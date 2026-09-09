@@ -9,7 +9,8 @@ import {
     renderPcrTableHead,
     updatePcrFilterCapsules,
     updatePcrHud,
-} from './template.js?v=14';
+    updatePcrViewButtons,
+} from './template.js?v=15';
 import {
     DEFAULT_PAGE_SIZE,
     bindPageSizeSelect,
@@ -28,6 +29,7 @@ const listState = {
     totalPages: 1,
     items: [],
     months: [],
+    view: 'procurement',
     canExport: true,
     isLoading: false,
     advancedOpen: false,
@@ -45,6 +47,7 @@ function init() {
     });
     fillYearMonthOptions();
     renderPcrTableHead([]);
+    updatePcrViewButtons(listState.view);
     updatePcrFilterCapsules();
     openWithData();
 }
@@ -76,6 +79,12 @@ function bindEvents() {
     });
     document.getElementById('pcrResetBtn')?.addEventListener('click', resetFilters);
     document.getElementById('pcrExportBtn')?.addEventListener('click', exportExcel);
+    document.getElementById('pcrViewProcurementBtn')?.addEventListener('click', () => {
+        setView('procurement');
+    });
+    document.getElementById('pcrViewAssemblyBtn')?.addEventListener('click', () => {
+        setView('assembly');
+    });
     document.getElementById('pcrLocationFilter')?.addEventListener('change', () => {
         setSelectValue('pcrVehicleModelFilter', '');
         setSelectValue('pcrBomVersionFilter', '');
@@ -122,6 +131,21 @@ function bindEvents() {
             if (page) loadList(page);
         }
     });
+}
+
+function isAssemblyView() {
+    return listState.view === 'assembly';
+}
+
+function setView(view) {
+    if (listState.view === view) return;
+    listState.view = view;
+    if (view === 'assembly') {
+        setSelectValue('pcrSupplierFilter', '');
+    }
+    updatePcrViewButtons(view);
+    updatePcrFilterCapsules();
+    refreshSuppliers().then(() => loadList(1));
 }
 
 function val(id) {
@@ -261,7 +285,8 @@ function readScope(showWarning = false) {
         start_month: startMonth,
         end_year: endYear,
         end_month: endMonth,
-        supplier_name: val('pcrSupplierFilter') || undefined,
+        supplier_name: isAssemblyView() ? undefined : (val('pcrSupplierFilter') || undefined),
+        view: listState.view,
     };
 }
 
@@ -279,6 +304,10 @@ function queryParams(scope, page, { forExport = false } = {}) {
 }
 
 async function refreshSuppliers() {
+    if (isAssemblyView()) {
+        fillSelect('pcrSupplierFilter', [], true, null, '全部');
+        return;
+    }
     const scope = readScope();
     const selected = val('pcrSupplierFilter');
     if (!scope) {
@@ -374,7 +403,9 @@ async function loadList(page = 1) {
         updatePcrHud(filters);
         setQaBanner(filters);
         const emptyHint = filters.empty_hint
-            ? `${esc(filters.empty_hint)} <a href="#/bom-procurement-object-list" class="text-[#FF1E27] hover:underline">去采购对象清单</a>`
+            ? (isAssemblyView()
+                ? esc(filters.empty_hint)
+                : `${esc(filters.empty_hint)} <a href="#/bom-procurement-object-list" class="text-[#FF1E27] hover:underline">去采购对象清单</a>`)
             : '当前范围没有可展示的价目行';
         setListEmpty(listState.items.length === 0, emptyHint);
         const pageInfo = document.getElementById('pcrPageInfo');
@@ -392,9 +423,14 @@ async function loadList(page = 1) {
         updatePcrHud(null);
         setQaBanner(null);
         const message = String(error?.message || '');
-        const emptyText = message.includes('采购对象清单')
-            ? missingListMessage()
-            : esc(message || '查询失败');
+        let emptyText;
+        if (!isAssemblyView() && message.includes('采购对象清单')) {
+            emptyText = missingListMessage();
+        } else if (isAssemblyView() && message.includes('材料清单')) {
+            emptyText = '未找到对应材料清单。<a href="#/bom-upload" class="text-[#FF1E27] hover:underline">去上传材料清单</a>';
+        } else {
+            emptyText = esc(message || '查询失败');
+        }
         setListEmpty(true, emptyText);
     } finally {
         setListLoading(false);
@@ -417,7 +453,7 @@ async function exportExcel() {
     if (!listState.canExport) return showToast('无导出权限', 'warning');
     const scope = readScope(true);
     if (!scope) return;
-    if (!scope.supplier_name) {
+    if (!isAssemblyView() && !scope.supplier_name) {
         setAdvancedOpen(true);
         return showToast('请先选定供应商再导出协议', 'warning');
     }

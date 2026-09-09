@@ -41,7 +41,7 @@ export function procurementContractReportTemplate() {
                                     未出结算价 <span id="pcrHudMissing">—</span>
                                 </div>
                             </div>
-                            <div class="bg-[#0D0D11]/80 border border-[#1E1E26] p-3"
+                            <div id="pcrHudSupplierCard" class="bg-[#0D0D11]/80 border border-[#1E1E26] p-3"
                                  style="box-shadow: inset 0 1px 0 rgba(255,255,255,0.03);">
                                 <div class="text-[#555555] text-[10px] tracking-wider">已指定供应商</div>
                                 <div class="text-[18px] font-bold text-[#FFFFFF] mt-1 tabular-nums">
@@ -51,6 +51,16 @@ export function procurementContractReportTemplate() {
                             </div>
                         </div>
                         <div class="flex flex-col items-end gap-2 shrink-0">
+                            <div class="flex items-center gap-1.5" role="group" aria-label="价目视图">
+                                <button id="pcrViewProcurementBtn" type="button"
+                                        class="px-3 py-1.5 text-[11px] font-medium rounded-md bg-[#1A080A] border border-[#FF1E27]/50 text-[#FF1E27] transition-all">
+                                    采购对象
+                                </button>
+                                <button id="pcrViewAssemblyBtn" type="button"
+                                        class="px-3 py-1.5 text-[11px] font-medium rounded-md bg-transparent border border-[#2A2A35] text-[#6E6E73] hover:text-white transition-all">
+                                    总成
+                                </button>
+                            </div>
                             <button id="pcrExportBtn" type="button"
                                     class="inline-flex items-center gap-1.5 bg-transparent text-[#6E6E73] border border-[#2A2A35] px-3 py-1.5 text-[11px] font-medium rounded-md hover:border-[#FF1E27]/50 hover:text-[#FF1E27] hover:bg-[#FF1E27]/10 hover:shadow-[0_0_12px_rgba(255,30,39,0.2)] transition-all duration-200"
                                     title="导出《批量零部件价格协议》（不分页、无水印）">
@@ -102,14 +112,14 @@ export function procurementContractReportTemplate() {
                             ${filterSelect('pcrStartMonthFilter', '开始月')}
                             ${filterSelect('pcrEndYearFilter', '结束年')}
                             ${filterSelect('pcrEndMonthFilter', '结束月')}
-                            ${filterSelect('pcrSupplierFilter', '供应商')}
+                            <span id="pcrSupplierFilterWrap">${filterSelect('pcrSupplierFilter', '供应商')}</span>
                             <button id="pcrResetBtn" type="button"
                                     class="inline-flex items-center gap-1.5 h-8 px-3 text-[11px] font-medium rounded-md bg-transparent text-[#6E6E73] border border-[#2A2A35] hover:bg-[#FF1E27]/10 hover:border-[#FF1E27]/50 hover:text-[#FF1E27] transition-all duration-200">
                                 ${window.svgIcon('refresh', 'w-3 h-3')}
                                 重置
                             </button>
                         </div>
-                        <p class="mt-2 text-[10px] text-[#555555]">打开即加载**最近一次核价**的基地 / 项目 / 版本 / 月份。导出须选定供应商，且需要导出权限。</p>
+                        <p id="pcrAdvancedHint" class="mt-2 text-[10px] text-[#555555]">打开即加载**最近一次核价**的基地 / 项目 / 版本 / 月份。采购对象导出须选定供应商。</p>
                     </div>
                 </div>
 
@@ -152,6 +162,25 @@ function filterSelect(id, label, widthClass = 'w-32') {
             <option value="">请选择</option>
         </select>
     </label>`;
+}
+
+export function updatePcrViewButtons(view) {
+    const isAssembly = view === 'assembly';
+    const active = 'px-3 py-1.5 text-[11px] font-medium rounded-md bg-[#1A080A] border border-[#FF1E27]/50 text-[#FF1E27] transition-all';
+    const idle = 'px-3 py-1.5 text-[11px] font-medium rounded-md bg-transparent border border-[#2A2A35] text-[#6E6E73] hover:text-white transition-all';
+    const procurementBtn = document.getElementById('pcrViewProcurementBtn');
+    const assemblyBtn = document.getElementById('pcrViewAssemblyBtn');
+    if (procurementBtn) procurementBtn.className = isAssembly ? idle : active;
+    if (assemblyBtn) assemblyBtn.className = isAssembly ? active : idle;
+    document.getElementById('pcrHudSupplierCard')?.classList.toggle('hidden', isAssembly);
+    document.getElementById('pcrCapsuleSupplier')?.classList.toggle('hidden', isAssembly);
+    document.getElementById('pcrSupplierFilterWrap')?.classList.toggle('hidden', isAssembly);
+    const hint = document.getElementById('pcrAdvancedHint');
+    if (hint) {
+        hint.textContent = isAssembly
+            ? '打开即加载最近一次核价的基地 / 项目 / 版本 / 月份。总成整包一份协议，不筛供应商。'
+            : '打开即加载最近一次核价的基地 / 项目 / 版本 / 月份。采购对象导出须选定供应商。';
+    }
 }
 
 export function updatePcrHud(filters) {

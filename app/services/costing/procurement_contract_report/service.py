@@ -8,7 +8,8 @@ from sqlalchemy.orm import Session
 
 from app.exceptions.base import NotFoundException
 from app.models.bom.node import BomNode
-from app.repositories.bom.bom_repository import BomNodeRepository
+from app.models.bom.procurement_object import BomProcurementObjectList
+from app.repositories.bom.bom_repository import BomNodeRepository, BomSnapshotRepository
 from app.repositories.bom.procurement_object_repository import BomProcurementObjectRepository
 from app.repositories.costing.assembly_cost.assembly_cost_repository import (
     AssemblyCostRepository,
@@ -24,12 +25,17 @@ from app.schemas.vo.procurement_contract_report_vo import (
     ProcurementContractReportPrepVO,
     ProcurementContractReportRowVO,
 )
+from app.services.bom.procurement_object.classify import KIND_L1_STAMPING
 from app.services.costing.procurement_contract_report.assemble import (
+    VIEW_ASSEMBLY,
+    VIEW_PROCUREMENT,
     PrepRow,
     PriceRow,
     ReportBundle,
+    ReportScope,
     ToolingAmounts,
     aggregate_price_rows,
+    build_assembly_prep_rows,
     build_prep_rows,
     count_missing_month_cells,
     report_sort_key,
@@ -40,12 +46,16 @@ from app.services.costing.procurement_contract_report.window import expand_month
 from app.services.masterdata.supplier.supplier_service import SupplierService
 
 _SECTION_OBJECT = "object"
-_EMPTY_HINT = "当前范围没有采购对象行"
+_EMPTY_OBJECT_HINT = "当前范围没有采购对象行"
+_EMPTY_ASSEMBLY_HINT = "当前范围没有供货总成"
+_MISSING_OBJECT_LIST = "请先生成采购对象清单"
+_MISSING_SNAPSHOT = "未找到对应材料清单，请先在焊接工程上传"
 
 
 class ProcurementContractReportService:
     def __init__(self) -> None:
         self.object_repo = BomProcurementObjectRepository()
+        self.snapshot_repo = BomSnapshotRepository()
         self.node_repo = BomNodeRepository()
         self.cost_repo = AssemblyCostRepository()
         self.die_fee_repo = StampingDieFeeRepository()
@@ -84,8 +94,9 @@ class ProcurementContractReportService:
     ) -> ProcurementContractReportPrepVO:
         bundle = self.build_report(db, query)
         return ProcurementContractReportPrepVO(
-            qa_passed=bundle.header.qa_passed,
-            qa_error_text=bundle.header.qa_error_text,
+            view=bundle.scope.view,
+            qa_passed=bundle.scope.qa_passed,
+            qa_error_text=bundle.scope.qa_error_text,
             months=_month_columns(bundle.months),
             supplier_names=bundle.supplier_names,
             prep_row_count=len(bundle.prep_rows),
@@ -131,15 +142,17 @@ class ProcurementContractReportService:
             end_year=query.end_year,
             end_month=query.end_month,
         )
-        header = self.object_repo.get_list_by_scope(
-            db,
-            location=query.location,
-            vehicle_model=query.vehicle_model,
-            bom_version=query.bom_version,
-        )
-        if header is None:
-            raise NotFoundException("请先生成采购对象清单")
+        if query.view == VIEW_ASSEMBLY:
+            return self._build_assembly_report(db, query, months)
+        return self._build_procurement_report(db, query, months)
 
+    def _build_procurement_report(
+        self,
+        db: Session,
+        query: ProcurementContractReportQuery,
+        months: list[tuple[int, int]],
+    ) -> ReportBundle:
+        header = self._require_object_list(db, query)
         supplier_name = self._resolve_supplier(db, query.supplier_name)
         scope_objects = self.object_repo.list_objects_for_export(
             db,
@@ -159,9 +172,84 @@ class ProcurementContractReportService:
             source_node_ids=[row.source_node_id for row in objects],
         )
         prep_rows = build_prep_rows(objects, nodes_by_id, months, costs)
+        return self._finish_bundle(
+            db,
+            query=query,
+            months=months,
+            scope=_scope_from_list(header),
+            prep_rows=prep_rows,
+            supplier_name=supplier_name,
+        )
+
+    def _build_assembly_report(
+        self,
+        db: Session,
+        query: ProcurementContractReportQuery,
+        months: list[tuple[int, int]],
+    ) -> ReportBundle:
+        snapshot = self.snapshot_repo.get_by_unique_key(
+            db,
+            query.location,
+            query.vehicle_model,
+            query.bom_version,
+        )
+        if snapshot is None:
+            raise NotFoundException(_MISSING_SNAPSHOT)
+        nodes = self.node_repo.list_by_snapshot(db, snapshot.id)
+        roots = sorted(
+            [node for node in nodes if node.parent_id is None],
+            key=lambda node: (node.sort_no, node.id),
+        )
+        costs = self._load_costs(
+            db,
+            query=query,
+            months=months,
+            source_node_ids=[node.id for node in roots],
+        )
+        prep_rows = build_assembly_prep_rows(roots, months, costs)
+        return self._finish_bundle(
+            db,
+            query=query,
+            months=months,
+            scope=ReportScope(
+                location=snapshot.location,
+                vehicle_model=snapshot.vehicle_model,
+                bom_version=snapshot.bom_version,
+                snapshot_id=snapshot.id,
+                view=VIEW_ASSEMBLY,
+            ),
+            prep_rows=prep_rows,
+            supplier_name=None,
+        )
+
+    def _require_object_list(
+        self,
+        db: Session,
+        query: ProcurementContractReportQuery,
+    ) -> BomProcurementObjectList:
+        header = self.object_repo.get_list_by_scope(
+            db,
+            location=query.location,
+            vehicle_model=query.vehicle_model,
+            bom_version=query.bom_version,
+        )
+        if header is None:
+            raise NotFoundException(_MISSING_OBJECT_LIST)
+        return header
+
+    def _finish_bundle(
+        self,
+        db: Session,
+        *,
+        query: ProcurementContractReportQuery,
+        months: list[tuple[int, int]],
+        scope: ReportScope,
+        prep_rows: list[PrepRow],
+        supplier_name: str | None,
+    ) -> ReportBundle:
         tooling = self._load_tooling(db, query, prep_rows)
         price_rows = aggregate_price_rows(prep_rows, months, tooling)
-        scope_key = (header.location, header.vehicle_model, header.bom_version)
+        scope_key = (scope.location, scope.vehicle_model, scope.bom_version)
         prep_rows.sort(
             key=lambda row: (
                 *report_sort_key(*scope_key, row.seq_label),
@@ -180,7 +268,7 @@ class ProcurementContractReportService:
             {name for row in prep_rows if row.supplier_name for name in [row.supplier_name]}
         )
         return ReportBundle(
-            header=header,
+            scope=scope,
             months=months,
             prep_rows=prep_rows,
             price_rows=price_rows,
@@ -221,6 +309,8 @@ class ProcurementContractReportService:
         query: ProcurementContractReportQuery,
         prep_rows: list[PrepRow],
     ) -> dict[str, ToolingAmounts]:
+        if not any(row.object_kind == KIND_L1_STAMPING for row in prep_rows):
+            return {}
         part_numbers = list(dict.fromkeys(row.part_number for row in prep_rows))
         die_fees = self.die_fee_repo.map_final_die_fee_by_part_numbers(
             db,
@@ -245,6 +335,18 @@ class ProcurementContractReportService:
             )
             for part_number in part_numbers
         }
+
+
+def _scope_from_list(header: BomProcurementObjectList) -> ReportScope:
+    return ReportScope(
+        location=header.location,
+        vehicle_model=header.vehicle_model,
+        bom_version=header.bom_version,
+        snapshot_id=header.snapshot_id,
+        view=VIEW_PROCUREMENT,
+        qa_passed=header.qa_passed,
+        qa_error_text=header.qa_error_text,
+    )
 
 
 def _nodes_by_id(nodes: list[BomNode]) -> dict[int, BomNode]:
@@ -280,9 +382,11 @@ def _month_columns(months: list[tuple[int, int]]) -> list[ProcurementContractMon
 def _empty_hint(bundle: ReportBundle) -> str | None:
     if bundle.price_rows:
         return None
+    if bundle.scope.view == VIEW_ASSEMBLY:
+        return _EMPTY_ASSEMBLY_HINT
     if bundle.supplier_name:
         return f"供应商「{bundle.supplier_name}」在当前筛选下没有可展示的价目行。"
-    return _EMPTY_HINT
+    return _EMPTY_OBJECT_HINT
 
 
 def _to_row_vo(row: PriceRow) -> ProcurementContractReportRowVO:
@@ -323,8 +427,9 @@ def _to_filters(
         supplier_name=bundle.supplier_name,
         part_number=query.part_number,
         part_name=query.part_name,
-        qa_passed=bundle.header.qa_passed,
-        qa_error_text=bundle.header.qa_error_text,
+        view=bundle.scope.view,
+        qa_passed=bundle.scope.qa_passed,
+        qa_error_text=bundle.scope.qa_error_text,
         months=_month_columns(bundle.months),
         prep_row_count=len(bundle.prep_rows),
         price_row_count=len(bundle.price_rows),

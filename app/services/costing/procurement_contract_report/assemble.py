@@ -9,9 +9,16 @@ from decimal import Decimal
 from app.common.money import Q4, quantize_money
 from app.exceptions.base import BusinessException
 from app.models.bom.node import BomNode
-from app.models.bom.procurement_object import BomProcurementObject, BomProcurementObjectList
+from app.models.bom.procurement_object import BomProcurementObject
 from app.services.bom.procurement_object.classify import KIND_L0_DEGENERATE, KIND_L1_STAMPING
-from app.services.costing.procurement_contract_report.qty import l0_node_of, vehicle_qty_from_l0
+from app.services.costing.procurement_contract_report.qty import (
+    l0_node_of,
+    node_qty,
+    vehicle_qty_from_l0,
+)
+
+VIEW_PROCUREMENT = "procurement"
+VIEW_ASSEMBLY = "assembly"
 
 
 @dataclass
@@ -61,9 +68,20 @@ class PriceRow:
     supplier_names: tuple[str, ...] = field(default_factory=tuple)
 
 
+@dataclass(frozen=True)
+class ReportScope:
+    location: str
+    vehicle_model: str
+    bom_version: str
+    snapshot_id: int
+    view: str = VIEW_PROCUREMENT
+    qa_passed: bool = True
+    qa_error_text: str | None = None
+
+
 @dataclass
 class ReportBundle:
-    header: BomProcurementObjectList
+    scope: ReportScope
     months: list[tuple[int, int]]
     prep_rows: list[PrepRow]
     price_rows: list[PriceRow]
@@ -87,14 +105,6 @@ def build_prep_rows(
         l0_node_id = l0.id if l0 is not None else item.source_node_id
         l0_seq_no = l0.seq_no if l0 is not None else None
         sort_no = node.sort_no if node is not None else (item.excel_row or 0)
-        month_amounts = [
-            MonthAmount(
-                year=year,
-                month=month,
-                should_cost=costs.get((year, month, item.source_node_id)),
-            )
-            for year, month in months
-        ]
         rows.append(
             PrepRow(
                 source_node_id=item.source_node_id,
@@ -108,11 +118,55 @@ def build_prep_rows(
                 l0_seq_no=l0_seq_no,
                 sort_no=sort_no,
                 vehicle_qty=vehicle_qty_from_l0(item.source_node_id, nodes_by_id),
-                month_amounts=month_amounts,
+                month_amounts=_month_amounts(item.source_node_id, months, costs),
             )
         )
     assign_seq_labels(rows)
     return rows
+
+
+def build_assembly_prep_rows(
+    roots: list[BomNode],
+    months: list[tuple[int, int]],
+    costs: dict[tuple[int, int, int], Decimal],
+) -> list[PrepRow]:
+    """树根一行：序号只写 seq_no，用量取根自身 qty，工装靠 object_kind 空 → /。"""
+    rows: list[PrepRow] = []
+    for node in roots:
+        seq_no = node.seq_no
+        rows.append(
+            PrepRow(
+                source_node_id=node.id,
+                part_number=node.part_number,
+                part_name=node.part_name,
+                internal_number=node.internal_number,
+                supplier_name=None,
+                object_kind=None,
+                l0_node_id=node.id,
+                l0_part_number=node.part_number,
+                l0_seq_no=seq_no,
+                sort_no=node.sort_no,
+                vehicle_qty=node_qty(node),
+                month_amounts=_month_amounts(node.id, months, costs),
+                seq_label="" if seq_no is None else str(seq_no),
+            )
+        )
+    return rows
+
+
+def _month_amounts(
+    source_node_id: int,
+    months: list[tuple[int, int]],
+    costs: dict[tuple[int, int, int], Decimal],
+) -> list[MonthAmount]:
+    return [
+        MonthAmount(
+            year=year,
+            month=month,
+            should_cost=costs.get((year, month, source_node_id)),
+        )
+        for year, month in months
+    ]
 
 
 def assign_seq_labels(rows: list[PrepRow]) -> None:

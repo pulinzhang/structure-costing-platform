@@ -43,7 +43,7 @@ import { pageConfig as stampingPartCostCalcPage } from './features/costing/stamp
 import { pageConfig as stampingPartCostPage } from './features/costing/stamping-part-cost/list/index.js?v=72';
 import { pageConfig as assemblyCostCalcPage } from './features/costing/assembly-cost/calc/index.js?v=9';
 import { pageConfig as assemblyCostPage } from './features/costing/assembly-cost/list/index.js?v=26';
-import { pageConfig as procurementContractReportPage } from './features/costing/procurement-contract-report/index.js?v=14';
+import { pageConfig as procurementContractReportPage } from './features/costing/procurement-contract-report/index.js?v=15';
 import { pageConfig as steelPricePolicyUploadPage } from './features/yishiyiyi/policy/upload/index.js?v=39';
 import { pageConfig as steelPricePolicyDownloadPage } from './features/yishiyiyi/policy/list/index.js?v=38';
 import { pageConfig as basePriceUploadPage } from './features/yishiyiyi/base-price/upload/index.js?v=40';

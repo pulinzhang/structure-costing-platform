@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+from typing import Literal
 from urllib.parse import quote
 
 from fastapi import APIRouter, Depends, Query
@@ -46,6 +47,7 @@ def _query_from_params(
     end_year: int,
     end_month: int,
     supplier_name: str | None,
+    view: Literal["procurement", "assembly"] = "procurement",
     part_number: str | None = None,
     part_name: str | None = None,
     page: int,
@@ -59,6 +61,7 @@ def _query_from_params(
         start_month=start_month,
         end_year=end_year,
         end_month=end_month,
+        view=view,
         supplier_name=supplier_name,
         part_number=part_number,
         part_name=part_name,
@@ -80,6 +83,7 @@ def list_report(
     end_year: int = Query(..., ge=2000, le=2100),
     end_month: int = Query(..., ge=1, le=12),
     supplier_name: str | None = Query(None),
+    view: Literal["procurement", "assembly"] = Query("procurement"),
     part_number: str | None = Query(None),
     part_name: str | None = Query(None),
     page: int = Query(1, ge=1),
@@ -95,6 +99,7 @@ def list_report(
         start_month=start_month,
         end_year=end_year,
         end_month=end_month,
+        view=view,
         supplier_name=supplier_name,
         part_number=part_number,
         part_name=part_name,
@@ -130,6 +135,7 @@ def prep_report(
     end_year: int = Query(..., ge=2000, le=2100),
     end_month: int = Query(..., ge=1, le=12),
     supplier_name: str | None = Query(None),
+    view: Literal["procurement", "assembly"] = Query("procurement"),
     db: Session = Depends(get_db),
     current_user: UserVO = Depends(require_perm(Perm.PROCUREMENT_CONTRACT_REPORT_VIEW)),
 ) -> ApiResponse[ProcurementContractReportPrepVO]:
@@ -141,6 +147,7 @@ def prep_report(
         start_month=start_month,
         end_year=end_year,
         end_month=end_month,
+        view=view,
         supplier_name=supplier_name,
         page=1,
         size=20,
@@ -158,6 +165,7 @@ def export_report(
     end_year: int = Query(..., ge=2000, le=2100),
     end_month: int = Query(..., ge=1, le=12),
     supplier_name: str | None = Query(None),
+    view: Literal["procurement", "assembly"] = Query("procurement"),
     db: Session = Depends(get_db),
     current_user: UserVO = Depends(require_perm(Perm.PROCUREMENT_CONTRACT_REPORT_EXPORT)),
 ) -> StreamingResponse:
@@ -169,6 +177,7 @@ def export_report(
         start_month=start_month,
         end_year=end_year,
         end_month=end_month,
+        view=view,
         supplier_name=supplier_name,
         page=1,
         size=20,
