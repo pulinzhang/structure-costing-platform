@@ -30,7 +30,7 @@ def location_in_or_exact_clause(
     column: InstrumentedAttribute[str],
     location: str | None,
 ) -> ColumnElement[bool] | None:
-    """主数据能展开则 IN；否则精确匹配（废料矩阵的福州/铝板不在基地表）。"""
+    """主数据能展开则 IN；否则精确匹配。"""
     text = (location or "").strip()
     if not text:
         return None

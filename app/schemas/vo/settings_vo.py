@@ -14,6 +14,10 @@ class ConfigVO(BaseModel):
 
     app_name: str
     company_name: str = Field(..., description="公司名称（采购协议甲方）")
+    procurement_agreement_remarks: str = Field(..., description="采购价格协议文尾条款")
+    procurement_agreement_remarks_sample: str = Field(
+        ..., description="采购协议备注普威样例（仅供设置页改写，导出不读此字段）"
+    )
     version: str
     steel_density: Decimal = Field(..., description="钢材密度(g/cm3)")
     material_loss_rate: Decimal = Field(..., description="冲压材料损耗率（小数，如 0.003=千分之3）")

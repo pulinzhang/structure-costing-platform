@@ -55,6 +55,7 @@
 | 文档 | 状态 |
 |------|------|
 | [steel-grade-category-design.md](yishiyiyi/steel-grade-category-design.md) | 牌号分类（已落地） |
+| [scrap-price-design.md](yishiyiyi/scrap-price-design.md) | 废料月度销售价（已落地）：基地×钢材/铝板；行=已启用基地 |
 | [thickness-policy-category-level-design.md](yishiyiyi/thickness-policy-category-level-design.md) | 分类级厚度加减价（设计） |
 
 ## 核价 `costing/`

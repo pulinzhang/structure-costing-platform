@@ -19,6 +19,7 @@ class ExportPrepContext:
     bundle: ReportBundle
     query: ProcurementContractReportQuery
     company_name: str
+    remarks_template: str
 
 
 def prepare_export(
@@ -26,8 +27,10 @@ def prepare_export(
     query_service: ProcurementContractReportService,
     query: ProcurementContractReportQuery,
 ) -> ExportPrepContext:
+    settings = SettingsService().get_config(db)
     return ExportPrepContext(
         bundle=query_service.build_report(db, query),
         query=query,
-        company_name=SettingsService().get_company_name(db),
+        company_name=settings.company_name,
+        remarks_template=settings.procurement_agreement_remarks,
     )

@@ -169,7 +169,7 @@ CostingEngineService                 ← 编排唯一入口
 | `base_price` | 钢材基准价 | `#/base-price-upload` | `#/base-price-download` | `year`, `month`, `location` |
 | `thickness_policy` | 厚度加减价政策 | `#/steel-price-policy-upload` | `#/steel-price-policy-download` | 文案提示牌号/厚度缺口 |
 | `width_policy` | 宽度加减价政策 | `#/steel-price-policy-upload` | `#/steel-price-policy-download` | 同上（同一政策模块） |
-| `scrap_price` | 废料月度价 | `#/scrap-price` | — | `year`, `month`, `location` |
+| `scrap_price` | 废料月度价（**钢材**） | `#/scrap-price` | — | `year`, `month`, `location`；取价固定 `scrap_category=钢材` |
 | `system_rates` | 系统费率等配置 | `#/settings`（或实际费率配置页） | — | 按现网设置页为准 |
 
 > 映射随侧栏路由变更时 **只改后端常量 / 单一前端字典一处**，与 `pageMeta` 的 hash 名保持一致。

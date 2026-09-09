@@ -12,14 +12,21 @@ import {
     parsePriceInput,
     comparePriceStrings,
     subtractPriceStrings,
-} from './template.js?v=19';
+} from './template.js?v=20';
 
 const API_BASE = '/api/yishiyiyi/scrap-price';
 const DRAWER_ANIMATION_MS = 300;
+const SCRAP_CATEGORY_STEEL = '钢材';
+const SCRAP_CATEGORY_ALUMINUM = '铝板';
+const SCRAP_CATEGORY_LABELS = {
+    [SCRAP_CATEGORY_STEEL]: '钢材料',
+    [SCRAP_CATEGORY_ALUMINUM]: '铝材',
+};
 
 const scrapState = {
     year: new Date().getFullYear(),
     month: new Date().getMonth() + 1,
+    scrapCategory: SCRAP_CATEGORY_STEEL,
     sheet: null,
     months: [],
     years: [],
@@ -63,7 +70,9 @@ async function fetchMonthsForYear(year) {
         return scrapState.months;
     }
     try {
-        const res = await HttpClient.get(`${API_BASE}/months`, { params: { year } });
+        const res = await HttpClient.get(`${API_BASE}/months`, {
+            params: { year, scrap_category: scrapState.scrapCategory },
+        });
         return Array.isArray(res.data) ? res.data : [];
     } catch (_) {
         return [];
@@ -90,7 +99,7 @@ async function refreshCopyPanelState() {
     const hasData = Boolean(hit && hit.filled_count > 0);
 
     if (hasData) {
-        toMeta.textContent = `已有 ${hit.filled_count}/6`;
+        toMeta.textContent = `已有 ${hit.filled_count}/${hit.required_count ?? hit.filled_count}`;
         warn.classList.remove('hidden');
         confirmBtn.textContent = '覆盖并复制';
     } else {
@@ -185,6 +194,36 @@ function applyPermissionUi() {
     if (!hasMore) document.getElementById('btnScrapMore')?.classList.add('hidden');
 }
 
+function syncCategoryButtons() {
+    const steelOn = scrapState.scrapCategory === SCRAP_CATEGORY_STEEL;
+    const steelBtn = document.getElementById('scrapCategorySteelBtn');
+    const aluBtn = document.getElementById('scrapCategoryAluminumBtn');
+    if (steelBtn) {
+        steelBtn.classList.toggle('bg-[#d32f2f]', steelOn);
+        steelBtn.classList.toggle('border-[#d32f2f]', steelOn);
+        steelBtn.classList.toggle('text-white', steelOn);
+        steelBtn.classList.toggle('bg-transparent', !steelOn);
+        steelBtn.classList.toggle('border-[#2c2c2c]', !steelOn);
+        steelBtn.classList.toggle('text-[#616161]', !steelOn);
+    }
+    if (aluBtn) {
+        aluBtn.classList.toggle('bg-[#d32f2f]', !steelOn);
+        aluBtn.classList.toggle('border-[#d32f2f]', !steelOn);
+        aluBtn.classList.toggle('text-white', !steelOn);
+        aluBtn.classList.toggle('bg-transparent', steelOn);
+        aluBtn.classList.toggle('border-[#2c2c2c]', steelOn);
+        aluBtn.classList.toggle('text-[#616161]', steelOn);
+    }
+}
+
+async function switchScrapCategory(category) {
+    if (category === scrapState.scrapCategory) return;
+    scrapState.scrapCategory = category;
+    syncCategoryButtons();
+    await loadMonthList();
+    await loadMonthSheet();
+}
+
 function setLoading(isLoading) {
     scrapState.isLoading = isLoading;
     const el = document.getElementById('scrapLoading');
@@ -198,7 +237,10 @@ function updateBadge(sheet) {
     const meta = document.getElementById('scrapFooterMeta');
     if (!badge) return;
 
-    if (meta) meta.textContent = '6 个基地';
+    if (meta) {
+        const n = sheet?.required_count ?? sheet?.locations?.length ?? 0;
+        meta.textContent = n ? `${n} 个基地` : '无已启用基地';
+    }
 
     if (!sheet) {
         badge.textContent = '—';
@@ -208,11 +250,12 @@ function updateBadge(sheet) {
     }
 
     badge.textContent = fmtPeriod(sheet.year, sheet.month);
+    const denom = sheet.required_count ?? 0;
     if (status) {
         if (sheet.is_complete) {
             status.textContent = '已完整';
         } else if (sheet.is_saved) {
-            status.textContent = `已录 ${sheet.filled_count}/6`;
+            status.textContent = `已录 ${sheet.filled_count}/${denom}`;
         } else {
             status.textContent = '未录入';
         }
@@ -221,7 +264,9 @@ function updateBadge(sheet) {
     if (hint) {
         hint.textContent = sheet.is_complete
             ? '修改后点击保存'
-            : '保存需填满 6 行大盘价';
+            : denom
+                ? `保存需填满 ${denom} 行大盘价`
+                : '请先在基地页启用基地';
     }
 }
 
@@ -416,7 +461,7 @@ async function loadFilterOptions() {
 async function loadMonthList() {
     try {
         const res = await HttpClient.get(`${API_BASE}/months`, {
-            params: { year: scrapState.year },
+            params: { year: scrapState.year, scrap_category: scrapState.scrapCategory },
         });
         scrapState.months = Array.isArray(res.data) ? res.data : [];
     } catch (_) {
@@ -430,7 +475,11 @@ async function loadMonthSheet() {
     setLoading(true);
     try {
         const res = await HttpClient.get(`${API_BASE}/month`, {
-            params: { year: scrapState.year, month: scrapState.month },
+            params: {
+                year: scrapState.year,
+                month: scrapState.month,
+                scrap_category: scrapState.scrapCategory,
+            },
         });
         scrapState.sheet = res.data || null;
         const editable =
@@ -460,8 +509,9 @@ async function saveMonth() {
         showToast(errors[0], 'warning');
         return;
     }
-    if (items.length !== 6) {
-        showToast('保存需要完整 6 行数据', 'warning');
+    const required = scrapState.sheet?.required_count ?? items.length;
+    if (items.length !== required) {
+        showToast(`保存需要完整 ${required} 行数据`, 'warning');
         return;
     }
 
@@ -473,6 +523,7 @@ async function saveMonth() {
         const res = await HttpClient.put(`${API_BASE}/month`, {
             year: scrapState.year,
             month: scrapState.month,
+            scrap_category: scrapState.scrapCategory,
             items,
         });
         scrapState.sheet = res.data || null;
@@ -493,12 +544,17 @@ async function deleteMonth() {
         return;
     }
     const label = fmtPeriod(scrapState.year, scrapState.month);
-    if (!window.confirm(`确认删除 ${label} 整月废料销售价？此操作不可恢复。`)) {
+    const categoryLabel = SCRAP_CATEGORY_LABELS[scrapState.scrapCategory] || '';
+    if (!window.confirm(`确认删除 ${label} ${categoryLabel}废料销售价？此操作不可恢复。`)) {
         return;
     }
     try {
         const res = await HttpClient.delete(`${API_BASE}/month`, {
-            params: { year: scrapState.year, month: scrapState.month },
+            params: {
+                year: scrapState.year,
+                month: scrapState.month,
+                scrap_category: scrapState.scrapCategory,
+            },
         });
         showToast(res.message || '已删除', 'success');
         await loadMonthList();
@@ -534,6 +590,7 @@ async function confirmCopy() {
             source_month,
             target_year,
             target_month,
+            scrap_category: scrapState.scrapCategory,
         });
         showToast(res.message || '复制成功', 'success');
         closeDrawer('scrapCopyDrawer', 'scrapCopyBackdrop');
@@ -578,6 +635,13 @@ function readSelectorsIntoState() {
 }
 
 function bindEvents() {
+    document.getElementById('scrapCategorySteelBtn')?.addEventListener('click', () => {
+        switchScrapCategory(SCRAP_CATEGORY_STEEL);
+    });
+    document.getElementById('scrapCategoryAluminumBtn')?.addEventListener('click', () => {
+        switchScrapCategory(SCRAP_CATEGORY_ALUMINUM);
+    });
+
     document.getElementById('btnScrapLoad')?.addEventListener('click', async () => {
         readSelectorsIntoState();
         await loadMonthList();
@@ -698,6 +762,7 @@ async function pickDefaultMonth() {
 async function init() {
     applyPermissionUi();
     bindEvents();
+    syncCategoryButtons();
     await loadFilterOptions();
     await pickDefaultMonth();
     fillYearMonthSelects();

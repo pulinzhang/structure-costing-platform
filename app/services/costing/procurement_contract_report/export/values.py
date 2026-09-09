@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import calendar
+import re
 
 from app.common.money import Q0, Q2, quantize_money
 from app.services.costing.procurement_contract_report.assemble import (
@@ -12,14 +13,9 @@ from app.services.costing.procurement_contract_report.assemble import (
 from app.services.costing.procurement_contract_report.export.columns import (
     MISSING_VALUE,
     QTY_UNIT,
-    REMARK_1_TEMPLATE,
-    REMARK_5_TEMPLATE,
-    REMARKS_HEAD,
-    REMARKS_TAIL,
     SINGLE_MONTH_PRICE_HEADER,
 )
 from app.services.costing.procurement_contract_report.window import month_header
-from app.services.settings.system.settings_service import DEFAULT_COMPANY_NAME
 
 
 def excel_int(value: object) -> int | str:
@@ -54,7 +50,7 @@ def party_b_name(bundle: ReportBundle) -> str:
 
 
 def _company_name(company_name: str | None) -> str:
-    return (company_name or "").strip() or DEFAULT_COMPANY_NAME
+    return (company_name or "").strip()
 
 
 def party_a_label(company_name: str) -> str:
@@ -77,19 +73,37 @@ def qty_unit() -> str:
     return QTY_UNIT
 
 
-def agreement_remarks(bundle: ReportBundle, company_name: str | None = None) -> tuple[str, ...]:
+def _fill_placeholders(template: str, values: dict[str, str]) -> str:
+    filled = template
+    for key, value in values.items():
+        filled = filled.replace("{" + key + "}", value)
+    return filled
+
+
+def agreement_remarks(
+    bundle: ReportBundle,
+    company_name: str | None = None,
+    remarks_template: str | None = None,
+) -> tuple[str, ...]:
     start_year, start_month = bundle.months[0]
     end_year, end_month = bundle.months[-1]
     end_day = calendar.monthrange(end_year, end_month)[1]
-    remark_1 = REMARK_1_TEMPLATE.format(company_name=_company_name(company_name))
-    remark_5 = REMARK_5_TEMPLATE.format(
-        start_year=start_year,
-        start_month=start_month,
-        end_year=end_year,
-        end_month=end_month,
-        end_day=end_day,
+    template = (remarks_template or "").strip()
+    if not template:
+        return ()
+    filled = _fill_placeholders(
+        template,
+        {
+            "company_name": _company_name(company_name),
+            "start_year": str(start_year),
+            "start_month": str(start_month),
+            "end_year": str(end_year),
+            "end_month": str(end_month),
+            "end_day": str(end_day),
+        },
     )
-    return (remark_1, *REMARKS_HEAD, remark_5, *REMARKS_TAIL)
+    parts = [part.strip() for part in re.split(r"\n\s*\n", filled) if part.strip()]
+    return tuple(parts) if parts else (filled,)
 
 
 def build_filename(bundle: ReportBundle) -> str:

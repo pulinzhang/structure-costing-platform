@@ -373,20 +373,44 @@ def test_expand_months_rejects_over_12() -> None:
         expand_months(start_year=2026, start_month=1, end_year=2027, end_month=2)
 
 
-def test_validity_clause_fills_window_dates() -> None:
+def _seed_agreement_settings(
+    db: Session,
+    *,
+    company_name: str = "",
+    remarks: str = "",
+) -> None:
+    db.add(
+        SystemConfig(
+            id=1,
+            app_name="test",
+            company_name=company_name,
+            procurement_agreement_remarks=remarks,
+        )
+    )
+    db.flush()
+
+
+def test_agreement_remarks_empty_without_template() -> None:
     bundle = SimpleNamespace(months=[(2025, 1), (2025, 8)])
-    remarks = agreement_remarks(bundle)  # type: ignore[arg-type]
-    assert remarks[0].startswith("1、本附件为双方签署的《上海普炳软件科技有限公司采购主合同》")
-    assert remarks[0].count("\n") == 2
-    assert "\n" in remarks[1]
-    assert "\n" in remarks[2]
-    assert remarks[3].count("\n") == 2
-    assert remarks[4] == "5、上述价格执行有效期为2025年1月1日起至2025年8月31日。"
-    assert "\n" in remarks[5]
-    assert "\n" in remarks[7]
-    assert remarks[9] == "10、本附件签署原件叁份，甲方执贰份，乙方执壹份。"
-    custom = agreement_remarks(bundle, "芜湖某厂")  # type: ignore[arg-type]
-    assert "《芜湖某厂采购主合同》" in custom[0]
+    assert agreement_remarks(bundle) == ()  # type: ignore[arg-type]
+    assert agreement_remarks(bundle, "某厂", "  ") == ()  # type: ignore[arg-type]
+
+
+def test_agreement_remarks_uses_settings_template() -> None:
+    bundle = SimpleNamespace(months=[(2026, 2), (2026, 3)])
+    remarks = agreement_remarks(
+        bundle,  # type: ignore[arg-type]
+        company_name="某冲压厂",
+        remarks_template=(
+            "甲方{company_name}有效期{start_year}年{start_month}月1日至"
+            "{end_year}年{end_month}月{end_day}日。\n\n"
+            "留空{unknown_token}。"
+        ),
+    )
+    assert remarks == (
+        "甲方某冲压厂有效期2026年2月1日至2026年3月31日。",
+        "留空{unknown_token}。",
+    )
 
 
 def test_seq_sort_key_orders_by_l0_then_child() -> None:
@@ -565,6 +589,14 @@ def test_conflict_same_part_two_prices(db: Session) -> None:
 
 def test_export_matches_template_shape(db: Session) -> None:
     _seed_pack(db)
+    _seed_agreement_settings(
+        db,
+        company_name="测试甲方",
+        remarks=(
+            "5、上述价格执行有效期为{start_year}年{start_month}月1日起至"
+            "{end_year}年{end_month}月{end_day}日。"
+        ),
+    )
     content, filename = ProcurementContractReportExportOrchestrator().export(
         db,
         _query(supplier_name="烟台海众汽车部件有限公司"),

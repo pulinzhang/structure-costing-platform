@@ -64,17 +64,22 @@ from app.services.costing.procurement_contract_report.export.values import (
 
 
 class AgreementWorkbookEngine:
-    def run(self, bundle: ReportBundle, company_name: str) -> Workbook:
+    def run(self, bundle: ReportBundle, company_name: str, remarks_template: str) -> Workbook:
         workbook = Workbook()
         agreement = workbook.active
         if not isinstance(agreement, Worksheet):
             raise RuntimeError("新建工作簿没有工作表")
         agreement.title = AGREEMENT_SHEET_TITLE
-        _write_agreement_sheet(agreement, bundle, company_name)
+        _write_agreement_sheet(agreement, bundle, company_name, remarks_template)
         return workbook
 
 
-def _write_agreement_sheet(sheet: Worksheet, bundle: ReportBundle, company_name: str) -> None:
+def _write_agreement_sheet(
+    sheet: Worksheet,
+    bundle: ReportBundle,
+    company_name: str,
+    remarks_template: str,
+) -> None:
     month_count = len(bundle.months)
     end_col = last_column(month_count)
     annex_cell = sheet.cell(1, 1, ANNEX_LABEL)
@@ -98,7 +103,7 @@ def _write_agreement_sheet(sheet: Worksheet, bundle: ReportBundle, company_name:
         )
         sheet.cell(data_start, 2, EMPTY_BODY)
         footer_row = data_start + 1
-    _write_footer(sheet, footer_row, end_col, bundle, company_name)
+    _write_footer(sheet, footer_row, end_col, bundle, company_name, remarks_template)
     _apply_column_widths(sheet, agreement_column_widths(month_count))
     _tune_agreement_sheet(sheet)
 
@@ -214,6 +219,7 @@ def _write_footer(
     last_col: int,
     bundle: ReportBundle,
     company_name: str,
+    remarks_template: str,
 ) -> None:
     row = start_row
     sheet.merge_cells(start_row=row, start_column=1, end_row=row, end_column=last_col)
@@ -221,7 +227,7 @@ def _write_footer(
     row += 1
     sheet.cell(row, 1, REMARK_LABEL)
     row += 1
-    for remark in agreement_remarks(bundle, company_name):
+    for remark in agreement_remarks(bundle, company_name, remarks_template):
         sheet.merge_cells(start_row=row, start_column=1, end_row=row, end_column=last_col)
         sheet.cell(row, 1, remark).alignment = LEFT
         if "\n" in remark:

@@ -50,7 +50,7 @@ import { pageConfig as basePriceUploadPage } from './features/yishiyiyi/base-pri
 import { pageConfig as basePriceDownloadPage } from './features/yishiyiyi/base-price/list/index.js?v=35';
 import { pageConfig as winningThicknessDownloadPage } from './features/yishiyiyi/winning-thickness/list/index.js?v=15';
 import { pageConfig as steelGradeCategoryPage } from './features/yishiyiyi/steel-grade-category/index.js?v=4';
-import { pageConfig as scrapPricePage } from './features/yishiyiyi/scrap-price/index.js?v=21';
+import { pageConfig as scrapPricePage } from './features/yishiyiyi/scrap-price/index.js?v=22';
 import { pageConfig as bomStructurePage }  from './features/bom/material/structure/index.js?v=9';
 import { pageConfig as bomVizPage }        from './features/bom/material/viz/index.js?v=29';
 import { pageConfig as bomUploadPage }     from './features/bom/material/upload/index.js?v=11';
@@ -75,7 +75,7 @@ import { pageConfig as vehicleModelUploadPage } from './features/masterdata/vehi
 import { pageConfig as vehicleModelListPage } from './features/masterdata/vehicle-model/list/index.js?v=4';
 import { pageConfig as supplierUploadPage } from './features/masterdata/supplier/upload/index.js?v=1';
 import { pageConfig as supplierListPage } from './features/masterdata/supplier/list/index.js?v=3';
-import { pageConfig as settingsPage }       from './features/settings/system/index.js?v=20';
+import { pageConfig as settingsPage }       from './features/settings/system/index.js?v=24';
 import { pageConfig as settingsUsersPage }  from './features/settings/users/index.js?v=13';
 import { pageConfig as settingsLogsPage }   from './features/settings/logs/index.js?v=7';
 import { pageConfig as settingsProfilePage } from './features/settings/profile/index.js?v=9';

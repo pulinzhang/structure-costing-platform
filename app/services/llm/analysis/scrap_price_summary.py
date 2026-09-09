@@ -56,7 +56,7 @@ def build_scrap_price_drivers(
     *,
     top_n: int = 6,
 ) -> dict[str, Any]:
-    """按基地汇总当月净价（固定 6 行矩阵，取有数据的基地）。"""
+    """按基地汇总钢材净价（top_n 为排名上限，不是矩阵行数）。"""
     by_location: dict[str, list[ScrapPricePeriodRow]] = defaultdict(list)
     for row in rows:
         by_location[row.location].append(row)

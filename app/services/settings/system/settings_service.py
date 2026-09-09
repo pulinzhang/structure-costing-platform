@@ -20,7 +20,6 @@ from app.schemas.vo.settings_vo import ConfigVO
 from app.schemas.vo.user_vo import UserVO
 
 DEFAULT_APP_NAME = "汽车冲压件自动核价平台"
-DEFAULT_COMPANY_NAME = "上海普炳软件科技有限公司"
 DEFAULT_STEEL_DENSITY = Decimal("7.85")
 DEFAULT_MATERIAL_LOSS_RATE = Decimal("0.003")  # 千分之 3
 DEFAULT_SCRAP_RECOVERY_RATE = Decimal("0.97")  # 97%
@@ -30,6 +29,38 @@ DEFAULT_FINISHED_WAREHOUSE_PACKAGING_RATE = Decimal("0.01")  # 1%
 DEFAULT_FINISHED_SCRAP_RATE = Decimal("0.003")  # 千分之 3
 DEFAULT_FINISHED_PRETAX_PROFIT_RATE = Decimal("0.02")  # 2%
 DEFAULT_SWING_SHEAR_PROCESS_FEE_PER_TON = Decimal("150")  # 元/吨
+SAMPLE_PROCUREMENT_AGREEMENT_REMARKS = (
+    "1、本附件为双方签署的《{company_name}采购主合同》（编号：__________________）\n"
+    "不可分割的部分，经双方签字、盖章后生效。\n"
+    "双方同意，除合同零部件价格条款按本附件执行外，其他所有条款继续有效，直至双方签订新的采购主合同。\n"
+    "\n"
+    "2、如工装费用单独支付，\n"
+    "具体支付方式以双方签订的编号为：__________________《工装支付协议》。\n"
+    "\n"
+    "3、工装费用分摊数量达到以上合同约定分摊数量时，双方确认分摊数量后工装费自动剥离，并于分摊完毕立即执行新结算价格；\n"
+    "特殊情况时工装费用剥离最终以报告为准。\n"
+    "\n"
+    "4、如上合同产品清单中，乙方开发 / 项目 / 个产品，涉及工装费金额 / 元，于 / 年年度价格中已清算（具体详见产品备注）。\n"
+    "□甲方所有，在乙方现场供生产备用 □乙方所有 □甲乙双方共有。\n"
+    "未经甲方确认同意，乙方不得私自处置。\n"
+    "\n"
+    "5、上述价格执行有效期为{start_year}年{start_month}月1日起至"
+    "{end_year}年{end_month}月{end_day}日。\n"
+    "\n"
+    "6、结算方式及付款期限：货到甲方经检验合格入寄库存，以甲方实际出库使用量结算；\n"
+    "甲方在接到乙方增值税发票后90个工作日内以承兑汇票或现金转账方式付款。\n"
+    "\n"
+    "7、以上零部件价格均为含运输费、包装费、仓储费、分拣费、配送费，\n"
+    "不含13%增值税的我方入库价格。\n"
+    "\n"
+    "8、供货方式（必选项）：乙方直供□普威技研 □普威新材料 □普威轻量化 □普威滨江 □安徽部件 □安庆普威 □湖南普威 □普威陕西\n"
+    "□普威江西 □鄂尔多斯普威 □山东普威 □湖州普威 □金华普威 □济南普威 □轻量化弋江工厂 □其他（如选其他需备注清楚）。\n"
+    "\n"
+    "9、因乙方的分供方不能正常供货，导致乙方不能按照双方约定向甲方供货或者存在供货风险的，\n"
+    "甲方有权暂停支付乙方的货款，直至乙方恢复正常供货或者消除前述供货风险。\n"
+    "\n"
+    "10、本附件签署原件叁份，甲方执贰份，乙方执壹份。"
+)
 APP_VERSION = "1.0.0"
 
 
@@ -44,7 +75,9 @@ class SettingsService:
         if row is None:
             return ConfigVO(
                 app_name=app_settings.APP_NAME or DEFAULT_APP_NAME,
-                company_name=DEFAULT_COMPANY_NAME,
+                company_name="",
+                procurement_agreement_remarks="",
+                procurement_agreement_remarks_sample=SAMPLE_PROCUREMENT_AGREEMENT_REMARKS,
                 version=APP_VERSION,
                 steel_density=DEFAULT_STEEL_DENSITY,
                 material_loss_rate=DEFAULT_MATERIAL_LOSS_RATE,
@@ -58,7 +91,11 @@ class SettingsService:
             )
         return ConfigVO(
             app_name=row.app_name or DEFAULT_APP_NAME,
-            company_name=self._normalize_company_name(getattr(row, "company_name", None)),
+            company_name=self._strip_text(getattr(row, "company_name", None)),
+            procurement_agreement_remarks=self._strip_text(
+                getattr(row, "procurement_agreement_remarks", None)
+            ),
+            procurement_agreement_remarks_sample=SAMPLE_PROCUREMENT_AGREEMENT_REMARKS,
             version=APP_VERSION,
             steel_density=self._normalize_density(row.steel_density),
             material_loss_rate=self._normalize_loss_rate(getattr(row, "material_loss_rate", None)),
@@ -98,7 +135,8 @@ class SettingsService:
         current_user: UserVO,
     ) -> ConfigVO:
         app_name = dto.app_name.strip() or DEFAULT_APP_NAME
-        company_name = self._normalize_company_name(dto.company_name)
+        company_name = dto.company_name
+        remarks = dto.procurement_agreement_remarks
         audit = audit_create(current_user)
         steel_density = quantize_money(dto.steel_density, Q4)
         material_loss_rate = quantize_money(dto.material_loss_rate, Q6)
@@ -118,6 +156,7 @@ class SettingsService:
                 SystemConfigWrite(
                     app_name=app_name,
                     company_name=company_name,
+                    procurement_agreement_remarks=remarks,
                     steel_density=steel_density,
                     material_loss_rate=material_loss_rate,
                     scrap_recovery_rate=scrap_recovery_rate,
@@ -138,6 +177,7 @@ class SettingsService:
                 SystemConfigPatch(
                     app_name=app_name,
                     company_name=company_name,
+                    procurement_agreement_remarks=remarks,
                     steel_density=steel_density,
                     material_loss_rate=material_loss_rate,
                     scrap_recovery_rate=scrap_recovery_rate,
@@ -152,13 +192,6 @@ class SettingsService:
             )
         db.commit()
         return self.get_config(db)
-
-    def get_company_name(self, db: Session) -> str:
-        """协议导出用：读公司名称（甲方），空则回退样张默认。"""
-        row = self.repository.get_singleton(db)
-        if row is None:
-            return DEFAULT_COMPANY_NAME
-        return self._normalize_company_name(getattr(row, "company_name", None))
 
     def get_steel_density(self, db: Session) -> Decimal:
         """核价用：读系统配置密度，无效或缺失则回退 7.85。"""
@@ -242,9 +275,8 @@ class SettingsService:
         )
 
     @staticmethod
-    def _normalize_company_name(value: Any) -> str:
-        name = str(value or "").strip()
-        return name or DEFAULT_COMPANY_NAME
+    def _strip_text(value: Any) -> str:
+        return str(value or "").strip()
 
     @staticmethod
     def _normalize_density(value: Any) -> Decimal:
