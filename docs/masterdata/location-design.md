@@ -25,7 +25,7 @@
 |---|------|
 | B1 | **绝对上游。** 不依赖项目、冲压、BOM、一事一议、核价。项目设计依赖本文，本文不依赖项目设计 |
 | B2 | 只在基地页手工增加。下游找不到就回本页手工补，禁止代建、禁止 `get_or_create` |
-| B3 | 凡选**采购基地**，选项只来自本文。废止 `PROCUREMENT_LOCATIONS` 与前端写死的四基地数组。**废料价矩阵不是本文**（见 §8） |
+| B3 | 凡选**采购基地**，选项只来自本文。废止 `PROCUREMENT_LOCATIONS` 与前端写死的四基地数组。废料月度价矩阵行也只来自本文（见 [scrap-price-design.md](../yishiyiyi/scrap-price-design.md)） |
 | B4 | **启用 / 禁用** 即可。已启用才允许新引入。不做生效日期、失效日期、暂停 |
 | B5 | 规范名创建后不改。历史「×基地」用别名，引入新数据只写规范名。废止 `location_candidates` |
 | B6 | **修改与删除同时支持。** 启用/禁用是改非主键，外键不管。删除只 `DELETE` 自己。拦改主键/删除的是数据库（子表 `ON UPDATE RESTRICT` + `ON DELETE RESTRICT`），不是基地去点名项目。删除文案：**「仍被引用，不能删除」**。规范名创建后不改（B5）；子表仍必须同时声明 `onupdate="RESTRICT"`，禁止只拦删除 |
@@ -53,6 +53,7 @@ stamping / bom / yishiyiyi / costing / dashboard / llm
 ```
 
 只按 `location` 写的路径（**基价**、钢材联动结果、冲次单价）只过本文。  
+**废料月度价**同样只按 `location` 写，且本表是直接下一跳：见 [scrap-price-design.md](../yishiyiyi/scrap-price-design.md)。  
 按 `(location, vehicle_model)` 写的路径：先过本文，再过项目设计。  
 **基准价格**（`steel_base_prices`）有 `location`：新写入 `require_enabled` 只落规范名；列表/核价读历史用 `expand_for_query`。不改写已有行，不加基地外键（不是下一跳）。  
 **厚度加减价政策没有 `location` 列**（键是年 + 月 + 钢厂 + 大类），不过本文、不加基地外键。核价：基地只用来取该基地基价；加减价按钢厂 + 大类命中政策，见 [thickness-policy-category-level-design.md](../yishiyiyi/thickness-policy-category-level-design.md)。
@@ -332,11 +333,11 @@ B8 与宪法「不加外键则不准提供改主键、不准提供删除」不�
 - 各切片 `/filters/locations`（及仪表盘范围选项）：改为调 `list_enabled` / `list_registered`，查询带 `expand_for_query`
 - 布点 / 检具 / 冲次单价 / BOM 上传与列表（选手选基地后 `require_enabled`）、一事一议**基价**（上传表头经别名收成规范名再 `require_enabled`；筛选用 `expand_for_query`）、钢材联动与零件核价计算、核价引擎门禁。工艺确认上传不选手选，落库基地仍是项目行上的规范名
 - 采购对象生成 / 列表 / 导出：见 [bom-procurement-objects-design.md](../bom/bom-procurement-objects-design.md)（生成 `require_enabled`；列表筛 `list_registered` + 查询 `expand_for_query`；清单头不加基地外键）
+- 废料月度销售价：矩阵行 `list_enabled`；写入 `require_enabled`；`stamping_scrap_prices.location` 声明基地 FK（`RESTRICT` / `RESTRICT`）。见 [scrap-price-design.md](../yishiyiyi/scrap-price-design.md)
 - LLM：只读本表 Model（解释层隔离，**禁止**调 LocationService）。现网写死的「青岛厂 / 芜湖厂 / 大连厂」**不进种子**；要对上就在基地页加别名，不要在 LLM 里保留第二套地图
 
 **不要改（第一期）：**
 
-- **废料月度销售价**矩阵仍用 `SCRAP_PRICE_LOCATIONS`（芜湖 / 大连 / 鄂尔多斯 / 青岛 / **福州** / **铝板**）。后两行不是采购基地，不能整表换成基地主数据。第一期废料写入**不过** `require_enabled`（已禁用的「青岛」仍能录废料价，是刻意范围，不是门禁漏洞）
 - **基准价格**（`steel_base_prices`）：有 `location`，但不改写历史行、不加基地外键。现库已是规范名（大连 / 芜湖 / 鄂尔多斯 / 青岛）。若再出现「×基地」，只靠读路径展开，禁止批量改写成规范名
 - **厚度加减价政策**（`steel_price_policies`）：无 `location` 列，上传只选年+月，不选手选基地。历史也没有基地可规范。核价按钢厂+大类命中，不按基地筛政策。清表重导见分类级厚度政策设计，本文不改写、不加基地外键、不 `require_enabled`
 - 给 `stamping_parts.location`、钢价.location 加**基地**外键（宪法 §4.3：间接下游，不是直接下一跳。基地的直接下一跳是项目表）
@@ -348,6 +349,6 @@ B8 与宪法「不加外键则不准提供改主键、不准提供删除」不�
 
 **做：** 切片 `masterdata` 基地 CRUD（启用/禁用、别名、`sort_order` 种子）；种子四基地 + 四条「×基地」别名；侧栏「主数据 / 基地」（§4.1～4.6）；下拉改读本文；写路径 `require_enabled`；读路径 `expand_for_query`；引擎先过本文；废止常量和 `location_candidates`。
 
-**不做：** 项目表；供应商表；政策；改规范名；自动建基地；自动生成新基地的「×基地」别名；全库整型外键；业务列 FK；生效/失效日期；暂停；逻辑删除；废料矩阵收进本文；手改 `sort_order`；导出；分页。
+**不做：** 项目表；供应商表；政策；改规范名；自动建基地；自动生成新基地的「×基地」别名；全库整型外键；给钢价/零件加基地外键；生效/失效日期；暂停；逻辑删除；手改 `sort_order`；导出；分页。废料价矩阵与 FK 见废料价专文，不在本页实现。
 
 侧栏「基地」与「项目」分开展示，不要做成同一张表。

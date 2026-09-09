@@ -11,7 +11,7 @@
 
 | 能力 | 说明 |
 |------|------|
-| 整月矩阵 CRUD | 固定基地行取数 / 一次提交覆盖 / 跨月复制 / 整月删除 |
+| 整月矩阵 CRUD | 按类别取数；保存/复制/删除只覆盖当前类别；行=已启用基地 |
 | 月份导航 | 已维护月份摘要、筛选项 |
 | Excel 导出 | 按年宽表（大盘价 / 扣费 / 净价公式） |
 
@@ -80,9 +80,9 @@ repositories.yishiyiyi.scrap_price
 
 ## 5. 关键业务约定
 
-- 基地行集合固定为 `SCRAP_PRICE_LOCATIONS`；月表始终返回完整行（已录 / 空模板）。
-- `save_month` / `copy_month`：目标月整月覆盖写入（`replace_year_month`）。
-- 导出：有扣费的基地写 3 行，净价用 Excel 公式；无扣费写 1 行大盘价。
+- 基地行 = `LocationService.list_enabled`；废止固定 6 行。
+- `save_month` / `copy_month` / `delete_month`：只覆盖 `year + month + scrap_category`。
+- 导出：按钢材料 / 铝材分块；列随已登记基地变。
 
 ---
 

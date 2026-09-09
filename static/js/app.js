@@ -50,7 +50,7 @@ import { pageConfig as basePriceUploadPage } from './features/yishiyiyi/base-pri
 import { pageConfig as basePriceDownloadPage } from './features/yishiyiyi/base-price/list/index.js?v=35';
 import { pageConfig as winningThicknessDownloadPage } from './features/yishiyiyi/winning-thickness/list/index.js?v=15';
 import { pageConfig as steelGradeCategoryPage } from './features/yishiyiyi/steel-grade-category/index.js?v=4';
-import { pageConfig as scrapPricePage } from './features/yishiyiyi/scrap-price/index.js?v=21';
+import { pageConfig as scrapPricePage } from './features/yishiyiyi/scrap-price/index.js?v=22';
 import { pageConfig as bomStructurePage }  from './features/bom/material/structure/index.js?v=9';
 import { pageConfig as bomVizPage }        from './features/bom/material/viz/index.js?v=29';
 import { pageConfig as bomUploadPage }     from './features/bom/material/upload/index.js?v=11';

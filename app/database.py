@@ -124,6 +124,7 @@ class DatabaseConfig:
         cls._ensure_vehicle_model_child_fks(engine)
         cls._ensure_supplier_child_fks(engine)
         cls._ensure_process_fee_part_fk(engine)
+        cls._ensure_scrap_price_location_fk(engine)
         cls._remap_welding_fee_permissions(engine)
         cls._remap_assembly_cost_permissions(engine)
         logger.info("主业务库表创建完成")
@@ -1145,6 +1146,57 @@ class DatabaseConfig:
             if str(row[2]) != "stamping_parts":
                 continue
             if str(row[3]) == "source_part_id" and str(row[4]) == "id":
+                return True
+        return False
+
+    @classmethod
+    def _ensure_scrap_price_location_fk(cls, engine: Engine) -> None:
+        """已有 SQLite 表补 stamping_scrap_prices.location → locations.location。"""
+        if not str(engine.url).startswith("sqlite"):
+            return
+        from sqlalchemy import inspect, text
+
+        inspector = inspect(engine)
+        table_names = set(inspector.get_table_names())
+        scrap_table = "stamping_scrap_prices"
+        if scrap_table not in table_names or "locations" not in table_names:
+            return
+        cols = {col["name"] for col in inspector.get_columns(scrap_table)}
+        if "scrap_category" not in cols:
+            logger.warning("废料价表尚无 scrap_category，跳过补基地外键")
+            return
+
+        with engine.connect() as conn:
+            autocommit = conn.execution_options(isolation_level="AUTOCOMMIT")
+            if cls._sqlite_has_scrap_price_location_fk(autocommit):
+                return
+            orphans = autocommit.execute(
+                text(
+                    f'SELECT DISTINCT location FROM "{scrap_table}" '
+                    "EXCEPT SELECT location FROM locations"
+                )
+            ).fetchall()
+            if orphans:
+                names = "、".join(str(row[0]) for row in orphans)
+                raise RuntimeError(
+                    "无法给废料价加基地外键：下列地点不在 locations 中。" f" {names}"
+                )
+            autocommit.exec_driver_sql("PRAGMA foreign_keys=OFF")
+            try:
+                cls._sqlite_rebuild_table(autocommit, scrap_table, tmp_suffix="__loc_fk")
+                logger.info("已为 %s 补基地外键", scrap_table)
+            finally:
+                autocommit.exec_driver_sql("PRAGMA foreign_keys=ON")
+
+    @staticmethod
+    def _sqlite_has_scrap_price_location_fk(conn: Connection) -> bool:
+        from sqlalchemy import text
+
+        rows = conn.execute(text('PRAGMA foreign_key_list("stamping_scrap_prices")')).fetchall()
+        for row in rows:
+            if str(row[2]) != "locations":
+                continue
+            if str(row[3]) == "location" and str(row[4]) == "location":
                 return True
         return False
 

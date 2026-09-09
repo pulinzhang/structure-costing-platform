@@ -25,12 +25,15 @@ class StampingScrapPriceRepository:
         db: Session,
         year: int,
         month: int,
+        *,
+        scrap_category: str,
     ) -> list[StampingScrapPrice]:
         return (
             db.query(StampingScrapPrice)
             .filter(
                 StampingScrapPrice.year == year,
                 StampingScrapPrice.month == month,
+                StampingScrapPrice.scrap_category == scrap_category,
             )
             .all()
         )
@@ -42,11 +45,13 @@ class StampingScrapPriceRepository:
         location: str,
         year: int,
         month: int,
+        scrap_category: str,
     ) -> StampingScrapPrice | None:
         return (
             db.query(StampingScrapPrice)
             .filter(
                 StampingScrapPrice.location == location,
+                StampingScrapPrice.scrap_category == scrap_category,
                 StampingScrapPrice.year == year,
                 StampingScrapPrice.month == month,
             )
@@ -67,7 +72,11 @@ class StampingScrapPriceRepository:
         return (
             db.query(StampingScrapPrice)
             .filter(StampingScrapPrice.year == year)
-            .order_by(StampingScrapPrice.month, StampingScrapPrice.location)
+            .order_by(
+                StampingScrapPrice.month,
+                StampingScrapPrice.scrap_category,
+                StampingScrapPrice.location,
+            )
             .all()
         )
 
@@ -86,17 +95,19 @@ class StampingScrapPriceRepository:
         self,
         db: Session,
         year: int | None = None,
+        *,
+        scrap_category: str,
     ) -> list[tuple[int, int, int, datetime | None]]:
         """
         按年月汇总：[(year, month, filled_count, max_updated_at), ...]
-        按 year desc, month desc 排序。
+        按 year desc, month desc 排序。必须带类别，禁止钢铝混计。
         """
         query = db.query(
             StampingScrapPrice.year,
             StampingScrapPrice.month,
             func.count(StampingScrapPrice.id),
             func.max(StampingScrapPrice.updated_at),
-        )
+        ).filter(StampingScrapPrice.scrap_category == scrap_category)
         if year is not None:
             query = query.filter(StampingScrapPrice.year == year)
 
@@ -122,17 +133,19 @@ class StampingScrapPriceRepository:
         ]
         return {"years": years}
 
-    def replace_year_month(
+    def replace_year_month_category(
         self,
         db: Session,
         year: int,
         month: int,
+        scrap_category: str,
         rows: list[ScrapPriceWrite],
     ) -> list[StampingScrapPrice]:
-        """同一事务内：删掉该月旧数据，再整月写入。"""
+        """同一事务内：只覆盖该月该类，再写入。"""
         db.query(StampingScrapPrice).filter(
             StampingScrapPrice.year == year,
             StampingScrapPrice.month == month,
+            StampingScrapPrice.scrap_category == scrap_category,
         ).delete(synchronize_session=False)
 
         records = [model_from_payload(StampingScrapPrice, row) for row in rows]
@@ -142,22 +155,36 @@ class StampingScrapPriceRepository:
             db.refresh(record)
 
         logger.info(
-            "整月保存废料销售价: year=%s month=%s count=%s",
+            "保存废料销售价: year=%s month=%s category=%s count=%s",
             year,
             month,
+            scrap_category,
             len(records),
         )
         return records
 
-    def delete_by_year_month(self, db: Session, year: int, month: int) -> int:
+    def delete_by_year_month_category(
+        self,
+        db: Session,
+        year: int,
+        month: int,
+        scrap_category: str,
+    ) -> int:
         count = (
             db.query(StampingScrapPrice)
             .filter(
                 StampingScrapPrice.year == year,
                 StampingScrapPrice.month == month,
+                StampingScrapPrice.scrap_category == scrap_category,
             )
             .delete(synchronize_session=False)
         )
         db.flush()
-        logger.info("删除 %s-%s 废料销售价: %s 条", year, month, count)
+        logger.info(
+            "删除 %s-%s %s 废料销售价: %s 条",
+            year,
+            month,
+            scrap_category,
+            count,
+        )
         return count

@@ -38,15 +38,18 @@ class StampingScrapPriceService:
         db: Session,
         year: int,
         month: int,
+        scrap_category: str,
     ) -> StampingScrapPriceMonthSheetVO:
-        return self._crud.get_month_sheet(db, year, month)
+        return self._crud.get_month_sheet(db, year, month, scrap_category)
 
     def list_month_summaries(
         self,
         db: Session,
         year: int | None = None,
+        *,
+        scrap_category: str,
     ) -> list[StampingScrapPriceMonthSummaryVO]:
-        return self._crud.list_month_summaries(db, year=year)
+        return self._crud.list_month_summaries(db, year=year, scrap_category=scrap_category)
 
     def get_filter_options(self, db: Session) -> StampingScrapPriceFilterOptionsVO:
         return self._crud.get_filter_options(db)
@@ -64,8 +67,9 @@ class StampingScrapPriceService:
         db: Session,
         year: int,
         month: int,
+        scrap_category: str,
     ) -> int:
-        return self._crud.delete_month(db, year, month)
+        return self._crud.delete_month(db, year, month, scrap_category)
 
     def copy_month(
         self,

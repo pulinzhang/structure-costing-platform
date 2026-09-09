@@ -11,10 +11,7 @@ from typing import NamedTuple
 from sqlalchemy.orm import Session
 
 from app.common.money import parse_decimal
-from app.common.scrap_price_locations import (
-    SCRAP_PRICE_LOCATION_COUNT,
-    SCRAP_PRICE_LOCATIONS,
-)
+from app.common.scrap_categories import SCRAP_CATEGORY_STEEL
 from app.common.timezone import now
 from app.repositories.bom.bom_repository import BomSnapshotRepository
 from app.repositories.costing.stamping_part_cost.stamping_part_cost_repository import (
@@ -534,7 +531,9 @@ class DashboardService:
         fallback: list[int],
     ) -> list[int]:
         months: set[int] = set(self._preferred_months(db, year))
-        for summary in self.scrap_service.list_month_summaries(db, year=year):
+        for summary in self.scrap_service.list_month_summaries(
+            db, year=year, scrap_category=SCRAP_CATEGORY_STEEL
+        ):
             months.add(summary.month)
         if months:
             return sorted(months)
@@ -548,14 +547,20 @@ class DashboardService:
         month: int,
         location: str | None = None,
     ) -> _ScrapStatus:
-        sheet = self.scrap_service.get_month_sheet(db, year, month)
+        sheet = self.scrap_service.get_month_sheet(db, year, month, SCRAP_CATEGORY_STEEL)
 
         scrap_location: str | None = None
         is_scrap_location_filled: bool | None = None
         scrap_location_net_price: Decimal | None = None
-        if location and location in SCRAP_PRICE_LOCATIONS:
+        if location:
             scrap_location = location
             row = next((r for r in sheet.items if r.location == location), None)
+            if row is None:
+                aliases = LocationService().expand_for_query(db, location)
+                row = next(
+                    (r for r in sheet.items if r.location in aliases),
+                    None,
+                )
             if row is not None and row.net_price is not None:
                 is_scrap_location_filled = True
                 scrap_location_net_price = parse_decimal(row.net_price)
@@ -564,7 +569,7 @@ class DashboardService:
 
         status = _ScrapStatus(
             filled_count=int(sheet.filled_count),
-            required_count=SCRAP_PRICE_LOCATION_COUNT,
+            required_count=int(sheet.required_count),
             is_complete=bool(sheet.is_complete),
             scrap_location=scrap_location,
             is_scrap_location_filled=is_scrap_location_filled,

@@ -23,7 +23,7 @@ from openpyxl.utils import get_column_letter
 
 from app.common.export_watermark import workbook_to_xlsx_bytes
 from app.common.money import Q2, excel_money_cell, parse_decimal
-from app.common.scrap_price_locations import SCRAP_PRICE_LOCATIONS
+from app.common.scrap_categories import SCRAP_CATEGORIES, SCRAP_CATEGORY_LABELS
 from app.common.timezone import now
 from app.schemas.vo.user_vo import UserVO
 
@@ -117,6 +117,7 @@ class StampingScrapPriceExporter:
         years: list[int],
         records_by_year: dict[int, list[Any]],
         *,
+        locations: list[str],
         year_filter: int | None = None,
         current_user: UserVO,
     ) -> tuple[bytes, str]:
@@ -133,6 +134,7 @@ class StampingScrapPriceExporter:
                 year_value,
                 records_by_year.get(year_value, []),
                 current_row,
+                locations,
             )
 
         if not years:
@@ -159,34 +161,46 @@ class StampingScrapPriceExporter:
         year: int,
         records: list[Any],
         start_row: int,
+        locations: list[str],
     ) -> int:
-        by_location: dict[str, dict[int, Any]] = {name: {} for name in SCRAP_PRICE_LOCATIONS}
-        for record in records:
-            if record.location not in by_location:
-                by_location[record.location] = {}
-            by_location[record.location][int(record.month)] = record
-
+        extra = sorted(
+            {
+                str(record.location)
+                for record in records
+                if record.location and record.location not in locations
+            }
+        )
+        ordered = list(locations) + extra
         row = start_row
-        headers = [f"{year}年"] + [f"{m}月" for m in range(1, 13)]
-        for col, text in enumerate(headers, start=1):
-            cell = ws.cell(row=row, column=col, value=text)
-            cell.font = _YEAR_FONT if col == 1 else _MONTH_FONT
-            cell.alignment = _CENTER
-            cell.border = _THIN
-        _set_row_height(ws, row)
-        row += 1
-
-        for location in SCRAP_PRICE_LOCATIONS:
-            month_map = by_location.get(location, {})
-            has_deduction = any(
-                (_to_decimal(r.deduction_fee) or Decimal("0")) > 0 for r in month_map.values()
-            )
-            if has_deduction:
-                row = self._write_deduction_location(ws, row, location, month_map)
-            else:
-                row = self._write_plain_location(ws, row, location, month_map)
-
-        _apply_block_outer_border(ws, start_row, row - 1)
+        for category in SCRAP_CATEGORIES:
+            by_location: dict[str, dict[int, Any]] = {name: {} for name in ordered}
+            for record in records:
+                if getattr(record, "scrap_category", None) != category:
+                    continue
+                loc = str(record.location)
+                by_location.setdefault(loc, {})
+                by_location[loc][int(record.month)] = record
+            label = SCRAP_CATEGORY_LABELS[category]
+            headers = [f"{year}年 {label}"] + [f"{m}月" for m in range(1, 13)]
+            for col, text in enumerate(headers, start=1):
+                cell = ws.cell(row=row, column=col, value=text)
+                cell.font = _YEAR_FONT if col == 1 else _MONTH_FONT
+                cell.alignment = _CENTER
+                cell.border = _THIN
+            _set_row_height(ws, row)
+            block_start = row
+            row += 1
+            for location in ordered:
+                month_map = by_location.get(location, {})
+                has_deduction = any(
+                    (_to_decimal(r.deduction_fee) or Decimal("0")) > 0 for r in month_map.values()
+                )
+                if has_deduction:
+                    row = self._write_deduction_location(ws, row, location, month_map)
+                else:
+                    row = self._write_plain_location(ws, row, location, month_map)
+            _apply_block_outer_border(ws, block_start, row - 1)
+            row += 1
         return row
 
     def _write_plain_location(

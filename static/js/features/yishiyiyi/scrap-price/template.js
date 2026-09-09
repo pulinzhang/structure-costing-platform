@@ -86,6 +86,16 @@ export function scrapPriceTemplate() {
             <div class="flex items-start justify-between gap-6 mb-10">
                 <div class="min-w-0 flex items-baseline gap-3 flex-wrap">
                     <h2 class="text-[14px] font-medium text-[#ffffff] shrink-0">废料月度销售价</h2>
+                    <div class="flex items-center gap-1.5" role="group" aria-label="废料类别">
+                        <button id="scrapCategorySteelBtn" type="button"
+                                class="px-3 py-1.5 text-[11px] font-medium rounded-md bg-[#d32f2f] border border-[#d32f2f] text-white transition-all">
+                            钢材料
+                        </button>
+                        <button id="scrapCategoryAluminumBtn" type="button"
+                                class="px-3 py-1.5 text-[11px] font-medium rounded-md bg-transparent border border-[#2c2c2c] text-[#616161] hover:text-white transition-all">
+                            铝材
+                        </button>
+                    </div>
                     <p id="scrapMonthBadge" class="text-[12px] font-mono tabular-nums text-[#616161] tracking-wide">—</p>
                     <span id="scrapMonthStatus" class="text-[11px] text-[#484848]"></span>
                 </div>
@@ -176,7 +186,7 @@ export function scrapPriceTemplate() {
             </div>
 
             <div class="mt-10 pt-5 border-t border-[#181818] flex items-center justify-between gap-4">
-                <span id="scrapFooterMeta" class="text-[11px] text-[#3a3a3a] tracking-[0.08em]">6 个基地</span>
+                <span id="scrapFooterMeta" class="text-[11px] text-[#3a3a3a] tracking-[0.08em]">—</span>
                 <span id="scrapFooterHint" class="text-[11px] text-[#3a3a3a] text-right"></span>
             </div>
         </div>
@@ -377,7 +387,7 @@ export function renderMonthChips(months, selected) {
             ? '<span class="absolute left-0 right-0 bottom-0 h-px bg-[#d32f2f]"></span>'
             : '';
         const title = meta
-            ? `${fmtPeriod(year, month)} · ${meta.filled_count}/6`
+            ? `${fmtPeriod(year, month)} · ${meta.filled_count}/${meta.required_count ?? meta.filled_count}`
             : fmtPeriod(year, month);
 
         return `

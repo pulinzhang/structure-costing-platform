@@ -7,6 +7,7 @@ from decimal import Decimal
 
 from sqlalchemy.orm import Session
 
+from app.common.scrap_categories import SCRAP_CATEGORY_STEEL
 from app.models.yishiyiyi import StampingScrapPrice
 from app.repositories.llm.location_in import location_in_or_exact_clause
 from app.services.llm._money import ym_int
@@ -38,7 +39,11 @@ class ScrapPriceAnalysisRepository:
         end = ym_int(end_year, end_month)
         ym_expr = StampingScrapPrice.year * 100 + StampingScrapPrice.month
 
-        q = db.query(StampingScrapPrice).filter(ym_expr >= start, ym_expr <= end)
+        q = db.query(StampingScrapPrice).filter(
+            ym_expr >= start,
+            ym_expr <= end,
+            StampingScrapPrice.scrap_category == SCRAP_CATEGORY_STEEL,
+        )
         loc_filter = location_in_or_exact_clause(db, StampingScrapPrice.location, location)
         if loc_filter is not None:
             q = q.filter(loc_filter)

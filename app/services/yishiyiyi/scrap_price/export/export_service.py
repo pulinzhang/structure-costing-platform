@@ -8,6 +8,7 @@ from app.repositories.yishiyiyi.scrap_price.scrap_price_repository import (
     StampingScrapPriceRepository,
 )
 from app.schemas.vo.user_vo import UserVO
+from app.services.masterdata.location.location_service import LocationService
 from app.services.yishiyiyi.scrap_price.export.excel_exporter import (
     StampingScrapPriceExporter,
 )
@@ -31,9 +32,11 @@ class StampingScrapPriceExportService:
         records_by_year = {
             year_value: self.repository.list_by_year(db, year_value) for year_value in years
         }
+        locations = LocationService().list_registered(db)
         return self._exporter.generate(
             years,
             records_by_year,
+            locations=locations,
             year_filter=year,
             current_user=current_user,
         )

@@ -6,6 +6,7 @@ from decimal import Decimal
 
 from sqlalchemy.orm import Session
 
+from app.common.scrap_categories import SCRAP_CATEGORY_STEEL
 from app.models.costing import SteelPrice
 from app.models.yishiyiyi import StampingScrapPrice
 from app.repositories.costing.steel_price.steel_price_repository import SteelPriceRepository
@@ -36,7 +37,11 @@ class PriceResolver:
     ) -> StampingScrapPrice | None:
         for candidate in LocationService().expand_for_query(db, location):
             record = self.scrap_repo.get_by_location_year_month(
-                db, location=candidate, year=year, month=month
+                db,
+                location=candidate,
+                year=year,
+                month=month,
+                scrap_category=SCRAP_CATEGORY_STEEL,
             )
             if record is not None:
                 return record

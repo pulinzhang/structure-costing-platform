@@ -1,5 +1,5 @@
 """
-冲压废料月度销售价格 DTO - 请求参数（以「月」为录入单元）
+冲压废料月度销售价格 DTO - 请求参数（以「月 + 类别」为录入单元）
 """
 
 from dataclasses import dataclass
@@ -9,10 +9,7 @@ from typing import Any
 from pydantic import BaseModel, Field, field_validator, model_validator
 
 from app.common.money import Q2, optional_quantize_money, quantize_money
-from app.common.scrap_price_locations import (
-    SCRAP_PRICE_LOCATION_COUNT,
-    SCRAP_PRICE_LOCATIONS,
-)
+from app.common.scrap_categories import SCRAP_CATEGORY_STEEL, ScrapCategory
 
 
 def _strip(value: str | None) -> str | None:
@@ -25,7 +22,7 @@ def _strip(value: str | None) -> str | None:
 class StampingScrapPriceMonthRowInput(BaseModel):
     """月度矩阵中单行（基地）录入项"""
 
-    location: str = Field(..., min_length=1, max_length=50, description="基地/物料名称")
+    location: str = Field(..., min_length=1, max_length=50, description="采购基地")
     market_price: Decimal = Field(..., ge=0, description="大盘价（元/吨）")
     deduction_fee: Decimal = Field(
         default=Decimal("0.00"),
@@ -59,38 +56,39 @@ class StampingScrapPriceMonthRowInput(BaseModel):
 
 
 class StampingScrapPriceMonthSaveDTO(BaseModel):
-    """整月一次提交：必须覆盖全部固定基地，不多不少"""
+    """整月一次提交：覆盖当前类别下全部已启用基地。"""
 
     year: int = Field(..., ge=2000, le=2100, description="年份")
     month: int = Field(..., ge=1, le=12, description="月份（1-12）")
+    scrap_category: ScrapCategory = Field(
+        default=SCRAP_CATEGORY_STEEL,
+        description="废料类别：钢材 / 铝板",
+    )
     items: list[StampingScrapPriceMonthRowInput] = Field(
         ...,
-        min_length=SCRAP_PRICE_LOCATION_COUNT,
-        max_length=SCRAP_PRICE_LOCATION_COUNT,
-        description="固定 6 个基地的价格行",
+        min_length=1,
+        description="已启用基地价格行",
     )
 
     @model_validator(mode="after")
-    def validate_fixed_locations(self) -> Any:
-        expected = list(SCRAP_PRICE_LOCATIONS)
-        actual = [row.location for row in self.items]
-        if sorted(actual) != sorted(expected):
-            raise ValueError(f"items 必须恰好包含且仅包含固定基地: {', '.join(expected)}")
-        if len(set(actual)) != len(actual):
+    def validate_unique_locations(self) -> Any:
+        names = [row.location for row in self.items]
+        if len(set(names)) != len(names):
             raise ValueError("items 中基地名称不能重复")
-        # 按固定顺序重排，便于落库与前端展示一致
-        by_location = {row.location: row for row in self.items}
-        self.items = [by_location[name] for name in expected]
         return self
 
 
 class StampingScrapPriceCopyMonth(BaseModel):
-    """从源年月复制到目标年月"""
+    """从源年月复制到目标年月（仅当前类别）"""
 
     source_year: int = Field(..., ge=2000, le=2100, description="源年份")
     source_month: int = Field(..., ge=1, le=12, description="源月份")
     target_year: int = Field(..., ge=2000, le=2100, description="目标年份")
     target_month: int = Field(..., ge=1, le=12, description="目标月份")
+    scrap_category: ScrapCategory = Field(
+        default=SCRAP_CATEGORY_STEEL,
+        description="废料类别：钢材 / 铝板",
+    )
 
 
 @dataclass(slots=True)
@@ -100,6 +98,7 @@ class ScrapPriceWrite:
     year: int
     month: int
     location: str
+    scrap_category: str
     market_price: Decimal
     deduction_fee: Decimal
     net_price: Decimal
