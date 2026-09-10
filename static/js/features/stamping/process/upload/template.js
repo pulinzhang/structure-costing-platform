@@ -95,6 +95,8 @@ export function uploadTemplate() {
                                                      style="width: 0%"></div>
                                             </div>
                                             <p id="stampingProgressMsg" class="text-[11px] text-[#9e9e9e] leading-relaxed mb-0 whitespace-pre-wrap break-words max-h-48 overflow-y-auto">已提交解析队列</p>
+                                            <a id="stampingGradeAction" href="#/steel-grade-category"
+                                               class="hidden mt-3 inline-flex items-center gap-1 text-[11px] text-[#FF1E27] hover:text-[#ff5252]">打开牌号分类</a>
                                         </div>
                                     </div>
 

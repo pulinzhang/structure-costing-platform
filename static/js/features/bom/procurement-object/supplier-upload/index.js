@@ -2,7 +2,7 @@
  * 采购对象批量上传供应商
  */
 
-import { procurementObjectSupplierUploadTemplate } from './template.js?v=4';
+import { procurementObjectSupplierUploadTemplate } from './template.js?v=5';
 
 const API_BASE = '/api/bom/procurement-objects';
 const CASCADE_API = '/api/bom/filters/cascade';
@@ -198,10 +198,19 @@ function resetForm() {
     loadCascade();
 }
 
-function showProgress() {
+function showProgress(msg = '解析并写入数据库，请稍候') {
     document.getElementById('poSupplierUploadDropIdle')?.classList.add('hidden');
     document.getElementById('poSupplierUploadProgressPanel')?.classList.remove('hidden');
-    document.getElementById('poSupplierUploadZone')?.classList.add('pointer-events-none');
+    const zone = document.getElementById('poSupplierUploadZone');
+    if (zone) zone.classList.add('pointer-events-none');
+    const progressMsg = document.getElementById('poSupplierUploadProgressMsg');
+    if (progressMsg) progressMsg.textContent = msg;
+}
+
+function failOnPanel(message) {
+    const text = String(message || '操作失败').trim() || '操作失败';
+    showProgress(text);
+    document.getElementById('poSupplierUploadZone')?.classList.remove('pointer-events-none');
 }
 
 function hideProgress() {
@@ -228,6 +237,7 @@ async function downloadTemplate() {
         const { blob, filename } = await HttpClient.download(`${API_BASE}/supplier-template`, {
             params: scope,
             defaultFilename: `采购对象供应商_${scope.location}_${scope.vehicle_model}_${scope.bom_version}.xlsx`,
+            skipToast: true,
         });
         const url = window.URL.createObjectURL(blob);
         const anchor = document.createElement('a');
@@ -237,9 +247,8 @@ async function downloadTemplate() {
         anchor.click();
         document.body.removeChild(anchor);
         window.URL.revokeObjectURL(url);
-        showToast('模板已下载', 'success');
     } catch (error) {
-        if (!error.status) showToast(error.message || '模板下载失败', 'error');
+        failOnPanel(error.message || '模板下载失败');
     }
 }
 
@@ -260,7 +269,7 @@ async function submitUpload() {
     setUploading(true);
     showProgress();
     try {
-        const res = await HttpClient.post(`${API_BASE}/supplier-upload`, formData);
+        const res = await HttpClient.post(`${API_BASE}/supplier-upload`, formData, { skipToast: true });
         const data = res.data || {};
         showToast(
             res.message
@@ -268,11 +277,11 @@ async function submitUpload() {
             'success',
         );
         clearSelectedFile();
+        hideProgress();
     } catch (error) {
-        if (!error.status) showToast(error.message || '上传失败', 'error');
+        failOnPanel(error.message || '上传失败');
     } finally {
         setUploading(false);
-        hideProgress();
     }
 }
 

@@ -3,7 +3,7 @@
  * 下载模板：基地 + 项目 + 年度；导入：基地 + 年度
  */
 
-import { annualPartPriceUploadTemplate } from './template.js?v=13';
+import { annualPartPriceUploadTemplate } from './template.js?v=14';
 
 
 const API_BASE = '/api/bom/annual-part-price';
@@ -268,6 +268,12 @@ const AnnualPartPriceUploadPage = {
         if (progressMsg) progressMsg.textContent = msg;
     },
 
+    failOnPanel(message) {
+        const text = String(message || '操作失败').trim() || '操作失败';
+        this.showProgress(text);
+        document.getElementById('annualPartPriceUploadZone')?.classList.remove('pointer-events-none');
+    },
+
     hideProgress() {
         const idle = document.getElementById('annualPartPriceUploadDropIdle');
         const panel = document.getElementById('annualPartPriceUploadProgressPanel');
@@ -313,6 +319,7 @@ const AnnualPartPriceUploadPage = {
             const { blob, filename } = await HttpClient.download(`${API_BASE}/template`, {
                 params: { location, vehicle_model: vehicleModel, year: yearRaw },
                 defaultFilename: `年度零件价导入模板_${location}_${vehicleModel}_${yearRaw}.xlsx`,
+                skipToast: true,
             });
             const url = window.URL.createObjectURL(blob);
             const anchor = document.createElement('a');
@@ -322,11 +329,8 @@ const AnnualPartPriceUploadPage = {
             anchor.click();
             document.body.removeChild(anchor);
             window.URL.revokeObjectURL(url);
-            showToast('模板已下载', 'success');
         } catch (error) {
-            if (!error.status) {
-                showToast(error.message || '模板下载失败', 'error');
-            }
+            this.failOnPanel(error.message || '模板下载失败');
         }
     },
 
@@ -362,27 +366,27 @@ const AnnualPartPriceUploadPage = {
         this.showProgress();
 
         try {
-            const res = await HttpClient.post(`${API_BASE}/upload`, formData);
+            const res = await HttpClient.post(`${API_BASE}/upload`, formData, { skipToast: true });
             const data = res.data || {};
             const created = data.created_count ?? 0;
             const updated = data.updated_count ?? 0;
             const skippedApproved = data.skipped_approved_count ?? 0;
             const written = created + updated;
-            let toastType = 'success';
             let msg = res.message || data.message || `导入成功：新增 ${created}，更新 ${updated}`;
             if (written === 0 && skippedApproved > 0) {
-                toastType = 'warning';
                 msg = `更新 0 条：这 ${skippedApproved} 条已审核，导入不会覆盖。如需改价请先在列表反审核。`;
             } else if (skippedApproved > 0) {
-                toastType = 'warning';
                 msg = `导入完成：新增 ${created} 条，更新 ${updated} 条；另有 ${skippedApproved} 条已审核未覆盖。`;
             }
-            showToast(msg, toastType);
-            this.hideProgress();
+            if (skippedApproved > 0) {
+                this.showProgress(msg);
+            } else {
+                showToast(msg, 'success');
+                this.hideProgress();
+            }
             this.clearSelectedFile(true);
         } catch (err) {
-            this.hideProgress();
-            showToast(err.message || '导入失败', 'error');
+            this.failOnPanel(err.message || '导入失败');
         } finally {
             this.setUploading(false);
         }

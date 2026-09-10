@@ -130,7 +130,7 @@ const WeldingUnitPriceUploadPage = {
         const body = document.getElementById('weldingUnitPriceCatalogBody');
         const countEl = document.getElementById('weldingUnitPriceCatalogCount');
         try {
-            const res = await HttpClient.get(`${API_BASE}/standard-catalog`);
+            const res = await HttpClient.get(`${API_BASE}/standard-catalog`, { skipToast: true });
             const items = Array.isArray(res.data) ? res.data : [];
             this.catalogItems = items;
             this.renderStandardCatalog(items);
@@ -143,9 +143,7 @@ const WeldingUnitPriceUploadPage = {
                     </tr>`;
             }
             if (countEl) countEl.textContent = '—';
-            if (!error.status) {
-                showToast(error.message || '标准目录加载失败', 'error');
-            }
+            this.showResult('error', error.message || '标准目录加载失败');
         }
     },
 
@@ -239,12 +237,10 @@ const WeldingUnitPriceUploadPage = {
         if (!file || this.isUploading) return;
         if (!file.name.toLowerCase().endsWith('.xlsx')) {
             showToast('仅支持 .xlsx 文件', 'warning');
-            this.showResult('error', '仅支持 .xlsx 文件');
             return;
         }
         if (file.size > MAX_FILE_SIZE) {
             showToast('文件过大，最大支持 5MB', 'warning');
-            this.showResult('error', '文件过大，最大支持 5MB');
             return;
         }
 
@@ -347,6 +343,7 @@ const WeldingUnitPriceUploadPage = {
         try {
             const { blob, filename } = await HttpClient.download(`${API_BASE}/template`, {
                 defaultFilename: '焊接单价导入模板.xlsx',
+                skipToast: true,
             });
             const url = window.URL.createObjectURL(blob);
             const anchor = document.createElement('a');
@@ -356,11 +353,8 @@ const WeldingUnitPriceUploadPage = {
             anchor.click();
             document.body.removeChild(anchor);
             window.URL.revokeObjectURL(url);
-            showToast('模板已下载', 'success');
         } catch (error) {
-            if (!error.status) {
-                showToast(error.message || '模板下载失败', 'error');
-            }
+            this.showResult('error', error.message || '模板下载失败');
         }
     },
 
@@ -376,17 +370,14 @@ const WeldingUnitPriceUploadPage = {
 
         if (!location) {
             showToast('请选择采购基地', 'warning');
-            this.showResult('error', '请选择采购基地');
             return;
         }
         if (!yearRaw || !/^\d{4}$/.test(yearRaw)) {
             showToast('请填写正确的年度（4位年份）', 'warning');
-            this.showResult('error', '请填写正确的年度（4位年份）');
             return;
         }
         if (!this.selectedFile) {
             showToast('请选择 Excel 文件', 'warning');
-            this.showResult('error', '请选择 Excel 文件');
             return;
         }
 
@@ -400,20 +391,19 @@ const WeldingUnitPriceUploadPage = {
         this.showProgress();
 
         try {
-            const res = await HttpClient.post(`${API_BASE}/upload`, formData);
+            const res = await HttpClient.post(`${API_BASE}/upload`, formData, { skipToast: true });
             const data = res.data || {};
             const msg = res.message
                 || data.message
                 || `导入成功：新增 ${data.created_count ?? 0}，更新 ${data.updated_count ?? 0}`;
             const warnings = Array.isArray(data.warnings) ? data.warnings : [];
             const resultType = warnings.length ? 'warning' : 'success';
-            showToast(msg, resultType === 'warning' ? 'warning' : 'success');
             this.showResult(resultType, msg, warnings);
+            if (!warnings.length) showToast(msg, 'success');
             this.hideProgress();
             this.clearSelectedFile(true);
         } catch (err) {
             this.hideProgress();
-            // HttpClient 已弹 Toast；此处落常驻面板，长文案可完整阅读
             this.showResult('error', err.message || '导入失败');
         } finally {
             this.setUploading(false);

@@ -13,6 +13,9 @@ from app.schemas.dto.steel_grade_category_dto import (
 class SteelGradeCategoryRepository:
     """牌号分类数据访问。"""
 
+    def count(self, db: Session) -> int:
+        return db.query(SteelGradeCategory).count()
+
     def get_by_id(self, db: Session, record_id: int) -> SteelGradeCategory | None:
         return db.query(SteelGradeCategory).filter(SteelGradeCategory.id == record_id).first()
 

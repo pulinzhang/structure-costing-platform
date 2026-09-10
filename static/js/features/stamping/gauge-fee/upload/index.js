@@ -2,7 +2,7 @@
  * 冲压检具费同步上传
  */
 
-import { gaugeFeeUploadTemplate } from './template.js?v=4';
+import { gaugeFeeUploadTemplate } from './template.js?v=5';
 import { setDropzoneDragActive } from '../../../../upload-dropzone.js?v=1';
 
 const API_BASE = '/api/stamping/gauge-fees';
@@ -161,6 +161,12 @@ const GaugeFeeUploadPage = {
         if (progressMsg) progressMsg.textContent = msg;
     },
 
+    failOnPanel(message) {
+        const text = String(message || '操作失败').trim() || '操作失败';
+        this.showProgress(text);
+        document.getElementById('gfuZone')?.classList.remove('pointer-events-none');
+    },
+
     hideProgress() {
         const idle = document.getElementById('gfuDropIdle');
         const panel = document.getElementById('gfuProgressPanel');
@@ -188,6 +194,7 @@ const GaugeFeeUploadPage = {
             const { blob, filename } = await HttpClient.download(`${API_BASE}/template`, {
                 params: { location, vehicle_model: vehicleModel },
                 defaultFilename: '冲压检具费导入模板.xlsx',
+                skipToast: true,
             });
             const url = window.URL.createObjectURL(blob);
             const anchor = document.createElement('a');
@@ -197,9 +204,8 @@ const GaugeFeeUploadPage = {
             anchor.click();
             document.body.removeChild(anchor);
             window.URL.revokeObjectURL(url);
-            showToast('模板已下载', 'success');
         } catch (error) {
-            if (!error.status) showToast(error.message || '模板下载失败', 'error');
+            this.failOnPanel(error.message || '模板下载失败');
         }
     },
 
@@ -231,12 +237,12 @@ const GaugeFeeUploadPage = {
         this.setUploading(true);
         this.showProgress();
         try {
-            const res = await HttpClient.post(`${API_BASE}/upload`, formData);
+            const res = await HttpClient.post(`${API_BASE}/upload`, formData, { skipToast: true });
             showToast(res.message || res.data?.message || '导入成功', 'success');
             this.hideProgress();
             this.clearSelectedFile(true);
-        } catch (_) {
-            this.hideProgress();
+        } catch (err) {
+            this.failOnPanel(err.message || '导入失败');
         } finally {
             this.setUploading(false);
         }

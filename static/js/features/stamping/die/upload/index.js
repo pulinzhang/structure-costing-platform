@@ -120,7 +120,7 @@ export const DieUploadPage = {
                 month: now.getMonth() + 1,
             };
             if (location) params.location = location;
-            const res = await HttpClient.get('/api/stamping/die/filters', { params });
+            const res = await HttpClient.get('/api/stamping/die/filters', { skipToast: true, params });
             const data = res.data || {};
             this.fillSelect('dieLocation', data.locations || [], '请选择采购基地');
             if (location) {
@@ -133,8 +133,15 @@ export const DieUploadPage = {
                 : '请先选择采购基地';
             this.fillSelect('dieVehicleModel', vehicles, vehiclePlaceholder);
         } catch (error) {
-            showToast(error.message || '加载筛选项失败', 'error');
+            this.failOnPanel(error.message || '加载筛选项失败');
         }
+    },
+
+    failOnPanel(message) {
+        const text = String(message || '操作失败').trim() || '操作失败';
+        this.showProgress(0, text);
+        this.updateProgress(0, text, 'failed');
+        document.getElementById('dieUploadZone')?.classList.remove('pointer-events-none');
     },
 
     handleFiles(files) {
@@ -294,6 +301,7 @@ export const DieUploadPage = {
         try {
             const { blob, filename } = await HttpClient.download('/api/stamping/die/template', {
                 defaultFilename: '冲压模具布点导入模板.xlsx',
+                skipToast: true,
             });
             const url = window.URL.createObjectURL(blob);
             const anchor = document.createElement('a');
@@ -303,9 +311,8 @@ export const DieUploadPage = {
             anchor.click();
             document.body.removeChild(anchor);
             window.URL.revokeObjectURL(url);
-            showToast('模板已下载', 'success');
         } catch (error) {
-            if (!error.status) showToast(error.message || '模板下载失败', 'error');
+            this.failOnPanel(error.message || '模板下载失败');
         }
     },
 
@@ -339,7 +346,10 @@ export const DieUploadPage = {
             if (this.pollInFlight) return;
             this.pollInFlight = true;
             try {
-                const response = await HttpClient.get(`/api/stamping/die/tasks/${encodeURIComponent(taskId)}`);
+                const response = await HttpClient.get(
+                    `/api/stamping/die/tasks/${encodeURIComponent(taskId)}`,
+                    { skipToast: true },
+                );
                 const data = response.data;
                 const status = data?.status || 'running';
                 this.updateProgress(data?.progress ?? 0, data?.msg || '', status);
@@ -359,16 +369,13 @@ export const DieUploadPage = {
                 }
                 if (status === 'failed') {
                     this.stopPolling();
-                    const fullMsg = data?.msg || '上传失败';
-                    const toastMsg = fullMsg.split('\n')[0] || fullMsg;
-                    showToast(toastMsg, 'error');
                     this.activeTaskId = null;
                     this.setUploading(false);
                     document.getElementById('dieUploadZone')?.classList.remove('pointer-events-none');
                 }
             } catch (error) {
                 this.stopPolling();
-                showToast(error.message || '查询进度失败', 'error');
+                this.failOnPanel(error.message || '查询进度失败');
                 this.activeTaskId = null;
                 this.setUploading(false);
             } finally {
@@ -408,13 +415,13 @@ export const DieUploadPage = {
         this.setUploading(true);
         this.showProgress(0, '已提交解析队列');
         try {
-            const response = await HttpClient.post('/api/stamping/die/upload', formData, { timeout: 60000 });
+            const response = await HttpClient.post('/api/stamping/die/upload', formData, { skipToast: true, timeout: 60000 });
             const taskId = response.data?.task_id;
             if (!taskId) throw new Error('未返回任务 ID');
             this.startPolling(taskId, fileInput.files[0].name, scopeLabel);
         } catch (error) {
             this.stopPolling();
-            this.hideProgress();
+            this.failOnPanel(error.message || '提交失败');
             this.activeTaskId = null;
             this.setUploading(false);
         }

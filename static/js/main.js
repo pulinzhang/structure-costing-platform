@@ -539,7 +539,7 @@ const HttpClient = (() => {
     /**
      * 文件下载（Excel 等）：带 token，返回 blob，不走 JSON 解包。
      */
-    async function download(url, { params, headers, timeout, skipAuth, defaultFilename } = {}) {
+    async function download(url, { params, headers, timeout, skipAuth, skipToast, defaultFilename } = {}) {
         const query = { ...(params || {}), _t: Date.now() };
         const fullUrl = buildUrl(url, query);
         const controller = new AbortController();
@@ -575,7 +575,7 @@ const HttpClient = (() => {
                     const data = await response.json();
                     msg = (data && (data.message || data.detail)) || msg;
                 } catch (_) { /* ignore */ }
-                showToast(msg, 'error');
+                if (!skipToast) showToast(msg, 'error');
                 const err = new Error(msg);
                 err.status = response.status;
                 throw err;
@@ -591,11 +591,11 @@ const HttpClient = (() => {
             clearTimeout(timer);
             if (isAbortError(error)) {
                 error.message = DOWNLOAD_TIMEOUT_MSG;
-                showToast(DOWNLOAD_TIMEOUT_MSG, 'error');
+                if (!skipToast) showToast(DOWNLOAD_TIMEOUT_MSG, 'error');
             } else if (!error.status) {
                 const msg = humanizeTransportError(error, '下载失败');
                 error.message = msg;
-                showToast(msg, 'error');
+                if (!skipToast) showToast(msg, 'error');
             }
             throw error;
         }
