@@ -159,7 +159,7 @@
 | `#/bom-welding-fee-calc` | 焊接费计算 | P3 |
 | `#/bom-welding-fee-list` | 焊接费列表 | P2 |
 
-**一事一议（7）**
+**一事一议（6）**
 
 | Hash | 标题 | 阶段 |
 |------|------|------|
@@ -167,9 +167,14 @@
 | `#/steel-price-policy-download` | 加减价政策列表 | P2 |
 | `#/base-price-upload` | 基准价格上传 | P3 |
 | `#/base-price-download` | 基准价格列表 | P2 |
-| `#/steel-grade-category` | 牌号分类 | P2 |
 | `#/winning-thickness-download` | 中标钢厂厚度价格一览表 | P2 |
 | `#/scrap-price` | 废料月度销售价 | P2 |
+
+**主数据**
+
+| Hash | 标题 | 阶段 |
+|------|------|------|
+| `#/steel-grade-category` | 牌号分类 | P2 |
 
 **核价（7）**
 

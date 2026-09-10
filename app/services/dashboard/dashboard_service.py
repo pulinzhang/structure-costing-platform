@@ -44,6 +44,7 @@ from app.schemas.vo.dashboard_vo import (
     SteelPriceCalcStatsVO,
 )
 from app.services.masterdata.location.location_service import LocationService
+from app.services.masterdata.steel_grade_category import SteelGradeCategoryService
 from app.services.stamping.stamping_service import StampingPartService
 from app.services.yishiyiyi.base_price.steel_base_price_service import SteelBasePriceService
 from app.services.yishiyiyi.policy.steel_price_policy_service import (
@@ -52,7 +53,6 @@ from app.services.yishiyiyi.policy.steel_price_policy_service import (
 from app.services.yishiyiyi.scrap_price.scrap_price_service import (
     StampingScrapPriceService,
 )
-from app.services.yishiyiyi.steel_grade_category import SteelGradeCategoryService
 
 
 class _ScrapStatus(NamedTuple):

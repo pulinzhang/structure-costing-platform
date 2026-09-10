@@ -60,7 +60,7 @@ Parser 是**横向工具**：只被 Service 调用；禁止依赖 Router/Service
 
 | 角色 | 切片 | 典型内容 |
 |------|------|----------|
-| **上游 / 基础数据** | `masterdata` · `settings` · `stamping` · `bom` · `yishiyiyi` | 基地/项目主数据、用户配置、工艺零件、BOM、基价/政策/牌号分类/废料价 |
+| **上游 / 基础数据** | `masterdata` · `settings` · `stamping` · `bom` · `yishiyiyi` | 基地/项目/供应商/牌号分类、用户配置、工艺零件、BOM、基价/政策/废料价 |
 | **下游 / 编排核价** | `costing` · `dashboard` | 钢材联动、零件核价、成品核价、引擎编排、KPI |
 | **解释层（隔离特例）** | `llm` | 核价结果自然语言分析；只读上游表；内部工具不进 `common`；上游不得依赖它 |
 | **横切登记** | `file_trace` | 已落盘 Excel 登记与鉴权下载；被上游上传 Service 调用，**不**依赖 costing |
@@ -306,10 +306,10 @@ ApiResponse[AsyncTaskAcceptedVO]
 
 | 切片 | 文档 |
 |------|------|
-| **masterdata** | [基地](masterdata/location-design.md)（已落地）· [项目](masterdata/vehicle-model-design.md)（本切片已落地；下游改读另做）· [供应商](masterdata/supplier-design.md)（第一期 + 第二期已落地：采购对象可空指定、工艺/采购对象 `RESTRICT`、一览改主键/删除） |
+| **masterdata** | [基地](masterdata/location-design.md)（已落地）· [项目](masterdata/vehicle-model-design.md)（本切片已落地；下游改读另做）· [供应商](masterdata/supplier-design.md)（第一期 + 第二期已落地：采购对象可空指定、工艺/采购对象 `RESTRICT`、一览改主键/删除）· [牌号分类](masterdata/steel-grade-category-design.md)（已落地：手工档案，下游只读） |
 | **stamping** | [产品质量先期策划（APQP）先布点后工艺](stamping/stamping-apqp-die-before-process-design.md) · [工艺确认表](stamping/stamping-process-confirmation-design.md) · [模具布点](stamping/stamping-die-management-design.md) · [模具单价](stamping/stamping-die-unit-price-design.md) · [检具费档案](stamping/stamping-gauge-fee-design.md) · [年度模具费（不含检具）](stamping/stamping-die-fee-design.md) |
 | **bom** | [年度零件价](bom/bom-annual-part-prices-design.md) · [焊接工艺拆解](bom/welding-process-breakdown-design.md) · [焊接费](bom/welding-fee-design.md) · [采购对象清单](bom/bom-procurement-objects-design.md) · [指定供应商](bom/bom-procurement-object-supplier-design.md) · [批量上传供应商](bom/bom-procurement-object-supplier-upload-design.md) |
-| **yishiyiyi** | [牌号分类](yishiyiyi/steel-grade-category-design.md) · [分类级厚度政策](yishiyiyi/thickness-policy-category-level-design.md) |
+| **yishiyiyi** | [分类级厚度政策](yishiyiyi/thickness-policy-category-level-design.md) |
 | **costing** | [核价引擎](costing/costing-engine-design.md) · [总成核价](costing/assembly-costing-design.md) · [L0 成品核价（冻结）](costing/l0-assembly-costing-design.md) · [采购价格协议](costing/procurement-contract-report-design.md) · [协议价生效期](costing/effective-period-design.md) · [暂估正式](costing/provisional-final-settlement-design.md) · [锚点送货](costing/anchor-true-up-design.md) |
 | **file_trace** | [文件溯源](file-trace/file-trace-design.md) |
 | **llm** | [核价结果智能分析](llm/llm-costing-analysis-report-design.md) |

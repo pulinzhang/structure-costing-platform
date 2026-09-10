@@ -5,7 +5,7 @@
 
 from decimal import Decimal
 
-from sqlalchemy import Index, Integer, Numeric, String, Text, UniqueConstraint
+from sqlalchemy import ForeignKey, Index, Integer, Numeric, String, Text, UniqueConstraint
 from sqlalchemy.orm import Mapped, mapped_column
 
 from app.database import Base
@@ -48,7 +48,14 @@ class SteelBasePrice(AuditUserMixin, Base):
         String(50), nullable=False, comment="钢种大类，例：镀锌、冷轧、酸洗"
     )
     grade: Mapped[str] = mapped_column(
-        String(50), nullable=False, comment="钢材牌号，例：DC51D+Z、DC01"
+        String(50),
+        ForeignKey(
+            "steel_grade_categories.grade",
+            ondelete="RESTRICT",
+            onupdate="RESTRICT",
+        ),
+        nullable=False,
+        comment="钢材牌号，例：DC51D+Z、DC01；必须已在牌号分类档案",
     )
     # 规格（厚度*宽度）
     spec: Mapped[str] = mapped_column(String(50), nullable=False, comment="规格，例：1.00*1250.00")

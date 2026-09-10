@@ -12,7 +12,7 @@ from app.services.costing.steel_price.calc.models import CalcRow, SteelPriceCalc
 from app.services.costing.steel_price.calc.steps.adjustments.thickness import (
     ThicknessAdjustmentMatcher,
 )
-from app.services.yishiyiyi.steel_grade_category import SteelGradeCategoryService
+from app.services.masterdata.steel_grade_category import SteelGradeCategoryService
 
 
 class AdjustmentApplier:

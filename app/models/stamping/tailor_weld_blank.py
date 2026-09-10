@@ -65,7 +65,16 @@ class StampingTailorWeldBlank(AuditUserMixin, Base):
     )
 
     # 材料信息（各片可不同）
-    material: Mapped[str | None] = mapped_column(String(50), nullable=True, comment="材质")
+    material: Mapped[str | None] = mapped_column(
+        String(50),
+        ForeignKey(
+            "steel_grade_categories.grade",
+            ondelete="RESTRICT",
+            onupdate="RESTRICT",
+        ),
+        nullable=True,
+        comment="材质（牌号）；空不引用档案",
+    )
     thickness: Mapped[Decimal | None] = mapped_column(
         Numeric(10, 4), nullable=True, comment="料厚(mm)"
     )

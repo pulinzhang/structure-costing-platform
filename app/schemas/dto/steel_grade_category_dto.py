@@ -18,7 +18,6 @@ class SteelGradeCategoryQuery(BaseModel):
 
     grade: str | None = Field(None, description="牌号模糊")
     category_name: str | None = Field(None, description="大类精确：冷轧/镀锌/酸洗")
-    uncategorized: bool = Field(False, description="只看待分类")
     page: int = Field(1, ge=1)
     size: int = Field(10, ge=1, le=100)
 
@@ -33,7 +32,6 @@ class SteelGradeCategoryExportQuery(BaseModel):
 
     grade: str | None = Field(None, description="牌号模糊")
     category_name: str | None = Field(None, description="大类精确：冷轧/镀锌/酸洗")
-    uncategorized: bool = Field(False, description="只看待分类")
 
     @field_validator("grade", "category_name", mode="before")
     @classmethod
@@ -75,21 +73,12 @@ class SteelGradeCategoryUpdate(BaseModel):
 
 
 @dataclass(slots=True)
-class GradeEnsureItem:
-    """ensure_grades 入参一行。"""
-
-    grade: str
-    category_name: str | None = None
-
-
-@dataclass(slots=True)
 class SteelGradeCategoryInsert:
     """Repository 整行插入。"""
 
     grade: str
-    category_name: str | None
-    category_seq: int | None
-    source: str
+    category_name: str
+    category_seq: int
     remark: str | None
     created_by: str | None
     updated_by: str | None
@@ -98,17 +87,7 @@ class SteelGradeCategoryInsert:
 class SteelGradeCategoryPatch(TypedDict, total=False):
     """部分更新。"""
 
-    category_name: str | None
-    category_seq: int | None
+    category_name: str
+    category_seq: int
     remark: str | None
     updated_by: str
-
-
-@dataclass(slots=True)
-class GradeEnsureResult:
-    """ensure_grades 结果（不穿过 HTTP）。"""
-
-    inserted_count: int = 0
-    claimed_count: int = 0
-    skipped_count: int = 0
-    conflicts: list[str] | None = None

@@ -53,6 +53,7 @@ def test_detect_query_mode(question: str, expected_mode: str) -> None:
         ("总成核价怎么审核", "audit"),
         ("冲压零件价格计算页在哪", "calc_run"),
         ("文件溯源在哪看", "file_trace"),
+        ("牌号分类在哪维护", "masterdata"),
     ],
 )
 def test_detect_help_topic(question: str, expected_topic: str) -> None:
@@ -77,6 +78,7 @@ def test_load_corpus_has_p1a_sections() -> None:
         "procurement",
         "die_gauge",
         "file_trace",
+        "masterdata",
         "assembly_cost",
         "procurement_contract_report",
         "audit",

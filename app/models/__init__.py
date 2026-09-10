@@ -41,7 +41,14 @@ from app.models.costing import (
 )
 from app.models.file_trace import UploadFile
 from app.models.llm import LlmAnalysisReport
-from app.models.masterdata import Location, LocationAlias, Supplier, SupplierAlias, VehicleModel
+from app.models.masterdata import (
+    Location,
+    LocationAlias,
+    SteelGradeCategory,
+    Supplier,
+    SupplierAlias,
+    VehicleModel,
+)
 from app.models.settings import (
     OperationLog,
     SystemConfig,
@@ -68,7 +75,6 @@ from app.models.stamping import (
 from app.models.yishiyiyi import (
     StampingScrapPrice,
     SteelBasePrice,
-    SteelGradeCategory,
     SteelPriceLadderItem,
     SteelPricePolicy,
 )

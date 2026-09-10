@@ -382,6 +382,9 @@ def create_app() -> FastAPI:
     from app.routers.file_trace.crud import router as file_trace_router
     from app.routers.llm.reports import router as llm_reports_router
     from app.routers.masterdata.location.crud import router as masterdata_location_router
+    from app.routers.masterdata.steel_grade_category.crud import (
+        router as masterdata_steel_grade_category_router,
+    )
     from app.routers.masterdata.supplier.crud import router as masterdata_supplier_router
     from app.routers.masterdata.vehicle_model.crud import (
         router as masterdata_vehicle_model_router,
@@ -404,9 +407,6 @@ def create_app() -> FastAPI:
     from app.routers.yishiyiyi.policy.export import router as yishiyiyi_policy_export_router
     from app.routers.yishiyiyi.policy.upload import router as yishiyiyi_policy_upload_router
     from app.routers.yishiyiyi.scrap_price.crud import router as yishiyiyi_scrap_price_router
-    from app.routers.yishiyiyi.steel_grade_category.crud import (
-        router as yishiyiyi_steel_grade_category_router,
-    )
     from app.routers.yishiyiyi.winning_thickness.crud import (
         router as yishiyiyi_winning_thickness_router,
     )
@@ -435,7 +435,6 @@ def create_app() -> FastAPI:
     app.include_router(yishiyiyi_policy_export_router)
     app.include_router(yishiyiyi_policy_router)
     app.include_router(yishiyiyi_base_price_router)
-    app.include_router(yishiyiyi_steel_grade_category_router)
     app.include_router(yishiyiyi_winning_thickness_router)
     app.include_router(yishiyiyi_scrap_price_router)
     app.include_router(bom_router)
@@ -450,6 +449,7 @@ def create_app() -> FastAPI:
     app.include_router(costing_engine_router)
     app.include_router(file_trace_router)
     app.include_router(masterdata_location_router)
+    app.include_router(masterdata_steel_grade_category_router)
     app.include_router(masterdata_supplier_router)
     app.include_router(masterdata_vehicle_model_router)
     app.include_router(settings_router)

@@ -11,9 +11,9 @@ from sqlalchemy.orm import Session
 
 from app.exceptions.base import BusinessException
 from app.models.yishiyiyi import SteelBasePrice, SteelPriceLadderItem, SteelPricePolicy
+from app.repositories.masterdata.steel_grade_category import SteelGradeCategoryRepository
 from app.repositories.yishiyiyi.base_price import SteelBasePriceRepository
 from app.repositories.yishiyiyi.policy import SteelPricePolicyRepository
-from app.repositories.yishiyiyi.steel_grade_category import SteelGradeCategoryRepository
 from app.schemas.vo.winning_thickness_vo import WinningThicknessRowVO
 from app.services.masterdata.location.location_service import LocationService
 from app.services.yishiyiyi.policy.export.excel_exporter import format_interval
@@ -151,16 +151,12 @@ class WinningThicknessRowAssembler:
             if archive is None:
                 continue
 
-            archive_category = (archive.category_name or "").strip()
-            if not archive_category:
-                continue
-
             context = _BaseContext.from_orm(base)
             rows.extend(
                 self._expand_grade_ladder(
                     context,
                     policies,
-                    category_name=archive_category,
+                    category_name=archive.category_name,
                     ladder_cache=ladder_cache,
                 )
             )

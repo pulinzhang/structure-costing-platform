@@ -9,21 +9,10 @@ export const CATEGORY_TABS = Object.freeze([
     { id: '冷轧', label: '1 冷轧' },
     { id: '镀锌', label: '2 镀锌' },
     { id: '酸洗', label: '3 酸洗' },
-    { id: 'uncategorized', label: '待分类' },
 ]);
-
-const SOURCE_LABELS = {
-    base_price: '基价导入',
-    stamping_upload: '工艺导入',
-    manual: '手建',
-};
 
 function canOp(code) {
     return typeof window.can === 'function' ? window.can(code) : true;
-}
-
-export function formatSourceLabel(source) {
-    return SOURCE_LABELS[source] || source || '—';
 }
 
 export function steelGradeCategoryTemplate() {
@@ -74,14 +63,13 @@ export function steelGradeCategoryTemplate() {
                 </div>
 
                 <div class="overflow-x-auto bg-[#0A0A0E] brabus-bg-grid">
-                    <table class="w-full table-fixed bg-transparent border-collapse" style="min-width: 860px;">
+                    <table class="w-full table-fixed bg-transparent border-collapse" style="min-width: 760px;">
                         <colgroup>
                             <col style="width: 8px;">
-                            <col style="width: 22%;">
+                            <col style="width: 26%;">
                             <col style="width: 16%;">
-                            <col style="width: 14%;">
-                            <col style="width: 22%;">
-                            <col style="width: 14%;">
+                            <col style="width: 28%;">
+                            <col style="width: 16%;">
                             <col style="width: 88px;">
                         </colgroup>
                         <thead>
@@ -89,7 +77,6 @@ export function steelGradeCategoryTemplate() {
                                 <th class="p-0" aria-hidden="true"></th>
                                 <th class="px-2 py-2 text-left text-[9px] font-medium tracking-[0.08em] text-[#555555]">牌号</th>
                                 <th class="px-2 py-2 text-left text-[9px] font-medium tracking-[0.06em] text-[#555555]">大类</th>
-                                <th class="px-2 py-2 text-left text-[9px] font-medium tracking-[0.06em] text-[#555555]">来源</th>
                                 <th class="px-2 py-2 text-left text-[9px] font-medium tracking-[0.06em] text-[#555555]">备注</th>
                                 <th class="px-2 py-2 text-left text-[9px] font-medium tracking-[0.06em] text-[#555555]">更新</th>
                                 <th class="px-1 py-2 text-center text-[9px] font-medium tracking-[0.06em] text-[#555555]">操作</th>
@@ -102,7 +89,7 @@ export function steelGradeCategoryTemplate() {
                 <div id="sgcEmptyState" class="hidden flex flex-col items-center justify-center py-16 text-center bg-[#0A0A0E]">
                     <div class="text-[#555555] mb-2">${window.svgIcon('inbox')}</div>
                     <p class="text-[12px] text-[#8E8E93] mb-1">暂无牌号</p>
-                    <p class="text-[11px] text-[#555555]">导入基价 / 工艺会自动补行，也可手动新增</p>
+                    <p class="text-[11px] text-[#555555]">请在本页手工新增；工艺或基价导入不会自动补档</p>
                 </div>
                 <div id="sgcLoadingState" class="hidden flex flex-col items-center justify-center py-16 gap-2 bg-[#0A0A0E]">
                     <div class="w-5 h-5 border-2 border-[#2c2c2c] border-t-[#FF1E27] rounded-full animate-spin"></div>
@@ -196,15 +183,9 @@ export function renderTableRows(records) {
     if (!records || !records.length) return '';
     const canUpdate = canOp('op:steel-grade-category:update');
     const canDelete = canOp('op:steel-grade-category:delete');
-    const numCell = 'px-2 py-2 font-mono text-[10px] text-[#8E8E93]';
 
     return records
         .map((record) => {
-            const categoryLabel = record.category_name || '待分类';
-            const isPending = !record.category_name;
-            const categoryClass = isPending
-                ? 'text-[#ffb74d]'
-                : 'text-[#C8C8D0]';
             const updated = formatDateTime(record.updated_at);
             return `
         <tr class="group relative font-mono text-[11px] border-b border-[#141418] hover:bg-[#161620] transition-colors duration-100">
@@ -215,9 +196,8 @@ export function renderTableRows(records) {
                 <div class="text-[14px] font-bold text-[#F0F0F2] truncate" title="${esc(record.grade)}">${esc(record.grade)}</div>
             </td>
             <td class="px-2 py-2 overflow-hidden">
-                <span class="${categoryClass}">${esc(categoryLabel)}</span>
+                <span class="text-[#C8C8D0]">${esc(record.category_name)}</span>
             </td>
-            <td class="${numCell}">${esc(formatSourceLabel(record.source))}</td>
             <td class="px-2 py-2 text-[10px] text-[#555555] overflow-hidden truncate" title="${esc(record.remark || '')}">${esc(record.remark || '—')}</td>
             <td class="px-2 py-2 text-[9px] text-[#3A3A42] whitespace-nowrap overflow-hidden">
                 <div>${esc(record.updated_by || '—')}</div>

@@ -250,13 +250,6 @@ class Perm:
     BASE_PRICE_DOWNLOAD_EXPORT = "op:base-price-download:export"  # 导出
     BASE_PRICE_DOWNLOAD_DELETE = "op:base-price-download:delete"  # 批量删除
 
-    MENU_STEEL_GRADE_CATEGORY = "menu:steel-grade-category"  # 牌号分类
-    STEEL_GRADE_CATEGORY_VIEW = "op:steel-grade-category:view"  # 查看
-    STEEL_GRADE_CATEGORY_CREATE = "op:steel-grade-category:create"  # 新增
-    STEEL_GRADE_CATEGORY_UPDATE = "op:steel-grade-category:update"  # 编辑
-    STEEL_GRADE_CATEGORY_DELETE = "op:steel-grade-category:delete"  # 删除
-    STEEL_GRADE_CATEGORY_EXPORT = "op:steel-grade-category:export"  # 导出
-
     MENU_WINNING_THICKNESS_DOWNLOAD = "menu:winning-thickness-download"  # 中标钢厂厚度价格一览表
     WINNING_THICKNESS_DOWNLOAD_VIEW = "op:winning-thickness-download:view"  # 预览
     WINNING_THICKNESS_DOWNLOAD_EXPORT = "op:winning-thickness-download:export"  # 导出
@@ -321,9 +314,7 @@ class Perm:
     COSTING_RUN = "op:costing:run"  # 启动运行
     COSTING_DELETE = "op:costing:delete"  # 删除 Run
 
-    MENU_PROCUREMENT_CONTRACT_REPORT = (
-        "menu:procurement-contract-report"  # 采购价格协议（一级叶子，不在核价组）
-    )
+    MENU_PROCUREMENT_CONTRACT_REPORT = "menu:procurement-contract-report"  # 采购价格协议
     PROCUREMENT_CONTRACT_REPORT_VIEW = "op:procurement-contract-report:view"  # 查询
     PROCUREMENT_CONTRACT_REPORT_EXPORT = "op:procurement-contract-report:export"  # 导出
 
@@ -368,6 +359,13 @@ class Perm:
     SUPPLIER_LIST_CREATE = "op:supplier-list:create"  # 新增
     SUPPLIER_LIST_UPDATE = "op:supplier-list:update"  # 编辑
     SUPPLIER_LIST_DELETE = "op:supplier-list:delete"  # 删除
+
+    MENU_STEEL_GRADE_CATEGORY = "menu:steel-grade-category"  # 牌号分类
+    STEEL_GRADE_CATEGORY_VIEW = "op:steel-grade-category:view"  # 查看
+    STEEL_GRADE_CATEGORY_CREATE = "op:steel-grade-category:create"  # 新增
+    STEEL_GRADE_CATEGORY_UPDATE = "op:steel-grade-category:update"  # 编辑
+    STEEL_GRADE_CATEGORY_DELETE = "op:steel-grade-category:delete"  # 删除
+    STEEL_GRADE_CATEGORY_EXPORT = "op:steel-grade-category:export"  # 导出
 
     MENU_SETTINGS = "menu:settings"  # 设置
 

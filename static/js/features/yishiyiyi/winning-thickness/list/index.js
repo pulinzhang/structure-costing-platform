@@ -24,7 +24,7 @@ const winningThicknessState = {
 };
 
 const API_BASE = '/api/yishiyiyi/winning-thickness';
-const GRADE_CATEGORY_API = '/api/yishiyiyi/steel-grade-category';
+const GRADE_CATEGORY_API = '/api/masterdata/steel-grade-category';
 
 function init() {
     bindEvents();

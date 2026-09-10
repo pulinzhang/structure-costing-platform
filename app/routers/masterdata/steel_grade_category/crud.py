@@ -21,13 +21,13 @@ from app.schemas.vo.steel_grade_category_vo import (
     SteelGradeCategoryVO,
 )
 from app.schemas.vo.user_vo import UserVO
-from app.services.yishiyiyi.steel_grade_category import SteelGradeCategoryService
-from app.services.yishiyiyi.steel_grade_category.export_service import (
+from app.services.masterdata.steel_grade_category import SteelGradeCategoryService
+from app.services.masterdata.steel_grade_category.export_service import (
     SteelGradeCategoryExportService,
 )
 from app.utils.response import ApiResponse
 
-router = APIRouter(prefix="/api/yishiyiyi/steel-grade-category", tags=["牌号分类"])
+router = APIRouter(prefix="/api/masterdata/steel-grade-category", tags=["牌号分类"])
 
 _service = SteelGradeCategoryService()
 _export_service = SteelGradeCategoryExportService()
