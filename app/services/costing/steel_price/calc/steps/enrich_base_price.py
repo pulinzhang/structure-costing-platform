@@ -20,8 +20,8 @@ from app.services.costing.steel_price.calc.models import (
     MaterialThicknessRow,
     SteelPriceCalcRequest,
 )
+from app.services.masterdata.steel_grade_category import SteelGradeCategoryService
 from app.services.yishiyiyi.base_price.steel_base_price_service import SteelBasePriceService
-from app.services.yishiyiyi.steel_grade_category import SteelGradeCategoryService
 from app.services.yishiyiyi.winning_thickness.assemble.row_assembler import (
     dedupe_bases_by_mill_grade,
 )

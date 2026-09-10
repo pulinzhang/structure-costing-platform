@@ -119,7 +119,7 @@ Router
 | 层级 | 路径 |
 |------|------|
 | Router | `app/routers/yishiyiyi/winning_thickness/` |
-| 依赖 Service | `yishiyiyi/steel_grade_category`、`yishiyiyi/base_price`、`yishiyiyi/policy` |
+| 依赖 Service | `masterdata/steel_grade_category`、`yishiyiyi/base_price`、`yishiyiyi/policy` |
 | 匹配公共 | `yishiyiyi/policy/match/adjustment_common` |
 | 前端 | `static/js/features/yishiyiyi/winning-thickness/` |
 | API 前缀 | `/api/yishiyiyi/winning-thickness` |

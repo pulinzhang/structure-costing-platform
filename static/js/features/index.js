@@ -55,7 +55,6 @@
  * │   ├── base-price/            # 基准价格
  * │   │   ├── upload/
  * │   │   └── list/
- * │   ├── steel-grade-category/  # 牌号分类
  * │   ├── winning-thickness/     # 中标钢厂厚度价格一览表
  * │   │   └── list/
  * │   └── scrap-price/           # 废料月度销售价
@@ -74,6 +73,7 @@
  * ├── file-trace/                # 文件溯源
  * ├── masterdata/                # 主数据
  * │   ├── location/              # 基地
+ * │   ├── steel-grade-category/  # 牌号分类
  * │   ├── vehicle-model/         # 项目
  * │   │   ├── upload/
  * │   │   └── list/
@@ -235,7 +235,7 @@ export const pageMeta = {
     'steel-grade-category': {
         title: '牌号分类',
         en: 'STEEL_GRADE_CATEGORY',
-        breadcrumb: ['一事一议', '牌号分类'],
+        breadcrumb: ['主数据', '牌号分类'],
     },
     'winning-thickness-download': {
         title: '中标钢厂厚度价格一览表',

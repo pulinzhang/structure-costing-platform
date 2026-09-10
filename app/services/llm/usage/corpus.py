@@ -303,14 +303,13 @@ def _extra_faq_chunks() -> list[CorpusChunk]:
         ),
         CorpusChunk(
             chunk_id="yishiyiyi_extra",
-            title="牌号分类与中标厚度价",
+            title="中标钢厂厚度价格一览",
             text=(
-                "一事一议 → 牌号分类：一个牌号一行，挂冷轧 / 镀锌 / 酸洗。"
                 "一事一议 → 中标钢厂厚度价格一览表：选定年/月/基地后预览或导出中标基价叠厚度加减价，不改核价库。"
             ),
             source_page="help.html",
             anchor="yishiyiyi",
-            keywords=("牌号分类", "中标", "厚度价格", "冷轧", "镀锌", "酸洗"),
+            keywords=("中标", "厚度价格", "中标钢厂"),
         ),
     ]
 
@@ -343,6 +342,7 @@ def load_corpus_chunks() -> tuple[CorpusChunk, ...]:
                 "冲压工程",
                 "焊接工程",
                 "一事一议",
+                "主数据",
                 "核价",
                 "文件溯源",
                 "设置",
@@ -370,7 +370,7 @@ def load_corpus_chunks() -> tuple[CorpusChunk, ...]:
             text=_extract_section(help_html, "yishiyiyi"),
             source_page="help.html",
             anchor="yishiyiyi",
-            keywords=("一事一议", "基准价", "加减价", "废料", "牌号分类", "中标钢厂"),
+            keywords=("一事一议", "基准价", "加减价", "废料", "中标钢厂"),
         ),
         CorpusChunk(
             chunk_id="costing-pages",
@@ -387,6 +387,14 @@ def load_corpus_chunks() -> tuple[CorpusChunk, ...]:
             source_page="help.html",
             anchor="file-trace",
             keywords=("文件溯源", "原件", "上传记录", "溯源"),
+        ),
+        CorpusChunk(
+            chunk_id="masterdata",
+            title="主数据怎么用",
+            text=_extract_section(help_html, "masterdata"),
+            source_page="help.html",
+            anchor="masterdata",
+            keywords=("主数据", "牌号分类", "冷轧", "镀锌", "酸洗"),
         ),
         CorpusChunk(
             chunk_id="engine",

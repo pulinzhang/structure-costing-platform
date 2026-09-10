@@ -24,6 +24,7 @@
 | [location-design.md](masterdata/location-design.md) | 基地（设计定稿，未落地）：现网 `location`；绝对上游；启用/禁用；§4.3 引用保护（修改与删除） |
 | [vehicle-model-design.md](masterdata/vehicle-model-design.md) | 项目（已落地）：挂基地；上传+一览 HUD 分卡；写门禁已接到工艺/布点/BOM/档案/计算/引擎；下一跳外键另做 |
 | [supplier-design.md](masterdata/supplier-design.md) | 供应商（第一期已落地；第二期：采购对象可空门禁 + 下一跳 RESTRICT + 改/删） |
+| [steel-grade-category-design.md](masterdata/steel-grade-category-design.md) | 牌号分类（已落地）：主数据手工档案；下游只读 |
 
 ## 冲压 `stamping/`
 
@@ -54,7 +55,6 @@
 
 | 文档 | 状态 |
 |------|------|
-| [steel-grade-category-design.md](yishiyiyi/steel-grade-category-design.md) | 牌号分类（已落地） |
 | [scrap-price-design.md](yishiyiyi/scrap-price-design.md) | 废料月度销售价（已落地）：基地×钢材/铝板；行=已启用基地 |
 | [thickness-policy-category-level-design.md](yishiyiyi/thickness-policy-category-level-design.md) | 分类级厚度加减价（设计） |
 

@@ -23,13 +23,9 @@ from app.schemas.vo.user_vo import UserVO
 from app.services.file_trace.path_utils import to_upload_relpath
 from app.services.file_trace.register import register_existing
 from app.services.masterdata.location.location_service import LocationService
+from app.services.masterdata.steel_grade_category import SteelGradeCategoryService
 from app.services.yishiyiyi.base_price.importing.template_builder import (
     build_steel_base_price_template,
-)
-from app.services.yishiyiyi.steel_grade_category import (
-    SOURCE_BASE_PRICE,
-    GradeEnsureItem,
-    SteelGradeCategoryService,
 )
 from app.utils.steel_price_archive import (
     FILE_KIND_BASE_PRICE,
@@ -235,6 +231,10 @@ class SteelBasePriceImportService:
                 errors=parse_result.errors,
             )
 
+        SteelGradeCategoryService().require_existing_grades(
+            db,
+            [write.grade for write in writes],
+        )
         _report(50, f"解析完成，共 {len(writes)} 条，正在写入数据库...")
         try:
             counts = self.repository.upsert(db, writes)
@@ -247,17 +247,6 @@ class SteelBasePriceImportService:
                 year=year,
                 month=month,
             )
-            grade_result = SteelGradeCategoryService().ensure_grades(
-                db,
-                [
-                    GradeEnsureItem(grade=write.grade, category_name=write.category_name)
-                    for write in writes
-                ],
-                source=SOURCE_BASE_PRICE,
-                current_user=current_user,
-            )
-            if grade_result.conflicts:
-                parse_result.warnings.extend(grade_result.conflicts)
             _report(90, "正在提交事务...")
             db.commit()
         except Exception:

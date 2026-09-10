@@ -39,6 +39,7 @@ from app.services.async_task import (
 )
 from app.services.file_trace.path_utils import to_upload_relpath
 from app.services.file_trace.register import register_existing
+from app.services.masterdata.steel_grade_category import SteelGradeCategoryService
 from app.services.masterdata.supplier import SupplierService
 from app.services.masterdata.vehicle_model import VehicleModelService
 from app.services.stamping.process_seq_validator import (
@@ -50,11 +51,6 @@ from app.services.stamping.tailor_weld_blank_service import StampingTailorWeldBl
 from app.services.stamping.upload.cost_ratio_preserver import ProcessCostRatioPreserver
 from app.services.stamping.upload.swing_shear_resolver import collect_swing_shear_part_numbers
 from app.services.stamping.upload.template_builder import build_stamping_process_template
-from app.services.yishiyiyi.steel_grade_category import (
-    SOURCE_STAMPING_UPLOAD,
-    GradeEnsureItem,
-    SteelGradeCategoryService,
-)
 
 # progress_callback(progress: int, msg: str)
 ProgressCallback = Callable[[int, str], None]
@@ -148,6 +144,10 @@ class StampingUploadService:
                 raise BusinessException(
                     format_duplicate_process_seq_issues(duplicate_seqs, source_name="工艺确认表")
                 )
+            SteelGradeCategoryService().require_existing_grades(
+                self.db,
+                self._collect_material_grades(parse_result.parts, tailor_result.assemblies),
+            )
 
             logger.info(
                 "解析 Excel 完成：%d 个零件、%d 道工序、%d 个拼焊总成",
@@ -209,17 +209,9 @@ class StampingUploadService:
                 process_count = self._save_processes(
                     parse_result.processes, part_map, current_user=current_user
                 )
-                grade_result = SteelGradeCategoryService().ensure_grades(
-                    self.db,
-                    self._collect_upload_grades(parse_result.parts, tailor_result.assemblies),
-                    source=SOURCE_STAMPING_UPLOAD,
-                    current_user=current_user,
-                )
 
                 warnings = list(parse_result.warnings) + list(tailor_result.warnings)
                 warnings.extend(tailor_warnings)
-                if grade_result.conflicts:
-                    warnings.extend(grade_result.conflicts)
                 parse_time_ms = parse_result.parse_time_ms + tailor_result.parse_time_ms
 
                 logger.info(
@@ -278,19 +270,16 @@ class StampingUploadService:
                 os.unlink(tmp_path)
 
     @staticmethod
-    def _collect_upload_grades(
+    def _collect_material_grades(
         parts: list[Part],
         assemblies: list[TailorWeldAssemblyParsed],
-    ) -> list[GradeEnsureItem]:
-        seen: set[str] = set()
-        items: list[GradeEnsureItem] = []
+    ) -> list[str]:
+        grades: list[str] = []
 
         def add_material(raw: str | None) -> None:
             grade = (raw or "").strip()
-            if not grade or grade in seen:
-                return
-            seen.add(grade)
-            items.append(GradeEnsureItem(grade=grade))
+            if grade:
+                grades.append(grade)
 
         for part in parts:
             add_material(part.material)
@@ -298,7 +287,7 @@ class StampingUploadService:
             add_material(assembly.material)
             for blank in assembly.blanks:
                 add_material(blank.material)
-        return items
+        return grades
 
     def _save_file(
         self,

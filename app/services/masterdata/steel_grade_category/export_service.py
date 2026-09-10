@@ -13,29 +13,17 @@ from sqlalchemy.orm import Session
 from app.common.excel_workbook import resolve_worksheet
 from app.common.export_watermark import workbook_to_xlsx_bytes
 from app.common.timezone import now
-from app.repositories.yishiyiyi.steel_grade_category import SteelGradeCategoryRepository
+from app.repositories.masterdata.steel_grade_category import SteelGradeCategoryRepository
 from app.schemas.dto.steel_grade_category_dto import SteelGradeCategoryExportQuery
 from app.schemas.vo.user_vo import UserVO
 
 logger = logging.getLogger("service.steel_grade_category.export")
-
-_SOURCE_LABELS = {
-    "base_price": "基价导入",
-    "stamping_upload": "工艺导入",
-    "manual": "手建",
-}
 
 
 def _dt(value: datetime | None) -> str:
     if value is None:
         return ""
     return f"{value:%Y-%m-%d %H:%M:%S}"
-
-
-def _source_label(source: str | None) -> str:
-    if not source:
-        return ""
-    return _SOURCE_LABELS.get(source, source)
 
 
 class SteelGradeCategoryExportService:
@@ -54,7 +42,6 @@ class SteelGradeCategoryExportService:
             db,
             grade=query.grade,
             category_name=query.category_name,
-            uncategorized=query.uncategorized,
         )
 
         wb = Workbook()
@@ -77,7 +64,6 @@ class SteelGradeCategoryExportService:
             "大类序号",
             "大类",
             "牌号",
-            "来源",
             "备注",
             "创建人",
             "创建时间",
@@ -93,10 +79,9 @@ class SteelGradeCategoryExportService:
 
         for row_idx, record in enumerate(records, start=2):
             values: list[str] = [
-                str(record.category_seq) if record.category_seq is not None else "",
-                record.category_name or "待分类",
+                str(record.category_seq),
+                record.category_name,
                 record.grade,
-                _source_label(record.source),
                 record.remark or "",
                 record.created_by or "",
                 _dt(record.created_at),
@@ -112,13 +97,13 @@ class SteelGradeCategoryExportService:
                 else:
                     cell.alignment = align_left
 
-        widths = [10, 10, 24, 12, 24, 12, 20, 12, 20]
+        widths = [10, 10, 24, 24, 12, 20, 12, 20]
         for idx, width in enumerate(widths, start=1):
             ws.column_dimensions[get_column_letter(idx)].width = width
 
         ws.freeze_panes = "A2"
         last_row = max(1, len(records) + 1)
-        ws.auto_filter.ref = f"A1:I{last_row}"
+        ws.auto_filter.ref = f"A1:H{last_row}"
 
         content = workbook_to_xlsx_bytes(wb, current_user)
 

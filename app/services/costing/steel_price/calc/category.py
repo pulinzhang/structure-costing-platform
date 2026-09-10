@@ -12,7 +12,7 @@ def resolve_canonical_category(
     grade: str,
     category_map: Mapping[str, SteelGradeCategoryVO],
 ) -> str:
-    """工艺牌号或已是大类名 → 规范三字；档案没有或待分类 → 空串。"""
+    """工艺牌号或已是大类名 → 规范三字；档案没有该牌号 → 空串。"""
     direct = as_canonical_category(grade)
     if direct:
         return direct

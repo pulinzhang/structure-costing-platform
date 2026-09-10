@@ -13,10 +13,9 @@ class SteelGradeCategoryVO(BaseModel):
     model_config = {"from_attributes": True}
 
     id: int
-    category_name: str | None = None
-    category_seq: int | None = None
+    category_name: str
+    category_seq: int
     grade: str
-    source: str
     remark: str | None = None
     created_by: str | None = None
     updated_by: str | None = None

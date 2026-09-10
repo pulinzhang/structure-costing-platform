@@ -1,7 +1,7 @@
 # 厚度加减价政策 — 分类级引入改造说明
 
 > 状态：**设计定稿（待开发）**  
-> 关联：`docs/yishiyiyi/steel-grade-category-design.md`、`app/models/yishiyiyi/steel_price_policy.py`、`app/services/costing/steel_price/calc/steps/adjustments/thickness.py`  
+> 关联：`docs/masterdata/steel-grade-category-design.md`、`app/models/yishiyiyi/steel_price_policy.py`、`app/services/costing/steel_price/calc/steps/adjustments/thickness.py`  
 > 原则：**只做厚度加减价**（冷轧 / 镀锌 / 酸洗 **三大类均做**）；政策按 **牌号分类大类级** 存储（`grade_type = CATEGORY`，`grade_value` 与块标签共用）；**开发环境清空历史政策后重来**，不做旧数据迁移与兼容。**宽度加减价、厚宽组合、锌层等本期不做。**
 
 ---
@@ -52,7 +52,7 @@
 | G3 | 每个厚度块 → **一条** `THICKNESS` 头表 + 一套阶梯；键含 `category_name`（冷轧钢 / 镀锌钢 / 酸洗钢）与 `base_thickness` |
 | G4 | `grade_value` 与块大类标签 **共用**（如 `冷轧钢`、`镀锌钢`、`酸洗钢`） |
 | G5 | 阶梯 `items` **结构不变**；区间、金额语义不变 |
-| G6 | 核价：经档案解析大类 → 命中 **对应大类** 厚度政策；待分类 **硬停** |
+| G6 | 核价：经档案解析大类 → 命中 **对应大类** 厚度政策；档案没有该牌号 **硬停** |
 | G7 | **移除** 宽度政策导入与核价应用路径 |
 | G8 | **无** 旧 per-grade 厚度、旧 WIDTH 数据的兼容与回退 |
 
@@ -240,8 +240,8 @@
 
 ### 7.5 政策导入与档案
 
-- **不** 调用 `ensure_grades`  
-- 牌号清单由基价 / 工艺 / 档案页维护；政策消费档案三分类  
+- **不** 往牌号分类插档；缺档由主数据页手工补  
+- 政策只消费档案三分类；基价 / 工艺导入缺牌号则整批拒绝  
 
 ---
 
@@ -252,7 +252,7 @@
 ```text
 1. row.grade 非空
 2. map_grades → category_name（冷轧 / 镀锌 / 酸洗）
-3. 待分类（NULL）→ 硬停：「牌号未分类，无法匹配厚度政策」
+3. 档案没有该牌号 → 硬停：「牌号未在分类档案中」
 4. 候选：policy_type=THICKNESS 且 grade_type=CATEGORY
 5. grade_category(policy, row)：档案大类与 policy.grade_value 经 category_aliases 对齐
 6. 钢厂别名 + base_thickness 优先（order_by_base_thickness）
@@ -318,7 +318,7 @@ CalcRow.width_adjustment → 0
 | A7 | 核价：酸洗 SPHC | 命中 **酸洗钢** 政策 |
 | A8 | 核价：任意牌号 | **无** 宽度调差 |
 | A9 | 已分类牌号缺对应大类政策 | 硬停 |
-| A10 | 待分类牌号 | 硬停 |
+| A10 | 档案没有该牌号 | 硬停 |
 | A11 | 库中无 `grade_type=GRADE` 的 THICKNESS 行 | 清表 + 新导入后成立 |
 
 ---
@@ -340,7 +340,7 @@ CalcRow.width_adjustment → 0
 
 - 落地后更新 `app/services/yishiyiyi/policy/README.md`（厚度三大类 + 宽度下线）  
 - `docs/costing/costing-engine-design.md`：硬停改为「已分类牌号须有对应大类厚度政策」；宽度调差移除  
-- `docs/yishiyiyi/steel-grade-category-design.md`：已链本文  
+- `docs/masterdata/steel-grade-category-design.md`：已链本文  
 - 权限码可不变  
 
 ---

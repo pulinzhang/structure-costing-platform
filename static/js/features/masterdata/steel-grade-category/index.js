@@ -7,13 +7,13 @@ import {
     renderTableRows,
     renderPagination,
     syncTabStyles,
-} from './template.js?v=4';
+} from './template.js?v=5';
 import {
     DEFAULT_PAGE_SIZE,
     bindPageSizeSelect,
 } from '../../../page-size.js?v=2';
 
-const API_BASE = '/api/yishiyiyi/steel-grade-category';
+const API_BASE = '/api/masterdata/steel-grade-category';
 const DRAWER_ANIMATION_MS = 300;
 
 const pageState = {
@@ -68,9 +68,7 @@ function buildFilterParams() {
     const params = {
         grade: pageState.grade.trim(),
     };
-    if (pageState.tab === 'uncategorized') {
-        params.uncategorized = true;
-    } else if (pageState.tab !== 'all') {
+    if (pageState.tab !== 'all') {
         params.category_name = pageState.tab;
     }
     return params;
@@ -139,7 +137,7 @@ function openCreateDrawer() {
     document.getElementById('sgcEditGrade').value = '';
     document.getElementById('sgcEditGrade').disabled = false;
     document.getElementById('sgcEditGradeHint')?.classList.add('hidden');
-    document.getElementById('sgcEditCategory').value = pageState.tab !== 'all' && pageState.tab !== 'uncategorized'
+    document.getElementById('sgcEditCategory').value = pageState.tab !== 'all'
         ? pageState.tab
         : '';
     document.getElementById('sgcEditRemark').value = '';

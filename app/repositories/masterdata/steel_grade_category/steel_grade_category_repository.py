@@ -1,9 +1,8 @@
 """牌号分类档案 Repository。"""
 
-from sqlalchemy import case
 from sqlalchemy.orm import Query, Session
 
-from app.models.yishiyiyi.steel_grade_category import SteelGradeCategory
+from app.models.masterdata.steel_grade_category import SteelGradeCategory
 from app.repositories.persist import apply_payload_fields, model_from_payload
 from app.schemas.dto.steel_grade_category_dto import (
     SteelGradeCategoryInsert,
@@ -31,20 +30,16 @@ class SteelGradeCategoryRepository:
         *,
         grade: str | None = None,
         category_name: str | None = None,
-        uncategorized: bool = False,
     ) -> Query[SteelGradeCategory]:
         query = db.query(SteelGradeCategory)
         if grade:
             query = query.filter(SteelGradeCategory.grade.like(f"%{grade}%"))
-        if uncategorized:
-            query = query.filter(SteelGradeCategory.category_name.is_(None))
-        elif category_name:
+        if category_name:
             query = query.filter(SteelGradeCategory.category_name == category_name)
         return query
 
     def _ordered(self, query: Query[SteelGradeCategory]) -> Query[SteelGradeCategory]:
         return query.order_by(
-            case((SteelGradeCategory.category_seq.is_(None), 1), else_=0),
             SteelGradeCategory.category_seq.asc(),
             SteelGradeCategory.grade.asc(),
         )
@@ -55,7 +50,6 @@ class SteelGradeCategoryRepository:
         *,
         grade: str | None = None,
         category_name: str | None = None,
-        uncategorized: bool = False,
         skip: int = 0,
         limit: int = 10,
     ) -> tuple[list[SteelGradeCategory], int]:
@@ -63,7 +57,6 @@ class SteelGradeCategoryRepository:
             db,
             grade=grade,
             category_name=category_name,
-            uncategorized=uncategorized,
         )
         total = query.count()
         records = self._ordered(query).offset(skip).limit(limit).all()
@@ -75,13 +68,11 @@ class SteelGradeCategoryRepository:
         *,
         grade: str | None = None,
         category_name: str | None = None,
-        uncategorized: bool = False,
     ) -> list[SteelGradeCategory]:
         query = self._build_list_query(
             db,
             grade=grade,
             category_name=category_name,
-            uncategorized=uncategorized,
         )
         return self._ordered(query).all()
 

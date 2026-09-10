@@ -11,10 +11,6 @@ CANONICAL_CATEGORIES: tuple[tuple[int, str], ...] = (
 CANONICAL_CATEGORY_NAMES: tuple[str, str, str] = ("冷轧", "镀锌", "酸洗")
 CATEGORY_SEQ_BY_NAME: dict[str, int] = {"冷轧": 1, "镀锌": 2, "酸洗": 3}
 
-SOURCE_BASE_PRICE = "base_price"
-SOURCE_STAMPING_UPLOAD = "stamping_upload"
-SOURCE_MANUAL = "manual"
-
 _ALIAS_TO_CANONICAL: dict[str, str] = {
     "冷轧": "冷轧",
     "冷轧钢": "冷轧",

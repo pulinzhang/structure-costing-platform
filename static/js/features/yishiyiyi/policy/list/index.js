@@ -27,7 +27,7 @@ const policyDownloadState = {
 
 // API 基础路径
 const API_BASE = '/api/yishiyiyi/policy';
-const GRADE_CATEGORY_API = '/api/yishiyiyi/steel-grade-category';
+const GRADE_CATEGORY_API = '/api/masterdata/steel-grade-category';
 
 /**
  * 页面初始化

@@ -123,6 +123,7 @@ class DatabaseConfig:
         cls._ensure_welding_fee_columns(engine)
         cls._ensure_vehicle_model_child_fks(engine)
         cls._ensure_supplier_child_fks(engine)
+        cls._ensure_steel_grade_category_child_fks(engine)
         cls._ensure_process_fee_part_fk(engine)
         cls._ensure_scrap_price_location_fk(engine)
         cls._remap_welding_fee_permissions(engine)
@@ -1091,6 +1092,91 @@ class DatabaseConfig:
                     f'WHERE "{column_name}" IS NOT NULL '
                     "EXCEPT "
                     "SELECT full_name FROM suppliers"
+                )
+            ).fetchall()
+            for (value,) in rows:
+                found.append((table_name, column_name, str(value)))
+        return found
+
+    @classmethod
+    def _ensure_steel_grade_category_child_fks(cls, engine: Engine) -> None:
+        """已有 SQLite 表补零件材质 / 子片材质 / 基价牌号 → steel_grade_categories.grade。"""
+        if not str(engine.url).startswith("sqlite"):
+            return
+        from sqlalchemy import inspect
+
+        inspector = inspect(engine)
+        table_names = set(inspector.get_table_names())
+        if "steel_grade_categories" not in table_names:
+            return
+        from app.models.stamping.part import StampingPart
+        from app.models.stamping.tailor_weld_blank import StampingTailorWeldBlank
+        from app.models.yishiyiyi.steel_base_price import SteelBasePrice
+
+        pending: list[tuple[str, str]] = []
+        for table_name, column_name in (
+            (StampingPart.__tablename__, "material"),
+            (StampingTailorWeldBlank.__tablename__, "material"),
+            (SteelBasePrice.__tablename__, "grade"),
+        ):
+            if table_name not in table_names:
+                continue
+            pending.append((table_name, column_name))
+        if not pending:
+            return
+
+        with engine.connect() as conn:
+            autocommit = conn.execution_options(isolation_level="AUTOCOMMIT")
+            missing = [
+                (table_name, column_name)
+                for table_name, column_name in pending
+                if not cls._sqlite_has_steel_grade_fk(autocommit, table_name, column_name)
+            ]
+            if not missing:
+                return
+            orphans = cls._sqlite_steel_grade_orphans(autocommit, missing)
+            if orphans:
+                detail = "；".join(f"{table}.{column}={value}" for table, column, value in orphans)
+                raise RuntimeError(
+                    "无法给牌号分类下一跳加外键：下列非空牌号不在 steel_grade_categories.grade 中。"
+                    "先到主数据牌号分类补档，禁止批量改写业务列。"
+                    f" {detail}"
+                )
+            autocommit.exec_driver_sql("PRAGMA foreign_keys=OFF")
+            try:
+                for table_name, _column_name in missing:
+                    cls._sqlite_rebuild_table(autocommit, table_name, tmp_suffix="__grade_fk")
+                    logger.info("已为 %s 补牌号分类外键", table_name)
+            finally:
+                autocommit.exec_driver_sql("PRAGMA foreign_keys=ON")
+
+    @staticmethod
+    def _sqlite_has_steel_grade_fk(conn: Connection, table_name: str, column_name: str) -> bool:
+        from sqlalchemy import text
+
+        rows = conn.execute(text(f'PRAGMA foreign_key_list("{table_name}")')).fetchall()
+        for row in rows:
+            if str(row[2]) != "steel_grade_categories":
+                continue
+            if str(row[3]) == column_name and str(row[4]) == "grade":
+                return True
+        return False
+
+    @staticmethod
+    def _sqlite_steel_grade_orphans(
+        conn: Connection,
+        tables: list[tuple[str, str]],
+    ) -> list[tuple[str, str, str]]:
+        from sqlalchemy import text
+
+        found: list[tuple[str, str, str]] = []
+        for table_name, column_name in tables:
+            rows = conn.execute(
+                text(
+                    f'SELECT DISTINCT "{column_name}" FROM "{table_name}" '
+                    f'WHERE "{column_name}" IS NOT NULL AND TRIM("{column_name}") != "" '
+                    "EXCEPT "
+                    "SELECT grade FROM steel_grade_categories"
                 )
             ).fetchall()
             for (value,) in rows:
