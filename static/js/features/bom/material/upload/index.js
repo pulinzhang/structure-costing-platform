@@ -154,11 +154,11 @@ const BomUploadPage = {
         if (!file || this.isUploading) return;
         const lower = file.name.toLowerCase();
         if (!lower.endsWith('.xlsx') && !lower.endsWith('.xls')) {
-            this.showError('仅支持 .xlsx / .xls 文件');
+            showToast('仅支持 .xlsx / .xls 文件', 'warning');
             return;
         }
         if (file.size > MAX_FILE_SIZE) {
-            this.showError('文件过大，最大支持 50MB');
+            showToast('文件过大，最大支持 50MB', 'warning');
             return;
         }
 
@@ -208,7 +208,7 @@ const BomUploadPage = {
 
     reset() {
         if (this.isUploading) {
-            this.showError('导入进行中，请稍候再重置');
+            showToast('导入进行中，请稍候再重置', 'warning');
             return;
         }
         this.hideProgress();
@@ -306,6 +306,7 @@ const BomUploadPage = {
         try {
             const { blob, filename } = await HttpClient.download('/api/bom/template', {
                 defaultFilename: '材料清单导入模板.xlsx',
+                skipToast: true,
             });
             const url = window.URL.createObjectURL(blob);
             const anchor = document.createElement('a');
@@ -315,17 +316,14 @@ const BomUploadPage = {
             anchor.click();
             document.body.removeChild(anchor);
             window.URL.revokeObjectURL(url);
-            showToast('模板已下载', 'success');
         } catch (error) {
-            if (!error.status) {
-                showToast(error.message || '模板下载失败', 'error');
-            }
+            this.showError(error.message || '模板下载失败');
         }
     },
 
     async submit() {
         if (this.canUpload === false) {
-            this.showError('无上传权限');
+            showToast('无上传权限', 'warning');
             return;
         }
         if (this.isUploading) return;
@@ -333,15 +331,15 @@ const BomUploadPage = {
         const location = document.getElementById('bomUploadLocation')?.value?.trim();
         const vehicleModel = document.getElementById('bomUploadVehicleModel')?.value?.trim();
         if (!location) {
-            this.showError('请选择采购基地');
+            showToast('请选择采购基地', 'warning');
             return;
         }
         if (!vehicleModel) {
-            this.showError('请选择项目');
+            showToast('请选择项目', 'warning');
             return;
         }
         if (!this.selectedFile) {
-            this.showError('请选择 Excel 文件');
+            showToast('请选择 Excel 文件', 'warning');
             return;
         }
 

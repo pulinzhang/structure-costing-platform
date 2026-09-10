@@ -3,7 +3,7 @@
  * 基准价格上传 — 异步 task_id + 进度轮询
  */
 
-import { basePriceUploadTemplate } from './template.js?v=37';
+import { basePriceUploadTemplate } from './template.js?v=38';
 
 const POLL_INTERVAL_MS = 2000;
 
@@ -111,6 +111,13 @@ const BasePriceUploadPage = {
         }
     },
 
+    failOnPanel(message) {
+        const text = String(message || '操作失败').trim() || '操作失败';
+        this.showProgress(0, text);
+        this.updateProgress(0, text, 'failed');
+        document.getElementById('basePriceUploadZone')?.classList.remove('pointer-events-none');
+    },
+
     selectFile(file) {
         if (!file || this.isUploading) return;
         if (!file.name.toLowerCase().endsWith('.xlsx') && !file.name.toLowerCase().endsWith('.xls')) {
@@ -205,11 +212,17 @@ const BasePriceUploadPage = {
         if (bar) bar.style.width = `${pct}%`;
         if (percentEl) percentEl.textContent = `${pct}%`;
         if (msgEl) msgEl.textContent = msg || '';
+        const actionEl = document.getElementById('basePriceGradeAction');
+        const isMissingGrade = status === 'failed' && (msg || '').includes('牌号分类');
+        if (actionEl) actionEl.classList.toggle('hidden', !isMissingGrade);
 
         if (titleEl) {
             if (status === 'completed') {
                 titleEl.textContent = '解析成功';
                 titleEl.className = 'text-xs font-medium text-[#4caf50] truncate mb-0';
+            } else if (isMissingGrade) {
+                titleEl.textContent = '未导入';
+                titleEl.className = 'text-xs font-medium text-[#ef5350] truncate mb-0';
             } else if (status === 'failed') {
                 titleEl.textContent = '解析失败';
                 titleEl.className = 'text-xs font-medium text-[#ef5350] truncate mb-0';
@@ -255,6 +268,7 @@ const BasePriceUploadPage = {
         try {
             const { blob, filename } = await HttpClient.download('/api/yishiyiyi/base-price/template', {
                 defaultFilename: '基准价格导入模板.xlsx',
+                skipToast: true,
             });
             const url = window.URL.createObjectURL(blob);
             const anchor = document.createElement('a');
@@ -264,11 +278,8 @@ const BasePriceUploadPage = {
             anchor.click();
             document.body.removeChild(anchor);
             window.URL.revokeObjectURL(url);
-            showToast('模板已下载', 'success');
         } catch (error) {
-            if (!error.status) {
-                showToast(error.message || '模板下载失败', 'error');
-            }
+            this.failOnPanel(error.message || '模板下载失败');
         }
     },
 
@@ -282,7 +293,8 @@ const BasePriceUploadPage = {
 
     async fetchTaskProgress(taskId) {
         const response = await HttpClient.get(
-            `/api/yishiyiyi/base-price/tasks/${encodeURIComponent(taskId)}`
+            `/api/yishiyiyi/base-price/tasks/${encodeURIComponent(taskId)}`,
+            { skipToast: true },
         );
         return response.data;
     },
@@ -308,10 +320,9 @@ const BasePriceUploadPage = {
                     const created = result.created_count || 0;
                     const updated = result.updated_count || 0;
                     const total = result.total || 0;
-                    showToast(
-                        `导入完成：新增 ${created} 条，更新 ${updated} 条，共 ${total} 条`,
-                        'success'
-                    );
+                    const doneMsg = `导入完成：新增 ${created} 条，更新 ${updated} 条，共 ${total} 条`;
+                    this.updateProgress(100, doneMsg, 'completed');
+                    showToast(doneMsg, 'success');
                     this.activeTaskId = null;
                     this.setUploading(false);
                     this.clearSelectedFile();
@@ -323,14 +334,14 @@ const BasePriceUploadPage = {
 
                 if (status === 'failed') {
                     this.stopPolling();
-                    showToast(msg || '导入失败', 'error');
                     this.activeTaskId = null;
                     this.setUploading(false);
+                    document.getElementById('basePriceUploadZone')?.classList.remove('pointer-events-none');
                     return;
                 }
             } catch (error) {
                 this.stopPolling();
-                showToast(error.message || '查询进度失败', 'error');
+                this.failOnPanel(error.message || '查询进度失败');
                 this.activeTaskId = null;
                 this.setUploading(false);
             } finally {
@@ -381,9 +392,7 @@ const BasePriceUploadPage = {
 
         try {
             const url = `/api/yishiyiyi/base-price/import?year=${year}&month=${month}`;
-            const response = await HttpClient.post(url, formData, {
-                timeout: 60000,
-            });
+            const response = await HttpClient.post(url, formData, { skipToast: true, timeout: 60000 });
             const taskId = response.data?.task_id;
             if (!taskId) {
                 throw new Error('未返回任务 ID');
@@ -391,7 +400,7 @@ const BasePriceUploadPage = {
             this.startPolling(taskId);
         } catch (error) {
             this.stopPolling();
-            this.hideProgress();
+            this.failOnPanel(error.message || '提交失败');
             this.activeTaskId = null;
             this.setUploading(false);
         }

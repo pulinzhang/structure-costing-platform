@@ -92,7 +92,7 @@ export function gaugeFeeUploadTemplate() {
                                                 <div class="h-full bg-[#d32f2f] shadow-[0_0_8px_rgba(211,47,47,0.5)] transition-all duration-300 animate-pulse"
                                                      style="width: 60%"></div>
                                             </div>
-                                            <p id="gfuProgressMsg" class="text-[11px] text-[#9e9e9e] leading-relaxed mb-0">解析并写入数据库，请稍候</p>
+                                            <p id="gfuProgressMsg" class="text-[11px] text-[#9e9e9e] leading-relaxed mb-0 whitespace-pre-wrap break-words max-h-48 overflow-y-auto">解析并写入数据库，请稍候</p>
                                         </div>
                                     </div>
                                     <div id="gfuFilePreview" class="hidden mb-4"></div>

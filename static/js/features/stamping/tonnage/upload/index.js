@@ -3,7 +3,7 @@
  * 同步导入：基地 + 年度必选，仅 .xlsx
  */
 
-import { tonnageUploadTemplate } from './template.js?v=4';
+import { tonnageUploadTemplate } from './template.js?v=5';
 import { can } from '../../../../permissions.js?v=8';
 
 const API_BASE = '/api/stamping/tonnage-price';
@@ -202,6 +202,12 @@ const TonnageUploadPage = {
         if (progressMsg) progressMsg.textContent = msg;
     },
 
+    failOnPanel(message) {
+        const text = String(message || '操作失败').trim() || '操作失败';
+        this.showProgress(text);
+        document.getElementById('tonnageUploadZone')?.classList.remove('pointer-events-none');
+    },
+
     hideProgress() {
         const idle = document.getElementById('tonnageUploadDropIdle');
         const panel = document.getElementById('tonnageUploadProgressPanel');
@@ -229,6 +235,7 @@ const TonnageUploadPage = {
         try {
             const { blob, filename } = await HttpClient.download(`${API_BASE}/template`, {
                 defaultFilename: '冲次单价导入模板.xlsx',
+                skipToast: true,
             });
             const url = window.URL.createObjectURL(blob);
             const anchor = document.createElement('a');
@@ -238,11 +245,8 @@ const TonnageUploadPage = {
             anchor.click();
             document.body.removeChild(anchor);
             window.URL.revokeObjectURL(url);
-            showToast('模板已下载', 'success');
         } catch (error) {
-            if (!error.status) {
-                showToast(error.message || '模板下载失败', 'error');
-            }
+            this.failOnPanel(error.message || '模板下载失败');
         }
     },
 
@@ -278,7 +282,7 @@ const TonnageUploadPage = {
         this.showProgress();
 
         try {
-            const res = await HttpClient.post(`${API_BASE}/upload`, formData);
+            const res = await HttpClient.post(`${API_BASE}/upload`, formData, { skipToast: true });
             const data = res.data || {};
             const msg = res.message
                 || data.message
@@ -287,8 +291,7 @@ const TonnageUploadPage = {
             this.hideProgress();
             this.clearSelectedFile(true);
         } catch (err) {
-            this.hideProgress();
-            showToast(err.message || '导入失败', 'error');
+            this.failOnPanel(err.message || '导入失败');
         } finally {
             this.setUploading(false);
         }

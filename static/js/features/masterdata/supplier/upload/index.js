@@ -2,7 +2,7 @@
  * 供应商上传页 — 同步导入
  */
 
-import { supplierUploadTemplate } from './template.js?v=2';
+import { supplierUploadTemplate } from './template.js?v=3';
 
 const API_BASE = '/api/masterdata/suppliers';
 const MAX_FILE_SIZE = 5 * 1024 * 1024;
@@ -152,6 +152,12 @@ const SupplierUploadPage = {
         if (progressMsg) progressMsg.textContent = msg;
     },
 
+    failOnPanel(message) {
+        const text = String(message || '操作失败').trim() || '操作失败';
+        this.showProgress(text);
+        document.getElementById('supplierUploadZone')?.classList.remove('pointer-events-none');
+    },
+
     hideProgress() {
         document.getElementById('supplierUploadDropIdle')?.classList.remove('hidden');
         document.getElementById('supplierUploadProgressPanel')?.classList.add('hidden');
@@ -172,6 +178,7 @@ const SupplierUploadPage = {
         try {
             const { blob, filename } = await HttpClient.download(`${API_BASE}/template`, {
                 defaultFilename: '供应商导入模板.xlsx',
+                skipToast: true,
             });
             const url = window.URL.createObjectURL(blob);
             const anchor = document.createElement('a');
@@ -181,11 +188,8 @@ const SupplierUploadPage = {
             anchor.click();
             document.body.removeChild(anchor);
             window.URL.revokeObjectURL(url);
-            showToast('模板已下载', 'success');
         } catch (error) {
-            if (!error.status) {
-                showToast(error.message || '模板下载失败', 'error');
-            }
+            this.failOnPanel(error.message || '模板下载失败');
         }
     },
 
@@ -204,7 +208,7 @@ const SupplierUploadPage = {
         this.setUploading(true);
         this.showProgress();
         try {
-            const res = await HttpClient.post(`${API_BASE}/upload`, formData);
+            const res = await HttpClient.post(`${API_BASE}/upload`, formData, { skipToast: true });
             const data = res.data || {};
             const msg = res.message
                 || `导入成功：新增 ${data.created_count ?? 0}，跳过 ${data.skipped_count ?? 0}`;
@@ -212,10 +216,7 @@ const SupplierUploadPage = {
             this.hideProgress();
             this.clearSelectedFile(true);
         } catch (err) {
-            this.hideProgress();
-            if (!err.status) {
-                showToast(err.message || '导入失败', 'error');
-            }
+            this.failOnPanel(err.message || '导入失败');
         } finally {
             this.setUploading(false);
         }

@@ -67,12 +67,14 @@ async def lifespan(app: FastAPI):
     DatabaseConfig.create_tables()
     AuxiliaryDatabaseConfig.create_tables()
 
+    from app.services.masterdata.steel_grade_category import SteelGradeCategoryService
     from app.services.settings.users.user_service import UserService
 
     session_factory = DatabaseConfig.get_session_factory()
     db = session_factory()
     try:
         UserService().ensure_default_admin(db)
+        SteelGradeCategoryService().ensure_seed_if_empty(db)
     finally:
         db.close()
 

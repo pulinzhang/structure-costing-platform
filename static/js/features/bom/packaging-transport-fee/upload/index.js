@@ -3,7 +3,7 @@
  * 同步导入：基地 + 年度 + 项目必选；基地/项目取自材料清单（BOM）
  */
 
-import { pkgTransportFeeUploadTemplate } from './template.js?v=5';
+import { pkgTransportFeeUploadTemplate } from './template.js?v=7';
 
 const API_BASE = '/api/bom/packaging-transport-fee';
 const CASCADE_API = '/api/bom/filters/cascade';
@@ -378,6 +378,14 @@ const PkgTransportFeeUploadPage = {
         if (progressMsg) progressMsg.textContent = msg;
     },
 
+    failOnPanel(message) {
+        const text = String(message || '操作失败').trim() || '操作失败';
+        this.showProgress(text);
+        if (this.hasBomOptions && this.canUpload) {
+            document.getElementById('pkgTransportFeeUploadZone')?.classList.remove('pointer-events-none');
+        }
+    },
+
     hideProgress() {
         document.getElementById('pkgTransportFeeUploadDropIdle')?.classList.remove('hidden');
         document.getElementById('pkgTransportFeeUploadProgressPanel')?.classList.add('hidden');
@@ -403,6 +411,7 @@ const PkgTransportFeeUploadPage = {
         try {
             const { blob, filename } = await HttpClient.download(`${API_BASE}/template`, {
                 defaultFilename: '包装运输费导入模板.xlsx',
+                skipToast: true,
             });
             const url = window.URL.createObjectURL(blob);
             const anchor = document.createElement('a');
@@ -412,9 +421,8 @@ const PkgTransportFeeUploadPage = {
             anchor.click();
             document.body.removeChild(anchor);
             window.URL.revokeObjectURL(url);
-            showToast('模板已下载', 'success');
         } catch (error) {
-            if (!error.status) showToast(error.message || '模板下载失败', 'error');
+            this.failOnPanel(error.message || '模板下载失败');
         }
     },
 
@@ -467,7 +475,7 @@ const PkgTransportFeeUploadPage = {
         this.setUploading(true);
         this.showProgress();
         try {
-            const res = await HttpClient.post(`${API_BASE}/upload`, formData);
+            const res = await HttpClient.post(`${API_BASE}/upload`, formData, { skipToast: true });
             const data = res.data || {};
             const summary = `新增 ${data.created_count ?? 0}，更新 ${data.updated_count ?? 0}`
                 + (data.skipped_approved_count ? `，跳过已审 ${data.skipped_approved_count}` : '');
@@ -485,8 +493,7 @@ const PkgTransportFeeUploadPage = {
             this.hideProgress();
             this.clearSelectedFile(true);
         } catch (err) {
-            this.hideProgress();
-            showToast(err.message || '导入失败', 'error');
+            this.failOnPanel(err.message || '导入失败');
         } finally {
             this.setUploading(false);
         }

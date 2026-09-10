@@ -7,7 +7,7 @@ import logging
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
 
-from app.common.audit import audit_create, display_name
+from app.common.audit import SYSTEM_USER, audit_create, display_name
 from app.common.steel_grade_category import (
     CANONICAL_CATEGORIES,
     CANONICAL_CATEGORY_NAMES,
@@ -28,6 +28,7 @@ from app.schemas.vo.steel_grade_category_vo import (
     SteelGradeCategoryVO,
 )
 from app.schemas.vo.user_vo import UserVO
+from app.services.masterdata.steel_grade_category.seed import SEED_STEEL_GRADE_CATEGORIES
 
 logger = logging.getLogger("service.steel_grade_category")
 
@@ -37,6 +38,36 @@ class SteelGradeCategoryService:
 
     def __init__(self) -> None:
         self.repository = SteelGradeCategoryRepository()
+
+    def ensure_seed_if_empty(self, db: Session) -> None:
+        """空库首次启动写入现网牌号分类；已有行则不覆盖。"""
+        if self.repository.count(db) > 0:
+            return
+        audit = audit_create(SYSTEM_USER)
+        try:
+            for grade, category_name in SEED_STEEL_GRADE_CATEGORIES:
+                name = self._require_canonical(category_name)
+                self.repository.create(
+                    db,
+                    SteelGradeCategoryInsert(
+                        grade=grade,
+                        category_name=name,
+                        category_seq=self._seq_for_canonical(name),
+                        remark=None,
+                        created_by=audit["created_by"],
+                        updated_by=audit["updated_by"],
+                    ),
+                )
+            db.commit()
+            logger.info("已初始化牌号分类档案: %s 条", len(SEED_STEEL_GRADE_CATEGORIES))
+        except IntegrityError:
+            db.rollback()
+            logger.exception("初始化牌号分类失败：唯一键冲突")
+            raise
+        except Exception:
+            db.rollback()
+            logger.exception("初始化牌号分类失败")
+            raise
 
     def list_canonical_categories(self) -> list[SteelGradeCategoryOptionVO]:
         return [
@@ -100,8 +131,11 @@ class SteelGradeCategoryService:
         if not missing:
             return
         sample = "、".join(missing[:10])
-        extra = f" 等 {len(missing)} 个" if len(missing) > 10 else ""
-        raise BusinessException(f"牌号未在分类档案中，请先到主数据补档：{sample}{extra}")
+        extra = f"\n共 {len(missing)} 个牌号未在档案中。" if len(missing) > 10 else ""
+        raise BusinessException(
+            "本次未导入。请到侧栏「主数据 → 牌号分类」点新增，"
+            f"把下面牌号补上并保存，再重新上传：\n{sample}{extra}"
+        )
 
     def create(
         self,

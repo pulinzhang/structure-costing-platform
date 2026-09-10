@@ -70,7 +70,7 @@
 | 零件表 | `stamping_parts.material`、`stamping_tailor_weld_blanks.material` → `steel_grade_categories.grade`，`ON DELETE/UPDATE RESTRICT`；空材质不引用 |
 | 基价表 | `steel_base_prices.grade` → 同一档案列，`RESTRICT`；行上仍保留 `category_name` |
 | 读法 | 一事一议、核算都走本切片稳定查询（如 `get_by_grade` / `map_grades`）。**禁止**各切片直接 `query` 这张表绕过 Service（核算热路径可只读本切片 Repository） |
-| 写 | **仅本切片 CRUD**。禁止下游插档。工艺/基价导入前 `require_existing_grades`：缺档整批拒绝，文案指向主数据补档 |
+| 写 | **仅本切片 CRUD**。禁止下游插档。工艺/基价导入前 `require_existing_grades`：缺档整批拒绝，进度区写明到「主数据 → 牌号分类」补档，不弹 Toast |
 
 依赖（允许、单向、禁止成环）：
 
@@ -166,11 +166,13 @@ CANONICAL_CATEGORIES: tuple[tuple[int, str], ...] = (
 | 新增 | `grade` + `category_name` 都必填；牌号冲突 → `BusinessException` 409 |
 | 编辑 | 可改大类、备注；**不改 `grade`**（`ON UPDATE RESTRICT`） |
 | 删除 | 仍被工艺 `material` 或基价 `grade` 引用 → `仍被引用，不能删除` |
+| 空库种子 | 无库 / 表为空时，启动写入现网牌号（`ensure_seed_if_empty`）。已有任意行则跳过。不灌 `DC01 HC180YD+Z`、不灌 `POLICY_TEST_*` |
 
 禁止：
 
 - 基价导入 / 工艺导入往本表插行  
 - 下游 Service 写本表  
+- 有数据后再按种子覆盖大类
 
 缺档：工艺/基价导入 `require_existing_grades` 整批失败。空材质（拼焊总成）不校验。
 
@@ -197,6 +199,7 @@ CANONICAL_CATEGORIES: tuple[tuple[int, str], ...] = (
 | 新增 / 编辑 | 抽屉；大类三选一；序号不手填 |
 | 删除 | 操作列按钮 |
 | 导出 Excel | 当前筛选 |
+| 空库种子 | 第一次启动、档案为空时写入现网牌号分类 |
 | 权限 | `menu:steel-grade-category` + `op:…:view/create/update/delete/export` |
 
 侧栏：主数据内，供应商之后。菜单文案写 **牌号分类**。

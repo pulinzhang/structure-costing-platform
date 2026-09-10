@@ -91,7 +91,7 @@ export function policyUploadTemplate() {
                                          class="h-full bg-[#d32f2f] shadow-[0_0_8px_rgba(211,47,47,0.5)] transition-all duration-300"
                                          style="width: 0%"></div>
                                 </div>
-                                <p id="policyProgressMsg" class="text-[11px] text-[#9e9e9e] leading-relaxed mb-0">已提交解析队列</p>
+                                <p id="policyProgressMsg" class="text-[11px] text-[#9e9e9e] leading-relaxed mb-0 whitespace-pre-wrap break-words max-h-48 overflow-y-auto">已提交解析队列</p>
                             </div>
                         </div>
 

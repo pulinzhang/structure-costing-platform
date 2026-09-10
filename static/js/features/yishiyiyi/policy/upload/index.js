@@ -1,4 +1,4 @@
-import { policyUploadTemplate } from './template.js?v=1';
+import { policyUploadTemplate } from './template.js?v=2';
 
 const MAX_RECENT_UPLOADS = 8;
 const POLL_INTERVAL_MS = 2000;
@@ -110,6 +110,13 @@ const PolicyUploadPage = {
         });
 
         window.resetPolicyUploadForm = () => this.reset();
+    },
+
+    failOnPanel(message) {
+        const text = String(message || '操作失败').trim() || '操作失败';
+        this.showProgress(0, text);
+        this.updateProgress(0, text, 'failed');
+        document.getElementById('policyUploadZone')?.classList.remove('pointer-events-none');
     },
 
     selectFile(file) {
@@ -307,6 +314,7 @@ const PolicyUploadPage = {
         try {
             const { blob, filename } = await HttpClient.download('/api/yishiyiyi/policy/template', {
                 defaultFilename: '加减价政策导入模板.xlsx',
+                skipToast: true,
             });
             const url = window.URL.createObjectURL(blob);
             const anchor = document.createElement('a');
@@ -316,11 +324,8 @@ const PolicyUploadPage = {
             anchor.click();
             document.body.removeChild(anchor);
             window.URL.revokeObjectURL(url);
-            showToast('模板已下载', 'success');
         } catch (error) {
-            if (!error.status) {
-                showToast(error.message || '模板下载失败', 'error');
-            }
+            this.failOnPanel(error.message || '模板下载失败');
         }
     },
 
@@ -341,7 +346,8 @@ const PolicyUploadPage = {
 
     async fetchTaskProgress(taskId) {
         const response = await HttpClient.get(
-            `/api/yishiyiyi/policy/tasks/${encodeURIComponent(taskId)}`
+            `/api/yishiyiyi/policy/tasks/${encodeURIComponent(taskId)}`,
+            { skipToast: true },
         );
         return response.data;
     },
@@ -372,10 +378,9 @@ const PolicyUploadPage = {
                     const skipped = result.skipped_count || 0;
                     const total = result.total || 0;
                     const summary = `新增 ${created} / 更新 ${updated} / 跳过 ${skipped} / 共 ${total}`;
-                    showToast(
-                        `导入完成：新增 ${created} 条，更新 ${updated} 条，跳过 ${skipped} 条，共 ${total} 条`,
-                        'success'
-                    );
+                    const doneMsg = `导入完成：新增 ${created} 条，更新 ${updated} 条，跳过 ${skipped} 条，共 ${total} 条`;
+                    this.updateProgress(100, doneMsg, 'completed');
+                    showToast(doneMsg, 'success');
                     this.addRecentUpload(fileName, year, month, summary);
                     this.clearActiveTask();
                     this.setUploading(false);
@@ -388,7 +393,6 @@ const PolicyUploadPage = {
 
                 if (status === 'failed') {
                     this.stopPolling();
-                    showToast(msg || '导入失败', 'error');
                     this.clearActiveTask();
                     this.setUploading(false);
                     const button = document.getElementById('policySubmitButton');
@@ -397,7 +401,7 @@ const PolicyUploadPage = {
                 }
             } catch (error) {
                 this.stopPolling();
-                showToast(error.message || '查询进度失败', 'error');
+                this.failOnPanel(error.message || '查询进度失败');
                 this.clearActiveTask();
                 this.setUploading(false);
                 const button = document.getElementById('policySubmitButton');
@@ -443,9 +447,7 @@ const PolicyUploadPage = {
         this.showProgress(0, '已提交解析队列');
 
         try {
-            const response = await HttpClient.post('/api/yishiyiyi/policy/upload', formData, {
-                timeout: 60000,
-            });
+            const response = await HttpClient.post('/api/yishiyiyi/policy/upload', formData, { skipToast: true, timeout: 60000 });
             const taskId = response.data?.task_id;
             if (!taskId) {
                 throw new Error('未返回任务 ID');
@@ -453,7 +455,7 @@ const PolicyUploadPage = {
             this.startPolling(taskId, fileName, year, month);
         } catch (error) {
             this.stopPolling();
-            this.hideProgress();
+            this.failOnPanel(error.message || '提交失败');
             this.clearActiveTask();
             this.setUploading(false);
             const button = document.getElementById('policySubmitButton');

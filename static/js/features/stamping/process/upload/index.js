@@ -3,7 +3,7 @@
  * 冲压工艺上传 — 异步 task_id + 进度轮询
  */
 
-import { uploadTemplate } from './template.js?v=16';
+import { uploadTemplate } from './template.js?v=17';
 import {
     setDropzoneDragActive,
     setDropzoneFileSelected,
@@ -132,6 +132,13 @@ export const UploadPage = {
             e.preventDefault();
             this.handleSubmit();
         });
+    },
+
+    failOnPanel(message) {
+        const text = String(message || '操作失败').trim() || '操作失败';
+        this.showProgress(0, text);
+        this.updateProgress(0, text, 'failed');
+        document.getElementById('uploadZone')?.classList.remove('pointer-events-none');
     },
 
     handleFiles(files) {
@@ -285,11 +292,17 @@ export const UploadPage = {
         if (bar) bar.style.width = `${pct}%`;
         if (percentEl) percentEl.textContent = `${pct}%`;
         if (msgEl) msgEl.textContent = msg || '';
+        const actionEl = document.getElementById('stampingGradeAction');
+        const isMissingGrade = status === 'failed' && (msg || '').includes('牌号分类');
+        if (actionEl) actionEl.classList.toggle('hidden', !isMissingGrade);
 
         if (titleEl) {
             if (status === 'completed') {
                 titleEl.textContent = '解析成功';
                 titleEl.className = 'text-xs font-medium text-[#4caf50] truncate mb-0';
+            } else if (isMissingGrade) {
+                titleEl.textContent = '未导入';
+                titleEl.className = 'text-xs font-medium text-[#ef5350] truncate mb-0';
             } else if (status === 'failed') {
                 titleEl.textContent = '解析失败';
                 titleEl.className = 'text-xs font-medium text-[#ef5350] truncate mb-0';
@@ -338,6 +351,7 @@ export const UploadPage = {
         try {
             const { blob, filename } = await HttpClient.download('/api/stamping/upload/template', {
                 defaultFilename: '冲压工艺导入模板.xlsx',
+                skipToast: true,
             });
             const url = window.URL.createObjectURL(blob);
             const anchor = document.createElement('a');
@@ -347,11 +361,8 @@ export const UploadPage = {
             anchor.click();
             document.body.removeChild(anchor);
             window.URL.revokeObjectURL(url);
-            showToast('模板已下载', 'success');
         } catch (error) {
-            if (!error.status) {
-                showToast(error.message || '模板下载失败', 'error');
-            }
+            this.failOnPanel(error.message || '模板下载失败');
         }
     },
 
@@ -370,7 +381,8 @@ export const UploadPage = {
 
     async fetchTaskProgress(taskId) {
         const response = await HttpClient.get(
-            `/api/stamping/upload/tasks/${encodeURIComponent(taskId)}`
+            `/api/stamping/upload/tasks/${encodeURIComponent(taskId)}`,
+            { skipToast: true },
         );
         return response.data;
     },
@@ -413,8 +425,6 @@ export const UploadPage = {
 
                 if (status === 'failed') {
                     this.stopPolling();
-                    const fullMsg = msg || '上传失败';
-                    showToast(fullMsg.split('\n')[0] || fullMsg, 'error');
                     this.clearActiveTask();
                     this.setUploading(false);
                     document.getElementById('uploadZone')?.classList.remove('pointer-events-none');
@@ -422,7 +432,7 @@ export const UploadPage = {
                 }
             } catch (error) {
                 this.stopPolling();
-                showToast(error.message || '查询进度失败', 'error');
+                this.failOnPanel(error.message || '查询进度失败');
                 this.clearActiveTask();
                 this.setUploading(false);
             } finally {
@@ -457,9 +467,7 @@ export const UploadPage = {
         this.showProgress(0, '已提交解析队列');
 
         try {
-            const response = await HttpClient.post('/api/stamping/upload/', formData, {
-                timeout: 60000,
-            });
+            const response = await HttpClient.post('/api/stamping/upload/', formData, { skipToast: true, timeout: 60000 });
             const taskId = response.data?.task_id;
             if (!taskId) {
                 throw new Error('未返回任务 ID');
@@ -467,7 +475,7 @@ export const UploadPage = {
             this.startPolling(taskId, fileName);
         } catch (error) {
             this.stopPolling();
-            this.hideProgress();
+            this.failOnPanel(error.message || '提交失败');
             this.clearActiveTask();
             this.setUploading(false);
         }

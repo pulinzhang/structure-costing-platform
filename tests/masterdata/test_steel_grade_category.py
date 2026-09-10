@@ -25,6 +25,7 @@ from app.schemas.dto.steel_grade_category_dto import (
     SteelGradeCategoryUpdate,
 )
 from app.services.masterdata.steel_grade_category import SteelGradeCategoryService
+from app.services.masterdata.steel_grade_category.seed import SEED_STEEL_GRADE_CATEGORIES
 
 
 @pytest.fixture
@@ -56,6 +57,25 @@ def memory_db() -> Generator[Session, None, None]:
 
 def _service() -> SteelGradeCategoryService:
     return SteelGradeCategoryService()
+
+
+def test_ensure_seed_if_empty_writes_production_catalog(memory_db: Session) -> None:
+    service = _service()
+    service.ensure_seed_if_empty(memory_db)
+    items, total = service.paginate(memory_db, SteelGradeCategoryQuery(page=1, size=100))
+    assert total == len(SEED_STEEL_GRADE_CATEGORIES)
+    grades = {row.grade for row in items}
+    assert "DC01 HC180YD+Z" not in grades
+    assert not any(grade.startswith("POLICY_TEST_") for grade in grades)
+    assert {"DC01", "DC51D+Z", "QStE420TM", "DCO3"} <= grades
+    by_grade = {row.grade: row.category_name for row in items}
+    assert by_grade["DC01"] == "冷轧"
+    assert by_grade["DC51D+Z"] == "镀锌"
+    assert by_grade["QStE420TM"] == "酸洗"
+
+    service.ensure_seed_if_empty(memory_db)
+    _, again = service.paginate(memory_db, SteelGradeCategoryQuery(page=1, size=100))
+    assert again == total
 
 
 def test_normalize_category_aliases() -> None:
@@ -156,7 +176,7 @@ def test_require_existing_grades_rejects_missing(memory_db: Session) -> None:
         current_user=SYSTEM_USER,
     )
     service.require_existing_grades(memory_db, ["DC01", ""])
-    with pytest.raises(BusinessException, match="请先到主数据补档") as missing:
+    with pytest.raises(BusinessException, match="主数据 → 牌号分类") as missing:
         service.require_existing_grades(memory_db, ["DC01", "HC340/590DP"])
     assert "HC340/590DP" in str(missing.value)
 
