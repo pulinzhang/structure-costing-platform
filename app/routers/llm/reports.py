@@ -4,9 +4,10 @@ LLM 分析报告 API（仅后端）。
 
 from __future__ import annotations
 
-from fastapi import APIRouter, Depends, Query
+from fastapi import APIRouter, Depends, Query, Request
 from sqlalchemy.orm import Session
 
+from app.common.operation_log.context import set_request_audit_scope
 from app.common.permissions.codes import Perm
 from app.database import get_db
 from app.deps.permissions import require_perm
@@ -36,9 +37,11 @@ _service = LlmAnalysisReportService()
 )
 def create_report(
     dto: LlmAnalysisReportCreateDTO,
+    request: Request,
     db: Session = Depends(get_db),
     current_user: UserVO = Depends(require_perm(Perm.LLM_ANALYSIS_RUN)),
 ) -> ApiResponse[LlmAnalysisReportTaskVO]:
+    set_request_audit_scope(request, {"question": dto.user_question})
     task = _service.create_report(db, dto, current_user=current_user)
     return ApiResponse.ok(data=task, message="已提交分析任务")
 

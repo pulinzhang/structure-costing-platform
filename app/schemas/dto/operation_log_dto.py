@@ -20,7 +20,11 @@ class OperationLogCreate:
     username: str | None = None
     operator_name: str | None = None
     module: str | None = None
+    permission_code: str | None = None
     client_ip: str | None = None
+    ip_country: str | None = None
+    ip_province: str | None = None
+    ip_city: str | None = None
     detail: str | None = None
 
 
@@ -28,6 +32,8 @@ class OperationLogQuery(BaseModel):
     """操作日志分页查询。"""
 
     username: str | None = None
+    menu_code: str | None = None
+    permission_code: str | None = None
     module: str | None = None
     action: str | None = None
     method: str | None = None

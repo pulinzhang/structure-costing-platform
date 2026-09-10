@@ -22,7 +22,11 @@ class OperationLogVO(BaseModel):
     status_code: int
     success: bool
     client_ip: str | None = None
+    ip_country: str | None = None
+    ip_province: str | None = None
+    ip_city: str | None = None
     detail: str | None = None
+    permission_code: str | None = None
     created_at: datetime | None = None
 
     @field_serializer("created_at")
@@ -32,9 +36,17 @@ class OperationLogVO(BaseModel):
     model_config = {"from_attributes": True}
 
 
-class OperationLogFilterOptionsVO(BaseModel):
-    """筛选下拉选项。"""
+class OperationLogCatalogOptionVO(BaseModel):
+    """权限目录筛选项。"""
 
-    modules: list[str] = Field(default_factory=list)
-    actions: list[str] = Field(default_factory=list)
-    methods: list[str] = Field(default_factory=list)
+    code: str
+    label: str
+    parent_code: str | None = None
+    breadcrumb: str
+
+
+class OperationLogFilterOptionsVO(BaseModel):
+    """筛选下拉：来自 catalog.json，不是日志表 distinct。"""
+
+    menus: list[OperationLogCatalogOptionVO] = Field(default_factory=list)
+    operations: list[OperationLogCatalogOptionVO] = Field(default_factory=list)

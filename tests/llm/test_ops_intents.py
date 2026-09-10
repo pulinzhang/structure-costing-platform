@@ -129,6 +129,9 @@ def test_ops_workbench_summary_totals() -> None:
         ("总成核价怎么审核", None, "buyer"),
         ("当月核算情况怎么样", "buyer", "buyer"),
         ("冲压零件价格计算页在哪", None, "buyer"),
+        ("2856的价格多少？", None, "buyer"),
+        ("8898在不在库里", None, "buyer"),
+        ("当月核算情况怎么样", None, "buyer_lead"),
     ],
 )
 def test_detect_audience(question: str, explicit: str | None, expected: str) -> None:

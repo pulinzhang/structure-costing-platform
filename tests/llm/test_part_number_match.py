@@ -13,6 +13,7 @@ from app.services.llm.query.query_parser import QueryParser
 
 def test_extract_full_part_number() -> None:
     assert extract_part_number_from_text("501006875AA 为什么这么贵？") == "501006875AA"
+    assert extract_part_number_from_text("FQ199D0616T25F19N零件价格是多少？") == "FQ199D0616T25F19N"
 
 
 def test_extract_four_digit_short_code() -> None:

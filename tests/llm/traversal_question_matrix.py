@@ -232,6 +232,22 @@ def build_traversal_cases(db: Session) -> list[TraversalCase]:
             scope.anchor_ym,
             None,
         ),
+        (
+            "operator_short_code_price",
+            "2856的价格多少？",
+            "l0",
+            None,
+            None,
+            None,
+        ),
+        (
+            "operator_latest_price",
+            "2856最新价",
+            "l0",
+            None,
+            None,
+            None,
+        ),
     ]
     for case_id, question, subject, start, end, expect_data in analysis_specs:
         cases.append(
@@ -267,6 +283,8 @@ def build_traversal_cases(db: Session) -> list[TraversalCase]:
         ("usage_upload", "怎么上传冲压工艺文件？", "usage_help"),
         ("usage_engine", "自动核价引擎怎么用？", "usage_help"),
         ("usage_export", "成品核价一览怎么导出 Excel？", "usage_help"),
+        ("usage_short_code", "怎么用简码问某个件的价？", "usage_help"),
+        ("usage_calc_stuck", "成品核价计算卡住怎么办？", "usage_help"),
     ]
     for case_id, question, subject in usage_specs:
         cases.append(

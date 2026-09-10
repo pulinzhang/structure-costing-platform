@@ -124,5 +124,5 @@ def test_l0_only_profile_marks_stamping_not_applicable() -> None:
         stamping_rows=[],
         process_rows=[],
     )
-    assert message == "成品核价 L0=1行"
+    assert message == "成品核价 供货总成=1行"
     assert "冲压价=无" not in message

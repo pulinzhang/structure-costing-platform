@@ -6,10 +6,11 @@ from __future__ import annotations
 
 from urllib.parse import quote
 
-from fastapi import APIRouter, Depends, Query
+from fastapi import APIRouter, Depends, Query, Request
 from fastapi.responses import StreamingResponse
 from sqlalchemy.orm import Session
 
+from app.common.operation_log.context import set_request_audit_scope
 from app.common.permissions.codes import Perm
 from app.database import get_db
 from app.deps.permissions import require_perm
@@ -46,6 +47,18 @@ router = APIRouter(
 _service = AssemblyCostService()
 _export_service = AssemblyCostExportService()
 _restore_service = AssemblyCostRestoreService()
+
+
+def _bind_restore_audit_scope(request: Request, row: AssemblyCostRestoreVO) -> None:
+    set_request_audit_scope(
+        request,
+        {
+            "location": row.location,
+            "part_number": row.part_number,
+            "year": str(row.year),
+            "month": str(row.month),
+        },
+    )
 
 
 @router.get(
@@ -137,6 +150,7 @@ def export_download(
     response_model=ApiResponse[AssemblyCostRestoreVO],
 )
 def get_restore_by_part(
+    request: Request,
     year: int = Query(..., ge=2000, le=2100),
     month: int = Query(..., ge=1, le=12),
     part_number: str = Query(..., min_length=1),
@@ -157,6 +171,7 @@ def get_restore_by_part(
         bom_version=bom_version,
         view=view,
     )
+    _bind_restore_audit_scope(request, row)
     return ApiResponse.ok(data=row)
 
 
@@ -165,12 +180,14 @@ def get_restore_by_part(
     response_model=ApiResponse[AssemblyCostRestoreVO],
 )
 def get_restore(
+    request: Request,
     cost_id: int,
     view: str = Query("finance"),
     db: Session = Depends(get_db),
     current_user: UserVO = Depends(require_perm(Perm.ASSEMBLY_COST_VIEW)),
 ) -> ApiResponse[AssemblyCostRestoreVO]:
     row = _restore_service.get_restore(db, cost_id, view=view)
+    _bind_restore_audit_scope(request, row)
     return ApiResponse.ok(data=row)
 
 

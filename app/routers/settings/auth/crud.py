@@ -1,8 +1,9 @@
 """登录认证路由"""
 
-from fastapi import APIRouter, Depends, File, Header, UploadFile
+from fastapi import APIRouter, Depends, File, Header, Request, UploadFile
 from sqlalchemy.orm import Session
 
+from app.common.operation_log.context import set_request_user
 from app.common.permissions.codes import Perm
 from app.database import get_auxiliary_db, get_db
 from app.deps.auth import extract_token, get_current_user, get_current_user_no_touch
@@ -28,11 +29,13 @@ _user_service = UserService()
 )
 def login(
     dto: UserLoginDTO,
+    request: Request,
     db: Session = Depends(get_db),
     token_db: Session = Depends(get_auxiliary_db),
 ) -> ApiResponse[LoginVO]:
     """账号密码登录，返回 token（存入辅助库 user_tokens）"""
     result = _auth_service.login(db, token_db, dto)
+    set_request_user(request, result.user)
     return ApiResponse.ok(data=result, message="登录成功")
 
 

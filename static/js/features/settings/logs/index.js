@@ -1,9 +1,8 @@
 /**
- * Operation Logs Page
- * 操作日志 — 对接 /api/settings/logs
+ * 操作日志 — 对接 /api/settings/logs，筛选项来自权限目录
  */
 
-import { logsTemplate, renderTableRows, renderPagination } from './template.js?v=1';
+import { logsTemplate, renderTableRows, renderPagination } from './template.js?v=9';
 import {
     DEFAULT_PAGE_SIZE,
     bindPageSizeSelect,
@@ -17,14 +16,15 @@ const logsState = {
     pageSize: DEFAULT_PAGE_SIZE,
     totalPages: 1,
     username: '',
-    module: '',
-    action: '',
-    method: '',
+    menuCode: '',
+    permissionCode: '',
     success: '',
     createdFrom: '',
     createdTo: '',
     isLoading: false,
-    filterOptionsApplied: false,
+    menus: [],
+    operations: [],
+    catalogByCode: {},
 };
 
 const API_BASE = '/api/settings/logs';
@@ -48,9 +48,8 @@ function init() {
 function collectFilters() {
     return {
         username: (document.getElementById('filterUsername')?.value || '').trim(),
-        module: document.getElementById('filterModule')?.value || '',
-        action: document.getElementById('filterAction')?.value || '',
-        method: document.getElementById('filterMethod')?.value || '',
+        menuCode: document.getElementById('filterMenu')?.value || '',
+        permissionCode: document.getElementById('filterPermission')?.value || '',
         success: document.getElementById('filterSuccess')?.value || '',
         createdFrom: document.getElementById('filterCreatedFrom')?.value || '',
         createdTo: document.getElementById('filterCreatedTo')?.value || '',
@@ -60,9 +59,8 @@ function collectFilters() {
 function applyFiltersToState() {
     const filters = collectFilters();
     logsState.username = filters.username;
-    logsState.module = filters.module;
-    logsState.action = filters.action;
-    logsState.method = filters.method;
+    logsState.menuCode = filters.menuCode;
+    logsState.permissionCode = filters.permissionCode;
     logsState.success = filters.success;
     logsState.createdFrom = filters.createdFrom;
     logsState.createdTo = filters.createdTo;
@@ -74,9 +72,8 @@ function buildQueryParams(page) {
         size: logsState.pageSize,
     };
     if (logsState.username) params.username = logsState.username;
-    if (logsState.module) params.module = logsState.module;
-    if (logsState.action) params.action = logsState.action;
-    if (logsState.method) params.method = logsState.method;
+    if (logsState.menuCode) params.menu_code = logsState.menuCode;
+    if (logsState.permissionCode) params.permission_code = logsState.permissionCode;
     if (logsState.success !== '') params.success = logsState.success;
     if (logsState.createdFrom) {
         params.created_from = localDatetimeToIso(logsState.createdFrom);
@@ -89,27 +86,66 @@ function buildQueryParams(page) {
 
 function localDatetimeToIso(value) {
     if (!value) return undefined;
-    // datetime-local → ISO（无时区），供 FastAPI datetime 查询参数解析
     return value.length === 16 ? `${value}:00` : value;
 }
 
-function fillSelectOptions(selectId, values, currentValue) {
-    const select = document.getElementById(selectId);
+function fillCatalogFilters() {
+    const menuSelect = document.getElementById('filterMenu');
+    if (menuSelect) {
+        const options = ['<option value="">全部功能</option>']
+            .concat((logsState.menus || []).map((item) => {
+                const selected = logsState.menuCode === item.code ? ' selected' : '';
+                return `<option value="${esc(item.code)}"${selected}>${esc(item.breadcrumb || item.label)}</option>`;
+            }));
+        menuSelect.innerHTML = options.join('');
+    }
+    fillPermissionOptions();
+}
+
+function fillPermissionOptions() {
+    const select = document.getElementById('filterPermission');
     if (!select) return;
-    const options = ['<option value="">全部</option>']
-        .concat((values || []).map((v) => {
-            const selected = currentValue === v ? ' selected' : '';
-            return `<option value="${esc(v)}"${selected}>${esc(v)}</option>`;
+    const menuCode = logsState.menuCode;
+    const selectedMenu = (logsState.menus || []).find((item) => item.code === menuCode);
+    const menuBreadcrumb = selectedMenu ? (selectedMenu.breadcrumb || selectedMenu.label) : '';
+    const ops = (logsState.operations || []).filter((item) => {
+        if (!menuCode) return true;
+        const breadcrumb = item.breadcrumb || '';
+        return breadcrumb === menuBreadcrumb || breadcrumb.startsWith(`${menuBreadcrumb} / `);
+    });
+    const options = ['<option value="">全部动作</option>']
+        .concat(ops.map((item) => {
+            const selected = logsState.permissionCode === item.code ? ' selected' : '';
+            let label = item.label;
+            if (!menuCode) {
+                label = item.breadcrumb || item.label;
+            } else if (menuBreadcrumb && item.breadcrumb && item.breadcrumb.startsWith(`${menuBreadcrumb} / `)) {
+                label = item.breadcrumb.slice(menuBreadcrumb.length + 3);
+            }
+            return `<option value="${esc(item.code)}"${selected}>${esc(label)}</option>`;
         }));
     select.innerHTML = options.join('');
 }
 
-function applyFilterOptions(filters) {
+function esc(value) {
+    if (typeof window.esc === 'function') return window.esc(value);
+    return String(value ?? '')
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;');
+}
+
+function applyCatalogOptions(filters) {
     if (!filters) return;
-    fillSelectOptions('filterModule', filters.modules, logsState.module);
-    fillSelectOptions('filterAction', filters.actions, logsState.action);
-    fillSelectOptions('filterMethod', filters.methods, logsState.method);
-    logsState.filterOptionsApplied = true;
+    logsState.menus = filters.menus || [];
+    logsState.operations = filters.operations || [];
+    const byCode = {};
+    (logsState.operations || []).forEach((item) => {
+        byCode[item.code] = item;
+    });
+    logsState.catalogByCode = byCode;
+    fillCatalogFilters();
 }
 
 async function loadData(page = 1) {
@@ -137,7 +173,7 @@ async function loadData(page = 1) {
         logsState.totalPages = pageResult.total_pages || 1;
 
         if (pageResult.filters) {
-            applyFilterOptions(pageResult.filters);
+            applyCatalogOptions(pageResult.filters);
         }
 
         if (tableBody) {
@@ -146,7 +182,7 @@ async function loadData(page = 1) {
                 if (emptyState) emptyState.classList.remove('hidden');
             } else {
                 if (emptyState) emptyState.classList.add('hidden');
-                tableBody.innerHTML = renderTableRows(logsState.records);
+                tableBody.innerHTML = renderTableRows(logsState.records, logsState.catalogByCode);
             }
         }
 
@@ -162,7 +198,7 @@ async function loadData(page = 1) {
         if (tableBody) {
             tableBody.innerHTML = `
                 <tr>
-                    <td colspan="9" class="px-4 py-8 text-center text-[#9e9e9e] text-xs">
+                    <td colspan="6" class="px-4 py-8 text-center text-[#9e9e9e] text-xs">
                         加载数据失败，请重试
                     </td>
                 </tr>
@@ -190,64 +226,47 @@ function bindPaginationEvents() {
 }
 
 function bindEvents() {
-    const btnFilter = document.getElementById('btnFilter');
-    if (btnFilter) {
-        btnFilter.addEventListener('click', () => {
+    document.getElementById('btnFilter')?.addEventListener('click', () => {
+        applyFiltersToState();
+        loadData(1);
+    });
+
+    document.getElementById('btnResetFilter')?.addEventListener('click', () => {
+        ['filterUsername', 'filterMenu', 'filterPermission', 'filterSuccess', 'filterCreatedFrom', 'filterCreatedTo']
+            .forEach((id) => {
+                const el = document.getElementById(id);
+                if (el) el.value = '';
+            });
+        applyFiltersToState();
+        fillPermissionOptions();
+        loadData(1);
+    });
+
+    document.getElementById('filterUsername')?.addEventListener('keydown', (event) => {
+        if (event.key === 'Enter') {
             applyFiltersToState();
             loadData(1);
-        });
-    }
+        }
+    });
 
-    const btnReset = document.getElementById('btnResetFilter');
-    if (btnReset) {
-        btnReset.addEventListener('click', () => {
-            const username = document.getElementById('filterUsername');
-            const module = document.getElementById('filterModule');
-            const action = document.getElementById('filterAction');
-            const method = document.getElementById('filterMethod');
-            const success = document.getElementById('filterSuccess');
-            const createdFrom = document.getElementById('filterCreatedFrom');
-            const createdTo = document.getElementById('filterCreatedTo');
-            if (username) username.value = '';
-            if (module) module.value = '';
-            if (action) action.value = '';
-            if (method) method.value = '';
-            if (success) success.value = '';
-            if (createdFrom) createdFrom.value = '';
-            if (createdTo) createdTo.value = '';
-            applyFiltersToState();
-            loadData(1);
-        });
-    }
+    document.getElementById('filterMenu')?.addEventListener('change', () => {
+        logsState.menuCode = document.getElementById('filterMenu')?.value || '';
+        logsState.permissionCode = '';
+        const perm = document.getElementById('filterPermission');
+        if (perm) perm.value = '';
+        fillPermissionOptions();
+        applyFiltersToState();
+        loadData(1);
+    });
 
-    const usernameInput = document.getElementById('filterUsername');
-    if (usernameInput) {
-        usernameInput.addEventListener('keydown', (event) => {
-            if (event.key === 'Enter') {
-                applyFiltersToState();
-                loadData(1);
-            }
-        });
-    }
-
-    [
-        'filterModule',
-        'filterAction',
-        'filterMethod',
-        'filterSuccess',
-        'filterCreatedFrom',
-        'filterCreatedTo',
-    ].forEach((id) => {
+    ['filterPermission', 'filterSuccess', 'filterCreatedFrom', 'filterCreatedTo'].forEach((id) => {
         document.getElementById(id)?.addEventListener('change', () => {
             applyFiltersToState();
             loadData(1);
         });
     });
 
-    const btnExport = document.getElementById('btnExportLogs');
-    if (btnExport) {
-        btnExport.addEventListener('click', exportLogs);
-    }
+    document.getElementById('btnExportLogs')?.addEventListener('click', exportLogs);
 }
 
 async function exportLogs() {
@@ -282,7 +301,6 @@ async function exportLogs() {
         window.URL.revokeObjectURL(url);
 
         showToast(`导出成功: ${filename}`, 'success');
-        // 导出本身会记审计，刷新列表可见新记录
         loadData(logsState.page);
     } catch (error) {
         console.error('导出操作日志失败:', error);

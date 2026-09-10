@@ -4,7 +4,7 @@
 
 import { humanizeUserFacingError } from '../errors.js';
 import { EXPORT_ICON_BTN_CLASS, llmIconPrint, llmIconWord } from '../icons.js';
-import { renderMarkdown } from '../markdown/render.js';
+import { renderMarkdown } from '../markdown/render.js?v=2';
 import { canExportAssistantMessage } from '../export/document.js';
 
 /**
@@ -45,8 +45,9 @@ function renderMessage(msg) {
         body = `<div class="text-[11px] text-[#ef5350]">${esc(humanizeUserFacingError(msg.content))}</div>`;
     } else if (!isUser) {
         const exportToolbar = renderExportToolbar(msg);
-        const markdownBlock = `<div class="llm-md text-[11px] leading-relaxed [&_h1]:text-sm [&_h2]:text-xs [&_h3]:text-[11px] [&_p]:my-1.5 [&_ul]:my-1.5 [&_ul]:list-disc [&_ul]:pl-4 [&_code]:font-mono [&_code]:text-[10px] [&_code]:text-[#ff8a80]">${renderMarkdown(msg.content || '')}</div>`;
-        body = `${exportToolbar}${markdownBlock}`;
+        const periodChip = renderPeriodChip(msg);
+        const markdownBlock = `<div class="llm-md text-[11px] leading-relaxed [&_h1]:text-sm [&_h2]:text-xs [&_h3]:text-[11px] [&_p]:my-1.5 [&_ul]:my-1.5 [&_ul]:list-disc [&_ul]:pl-4 [&_code]:font-mono [&_code]:text-[10px] [&_code]:text-[#ff8a80] [&_.table-scroll]:overflow-x-auto [&_.table-scroll]:max-w-full [&_.table-scroll]:my-2 [&_table]:border-collapse [&_table]:text-[10px] [&_table]:leading-snug [&_th]:border [&_th]:border-[#2c2c2c] [&_th]:bg-[#1a1a1a] [&_th]:px-2 [&_th]:py-1 [&_th]:whitespace-nowrap [&_th]:text-[#bdbdbd] [&_td]:border [&_td]:border-[#2c2c2c] [&_td]:px-2 [&_td]:py-1 [&_.cell-keep]:whitespace-nowrap [&_.cell-wrap]:max-w-[10.5em] [&_.cell-wrap]:break-words">${renderMarkdown(msg.content || '')}</div>`;
+        body = `${exportToolbar}${periodChip}${markdownBlock}`;
     } else {
         body = `<div class="text-[11px] whitespace-pre-wrap break-words">${esc(msg.content || '')}</div>`;
     }
@@ -63,6 +64,19 @@ function renderMessage(msg) {
  * @param {object} msg
  * @returns {string}
  */
+function renderPeriodChip(msg) {
+    const scope = msg.scope || {};
+    const period = typeof window.fmtPeriod === 'function'
+        ? window.fmtPeriod(scope.year, scope.month)
+        : '';
+    if (!period) return '';
+    const extra = [scope.location, scope.vehicle_model, scope.part_number]
+        .filter(Boolean)
+        .map((item) => esc(String(item)))
+        .join(' · ');
+    return `<p class="text-[10px] text-[#757575] mb-1.5">${esc(period)}${extra ? ` · ${extra}` : ''}</p>`;
+}
+
 function renderExportToolbar(msg) {
     if (!canExportAssistantMessage(msg)) return '';
 

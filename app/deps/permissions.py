@@ -12,10 +12,12 @@ from __future__ import annotations
 
 from collections.abc import Callable
 
-from fastapi import Depends
+from fastapi import Depends, Request
 
+from app.common.operation_log.context import set_request_permission
 from app.common.permissions.catalog import is_valid_code
 from app.common.permissions.checks import (
+    has_permission,
     require_admin,
     require_any_permission,
     require_permission,
@@ -30,9 +32,11 @@ def require_perm(code: str) -> Callable[..., UserVO]:
         raise ValueError(f"未知权限码: {code}（请同步 catalog.json 与 codes.Perm）")
 
     def _dependency(
+        request: Request,
         current_user: UserVO = Depends(get_current_user),
     ) -> UserVO:
         require_permission(current_user, code)
+        set_request_permission(request, code)
         return current_user
 
     _dependency.__name__ = f"require_perm_{code.replace(':', '_')}"
@@ -48,9 +52,11 @@ def require_any_perm(*codes: str) -> Callable[..., UserVO]:
             raise ValueError(f"未知权限码: {code}（请同步 catalog.json 与 codes.Perm）")
 
     def _dependency(
+        request: Request,
         current_user: UserVO = Depends(get_current_user),
     ) -> UserVO:
         require_any_permission(current_user, list(codes))
+        set_request_permission(request, _pick_matched_permission(current_user, codes))
         return current_user
 
     _dependency.__name__ = "require_any_perm_" + "_".join(c.replace(":", "_") for c in codes)
@@ -63,3 +69,15 @@ def require_admin_user(
     """仅管理员可访问。"""
     require_admin(current_user)
     return current_user
+
+
+def _pick_matched_permission(user: UserVO, codes: tuple[str, ...]) -> str:
+    """any 权限取用户实际命中的码；管理员记路由声明的第一项。"""
+    if not codes:
+        return ""
+    if getattr(user, "is_admin", False):
+        return codes[0]
+    for code in codes:
+        if has_permission(user, code):
+            return code
+    return codes[0]

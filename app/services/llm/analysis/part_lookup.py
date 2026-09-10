@@ -9,6 +9,10 @@ from app.repositories.llm.cost_analysis_repository import L0PartPeriodRow
 from app.repositories.llm.stamping_cost_analysis_repository import StampingPartPeriodRow
 from app.repositories.llm.stamping_process_analysis_repository import StampingProcessPartRow
 from app.services.llm._money import money_str, month_key
+from app.services.llm.analysis.drilldown import (
+    assembly_card_role,
+    pick_finance_card,
+)
 
 PartPrimarySource = Literal["l0", "stamping_cost", "stamping_process"]
 
@@ -40,12 +44,19 @@ def resolve_part_data_profile(
     in_stamping = bool(stamping_rows)
     in_process = bool(process_rows)
 
+    supply_assembly = any(row.is_tree_root for row in l0_rows)
     if in_l0 and not in_stamping and not in_process:
+        if supply_assembly:
+            return PartDataProfile(
+                primary_source="l0",
+                stamping_cost_applicable=False,
+                stamping_process_applicable=False,
+                domain_note=_L0_DOMAIN_NOTE,
+            )
         return PartDataProfile(
             primary_source="l0",
-            stamping_cost_applicable=False,
-            stamping_process_applicable=False,
-            domain_note=_L0_DOMAIN_NOTE,
+            stamping_cost_applicable=True,
+            stamping_process_applicable=True,
         )
     if in_l0:
         return PartDataProfile(
@@ -122,17 +133,65 @@ def _l0_presence(rows: list[L0PartPeriodRow], query_token: str) -> dict[str, Any
             "message": "成品核价（L0）中未找到该零件号",
             "row_count": 0,
         }
-    latest = sorted(rows, key=lambda row: (row.year, row.month))[-1]
+    by_identity: dict[tuple[str, bool, str, int], list[L0PartPeriodRow]] = {}
+    for row in rows:
+        key = (
+            row.part_number,
+            bool(row.is_tree_root),
+            row.object_kind or "",
+            int(row.level or 0),
+        )
+        by_identity.setdefault(key, []).append(row)
+    identities: list[dict[str, Any]] = []
+    heads: list[L0PartPeriodRow] = []
+    for items in by_identity.values():
+        latest_item = sorted(items, key=lambda row: (row.year, row.month))[-1]
+        heads.append(latest_item)
+        identities.append(
+            {
+                "part_number": latest_item.part_number,
+                "part_name": latest_item.part_name,
+                "card_role": assembly_card_role(
+                    is_tree_root=latest_item.is_tree_root,
+                    level=latest_item.level,
+                    object_kind=latest_item.object_kind,
+                ),
+                "is_tree_root": bool(latest_item.is_tree_root),
+                "level": int(latest_item.level or 0),
+                "object_kind": latest_item.object_kind,
+                "root_part_number": latest_item.root_part_number,
+                "latest_month": month_key(latest_item.year, latest_item.month),
+                "grand_total": money_str(latest_item.grand_total),
+                "total_amount": money_str(latest_item.total_amount),
+                "location": latest_item.location,
+                "vehicle_model": latest_item.vehicle_model,
+                "calc_status": latest_item.calc_status,
+                "bom_version": latest_item.bom_version,
+            }
+        )
+    latest = pick_finance_card(heads)
     return {
         "found": True,
         "source": "l0",
         "row_count": len(rows),
         "part_number": latest.part_number,
         "part_name": latest.part_name,
+        "card_role": assembly_card_role(
+            is_tree_root=latest.is_tree_root,
+            level=latest.level,
+            object_kind=latest.object_kind,
+        ),
+        "is_tree_root": bool(latest.is_tree_root),
+        "level": int(latest.level or 0),
+        "object_kind": latest.object_kind,
+        "root_part_number": latest.root_part_number,
         "latest_month": month_key(latest.year, latest.month),
         "grand_total": money_str(latest.grand_total),
+        "total_amount": money_str(latest.total_amount),
         "calc_status": latest.calc_status,
         "bom_version": latest.bom_version,
+        "identity_count": len(identities),
+        "identities": identities,
     }
 
 
@@ -255,7 +314,9 @@ def format_part_lookup_message(
         process_rows=process_rows,
     )
     if profile.primary_source == "l0" and profile.domain_note:
-        return f"成品核价 L0={len(l0_rows)}行"
+        return f"成品核价 供货总成={len(l0_rows)}行"
+    if profile.primary_source == "l0" and l0_rows and not any(row.is_tree_root for row in l0_rows):
+        return f"成品核价 分总成/子件卡={len(l0_rows)}行"
     parts: list[str] = []
     if l0_rows:
         parts.append(f"L0={len(l0_rows)}行")

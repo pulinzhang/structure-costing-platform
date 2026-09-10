@@ -20,14 +20,17 @@ export function renderMarkdown(markdown) {
     }
 
     if (typeof DOMPurify !== 'undefined' && typeof DOMPurify.sanitize === 'function') {
-        return DOMPurify.sanitize(html, {
+        html = DOMPurify.sanitize(html, {
             USE_PROFILES: { html: true },
+            ADD_ATTR: ['class', 'style'],
             FORBID_TAGS: ['script', 'iframe', 'object', 'embed', 'form'],
             FORBID_ATTR: ['onerror', 'onload', 'onclick', 'onmouseover'],
         });
+    } else {
+        html = escapeHtml(source).replace(/\n/g, '<br>');
     }
 
-    return escapeHtml(source).replace(/\n/g, '<br>');
+    return enhanceMarkdownTables(html);
 }
 
 /**
@@ -56,4 +59,57 @@ function fallbackMarkdownToHtml(markdown) {
         .replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>')
         .replace(/`([^`]+)`/g, '<code>$1</code>')
         .replace(/\n/g, '<br>');
+}
+
+const SHORT_CELL_MAX = 10;
+
+/**
+ * 宽表横向滚动；短单元格禁止拆字，长文本限宽换行。
+ * @param {string} html
+ * @returns {string}
+ */
+function enhanceMarkdownTables(html) {
+    if (typeof document === 'undefined' || !html || !String(html).includes('<table')) {
+        return html;
+    }
+    const wrap = document.createElement('div');
+    wrap.innerHTML = html;
+    wrap.querySelectorAll('table').forEach((table) => {
+        table.querySelectorAll('th').forEach((cell) => applyCellLayout(cell, true));
+        table.querySelectorAll('td').forEach((cell) => applyCellLayout(cell, false));
+        if (table.parentElement?.classList.contains('table-scroll')) {
+            return;
+        }
+        const holder = document.createElement('div');
+        holder.className = 'table-scroll';
+        table.parentNode.insertBefore(holder, table);
+        holder.appendChild(table);
+    });
+    return wrap.innerHTML;
+}
+
+/**
+ * @param {HTMLElement} cell
+ * @param {boolean} isHeader
+ */
+function applyCellLayout(cell, isHeader) {
+    const text = String(cell.textContent || '').replace(/\s+/g, ' ').trim();
+    if (isHeader || isShortCell(text)) {
+        cell.classList.add('cell-keep');
+        cell.setAttribute('style', 'white-space:nowrap;word-break:keep-all;');
+        return;
+    }
+    cell.classList.add('cell-wrap');
+    cell.setAttribute('style', 'max-width:10.5em;word-break:break-word;overflow-wrap:break-word;');
+}
+
+/**
+ * @param {string} text
+ * @returns {boolean}
+ */
+function isShortCell(text) {
+    if (!text) return true;
+    if (/^-?\d[\d,]*\.?\d*%?$/.test(text)) return true;
+    if (/^\d{4}-\d{1,2}$/.test(text)) return true;
+    return Array.from(text).length <= SHORT_CELL_MAX;
 }

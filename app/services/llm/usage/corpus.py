@@ -161,6 +161,27 @@ def _extra_faq_chunks() -> list[CorpusChunk]:
     """P1a 高频 FAQ：无独立 help 章节时补短答。"""
     return [
         CorpusChunk(
+            chunk_id="part_lookup_how",
+            title="怎么用零件号或简码问价",
+            text=(
+                "问某个件多少钱，直接在助理里打零件号或后几位即可，例如「2856的价格多少」"
+                "「8898在不在库里」。不必先写全码，也不必先选年月；系统按核价表最新年月取卡。"
+                "分总成/冲压件的价格和供货总成不是同一张卡，不要混在一起对账。"
+                "这是查已核算结果，不是去计算页改价。计算仍走各模块计算页。"
+            ),
+            source_page="help.html",
+            anchor="start",
+            keywords=(
+                "简码",
+                "短码",
+                "后四位",
+                "怎么查价",
+                "怎么问价",
+                "零件号怎么问",
+                "2856",
+            ),
+        ),
+        CorpusChunk(
             chunk_id="upload",
             title="如何上传数据",
             text=(

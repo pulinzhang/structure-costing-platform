@@ -10,7 +10,12 @@ _ANALYSIS_DATA_SIGNALS: tuple[str, ...] = (
     "多少元",
     "什么价",
     "价格多少",
+    "价格是多少",
     "单价多少",
+    "最新价",
+    "现在什么价",
+    "核了多少",
+    "这个价多少",
     "环比",
     "趋势",
     "对比",
@@ -136,6 +141,10 @@ _USAGE_TOPIC_SIGNALS: tuple[str, ...] = (
     "审核",
     "反审核",
     "计算页",
+    "简码",
+    "短码",
+    "怎么查价",
+    "怎么问价",
 )
 
 _STUCK_SIGNALS: tuple[str, ...] = (
@@ -206,6 +215,7 @@ _HELP_TOPIC_RULES: tuple[tuple[str, tuple[str, ...]], ...] = (
     ("assembly_cost", ("总成核价", "成品核价计算", "总成核价计算")),
     ("masterdata", ("牌号分类",)),
     ("yishiyiyi_extra", ("中标钢厂", "厚度价格一览")),
+    ("part_lookup_how", ("简码", "短码", "后四位", "怎么查价", "怎么问价")),
     ("menu", ("菜单", "侧栏", "导航", "冲压工程", "焊接工程", "一事一议")),
     ("start", ("入门", "登录", "第一次", "快速入门", "会话")),
 )
@@ -334,9 +344,23 @@ _OPERATOR_AUDIENCE_SIGNALS: tuple[str, ...] = (
     "按钮",
 )
 
+_OPERATOR_LOOKUP_SIGNALS: tuple[str, ...] = (
+    "价格多少",
+    "价格是多少",
+    "多少钱",
+    "什么价",
+    "最新价",
+    "存在吗",
+    "在不在",
+    "有没有这个",
+    "最近一次核价",
+    "上次核价",
+    "核了多少",
+)
+
 
 def detect_audience(question: str, explicit: str | None = None) -> str:
-    """胶囊可显式指定；否则主管看进度、操作员看怎么做。"""
+    """胶囊可显式指定；否则主管看进度、操作员看怎么做 / 问单件价。"""
     resolved = (explicit or "").strip()
     if resolved in {"buyer", "buyer_lead"}:
         return resolved
@@ -348,4 +372,6 @@ def detect_audience(question: str, explicit: str | None = None) -> str:
         return "buyer"
     if any(signal in text for signal in _LEAD_AUDIENCE_SIGNALS):
         return "buyer_lead"
+    if any(signal in text for signal in _OPERATOR_LOOKUP_SIGNALS):
+        return "buyer"
     return "buyer_lead"

@@ -28,7 +28,10 @@ class OperationLog(Base):
         String(50), nullable=True, index=True, comment="业务模块"
     )
     action: Mapped[str] = mapped_column(
-        String(30), nullable=False, index=True, comment="动作：create/update/delete/export/…"
+        String(30), nullable=False, index=True, comment="动作：catalog 操作名或 create/update/…"
+    )
+    permission_code: Mapped[str | None] = mapped_column(
+        String(80), nullable=True, index=True, comment="权限码 op:… / menu:…"
     )
     summary: Mapped[str] = mapped_column(String(255), nullable=False, comment="摘要")
     status_code: Mapped[int] = mapped_column(
@@ -37,7 +40,12 @@ class OperationLog(Base):
     success: Mapped[bool] = mapped_column(
         Boolean, nullable=False, default=True, comment="是否成功（<400）"
     )
-    client_ip: Mapped[str | None] = mapped_column(String(64), nullable=True, comment="客户端 IP")
+    client_ip: Mapped[str | None] = mapped_column(
+        String(64), nullable=True, index=True, comment="客户端 IP"
+    )
+    ip_country: Mapped[str | None] = mapped_column(String(64), nullable=True, comment="IP 国家")
+    ip_province: Mapped[str | None] = mapped_column(String(64), nullable=True, comment="IP 省/州")
+    ip_city: Mapped[str | None] = mapped_column(String(64), nullable=True, comment="IP 城市")
     detail: Mapped[str | None] = mapped_column(
         Text, nullable=True, comment="补充信息（查询串等，不含敏感体）"
     )

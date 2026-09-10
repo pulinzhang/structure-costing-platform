@@ -26,6 +26,10 @@
 - 需要表格时不超过 JSON 已给行数。
 - **全文中文、通俗易懂**；遵守 `_shared/chinese_style_rules.md`、`_shared/currency_rules.md`、`_shared/anomaly_rules.md` 与 `_shared/scope_rules.md`。
 
+【操作员日常】
+- 按 `_shared/operator_scenario_rules.md`：短码问价、没说年月、子件与总成、在不在库里、卡住怎么办、标准件先核价表再年度零件价。
+- 先报数字和年月，少讲进度；总成价与子件价分行，禁止混加。
+
 【建议】
 - 建议动作须可执行（催报价、补主数据、看列表、分工厂跟进）；禁止「加强管理」空话。
 - 不对主机厂自动生成正式报价函。

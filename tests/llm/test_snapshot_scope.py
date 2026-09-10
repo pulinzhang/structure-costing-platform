@@ -94,3 +94,10 @@ def test_prompt_manifest_includes_scope_rules() -> None:
     resolved = registry.resolve(audience="costing")
     assert "scope.month_count" in resolved.system_prompt
     assert "禁止把「N 个月合计」写成「全年」" in resolved.system_prompt
+
+
+def test_prompt_manifest_includes_operator_scenarios() -> None:
+    registry = PromptRegistry()
+    buyer = registry.resolve(audience="buyer")
+    assert "短码问价" in buyer.system_prompt
+    assert "fork=sub_assembly" in buyer.user_shell or "操作员口语" in buyer.user_shell

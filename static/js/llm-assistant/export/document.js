@@ -2,7 +2,7 @@
  * 将 AI 回答组装为可打印 / 可导出 Word 的独立 HTML 文档（仅正文，不含快照与操作）
  */
 
-import { renderMarkdown } from '../markdown/render.js';
+import { renderMarkdown } from '../markdown/render.js?v=2';
 import { analysesKeyLabelZh } from '../report/labels.js';
 
 /**
@@ -74,7 +74,7 @@ ${documentStyles()}
 <article class="doc">
   <header class="doc-header">
     <h1 class="doc-title">AI 分析报告</h1>
-    <p class="doc-subtitle">汽车冲压件自动核价平台 · AI 助手</p>
+    <p class="doc-subtitle">汽车冲压件自动核价平台 · AI 助手整理，便于参阅，请以系统核算为准</p>
   </header>
   <table class="meta-table" role="presentation">
     ${metaRow('提问', question || '—')}
@@ -163,7 +163,7 @@ body {
   color: #1a1a1a;
   background: #ffffff;
 }
-.doc { max-width: 720px; margin: 0 auto; }
+.doc { max-width: 900px; margin: 0 auto; }
 .doc-header {
   border-bottom: 2px solid #d32f2f;
   padding-bottom: 12px;
@@ -207,19 +207,39 @@ body {
 .llm-body p { margin: 6px 0; }
 .llm-body ul, .llm-body ol { margin: 6px 0 6px 1.6em; padding: 0; }
 .llm-body li { margin: 2px 0; }
-.llm-body table {
-  width: 100%;
-  border-collapse: collapse;
+.llm-body .table-scroll {
+  overflow-x: auto;
+  max-width: 100%;
   margin: 10px 0;
-  font-size: 10pt;
+}
+.llm-body table {
+  width: max-content;
+  min-width: 100%;
+  border-collapse: collapse;
+  font-size: 9.5pt;
+  line-height: 1.35;
 }
 .llm-body th, .llm-body td {
   border: 1px solid #cccccc;
-  padding: 6px 8px;
+  padding: 5px 8px;
   text-align: left;
   vertical-align: top;
 }
-.llm-body th { background: #f5f5f5; font-weight: 600; }
+.llm-body th {
+  background: #f5f5f5;
+  font-weight: 600;
+  white-space: nowrap;
+  word-break: keep-all;
+}
+.llm-body .cell-keep {
+  white-space: nowrap;
+  word-break: keep-all;
+}
+.llm-body .cell-wrap {
+  max-width: 10.5em;
+  word-break: break-word;
+  overflow-wrap: break-word;
+}
 .llm-body code {
   font-family: Consolas, "Courier New", monospace;
   font-size: 9.5pt;
@@ -248,6 +268,9 @@ body {
 }
 @media print {
   body { padding: 0; }
+  .doc { max-width: none; }
+  .llm-body .table-scroll { overflow: visible; }
+  .llm-body table { font-size: 8.5pt; }
 }
 `.trim();
 }

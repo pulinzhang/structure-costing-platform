@@ -30,6 +30,9 @@ from app.services.llm.usage.runner import UsageHelpRunner
         ("青岛当月待审核还有多少", "analysis"),
         ("总成核价怎么审核", "usage_help"),
         ("冲压零件价格计算页在哪", "usage_help"),
+        ("怎么用简码问某个件的价？", "usage_help"),
+        ("2856的价格多少？", "analysis"),
+        ("2856最新价", "analysis"),
     ],
 )
 def test_detect_query_mode(question: str, expected_mode: str) -> None:
@@ -52,6 +55,7 @@ def test_detect_query_mode(question: str, expected_mode: str) -> None:
         ("模具费怎么算进零件价", "die_gauge"),
         ("总成核价怎么审核", "audit"),
         ("冲压零件价格计算页在哪", "calc_run"),
+        ("怎么用简码问某个件的价？", "part_lookup_how"),
         ("文件溯源在哪看", "file_trace"),
         ("牌号分类在哪维护", "masterdata"),
     ],
@@ -83,6 +87,7 @@ def test_load_corpus_has_p1a_sections() -> None:
         "procurement_contract_report",
         "audit",
         "calc_run",
+        "part_lookup_how",
     ):
         assert required in chunk_ids
 

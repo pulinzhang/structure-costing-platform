@@ -10,18 +10,18 @@
 
 import { createReport, getReport } from './api.js';
 
-import { mountChips, setChipsDisabled, setChipsVisible } from './chat/chips.js';
+import { mountChips, setChipsDisabled, setChipsVisible } from './chat/chips.js?v=2';
 
 import { mountComposer, setComposerBusy } from './chat/composer.js';
 
 import { humanizeUserFacingError } from './errors.js';
-import { renderThread } from './chat/thread.js?v=9';
+import { renderThread } from './chat/thread.js?v=11';
 
-import { printAssistantMessage, closePrintPreview } from './export/print.js?v=8';
+import { printAssistantMessage, closePrintPreview } from './export/print.js?v=10';
 
-import { downloadWordDocument } from './export/word.js?v=4';
+import { downloadWordDocument } from './export/word.js?v=6';
 
-import { findPrompt, fillPromptTemplate } from './prompts/catalog.js?v=4';
+import { findPrompt, fillPromptTemplate } from './prompts/catalog.js?v=5';
 
 import { applyReportToMessage } from './report/apply-report.js';
 

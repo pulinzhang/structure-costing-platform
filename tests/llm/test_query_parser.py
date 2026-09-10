@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 from decimal import Decimal
+from types import SimpleNamespace
 from unittest.mock import MagicMock
 
 from app.repositories.llm.cost_analysis_repository import L0MonthlyTotalRow, L0PartPeriodRow
@@ -120,6 +121,106 @@ def test_query_parser_price_detail_skips_dashboard_summary() -> None:
     assert query.subject == "l0"
     assert query.part_number() == "9144"
     assert query.location() == "青岛"
+
+
+def test_query_parser_latest_costing_uses_table_month() -> None:
+    parser = QueryParser()
+    db = MagicMock()
+    _mock_aligner(parser)
+    parser._extractor.extract = MagicMock(
+        return_value={
+            "time_range": {"start": "2026-09", "end": "2026-09"},
+            "filters": {},
+            "compare_locations": [],
+        }
+    )
+    parser._cost_repo.query_latest_card_scope = MagicMock(
+        return_value=SimpleNamespace(
+            year=2026,
+            month=1,
+            location="芜湖",
+            vehicle_model="T13J",
+            bom_version="D/09",
+            part_number="551002856AA",
+            is_tree_root=False,
+            object_kind="l1_stamping",
+            root_part_number="551002784AA",
+        )
+    )
+    query = parser.parse(
+        db,
+        user_question="2856零件，最近一次核价是多少钱？",
+    )
+    assert query.part_number() == "2856"
+    assert query.analyses == ["drilldown"]
+    assert query.subject == "l0"
+    assert query.time_range.start == "2026-01"
+    assert query.time_range.end == "2026-01"
+    assert query.location() == "芜湖"
+    assert query.vehicle_model() == "T13J"
+    assert query.parser_data_message is not None
+    assert "2026年01月" in query.parser_data_message
+
+
+def test_query_parser_operator_short_code_price() -> None:
+    parser = QueryParser()
+    db = MagicMock()
+    _mock_aligner(parser)
+    parser._extractor.extract = MagicMock(
+        return_value={
+            "time_range": {"start": "2026-09", "end": "2026-09"},
+            "filters": {},
+            "compare_locations": [],
+        }
+    )
+    parser._cost_repo.query_latest_card_scope = MagicMock(
+        return_value=SimpleNamespace(
+            year=2026,
+            month=1,
+            location="芜湖",
+            vehicle_model="T13J",
+            bom_version="D/09",
+            part_number="551002856AA",
+            is_tree_root=False,
+            object_kind="l1_stamping",
+            root_part_number="551002784AA",
+        )
+    )
+    query = parser.parse(db, user_question="2856的价格多少？")
+    assert query.part_number() == "2856"
+    assert query.analyses == ["drilldown"]
+    assert query.subject == "l0"
+    assert query.time_range.start == "2026-01"
+    assert query.time_range.end == "2026-01"
+
+
+def test_query_parser_operator_latest_price_phrase() -> None:
+    parser = QueryParser()
+    db = MagicMock()
+    _mock_aligner(parser)
+    parser._extractor.extract = MagicMock(
+        return_value={
+            "time_range": {"start": "2026-09", "end": "2026-09"},
+            "filters": {},
+            "compare_locations": [],
+        }
+    )
+    parser._cost_repo.query_latest_card_scope = MagicMock(
+        return_value=SimpleNamespace(
+            year=2026,
+            month=1,
+            location="芜湖",
+            vehicle_model="T13J",
+            bom_version="D/09",
+            part_number="551002856AA",
+            is_tree_root=False,
+            object_kind="l1_stamping",
+            root_part_number="551002784AA",
+        )
+    )
+    query = parser.parse(db, user_question="2856最新价")
+    assert query.analyses == ["drilldown"]
+    assert query.time_range.start == "2026-01"
 
 
 def test_normalize_yoy_range() -> None:
