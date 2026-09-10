@@ -46,9 +46,9 @@ export function basePriceDownloadTemplate() {
                         ${filterSelect('basePriceDownloadYear', '年度')}
                         ${filterSelect('basePriceDownloadMonth', '月份')}
                         ${filterSelect('basePriceDownloadLocation', '基地')}
-                        ${filterSelect('basePriceDownloadCategory', '钢种')}
-                        ${filterInput('basePriceDownloadGrade', '牌号', '输入牌号（模糊）')}
                         ${filterSelect('basePriceDownloadMill', '钢厂')}
+                        ${filterSelect('basePriceDownloadCategory', '钢种大类')}
+                        ${filterInputWithDatalist('basePriceDownloadGrade', '牌号', 'basePriceGradeOptions')}
                     </div>
                     <div class="flex items-center gap-2">
                         <button id="btnPreviewBasePrice"
@@ -65,7 +65,7 @@ export function basePriceDownloadTemplate() {
                     <div class="bg-[#0c0c0c] border border-[#1a1a1a] rounded p-3">
                         <p class="text-[11px] text-[#888888] leading-5">
                             <span class="text-[#9e9e9e] font-medium">说明：</span>
-                            根据所选条件导出基准价格数据。基准价格表记录每个基地、每个钢厂、每个牌号在每个月的到厂原卷承兑价格。
+                            筛选条件为年度、月份、基地、钢厂、钢种大类、牌号。基准价格表记录每个基地、每个钢厂、每个牌号在每个月的到厂原卷承兑价格。
                         </p>
                     </div>
                 </div>
@@ -155,9 +155,12 @@ function filterSelect(id, label) {
     </label>`;
 }
 
-function filterInput(id, label, placeholder) {
+function filterInputWithDatalist(id, label, datalistId) {
     return `<label class="space-y-1">
         <span class="block text-[9px] font-semibold text-[#484848] uppercase tracking-[0.12em] whitespace-nowrap">${label}</span>
-        <input id="${id}" placeholder="${placeholder}" class="h-7 w-32 px-2.5 text-[11px] bg-[#0d0d0d] border border-[#272727] text-[#ffffff] placeholder:text-[#616161] rounded-sm focus:outline-none focus:border-[#ff5252]">
+        <input type="text" id="${id}" list="${datalistId}"
+               class="w-44 h-7 pl-2.5 pr-3 text-[11px] bg-[#0d0d0d] border border-[#272727] text-[#909090] placeholder:text-[#505050] focus:outline-none focus:border-[#ff5252] focus:text-[#d0d0d0] transition-all rounded-sm"
+               placeholder="输入搜索或选择牌号">
+        <datalist id="${datalistId}"></datalist>
     </label>`;
 }

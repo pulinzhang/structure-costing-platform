@@ -3,7 +3,7 @@
  * 基准价格导出页面逻辑
  */
 
-import { basePriceDownloadTemplate } from './template.js?v=29';
+import { basePriceDownloadTemplate } from './template.js?v=31';
 import {
     DEFAULT_PREVIEW_PAGE_SIZE,
     PREVIEW_PAGE_SIZE_OPTIONS,
@@ -89,8 +89,14 @@ async function loadFilterOptions() {
         fillSelect('basePriceDownloadYear', buildYearOptions(data.years));
         fillMonthOptions();
         fillSelect('basePriceDownloadLocation', data.locations || []);
-        fillSelect('basePriceDownloadCategory', data.category_names || []);
         fillSelect('basePriceDownloadMill', data.steel_mills || []);
+        fillSelect('basePriceDownloadCategory', data.category_names || []);
+        const gradeList = document.getElementById('basePriceGradeOptions');
+        if (gradeList) {
+            gradeList.innerHTML = (data.grades || [])
+                .map((grade) => `<option value="${esc(grade)}">`)
+                .join('');
+        }
     } catch (error) {
         if (token !== basePriceDownloadState.filterLoadToken) return;
         console.error('加载筛选选项失败:', error);
@@ -137,7 +143,7 @@ function bindEvents() {
         btnDelete.addEventListener('click', () => batchDeleteBasePrices());
     }
 
-    ['basePriceDownloadYear', 'basePriceDownloadMonth', 'basePriceDownloadLocation', 'basePriceDownloadCategory', 'basePriceDownloadMill']
+    ['basePriceDownloadYear', 'basePriceDownloadMonth', 'basePriceDownloadLocation', 'basePriceDownloadMill', 'basePriceDownloadCategory']
         .forEach(id => {
             const el = document.getElementById(id);
             if (el) el.addEventListener('change', () => queryAfterFilterSelect());
@@ -178,9 +184,9 @@ function updateConditionsDisplay() {
     const period = fmtPeriod(filters.year, filters.month);
     if (period) conditions.push(period);
     if (filters.location) conditions.push(`基地: ${filters.location}`);
-    if (filters.category_name) conditions.push(`钢种: ${filters.category_name}`);
-    if (filters.grade) conditions.push(`牌号: ${filters.grade}`);
     if (filters.steel_mill) conditions.push(`钢厂: ${filters.steel_mill}`);
+    if (filters.category_name) conditions.push(`钢种大类: ${filters.category_name}`);
+    if (filters.grade) conditions.push(`牌号: ${filters.grade}`);
 
     const display = document.getElementById('selectedBasePriceConditions');
     if (display) {
@@ -197,23 +203,30 @@ function collectFilters() {
         year: getFilterValue('basePriceDownloadYear'),
         month: getFilterValue('basePriceDownloadMonth'),
         location: getFilterValue('basePriceDownloadLocation'),
+        steel_mill: getFilterValue('basePriceDownloadMill'),
         category_name: getFilterValue('basePriceDownloadCategory'),
         grade: document.getElementById('basePriceDownloadGrade')?.value.trim() || '',
-        steel_mill: getFilterValue('basePriceDownloadMill'),
     };
 }
 
 function hasAnyFilter(filters) {
-    return !!(filters.year || filters.month || filters.location || filters.category_name || filters.grade || filters.steel_mill);
+    return !!(
+        filters.year ||
+        filters.month ||
+        filters.location ||
+        filters.steel_mill ||
+        filters.category_name ||
+        filters.grade
+    );
 }
 
 function applyFiltersToParams(params, filters) {
     if (filters.year) params.year = parseInt(filters.year, 10);
     if (filters.month) params.month = parseInt(filters.month, 10);
     if (filters.location) params.location = filters.location;
+    if (filters.steel_mill) params.steel_mill = filters.steel_mill;
     if (filters.category_name) params.category_name = filters.category_name;
     if (filters.grade) params.grade = filters.grade;
-    if (filters.steel_mill) params.steel_mill = filters.steel_mill;
 }
 
 /**
@@ -326,9 +339,9 @@ async function exportExcel() {
                 year: filters.year ? parseInt(filters.year, 10) : undefined,
                 month: filters.month ? parseInt(filters.month, 10) : undefined,
                 location: filters.location,
+                steel_mill: filters.steel_mill,
                 category_name: filters.category_name,
                 grade: filters.grade,
-                steel_mill: filters.steel_mill,
             },
             defaultFilename: '基准价格导出.xlsx',
         });

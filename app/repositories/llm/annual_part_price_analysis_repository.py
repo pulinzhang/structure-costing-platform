@@ -22,6 +22,9 @@ class AnnualPartPriceRow:
     unit_price: Decimal
     supply_type: str
     audit_status: str
+    purchase_unit: str | None = None
+    purchase_unit_price: Decimal | None = None
+    conversion_factor: Decimal = Decimal("1")
 
 
 class AnnualPartPriceAnalysisRepository:
@@ -59,10 +62,17 @@ class AnnualPartPriceAnalysisRepository:
                 location=str(row.location),
                 part_number=str(row.part_number),
                 part_name=row.part_name,
-                unit=str(row.unit),
+                unit=str(row.unit or "pcs"),
                 unit_price=Decimal(str(row.unit_price)),
                 supply_type=str(row.supply_type),
                 audit_status=str(row.audit_status or "pending"),
+                purchase_unit=row.purchase_unit,
+                purchase_unit_price=(
+                    Decimal(str(row.purchase_unit_price))
+                    if row.purchase_unit_price is not None
+                    else None
+                ),
+                conversion_factor=Decimal(str(row.conversion_factor or 1)),
             )
             for row in q.all()
         ]

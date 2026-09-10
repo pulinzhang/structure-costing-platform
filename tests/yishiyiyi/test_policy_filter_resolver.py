@@ -64,3 +64,20 @@ def test_resolve_unknown_grade(db_session):
 
 def test_canonical_category_names():
     assert list(CANONICAL_CATEGORY_NAMES) == ["冷轧", "镀锌", "酸洗"]
+
+
+def test_policy_export_query_filters():
+    from app.schemas.dto.steel_price_policy_dto import (
+        PolicyExportPreviewQuery,
+        PolicyExportQuery,
+    )
+
+    assert set(PolicyExportQuery.model_fields) == {
+        "year",
+        "month",
+        "steel_mill",
+        "category_name",
+        "grade_value",
+    }
+    assert "page" in PolicyExportPreviewQuery.model_fields
+    assert "size" in PolicyExportPreviewQuery.model_fields

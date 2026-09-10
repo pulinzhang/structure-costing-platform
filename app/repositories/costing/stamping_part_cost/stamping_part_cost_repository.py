@@ -504,6 +504,38 @@ class StampingPartCostRepository:
             .all()
         )
 
+    def list_success_by_part_numbers(
+        self,
+        db: Session,
+        *,
+        year: int,
+        month: int,
+        location: str,
+        vehicle_model: str,
+        part_numbers: list[str],
+    ) -> list[StampingPartCost]:
+        if not part_numbers:
+            return []
+        unique = list(dict.fromkeys(part_numbers))
+        rows: list[StampingPartCost] = []
+        for offset in range(0, len(unique), 400):
+            chunk = unique[offset : offset + 400]
+            rows.extend(
+                db.query(StampingPartCost)
+                .filter(
+                    StampingPartCost.location == location,
+                    StampingPartCost.vehicle_model == vehicle_model,
+                    StampingPartCost.year == year,
+                    StampingPartCost.month == month,
+                    StampingPartCost.part_number.in_(chunk),
+                    StampingPartCost.calc_status == "success",
+                    StampingPartCost.unit_cost.isnot(None),
+                )
+                .order_by(StampingPartCost.part_number, StampingPartCost.id.asc())
+                .all()
+            )
+        return rows
+
     def get_distinct_locations(
         self, db: Session, year: int | None = None, month: int | None = None
     ) -> list[str]:

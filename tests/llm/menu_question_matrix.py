@@ -150,6 +150,27 @@ MENU_QUESTION_CASES: tuple[MenuQuestionCase, ...] = (
         "complete",
     ),
     MenuQuestionCase(
+        "stamping-die-fee",
+        "冲压模具费列表",
+        "模具费",
+        "stamping_die_fee",
+        "complete",
+    ),
+    MenuQuestionCase(
+        "stamping-gauge-fee",
+        "检具费列表",
+        "检具费",
+        "stamping_gauge_fee",
+        "complete",
+    ),
+    MenuQuestionCase(
+        "bom-procurement-object-list",
+        "采购对象清单",
+        "采购对象清单",
+        "procurement_object",
+        "complete",
+    ),
+    MenuQuestionCase(
         "procurement-contract-report",
         "采购价格协议",
         "采购价格",

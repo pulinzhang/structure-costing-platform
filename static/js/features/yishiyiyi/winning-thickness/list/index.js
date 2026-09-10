@@ -12,7 +12,7 @@ import { setSearchBusy } from '../../../../search-busy.js?v=1';
 import {
     winningThicknessDownloadTemplate,
     renderWinningThicknessRows,
-} from './template.js?v=11';
+} from './template.js?v=12';
 
 const winningThicknessState = {
     records: [],
@@ -203,9 +203,9 @@ function updateConditionsDisplay() {
     const period = fmtPeriod(filters.year, filters.month);
     if (period) conditions.push(period);
     if (filters.location) conditions.push(`基地: ${filters.location}`);
+    if (filters.steel_mill) conditions.push(`钢厂: ${filters.steel_mill}`);
     if (filters.category_name) conditions.push(`分类: ${filters.category_name}`);
     if (filters.grade) conditions.push(`牌号: ${filters.grade}`);
-    if (filters.steel_mill) conditions.push(`钢厂: ${filters.steel_mill}`);
 
     const display = document.getElementById('selectedWinningThicknessConditions');
     if (display) {
@@ -222,9 +222,9 @@ function collectFilters() {
         year: getFilterValue('winningThicknessYear'),
         month: getFilterValue('winningThicknessMonth'),
         location: getFilterValue('winningThicknessLocation'),
+        steel_mill: getFilterValue('winningThicknessMill'),
         category_name: getFilterValue('winningThicknessCategory'),
         grade: document.getElementById('winningThicknessGrade')?.value.trim() || '',
-        steel_mill: getFilterValue('winningThicknessMill'),
     };
 }
 
@@ -244,9 +244,9 @@ function applyFiltersToParams(params, filters) {
     params.year = parseInt(filters.year, 10);
     params.month = parseInt(filters.month, 10);
     params.location = filters.location;
+    if (filters.steel_mill) params.steel_mill = filters.steel_mill;
     if (filters.category_name) params.category_name = filters.category_name;
     if (filters.grade) params.grade = filters.grade;
-    if (filters.steel_mill) params.steel_mill = filters.steel_mill;
 }
 
 async function previewData() {

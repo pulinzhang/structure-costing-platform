@@ -265,6 +265,43 @@ def _extra_faq_chunks() -> list[CorpusChunk]:
             ),
         ),
         CorpusChunk(
+            chunk_id="audit",
+            title="列表怎么审核",
+            text=(
+                "审核在各结果列表页操作列：总成核价一览、冲压零件价格一览、焊接费列表、"
+                "冲压模具费列表、采购对象清单。待审核行可点审核；已审核可按权限反审核。"
+                "列表页只改审核状态，不算价。问「还有多少待审核」请用智能体查数，不要只问怎么点。"
+            ),
+            source_page="help.html",
+            anchor="start",
+            keywords=("怎么审核", "如何审核", "反审核", "审核按钮", "待审核"),
+        ),
+        CorpusChunk(
+            chunk_id="calc_run",
+            title="计算页在哪",
+            text=(
+                "写入靠计算页，不在一览上改价。"
+                "冲压零件价格计算 #/stamping-part-cost-calc；"
+                "总成核价计算 #/assembly-cost-calc；"
+                "冲压模具费计算 #/stamping-die-fee-calc；"
+                "冲压加工费计算在冲压工程计算页；"
+                "焊接费计算 #/bom-welding-fee-calc。"
+                "算完后到对应一览核对并审核。"
+            ),
+            source_page="help.html",
+            anchor="costing-pages",
+            keywords=(
+                "冲压零件价格计算",
+                "总成核价计算",
+                "模具费计算",
+                "加工费计算",
+                "焊接费计算",
+                "计算页",
+                "怎么计算",
+                "怎么算模具费",
+            ),
+        ),
+        CorpusChunk(
             chunk_id="yishiyiyi_extra",
             title="牌号分类与中标厚度价",
             text=(

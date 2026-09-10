@@ -31,6 +31,11 @@ class StampingGaugeFeeRepository:
     def get_by_id(self, db: Session, record_id: int) -> StampingGaugeFee | None:
         return db.query(StampingGaugeFee).filter(StampingGaugeFee.id == record_id).first()
 
+    def list_by_ids(self, db: Session, record_ids: list[int]) -> list[StampingGaugeFee]:
+        if not record_ids:
+            return []
+        return db.query(StampingGaugeFee).filter(StampingGaugeFee.id.in_(record_ids)).all()
+
     def get_effective_by_part(
         self,
         db: Session,

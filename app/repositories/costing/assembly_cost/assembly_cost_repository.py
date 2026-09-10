@@ -791,6 +791,64 @@ class AssemblyCostRepository:
         db.flush()
         return int(count)
 
+    def list_by_scope_source_nodes(
+        self,
+        db: Session,
+        *,
+        year: int,
+        month: int,
+        location: str,
+        vehicle_model: str,
+        bom_version: str,
+        source_node_ids: list[int],
+    ) -> list[AssemblyCost]:
+        if not source_node_ids:
+            return []
+        rows: list[AssemblyCost] = []
+        for chunk in _chunks(source_node_ids):
+            rows.extend(
+                db.query(AssemblyCost)
+                .options(noload(AssemblyCost.items), noload(AssemblyCost.indirects))
+                .filter(
+                    AssemblyCost.year == year,
+                    AssemblyCost.month == month,
+                    AssemblyCost.location == location,
+                    AssemblyCost.vehicle_model == vehicle_model,
+                    AssemblyCost.bom_version == bom_version,
+                    AssemblyCost.source_node_id.in_(chunk),
+                )
+                .all()
+            )
+        return rows
+
+    def list_by_part_scope(
+        self,
+        db: Session,
+        *,
+        year: int,
+        month: int,
+        part_number: str,
+        location: str | None = None,
+        vehicle_model: str | None = None,
+        bom_version: str | None = None,
+    ) -> list[AssemblyCost]:
+        query = (
+            db.query(AssemblyCost)
+            .options(noload(AssemblyCost.items), noload(AssemblyCost.indirects))
+            .filter(
+                AssemblyCost.year == year,
+                AssemblyCost.month == month,
+                AssemblyCost.part_number == part_number,
+            )
+        )
+        if location:
+            query = query.filter(AssemblyCost.location == location)
+        if vehicle_model:
+            query = query.filter(AssemblyCost.vehicle_model == vehicle_model)
+        if bom_version:
+            query = query.filter(AssemblyCost.bom_version == bom_version)
+        return query.order_by(AssemblyCost.id.asc()).all()
+
     def list_should_costs_for_nodes(
         self,
         db: Session,

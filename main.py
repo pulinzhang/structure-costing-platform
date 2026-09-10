@@ -299,6 +299,15 @@ def create_app() -> FastAPI:
             headers={"Cache-Control": "no-cache, must-revalidate"},
         )
 
+    @app.get("/assembly-cost-restore", include_in_schema=False)
+    async def assembly_cost_restore_page():
+        from fastapi.responses import FileResponse
+
+        return FileResponse(
+            "static/assembly-cost-restore.html",
+            headers={"Cache-Control": "no-cache, must-revalidate"},
+        )
+
     # 使用帮助站（独立静态目录：index / help / knowledge / example + css/img）
     # /helper → /helper/ ；子页用相对路径，如 help.html、helper.css、img/...
     @app.get("/helper", include_in_schema=False)

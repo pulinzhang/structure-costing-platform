@@ -52,6 +52,8 @@ const PCR_FX_CSS = `@keyframes pcr-laser-sweep{0%{left:-72px;opacity:1}100%{left
     + `.pcr-status-idle{background:#3A3A42}`
     + `.pcr-status-alert{background:#FF1E27;box-shadow:0 0 6px rgba(255,30,39,.55)}`
     + `.pcr-export:hover{filter:brightness(1.25)}`
+    + `.pcr-amt-mark{opacity:0}`
+    + `.pcr-amt-cell:hover .pcr-amt-mark,.pcr-amt-cell:focus-within .pcr-amt-mark{opacity:.8}`
     + `@media (prefers-reduced-motion:reduce){.pcr-laser-spot,.pcr-ignition-pulse{animation:none!important}.pcr-bento{transition:none}}`;
 
 function cornerMarks() {
@@ -585,6 +587,34 @@ function moneyCell(value) {
     return `<td class="px-2 py-2 text-right text-[#C8C8D0]">${mechNum(fixed)}</td>`;
 }
 
+function restoreHit(row, year, month) {
+    const partNumber = row.part_number || '';
+    if (!partNumber || year == null || year === '' || month == null || month === '') return '';
+    return `<button type="button"
+            class="btn-open-restore absolute inset-0 z-[1] cursor-pointer bg-transparent border-0 p-0"
+            data-year="${esc(year)}"
+            data-month="${esc(month)}"
+            data-part-number="${esc(partNumber)}"
+            title="计算过程"
+            aria-label="计算过程"></button>
+        <span class="pcr-amt-mark pointer-events-none absolute right-0 bottom-0 w-1.5 h-1.5 border-r border-b border-[#FF1E27]"
+              aria-hidden="true"></span>`;
+}
+
+function monthAmountCell(value, row, year, month) {
+    const hit = restoreHit(row, year, month);
+    if (value == null || value === '' || value === '/') {
+        return `<td class="pcr-amt-cell relative px-2 py-2 text-center text-[#555555]">${esc('/')}${hit}</td>`;
+    }
+    const fixed = typeof formatDecimalFixed === 'function'
+        ? formatDecimalFixed(value, 2, { allowNegative: true })
+        : null;
+    if (fixed == null) {
+        return `<td class="pcr-amt-cell relative px-2 py-2 text-center text-[#555555]">${esc('/')}${hit}</td>`;
+    }
+    return `<td class="pcr-amt-cell relative px-2 py-2 text-right text-[#C8C8D0]">${mechNum(fixed)}${hit}</td>`;
+}
+
 function toolingFeeCell(value) {
     if (value == null || value === '' || value === '/') {
         return `<td class="px-2 py-2 pr-4 text-center text-[#555555]">/</td>`;
@@ -606,8 +636,18 @@ export function renderPcrRows(rows, months, showSupplier = true) {
             byMonth[`${cell.year}-${cell.month}`] = cell.should_cost;
         });
         const monthHtml = monthKeys.length
-            ? monthKeys.map((key) => moneyCell(byMonth[key])).join('')
-            : moneyCell(row.month_amounts?.[0]?.should_cost);
+            ? (months || []).map((col) => monthAmountCell(
+                byMonth[`${col.year}-${col.month}`],
+                row,
+                col.year,
+                col.month,
+            )).join('')
+            : monthAmountCell(
+                row.month_amounts?.[0]?.should_cost,
+                row,
+                row.month_amounts?.[0]?.year,
+                row.month_amounts?.[0]?.month,
+            );
         return `
         <tr class="group relative text-[11px] border-b border-[#141418] hover:bg-[#161620] transition-colors duration-100">
             <td class="px-2 py-2 text-center text-[#F0F0F2] relative">

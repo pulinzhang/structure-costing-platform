@@ -21,7 +21,7 @@ import { printAssistantMessage, closePrintPreview } from './export/print.js?v=8'
 
 import { downloadWordDocument } from './export/word.js?v=4';
 
-import { findPrompt, fillPromptTemplate } from './prompts/catalog.js';
+import { findPrompt, fillPromptTemplate } from './prompts/catalog.js?v=4';
 
 import { applyReportToMessage } from './report/apply-report.js';
 

@@ -78,6 +78,11 @@ class SteelBasePriceRepository:
         """根据主键查询单条记录。"""
         return db.query(SteelBasePrice).filter(SteelBasePrice.id == record_id).first()
 
+    def list_by_ids(self, db: Session, record_ids: list[int]) -> list[SteelBasePrice]:
+        if not record_ids:
+            return []
+        return db.query(SteelBasePrice).filter(SteelBasePrice.id.in_(record_ids)).all()
+
     def paginate(
         self,
         db: Session,

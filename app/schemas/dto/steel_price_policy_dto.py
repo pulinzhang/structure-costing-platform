@@ -199,6 +199,28 @@ class PolicyQuery(BaseModel):
         return _strip(v)
 
 
+class PolicyExportQuery(BaseModel):
+    """加减价政策导出筛选：年度、月份、钢厂、钢种大类、牌号。"""
+
+    year: int | None = Field(None, ge=2000, le=2100, description="生效年度")
+    month: int | None = Field(None, ge=1, le=12, description="生效月份（1-12）")
+    steel_mill: str | None = Field(None, description="钢厂名称")
+    category_name: str | None = Field(None, description="钢种大类：冷轧/镀锌/酸洗")
+    grade_value: str | None = Field(None, description="牌号（经档案解析为大类后筛选政策）")
+
+    @field_validator("steel_mill", "category_name", "grade_value", mode="before")
+    @classmethod
+    def strip_export_strings(cls, v: Any) -> Any:
+        return _strip(v)
+
+
+class PolicyExportPreviewQuery(PolicyExportQuery):
+    """加减价政策导出预览分页。"""
+
+    page: int = Field(1, ge=1, description="页码")
+    size: int = Field(100, ge=1, le=5000, description="每页条数")
+
+
 # ============================
 # 阶梯匹配 DTO（Request）
 # ============================

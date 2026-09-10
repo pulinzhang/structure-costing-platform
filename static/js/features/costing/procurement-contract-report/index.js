@@ -14,7 +14,7 @@ import {
     cancelPcrHudCountUp,
     updatePcrViewButtons,
     updateRingIndicators,
-} from './template.js?v=34';
+} from './template.js?v=37';
 import {
     DEFAULT_PAGE_SIZE,
     bindPageSizeSelect,
@@ -194,6 +194,33 @@ function bindEvents() {
             const page = parseInt(btn.dataset.page, 10);
             if (page) loadList(page);
         }
+    });
+    document.getElementById('pcrTableBody')?.addEventListener('click', (event) => {
+        const restoreBtn = event.target.closest('.btn-open-restore');
+        if (!restoreBtn) return;
+        const year = restoreBtn.dataset.year;
+        const month = restoreBtn.dataset.month;
+        const partNumber = restoreBtn.dataset.partNumber;
+        if (!year || !month || !partNumber) return;
+        const view = listState.view === 'procurement' ? 'procurement' : 'finance';
+        const query = new URLSearchParams({
+            year,
+            month,
+            part_number: partNumber,
+            view,
+        });
+        const location = val('pcrLocationFilter');
+        const vehicleModel = val('pcrVehicleModelFilter');
+        const bomVersion = val('pcrBomVersionFilter');
+        if (location) query.set('location', location);
+        if (vehicleModel) query.set('vehicle_model', vehicleModel);
+        if (bomVersion) query.set('bom_version', bomVersion);
+        const opened = window.open(
+            `/assembly-cost-restore?${query.toString()}`,
+            '_blank',
+            'noopener,noreferrer',
+        );
+        if (opened) opened.opener = null;
     });
 }
 

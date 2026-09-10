@@ -44,6 +44,7 @@ from app.services.llm.client import LlmClientError
 from app.services.llm.context.snapshot_builder import SnapshotBuilder
 from app.services.llm.engine_readiness import EngineReadinessRunner
 from app.services.llm.generator import LlmReportGenerator
+from app.services.llm.query.intent_router import detect_audience
 from app.services.llm.query.query_parser import QueryParser
 from app.services.llm.usage import UsageHelpRunner
 from app.utils.logging_config import get_logger
@@ -86,7 +87,7 @@ class LlmAnalysisReportService:
 
         trace_id = str(uuid.uuid4())
         analysis_query = analysis_query.model_copy(update={"trace_id": trace_id})
-        audience = (dto.audience or "buyer_lead").strip() or "buyer_lead"
+        audience = detect_audience(dto.user_question, dto.audience)
         part_number = analysis_query.part_number()
         analyses_key = analysis_query.analyses_key()
         # 表字段 NOT NULL：未抽到时用占位，真实过滤仍以 AnalysisQuery.filters 为准

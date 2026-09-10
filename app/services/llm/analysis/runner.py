@@ -19,15 +19,21 @@ from app.repositories.llm.cost_analysis_repository import (
     L0CostAnalysisRepository,
     L0PartPeriodRow,
 )
+from app.repositories.llm.die_fee_analysis_repository import DieFeeAnalysisRepository
+from app.repositories.llm.gauge_fee_analysis_repository import GaugeFeeAnalysisRepository
 from app.repositories.llm.l0_welding_fee_analysis_repository import (
     L0WeldingFeeAnalysisRepository,
 )
+from app.repositories.llm.ops_workbench_repository import OpsWorkbenchRepository
 from app.repositories.llm.packaging_transport_fee_analysis_repository import (
     PackagingTransportFeeAnalysisRepository,
 )
 from app.repositories.llm.policy_analysis_repository import PolicyAnalysisRepository
 from app.repositories.llm.process_fee_analysis_repository import (
     ProcessFeeAnalysisRepository,
+)
+from app.repositories.llm.procurement_object_analysis_repository import (
+    ProcurementObjectAnalysisRepository,
 )
 from app.repositories.llm.scrap_price_analysis_repository import (
     ScrapPriceAnalysisRepository,
@@ -58,12 +64,18 @@ from app.schemas.llm.analysis_query import AnalysisQuery
 from app.services.llm._money import money_str
 from app.services.llm.analysis._formulas import format_missing_price_message
 from app.services.llm.analysis.annual_part_price_summary import (
+    annual_price_conversion_risk_entry,
     build_annual_part_price_comparison,
+    build_annual_part_price_conversion_anomalies,
     build_annual_part_price_drilldown,
     build_annual_part_price_drivers,
     build_annual_part_price_summary,
 )
-from app.services.llm.analysis.anomaly import build_risks, build_stamping_risks
+from app.services.llm.analysis.anomaly import (
+    build_risks,
+    build_stamping_risks,
+    build_welding_fee_risks,
+)
 from app.services.llm.analysis.base_price_summary import (
     build_base_price_drivers,
     build_base_price_mom_anomalies,
@@ -77,11 +89,17 @@ from app.services.llm.analysis.bom_material_summary import (
 )
 from app.services.llm.analysis.comparability import resolve_runtime_comparability
 from app.services.llm.analysis.comparison import build_location_comparison
+from app.services.llm.analysis.composition import (
+    build_composition_anomalies,
+    composition_risk_entry,
+)
 from app.services.llm.analysis.constants import ANALYSIS_VERSION
 from app.services.llm.analysis.cost_driver import (
     build_l0_drivers,
     build_l0_mom_anomalies,
     build_stamping_drivers,
+    build_stamping_mom_anomalies,
+    build_welding_fee_mom_anomalies,
 )
 from app.services.llm.analysis.cost_trend import (
     build_cost_trend,
@@ -94,6 +112,18 @@ from app.services.llm.analysis.l0_welding_fee_summary import (
     build_l0_welding_fee_drilldown,
     build_l0_welding_fee_drivers,
     build_l0_welding_fee_summary,
+)
+from app.services.llm.analysis.ops_masterdata_summary import (
+    build_die_fee_drilldown,
+    build_die_fee_summary,
+    build_gauge_fee_drilldown,
+    build_gauge_fee_summary,
+    build_procurement_object_drilldown,
+    build_procurement_object_summary,
+)
+from app.services.llm.analysis.ops_workbench import (
+    build_ops_workbench_risks,
+    build_ops_workbench_summary,
 )
 from app.services.llm.analysis.packaging_transport_fee_summary import (
     build_packaging_transport_fee_comparison,
@@ -151,6 +181,7 @@ from app.services.llm.analysis.winning_thickness_summary import (
 )
 from app.services.llm.menu_catalog import expand_base_price_location
 from app.services.llm.query.comparison_basis import resolve_comparability
+from app.services.llm.query.time_range import shift_month
 
 
 @dataclass
@@ -185,8 +216,20 @@ class AnalysisRunner:
         self._bom_material_repo = BomMaterialAnalysisRepository()
         self._welding_breakdown_repo = WeldingProcessBreakdownAnalysisRepository()
         self._l0_welding_fee_repo = L0WeldingFeeAnalysisRepository()
+        self._ops_workbench_repo = OpsWorkbenchRepository()
+        self._die_fee_repo = DieFeeAnalysisRepository()
+        self._gauge_fee_repo = GaugeFeeAnalysisRepository()
+        self._procurement_object_repo = ProcurementObjectAnalysisRepository()
 
     def run(self, db: Session, query: AnalysisQuery) -> AnalysisRunResult:
+        if query.subject == "ops_workbench":
+            return self._run_ops_workbench(db, query)
+        if query.subject == "stamping_die_fee":
+            return self._run_stamping_die_fee(db, query)
+        if query.subject == "stamping_gauge_fee":
+            return self._run_stamping_gauge_fee(db, query)
+        if query.subject == "procurement_object":
+            return self._run_procurement_object(db, query)
         if query.subject == "stamping_process":
             return self._run_stamping_process(db, query)
         if query.subject == "stamping_tonnage":
@@ -220,6 +263,189 @@ class AnalysisRunner:
         if query.subject == "part":
             return self._run_part_lookup(db, query)
         return self._run_l0(db, query)
+
+    def _run_ops_workbench(self, db: Session, query: AnalysisQuery) -> AnalysisRunResult:
+        tr = query.time_range
+        boards = self._ops_workbench_repo.query_boards(
+            db,
+            location=query.location(),
+            vehicle_model=query.vehicle_model(),
+            year=tr.end_year,
+            month=tr.end_month,
+        )
+        summary = build_ops_workbench_summary(boards)
+        out = AnalysisRunResult(
+            comparability=resolve_comparability(query.comparison_basis),
+            has_data=any(row.row_count > 0 for row in boards),
+            data_message=(
+                f"待审核={summary['pending_audit_total']}，"
+                f"未完成={summary['incomplete_total']}，"
+                f"待确认外发={summary['pending_confirm_total']}"
+            ),
+            summary=summary,
+        )
+        parts_result: dict[str, Any] = {}
+        if "risk" in query.analyses:
+            parts_result["risk"] = build_ops_workbench_risks(summary)
+        out.result = _compose_result(parts_result, default_kind="summary")
+        return out
+
+    def _run_stamping_die_fee(self, db: Session, query: AnalysisQuery) -> AnalysisRunResult:
+        tr = query.time_range
+        part_token = query.part_number() or ""
+        rows = self._die_fee_repo.query_rows(
+            db,
+            location=query.location(),
+            vehicle_model=query.vehicle_model(),
+            start_year=tr.start_year,
+            end_year=tr.end_year,
+            part_number=part_token or None,
+        )
+        head = self._die_fee_repo.pick_best_row(rows, part_token=part_token) if part_token else None
+        out = AnalysisRunResult(
+            comparability=resolve_comparability(query.comparison_basis),
+            has_data=bool(rows),
+            data_message=(f"模具费行={len(rows)}" if rows else "当前范围无模具费数据"),
+        )
+        parts_result: dict[str, Any] = {}
+        if "summary" in query.analyses:
+            out.summary = build_die_fee_summary(rows)
+        if "risk" in query.analyses and out.summary:
+            pending = int(out.summary.get("pending_audit_count") or 0)
+            zero = int(out.summary.get("zero_fee_count") or 0)
+            risks: list[dict[str, Any]] = []
+            if pending:
+                risks.append(
+                    {
+                        "risk_type": "pending_audit",
+                        "count": pending,
+                        "message": "尚有模具费未审核",
+                    }
+                )
+            if zero:
+                risks.append(
+                    {
+                        "risk_type": "zero_fee",
+                        "count": zero,
+                        "message": "尚有模具费为 0",
+                    }
+                )
+            parts_result["risk"] = {"kind": "risk", "risks": risks}
+        if "drilldown" in query.analyses or part_token:
+            parts_result["drilldown"] = build_die_fee_drilldown(
+                rows, part_token=part_token, head=head
+            )
+        default_kind = "drilldown" if part_token else "summary"
+        out.result = _compose_result(parts_result, default_kind=default_kind)
+        return out
+
+    def _run_stamping_gauge_fee(self, db: Session, query: AnalysisQuery) -> AnalysisRunResult:
+        part_token = query.part_number() or ""
+        rows = self._gauge_fee_repo.query_rows(
+            db,
+            location=query.location(),
+            vehicle_model=query.vehicle_model(),
+            part_number=part_token or None,
+        )
+        head = (
+            self._gauge_fee_repo.pick_best_row(rows, part_token=part_token) if part_token else None
+        )
+        out = AnalysisRunResult(
+            comparability=resolve_comparability(query.comparison_basis),
+            has_data=bool(rows),
+            data_message=(f"检具费行={len(rows)}" if rows else "当前范围无检具费档案"),
+        )
+        parts_result: dict[str, Any] = {}
+        if "summary" in query.analyses:
+            out.summary = build_gauge_fee_summary(rows)
+        if "risk" in query.analyses and out.summary:
+            zero = int(out.summary.get("zero_fee_count") or 0)
+            invalid = int(out.summary.get("invalid_count") or 0)
+            gauge_risks: list[dict[str, Any]] = []
+            if zero:
+                gauge_risks.append(
+                    {
+                        "risk_type": "zero_fee",
+                        "count": zero,
+                        "message": "尚有检具费为 0",
+                    }
+                )
+            if invalid:
+                gauge_risks.append(
+                    {
+                        "risk_type": "invalid_gauge",
+                        "count": invalid,
+                        "message": "尚有检具费档案非有效",
+                    }
+                )
+            parts_result["risk"] = {"kind": "risk", "risks": gauge_risks}
+        if "drilldown" in query.analyses or part_token:
+            parts_result["drilldown"] = build_gauge_fee_drilldown(
+                rows, part_token=part_token, head=head
+            )
+        default_kind = "drilldown" if part_token else "summary"
+        out.result = _compose_result(parts_result, default_kind=default_kind)
+        return out
+
+    def _run_procurement_object(self, db: Session, query: AnalysisQuery) -> AnalysisRunResult:
+        part_token = query.part_number() or ""
+        rows = self._procurement_object_repo.query_rows(
+            db,
+            location=query.location(),
+            vehicle_model=query.vehicle_model(),
+            bom_version=query.bom_version(),
+            part_number=part_token or None,
+        )
+        head = (
+            self._procurement_object_repo.pick_best_row(rows, part_token=part_token)
+            if part_token
+            else None
+        )
+        out = AnalysisRunResult(
+            comparability=resolve_comparability(query.comparison_basis),
+            has_data=bool(rows),
+            data_message=(f"采购对象行={len(rows)}" if rows else "当前范围无采购对象清单"),
+        )
+        parts_result: dict[str, Any] = {}
+        if "summary" in query.analyses:
+            out.summary = build_procurement_object_summary(rows)
+        if "drilldown" in query.analyses or part_token:
+            parts_result["drilldown"] = build_procurement_object_drilldown(
+                rows, part_token=part_token, head=head
+            )
+        if "risk" in query.analyses and out.summary:
+            pending_confirm = int(out.summary.get("pending_confirm_count") or 0)
+            pending_audit = int(out.summary.get("pending_audit_count") or 0)
+            anomaly = int(out.summary.get("anomaly_count") or 0)
+            risks: list[dict[str, Any]] = []
+            if pending_confirm:
+                risks.append(
+                    {
+                        "risk_type": "pending_confirm",
+                        "count": pending_confirm,
+                        "message": "尚有采购对象未确认外发/自制",
+                    }
+                )
+            if pending_audit:
+                risks.append(
+                    {
+                        "risk_type": "pending_audit",
+                        "count": pending_audit,
+                        "message": "尚有采购对象未审核",
+                    }
+                )
+            if anomaly:
+                risks.append(
+                    {
+                        "risk_type": "procurement_anomaly",
+                        "count": anomaly,
+                        "message": "采购对象核对区仍有异常件",
+                    }
+                )
+            parts_result["risk"] = {"kind": "risk", "risks": risks}
+        default_kind = "drilldown" if part_token else "summary"
+        out.result = _compose_result(parts_result, default_kind=default_kind)
+        return out
 
     def _run_stamping_process(self, db: Session, query: AnalysisQuery) -> AnalysisRunResult:
         """对齐「冲压零件列表」#/stamping-parts（工艺主数据）。"""
@@ -369,25 +595,38 @@ class AnalysisRunner:
     def _run_stamping_part(self, db: Session, query: AnalysisQuery) -> AnalysisRunResult:
         """对齐「冲压零件价格一览」#/stamping-part-cost。"""
         tr = query.time_range
+        peek_previous_month = query.time_range.month_span() == 1 and any(
+            kind in query.analyses for kind in ("risk", "drivers", "trend")
+        )
+        start_year, start_month = tr.start_year, tr.start_month
+        if peek_previous_month:
+            start_year, start_month = shift_month(tr.start_year, tr.start_month, -1)
         rows = self._stamping_repo.query_part_rows(
             db,
             location=query.location(),
             vehicle_model=query.vehicle_model(),
-            start_year=tr.start_year,
-            start_month=tr.start_month,
+            start_year=start_year,
+            start_month=start_month,
             end_year=tr.end_year,
             end_month=tr.end_month,
             part_number=query.part_number(),
         )
+        focus_rows = (
+            [row for row in rows if row.year == tr.end_year and row.month == tr.end_month]
+            if peek_previous_month
+            else rows
+        )
         out = AnalysisRunResult(
             comparability=resolve_comparability(query.comparison_basis),
-            has_data=bool(rows),
-            data_message=(f"冲压零件行={len(rows)}" if rows else "当前范围无冲压零件价格数据"),
+            has_data=bool(focus_rows),
+            data_message=(
+                f"冲压零件行={len(focus_rows)}" if focus_rows else "当前范围无冲压零件价格数据"
+            ),
         )
         parts_result: dict[str, Any] = {}
 
         if "summary" in query.analyses:
-            out.summary = build_stamping_summary(rows)
+            out.summary = build_stamping_summary(focus_rows)
 
         if "trend" in query.analyses:
             parts_result["trend"] = build_stamping_trend(rows, basis=query.comparison_basis)
@@ -396,11 +635,20 @@ class AnalysisRunner:
             parts_result["drivers"] = build_stamping_drivers(rows)
 
         if "risk" in query.analyses:
-            parts_result["risk"] = build_stamping_risks(rows)
+            parts_result["risk"] = build_stamping_risks(focus_rows)
+
+        if rows and any(kind in query.analyses for kind in ("risk", "drivers", "trend")):
+            focus_month = None
+            if peek_previous_month:
+                focus_month = f"{tr.end_year:04d}-{tr.end_month:02d}"
+            parts_result["mom_anomalies"] = build_stamping_mom_anomalies(
+                rows,
+                focus_month=focus_month,
+            )
 
         if "drilldown" in query.analyses:
             parts_result["drilldown"] = _build_stamping_drilldown(
-                rows, part_number=query.part_number() or ""
+                focus_rows, part_number=query.part_number() or ""
             )
 
         out.result = _compose_result(parts_result, default_kind="summary")
@@ -413,7 +661,7 @@ class AnalysisRunner:
                 "calc_status": row.calc_status,
                 "stamping_supplier": row.stamping_supplier,
             }
-            for row in rows[:50]
+            for row in focus_rows[:50]
         ]
         return out
 
@@ -670,6 +918,16 @@ class AnalysisRunner:
                 head=head,
             )
 
+        if "risk" in query.analyses:
+            conversion = build_annual_part_price_conversion_anomalies(rows)
+            parts_result["annual_price_anomalies"] = conversion
+            risk_payload: dict[str, Any] = {"kind": "risk", "risks": []}
+            conversion_risk = annual_price_conversion_risk_entry(conversion)
+            if conversion_risk is not None:
+                risk_payload["risks"].append(conversion_risk)
+                risk_payload["annual_price_conversion_count"] = conversion_risk["count"]
+            parts_result["risk"] = risk_payload
+
         if "comparison" in query.analyses:
             default_kind = "comparison"
         elif part_token:
@@ -684,7 +942,15 @@ class AnalysisRunner:
                 "part_number": row.part_number,
                 "part_name": row.part_name,
                 "supply_type": row.supply_type,
+                "unit": row.unit,
                 "unit_price": f"{row.unit_price:.4f}",
+                "purchase_unit": row.purchase_unit,
+                "purchase_unit_price": (
+                    f"{row.purchase_unit_price:.4f}"
+                    if row.purchase_unit_price is not None
+                    else None
+                ),
+                "conversion_factor": str(row.conversion_factor),
                 "audit_status": row.audit_status,
             }
             for row in rows[:50]
@@ -863,12 +1129,16 @@ class AnalysisRunner:
         """对齐「焊接费列表」#/bom-welding-fee-list。"""
         tr = query.time_range
         part_token = query.part_number() or ""
+        peek_previous_year = tr.start_year == tr.end_year and any(
+            kind in query.analyses for kind in ("risk", "drivers", "trend", "comparison")
+        )
+        start_year = tr.start_year - 1 if peek_previous_year else tr.start_year
         rows = self._l0_welding_fee_repo.query_rows(
             db,
             location=query.location(),
             vehicle_model=query.vehicle_model(),
             bom_version=query.bom_version(),
-            start_year=tr.start_year,
+            start_year=start_year,
             end_year=tr.end_year,
             part_number=part_token or None,
         )
@@ -880,19 +1150,24 @@ class AnalysisRunner:
                 bom_version=query.bom_version(),
                 part_number=part_token,
             )
+        focus_rows = (
+            [row for row in rows if row.year == tr.end_year] if peek_previous_year else rows
+        )
         head = (
-            self._l0_welding_fee_repo.pick_best_row(rows, part_token=part_token)
+            self._l0_welding_fee_repo.pick_best_row(focus_rows, part_token=part_token)
             if part_token
             else None
         )
         out = AnalysisRunResult(
             comparability=resolve_comparability(query.comparison_basis),
-            has_data=bool(rows),
-            data_message=(f"成品焊接费行={len(rows)}" if rows else "当前范围无成品焊接费数据"),
+            has_data=bool(focus_rows),
+            data_message=(
+                f"成品焊接费行={len(focus_rows)}" if focus_rows else "当前范围无成品焊接费数据"
+            ),
         )
         parts_result: dict[str, Any] = {}
         if "summary" in query.analyses:
-            out.summary = build_l0_welding_fee_summary(rows)
+            out.summary = build_l0_welding_fee_summary(focus_rows)
         if "comparison" in query.analyses:
             parts_result["comparison"] = build_l0_welding_fee_comparison(
                 rows,
@@ -900,9 +1175,16 @@ class AnalysisRunner:
             )
         if "drivers" in query.analyses:
             parts_result["drivers"] = build_l0_welding_fee_drivers(rows)
+        if "risk" in query.analyses:
+            parts_result["risk"] = build_welding_fee_risks(focus_rows)
+        if rows and any(kind in query.analyses for kind in ("risk", "drivers", "trend")):
+            parts_result["mom_anomalies"] = build_welding_fee_mom_anomalies(
+                rows,
+                focus_year=tr.end_year if peek_previous_year else None,
+            )
         if "drilldown" in query.analyses or part_token:
             parts_result["drilldown"] = build_l0_welding_fee_drilldown(
-                rows,
+                focus_rows,
                 part_token=part_token,
                 head=head,
             )
@@ -923,7 +1205,7 @@ class AnalysisRunner:
                 ),
                 "calc_status": row.calc_status,
             }
-            for row in rows[:50]
+            for row in focus_rows[:50]
         ]
         return out
 
@@ -1087,16 +1369,22 @@ class AnalysisRunner:
         need_parts = any(
             kind in query.analyses for kind in ("drivers", "risk", "drilldown", "trend", "summary")
         )
+        peek_previous_month = query.time_range.month_span() == 1 and any(
+            kind in query.analyses for kind in ("risk", "drivers", "trend")
+        )
         part_rows: list[L0PartPeriodRow] = []
         filtered_missing = 0
         if need_parts:
+            part_start_year, part_start_month = tr.start_year, tr.start_month
+            if peek_previous_month:
+                part_start_year, part_start_month = shift_month(tr.start_year, tr.start_month, -1)
             part_rows = self._l0_repo.query_part_rows(
                 db,
                 location=location,
                 vehicle_model=vehicle_model,
                 bom_version=bom_version,
-                start_year=tr.start_year,
-                start_month=tr.start_month,
+                start_year=part_start_year,
+                start_month=part_start_month,
                 end_year=tr.end_year,
                 end_month=tr.end_month,
                 part_number=query.part_number(),
@@ -1114,9 +1402,15 @@ class AnalysisRunner:
                 trace_id=trace_id,
             )
 
+        focus_part_rows = (
+            [row for row in part_rows if row.year == tr.end_year and row.month == tr.end_month]
+            if peek_previous_month
+            else part_rows
+        )
+
         comparability, comparability_note = resolve_runtime_comparability(
             basis=query.comparison_basis,
-            part_rows=part_rows,
+            part_rows=focus_part_rows,
         )
         out = AnalysisRunResult(
             comparability=comparability,
@@ -1127,7 +1421,7 @@ class AnalysisRunner:
         driver_top_n = query.top_n()
 
         if "summary" in query.analyses:
-            out.summary = build_summary(monthly, part_rows=part_rows or None)
+            out.summary = build_summary(monthly, part_rows=focus_part_rows or None)
 
         if "trend" in query.analyses:
             single_month = query.time_range.start == query.time_range.end
@@ -1148,13 +1442,39 @@ class AnalysisRunner:
             )
 
         if "risk" in query.analyses:
-            parts_result["risk"] = build_risks(
-                part_rows,
+            risk_payload = build_risks(
+                focus_part_rows,
                 filtered_missing_price_count=filtered_missing,
             )
+            composition = build_composition_anomalies(
+                self._l0_repo.query_composition_lines(
+                    db,
+                    location=location,
+                    vehicle_model=vehicle_model,
+                    bom_version=bom_version,
+                    start_year=tr.start_year,
+                    start_month=tr.start_month,
+                    end_year=tr.end_year,
+                    end_month=tr.end_month,
+                    part_number=query.part_number(),
+                    trace_id=trace_id,
+                )
+            )
+            parts_result["composition_anomalies"] = composition
+            composition_risk = composition_risk_entry(composition)
+            if composition_risk is not None:
+                risk_payload["risks"].append(composition_risk)
+                risk_payload["composition_dominance_count"] = composition_risk["count"]
+            parts_result["risk"] = risk_payload
 
         if part_rows and any(kind in query.analyses for kind in ("risk", "drivers", "trend")):
-            parts_result["mom_anomalies"] = build_l0_mom_anomalies(part_rows)
+            focus_month = None
+            if peek_previous_month:
+                focus_month = f"{tr.end_year:04d}-{tr.end_month:02d}"
+            parts_result["mom_anomalies"] = build_l0_mom_anomalies(
+                part_rows,
+                focus_month=focus_month,
+            )
 
         if "drilldown" in query.analyses:
             part_number = query.part_number() or ""
@@ -1179,7 +1499,7 @@ class AnalysisRunner:
             out.data_message = base_message or missing_message or "当前查询范围无核价结果"
 
         if out.summary is None and monthly:
-            out.summary = build_summary(monthly, part_rows=part_rows or None)
+            out.summary = build_summary(monthly, part_rows=focus_part_rows or None)
 
         out.evidence["monthly_totals"] = [
             {

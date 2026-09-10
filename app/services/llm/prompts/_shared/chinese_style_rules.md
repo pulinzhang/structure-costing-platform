@@ -17,6 +17,10 @@
 | `indirect` / `indirect_amount` | 间接费用 |
 | `stamping` / `stamping_amount` | 冲压费用 / 冲压分项 |
 | `purchased` / `purchased_amount` | 外购费用 / 外购分项 |
+| `composition_anomalies` / `share_of_should_cost` | 构成独大 / 占应成本比例 |
+| `effective_qty` | 有效用量 |
+| `conversion_factor` / `purchase_unit_price` | 转换系数 / 采购单价 |
+| `expected_unit_price` | 应有核价单价（采购单价÷转换系数） |
 | `bundle` / `bundle_amount` | 一口价费用 / 一口价分项 |
 | `welding` / `welding_amount` | 焊接费用 / 焊接分项 |
 | `welding_other` | 焊接其他费用 |

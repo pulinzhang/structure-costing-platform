@@ -11,6 +11,7 @@ from sqlalchemy.sql.elements import ColumnElement
 
 from app.common.part_number import escape_like_fragment
 from app.models.costing.assembly_cost import AssemblyCost
+from app.models.costing.assembly_cost_item import AssemblyCostItem
 from app.repositories.llm._query_guard import run_guarded_query
 from app.repositories.llm.location_in import location_in_clause, location_in_list_clause
 from app.services.llm._money import ym_int
@@ -53,6 +54,24 @@ class L0PartPeriodRow:
     welding_other_fee: Decimal
     indirect_amount: Decimal
     bom_version: str
+    should_cost: Decimal | None = None
+
+
+@dataclass(frozen=True, slots=True)
+class L0CompositionLineRow:
+    """树根核价卡上的一条材料明细（供构成独大分析）。"""
+
+    year: int
+    month: int
+    root_part_number: str
+    root_part_name: str | None
+    root_should_cost: Decimal
+    child_part_number: str
+    child_part_name: str | None
+    cost_source: str
+    unit_price: Decimal
+    effective_qty: Decimal
+    line_amount: Decimal
 
 
 def _is_missing_price() -> ColumnElement[bool]:
@@ -347,6 +366,103 @@ class L0CostAnalysisRepository:
                 welding_other_fee=Decimal(str(row.welding_other_fee or 0)),
                 indirect_amount=Decimal(str(row.indirect_amount or 0)),
                 bom_version=str(row.bom_version),
+                should_cost=Decimal(str(row.should_cost or row.total_amount or 0)),
             )
             for row in q.all()
         ]
+
+    def query_composition_lines(
+        self,
+        db: Session,
+        *,
+        location: str | None,
+        vehicle_model: str | None,
+        bom_version: str | None,
+        start_year: int,
+        start_month: int,
+        end_year: int,
+        end_month: int,
+        part_number: str | None = None,
+        limit: int = 4000,
+        trace_id: str | None = None,
+    ) -> list[L0CompositionLineRow]:
+        return run_guarded_query(
+            sql_summary="costing_assembly_cost_items.query_composition_lines",
+            trace_id=trace_id,
+            query_fn=lambda: self._query_composition_lines_impl(
+                db,
+                location=location,
+                vehicle_model=vehicle_model,
+                bom_version=bom_version,
+                start_year=start_year,
+                start_month=start_month,
+                end_year=end_year,
+                end_month=end_month,
+                part_number=part_number,
+                limit=limit,
+            ),
+        )
+
+    def _query_composition_lines_impl(
+        self,
+        db: Session,
+        *,
+        location: str | None,
+        vehicle_model: str | None,
+        bom_version: str | None,
+        start_year: int,
+        start_month: int,
+        end_year: int,
+        end_month: int,
+        part_number: str | None,
+        limit: int,
+    ) -> list[L0CompositionLineRow]:
+        start = ym_int(start_year, start_month)
+        end = ym_int(end_year, end_month)
+        ym_expr = AssemblyCost.year * 100 + AssemblyCost.month
+        q = (
+            db.query(AssemblyCost, AssemblyCostItem)
+            .join(
+                AssemblyCostItem,
+                AssemblyCostItem.assembly_cost_id == AssemblyCost.id,
+            )
+            .filter(
+                ym_expr >= start,
+                ym_expr <= end,
+                AssemblyCost.is_tree_root.is_(True),
+                AssemblyCost.should_cost > 0,
+                or_(
+                    AssemblyCostItem.line_amount >= 50,
+                    AssemblyCostItem.effective_qty >= 10000,
+                ),
+            )
+        )
+        loc_filter = location_in_clause(db, AssemblyCost.location, location)
+        if loc_filter is not None:
+            q = q.filter(loc_filter)
+        if vehicle_model:
+            q = q.filter(AssemblyCost.vehicle_model == vehicle_model)
+        if bom_version:
+            q = q.filter(AssemblyCost.bom_version == bom_version)
+        if part_number:
+            pattern = f"%{escape_like_fragment(part_number)}%"
+            q = q.filter(AssemblyCost.part_number.like(pattern, escape="\\"))
+        q = q.order_by(AssemblyCostItem.line_amount.desc()).limit(limit)
+        rows: list[L0CompositionLineRow] = []
+        for card, item in q.all():
+            rows.append(
+                L0CompositionLineRow(
+                    year=int(card.year),
+                    month=int(card.month),
+                    root_part_number=str(card.part_number),
+                    root_part_name=card.part_name,
+                    root_should_cost=Decimal(str(card.should_cost or card.total_amount or 0)),
+                    child_part_number=str(item.part_number),
+                    child_part_name=item.part_name,
+                    cost_source=str(item.cost_source or ""),
+                    unit_price=Decimal(str(item.unit_price or 0)),
+                    effective_qty=Decimal(str(item.effective_qty or 0)),
+                    line_amount=Decimal(str(item.line_amount or 0)),
+                )
+            )
+        return rows

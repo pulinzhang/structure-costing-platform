@@ -115,6 +115,29 @@ class SteelBasePriceQuery(BaseModel):
         return _strip(v)
 
 
+class SteelBasePriceExportQuery(BaseModel):
+    """基准价格导出筛选：年度、月份、基地、钢厂、钢种大类、牌号。"""
+
+    year: int | None = Field(None, ge=2000, le=2100, description="订单发布年份")
+    month: int | None = Field(None, ge=1, le=12, description="订单发布月份")
+    location: str | None = Field(None, description="采购基地")
+    steel_mill: str | None = Field(None, description="中标钢厂")
+    category_name: str | None = Field(None, description="钢种大类")
+    grade: str | None = Field(None, description="牌号（模糊）")
+
+    @field_validator("location", "steel_mill", "category_name", "grade", mode="before")
+    @classmethod
+    def strip_export_strings(cls, v: Any) -> Any:
+        return _strip(v)
+
+
+class SteelBasePriceExportPreviewQuery(SteelBasePriceExportQuery):
+    """基准价格导出预览分页。"""
+
+    page: int | None = Field(None, ge=1, description="页码（前端分页用）")
+    size: int | None = Field(None, ge=1, le=5000, description="每页条数")
+
+
 # ============================
 # Repository 写入载荷
 # ============================

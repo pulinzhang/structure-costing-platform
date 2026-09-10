@@ -31,9 +31,9 @@ export function winningThicknessDownloadTemplate() {
                         ${filterSelect('winningThicknessYear', '年度', true)}
                         ${filterSelect('winningThicknessMonth', '月份', true)}
                         ${filterSelect('winningThicknessLocation', '基地', true)}
+                        ${filterSelect('winningThicknessMill', '钢厂', false)}
                         ${filterSelect('winningThicknessCategory', '分类', false)}
                         ${filterInputWithDatalist('winningThicknessGrade', '牌号', 'winningThicknessGradeOptions')}
-                        ${filterSelect('winningThicknessMill', '钢厂', false)}
                     </div>
                     <div class="flex items-center gap-2">
                         <button id="btnPreviewWinningThickness"

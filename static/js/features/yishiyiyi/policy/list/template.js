@@ -47,9 +47,9 @@ export function policyDownloadTemplate() {
                     <div class="flex items-end gap-3 flex-wrap">
                         ${filterSelect('policyDownloadYear', '年度')}
                         ${filterSelect('policyDownloadMonth', '月份')}
-                        ${filterSelect('policyDownloadCategory', '分类')}
+                        ${filterSelect('policyDownloadMill', '钢厂')}
+                        ${filterSelect('policyDownloadCategory', '钢种大类')}
                         ${filterInputWithDatalist('policyDownloadGrade', '牌号', 'policyGradeOptions')}
-                        ${filterInputWithDatalist('policyDownloadMill', '钢厂', 'steelMillOptions')}
                     </div>
                     <div class="flex items-center gap-2">
                         <button id="btnPreview"
@@ -66,7 +66,7 @@ export function policyDownloadTemplate() {
                     <div class="bg-[#0c0c0c] border border-[#1a1a1a] rounded p-3">
                         <p class="text-[11px] text-[#888888] leading-5">
                             <span class="text-[#9e9e9e] font-medium">说明：</span>
-                            根据所选条件导出钢价政策主子表数据。政策主表（年度、月份、钢厂、大类、类型、牌号等）与阶梯明细表（厚度区间、宽度区间、加减价等）联合查询，结果用于测试部门核对数据。删除时须选择年度与月份，钢厂可选（不选则删除该年月全部钢厂数据）。
+                            筛选条件为年度、月份、钢厂、钢种大类、牌号。按条件预览或导出厚度加减价主子表。删除须选择年度与月份，钢厂可选（不选则删除该年月全部钢厂数据）。
                         </p>
                     </div>
                 </div>
@@ -183,7 +183,7 @@ function filterInputWithDatalist(id, label, datalistId) {
         <span class="block text-[9px] font-semibold text-[#484848] uppercase tracking-[0.12em] whitespace-nowrap">${label}</span>
         <input type="text" id="${id}" list="${datalistId}" disabled
                class="w-44 h-7 pl-2.5 pr-3 text-[11px] bg-[#0d0d0d] border border-[#272727] text-[#909090] placeholder:text-[#505050] focus:outline-none focus:border-[#ff5252] focus:text-[#d0d0d0] transition-all rounded-sm disabled:opacity-50 disabled:cursor-not-allowed"
-               placeholder="请先选择分类">
+               placeholder="请先选择钢种大类">
         <datalist id="${datalistId}"></datalist>
     </label>`;
 }
