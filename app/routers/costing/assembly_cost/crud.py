@@ -21,6 +21,7 @@ from app.schemas.dto.assembly_cost_dto import (
     AssemblyCostQuery,
     AssemblyCostView,
 )
+from app.schemas.vo.assembly_cost_restore_vo import AssemblyCostRestoreVO
 from app.schemas.vo.assembly_cost_vo import (
     AssemblyCostBatchResultVO,
     AssemblyCostVO,
@@ -32,6 +33,9 @@ from app.services.costing.assembly_cost.assembly_cost_service import (
 from app.services.costing.assembly_cost.export.assembly_cost_export_service import (
     AssemblyCostExportService,
 )
+from app.services.costing.assembly_cost.restore.restore_service import (
+    AssemblyCostRestoreService,
+)
 from app.utils.response import ApiResponse
 
 router = APIRouter(
@@ -41,6 +45,7 @@ router = APIRouter(
 
 _service = AssemblyCostService()
 _export_service = AssemblyCostExportService()
+_restore_service = AssemblyCostRestoreService()
 
 
 @router.get(
@@ -125,6 +130,48 @@ def export_download(
         media_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
         headers={"Content-Disposition": f"attachment; filename*=UTF-8''{quote(filename)}"},
     )
+
+
+@router.get(
+    "/restore",
+    response_model=ApiResponse[AssemblyCostRestoreVO],
+)
+def get_restore_by_part(
+    year: int = Query(..., ge=2000, le=2100),
+    month: int = Query(..., ge=1, le=12),
+    part_number: str = Query(..., min_length=1),
+    location: str | None = Query(None),
+    vehicle_model: str | None = Query(None),
+    bom_version: str | None = Query(None),
+    view: str = Query("finance"),
+    db: Session = Depends(get_db),
+    current_user: UserVO = Depends(require_perm(Perm.ASSEMBLY_COST_VIEW)),
+) -> ApiResponse[AssemblyCostRestoreVO]:
+    row = _restore_service.get_restore_by_part(
+        db,
+        year=year,
+        month=month,
+        part_number=part_number,
+        location=location,
+        vehicle_model=vehicle_model,
+        bom_version=bom_version,
+        view=view,
+    )
+    return ApiResponse.ok(data=row)
+
+
+@router.get(
+    "/{cost_id}/restore",
+    response_model=ApiResponse[AssemblyCostRestoreVO],
+)
+def get_restore(
+    cost_id: int,
+    view: str = Query("finance"),
+    db: Session = Depends(get_db),
+    current_user: UserVO = Depends(require_perm(Perm.ASSEMBLY_COST_VIEW)),
+) -> ApiResponse[AssemblyCostRestoreVO]:
+    row = _restore_service.get_restore(db, cost_id, view=view)
+    return ApiResponse.ok(data=row)
 
 
 @router.get(

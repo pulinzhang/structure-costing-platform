@@ -7,13 +7,25 @@ from decimal import ROUND_HALF_UP, Decimal
 from typing import Any
 
 from app.repositories.llm.annual_part_price_analysis_repository import AnnualPartPriceRow
+from app.services.llm.analysis.constants import (
+    ANNUAL_PRICE_CONVERSION_FACTOR_MIN,
+    ANNUAL_PRICE_CONVERSION_TOLERANCE,
+)
+
+_PRICE_QUANT = Decimal("0.0001")
+_FINE_COSTING_UNITS = frozenset({"mm", "cm", "g", "ml", "毫克", "毫升", "毫米", "厘米"})
+_BULK_PURCHASE_UNITS = frozenset({"桶", "瓶", "罐", "kg", "KG", "公斤", "升", "L", "l", "盒", "箱"})
 
 
 def _unit_price_str(value: Decimal | None) -> str | None:
     if value is None:
         return None
-    quantized = value.quantize(Decimal("0.0001"), rounding=ROUND_HALF_UP)
+    quantized = value.quantize(_PRICE_QUANT, rounding=ROUND_HALF_UP)
     return f"{quantized:.4f}"
+
+
+def _round4(value: Decimal) -> Decimal:
+    return value.quantize(_PRICE_QUANT, rounding=ROUND_HALF_UP)
 
 
 def build_annual_part_price_summary(
@@ -182,6 +194,9 @@ def build_annual_part_price_drilldown(
             "supply_type": row.supply_type,
             "unit": row.unit,
             "unit_price": _unit_price_str(row.unit_price),
+            "purchase_unit": row.purchase_unit,
+            "purchase_unit_price": _unit_price_str(row.purchase_unit_price),
+            "conversion_factor": str(row.conversion_factor),
             "audit_status": row.audit_status,
         }
         for row in rows
@@ -197,6 +212,9 @@ def build_annual_part_price_drilldown(
         "supply_type": best.supply_type,
         "unit": best.unit,
         "unit_price": _unit_price_str(best.unit_price),
+        "purchase_unit": best.purchase_unit,
+        "purchase_unit_price": _unit_price_str(best.purchase_unit_price),
+        "conversion_factor": str(best.conversion_factor),
         "audit_status": best.audit_status,
         "items": items,
     }
@@ -227,3 +245,124 @@ def build_annual_part_price_drivers(
         for index, row in enumerate(ranked, start=1)
     ]
     return {"kind": "drivers", "items": items, "top_n": top_n}
+
+
+def build_annual_part_price_conversion_anomalies(
+    rows: list[AnnualPartPriceRow],
+    *,
+    top_n: int = 20,
+) -> dict[str, Any]:
+    """核价单价应 = 采购单价 ÷ 转换系数。未除系数会把桶价当成毫米价。"""
+    factor_min = Decimal(ANNUAL_PRICE_CONVERSION_FACTOR_MIN)
+    tolerance = Decimal(ANNUAL_PRICE_CONVERSION_TOLERANCE)
+    items: list[dict[str, Any]] = []
+    seen: set[tuple[int, str, str]] = set()
+    for row in rows:
+        flags = _conversion_flags(row, factor_min=factor_min, tolerance=tolerance)
+        if not flags:
+            continue
+        key = (row.year, row.location, row.part_number)
+        if key in seen:
+            continue
+        seen.add(key)
+        purchase = row.purchase_unit_price
+        factor = row.conversion_factor if row.conversion_factor > 0 else Decimal("1")
+        derived = _round4(purchase / factor) if purchase is not None and purchase > 0 else None
+        items.append(
+            {
+                "anomaly_type": flags[0],
+                "anomaly_flags": flags,
+                "year": row.year,
+                "location": row.location,
+                "part_number": row.part_number,
+                "part_name": row.part_name,
+                "supply_type": row.supply_type,
+                "purchase_unit": row.purchase_unit,
+                "purchase_unit_price": _unit_price_str(purchase),
+                "conversion_factor": str(factor),
+                "unit": row.unit,
+                "unit_price": _unit_price_str(row.unit_price),
+                "expected_unit_price": _unit_price_str(derived),
+                "message": _conversion_message(flags[0], row.unit, factor),
+            }
+        )
+    items.sort(key=lambda item: (item["anomaly_type"], item["part_number"]))
+    return {
+        "kind": "annual_price_anomalies",
+        "threshold": str(tolerance),
+        "conversion_factor_min": str(factor_min),
+        "items": items[:top_n],
+    }
+
+
+def annual_price_conversion_risk_entry(payload: dict[str, Any]) -> dict[str, Any] | None:
+    items = list(payload.get("items") or [])
+    if not items:
+        return None
+    return {
+        "risk_type": "annual_price_conversion",
+        "severity": "high",
+        "count": len(items),
+        "message": "年度零件价存在未按转换系数换算的核价单价（桶/瓶价可能被当成毫米单价）",
+        "sample_part_numbers": [item["part_number"] for item in items[:8]],
+        "conversion_items": items,
+    }
+
+
+def _conversion_flags(
+    row: AnnualPartPriceRow,
+    *,
+    factor_min: Decimal,
+    tolerance: Decimal,
+) -> list[str]:
+    flags: list[str] = []
+    factor = row.conversion_factor if row.conversion_factor > 0 else Decimal("1")
+    purchase = row.purchase_unit_price
+    unit_key = (row.unit or "").strip().lower()
+    purchase_unit = (row.purchase_unit or "").strip()
+    is_fine_unit = unit_key in _FINE_COSTING_UNITS or (row.unit or "") in _FINE_COSTING_UNITS
+
+    if purchase is not None and purchase > 0 and factor >= factor_min:
+        ratio = row.unit_price / purchase
+        derived = _round4(purchase / factor)
+        if Decimal("0.5") <= ratio <= Decimal("2"):
+            flags.append("skipped_conversion")
+        elif derived > 0:
+            error = abs(row.unit_price - derived) / derived
+            if error >= tolerance:
+                flags.append("conversion_mismatch")
+
+    if (
+        is_fine_unit
+        and factor <= Decimal("1")
+        and purchase_unit in _BULK_PURCHASE_UNITS
+        and row.unit_price >= Decimal("0.01")
+    ):
+        flags.append("fine_unit_unconverted")
+
+    if (
+        is_fine_unit
+        and row.unit_price >= Decimal("0.01")
+        and "skipped_conversion" not in flags
+        and "fine_unit_unconverted" not in flags
+        and (
+            factor >= factor_min
+            or (purchase is not None and row.unit_price >= purchase * Decimal("0.5"))
+        )
+    ):
+        flags.append("fine_unit_high_price")
+
+    return flags
+
+
+def _conversion_message(anomaly_type: str, unit: str, factor: Decimal) -> str:
+    if anomaly_type == "skipped_conversion":
+        return (
+            f"核价单价与采购单价几乎相同，未除转换系数 {factor}；"
+            f"若核价单位是 {unit}，成本会放大约 {factor} 倍"
+        )
+    if anomaly_type == "fine_unit_unconverted":
+        return f"采购按桶/瓶，核价单位是 {unit}，但转换系数为 1，毫米/克单价可能被当成采购价"
+    if anomaly_type == "fine_unit_high_price":
+        return f"核价单位是 {unit}，核价单价偏高，请核是否把采购单价填进了毫米单价"
+    return "核价单价与「采购单价÷转换系数」不一致"

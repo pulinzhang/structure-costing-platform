@@ -30,6 +30,22 @@ _ANALYSIS_DATA_SIGNALS: tuple[str, ...] = (
     "存在吗",
     "有没有这个",
     "在不在",
+    "异常",
+    "有没有异常",
+    "有无异常",
+    "单价为0",
+    "单价是0",
+    "偏差",
+    "待审核",
+    "进度",
+    "审完",
+    "完成情况",
+    "还没确认",
+    "外发确认",
+    "有多少",
+    "模具费情况",
+    "检具费情况",
+    "核价进度",
 )
 
 # 「缺口」口语：还差/缺什么（勿单独用「哪些数据」，否则会误伤「每月要维护哪些数据」）
@@ -71,7 +87,6 @@ _USAGE_HOW_SIGNALS: tuple[str, ...] = (
     "怎么操作",
     "如何操作",
     "怎么点",
-    "怎样",
     "怎么办",
     "如何",
     "在哪",
@@ -118,7 +133,9 @@ _USAGE_TOPIC_SIGNALS: tuple[str, ...] = (
     "导出协议",
     "模具费",
     "检具费",
-    "牌号分类",
+    "审核",
+    "反审核",
+    "计算页",
 )
 
 _STUCK_SIGNALS: tuple[str, ...] = (
@@ -157,6 +174,20 @@ _PERMISSION_SIGNALS: tuple[str, ...] = (
 
 _HELP_TOPIC_RULES: tuple[tuple[str, tuple[str, ...]], ...] = (
     ("engine", ("引擎", "自动核价", "检查就绪", "启动核价", "启动")),
+    (
+        "calc_run",
+        (
+            "冲压零件价格计算",
+            "总成核价计算",
+            "模具费计算",
+            "加工费计算",
+            "焊接费计算",
+            "计算页",
+            "怎么计算",
+            "怎么算模具费",
+        ),
+    ),
+    ("audit", ("怎么审核", "如何审核", "反审核", "审核按钮")),
     ("export", ("导出", "合册", "excel", "Excel", "核对合册")),
     ("faq_permission", _PERMISSION_SIGNALS),
     ("faq_stuck", _STUCK_SIGNALS),
@@ -179,15 +210,22 @@ _HELP_TOPIC_RULES: tuple[tuple[str, tuple[str, ...]], ...] = (
 )
 
 
+def _text_for_how_signals(text: str) -> str:
+    """「怎么样」含「怎么」，查数口吻不可当成操作问法。"""
+    return (text or "").replace("怎么样", "")
+
+
 def detect_engine_readiness_question(question: str) -> bool:
     """「还差什么才能核算/核价」→ 引擎就绪检查（非核价一览分析）。"""
     text = (question or "").strip()
     if not text:
         return False
     # 「怎么用引擎」仍走帮助；「检查就绪」本身是就绪检查
-    if "检查就绪" in text and not any(signal in text for signal in _USAGE_HOW_SIGNALS):
+    if "检查就绪" in text and not any(
+        signal in _text_for_how_signals(text) for signal in _USAGE_HOW_SIGNALS
+    ):
         return True
-    if any(signal in text for signal in _USAGE_HOW_SIGNALS):
+    if any(signal in _text_for_how_signals(text) for signal in _USAGE_HOW_SIGNALS):
         return False
     # 「每月要维护哪些数据」是帮助月历，不是某月门禁
     if ("每月" in text or "月度" in text) and "维护" in text:
@@ -206,7 +244,7 @@ def detect_query_mode(question: str) -> QueryMode:
     if detect_engine_readiness_question(text):
         return "engine_readiness"
 
-    has_how = any(signal in text for signal in _USAGE_HOW_SIGNALS)
+    has_how = any(signal in _text_for_how_signals(text) for signal in _USAGE_HOW_SIGNALS)
     has_usage_topic = any(signal in text for signal in _USAGE_TOPIC_SIGNALS)
     has_analysis = any(signal in text for signal in _ANALYSIS_DATA_SIGNALS)
 
@@ -272,3 +310,41 @@ def has_calc_stuck(text: str) -> bool:
 
 def has_permission_only(text: str) -> bool:
     return any(signal in text for signal in _PERMISSION_SIGNALS)
+
+
+_LEAD_AUDIENCE_SIGNALS: tuple[str, ...] = (
+    "主管",
+    "经理",
+    "科长",
+    "进度",
+    "待审核",
+    "审完",
+    "完成情况",
+    "作业台",
+    "还没审",
+    "还没确认",
+)
+
+_OPERATOR_AUDIENCE_SIGNALS: tuple[str, ...] = (
+    "上传",
+    "导入",
+    "计算页",
+    "怎么点",
+    "按钮",
+)
+
+
+def detect_audience(question: str, explicit: str | None = None) -> str:
+    """胶囊可显式指定；否则主管看进度、操作员看怎么做。"""
+    resolved = (explicit or "").strip()
+    if resolved in {"buyer", "buyer_lead"}:
+        return resolved
+    text = (question or "").strip()
+    if not text:
+        return "buyer_lead"
+    has_how = any(signal in _text_for_how_signals(text) for signal in _USAGE_HOW_SIGNALS)
+    if has_how or any(signal in text for signal in _OPERATOR_AUDIENCE_SIGNALS):
+        return "buyer"
+    if any(signal in text for signal in _LEAD_AUDIENCE_SIGNALS):
+        return "buyer_lead"
+    return "buyer_lead"

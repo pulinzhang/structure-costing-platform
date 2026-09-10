@@ -5,7 +5,7 @@ import {
     updateLacHud,
     updateLacFilterCapsules,
     updateLacTableHead,
-} from './template.js?v=20';
+} from './template.js?v=24';
 import {
     DEFAULT_PAGE_SIZE,
     bindPageSizeSelect,
@@ -291,6 +291,33 @@ function bindEvents() {
     });
 
     document.getElementById('lacTableBody')?.addEventListener('click', (event) => {
+        const restoreBtn = event.target.closest('.btn-open-restore');
+        if (restoreBtn) {
+            const year = restoreBtn.dataset.year;
+            const month = restoreBtn.dataset.month;
+            const partNumber = restoreBtn.dataset.partNumber;
+            if (!year || !month || !partNumber) return;
+            const view = listState.view === 'procurement' ? 'procurement' : 'finance';
+            const query = new URLSearchParams({
+                year,
+                month,
+                part_number: partNumber,
+                view,
+            });
+            const location = restoreBtn.dataset.location;
+            const vehicleModel = restoreBtn.dataset.vehicleModel;
+            const bomVersion = restoreBtn.dataset.bomVersion;
+            if (location) query.set('location', location);
+            if (vehicleModel) query.set('vehicle_model', vehicleModel);
+            if (bomVersion) query.set('bom_version', bomVersion);
+            const opened = window.open(
+                `/assembly-cost-restore?${query.toString()}`,
+                '_blank',
+                'noopener,noreferrer',
+            );
+            if (opened) opened.opener = null;
+            return;
+        }
         const detailBtn = event.target.closest('.btn-open-detail');
         if (detailBtn) {
             openDetail(Number(detailBtn.dataset.id));

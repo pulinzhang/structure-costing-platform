@@ -62,6 +62,80 @@ def test_query_parser_yikoujia_alias() -> None:
     assert "drilldown" in query.analyses
 
 
+def _price_row(**kwargs):
+    from decimal import Decimal
+
+    from app.repositories.llm.annual_part_price_analysis_repository import AnnualPartPriceRow
+
+    values = {
+        "year": 2026,
+        "location": "芜湖",
+        "part_number": "B11-4102613",
+        "part_name": "点焊胶",
+        "unit": "mm",
+        "unit_price": Decimal("8.8800"),
+        "supply_type": "胶块",
+        "audit_status": "pending",
+        "purchase_unit": "桶",
+        "purchase_unit_price": Decimal("8.8800"),
+        "conversion_factor": Decimal("10000"),
+    }
+    values.update(kwargs)
+    return AnnualPartPriceRow(**values)
+
+
+def test_glue_skipped_conversion_is_flagged() -> None:
+    from app.services.llm.analysis.annual_part_price_summary import (
+        build_annual_part_price_conversion_anomalies,
+    )
+
+    result = build_annual_part_price_conversion_anomalies([_price_row()])
+    assert len(result["items"]) == 1
+    item = result["items"][0]
+    assert item["anomaly_type"] == "skipped_conversion"
+    assert item["part_number"] == "B11-4102613"
+    assert item["expected_unit_price"] == "0.0009"
+    assert item["unit_price"] == "8.8800"
+
+
+def test_correct_mm_unit_price_not_flagged() -> None:
+    from decimal import Decimal
+
+    from app.services.llm.analysis.annual_part_price_summary import (
+        build_annual_part_price_conversion_anomalies,
+    )
+
+    result = build_annual_part_price_conversion_anomalies(
+        [_price_row(unit_price=Decimal("0.0009"))]
+    )
+    assert result["items"] == []
+
+
+def test_query_parser_annual_price_anomaly_includes_risk() -> None:
+    parser = QueryParser()
+    db = MagicMock()
+    parser._aligner._scope_repo.list_locations = MagicMock(return_value=["芜湖"])
+    parser._aligner._scope_repo.location_alias_map = MagicMock(
+        return_value={"芜湖": "芜湖", "芜湖基地": "芜湖"}
+    )
+    parser._aligner._scope_repo.list_vehicle_models = MagicMock(return_value=[])
+    parser._aligner._scope_repo.list_bom_versions = MagicMock(return_value=[])
+    parser._aligner._scope_repo.list_part_numbers_matching = MagicMock(return_value=[])
+    parser._extractor.extract = MagicMock(
+        return_value={
+            "time_range": {"start": "2026-01", "end": "2026-12"},
+            "filters": {"location": "芜湖"},
+            "compare_locations": [],
+        }
+    )
+    query = parser.parse(db, user_question="芜湖，2026年，年度零件价有无异常")
+    assert query.subject == "annual_part_price"
+    assert "risk" in query.analyses
+    query_bundle = parser.parse(db, user_question="芜湖一口价有没有异常")
+    assert query_bundle.subject == "annual_part_price"
+    assert "risk" in query_bundle.analyses
+
+
 @pytest.mark.integration
 def test_annual_part_price_qingdao_yoy() -> None:
     db = DatabaseConfig.get_session_factory()()

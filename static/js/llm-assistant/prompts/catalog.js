@@ -16,6 +16,46 @@ export const PROMPT_CATALOG = [
         label: '当月一事一议价格怎么样？',
         audience: 'buyer_lead',
     },
+    {
+        id: 'Q03',
+        label: '当月核价进度怎么样？待审核还有多少？',
+        audience: 'buyer_lead',
+    },
+    {
+        id: 'Q04',
+        label: '采购对象还有多少没确认外发？',
+        audience: 'buyer_lead',
+    },
+    {
+        id: 'Q05',
+        label: '今年模具费待审核有多少？',
+        audience: 'buyer_lead',
+    },
+    {
+        id: 'Q06',
+        label: '总成核价怎么审核？',
+        audience: 'buyer',
+    },
+    {
+        id: 'Q07',
+        label: '冲压零件价格计算页在哪？',
+        audience: 'buyer',
+    },
+    {
+        id: 'Q08',
+        label: '检具费情况怎么样？',
+        audience: 'buyer_lead',
+    },
+    {
+        id: 'Q09',
+        label: '当月核价有无异常？',
+        audience: 'buyer_lead',
+    },
+    {
+        id: 'Q10',
+        label: '芜湖今年年度零件价有无异常？',
+        audience: 'buyer_lead',
+    },
 ];
 
 /**

@@ -625,7 +625,138 @@ def test_build_l0_mom_anomalies_ranks_jump() -> None:
     top = result["items"][0]
     assert top["part_number"] == "P001"
     assert top["month"] == "2025-02"
-    assert top["change"] == "100.00"
+    assert top["change"] == "90.00"
+
+
+def _assembly_row(
+    *,
+    month: int,
+    part_number: str = "P001",
+    total_amount: Decimal,
+    calc_status: str = "ok",
+    year: int = 2026,
+) -> L0PartPeriodRow:
+    return L0PartPeriodRow(
+        year=year,
+        month=month,
+        part_number=part_number,
+        part_name="件A",
+        grand_total=total_amount,
+        total_amount=total_amount,
+        calc_status=calc_status,
+        missing_leaf_count=0,
+        calc_message=None,
+        stamping_amount=Decimal("0"),
+        purchased_amount=Decimal("0"),
+        bundle_amount=Decimal("0"),
+        welding_amount=Decimal("0"),
+        welding_other_fee=Decimal("0"),
+        indirect_amount=Decimal("0"),
+        bom_version="V1",
+        should_cost=total_amount,
+    )
+
+
+def test_build_l0_mom_anomalies_requires_ten_percent() -> None:
+    from app.services.llm.analysis.cost_driver import build_l0_mom_anomalies
+
+    under = [
+        _assembly_row(month=12, total_amount=Decimal("100"), year=2025),
+        _assembly_row(month=1, total_amount=Decimal("109"), year=2026),
+    ]
+    over = [
+        _assembly_row(month=12, total_amount=Decimal("100"), year=2025),
+        _assembly_row(month=1, total_amount=Decimal("110"), year=2026),
+    ]
+    under_result = build_l0_mom_anomalies(under, focus_month="2026-01")
+    over_result = build_l0_mom_anomalies(over, focus_month="2026-01")
+    assert under_result["items"] == []
+    assert len(over_result["items"]) == 1
+    assert over_result["items"][0]["change_rate"] == "0.10"
+
+
+def test_build_risks_zero_unit_price() -> None:
+    from app.services.llm.analysis.anomaly import build_risks
+
+    rows = [
+        _assembly_row(month=1, part_number="ZERO1", total_amount=Decimal("0")),
+        _assembly_row(month=1, part_number="OK1", total_amount=Decimal("12.5")),
+    ]
+    result = build_risks(rows)
+    zero = next(item for item in result["risks"] if item["risk_type"] == "zero_unit_price")
+    assert result["zero_unit_price_count"] == 1
+    assert zero["sample_part_numbers"] == ["ZERO1"]
+
+
+def test_query_parser_assembly_cost_anomaly_routes_to_l0() -> None:
+    parser = QueryParser()
+    db = MagicMock()
+    _mock_aligner(parser)
+    parser._aligner._scope_repo.list_vehicle_models = MagicMock(return_value=["T13J", "T28"])
+    parser._extractor.extract = MagicMock(
+        return_value={
+            "time_range": {"start": "2026-01", "end": "2026-01"},
+            "filters": {"vehicle_model": "T13J"},
+            "compare_locations": [],
+        }
+    )
+    query = parser.parse(
+        db,
+        user_question="2026年01月 T13J 项目总成核价有没有异常",
+    )
+    assert query.query_mode == "analysis"
+    assert query.subject == "l0"
+    assert query.vehicle_model() == "T13J"
+    assert query.time_range.start == "2026-01"
+    assert query.time_range.end == "2026-01"
+    assert "risk" in query.analyses
+    assert "drivers" in query.analyses
+
+
+def test_query_parser_stamping_cost_anomaly_routes_to_part_cost() -> None:
+    parser = QueryParser()
+    db = MagicMock()
+    _mock_aligner(parser)
+    parser._extractor.extract = MagicMock(
+        return_value={
+            "time_range": {"start": "2026-01", "end": "2026-01"},
+            "filters": {},
+            "compare_locations": [],
+        }
+    )
+    query = parser.parse(
+        db,
+        user_question="2026年01月，冲压核价的异常",
+    )
+    assert query.query_mode == "analysis"
+    assert query.subject == "stamping_part"
+    assert "risk" in query.analyses
+    assert "drivers" in query.analyses
+
+
+def test_build_stamping_mom_anomalies_requires_ten_percent() -> None:
+    from app.repositories.llm.stamping_cost_analysis_repository import StampingPartPeriodRow
+    from app.services.llm.analysis.cost_driver import build_stamping_mom_anomalies
+
+    def row(month: int, year: int, unit_cost: Decimal) -> StampingPartPeriodRow:
+        return StampingPartPeriodRow(
+            year=year,
+            month=month,
+            part_number="S001",
+            part_name="冲压件",
+            unit_cost=unit_cost,
+            material_net_per_part=None,
+            process_fee_amount=None,
+            calc_status="success",
+            stamping_supplier="供应商A",
+        )
+
+    under = [row(12, 2025, Decimal("100")), row(1, 2026, Decimal("109"))]
+    over = [row(12, 2025, Decimal("100")), row(1, 2026, Decimal("110"))]
+    assert build_stamping_mom_anomalies(under, focus_month="2026-01")["items"] == []
+    over_result = build_stamping_mom_anomalies(over, focus_month="2026-01")
+    assert len(over_result["items"]) == 1
+    assert over_result["items"][0]["change_rate"] == "0.10"
 
 
 def test_query_parser_max_risk_question() -> None:

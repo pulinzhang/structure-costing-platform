@@ -15,6 +15,8 @@ from app.deps.permissions import require_any_perm, require_perm
 from app.schemas.common import PageResult
 from app.schemas.dto.steel_base_price_dto import (
     SteelBasePriceCreate,
+    SteelBasePriceExportPreviewQuery,
+    SteelBasePriceExportQuery,
     SteelBasePriceQuery,
     SteelBasePriceUpdate,
 )
@@ -98,37 +100,28 @@ def get_base_price_options(
     response_model=ApiResponse[PageResult[SteelBasePriceExportRow] | list[SteelBasePriceExportRow]],
 )
 def export_preview(
-    year: int | None = Query(None, ge=2000, le=2100, description="订单发布年份"),
-    month: int | None = Query(None, ge=1, le=12, description="订单发布月份"),
-    location: str | None = Query(None, description="采购基地"),
-    steel_mill: str | None = Query(None, description="中标钢厂"),
-    category_name: str | None = Query(None, description="钢种大类"),
-    grade: str | None = Query(None, description="牌号（模糊）"),
-    spec: str | None = Query(None, description="规格"),
-    page: int | None = Query(None, ge=1, description="页码（前端分页用）"),
-    size: int | None = Query(None, ge=1, le=5000, description="每页条数"),
+    query: SteelBasePriceExportPreviewQuery = Depends(),
     db: Session = Depends(get_db),
     current_user: UserVO = Depends(require_perm(Perm.BASE_PRICE_DOWNLOAD_VIEW)),
 ) -> ApiResponse[PageResult[SteelBasePriceExportRow] | list[SteelBasePriceExportRow]]:
-    """导出预览：返回筛选后的基准价格数据（前端分页）。"""
-    page_size = size or DEFAULT_EXPORT_PAGE_SIZE
+    """导出预览。筛选：年度、月份、基地、钢厂、分类、牌号。"""
+    page_size = query.size or DEFAULT_EXPORT_PAGE_SIZE
     records, total = _steel_base_price_service.list_for_export(
         db,
-        year=year,
-        month=month,
-        location=location,
-        steel_mill=steel_mill,
-        category_name=category_name,
-        grade=grade,
-        spec=spec,
-        page=page,
+        year=query.year,
+        month=query.month,
+        location=query.location,
+        steel_mill=query.steel_mill,
+        category_name=query.category_name,
+        grade=query.grade,
+        page=query.page,
         page_size=page_size,
     )
-    if page is not None:
+    if query.page is not None:
         return ApiResponse.list_(
             items=records,
             total=total,
-            page=page,
+            page=query.page,
             page_size=page_size,
             message="查询成功",
         )
@@ -140,26 +133,19 @@ def export_preview(
     response_model=None,
 )
 def export_download(
-    year: int | None = Query(None, ge=2000, le=2100, description="订单发布年份"),
-    month: int | None = Query(None, ge=1, le=12, description="订单发布月份"),
-    location: str | None = Query(None, description="采购基地"),
-    steel_mill: str | None = Query(None, description="中标钢厂"),
-    category_name: str | None = Query(None, description="钢种大类"),
-    grade: str | None = Query(None, description="牌号（模糊）"),
-    spec: str | None = Query(None, description="规格"),
+    query: SteelBasePriceExportQuery = Depends(),
     db: Session = Depends(get_db),
     current_user: UserVO = Depends(require_perm(Perm.BASE_PRICE_DOWNLOAD_EXPORT)),
 ) -> StreamingResponse:
-    """下载基准价格 Excel 文件。"""
+    """下载基准价格 Excel。筛选：年度、月份、基地、钢厂、分类、牌号。"""
     content, filename = _steel_base_price_export_service.export(
         db,
-        year=year,
-        month=month,
-        location=location,
-        steel_mill=steel_mill,
-        category_name=category_name,
-        grade=grade,
-        spec=spec,
+        year=query.year,
+        month=query.month,
+        location=query.location,
+        steel_mill=query.steel_mill,
+        category_name=query.category_name,
+        grade=query.grade,
         current_user=current_user,
     )
     return StreamingResponse(

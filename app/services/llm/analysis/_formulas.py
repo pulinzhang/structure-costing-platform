@@ -12,6 +12,14 @@ ANOMALY_MIN_POINTS_FOR_STAT = 6
 ANOMALY_RATE_THRESHOLD = Decimal("0.15")
 
 
+def assembly_unit_price(row: Any) -> Decimal:
+    """总成核价「单价」= 应成本；缺字段时回退月总账。"""
+    should_cost = getattr(row, "should_cost", None)
+    if should_cost is not None:
+        return Decimal(str(should_cost))
+    return Decimal(str(getattr(row, "total_amount", 0) or 0))
+
+
 def compute_mom_rate(prev: Decimal, current: Decimal) -> Decimal | None:
     if prev == 0:
         return None

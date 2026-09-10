@@ -16,6 +16,13 @@
 - 存在 `engine_gate_digest` / 门禁缺口类字段
 - **基准价探查**：`base_price_anomalies.items`（`base_price_jump`）、基准价 `trend.anomaly_months`
 - **加减价探查**（口语常说「加减价」，不必写「政策」）：`policy_anomalies.items`（`policy_adjustment_jump`）、加减价 `trend.anomaly_months`
+- **总成核价探查**：`risk.zero_unit_price_count` / `risks` 中 `zero_unit_price`（应成本/月总账单价为 0）；`mom_anomalies.items`（相对上月单价绝对值 ≥ 10%）；`composition_anomalies.items` / `risks` 中 `composition_dominance`（一条材料明细占应成本 ≥ 50%，或有效用量过大）
+- **冲压零件核价探查**：`risks` 中 `zero_unit_price`（`unit_cost` 为 0）、`stamping_calc_failed`；`mom_anomalies.items`（相对上月单价绝对值 ≥ 10%）
+- **作业台核对**：`summary.pending_audit_total` / `incomplete_total` / `pending_confirm_total`，以及 `boards` 各切片件数；`risks` 中 `pending_audit` / `calc_incomplete` / `pending_confirm`
+- **模具费**：`pending_audit_count`、`zero_fee_count`、`final_die_fee_sum`
+- **检具费**：`effective_count`、`invalid_count`、`zero_fee_count`
+- **采购对象**：`pending_confirm_count`、`pending_audit_count`、`anomaly_count`
+- **年度零件价 / 一口价探查**：`annual_price_anomalies.items`（`skipped_conversion`：核价单价≈采购单价、未除转换系数；`fine_unit_unconverted`：桶/瓶对毫米但系数为 1）
 
 ## 何时写（比较 / 趋势类例外）
 

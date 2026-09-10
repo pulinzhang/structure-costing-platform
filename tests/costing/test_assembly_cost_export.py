@@ -8,6 +8,7 @@ from app.services.costing.assembly_cost.codes import (
     item_short_code,
     part_short_code,
     procurement_part_short_code,
+    tree_item_short_code,
 )
 from app.services.costing.assembly_cost.export.assembly_cost_export_service import (
     AssemblyCostExportService,
@@ -92,6 +93,31 @@ def test_item_short_code_only_for_stamping_source() -> None:
         == ""
     )
     assert part_short_code(part_number="FQ371B06F36", level=2) == "0636"
+
+
+def test_tree_item_short_code_fastener_uses_full_number() -> None:
+    assert (
+        tree_item_short_code(
+            part_number="QR36410",
+            part_name="焊接方螺母",
+            supply_type="标准件",
+            cost_source="annual",
+            level=1,
+            view="procurement",
+        )
+        == "QR36410"
+    )
+    assert (
+        tree_item_short_code(
+            part_number="551001133AA",
+            part_name="左后门上铰链安装板",
+            supply_type="沿用",
+            cost_source="annual",
+            level=1,
+            view="procurement",
+        )
+        == "1133"
+    )
 
 
 def test_procurement_export_uses_chinese_labels() -> None:

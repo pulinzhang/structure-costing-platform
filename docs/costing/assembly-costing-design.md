@@ -536,7 +536,8 @@ Ready VO 增加：`subject_count`、`tree_root_count`、`procurement_object_coun
 - 默认 `view=finance`，表头仍偏总费用 / 间接（现网 HUD）。  
 - 切换采购：列为材料成本、焊接费/电泳黑漆等（数据仍 `welding_amount`）、**总成本**（关注列=`total_amount`）、对象种类中文、确认状态；不展示报价/价差、不展示 I3～I8。  
 - 操作仍只在操作列。  
-- 有子件树根不出现在采购视图。
+- 有子件树根不出现在采购视图。  
+- 单卡**成本还原报告**见 [assembly-cost-restore-design.md](assembly-cost-restore-design.md)：一览点「还原」打开**新页签画册级静态报告**（浅底、封面+章扉、禁止黑底与页内交互）。
 
 计算页：就绪展示树根数 / 主体数 / 清单对象数 / 各层焊接行数。开始计算 = 全卡（不在页面默认勾 `levels=[0]`）。计算历史「过程」新页签打开浅色报告（非主应用黑底）。
 

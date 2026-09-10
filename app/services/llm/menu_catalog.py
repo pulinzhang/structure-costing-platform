@@ -100,6 +100,22 @@ SUBJECT_MENU: dict[str, MenuTarget] = {
         hash_page="assembly-cost",
         label="打开总成核价一览",
     ),
+    "ops_workbench": MenuTarget(
+        hash_page="assembly-cost",
+        label="打开总成核价一览",
+    ),
+    "stamping_die_fee": MenuTarget(
+        hash_page="stamping-die-fee",
+        label="打开冲压模具费列表",
+    ),
+    "stamping_gauge_fee": MenuTarget(
+        hash_page="stamping-gauge-fee",
+        label="打开检具费列表",
+    ),
+    "procurement_object": MenuTarget(
+        hash_page="bom-procurement-object-list",
+        label="打开采购对象清单",
+    ),
 }
 
 # 侧栏「列表/一览」页覆盖查检（上传/计算页不在此列）
@@ -222,6 +238,24 @@ MENU_COVERAGE: tuple[MenuCoverageItem, ...] = (
         "cost_total 同落点",
     ),
     MenuCoverageItem(
+        "stamping-die-fee",
+        "冲压模具费列表",
+        "stamping_die_fee",
+        "complete",
+    ),
+    MenuCoverageItem(
+        "stamping-gauge-fee",
+        "检具费列表",
+        "stamping_gauge_fee",
+        "complete",
+    ),
+    MenuCoverageItem(
+        "bom-procurement-object-list",
+        "采购对象清单",
+        "procurement_object",
+        "complete",
+    ),
+    MenuCoverageItem(
         "costing",
         "自动核价引擎",
         None,
@@ -259,6 +293,9 @@ ENTITY_LIST_PAGES: tuple[tuple[str, str], ...] = (
     ("steel-price-list", "steel_price"),
     ("stamping-part-cost", "stamping_part"),
     ("assembly-cost", "l0"),
+    ("stamping-die-fee", "stamping_die_fee"),
+    ("stamping-gauge-fee", "stamping_gauge_fee"),
+    ("bom-procurement-object-list", "procurement_object"),
 )
 
 
@@ -423,6 +460,48 @@ def build_list_params(query: AnalysisQuery) -> dict[str, str]:
 
     if query.subject == "l0_welding_fee":
         params = {"year": year}
+        location = query.location() or ""
+        vehicle_model = query.vehicle_model() or ""
+        bom_version = query.bom_version() or ""
+        part_number = query.part_number() or ""
+        if location:
+            params["location"] = location
+        if vehicle_model:
+            params["vehicle_model"] = vehicle_model
+        if bom_version:
+            params["bom_version"] = bom_version
+        if part_number:
+            params["part_number"] = part_number
+        return params
+
+    if query.subject == "stamping_die_fee":
+        params = {"year": year}
+        location = query.location() or ""
+        vehicle_model = query.vehicle_model() or ""
+        part_number = query.part_number() or ""
+        if location:
+            params["location"] = location
+        if vehicle_model:
+            params["vehicle_model"] = vehicle_model
+        if part_number:
+            params["part_number"] = part_number
+        return params
+
+    if query.subject == "stamping_gauge_fee":
+        params = {}
+        location = query.location() or ""
+        vehicle_model = query.vehicle_model() or ""
+        part_number = query.part_number() or ""
+        if location:
+            params["location"] = location
+        if vehicle_model:
+            params["vehicle_model"] = vehicle_model
+        if part_number:
+            params["part_number"] = part_number
+        return params
+
+    if query.subject == "procurement_object":
+        params = {}
         location = query.location() or ""
         vehicle_model = query.vehicle_model() or ""
         bom_version = query.bom_version() or ""

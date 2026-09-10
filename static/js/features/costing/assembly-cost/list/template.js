@@ -339,6 +339,20 @@ export function renderLacRows(records, view = 'finance') {
                         data-id="${esc(row.id)}" title="查看详情" aria-label="查看详情">
                     ${window.svgIcon('eye', 'w-3.5 h-3.5')}
                 </button>
+                <button type="button"
+                        class="btn-open-restore inline-flex items-center justify-center h-7 px-1.5 rounded-sm
+                               opacity-0 group-hover:opacity-100 focus:opacity-100
+                               text-[#555555] hover:text-[#C8C8D0] hover:bg-[#161620] transition-all duration-100
+                               text-[10px] tracking-wide"
+                        data-year="${esc(row.year)}"
+                        data-month="${esc(row.month)}"
+                        data-part-number="${esc(row.part_number)}"
+                        data-location="${esc(row.location || '')}"
+                        data-vehicle-model="${esc(row.vehicle_model || '')}"
+                        data-bom-version="${esc(row.bom_version || '')}"
+                        title="计算过程" aria-label="计算过程">
+                    计算过程
+                </button>
             </td>`;
         if (view === 'procurement') {
             return `

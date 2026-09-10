@@ -2,7 +2,7 @@
  * 常见问题胶囊
  */
 
-import { PROMPT_CATALOG } from '../prompts/catalog.js';
+import { PROMPT_CATALOG } from '../prompts/catalog.js?v=4';
 
 /**
  * @param {HTMLElement} root

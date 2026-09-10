@@ -13,6 +13,7 @@ from app.common.permissions.codes import Perm
 from app.database import get_db
 from app.deps.permissions import require_perm
 from app.schemas.common.page_result import PageResult
+from app.schemas.dto.steel_price_policy_dto import PolicyExportPreviewQuery, PolicyExportQuery
 from app.schemas.vo.steel_price_policy_vo import ExportRow
 from app.schemas.vo.user_vo import UserVO
 from app.services.yishiyiyi.policy import SteelPricePolicyService
@@ -20,31 +21,26 @@ from app.utils.response import ApiResponse
 
 router = APIRouter(prefix="/api/yishiyiyi/policy", tags=["钢价政策导出"])
 
-DEFAULT_PAGE_SIZE = 100
-
 _policy_service = SteelPricePolicyService()
 
 
 @router.get("/export")
 def export_policies_excel(
-    year: int | None = None,
-    month: int | None = None,
-    steel_mill: str | None = None,
-    category_name: str | None = None,
-    grade_value: str | None = None,
+    query: PolicyExportQuery = Depends(),
     db: Session = Depends(get_db),
     current_user: UserVO = Depends(require_perm(Perm.STEEL_PRICE_POLICY_DOWNLOAD_EXPORT)),
 ) -> StreamingResponse:
     """
-    导出钢价政策主子表联合数据为 Excel，用于测试部门核对。
+    导出钢价政策主子表联合数据为 Excel。
+    筛选：年度、月份、钢厂、分类、牌号。
     """
     excel_bytes, filename = _policy_service.generate_export_excel_bytes(
         db,
-        year=year,
-        month=month,
-        steel_mill=steel_mill,
-        category_name=category_name.strip() if category_name else None,
-        grade_value=grade_value.strip() if grade_value else None,
+        year=query.year,
+        month=query.month,
+        steel_mill=query.steel_mill,
+        category_name=query.category_name,
+        grade_value=query.grade_value,
         current_user=current_user,
     )
 
@@ -62,38 +58,30 @@ def export_policies_excel(
     response_model=ApiResponse[PageResult[ExportRow]],
 )
 def export_policies_preview(
-    year: int | None = None,
-    month: int | None = None,
-    steel_mill: str | None = None,
-    category_name: str | None = None,
-    grade_value: str | None = None,
-    page: int = 1,
-    size: int = DEFAULT_PAGE_SIZE,
+    query: PolicyExportPreviewQuery = Depends(),
     db: Session = Depends(get_db),
     current_user: UserVO = Depends(require_perm(Perm.STEEL_PRICE_POLICY_DOWNLOAD_VIEW)),
 ) -> ApiResponse[PageResult[ExportRow]]:
     """
-    预览导出数据（主子表联合查询，分页）
+    预览导出数据（主子表联合查询，分页）。
+    筛选：年度、月份、钢厂、分类、牌号。
     """
-    category = category_name.strip() if category_name else None
-    grade = grade_value.strip() if grade_value else None
-    mill = steel_mill.strip() if steel_mill else None
     records = _policy_service.get_export_data(
         db,
-        year=year,
-        month=month,
-        steel_mill=mill,
-        category_name=category,
-        grade_value=grade,
-        page=page,
-        size=size,
+        year=query.year,
+        month=query.month,
+        steel_mill=query.steel_mill,
+        category_name=query.category_name,
+        grade_value=query.grade_value,
+        page=query.page,
+        size=query.size,
     )
     total = _policy_service.count_export_data(
         db,
-        year=year,
-        month=month,
-        steel_mill=mill,
-        category_name=category,
-        grade_value=grade,
+        year=query.year,
+        month=query.month,
+        steel_mill=query.steel_mill,
+        category_name=query.category_name,
+        grade_value=query.grade_value,
     )
-    return ApiResponse.list_(items=records, total=total, page=page, page_size=size)
+    return ApiResponse.list_(items=records, total=total, page=query.page, page_size=query.size)

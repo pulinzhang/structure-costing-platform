@@ -42,6 +42,16 @@ class StampingDieFeeRepository:
             .first()
         )
 
+    def list_by_ids(self, db: Session, fee_ids: list[int]) -> list[StampingDieFee]:
+        if not fee_ids:
+            return []
+        return (
+            db.query(StampingDieFee)
+            .options(joinedload(StampingDieFee.items))
+            .filter(StampingDieFee.id.in_(fee_ids))
+            .all()
+        )
+
     def get_by_year_location_vehicle_part(
         self,
         db: Session,
