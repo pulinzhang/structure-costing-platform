@@ -67,6 +67,8 @@ from app.services.costing.assembly_cost.codes import (
     tree_item_short_code,
 )
 from app.services.costing.assembly_cost.restore.labels import (
+    HIGHLIGHT_GRAND_TOTAL,
+    HIGHLIGHT_TOTAL_COST,
     INDIRECT_KIND_LABELS,
     INDIRECT_UNIT_TRANSPORT,
     INDIRECT_WAREHOUSE_BUNDLING,
@@ -275,8 +277,10 @@ class AssemblyCostRestoreService:
             )
 
         identity = self._identity_checks(card, items, exceptions)
-        highlight_amount = card.should_cost if report_view == "procurement" else card.grand_total
-        highlight_label = "核算单价" if report_view == "procurement" else "含摊入后总价"
+        highlight_amount = card.total_amount if report_view == "procurement" else card.grand_total
+        highlight_label = (
+            HIGHLIGHT_TOTAL_COST if report_view == "procurement" else HIGHLIGHT_GRAND_TOTAL
+        )
 
         return AssemblyCostRestoreVO(
             view=report_view,
@@ -298,6 +302,7 @@ class AssemblyCostRestoreService:
             purchased_amount=_money(card.purchased_amount),
             bundle_amount=_money(card.bundle_amount),
             welding_amount=_money(card.welding_amount),
+            total_amount=_money(card.total_amount),
             should_cost=_money(card.should_cost),
             indirect_amount=_money(card.indirect_amount),
             grand_total=_money(card.grand_total),
@@ -490,7 +495,7 @@ class AssemblyCostRestoreService:
     ) -> RestoreMaterialNodeVO:
         indent = self._indent_from_card(bom_node.id, card.source_node_id, parent_by_id)
         if sibling is not None:
-            unit = _money(sibling.should_cost)
+            unit = _money(sibling.total_amount)
             material_amt = _money(sibling.material_amount)
             welding_amt = _money(sibling.welding_amount)
             line = _money(unit * path_qty)
@@ -1219,14 +1224,14 @@ class AssemblyCostRestoreService:
             ),
             RestoreIdentityCheckVO(
                 code="total",
-                label="核算单价",
+                label=HIGHLIGHT_TOTAL_COST,
                 recorded=_money(card.total_amount),
                 summed=total_sum,
                 is_match=_match(card.total_amount, total_sum),
             ),
             RestoreIdentityCheckVO(
                 code="should",
-                label="核算单价（两处）",
+                label=f"{HIGHLIGHT_TOTAL_COST}（两处）",
                 recorded=_money(card.should_cost),
                 summed=_money(card.total_amount),
                 is_match=_match(card.should_cost, card.total_amount),
@@ -1240,7 +1245,7 @@ class AssemblyCostRestoreService:
             ),
             RestoreIdentityCheckVO(
                 code="grand",
-                label="含摊入后总价",
+                label=HIGHLIGHT_GRAND_TOTAL,
                 recorded=_money(card.grand_total),
                 summed=_money(_money(card.total_amount) + _money(card.indirect_amount)),
                 is_match=_match(

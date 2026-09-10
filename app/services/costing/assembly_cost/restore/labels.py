@@ -9,6 +9,9 @@ INDIRECT_PRETAX_PROFIT = "finished_pretax_profit_fee"
 INDIRECT_GAUGE_ALLOC = "gauge_alloc_fee"
 INDIRECT_FIXTURE_ALLOC = "fixture_alloc_fee"
 
+HIGHLIGHT_TOTAL_COST = "总成本"
+HIGHLIGHT_GRAND_TOTAL = "总费用"
+
 COST_SOURCE_LABELS = {
     "stamping": "自制冲压",
     "annual": "外购件",

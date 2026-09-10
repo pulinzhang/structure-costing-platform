@@ -99,3 +99,43 @@ def test_query_parser_generic_costing_anomaly_routes_to_l0() -> None:
     assert query.query_mode == "analysis"
     assert query.subject == "l0"
     assert "risk" in query.analyses
+
+
+def test_standard_part_line_high_price_is_flagged() -> None:
+    from app.services.llm.analysis.standard_part_price import (
+        build_standard_part_price_anomalies,
+    )
+
+    result = build_standard_part_price_anomalies(
+        [
+            _line(
+                child="Q1980616",
+                child_name="承面凸焊螺栓",
+                line_amount="8.8800",
+                unit_price="8.8800",
+                qty="1",
+            )
+        ]
+    )
+    assert len(result["items"]) == 1
+    assert result["items"][0]["anomaly_type"] == "standard_part_high_price"
+    assert result["items"][0]["part_number"] == "Q1980616"
+
+
+def test_cheap_nut_not_flagged_as_standard_part_price() -> None:
+    from app.services.llm.analysis.standard_part_price import (
+        build_standard_part_price_anomalies,
+    )
+
+    result = build_standard_part_price_anomalies(
+        [
+            _line(
+                child="N0111931",
+                child_name="焊接方螺母",
+                line_amount="0.0840",
+                unit_price="0.0420",
+                qty="2",
+            )
+        ]
+    )
+    assert result["items"] == []

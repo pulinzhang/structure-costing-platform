@@ -5,7 +5,7 @@ from __future__ import annotations
 from dataclasses import dataclass
 from datetime import datetime
 from decimal import Decimal
-from typing import TypedDict, TypeVar
+from typing import Literal, TypedDict, TypeVar
 
 from sqlalchemy import and_, case, func, or_
 from sqlalchemy.orm import Query, Session, joinedload, noload
@@ -18,6 +18,11 @@ from app.models.costing.assembly_cost_item import AssemblyCostItem
 
 _T = TypeVar("_T")
 _IN_CHUNK = 400
+SettlementAmountField = Literal["total_amount", "grand_total"]
+_SETTLEMENT_AMOUNT_COLUMNS = {
+    "total_amount": AssemblyCost.total_amount,
+    "grand_total": AssemblyCost.grand_total,
+}
 
 
 def _chunks(values: list[int]) -> list[list[int]]:
@@ -858,10 +863,12 @@ class AssemblyCostRepository:
         bom_version: str,
         months: list[tuple[int, int]],
         source_node_ids: list[int],
+        amount_field: SettlementAmountField = "total_amount",
     ) -> list[tuple[int, int, int, Decimal]]:
-        """窗口内节点应成本。返回 (year, month, source_node_id, should_cost)。"""
+        """窗口内节点结算价。采购对象抄总成本，总成抄总费用。"""
         if not months or not source_node_ids:
             return []
+        amount_column = _SETTLEMENT_AMOUNT_COLUMNS[amount_field]
         month_clause = or_(
             *[
                 and_(AssemblyCost.year == year, AssemblyCost.month == month)
@@ -875,7 +882,7 @@ class AssemblyCostRepository:
                     AssemblyCost.year,
                     AssemblyCost.month,
                     AssemblyCost.source_node_id,
-                    AssemblyCost.should_cost,
+                    amount_column,
                 )
                 .filter(
                     AssemblyCost.location == location,
@@ -887,8 +894,8 @@ class AssemblyCostRepository:
                 .all()
             )
             rows.extend(
-                (int(year), int(month), int(node_id), _decimal(should_cost))
-                for year, month, node_id, should_cost in found
+                (int(year), int(month), int(node_id), _decimal(amount))
+                for year, month, node_id, amount in found
             )
         return rows
 

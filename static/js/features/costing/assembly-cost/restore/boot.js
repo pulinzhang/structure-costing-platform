@@ -150,7 +150,7 @@ function signOffHtml(row) {
 function coverHtml(row) {
     const month = padMonth(row.month);
     const moneyHint = row.highlight_label
-        || (row.view === 'procurement' ? '核算单价' : '含摊入后总价');
+        || (row.view === 'procurement' ? '总成本' : '总费用');
     const company = (row.company_name || '').trim();
     return `
         <header class="cover">
@@ -227,11 +227,13 @@ function waterfallHtml(row) {
         ['外购件', row.purchased_amount],
         ['一口价', row.bundle_amount],
         ['焊装', row.welding_amount],
-        ['核算单价', row.should_cost, true],
     ];
-    if (!isProcurement) {
+    if (isProcurement) {
+        items.push(['总成本', row.total_amount, true]);
+    } else {
+        items.push(['月总账', row.total_amount]);
         items.push(['摊入费用', row.indirect_amount]);
-        items.push(['含摊入后总价', row.grand_total, true]);
+        items.push(['总费用', row.grand_total, true]);
     }
     const body = `<ul class="waterfall">${items.map(([label, amount, hero]) => {
         if (!hero && isZero(amount)) return '';
@@ -379,7 +381,7 @@ function assemblyBlock(node) {
     return `<div class="facts">
         ${fact('材料', money(node.assembly_material_amount))}
         ${fact('焊装', money(node.assembly_welding_amount))}
-        ${fact('核算单价', `${money(node.unit_price)} × 用量 ${display(node.effective_qty)} = ${money(node.line_amount)}`)}
+        ${fact('总成本', `${money(node.unit_price)} × 用量 ${display(node.effective_qty)} = ${money(node.line_amount)}`)}
     </div>`;
 }
 
@@ -416,7 +418,9 @@ function restoreHref(report, node) {
         year: String(report.year || ''),
         month: String(report.month || ''),
         part_number: node.part_number || '',
-        view: report.view || 'finance',
+        view: node.cost_source === 'sub_assembly' || node.cost_source === 'stamping'
+            ? 'procurement'
+            : (report.view || 'finance'),
     });
     if (report.location) query.set('location', report.location);
     if (report.vehicle_model) query.set('vehicle_model', report.vehicle_model);

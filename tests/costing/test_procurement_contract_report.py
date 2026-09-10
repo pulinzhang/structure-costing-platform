@@ -307,6 +307,7 @@ def _seed_pack(db: Session) -> tuple[BomNode, BomNode]:
                 part_name=node.part_name,
                 should_cost=amount,
                 total_amount=amount,
+                grand_total=amount + Decimal("10.0000"),
             )
         )
     db.add(
@@ -804,7 +805,13 @@ def test_pending_objects_appear_in_default_list(db: Session) -> None:
     assert rows[0].part_number == stamping.part_number
 
 
-def _seed_l0_cost(db: Session, node: BomNode, amount: Decimal) -> None:
+def _seed_l0_cost(
+    db: Session,
+    node: BomNode,
+    amount: Decimal,
+    *,
+    grand_total: Decimal | None = None,
+) -> None:
     db.add(
         AssemblyCost(
             year=2026,
@@ -817,6 +824,7 @@ def _seed_l0_cost(db: Session, node: BomNode, amount: Decimal) -> None:
             part_name=node.part_name,
             should_cost=amount,
             total_amount=amount,
+            grand_total=grand_total if grand_total is not None else amount,
         )
     )
     db.flush()
@@ -825,7 +833,7 @@ def _seed_l0_cost(db: Session, node: BomNode, amount: Decimal) -> None:
 def test_assembly_view_one_tree_root_not_objects(db: Session) -> None:
     _seed_pack(db)
     l0 = db.query(BomNode).filter(BomNode.level == 0).one()
-    _seed_l0_cost(db, l0, Decimal("40.0000"))
+    _seed_l0_cost(db, l0, Decimal("40.0000"), grand_total=Decimal("48.0000"))
     rows, total, filters = ProcurementContractReportService().paginate(
         db, _query(view="assembly", supplier_name="烟台海众汽车部件有限公司")
     )
@@ -839,7 +847,7 @@ def test_assembly_view_one_tree_root_not_objects(db: Session) -> None:
     assert rows[0].seq_label == "5"
     assert "-" not in rows[0].seq_label
     assert rows[0].vehicle_qty == Decimal("1")
-    assert rows[0].month_amounts[0].should_cost == Decimal("40.0000")
+    assert rows[0].month_amounts[0].should_cost == Decimal("48.0000")
     assert rows[0].tooling_alloc_price is None
 
 
@@ -862,7 +870,7 @@ def test_assembly_missing_snapshot_is_not_found(db: Session) -> None:
 def test_assembly_export_blank_party_b_and_no_supplier_in_filename(db: Session) -> None:
     _seed_pack(db)
     l0 = db.query(BomNode).filter(BomNode.level == 0).one()
-    _seed_l0_cost(db, l0, Decimal("40.0000"))
+    _seed_l0_cost(db, l0, Decimal("40.0000"), grand_total=Decimal("48.0000"))
     content, filename = ProcurementContractReportExportOrchestrator().export(
         db, _query(view="assembly")
     )
@@ -873,7 +881,7 @@ def test_assembly_export_blank_party_b_and_no_supplier_in_filename(db: Session) 
     assert sheet["A6"].value == "5"
     assert sheet["B6"].value == "ACA674"
     assert sheet["C6"].value == "551003086AA"
-    assert sheet["G6"].value == 40.0
+    assert sheet["G6"].value == 48.0
     assert sheet["I6"].value == "/"
     party_b = {str(sheet.cell(row, 8).value) for row in range(1, 50) if sheet.cell(row, 8).value}
     assert "乙   方：" in party_b

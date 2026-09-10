@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 from dataclasses import dataclass, field
+from decimal import Decimal
 from typing import Any
 
 from sqlalchemy.orm import Session
@@ -93,7 +94,12 @@ from app.services.llm.analysis.composition import (
     build_composition_anomalies,
     composition_risk_entry,
 )
-from app.services.llm.analysis.constants import ANALYSIS_VERSION
+from app.services.llm.analysis.constants import (
+    ANALYSIS_VERSION,
+    STANDARD_PART_NAME_KEYS,
+    STANDARD_PART_SUPPLY_TYPES,
+    STANDARD_PART_UNIT_PRICE_MAX,
+)
 from app.services.llm.analysis.cost_driver import (
     build_l0_drivers,
     build_l0_mom_anomalies,
@@ -155,6 +161,10 @@ from app.services.llm.analysis.stamping_process_summary import (
     build_stamping_process_drilldown,
     build_stamping_process_drivers,
     build_stamping_process_summary,
+)
+from app.services.llm.analysis.standard_part_price import (
+    build_standard_part_price_anomalies,
+    standard_part_price_risk_entry,
 )
 from app.services.llm.analysis.summary import (
     build_stamping_summary,
@@ -920,12 +930,18 @@ class AnalysisRunner:
 
         if "risk" in query.analyses:
             conversion = build_annual_part_price_conversion_anomalies(rows)
+            standard = build_standard_part_price_anomalies(rows)
             parts_result["annual_price_anomalies"] = conversion
+            parts_result["standard_part_anomalies"] = standard
             risk_payload: dict[str, Any] = {"kind": "risk", "risks": []}
             conversion_risk = annual_price_conversion_risk_entry(conversion)
             if conversion_risk is not None:
                 risk_payload["risks"].append(conversion_risk)
                 risk_payload["annual_price_conversion_count"] = conversion_risk["count"]
+            standard_risk = standard_part_price_risk_entry(standard)
+            if standard_risk is not None:
+                risk_payload["risks"].append(standard_risk)
+                risk_payload["standard_part_high_price_count"] = standard_risk["count"]
             parts_result["risk"] = risk_payload
 
         if "comparison" in query.analyses:
@@ -1465,6 +1481,28 @@ class AnalysisRunner:
             if composition_risk is not None:
                 risk_payload["risks"].append(composition_risk)
                 risk_payload["composition_dominance_count"] = composition_risk["count"]
+            standard = build_standard_part_price_anomalies(
+                self._l0_repo.query_standard_part_price_lines(
+                    db,
+                    location=location,
+                    vehicle_model=vehicle_model,
+                    bom_version=bom_version,
+                    start_year=tr.start_year,
+                    start_month=tr.start_month,
+                    end_year=tr.end_year,
+                    end_month=tr.end_month,
+                    part_number=query.part_number(),
+                    min_unit_price=Decimal(STANDARD_PART_UNIT_PRICE_MAX),
+                    supply_types=STANDARD_PART_SUPPLY_TYPES,
+                    name_keys=STANDARD_PART_NAME_KEYS,
+                    trace_id=trace_id,
+                )
+            )
+            parts_result["standard_part_anomalies"] = standard
+            standard_risk = standard_part_price_risk_entry(standard)
+            if standard_risk is not None:
+                risk_payload["risks"].append(standard_risk)
+                risk_payload["standard_part_high_price_count"] = standard_risk["count"]
             parts_result["risk"] = risk_payload
 
         if part_rows and any(kind in query.analyses for kind in ("risk", "drivers", "trend")):
