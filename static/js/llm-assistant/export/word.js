@@ -2,7 +2,7 @@
  * AI 回答导出 Word（HTML 封装 .doc，Word / WPS 可直接打开）
  */
 
-import { buildAssistantDocumentHtml, buildExportFilename, canExportAssistantMessage } from './document.js?v=5';
+import { buildAssistantDocumentHtml, buildExportFilename, canExportAssistantMessage } from './document.js?v=6';
 
 /**
  * @param {object} msg

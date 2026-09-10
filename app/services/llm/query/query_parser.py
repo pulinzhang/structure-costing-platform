@@ -9,7 +9,9 @@ from sqlalchemy.orm import Session
 from app.common.part_number import extract_part_number_from_text, sanitize_part_number_token
 from app.common.timezone import now
 from app.common.tonnage import extract_tonnage_from_text
+from app.repositories.llm.cost_analysis_repository import L0CostAnalysisRepository
 from app.schemas.llm.analysis_query import AnalysisKind, AnalysisQuery, TimeRange
+from app.services.llm._money import month_key
 from app.services.llm.client import LlmClientError
 from app.services.llm.query.comparison_basis import default_comparison_basis
 from app.services.llm.query.condition_extractor import ConditionExtractor
@@ -21,6 +23,7 @@ from app.services.llm.query.intent_router import (
 )
 from app.services.llm.query.time_range import (
     DefaultScopeMonth,
+    asks_latest_costing,
     draft_has_time_range,
     normalize_time_range,
     question_has_explicit_time,
@@ -139,6 +142,28 @@ def _is_winning_thickness_question(question: str) -> bool:
     return any(term in question for term in _WINNING_THICKNESS_TERMS)
 
 
+def question_asks_part_price(question: str) -> bool:
+    """口语问价（含「零件价格」，不必带「是多少」）。"""
+    return any(
+        phrase in question
+        for phrase in (
+            "多少钱",
+            "什么价",
+            "单价多少",
+            "价格多少",
+            "价格是多少",
+            "最新价",
+            "核了多少",
+            "这个价",
+            "零件价格",
+            "零件价",
+            "的价格",
+            "单价",
+            "价格",
+        )
+    )
+
+
 def _is_standard_part_price_question(question: str) -> bool:
     """标准件价格异常走年度零件价，不要落到总成核价或采购成本总览。"""
     if any(
@@ -159,9 +184,11 @@ class QueryParser:
         *,
         extractor: ConditionExtractor | None = None,
         aligner: EntityAligner | None = None,
+        cost_repo: L0CostAnalysisRepository | None = None,
     ) -> None:
         self._extractor = extractor or ConditionExtractor()
         self._aligner = aligner or EntityAligner()
+        self._cost_repo = cost_repo or L0CostAnalysisRepository()
 
     def parse(self, db: Session, *, user_question: str) -> AnalysisQuery:
         """LLM 只产出条件草稿；对齐与 analyses/subject 由 Python 决定。"""
@@ -342,7 +369,16 @@ class QueryParser:
         time_range = self._parse_time_range(draft, question=question, default=default)
         parser_fallback_level = 1
         parser_data_message: str | None = None
-        if not draft_has_time_range(draft) and not question_has_explicit_time(question):
+        if self._should_pin_table_latest(question, filters.get("part_number")):
+            pinned = self._pin_table_latest_month(
+                db,
+                filters=filters,
+                time_range=time_range,
+            )
+            time_range = pinned[0]
+            filters = pinned[1]
+            parser_data_message = pinned[2]
+        elif not draft_has_time_range(draft) and not question_has_explicit_time(question):
             parser_fallback_level = 3
             parser_data_message = "未识别到时间范围，默认分析当月"
 
@@ -397,6 +433,50 @@ class QueryParser:
             explicit_start=start,
             explicit_end=end,
         )
+
+    def _should_pin_table_latest(self, question: str, part_number: str | None) -> bool:
+        if question_has_explicit_time(question):
+            return False
+        if asks_latest_costing(question):
+            return True
+        return bool(part_number) and self._is_drilldown_focused(question, part_number)
+
+    def _pin_table_latest_month(
+        self,
+        db: Session,
+        *,
+        filters: dict[str, str],
+        time_range: TimeRange,
+    ) -> tuple[TimeRange, dict[str, str], str | None]:
+        try:
+            scope = self._cost_repo.query_latest_card_scope(
+                db,
+                part_number=filters.get("part_number"),
+                location=filters.get("location"),
+                vehicle_model=filters.get("vehicle_model"),
+            )
+            if scope is None and filters.get("part_number"):
+                scope = self._cost_repo.query_latest_card_scope(
+                    db,
+                    part_number=None,
+                    location=filters.get("location"),
+                    vehicle_model=filters.get("vehicle_model"),
+                )
+        except (TypeError, ValueError, AttributeError):
+            scope = None
+        if scope is None:
+            return time_range, filters, "核价表暂无可用年月，仍按当前查询窗口取数"
+        key = month_key(scope.year, scope.month)
+        pinned = TimeRange(start=key, end=key)
+        merged = dict(filters)
+        if not merged.get("location") and scope.location:
+            merged["location"] = scope.location
+        if not merged.get("vehicle_model") and scope.vehicle_model:
+            merged["vehicle_model"] = scope.vehicle_model
+        if not merged.get("bom_version") and scope.bom_version:
+            merged["bom_version"] = scope.bom_version
+        message = f"按核价表最新年月 {scope.year}年{scope.month:02d}月 取数"
+        return pinned, merged, message
 
     def _resolve_subject(
         self,
@@ -639,6 +719,15 @@ class QueryParser:
             "核价详细",
             "价格明细",
             "核价明细",
+            "最近一次核价",
+            "上次核价",
+            "最新核价",
+            "最新价",
+            "现在什么价",
+            "当前核价",
+            "核了多少",
+            "这个价多少",
+            "单价是多少",
         )
         if any(phrase in question for phrase in focus_phrases):
             return True
@@ -652,7 +741,7 @@ class QueryParser:
             "怎么样",
             "概览",
         )
-        if any(phrase in question for phrase in ("多少钱", "什么价", "单价多少", "价格多少")):
+        if question_asks_part_price(question):
             return not any(word in question for word in overview_words)
         return False
 
@@ -668,9 +757,10 @@ class QueryParser:
         """analyses 纯规则：不信任 LLM。"""
         if self._is_drilldown_focused(question, part_number):
             result: list[AnalysisKind] = ["drilldown"]
-            if time_span > 1 or any(
+            wants_trend = any(
                 word in question for word in ("趋势", "变化", "涨", "跌", "环比", "同比")
-            ):
+            )
+            if wants_trend or (time_span > 1 and not asks_latest_costing(question)):
                 result.append("trend")
             if has_compare or any(
                 word in question for word in ("对比", "比较", "哪个基地", "谁更")

@@ -41,6 +41,8 @@ def _build_scope(query: AnalysisQuery, run: AnalysisRunResult) -> SnapshotScope:
     has_coverage_gap = query_month_span > 0 and month_count < query_month_span
     return SnapshotScope(
         time_range={"start": start, "end": end},
+        year=int(end[:4]) if len(end) >= 7 else None,
+        month=int(end[5:7]) if len(end) >= 7 else None,
         month_count=month_count,
         query_month_span=query_month_span,
         is_full_calendar_year=is_full_calendar_year,

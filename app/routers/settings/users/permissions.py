@@ -1,8 +1,10 @@
 """权限目录与用户授权路由"""
 
-from fastapi import APIRouter, Depends
+from fastapi import APIRouter, Depends, Request
 from sqlalchemy.orm import Session
 
+from app.common.operation_log.context import set_request_permission
+from app.common.permissions.codes import Perm
 from app.database import get_db
 from app.deps.permissions import require_admin_user
 from app.schemas.dto.user_permission_dto import UserPermissionsUpdateDTO
@@ -48,9 +50,11 @@ def get_user_permissions(
 def set_user_permissions(
     user_id: int,
     dto: UserPermissionsUpdateDTO,
+    request: Request,
     db: Session = Depends(get_db),
     current_user: UserVO = Depends(require_admin_user),
 ) -> ApiResponse[list[str]]:
     """覆盖保存用户权限（强制合并个人资料必选码）"""
+    set_request_permission(request, Perm.SETTINGS_USERS_GRANT)
     codes = _permission_service.set_user_permissions(db, user_id, dto.codes, current_user)
     return ApiResponse.updated(data=codes, message="授权已保存")

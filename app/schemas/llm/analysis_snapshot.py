@@ -14,6 +14,8 @@ class SnapshotScope(BaseModel):
     """Context Pack 查询范围（强制供 LLM 引用，避免把 N 个月合计说成全年）。"""
 
     time_range: dict[str, str]
+    year: int | None = None
+    month: int | None = None
     month_count: int = 0
     query_month_span: int = 0
     is_full_calendar_year: bool = False

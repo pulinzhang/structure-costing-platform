@@ -29,7 +29,11 @@ _RANGE_RE = re.compile(
     r"(\d{4})\s*年\s*(\d{1,2})\s*月\s*[到至\-~～]\s*(?:(\d{4})\s*年\s*)?(\d{1,2})\s*月"
 )
 _SINGLE_RE = re.compile(r"(\d{4})\s*年\s*(\d{1,2})\s*月")
+_LATEST_COSTING_RE = re.compile(
+    r"最近一次|最近一回|最近一笔|上次核价|最新一次核价|最新核价|最新价|现在什么价|当前核价"
+)
 _HALF_YEAR_RE = re.compile(r"过去\s*半年|近\s*半年")
+LATEST_COSTING_LOOKBACK_MONTHS = 36
 _THIS_YEAR_RE = re.compile(r"今年以来|本年以来|今年(?![与和].*去年)")
 _YOY_RE = re.compile(r"今年与去年|去年和今年|去年与今年|同比")
 
@@ -142,6 +146,23 @@ def normalize_time_range(
 
     key = month_key(default.year, default.month)
     return TimeRange(start=key, end=key)
+
+
+def asks_latest_costing(user_question: str) -> bool:
+    """问「最近一次核价」：按零件跨月取最新卡，不锁死当月。"""
+    return bool(_LATEST_COSTING_RE.search(user_question or ""))
+
+
+def latest_costing_time_range(default: DefaultScopeMonth) -> TimeRange:
+    start_year, start_month = shift_month(
+        default.year,
+        default.month,
+        -(LATEST_COSTING_LOOKBACK_MONTHS - 1),
+    )
+    return TimeRange(
+        start=month_key(start_year, start_month),
+        end=month_key(default.year, default.month),
+    )
 
 
 def question_has_explicit_time(user_question: str) -> bool:

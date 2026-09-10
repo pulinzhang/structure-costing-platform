@@ -140,6 +140,44 @@ class DatabaseConfig:
         inspector = inspect(engine)
         table_names = set(inspector.get_table_names())
 
+        log_table = "operation_logs"
+        if log_table in table_names:
+            log_cols = {col["name"] for col in inspector.get_columns(log_table)}
+            if "permission_code" not in log_cols:
+                with engine.begin() as conn:
+                    conn.execute(
+                        text(f"ALTER TABLE {log_table} ADD COLUMN permission_code VARCHAR(80)")
+                    )
+                    conn.execute(
+                        text(
+                            "CREATE INDEX IF NOT EXISTS ix_operation_logs_permission_code "
+                            f"ON {log_table} (permission_code)"
+                        )
+                    )
+                logger.info("已为 %s 追加列 permission_code", log_table)
+            inspector.clear_cache()
+            log_cols = {col["name"] for col in inspector.get_columns(log_table)}
+            location_columns = (
+                ("ip_country", "VARCHAR(64)"),
+                ("ip_province", "VARCHAR(64)"),
+                ("ip_city", "VARCHAR(64)"),
+            )
+            for column_name, column_def in location_columns:
+                if column_name in log_cols:
+                    continue
+                with engine.begin() as conn:
+                    conn.execute(
+                        text(f"ALTER TABLE {log_table} ADD COLUMN {column_name} {column_def}")
+                    )
+                logger.info("已为 %s 追加列 %s", log_table, column_name)
+            with engine.begin() as conn:
+                conn.execute(
+                    text(
+                        "CREATE INDEX IF NOT EXISTS ix_operation_logs_client_ip "
+                        f"ON {log_table} (client_ip)"
+                    )
+                )
+
         fee_table = "stamping_process_fees"
         if fee_table in table_names:
             fee_cols = {col["name"] for col in inspector.get_columns(fee_table)}

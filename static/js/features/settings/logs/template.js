@@ -1,134 +1,108 @@
 /**
- * Operation Logs Template
- * 操作日志 — Brabus Carbon & Precision Dark
+ * 操作日志 — 与用户管理同一套设置页表格（非 HUD）
  */
 
 import { pageSizeSelectHtml } from '../../../page-size.js?v=2';
 
 export function logsTemplate() {
     return `
-        <div class="space-y-2 w-full max-w-full">
+        <div class="space-y-3 w-full max-w-full text-[#9e9e9e]">
+            <div class="bg-[#121215] border border-[#2c2c2c]">
 
-            <div class="bg-[#1e1e1e] border border-[#2c2c2c] overflow-hidden w-full max-w-full"
-                 style="box-shadow: 0 2px 12px rgba(0,0,0,0.5), inset 0 1px 0 rgba(255,255,255,0.03);">
+                <div class="p-3 border-b border-[#222222] flex flex-wrap items-center justify-between gap-3 bg-[#16161a]">
+                    <div class="flex items-center gap-2 flex-wrap flex-1 min-w-0">
+                        <input type="text" id="filterUsername" placeholder="账号 / 操作人"
+                               class="w-36 h-8 px-3 text-xs bg-[#0a0a0c] border border-[#2c2c2c] text-[#ffffff] placeholder:text-[#616161] focus:outline-none focus:border-[#ff5252] transition-colors">
 
-                <div class="flex items-center justify-between px-5 py-3.5 border-b border-[#222222]"
-                     style="background: linear-gradient(90deg, #1c1c1c 0%, #1e1e1e 60%);">
-                    <div class="flex items-center gap-3">
-                        <div class="w-[2px] h-4 bg-[#d32f2f] rounded-[1px] shadow-[0_0_6px_rgba(211,47,47,0.3)]"></div>
-                        <h2 class="text-[12px] font-semibold text-[#c8c8c8] tracking-wide">操作日志</h2>
-                    </div>
-                    <div class="flex items-center gap-2">
-                        <button id="btnExportLogs"
-                                class="inline-flex items-center gap-1.5 bg-transparent text-[#9e9e9e] border border-[#2c2c2c] px-3 py-1.5 text-[11px] font-medium rounded-sm hover:border-[#d32f2f] hover:text-[#d32f2f] transition-all duration-150">
-                            ${window.svgIcon('download', 'w-3 h-3')}
-                            导出
-                        </button>
-                    </div>
-                </div>
+                        <select id="filterMenu"
+                                class="h-8 max-w-[220px] px-2 text-xs bg-[#0a0a0c] border border-[#2c2c2c] text-[#9e9e9e] cursor-pointer focus:outline-none focus:border-[#ff5252] transition-colors">
+                            <option value="">全部功能</option>
+                        </select>
 
-                <div class="flex items-center justify-between px-5 py-2.5 border-b border-[#1e1e1e]"
-                     style="background: linear-gradient(180deg, #181818 0%, #161616 100%);">
-                    <div class="flex items-center gap-3 flex-wrap">
-                        <div class="flex items-center gap-1.5">
-                            <label class="text-[9px] font-semibold text-[#484848] uppercase tracking-[0.12em] whitespace-nowrap">账号</label>
-                            <input type="text" id="filterUsername" placeholder="模糊搜索"
-                                   class="w-28 h-7 px-2.5 text-[11px] bg-[#0d0d0d] border border-[#272727] text-[#909090] placeholder:text-[#484848] focus:outline-none focus:border-[#ff5252] transition-all rounded-sm">
-                        </div>
-                        <div class="flex items-center gap-1.5">
-                            <label class="text-[9px] font-semibold text-[#484848] uppercase tracking-[0.12em] whitespace-nowrap">模块</label>
-                            <select id="filterModule"
-                                    class="w-32 h-7 pl-2.5 pr-7 text-[11px] bg-[#0d0d0d] border border-[#272727] text-[#909090] appearance-none cursor-pointer focus:outline-none focus:border-[#ff5252] transition-all rounded-sm">
-                                <option value="">全部</option>
-                            </select>
-                        </div>
-                        <div class="flex items-center gap-1.5">
-                            <label class="text-[9px] font-semibold text-[#484848] uppercase tracking-[0.12em] whitespace-nowrap">动作</label>
-                            <select id="filterAction"
-                                    class="w-28 h-7 pl-2.5 pr-7 text-[11px] bg-[#0d0d0d] border border-[#272727] text-[#909090] appearance-none cursor-pointer focus:outline-none focus:border-[#ff5252] transition-all rounded-sm">
-                                <option value="">全部</option>
-                            </select>
-                        </div>
-                        <div class="flex items-center gap-1.5">
-                            <label class="text-[9px] font-semibold text-[#484848] uppercase tracking-[0.12em] whitespace-nowrap">方法</label>
-                            <select id="filterMethod"
-                                    class="w-24 h-7 pl-2.5 pr-7 text-[11px] bg-[#0d0d0d] border border-[#272727] text-[#909090] appearance-none cursor-pointer focus:outline-none focus:border-[#ff5252] transition-all rounded-sm">
-                                <option value="">全部</option>
-                            </select>
-                        </div>
-                        <div class="flex items-center gap-1.5">
-                            <label class="text-[9px] font-semibold text-[#484848] uppercase tracking-[0.12em] whitespace-nowrap">结果</label>
-                            <select id="filterSuccess"
-                                    class="w-24 h-7 pl-2.5 pr-7 text-[11px] bg-[#0d0d0d] border border-[#272727] text-[#909090] appearance-none cursor-pointer focus:outline-none focus:border-[#ff5252] transition-all rounded-sm">
-                                <option value="">全部</option>
-                                <option value="true">成功</option>
-                                <option value="false">失败</option>
-                            </select>
-                        </div>
-                        <div class="flex items-center gap-1.5">
-                            <label class="text-[9px] font-semibold text-[#484848] uppercase tracking-[0.12em] whitespace-nowrap">起</label>
-                            <input type="datetime-local" id="filterCreatedFrom"
-                                   class="h-7 px-2 text-[11px] bg-[#0d0d0d] border border-[#272727] text-[#909090] focus:outline-none focus:border-[#ff5252] transition-all rounded-sm">
-                        </div>
-                        <div class="flex items-center gap-1.5">
-                            <label class="text-[9px] font-semibold text-[#484848] uppercase tracking-[0.12em] whitespace-nowrap">止</label>
-                            <input type="datetime-local" id="filterCreatedTo"
-                                   class="h-7 px-2 text-[11px] bg-[#0d0d0d] border border-[#272727] text-[#909090] focus:outline-none focus:border-[#ff5252] transition-all rounded-sm">
-                        </div>
+                        <select id="filterPermission"
+                                class="h-8 max-w-[180px] px-2 text-xs bg-[#0a0a0c] border border-[#2c2c2c] text-[#9e9e9e] cursor-pointer focus:outline-none focus:border-[#ff5252] transition-colors">
+                            <option value="">全部动作</option>
+                        </select>
+
+                        <select id="filterSuccess"
+                                class="h-8 px-2 text-xs bg-[#0a0a0c] border border-[#2c2c2c] text-[#9e9e9e] cursor-pointer focus:outline-none focus:border-[#ff5252] transition-colors">
+                            <option value="">全部结果</option>
+                            <option value="true">成功</option>
+                            <option value="false">失败</option>
+                        </select>
+
+                        <input type="datetime-local" id="filterCreatedFrom"
+                               class="h-8 px-2 text-xs bg-[#0a0a0c] border border-[#2c2c2c] text-[#9e9e9e] focus:outline-none focus:border-[#ff5252] transition-colors">
+                        <input type="datetime-local" id="filterCreatedTo"
+                               class="h-8 px-2 text-xs bg-[#0a0a0c] border border-[#2c2c2c] text-[#9e9e9e] focus:outline-none focus:border-[#ff5252] transition-colors">
+
                         <button id="btnFilter"
-                                class="inline-flex items-center gap-1 h-7 px-3 text-[11px] font-medium bg-[#242424] text-[#787878] border border-[#272727] rounded-sm hover:border-[#d32f2f] hover:text-[#d32f2f] transition-all duration-150">
+                                class="inline-flex items-center gap-1.5 h-8 px-3 text-[11px] font-semibold text-[#c8c8c8] border border-[#8a2020] hover:text-white transition-all"
+                                style="background: linear-gradient(180deg, #3d1515 0%, #2d0f0f 100%);">
                             ${window.svgIcon('search', 'w-3 h-3')}
                             查询
                         </button>
                         <button id="btnResetFilter"
-                                class="inline-flex items-center h-7 px-3 text-[11px] font-medium text-[#616161] hover:text-[#9e9e9e] transition-all duration-150">
+                                class="h-8 px-3 text-[11px] text-[#616161] hover:text-[#9e9e9e] transition-all">
                             重置
                         </button>
                     </div>
+
+                    <button id="btnExportLogs"
+                            class="h-8 inline-flex items-center gap-1.5 bg-transparent text-[#9e9e9e] border border-[#2c2c2c] px-3 text-xs hover:border-[#d32f2f] hover:text-[#d32f2f] transition-all">
+                        ${window.svgIcon('download', 'w-3.5 h-3.5')}
+                        导出
+                    </button>
                 </div>
 
                 <div class="overflow-x-auto">
-                    <table class="w-full">
+                    <table class="w-full text-left text-xs border-collapse">
                         <thead>
-                            <tr style="background: linear-gradient(180deg, #111111 0%, #0e0e0e 100%); border-bottom: 1px solid #222222;">
-                                <th class="px-4 py-2.5 text-left text-[9px] font-semibold uppercase tracking-[0.15em] text-[#484848] whitespace-nowrap">时间</th>
-                                <th class="px-4 py-2.5 text-left text-[9px] font-semibold uppercase tracking-[0.15em] text-[#484848] whitespace-nowrap">操作人</th>
-                                <th class="px-4 py-2.5 text-left text-[9px] font-semibold uppercase tracking-[0.15em] text-[#484848] whitespace-nowrap">模块</th>
-                                <th class="px-4 py-2.5 text-left text-[9px] font-semibold uppercase tracking-[0.15em] text-[#484848] whitespace-nowrap">动作</th>
-                                <th class="px-4 py-2.5 text-left text-[9px] font-semibold uppercase tracking-[0.15em] text-[#484848] whitespace-nowrap">摘要</th>
-                                <th class="px-4 py-2.5 text-left text-[9px] font-semibold uppercase tracking-[0.15em] text-[#484848] whitespace-nowrap">方法</th>
-                                <th class="px-4 py-2.5 text-left text-[9px] font-semibold uppercase tracking-[0.15em] text-[#484848] whitespace-nowrap">路径</th>
-                                <th class="px-4 py-2.5 text-center text-[9px] font-semibold uppercase tracking-[0.15em] text-[#484848] whitespace-nowrap">状态</th>
-                                <th class="px-4 py-2.5 text-left text-[9px] font-semibold uppercase tracking-[0.15em] text-[#484848] whitespace-nowrap">IP</th>
+                            <tr class="bg-[#0e0e11] border-b border-[#2c2c2c] text-[#9e9e9e]">
+                                <th class="px-4 py-3 text-[10px] font-semibold tracking-wider whitespace-nowrap">时间</th>
+                                <th class="px-4 py-3 text-[10px] font-semibold tracking-wider whitespace-nowrap">操作人</th>
+                                <th class="px-4 py-3 text-[10px] font-semibold tracking-wider">操作</th>
+                                <th class="px-4 py-3 text-[10px] font-semibold tracking-wider w-[132px] max-w-[132px]">对象</th>
+                                <th class="px-4 py-3 text-[10px] font-semibold tracking-wider text-center whitespace-nowrap">结果</th>
+                                <th class="px-4 py-3 text-[10px] font-semibold tracking-wider whitespace-nowrap">IP</th>
                             </tr>
                         </thead>
-                        <tbody id="logsTableBody" class="divide-y divide-[#1d1d1d]">
-                        </tbody>
+                        <tbody id="logsTableBody" class="divide-y divide-[#222222]"></tbody>
                     </table>
                 </div>
 
-                <div class="flex items-center justify-between px-5 py-2 border-t border-[#1e1e1e] bg-[#141414]" id="paginationContainer">
+                <div class="flex items-center justify-between px-4 py-2.5 border-t border-[#222222] bg-[#0e0e11]" id="paginationContainer">
                     <div class="flex items-center gap-3 min-w-0">
-                        <span id="totalCountPagination" class="text-[10px] text-[#484848]"></span>
+                        <span id="totalCountPagination" class="text-xs text-[#616161] font-mono"></span>
                         ${pageSizeSelectHtml('logsPageSize')}
                     </div>
-                    <div class="flex items-center gap-0.5" id="paginationBtns"></div>
+                    <div class="flex items-center gap-1" id="paginationBtns"></div>
                 </div>
 
-                <div id="emptyState" class="hidden flex flex-col items-center justify-center py-10">
-                    <div class="w-8 h-8 flex items-center justify-center mb-3 rounded-sm" style="background:#141414; border: 1px solid #222222;">
-                        ${window.svgIcon('clipboard-list', 'w-4 h-4 text-[#3a3a3a]')}
+                <div id="emptyState" class="hidden flex flex-col items-center justify-center py-16 text-center">
+                    <div class="p-3 bg-[#1e1e1e] border border-[#2c2c2c] text-[#616161] mb-2">
+                        ${window.svgIcon('clipboard-list', 'w-6 h-6')}
                     </div>
-                    <h5 class="text-[11px] font-medium text-[#555555] mb-1">暂无操作日志</h5>
-                    <p class="text-[10px] text-[#3a3a3a]">写操作与导出成功后将出现在此</p>
+                    <p class="text-xs text-[#9e9e9e] mb-1">暂无操作日志</p>
+                    <p class="text-[11px] text-[#616161]">登录、写操作、导出和查看计算过程会出现在此</p>
                 </div>
 
-                <div id="loadingState" class="hidden flex items-center justify-center py-10">
-                    <div class="w-4 h-4 border border-[#252525] border-t-[#d32f2f] rounded-full animate-spin"></div>
+                <div id="loadingState" class="hidden flex flex-col items-center justify-center py-16 gap-2">
+                    <div class="w-5 h-5 border-2 border-[#2c2c2c] border-t-[#d32f2f] rounded-full animate-spin"></div>
+                    <span class="text-[11px] text-[#616161]">加载中..</span>
                 </div>
             </div>
         </div>
     `;
+}
+
+function esc(str) {
+    if (typeof window.esc === 'function') return window.esc(str);
+    return String(str ?? '')
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;');
 }
 
 function formatDateTime(value) {
@@ -136,39 +110,109 @@ function formatDateTime(value) {
     return String(value).replace('T', ' ').slice(0, 19);
 }
 
+function isHttpTail(part) {
+    return /^(GET|POST|PUT|PATCH|DELETE)\s\/api\//u.test(part);
+}
+
+function isObjectPart(part) {
+    return (
+        /^文件[= ]/u.test(part)
+        || /^基地\s/u.test(part)
+        || /^零件号\s/u.test(part)
+        || /^\d{4}年/u.test(part)
+    );
+}
+
+function stripFilePrefix(part) {
+    return String(part || '').replace(/^文件[= ]/u, '').trim();
+}
+
+function cleanLegacyDetail(detail) {
+    const raw = String(detail || '').trim();
+    if (!raw) return '';
+    const beforeAmp = raw.includes('&') ? raw.slice(0, raw.indexOf('&')) : raw;
+    if (/^基地\s|^零件号\s|^文件[= ]/u.test(beforeAmp)) {
+        return stripFilePrefix(beforeAmp);
+    }
+    return stripFilePrefix(raw);
+}
+
+function splitLogDisplay(summary, detail) {
+    const parts = String(summary || '')
+        .split(/\s·\s/u)
+        .map((item) => item.trim())
+        .filter(Boolean);
+    const actionParts = [];
+    const objectParts = [];
+    for (const part of parts) {
+        if (isHttpTail(part)) continue;
+        if (isObjectPart(part)) {
+            const cleaned = stripFilePrefix(part);
+            if (cleaned) objectParts.push(cleaned);
+            continue;
+        }
+        actionParts.push(part);
+    }
+    const fromDetail = cleanLegacyDetail(detail);
+    if (
+        fromDetail
+        && !objectParts.some((item) => fromDetail.includes(item) || item.includes(fromDetail))
+    ) {
+        objectParts.push(fromDetail);
+    }
+    return {
+        what: actionParts.join(' / ') || '',
+        objectText: objectParts.join(' · '),
+    };
+}
+
 /**
  * @param {Array} records
- * @returns {string}
+ * @param {{[code: string]: {label: string, breadcrumb: string}}} catalogByCode
  */
-export function renderTableRows(records) {
+export function renderTableRows(records, catalogByCode) {
     if (!records || !Array.isArray(records) || records.length === 0) {
         return '';
     }
-    return records.map((record, idx) => {
-        const isEven = idx % 2 === 1;
+    const catalog = catalogByCode || {};
+    return records.map((record) => {
         const successBadge = record.success
-            ? `<span class="inline-flex items-center px-2 py-0.5 text-[10px] font-semibold bg-[#2e7d32]/20 text-[#4caf50] rounded">${esc(record.status_code)}</span>`
-            : `<span class="inline-flex items-center px-2 py-0.5 text-[10px] font-semibold bg-[#c62828]/20 text-[#ef5350] rounded">${esc(record.status_code)}</span>`;
+            ? `<span class="inline-flex items-center gap-1.5 px-2 py-0.5 text-[11px] text-[#4caf50] bg-[#2e7d32]/20 border border-[#2e7d32]/40">成功</span>`
+            : `<span class="inline-flex items-center gap-1.5 px-2 py-0.5 text-[11px] text-[#ef5350] bg-[#c62828]/20 border border-[#c62828]/40">失败 ${esc(record.status_code)}</span>`;
         const operator = record.operator_name || record.username || '-';
         const operatorSub = record.username && record.operator_name && record.username !== record.operator_name
-            ? `<div class="text-[10px] text-[#616161] font-mono">${esc(record.username)}</div>`
+            ? `<div class="text-[11px] text-[#616161] font-mono">${esc(record.username)}</div>`
+            : '';
+        const catalogHit = record.permission_code ? catalog[record.permission_code] : null;
+        const split = splitLogDisplay(record.summary, record.detail);
+        const whatMain = split.what
+            || (catalogHit && catalogHit.breadcrumb)
+            || (record.module && record.action ? `${record.module} / ${record.action}` : '-');
+        const objectText = split.objectText;
+        const locationParts = [record.ip_country, record.ip_province, record.ip_city].filter((part) => part);
+        const locationHint = locationParts.length
+            ? `<div class="text-[11px] text-[#616161]">${esc(locationParts.join(' / '))}</div>`
             : '';
 
         return `
-            <tr class="${isEven ? 'bg-[#1a1a1a]/40' : ''} hover:bg-[#ffffff]/[0.02] transition-colors">
-                <td class="px-4 py-2.5 text-[11px] text-[#9e9e9e] font-mono whitespace-nowrap">${esc(formatDateTime(record.created_at))}</td>
-                <td class="px-4 py-2.5 text-[11px] text-[#c8c8c8]">
-                    <div>${esc(operator)}</div>
-                    ${operatorSub}
-                </td>
-                <td class="px-4 py-2.5 text-[11px] text-[#9e9e9e] whitespace-nowrap">${esc(record.module)}</td>
-                <td class="px-4 py-2.5 text-[11px] text-[#9e9e9e] whitespace-nowrap">${esc(record.action)}</td>
-                <td class="px-4 py-2.5 text-[11px] text-[#c8c8c8] max-w-[220px] truncate" title="${esc(record.summary)}">${esc(record.summary)}</td>
-                <td class="px-4 py-2.5 text-[11px] text-[#9e9e9e] font-mono whitespace-nowrap">${esc(record.method)}</td>
-                <td class="px-4 py-2.5 text-[11px] text-[#787878] font-mono max-w-[260px] truncate" title="${esc(record.path)}">${esc(record.path)}</td>
-                <td class="px-4 py-2.5 text-center">${successBadge}</td>
-                <td class="px-4 py-2.5 text-[11px] text-[#616161] font-mono whitespace-nowrap">${esc(record.client_ip)}</td>
-            </tr>
+        <tr class="hover:bg-[#ffffff]/[0.02] transition-colors border-b border-[#222222]">
+            <td class="px-4 py-2.5 text-[11px] text-[#616161] font-mono whitespace-nowrap align-top">${esc(formatDateTime(record.created_at))}</td>
+            <td class="px-4 py-2.5 whitespace-nowrap align-top">
+                <div class="text-xs text-[#ffffff]">${esc(operator)}</div>
+                ${operatorSub}
+            </td>
+            <td class="px-4 py-2.5 align-top">
+                <div class="text-xs text-[#c8c8c8] leading-5 break-words">${esc(whatMain)}</div>
+            </td>
+            <td class="px-4 py-2.5 w-[132px] max-w-[132px] align-top">
+                <div class="text-[11px] text-[#9e9e9e] truncate" title="${esc(objectText)}">${esc(objectText || '-')}</div>
+            </td>
+            <td class="px-4 py-2.5 text-center whitespace-nowrap align-top">${successBadge}</td>
+            <td class="px-4 py-2.5 whitespace-nowrap align-top">
+                <div class="text-[11px] text-[#9e9e9e] font-mono">${esc(record.client_ip || '-')}</div>
+                ${locationHint}
+            </td>
+        </tr>
         `;
     }).join('');
 }
@@ -176,7 +220,6 @@ export function renderTableRows(records) {
 /**
  * @param {number} currentPage
  * @param {number} totalPages
- * @returns {string}
  */
 export function renderPagination(currentPage, totalPages) {
     if (totalPages <= 1) {
@@ -186,12 +229,8 @@ export function renderPagination(currentPage, totalPages) {
     let buttons = '';
 
     buttons += `
-        <button class="page-btn flex items-center justify-center w-6 h-6 rounded-sm text-[10px] ${currentPage === 1 ? 'text-[#333333] cursor-not-allowed' : 'text-[#585858] hover:text-[#c0c0c0] hover:bg-[#232323]'} transition-all duration-150"
-                data-page="${currentPage - 1}" ${currentPage === 1 ? 'disabled' : ''}>
-            <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"></path>
-            </svg>
-        </button>
+        <button class="page-btn px-2 h-6 text-[11px] border ${currentPage === 1 ? 'border-[#2c2c2c]/50 text-[#333333] cursor-not-allowed' : 'border-[#2c2c2c] text-[#9e9e9e] hover:text-white hover:bg-[#262626]'} transition-all"
+                data-page="${currentPage - 1}" ${currentPage === 1 ? 'disabled' : ''}>上一页</button>
     `;
 
     const maxVisible = 5;
@@ -202,30 +241,26 @@ export function renderPagination(currentPage, totalPages) {
     }
 
     if (startPage > 1) {
-        buttons += `<button class="page-btn flex items-center justify-center w-6 h-6 rounded-sm text-[10px] text-[#585858] hover:text-[#c0c0c0] hover:bg-[#232323] transition-all duration-150" data-page="1">1</button>`;
-        if (startPage > 2) buttons += `<span class="px-0.5 text-[#333333] leading-6 text-[9px]">…</span>`;
+        buttons += `<button class="page-btn w-6 h-6 text-[11px] border border-[#2c2c2c] text-[#9e9e9e] hover:text-white hover:bg-[#262626] transition-all" data-page="1">1</button>`;
+        if (startPage > 2) buttons += `<span class="px-1 text-[#616161] text-xs">—</span>`;
     }
 
     for (let i = startPage; i <= endPage; i++) {
         const isActive = i === currentPage;
         buttons += `
-            <button class="page-btn flex items-center justify-center min-w-[24px] h-6 px-1.5 rounded-sm text-[10px] ${isActive ? 'bg-[#d32f2f] text-white' : 'text-[#585858] hover:text-[#c0c0c0] hover:bg-[#232323]'} transition-all duration-150"
+            <button class="page-btn w-6 h-6 text-[11px] font-mono ${isActive ? 'bg-[#d32f2f] border border-[#d32f2f] text-white' : 'border border-[#2c2c2c] text-[#9e9e9e] hover:text-white hover:bg-[#262626]'} transition-all"
                     data-page="${i}">${i}</button>
         `;
     }
 
     if (endPage < totalPages) {
-        if (endPage < totalPages - 1) buttons += `<span class="px-0.5 text-[#333333] leading-6 text-[9px]">…</span>`;
-        buttons += `<button class="page-btn flex items-center justify-center w-6 h-6 rounded-sm text-[10px] text-[#585858] hover:text-[#c0c0c0] hover:bg-[#232323] transition-all duration-150" data-page="${totalPages}">${totalPages}</button>`;
+        if (endPage < totalPages - 1) buttons += `<span class="px-1 text-[#616161] text-xs">—</span>`;
+        buttons += `<button class="page-btn w-6 h-6 text-[11px] border border-[#2c2c2c] text-[#9e9e9e] hover:text-white hover:bg-[#262626] transition-all" data-page="${totalPages}">${totalPages}</button>`;
     }
 
     buttons += `
-        <button class="page-btn flex items-center justify-center w-6 h-6 rounded-sm text-[10px] ${currentPage === totalPages ? 'text-[#333333] cursor-not-allowed' : 'text-[#585858] hover:text-[#c0c0c0] hover:bg-[#232323]'} transition-all duration-150"
-                data-page="${currentPage + 1}" ${currentPage === totalPages ? 'disabled' : ''}>
-            <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"></path>
-            </svg>
-        </button>
+        <button class="page-btn px-2 h-6 text-[11px] border ${currentPage === totalPages ? 'border-[#2c2c2c]/50 text-[#333333] cursor-not-allowed' : 'border-[#2c2c2c] text-[#9e9e9e] hover:text-white hover:bg-[#262626]'} transition-all"
+                data-page="${currentPage + 1}" ${currentPage === totalPages ? 'disabled' : ''}>下一页</button>
     `;
 
     return buttons;

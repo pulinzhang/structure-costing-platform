@@ -1,7 +1,7 @@
 # Prompt 清单（llm 切片）
 # PromptRegistry 加载本文件；改文案须 bump version
 
-version: "v1.1.11"
+version: "v1.1.13"
 
 shared:
   - _shared/chinese_style_rules.md
@@ -9,6 +9,7 @@ shared:
   - _shared/anomaly_rules.md
   - _shared/comparison_advice_rules.md
   - _shared/scope_rules.md
+  - _shared/operator_scenario_rules.md
 
 audiences:
   buyer:

@@ -38,7 +38,8 @@
 
 ## 成品 vs 冲压域（part_existence）
 
-- `part_existence.primary_source = l0`：成品供货总成，只在成品核价一览建账。
+- `part_existence.primary_source = l0`：成品核价卡（可能是供货总成，也可能是分总成/冲压件子卡），以 `card_role` / `identities` 为准。
+- 同一简码同时命中总成与分总成：**不是**缺数据，必须分行报价。
 - `stamping_cost.applicable = false` 等：**数据源不适用**，不是缺数据、不是风险。
 - **禁止**把「成品在 L0 已找到，但冲压库未命中」写成异常。
 - 只有 `applicable = true` 且 `found = false` 时，才可提示该库未命中。

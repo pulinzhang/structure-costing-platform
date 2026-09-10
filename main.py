@@ -10,7 +10,7 @@ FastAPI 应用入口
 import socket
 from contextlib import asynccontextmanager
 
-from fastapi import FastAPI, HTTPException, Request
+from fastapi import Depends, FastAPI, HTTPException, Request
 from fastapi.exceptions import RequestValidationError
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
@@ -100,12 +100,15 @@ async def lifespan(app: FastAPI):
 
 def create_app() -> FastAPI:
     """创建 FastAPI 应用实例"""
+    from app.deps.operation_log_upload import capture_upload_filenames
+
     app = FastAPI(
         title=settings.APP_NAME,
         description=settings.APP_DESCRIPTION,
         version=settings.APP_VERSION,
         lifespan=lifespan,
         debug=settings.IS_DEBUG,
+        dependencies=[Depends(capture_upload_filenames)],
         swagger_ui_parameters={
             "defaultModelsExpandDepth": 1,
             "docExpansion": "list",

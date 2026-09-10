@@ -112,7 +112,13 @@ from app.services.llm.analysis.cost_trend import (
     build_stamping_trend,
     build_steel_trend,
 )
-from app.services.llm.analysis.drilldown import build_drilldown
+from app.services.llm.analysis.drilldown import (
+    build_annual_leaf_price,
+    build_branch_related,
+    build_drilldown,
+    build_item_price_drilldown,
+    build_missing_part_price,
+)
 from app.services.llm.analysis.l0_welding_fee_summary import (
     build_l0_welding_fee_comparison,
     build_l0_welding_fee_drilldown,
@@ -191,6 +197,7 @@ from app.services.llm.analysis.winning_thickness_summary import (
 )
 from app.services.llm.menu_catalog import expand_base_price_location
 from app.services.llm.query.comparison_basis import resolve_comparability
+from app.services.llm.query.query_parser import question_asks_part_price
 from app.services.llm.query.time_range import shift_month
 
 
@@ -271,8 +278,198 @@ class AnalysisRunner:
         if query.subject == "steel_price":
             return self._run_steel(db, query)
         if query.subject == "part":
+            if self._should_run_part_price_drilldown(query):
+                return self._run_part_price_drilldown(db, query)
             return self._run_part_lookup(db, query)
+        if self._is_part_price_drilldown(query):
+            return self._run_part_price_drilldown(db, query)
         return self._run_l0(db, query)
+
+    def _is_part_price_drilldown(self, query: AnalysisQuery) -> bool:
+        return (
+            "drilldown" in query.analyses
+            and bool(query.part_number())
+            and "summary" not in query.analyses
+        )
+
+    def _should_run_part_price_drilldown(self, query: AnalysisQuery) -> bool:
+        if self._is_part_price_drilldown(query):
+            return True
+        if not query.part_number():
+            return False
+        question = query.user_question or ""
+        if any(word in question for word in ("存在", "有没有这个", "在不在", "在吗")):
+            return False
+        return question_asks_part_price(question)
+
+    def _run_part_price_drilldown(self, db: Session, query: AnalysisQuery) -> AnalysisRunResult:
+        """单件问价：先核价卡，再核价表材料行，再年度零件价。"""
+        tr = query.time_range
+        token = query.part_number() or ""
+        part_rows = self._query_assembly_part_rows(
+            db,
+            query,
+            start_year=tr.start_year,
+            start_month=tr.start_month,
+            end_year=tr.end_year,
+            end_month=tr.end_month,
+        )
+        drilldown = build_drilldown(part_rows, part_number=token)
+        if drilldown.get("found"):
+            if drilldown.get("fork") == "sub_assembly":
+                drilldown["related"] = self._related_branch_costing(db, query, drilldown)
+            return self._part_price_result(
+                query,
+                drilldown,
+                has_data=True,
+                detail="来源=核价表",
+            )
+
+        item_rows = self._l0_repo.query_item_price_rows(
+            db,
+            part_number=token,
+            start_year=tr.start_year,
+            start_month=tr.start_month,
+            end_year=tr.end_year,
+            end_month=tr.end_month,
+            location=query.location(),
+            vehicle_model=query.vehicle_model(),
+            bom_version=query.bom_version(),
+        )
+        if not item_rows and (query.location() or query.vehicle_model() or query.bom_version()):
+            item_rows = self._l0_repo.query_item_price_rows(
+                db,
+                part_number=token,
+                start_year=tr.start_year,
+                start_month=tr.start_month,
+                end_year=tr.end_year,
+                end_month=tr.end_month,
+            )
+        if item_rows:
+            payload = build_item_price_drilldown(item_rows, part_token=token)
+            if payload.get("found"):
+                return self._part_price_result(
+                    query,
+                    payload,
+                    has_data=True,
+                    detail="来源=核价表材料明细",
+                )
+
+        annual_rows = self._annual_part_price_repo.query_rows(
+            db,
+            location=query.location(),
+            start_year=tr.end_year,
+            end_year=tr.end_year,
+            part_number=token,
+        )
+        if not annual_rows:
+            annual_rows = self._annual_part_price_repo.query_rows(
+                db,
+                location=None,
+                start_year=None,
+                end_year=None,
+                part_number=token,
+            )
+        head = self._annual_part_price_repo.pick_best_row(annual_rows, part_token=token)
+        if head is not None:
+            payload = build_annual_leaf_price(head, part_token=token)
+            return self._part_price_result(
+                query,
+                payload,
+                has_data=True,
+                detail="来源=年度零件价列表",
+            )
+        return self._part_price_result(
+            query,
+            build_missing_part_price(token),
+            has_data=False,
+            detail="核价表与年度零件价列表均未命中",
+        )
+
+    def _part_price_result(
+        self,
+        query: AnalysisQuery,
+        drilldown: dict[str, Any],
+        *,
+        has_data: bool,
+        detail: str,
+    ) -> AnalysisRunResult:
+        base_message = query.parser_data_message or ""
+        parts = [part for part in (base_message, detail) if part]
+        return AnalysisRunResult(
+            comparability=resolve_comparability(query.comparison_basis),
+            has_data=has_data,
+            data_message="；".join(parts),
+            result=drilldown,
+        )
+
+    def _query_assembly_part_rows(
+        self,
+        db: Session,
+        query: AnalysisQuery,
+        *,
+        start_year: int,
+        start_month: int,
+        end_year: int,
+        end_month: int,
+        trace_id: str | None = None,
+    ) -> list[L0PartPeriodRow]:
+        part_token = query.part_number()
+        return self._l0_repo.query_part_rows(
+            db,
+            location=query.location(),
+            vehicle_model=query.vehicle_model(),
+            bom_version=query.bom_version(),
+            start_year=start_year,
+            start_month=start_month,
+            end_year=end_year,
+            end_month=end_month,
+            part_number=part_token or None,
+            tree_root_only=not bool(part_token),
+            trace_id=trace_id,
+        )
+
+    def _related_branch_costing(
+        self,
+        db: Session,
+        query: AnalysisQuery,
+        drilldown: dict[str, Any],
+    ) -> dict[str, Any]:
+        latest = drilldown.get("latest") or {}
+        year = int(latest.get("year") or query.time_range.end_year)
+        month = int(latest.get("month_number") or query.time_range.end_month)
+        part_number = str(drilldown.get("part_number") or query.part_number() or "")
+        items = (
+            self._l0_repo.query_card_item_rows(
+                db,
+                year=year,
+                month=month,
+                part_number=part_number,
+                location=query.location() or latest.get("location"),
+                vehicle_model=query.vehicle_model() or latest.get("vehicle_model"),
+                bom_version=query.bom_version() or latest.get("bom_version"),
+            )
+            if part_number
+            else []
+        )
+        parent = None
+        root_part_number = drilldown.get("root_part_number")
+        if root_part_number:
+            parent_rows = self._l0_repo.query_part_rows(
+                db,
+                location=query.location() or latest.get("location"),
+                vehicle_model=query.vehicle_model() or latest.get("vehicle_model"),
+                bom_version=query.bom_version() or latest.get("bom_version"),
+                start_year=year,
+                start_month=month,
+                end_year=year,
+                end_month=month,
+                part_number=str(root_part_number),
+                tree_root_only=True,
+            )
+            if parent_rows:
+                parent = sorted(parent_rows, key=lambda row: (row.year, row.month))[-1]
+        return build_branch_related(parent=parent, items=items)
 
     def _run_ops_workbench(self, db: Session, query: AnalysisQuery) -> AnalysisRunResult:
         tr = query.time_range
@@ -1262,16 +1459,13 @@ class AnalysisRunner:
         """指定零件号：同时在 L0、冲压价、冲压工艺中检索。"""
         tr = query.time_range
         part_token = query.part_number() or ""
-        l0_rows = self._l0_repo.query_part_rows(
+        l0_rows = self._query_assembly_part_rows(
             db,
-            location=query.location(),
-            vehicle_model=query.vehicle_model(),
-            bom_version=query.bom_version(),
+            query,
             start_year=tr.start_year,
             start_month=tr.start_month,
             end_year=tr.end_year,
             end_month=tr.end_month,
-            part_number=part_token or None,
         )
         stamping_rows = self._stamping_repo.query_part_rows(
             db,
@@ -1329,7 +1523,10 @@ class AnalysisRunner:
             )
         if "drilldown" in query.analyses:
             if l0_rows:
-                parts_result["l0_drilldown"] = build_drilldown(l0_rows, part_number=part_token)
+                l0_drilldown = build_drilldown(l0_rows, part_number=part_token)
+                if l0_drilldown.get("fork") == "sub_assembly":
+                    l0_drilldown["related"] = self._related_branch_costing(db, query, l0_drilldown)
+                parts_result["l0_drilldown"] = l0_drilldown
             if profile.stamping_cost_applicable:
                 parts_result["stamping_cost_drilldown"] = _build_stamping_drilldown(
                     stamping_rows, part_number=part_token
@@ -1394,16 +1591,13 @@ class AnalysisRunner:
             part_start_year, part_start_month = tr.start_year, tr.start_month
             if peek_previous_month:
                 part_start_year, part_start_month = shift_month(tr.start_year, tr.start_month, -1)
-            part_rows = self._l0_repo.query_part_rows(
+            part_rows = self._query_assembly_part_rows(
                 db,
-                location=location,
-                vehicle_model=vehicle_model,
-                bom_version=bom_version,
+                query,
                 start_year=part_start_year,
                 start_month=part_start_month,
                 end_year=tr.end_year,
                 end_month=tr.end_month,
-                part_number=query.part_number(),
                 trace_id=trace_id,
             )
             filtered_missing = self._l0_repo.count_filtered_missing_price(
@@ -1516,7 +1710,10 @@ class AnalysisRunner:
 
         if "drilldown" in query.analyses:
             part_number = query.part_number() or ""
-            parts_result["drilldown"] = build_drilldown(part_rows, part_number=part_number)
+            drilldown = build_drilldown(part_rows, part_number=part_number)
+            if drilldown.get("fork") == "sub_assembly":
+                drilldown["related"] = self._related_branch_costing(db, query, drilldown)
+            parts_result["drilldown"] = drilldown
 
         out.result = _compose_result(parts_result, default_kind="summary")
         out.has_data = bool(monthly) or bool(part_rows)
