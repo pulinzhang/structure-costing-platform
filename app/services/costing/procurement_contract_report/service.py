@@ -13,6 +13,7 @@ from app.repositories.bom.bom_repository import BomNodeRepository, BomSnapshotRe
 from app.repositories.bom.procurement_object_repository import BomProcurementObjectRepository
 from app.repositories.costing.assembly_cost.assembly_cost_repository import (
     AssemblyCostRepository,
+    SettlementAmountField,
 )
 from app.repositories.stamping.die_fee_repository import StampingDieFeeRepository
 from app.repositories.stamping.gauge_fee_repository import StampingGaugeFeeRepository
@@ -297,6 +298,9 @@ class ProcurementContractReportService:
         months: list[tuple[int, int]],
         source_node_ids: list[int],
     ) -> dict[tuple[int, int, int], Decimal]:
+        amount_field: SettlementAmountField = (
+            "grand_total" if query.view == VIEW_ASSEMBLY else "total_amount"
+        )
         rows = self.cost_repo.list_should_costs_for_nodes(
             db,
             location=query.location,
@@ -304,8 +308,9 @@ class ProcurementContractReportService:
             bom_version=query.bom_version,
             months=months,
             source_node_ids=source_node_ids,
+            amount_field=amount_field,
         )
-        return {(year, month, node_id): should_cost for year, month, node_id, should_cost in rows}
+        return {(year, month, node_id): amount for year, month, node_id, amount in rows}
 
     def _load_tooling(
         self,

@@ -333,6 +333,7 @@ class AssemblyCostRestoreVO(BaseModel):
     purchased_amount: Decimal
     bundle_amount: Decimal
     welding_amount: Decimal
+    total_amount: Decimal
     should_cost: Decimal
     indirect_amount: Decimal
     grand_total: Decimal
@@ -355,6 +356,7 @@ class AssemblyCostRestoreVO(BaseModel):
         "purchased_amount",
         "bundle_amount",
         "welding_amount",
+        "total_amount",
         "should_cost",
         "indirect_amount",
         "grand_total",

@@ -157,7 +157,7 @@ BOM 重导后 `source_node_id` 可能失效（P18）：报告仍展示**当时�
 
 ```text
 L0  成本对象余额
-      grand_total / should_cost / 恒等式 / 状态 / 审核
+      grand_total / total_amount / 恒等式 / 状态 / 审核
 
 L1  成本项目（本切片归集结果）
       ①②③ 直接材料    ④⑤ 工艺费（本卡根焊接）
@@ -193,7 +193,7 @@ flowchart TB
   IND --> CFG["费率快照 × 月总账"]
 ```
 
-**财务视图**关注 L0 的 `grand_total`（总费用）。**采购视图**关注 L0 的 `should_cost`（= `total_amount`，应成本）。链条相同；封面强调列随入口 `view` 变，不两套还原规则。
+**财务视图**关注树根卡的 `grand_total`（总费用，对齐一览财务列）。**采购视图**关注对象卡的 `total_amount`（总成本，对齐一览采购列 / 协议分总成结算价）。链条相同；封面强调列随入口 `view` 变，不两套还原规则。
 
 ---
 
@@ -362,7 +362,7 @@ URL：`/assembly-cost-restore?year={year}&month={month}&part_number={part_number
 
 - 眉题小字：计算过程
 - **零件短码（最大字）**；其下完整零件号 + 名称
-- 一笔主角金额：财务 `grand_total`，采购 `should_cost`
+- 一笔主角金额：财务 `grand_total`（总费用），采购 `total_amount`（总成本）
 - 标识一行：年/月 · 基地 · 项目 · BOM 版本
 - 核算 / 审核状态用短词
 - 文末细字：核价人、核价时间；水印：公司核心机密 + 操作人 + 打开/打印时刻
@@ -429,7 +429,7 @@ GET /api/costing/assembly-costs/restore?year=&month=&part_number=
 
 - 404：没有这张核价卡。  
 - `require_perm(Perm.ASSEMBLY_COST_VIEW)`，与 get 详情相同。  
-- 查询可选 `view=finance|procurement`：只影响封面强调列，VO 仍含全部项目。缺省 `finance`。  
+- 查询可选 `view=finance|procurement`：只影响封面强调列（总费用 / 总成本），VO 仍含全部项目。缺省 `finance`。  
 - `/restore` 与 `/{cost_id}/restore` 必须写在 `GET /{cost_id}` **之前**。
 
 VO 分层（禁止 `dict[str, Any]` 把上游整行 dump 出去）：
@@ -477,7 +477,7 @@ tests/costing/test_assembly_cost_restore.py
 6. 冲压叶子能还原到加工费、模具、钢价指针。  
 7. I3～I6 标明**分配**与费率快照；I1/I2 标明**直接归集**到包装记录。  
 8. 无上传件的数据只印核算记录。  
-9. 财务入口封面是含摊入后总价；采购入口是核算单价，不展示摊入章。  
+9. 财务入口封面是总费用；采购入口是总成本，不展示摊入章。构成树里点分总成「计算过程」仍开采购口径（总成本）。  
 10. 紧固件短码列是全码（如 `QR36410`），外购板是末四位（如 `1133`）。  
 11. 不写库、不调用上游计算。  
 12. 恒等式展示值与卡上余额一致。  
