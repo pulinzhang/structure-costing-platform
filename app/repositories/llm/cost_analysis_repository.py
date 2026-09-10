@@ -72,6 +72,9 @@ class L0CompositionLineRow:
     unit_price: Decimal
     effective_qty: Decimal
     line_amount: Decimal
+    supply_type: str | None = None
+    unit: str = "pcs"
+    location: str | None = None
 
 
 def _is_missing_price() -> ColumnElement[bool]:
@@ -463,6 +466,117 @@ class L0CostAnalysisRepository:
                     unit_price=Decimal(str(item.unit_price or 0)),
                     effective_qty=Decimal(str(item.effective_qty or 0)),
                     line_amount=Decimal(str(item.line_amount or 0)),
+                    supply_type=item.supply_type,
+                    location=str(card.location) if card.location else None,
+                )
+            )
+        return rows
+
+    def query_standard_part_price_lines(
+        self,
+        db: Session,
+        *,
+        location: str | None,
+        vehicle_model: str | None,
+        bom_version: str | None,
+        start_year: int,
+        start_month: int,
+        end_year: int,
+        end_month: int,
+        min_unit_price: Decimal,
+        supply_types: tuple[str, ...],
+        name_keys: tuple[str, ...],
+        part_number: str | None = None,
+        limit: int = 500,
+        trace_id: str | None = None,
+    ) -> list[L0CompositionLineRow]:
+        return run_guarded_query(
+            sql_summary="costing_assembly_cost_items.query_standard_part_price_lines",
+            trace_id=trace_id,
+            query_fn=lambda: self._query_standard_part_price_lines_impl(
+                db,
+                location=location,
+                vehicle_model=vehicle_model,
+                bom_version=bom_version,
+                start_year=start_year,
+                start_month=start_month,
+                end_year=end_year,
+                end_month=end_month,
+                min_unit_price=min_unit_price,
+                supply_types=supply_types,
+                name_keys=name_keys,
+                part_number=part_number,
+                limit=limit,
+            ),
+        )
+
+    def _query_standard_part_price_lines_impl(
+        self,
+        db: Session,
+        *,
+        location: str | None,
+        vehicle_model: str | None,
+        bom_version: str | None,
+        start_year: int,
+        start_month: int,
+        end_year: int,
+        end_month: int,
+        min_unit_price: Decimal,
+        supply_types: tuple[str, ...],
+        name_keys: tuple[str, ...],
+        part_number: str | None,
+        limit: int,
+    ) -> list[L0CompositionLineRow]:
+        start = ym_int(start_year, start_month)
+        end = ym_int(end_year, end_month)
+        ym_expr = AssemblyCost.year * 100 + AssemblyCost.month
+        name_filters = [AssemblyCostItem.part_name.contains(key) for key in name_keys]
+        q = (
+            db.query(AssemblyCost, AssemblyCostItem)
+            .join(
+                AssemblyCostItem,
+                AssemblyCostItem.assembly_cost_id == AssemblyCost.id,
+            )
+            .filter(
+                ym_expr >= start,
+                ym_expr <= end,
+                AssemblyCost.is_tree_root.is_(True),
+                AssemblyCostItem.cost_source == "annual",
+                AssemblyCostItem.unit_price >= min_unit_price,
+                or_(
+                    AssemblyCostItem.supply_type.in_(list(supply_types)),
+                    *name_filters,
+                ),
+            )
+        )
+        loc_filter = location_in_clause(db, AssemblyCost.location, location)
+        if loc_filter is not None:
+            q = q.filter(loc_filter)
+        if vehicle_model:
+            q = q.filter(AssemblyCost.vehicle_model == vehicle_model)
+        if bom_version:
+            q = q.filter(AssemblyCost.bom_version == bom_version)
+        if part_number:
+            pattern = f"%{escape_like_fragment(part_number)}%"
+            q = q.filter(AssemblyCost.part_number.like(pattern, escape="\\"))
+        q = q.order_by(AssemblyCostItem.unit_price.desc()).limit(limit)
+        rows: list[L0CompositionLineRow] = []
+        for card, item in q.all():
+            rows.append(
+                L0CompositionLineRow(
+                    year=int(card.year),
+                    month=int(card.month),
+                    root_part_number=str(card.part_number),
+                    root_part_name=card.part_name,
+                    root_should_cost=Decimal(str(card.should_cost or card.total_amount or 0)),
+                    child_part_number=str(item.part_number),
+                    child_part_name=item.part_name,
+                    cost_source=str(item.cost_source or ""),
+                    unit_price=Decimal(str(item.unit_price or 0)),
+                    effective_qty=Decimal(str(item.effective_qty or 0)),
+                    line_amount=Decimal(str(item.line_amount or 0)),
+                    supply_type=item.supply_type,
+                    location=str(card.location) if card.location else None,
                 )
             )
         return rows

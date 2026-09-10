@@ -18,6 +18,7 @@
 | `stamping` / `stamping_amount` | 冲压费用 / 冲压分项 |
 | `purchased` / `purchased_amount` | 外购费用 / 外购分项 |
 | `composition_anomalies` / `share_of_should_cost` | 构成独大 / 占应成本比例 |
+| `standard_part_anomalies` / `standard_part_high_price` | 标准件单价过大 |
 | `effective_qty` | 有效用量 |
 | `conversion_factor` / `purchase_unit_price` | 转换系数 / 采购单价 |
 | `expected_unit_price` | 应有核价单价（采购单价÷转换系数） |

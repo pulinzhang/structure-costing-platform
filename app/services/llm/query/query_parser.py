@@ -139,6 +139,20 @@ def _is_winning_thickness_question(question: str) -> bool:
     return any(term in question for term in _WINNING_THICKNESS_TERMS)
 
 
+def _is_standard_part_price_question(question: str) -> bool:
+    """标准件价格异常走年度零件价，不要落到总成核价或采购成本总览。"""
+    if any(
+        word in question for word in ("总成核价", "成品核价", "供货总成", "采购对象", "材料清单")
+    ):
+        return False
+    has_part = any(word in question for word in ("标准件", "螺母", "螺栓", "胶块"))
+    if not has_part:
+        return False
+    if "异常" in question:
+        return True
+    return any(word in question for word in ("价格", "单价", "多少钱", "什么价"))
+
+
 class QueryParser:
     def __init__(
         self,
@@ -418,6 +432,8 @@ class QueryParser:
             "焊接" in question and "单价" in question and "冲压" not in question
         ):
             return "welding_unit_price"
+        if _is_standard_part_price_question(question):
+            return "annual_part_price"
         if any(word in question for word in ("年度零件价", "年度零件价格")):
             return "annual_part_price"
         if "一口价" in question and not any(
@@ -517,6 +533,8 @@ class QueryParser:
                 word in question for word in ("加工费", "冲压费", "冲压加工费", "工序费")
             ):
                 return "stamping_process_fee"
+            if _is_standard_part_price_question(question):
+                return "annual_part_price"
             if any(
                 word in question for word in ("一口价", "年度零件价", "外购价", "外购零件价")
             ) and not any(word in question for word in ("成品", "L0", "l0", "总成", "供货总成")):
