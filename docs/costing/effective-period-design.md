@@ -1,7 +1,7 @@
 # 年度协议价生效期 — 设计说明
 
 > 状态：**设计稿（未落地）**  
-> 关联：`docs/bom/bom-annual-part-prices-design.md`、`docs/costing/l0-assembly-costing-design.md`、`docs/costing/costing-engine-design.md`、`docs/architecture.md`  
+> 关联：`docs/bom/bom-annual-part-prices-design.md`、[总成月核价](assembly-costing-design.md)、`docs/costing/costing-engine-design.md`、`docs/architecture.md`。冻结史料：[l0-assembly-costing-design.md](l0-assembly-costing-design.md)。  
 > 原则：账在库里对得上。客户、核价引擎、分析读同一套行。不要用审核 Excel 快照当历史账。
 
 ---
@@ -27,7 +27,7 @@
 | 核价引擎 / 成品月账 | `list_with_unit_price(location, year)`，**不看月** | 算 3 月取 1 元，算 8 月取 2 元 |
 | 分析 / LLM | 按年聚合 | 能问上半年、能问 8 月起 |
 
-成品月账（`costing_l0_assembly_cost_items.unit_price`）在计算当时会抄单价。3 月已审核则 3 月账上仍是 1 元。一旦反审 3 月再算，引擎会再读主表，读到 2 元，口径就错。主表必须自己能按月回答，不能靠「别重算旧月」硬撑。
+成品月账（`costing_assembly_cost_items.unit_price`）在计算当时会抄单价。3 月已审核则 3 月账上仍是 1 元。一旦反审 3 月再算，引擎会再读主表，读到 2 元，口径就错。主表必须自己能按月回答，不能靠「别重算旧月」硬撑。
 
 文件溯源继续只登记 **客户上传原件**。适用哪几个月是行上的字段，不是附件。
 
@@ -91,7 +91,7 @@
 
 ### 3.3 必跟：成品焊接费要从「年」改到「月」
 
-现网 `bom_welding_fees` 按 **年 + 基地 + 车型 + BOM 版本** 存（财务读 `level=0`），引擎阶段仍叫 `annual_l0_welding_fee`：**一年算一次，12 个月成品账共用**。
+现网 `bom_welding_fees` 按 **年 + 基地 + 车型 + BOM 版本** 存（财务读 `level=0`），引擎阶段 `annual_welding_fee`：**一年算一次，12 个月成品账共用**。
 
 焊接单价一旦分段，这条必须改。否则 8 月焊点 2 元，成品账仍用年初算死的焊接费。
 
@@ -283,8 +283,8 @@ costing 只调用上游 Repository/Service 的 `as_of`，禁止 costing 自己�
 | 文档 | 要点 |
 |------|------|
 | `docs/bom/bom-annual-part-prices-design.md` | 唯一键与取价从「年」改为「年 + 覆盖该月的段」；节奏从「一年订一次」改为「默认全年，允许分段」 |
-| `docs/costing/l0-assembly-costing-design.md` | ②③⑤ 取价带月 |
-| `docs/costing/costing-engine-design.md` | gate 按月覆盖；`annual_l0_welding_fee` 改为按月 |
+| `docs/costing/assembly-costing-design.md` | ②③⑤ 取价带月 |
+| `docs/costing/costing-engine-design.md` | gate 按月覆盖；`annual_welding_fee` 改为按月 |
 | `docs/file-trace/file-trace-design.md` | 不扩大到审核快照 |
 
 ---

@@ -21,8 +21,8 @@ from app.schemas.dto.steel_base_price_dto import (
 )
 from app.schemas.vo.async_task_vo import AsyncTaskAcceptedVO
 from app.schemas.vo.steel_base_price_vo import (
-    FilterOptionsVO,
     SteelBasePriceExportRow,
+    SteelBasePriceFilterOptionsVO,
     SteelBasePriceImportResultResponse,
     SteelBasePriceResponse,
 )
@@ -62,7 +62,7 @@ class SteelBasePriceService:
         self._export_service = SteelBasePriceExportService()
         self.repository = self._crud.repository
 
-    def get_filter_options(self, db: Session) -> FilterOptionsVO:
+    def get_filter_options(self, db: Session) -> SteelBasePriceFilterOptionsVO:
         return self._crud.get_filter_options(db)
 
     def paginate(

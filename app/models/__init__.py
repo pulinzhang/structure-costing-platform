@@ -1,7 +1,7 @@
 """
-ORM 全量注册入口，只给 main.py 启动用。
+ORM 全量注册入口，只给启动建表用。
 
-main.py 里 `from app import models` 会执行本文件，从而把各切片实体
+`from app import models` 会执行本文件，从而把各切片实体
 import 一遍，SQLAlchemy 才能在 create_all 时发现全部表。
 
 业务代码不要从这里 import。请从对应切片包导入，例如：

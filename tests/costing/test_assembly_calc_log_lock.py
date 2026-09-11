@@ -82,7 +82,7 @@ def test_second_begin_processing_same_scope_is_409(lock_db: Session) -> None:
 
     indexes = inspect(lock_db.get_bind()).get_indexes("costing_assembly_cost_calc_logs")
     names = {item["name"] for item in indexes}
-    assert "uq_l0_assembly_calc_processing" in names
+    assert "uq_assembly_calc_processing" in names
 
 
 def test_duplicate_processing_rows_are_collapsed_before_index(lock_db: Session) -> None:
@@ -100,7 +100,7 @@ def test_duplicate_processing_rows_are_collapsed_before_index(lock_db: Session) 
     exists = lock_db.execute(
         text(
             "SELECT 1 FROM sqlite_master WHERE type='index' "
-            "AND name='uq_l0_assembly_calc_processing'"
+            "AND name='uq_assembly_calc_processing'"
         )
     ).scalar()
     assert exists == 1

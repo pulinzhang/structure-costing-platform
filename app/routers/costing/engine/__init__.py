@@ -1,3 +1,1 @@
-from app.routers.costing.engine.crud import router
-
-__all__ = ["router"]
+"""核价引擎路由包。"""

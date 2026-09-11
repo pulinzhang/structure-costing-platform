@@ -22,8 +22,8 @@ from app.schemas.dto.steel_base_price_dto import (
 )
 from app.schemas.vo.async_task_vo import AsyncTaskAcceptedVO, AsyncTaskProgressVO
 from app.schemas.vo.steel_base_price_vo import (
-    FilterOptionsVO,
     SteelBasePriceExportRow,
+    SteelBasePriceFilterOptionsVO,
     SteelBasePriceImportResultResponse,
     SteelBasePriceResponse,
 )
@@ -83,14 +83,14 @@ def list_base_prices(
 
 @router.get(
     "/options",
-    response_model=ApiResponse[FilterOptionsVO],
+    response_model=ApiResponse[SteelBasePriceFilterOptionsVO],
 )
 def get_base_price_options(
     db: Session = Depends(get_db),
     current_user: UserVO = Depends(
         require_any_perm(Perm.BASE_PRICE_DOWNLOAD_VIEW, Perm.BASE_PRICE_UPLOAD_VIEW)
     ),
-) -> ApiResponse[FilterOptionsVO]:
+) -> ApiResponse[SteelBasePriceFilterOptionsVO]:
     """获取筛选下拉选项（年度/月份/基地/钢厂等）。"""
     return ApiResponse.ok(data=_steel_base_price_service.get_filter_options(db))
 

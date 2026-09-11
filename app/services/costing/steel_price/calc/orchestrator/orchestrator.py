@@ -12,12 +12,12 @@
 from __future__ import annotations
 
 from datetime import datetime
-from typing import Any
 
 from sqlalchemy.orm import Session
 
 from app.common.audit import display_name
 from app.exceptions.base import BusinessException
+from app.models.costing import SteelPriceCalcLog
 from app.schemas.common import DeletedCountVO
 from app.schemas.dto.steel_price_dto import SteelPriceCalcDTO
 from app.schemas.vo.async_task_vo import AsyncTaskAcceptedVO
@@ -63,7 +63,7 @@ class SteelPriceCalcOrchestrator:
         *,
         operator_id: int | None = None,
         operator_name: str | None = None,
-    ) -> Any:
+    ) -> SteelPriceCalcLog:
         """提交前写入 processing 期别锁。"""
         location = request.location.strip()
         if not location:
@@ -132,7 +132,7 @@ class SteelPriceCalcOrchestrator:
         location: str | None = None,
         page: int = 1,
         size: int = 20,
-    ) -> Any:
+    ) -> tuple[list[SteelPriceCalcLogVO], int]:
         return self.calc_log_service.list_logs(
             db,
             year=year,

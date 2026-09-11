@@ -16,7 +16,7 @@ from sqlalchemy.orm import Session, sessionmaker
 from sqlalchemy.pool import StaticPool
 
 from app.common.audit import SYSTEM_USER
-from app.database import Base, DatabaseConfig
+from app.database import Base
 from app.exceptions.base import BusinessException
 from app.models.masterdata.location import Location, LocationAlias
 from app.models.masterdata.vehicle_model import VehicleModel
@@ -430,42 +430,15 @@ def test_delete_blocked_when_child_row_exists(memory_db: Session) -> None:
         VehicleModelService().delete(memory_db, "青岛", "T13J")
 
 
-def test_sqlite_rebuild_table_preserves_child_fk(memory_db: Session) -> None:
-    from sqlalchemy import text
+def test_gauge_fee_declares_vehicle_model_fk(memory_db: Session) -> None:
+    from sqlalchemy import inspect
 
-    _seed(memory_db)
-    _create(memory_db)
-    memory_db.add(
-        StampingGaugeFee(
-            location="青岛",
-            vehicle_model="T13J",
-            part_number="P1",
-            gauge_fee=Decimal("0.8"),
-        )
+    fks = inspect(memory_db.get_bind()).get_foreign_keys("stamping_gauge_fees")
+    assert any(
+        fk["referred_table"] == "vehicle_models"
+        and set(fk["constrained_columns"]) == {"location", "vehicle_model"}
+        for fk in fks
     )
-    memory_db.commit()
-    engine = memory_db.get_bind()
-    with engine.connect() as conn:
-        autocommit = conn.execution_options(isolation_level="AUTOCOMMIT")
-        autocommit.exec_driver_sql("PRAGMA foreign_keys=OFF")
-        try:
-            DatabaseConfig._sqlite_rebuild_table(autocommit, "stamping_gauge_fees")
-        finally:
-            autocommit.exec_driver_sql("PRAGMA foreign_keys=ON")
-        assert DatabaseConfig._sqlite_has_vehicle_model_fk(autocommit, "stamping_gauge_fees")
-        count = autocommit.execute(text("SELECT COUNT(*) FROM stamping_gauge_fees")).scalar()
-        assert count == 1
-    memory_db.expire_all()
-    with pytest.raises(BusinessException, match="仍被引用，不能删除"):
-        VehicleModelService().delete(memory_db, "青岛", "T13J")
-
-
-def test_ensure_vehicle_model_child_fks_is_idempotent(memory_db: Session) -> None:
-    engine = memory_db.get_bind()
-    DatabaseConfig._ensure_vehicle_model_child_fks(engine)
-    DatabaseConfig._ensure_vehicle_model_child_fks(engine)
-    with engine.connect() as conn:
-        assert DatabaseConfig._sqlite_has_vehicle_model_fk(conn, "stamping_gauge_fees")
 
 
 def test_location_delete_blocked_when_project_exists(memory_db: Session) -> None:

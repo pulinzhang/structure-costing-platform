@@ -9,6 +9,7 @@ alwaysApply: false
 > 导读（为什么）：`docs/architecture.md`。本文件只写**谁做什么、谁不能依赖谁**。  
 > JSON/`ApiResponse`/Decimal/`Any`/`Perm.*` → `api-type-safety.mdc`  
 > Orchestrator 主方法行数与 `for` → `orchestrator-constitution.mdc`  
+> `main.py` 装配 → `main-structure.mdc`  
 > 标识符 → `naming-convention.mdc`  
 > 领域文档旧编号：§4.3 = 本文 §3.3 引用保护；§5.2 = §四 异常通道；§5.3 = §五 异步任务。
 
@@ -40,6 +41,7 @@ HTTP 列表参数名是 `page`+`size`；Repo 的 `skip`/`limit` 只对应 SQL OF
 ```
 app/
 ├── common/                 # 横切纯函数；不得依赖业务切片
+├── bootstrap/              # 应用装配；main.py 只编排，见 main-structure.mdc
 ├── routers/{feature}/      # crud.py / upload.py
 ├── services/{feature}/
 ├── repositories/{feature}/

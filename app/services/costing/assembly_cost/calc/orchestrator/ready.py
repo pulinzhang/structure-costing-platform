@@ -145,7 +145,6 @@ def collect_calc_ready(
         message = "采购对象未生成，本趟只出装配∪树根"
 
     return AssemblyCostCalcReadyVO(
-        l0_count=tree_root_count,
         tree_root_count=tree_root_count,
         subject_count=subject_count,
         procurement_object_count=procurement_object_count,

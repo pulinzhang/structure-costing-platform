@@ -237,7 +237,7 @@ subjects = A ∪ B ∪ C                       // 按 id 去重
 - 现网 L0→L1→L2：叶子 = `L1.qty × L2.qty`（与 `l0_assembly_sim` 一致）。
 - `R` 无子件：一行叶子，`effective_qty = 1`。库内金额 = **一个 R 实例**。单车展示 = 金额 × `supply_qty`（列表可选列，默认财务树根 `supply_qty` 多为 1，不必强调）。
 
-### 5.2 递归（替换 `rollup_l0` 两层 for）
+### 5.2 递归（替换两层 for）
 
 **P4：不对 R 自己做一口价判断。** 即使 R 有年度价，仍 walk 子件（采购应成本）；R 的年度价只进 `vendor_quote`。
 
@@ -359,7 +359,7 @@ welding_by_bom_node   = { bd.source_node_id: fee
 
 ## 8. 表结构
 
-一次迁移、不双写。SQLite 现网表改名（与焊接费迁表同一策略）。
+一次落地、不双写。现网表：
 
 ```text
 costing_assembly_costs
@@ -486,19 +486,20 @@ Ready VO 增加：`subject_count`、`tree_root_count`、`procurement_object_coun
 
 ### 10.1 路径
 
-| 现网 | 目标 |
+产品入口：
+
+| 类型 | 路径 |
 |------|------|
-| `/api/costing/l0-assembly-costs` | `/api/costing/assembly-costs` |
-| `#/l0-assembly-cost-calc` `#/l0-assembly-cost` | `#/assembly-cost-calc` `#/assembly-cost` |
-| 侧栏「成品核价」 | 「总成核价」（计算 / 一览） |
+| API | `/api/costing/assembly-costs` |
+| 计算页 | `#/assembly-cost-calc` |
+| 一览页 | `#/assembly-cost` |
+| 侧栏 | 「总成核价」（计算 / 一览） |
 
-旧 API 一期 **307** 到新路径（方法+body 保留）。旧 hash 在 `app.js` 重定向。禁止长期双写两套 Router 逻辑。
-
-任务类型：`assembly_cost_calc`。引擎阶段 id：`assembly`（替换 `l0`）。
+任务类型：`assembly_cost_calc`。引擎阶段 id：`assembly`。
 
 ### 10.2 JSON 接口（仍 `ApiResponse[T]`）
 
-现网计算/列表/详情/批量审删/导出/筛选年 **能力保留**，前缀更换。
+现网计算/列表/详情/批量审删/导出/筛选年 **能力保留**。前缀 `/api/costing/assembly-costs`。
 
 计算 DTO 增加可选 `levels: list[int] | None = None`。
 
@@ -517,15 +518,15 @@ Ready VO 增加：`subject_count`、`tree_root_count`、`procurement_object_coun
 
 金额 JSON：VO `@field_serializer` 字符串，现网约定不变。
 
-### 10.3 权限（一次性改名 + 库内码替换）
+### 10.3 权限
 
-| 现网 | 目标 |
+`catalog.json` → `Perm.*`；前端 `can()` 用同一码。不要在 `permission-design.md` 再抄一棵树。不新增第二组「应成本」菜单。
+
+| 码 | 用途 |
 |------|------|
-| `menu:l0-assembly-cost-group` | `menu:assembly-cost-group` |
-| `menu:l0-assembly-cost-calc` + `op:l0-assembly-cost-calc:*` | `menu:assembly-cost-calc` / `op:assembly-cost-calc:view\|run\|delete` |
-| `menu:l0-assembly-cost` + `op:l0-assembly-cost:*` | `menu:assembly-cost` / `op:assembly-cost:view\|delete\|approve\|reverse\|export` |
-
-先改 `catalog.json` 再生成 `Perm.*`；前端 `can()` 用同一码。不要在 `permission-design.md` 再抄一棵树。一期可在 `canAccessPage` 把旧 pageName 映射到新码，避免未迁角色的账号空白。不新增第二组「应成本」菜单。
+| `menu:assembly-cost-group` | 侧栏分组 |
+| `menu:assembly-cost-calc` / `op:assembly-cost-calc:view\|run\|delete` | 计算页 |
+| `menu:assembly-cost` / `op:assembly-cost:view\|delete\|approve\|reverse\|export` | 一览页 |
 
 ### 10.4 前端
 
@@ -548,19 +549,20 @@ Ready VO 增加：`subject_count`、`tree_root_count`、`procurement_object_coun
 
 ---
 
-## 11. 现网横切改造清单（实施时按此搜）
+## 11. 现网符号索引
 
-| 区域 | 现网符号 |
-|------|----------|
-| 包 | `app/services/costing/l0_assembly_cost/**`、`app/routers/costing/l0_assembly_cost/**`、`app/repositories/costing/l0_assembly_cost/**` |
-| 模型 / schema | `L0AssemblyCost*`、`l0_assembly_cost_{dto,vo}` |
-| 引擎 | 零件价完成且 **焊接费覆盖全部要抄的 level** 才跑 assembly（P20）。补焊 **禁止** 只传 `levels=[0]`。阶段 id `l0` → `assembly`。`annual_l0_welding_fee` 阶段可改名为 `annual_welding_fee`（实施时与引擎文档一起改）。本切片不得内部触发上游 |
+| 区域 | 符号 |
+|------|------|
+| 包 | `app/services/costing/assembly_cost/**`、`app/routers/costing/assembly_cost/**`、`app/repositories/costing/assembly_cost/**` |
+| 模型 / schema | `AssemblyCost*`、`assembly_cost_{dto,vo}` |
+| 表 | `costing_assembly_costs` / `_items` / `_indirects` / `_calc_logs` |
+| 引擎 | 零件价完成且 **焊接费覆盖全部要抄的 level** 才跑 assembly（P20）。补焊 **禁止** 只传 `levels=[0]`。阶段 id `assembly`；焊接费阶段 `annual_welding_fee`。本切片不得内部触发上游 |
 | 合册 | `monthly_bundle_export_service` → 树根过滤 |
-| LLM | `menu_catalog`、`field_labels`、`cost_analysis_repository` |
-| 权限 / 种子 | `catalog.json` → `codes.py` |
-| 前端 | `index.html`、`app.js`、`features/index.js`、`l0-assembly-cost/` |
-| 测试 | `tests/costing/l0_assembly_sim.py` 改为 `assembly_sim.py`；青岛金标加「仅树根 + 有子件」过滤；退化根单独用例 |
-| 任务常量 | `TASK_TYPE_L0_ASSEMBLY_COST_CALC` |
+| LLM | `menu_catalog`、`field_labels`、`cost_analysis_repository`（查现表 `costing_assembly_costs`） |
+| 权限 / 种子 | `catalog.json` → `codes.py`（§10.3） |
+| 前端 | `index.html`、`app.js`、`features/index.js`、`static/js/features/costing/assembly-cost/` |
+| 测试适配 | `tests/costing/l0_assembly_sim.py`（领域 L0 树根金样，公式委托 `rollup_assembly`） |
+| 任务常量 | `TASK_TYPE_ASSEMBLY_COST_CALC`（`assembly_cost_calc`） |
 
 焊接费切片、采购对象清单切片 **不改公式**。costing 只读它们。
 
@@ -614,7 +616,7 @@ D5  退化树根财务专项签字
 
 | 文档 | 角色 |
 |------|------|
-| [l0-assembly-costing-design.md](l0-assembly-costing-design.md) | 现网五块积木、I1～I8、青岛样例 |
+| [l0-assembly-costing-design.md](l0-assembly-costing-design.md) | 冻结史料：原五块积木、I1～I8、青岛样例 |
 | [l1-assembly-costing-design.md](l1-assembly-costing-design.md) | 应成本口径；§7 委外表 **作废** |
 | [welding-fee-design.md](../bom/welding-fee-design.md) | 按节点工费 |
 | [bom-procurement-objects-design.md](../bom/bom-procurement-objects-design.md) | 集合 C |

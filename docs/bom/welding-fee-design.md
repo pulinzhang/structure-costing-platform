@@ -156,17 +156,17 @@ levels: list[int] | 省略
 
 ---
 
-## 7. 产品与 API（目标）
+## 7. 产品与 API
 
 一个入口，用 level 筛，不要「成品焊接费」「分总成焊接费」两套菜单。
 
-| 现网 | 目标 |
+| 类型 | 路径 |
 |------|------|
-| `#/bom-l0-welding-fee-calc` | `#/bom-welding-fee-calc` |
-| `#/bom-l0-welding-fee-list` | `#/bom-welding-fee-list` |
-| `/api/bom/l0-welding-fees` | `/api/bom/welding-fees` |
-| `menu/op:bom-l0-welding-fee-*` | `menu/op:bom-welding-fee-*` |
-| 侧栏「成品焊接费」 | 「焊接费」（列表默认可看全部层级） |
+| 计算页 | `#/bom-welding-fee-calc` |
+| 一览页 | `#/bom-welding-fee-list` |
+| API | `/api/bom/welding-fees` |
+| 权限 | `menu/op:bom-welding-fee-*` |
+| 侧栏 | 「焊接费」（列表默认可看全部层级） |
 
 批量删除 / 审核 / 反审核：范围仍是年 + 基地 + 车型 + 版本；**可加可选 `level`**，不传则该范围全部未审行。意见 / 原因必填。
 
@@ -174,7 +174,7 @@ levels: list[int] | 省略
 
 ---
 
-## 8. 代码路径（目标，未实施）
+## 8. 代码路径
 
 ```text
 app/routers/bom/welding_fee.py
@@ -187,23 +187,21 @@ static/js/features/bom/welding-fee/{calc,list}/
 ```
 
 指挥家：`prepare`（单价 + 按 levels 过滤拆解）→ `engine`（逐节点套 §3）→ `persist`。  
-单件公式从现网 `l0_fee.py` 改名即可，不要按 level 分支公式。
+单件公式按节点 `level` 共用，不要按 level 分支公式。
 
 下游 costing：**只读** `final_welding_fee` where `level=0`。bom **不** 依赖 costing。
 
 ---
 
-## 9. 从现网迁过去（实施时，现不改库）
+## 9. 现网表名
 
-| 现网 | 目标 |
+| 表 / 字段 | 说明 |
 |------|------|
-| `bom_l0_welding_fees` | `bom_welding_fees`，现有行 `level=0` |
-| `bom_l0_welding_fee_items` | `bom_welding_fee_items` |
-| `bom_l0_welding_fee_calc_logs` | `bom_welding_fee_calc_logs` |
-| `total_l0_welding_fee` / `final_l0_welding_fee` | `total_welding_fee` / `final_welding_fee` |
-| 计算过滤 `level==0` | `levels` 入参，财务默认 `[0]` |
+| `bom_welding_fees` / `bom_welding_fee_items` / `bom_welding_fee_calc_logs` | 一表 + `level` |
+| `total_welding_fee` / `final_welding_fee` | 主表金额 |
+| 计算过滤 | `levels` 入参，财务默认 `[0]` |
 
-一次迁移，**不双写**。成品核价、引擎阶段名 `annual_l0_welding_fee` 改为读新表 `level=0`（阶段 id 可随后改 `annual_welding_fee`）。旧 URL / 旧权限码实施时做兼容或一次性替换（权限树见 [permission-design.md](../permission-design.md)）。
+引擎阶段 `annual_welding_fee`，财务读 `level=0`。HTTP 只挂 `/api/bom/welding-fees`。权限码见 [permission-design.md](../permission-design.md)。
 
 ---
 
@@ -224,7 +222,7 @@ static/js/features/bom/welding-fee/{calc,list}/
 | 文档 | 关系 |
 |------|------|
 | [welding-process-breakdown-design.md](welding-process-breakdown-design.md) | `level` 与过程量的上游 |
-| [l0-assembly-costing-design.md](../costing/l0-assembly-costing-design.md) | 成品账只读 **level=0**（迁表后字段名见 §9） |
+| [assembly-costing-design.md](../costing/assembly-costing-design.md) | 成品账只读 **level=0** |
 | [l1-assembly-costing-design.md](../costing/l1-assembly-costing-design.md) | 应成本工艺费读 **level=1** |
 | [costing-engine-design.md](../costing/costing-engine-design.md) | 补算默认 `levels=[0]` |
 | [effective-period-design.md](../costing/effective-period-design.md) | 将来加 `month` 时表名跟本文 |

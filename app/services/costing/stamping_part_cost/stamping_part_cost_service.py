@@ -51,11 +51,9 @@ from app.services.async_task import (
 )
 from app.services.costing.stamping_part_cost.calc.constants import (
     AMOUNT_QUANTIZE,
-    DUPLICATE_SCOPE_CALC_MESSAGE,
     STATUS_FAILED,
 )
 from app.services.costing.stamping_part_cost.calc.models import (
-    DuplicateScopeCalcError,
     ProgressCallback,
 )
 from app.services.costing.stamping_part_cost.calc.orchestrator import (
@@ -70,13 +68,6 @@ from app.services.costing.stamping_part_cost.export.tailor_weld_display import (
 from app.services.masterdata.location.location_service import LocationService
 from app.services.masterdata.supplier import SupplierService
 from app.services.masterdata.vehicle_model import VehicleModelService
-
-# 兼容旧导入路径
-__all__ = [
-    "DUPLICATE_SCOPE_CALC_MESSAGE",
-    "DuplicateScopeCalcError",
-    "StampingPartCostService",
-]
 
 
 class StampingPartCostService:

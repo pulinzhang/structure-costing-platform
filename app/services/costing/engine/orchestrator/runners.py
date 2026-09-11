@@ -89,7 +89,7 @@ def run_annual_item(
                 vehicle_model=vehicle_model,
                 bom_version=bom_version,
             )
-            weld_result = orch.l0_welding_orch.calculate(db, weld_dto, current_user=current_user)
+            weld_result = orch.welding_orch.calculate(db, weld_dto, current_user=current_user)
             return (
                 True,
                 f"焊接费补算完成 status={weld_result.status}",

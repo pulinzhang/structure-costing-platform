@@ -184,8 +184,8 @@
 | `#/steel-price-list` | 冲压钢材联动价一览 | P2 |
 | `#/stamping-part-cost-calc` | 冲压零件价格计算 | P3 |
 | `#/stamping-part-cost` | 冲压零件价格一览 | **P1 标杆** |
-| `#/l0-assembly-cost-calc` | 成品核价计算 | P3 |
-| `#/l0-assembly-cost` | 成品核价一览 | P2 |
+| `#/assembly-cost-calc` | 总成核价计算 | P3 |
+| `#/assembly-cost` | 总成核价一览 | P2 |
 | `#/costing` | 自动核价引擎 | P3 |
 
 **文件溯源 / 设置（5）**

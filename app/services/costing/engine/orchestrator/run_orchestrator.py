@@ -43,7 +43,7 @@ class RunOrchestrator:
         self.run_repo = CostingEngineRunRepository()
         self.process_fee_orch = StampingProcessFeeCalcOrchestrator()
         self.breakdown_svc = BomWeldingProcessBreakdownGenerateService()
-        self.l0_welding_orch = BomWeldingFeeCalcOrchestrator()
+        self.welding_orch = BomWeldingFeeCalcOrchestrator()
         self.steel_orch = SteelPriceCalcOrchestrator()
         self.part_cost_orch = StampingPartCostCalcOrchestrator()
         self.assembly_orch = AssemblyCostCalcOrchestrator()

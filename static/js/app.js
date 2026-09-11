@@ -13,7 +13,7 @@
  * 入口 URL 的 query 串驱动整体刷新；每次脚本更新后需要同步递增 ?v= 版本号。
  */
 
-import { pageMeta } from './features/index.js?v=42';
+import { pageMeta } from './features/index.js?v=43';
 
 // 页面导入（路径与 index.html 菜单树 / features 目录对齐）
 import { getUserSession, initUserMenu, startTokenHeartbeat, updateUserSession } from './features/login/index.js?v=15';
@@ -21,11 +21,11 @@ import {
     applySidebarPermissions,
     canAccessPage,
     fallbackPageName,
-} from './permissions.js?v=11';
+} from './permissions.js?v=12';
 import { bootLlmAssistant } from './llm-assistant/boot.js?v=33';
 import { pageConfig as dashboardPage }      from './features/dashboard/index.js?v=12';
-import { pageConfig as stampingUploadPage } from './features/stamping/process/upload/index.js?v=60';
-import { pageConfig as stampingPartsPage }  from './features/stamping/process/parts/index.js?v=47';
+import { pageConfig as stampingUploadPage } from './features/stamping/process/upload/index.js?v=61';
+import { pageConfig as stampingPartsPage }  from './features/stamping/process/parts/index.js?v=48';
 import { pageConfig as stampingDieUploadPage } from './features/stamping/die/upload/index.js?v=13';
 import { pageConfig as stampingDieListPage } from './features/stamping/die/list/index.js?v=11';
 import { pageConfig as stampingDieUnitPricePage } from './features/stamping/die/unit-price/index.js?v=8';
@@ -41,12 +41,12 @@ import { pageConfig as steelPriceListPage }   from './features/costing/steel-pri
 import { pageConfig as steelPriceCalcPage }    from './features/costing/steel-price/calc/index.js?v=25';
 import { pageConfig as stampingPartCostCalcPage } from './features/costing/stamping-part-cost/calc/index.js?v=22';
 import { pageConfig as stampingPartCostPage } from './features/costing/stamping-part-cost/list/index.js?v=75';
-import { pageConfig as assemblyCostCalcPage } from './features/costing/assembly-cost/calc/index.js?v=10';
-import { pageConfig as assemblyCostPage } from './features/costing/assembly-cost/list/index.js?v=31';
+import { pageConfig as assemblyCostCalcPage } from './features/costing/assembly-cost/calc/index.js?v=11';
+import { pageConfig as assemblyCostPage } from './features/costing/assembly-cost/list/index.js?v=32';
 import { pageConfig as procurementContractReportPage } from './features/costing/procurement-contract-report/index.js?v=37';
-import { pageConfig as steelPricePolicyUploadPage } from './features/yishiyiyi/policy/upload/index.js?v=41';
+import { pageConfig as steelPricePolicyUploadPage } from './features/yishiyiyi/policy/upload/index.js?v=42';
 import { pageConfig as steelPricePolicyDownloadPage } from './features/yishiyiyi/policy/list/index.js?v=40';
-import { pageConfig as basePriceUploadPage } from './features/yishiyiyi/base-price/upload/index.js?v=44';
+import { pageConfig as basePriceUploadPage } from './features/yishiyiyi/base-price/upload/index.js?v=45';
 import { pageConfig as basePriceDownloadPage } from './features/yishiyiyi/base-price/list/index.js?v=37';
 import { pageConfig as winningThicknessDownloadPage } from './features/yishiyiyi/winning-thickness/list/index.js?v=16';
 import { pageConfig as steelGradeCategoryPage } from './features/masterdata/steel-grade-category/index.js?v=5';
@@ -170,34 +170,6 @@ function getPageFromHash() {
     if (pageName === 'login') {
         window.location.replace('/login');
         return null;
-    }
-
-    // 旧 BOM 列表 / Phase A 临时路由 → 产品结构 / 上传
-    if (pageName === 'bom') {
-        return 'bom-upload';
-    }
-    if (pageName === 'bom-list') {
-        return 'bom-structure';
-    }
-
-    if (pageName === 'bom-l0-welding-fee-calc') {
-        return 'bom-welding-fee-calc';
-    }
-    if (pageName === 'bom-l0-welding-fee-list') {
-        return 'bom-welding-fee-list';
-    }
-
-    if (pageName === 'l0-assembly-cost-calc') {
-        return 'assembly-cost-calc';
-    }
-    if (pageName === 'l0-assembly-cost') {
-        return 'assembly-cost';
-    }
-    if (pageName === 'vehicle-model') {
-        return 'vehicle-model-list';
-    }
-    if (pageName === 'supplier') {
-        return 'supplier-list';
     }
 
     return pageName;

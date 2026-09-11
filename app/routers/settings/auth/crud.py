@@ -1,4 +1,4 @@
-"""登录认证路由"""
+"""登录认证路由。"""
 
 from fastapi import APIRouter, Depends, File, Header, Request, UploadFile
 from sqlalchemy.orm import Session

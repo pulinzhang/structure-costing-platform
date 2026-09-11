@@ -600,26 +600,3 @@ def rollup_assembly(
         lines=lines,
         indirect_lines=indirect_lines,
     )
-
-
-def rollup_l0(
-    l0: RollupBomNode,
-    children_by_parent: dict[int | None, list[RollupBomNode]],
-    stamping_prices: dict[str, Decimal],
-    annual_prices: dict[str, Decimal],
-    welding: RollupWeldingFee | None,
-    packaging: RollupPackagingFee | None = None,
-    rates: RollupFinishedRates | None = None,
-    allocation: RollupAllocationFees | None = None,
-) -> RollupResult:
-    """兼容旧名：委托 rollup_assembly。"""
-    return rollup_assembly(
-        root=l0,
-        children_by_parent=children_by_parent,
-        stamping_prices=stamping_prices,
-        annual_prices=annual_prices,
-        welding=welding,
-        packaging=packaging,
-        rates=rates,
-        allocation=allocation,
-    )

@@ -33,7 +33,7 @@ from app.schemas.dto.steel_price_dto import (
 from app.schemas.vo.steel_price_vo import (
     SteelPriceBatchAuditResultVO,
     SteelPriceBatchDeleteResultVO,
-    SteelPriceFilterOptions,
+    SteelPriceFilterOptionsVO,
     SteelPriceListSummaryVO,
     SteelPriceResponse,
 )
@@ -83,7 +83,7 @@ class SteelPriceService:
 
     def paginate(
         self, db: Session, query: SteelPriceQuery
-    ) -> tuple[list[SteelPriceResponse], int, SteelPriceFilterOptions]:
+    ) -> tuple[list[SteelPriceResponse], int, SteelPriceFilterOptionsVO]:
         skip = (query.page - 1) * query.size
         year = query.year
         month = query.month
@@ -101,7 +101,7 @@ class SteelPriceService:
                 return (
                     [],
                     0,
-                    SteelPriceFilterOptions(
+                    SteelPriceFilterOptionsVO(
                         years=list(options["years"]),
                         months=list(options["months"]),
                         locations=location_service.list_registered(db),
@@ -125,7 +125,7 @@ class SteelPriceService:
         )
         rows = [SteelPriceResponse.model_validate(record) for record in records]
         options = self.repository.get_filter_options(db)
-        filters = SteelPriceFilterOptions(
+        filters = SteelPriceFilterOptionsVO(
             years=list(options["years"]),
             months=list(options["months"]),
             locations=location_service.list_registered(db),

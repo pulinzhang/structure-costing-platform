@@ -14,13 +14,13 @@
 | **仪表盘** | 管理者看板：本期产出 / 待办与风险 / 核价闭环就绪 + 决策入口 |
 | **冲压工程** | 工艺 Excel 上传与解析；零件/工序列表；冲次单价；加工费计算与列表 |
 | **一事一议** | 加减价政策上传/列表/匹配；基准价格；中标钢厂厚度一览；废料月度销售价 |
-| **焊接工程（BOM）** | 材料清单上传 / 产品结构 / 结构图；焊接单价；年度零件价；包装运输费；焊接工艺拆解；成品焊接费 |
-| **核价** | 冲压钢材联动；零件价格；成品核价（L0）；自动核价引擎；月度核对合册 |
+| **焊接工程（BOM）** | 材料清单上传 / 产品结构 / 结构图；焊接单价；年度零件价；包装运输费；焊接工艺拆解；焊接费 |
+| **核价** | 冲压钢材联动；零件价格；总成核价；自动核价引擎；月度核对合册 |
 | **文件溯源** | 已落盘业务 Excel 登记、筛选、鉴权下载 |
 | **AI 助理** | 核价结果智能分析：自然语言提问 → 系统算数 + LLM 解释；Markdown 回答、分析历史、打印/Word 导出 |
 | **设置** | 个人资料、系统配置、用户管理、操作日志 |
 
-典型链路：工艺 / 政策 / 基价 / 废料价 / BOM 入库 → 钢材联动 → 零件核价（材料 + 加工费）→ 成品核价 → **AI 助理解读趋势与动因**。
+典型链路：工艺 / 政策 / 基价 / 废料价 / BOM 入库 → 钢材联动 → 零件核价（材料 + 加工费）→ 总成核价 → **AI 助理解读趋势与动因**。
 
 **AI 助理（LLM）**：数字由核价库与 Analysis 层计算，LLM 只负责自然语言解释；问什么答什么，不流式、不跳页。设计详见 [docs/llm/llm-costing-analysis-report-design.md](docs/llm/llm-costing-analysis-report-design.md)。
 
@@ -310,7 +310,7 @@ stamping-costing-platform/
 | `/api/bom/annual-part-price` | 年度零件价 |
 | `/api/bom/packaging-transport-fee` | 包装运输费 |
 | `/api/bom/welding-process-breakdown` | 焊接工艺拆解 |
-| `/api/bom/l0-welding-fees` | 成品焊接费 |
+| `/api/bom/welding-fees` | 焊接费 |
 | `/api/costing/steel-price` | 钢材联动计算与列表 |
 | `/api/costing/stamping-part-cost` | 零件价格计算与列表 |
 | `/api/costing/assembly-costs` | 总成核价 |

@@ -1,0 +1,49 @@
+"""静态目录挂载与入口页（非业务 API）。"""
+
+from fastapi import FastAPI
+from fastapi.responses import FileResponse, RedirectResponse, Response
+from fastapi.staticfiles import StaticFiles
+
+from app.config import BASE_DIR, settings
+
+_STATIC_DIR = BASE_DIR / "static"
+_NO_CACHE = {"Cache-Control": "no-cache, must-revalidate"}
+
+
+def register_frontend(app: FastAPI) -> None:
+    app.mount("/static", StaticFiles(directory=str(_STATIC_DIR)), name="static")
+    app.mount("/uploads", StaticFiles(directory=str(settings.UPLOAD_DIR)), name="uploads")
+
+    @app.get("/app", include_in_schema=False)
+    async def spa_index() -> FileResponse:
+        return FileResponse(_STATIC_DIR / "index.html", headers=_NO_CACHE)
+
+    @app.get("/login", include_in_schema=False)
+    async def login_page() -> FileResponse:
+        return FileResponse(_STATIC_DIR / "login.html", headers=_NO_CACHE)
+
+    @app.get("/assembly-cost-calc-report", include_in_schema=False)
+    async def assembly_cost_calc_report_page() -> FileResponse:
+        return FileResponse(_STATIC_DIR / "assembly-cost-calc-report.html", headers=_NO_CACHE)
+
+    @app.get("/assembly-cost-restore", include_in_schema=False)
+    async def assembly_cost_restore_page() -> FileResponse:
+        return FileResponse(_STATIC_DIR / "assembly-cost-restore.html", headers=_NO_CACHE)
+
+    @app.get("/helper", include_in_schema=False)
+    async def helper_redirect() -> RedirectResponse:
+        return RedirectResponse(url="/helper/", status_code=302)
+
+    app.mount(
+        "/helper",
+        StaticFiles(directory=str(_STATIC_DIR / "helper"), html=True),
+        name="helper_site",
+    )
+
+    @app.get("/favicon.ico", include_in_schema=False)
+    async def favicon() -> Response:
+        return Response(status_code=204)
+
+    @app.get("/", include_in_schema=False)
+    async def root() -> RedirectResponse:
+        return RedirectResponse(url="/login", status_code=302)

@@ -1,3 +1,1 @@
-from app.routers.yishiyiyi.scrap_price.crud import router
-
-__all__ = ["router"]
+"""废料月度销售价格路由包。"""

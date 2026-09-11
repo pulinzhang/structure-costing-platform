@@ -25,7 +25,6 @@ function emptyReady(message = null) {
         tree_root_count: 0,
         subject_count: 0,
         procurement_object_count: 0,
-        l0_count: 0,
         stamping_price_count: 0,
         annual_price_count: 0,
         welding_fee_count: 0,
@@ -87,8 +86,8 @@ function destroy() {
 
 function applyPermissionUi() {
     const canFn = typeof can === 'function' ? can : () => true;
-    calcState.canRun = canFn('op:assembly-cost-calc:run') || canFn('op:l0-assembly-cost-calc:run');
-    calcState.canDelete = canFn('op:assembly-cost-calc:delete') || canFn('op:l0-assembly-cost-calc:delete');
+    calcState.canRun = canFn('op:assembly-cost-calc:run');
+    calcState.canDelete = canFn('op:assembly-cost-calc:delete');
     if (!calcState.canRun) {
         document.getElementById('lacStartCalcBtn')?.classList.add('hidden');
     }
@@ -257,10 +256,9 @@ async function loadCalcReady() {
         const res = await HttpClient.get(CALC_READY_API, { params: scope });
         const data = res.data || {};
         calcState.ready = {
-            tree_root_count: Number(data.tree_root_count) || Number(data.l0_count) || 0,
+            tree_root_count: Number(data.tree_root_count) || 0,
             subject_count: Number(data.subject_count) || 0,
             procurement_object_count: Number(data.procurement_object_count) || 0,
-            l0_count: Number(data.l0_count) || 0,
             stamping_price_count: Number(data.stamping_price_count) || 0,
             annual_price_count: Number(data.annual_price_count) || 0,
             welding_fee_count: Number(data.welding_fee_count) || 0,
@@ -305,7 +303,7 @@ function validateDataPreparation() {
 }
 
 function setReadyCounts(ready) {
-    setCountHtml('lacCntTreeRoot', ready.tree_root_count || ready.l0_count, '条');
+    setCountHtml('lacCntTreeRoot', ready.tree_root_count, '条');
     setCountHtml('lacCntSubject', ready.subject_count, '条');
     setCountHtml('lacCntProcObj', ready.procurement_object_count, '条');
     setCountHtml('lacCntStamping', ready.stamping_price_count, '条', ready.stamping_complete);
@@ -372,7 +370,7 @@ function renderHistoryRows(items) {
                 <td class="py-2 px-2">${esc(row.vehicle_model)}</td>
                 <td class="py-2 px-2 font-mono">${esc(row.bom_version)}</td>
                 <td class="py-2 px-2 text-center ${meta.className}">${esc(meta.label)}</td>
-                <td class="py-2 px-2 text-right font-mono">${esc(row.subject_total ?? row.l0_total)}</td>
+                <td class="py-2 px-2 text-right font-mono">${esc(row.subject_total)}</td>
                 <td class="py-2 px-2 text-right font-mono text-[#66bb6a]">${esc(row.ok_count)}</td>
                 <td class="py-2 px-2 text-right font-mono text-[#ffb74d]">${esc(row.partial_count)}</td>
                 <td class="py-2 px-2 text-right font-mono text-[#ef5350]">${esc(row.failed_count)}</td>

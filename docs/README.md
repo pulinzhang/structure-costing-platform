@@ -66,7 +66,7 @@
 | [assembly-costing-design.md](costing/assembly-costing-design.md) | 总成月核价（已落地）：级别无关；财务总费用与采购应成本同一批行 |
 | [assembly-cost-restore-design.md](costing/assembly-cost-restore-design.md) | 总成核价成本还原报告（已落地）：异常时新页签画册级静态报告 |
 | [procurement-contract-report-design.md](costing/procurement-contract-report-design.md) | 采购价格协议（已落地）：按供应商出《批量零部件价格协议》 |
-| [l0-assembly-costing-design.md](costing/l0-assembly-costing-design.md) | 现网 L0 成品核价（已上线；新规则见上一行） |
+| [l0-assembly-costing-design.md](costing/l0-assembly-costing-design.md) | 冻结史料：原 L0 成品核价口径（现网见总成月核价） |
 | [l1-assembly-costing-design.md](costing/l1-assembly-costing-design.md) | 历史：委外应成本口径（结果表方案已作废） |
 | [effective-period-design.md](costing/effective-period-design.md) | 协议价生效期（设计） |
 | [provisional-final-settlement-design.md](costing/provisional-final-settlement-design.md) | 暂估 / 正式（设计） |

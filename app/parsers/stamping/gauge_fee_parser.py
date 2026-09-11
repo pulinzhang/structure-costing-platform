@@ -11,10 +11,9 @@ from openpyxl import load_workbook
 
 from app.common.money import Q4, quantize_money, quantize_positive_whole
 from app.common.part_number import normalize_part_number_token
-from app.models.stamping.gauge_fee import (
-    STATUS_EFFECTIVE,
-    STATUS_INVALID,
-)
+
+STATUS_EFFECTIVE = "effective"
+STATUS_INVALID = "invalid"
 
 HEADER_PART_NUMBER = "零件号"
 HEADER_PART_NAME = "零件名称"

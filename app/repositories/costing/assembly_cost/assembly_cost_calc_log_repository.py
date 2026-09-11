@@ -13,7 +13,7 @@ from app.models.costing.assembly_cost_calc_log import AssemblyCostCalcLog
 _STATUS_PROCESSING = "processing"
 
 _PROCESSING_LOCK_INDEX_SQL = """
-CREATE UNIQUE INDEX IF NOT EXISTS uq_l0_assembly_calc_processing
+CREATE UNIQUE INDEX IF NOT EXISTS uq_assembly_calc_processing
 ON costing_assembly_cost_calc_logs(year, month, location, vehicle_model, bom_version)
 WHERE status = 'processing'
 """

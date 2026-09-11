@@ -171,23 +171,6 @@ def delete_part(
     return ApiResponse.deleted(message="零件删除成功")
 
 
-@router.get("/parts", response_model=ApiResponse[PageResult[StampingPartListResponse]])
-def list_parts_legacy(
-    query: StampingPartQuery = Depends(),
-    db: Session = Depends(get_db),
-    current_user: UserVO = Depends(require_perm(Perm.STAMPING_PARTS_VIEW)),
-) -> ApiResponse[PageResult[StampingPartListResponse]]:
-    """获取零件列表（兼容旧路径）"""
-    data, total, filter_options = _stamping_service.list_parts(db, query)
-    return ApiResponse.list_(
-        items=data,
-        total=total,
-        page=query.page,
-        page_size=query.size,
-        filters=filter_options,
-    )
-
-
 @router.get("/materials", response_model=ApiResponse[PageResult[StampingMaterialResponse]])
 def list_materials(
     query: StampingMaterialQuery = Depends(),
