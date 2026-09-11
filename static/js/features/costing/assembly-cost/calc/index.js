@@ -5,7 +5,7 @@
 import {
     assemblyCostCalcTemplate,
     renderCalcHistoryPagination,
-} from './template.js?v=6';
+} from './template.js?v=7';
 import {
     DEFAULT_PAGE_SIZE,
     bindPageSizeSelect,
@@ -19,6 +19,23 @@ const CALC_TASK_API = `${API_BASE}/calc/tasks`;
 const CALC_LOGS_API = `${API_BASE}/calc/logs`;
 const YEARS_API = `${API_BASE}/filters/years`;
 const POLL_INTERVAL_MS = 1500;
+
+function emptyReady(message = null) {
+    return {
+        tree_root_count: 0,
+        subject_count: 0,
+        procurement_object_count: 0,
+        l0_count: 0,
+        stamping_price_count: 0,
+        annual_price_count: 0,
+        welding_fee_count: 0,
+        packaging_fee_count: 0,
+        stamping_complete: null,
+        welding_calc_complete: null,
+        ready: false,
+        message,
+    };
+}
 
 const STATUS_META = {
     processing: { label: '计算中', className: 'text-[#64b5f6]' },
@@ -34,14 +51,7 @@ const calcState = {
     pollInFlight: false,
     canRun: true,
     canDelete: true,
-    ready: {
-        l0_count: 0,
-        stamping_price_count: 0,
-        annual_price_count: 0,
-        welding_fee_count: 0,
-        packaging_fee_count: 0,
-        ready: false,
-    },
+    ready: emptyReady(),
     history: {
         page: 1,
         size: DEFAULT_PAGE_SIZE,
@@ -238,17 +248,7 @@ function getScope() {
 async function loadCalcReady() {
     const scope = getScope();
     if (!scope.year || !scope.month || !scope.location || !scope.vehicle_model || !scope.bom_version) {
-        calcState.ready = {
-            tree_root_count: 0,
-            subject_count: 0,
-            procurement_object_count: 0,
-            l0_count: 0,
-            stamping_price_count: 0,
-            annual_price_count: 0,
-            welding_fee_count: 0,
-            packaging_fee_count: 0,
-            ready: false,
-        };
+        calcState.ready = emptyReady();
         setReadyCounts(calcState.ready);
         validateDataPreparation();
         return;
@@ -265,6 +265,8 @@ async function loadCalcReady() {
             annual_price_count: Number(data.annual_price_count) || 0,
             welding_fee_count: Number(data.welding_fee_count) || 0,
             packaging_fee_count: Number(data.packaging_fee_count) || 0,
+            stamping_complete: Boolean(data.stamping_complete),
+            welding_calc_complete: Boolean(data.welding_calc_complete),
             ready: Boolean(data.ready),
             message: data.message || null,
         };
@@ -272,17 +274,7 @@ async function loadCalcReady() {
         validateDataPreparation();
     } catch (error) {
         console.error('加载计算就绪统计失败:', error);
-        calcState.ready = {
-            tree_root_count: 0,
-            subject_count: 0,
-            procurement_object_count: 0,
-            l0_count: 0,
-            stamping_price_count: 0,
-            annual_price_count: 0,
-            welding_fee_count: 0,
-            packaging_fee_count: 0,
-            ready: false,
-        };
+        calcState.ready = emptyReady(error.message || '就绪统计加载失败');
         setReadyCounts(calcState.ready);
         validateDataPreparation();
     }
@@ -298,24 +290,36 @@ function validateDataPreparation() {
     );
     const isReady = isScopeSelected && calcState.ready.ready;
     startBtn.disabled = !isReady;
-    if (isReady) errorBanner?.classList.add('hidden');
-    else errorBanner?.classList.remove('hidden');
+    let hint = null;
+    if (!isScopeSelected) {
+        hint = '须选定年度、月份、基地、项目、BOM 版本。';
+    } else if (calcState.ready.message) {
+        hint = calcState.ready.message;
+    }
+    if (hint && errorBanner) {
+        errorBanner.textContent = `提示：${hint}`;
+        errorBanner.classList.remove('hidden');
+    } else {
+        errorBanner?.classList.add('hidden');
+    }
 }
 
 function setReadyCounts(ready) {
     setCountHtml('lacCntTreeRoot', ready.tree_root_count || ready.l0_count, '条');
     setCountHtml('lacCntSubject', ready.subject_count, '条');
     setCountHtml('lacCntProcObj', ready.procurement_object_count, '条');
-    setCountHtml('lacCntStamping', ready.stamping_price_count, '条');
+    setCountHtml('lacCntStamping', ready.stamping_price_count, '条', ready.stamping_complete);
     setCountHtml('lacCntAnnual', ready.annual_price_count, '条');
-    setCountHtml('lacCntWelding', ready.welding_fee_count, '条');
+    setCountHtml('lacCntWelding', ready.welding_fee_count, '条', ready.welding_calc_complete);
     setCountHtml('lacCntPackaging', ready.packaging_fee_count, '条');
 }
 
-function setCountHtml(id, count, unit) {
+function setCountHtml(id, count, unit, isComplete) {
     const el = document.getElementById(id);
     if (!el) return;
     const display = Number.isFinite(count) ? Number(count).toLocaleString('zh-CN') : '-';
+    const tone = isComplete === false ? 'text-[#ffb74d]' : 'text-[#dddddd]';
+    el.className = `text-xs font-mono font-bold ${tone}`;
     el.innerHTML = `${display} <span class="text-[9px] font-normal text-[#555]">${unit}</span>`;
 }
 

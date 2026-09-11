@@ -476,7 +476,7 @@ persist:
 
 `calculate` 与 Ready 同一套门：未完成直接 `BusinessException`，不写总成卡、不入队装成「先算着」。
 
-Ready VO 增加：`subject_count`、`tree_root_count`、`procurement_object_count`、`welding_fee_count`（全 level）、`welding_fee_level_counts`、`stamping_complete`、`stamping_incomplete_suppliers`、`welding_calc_complete`。保留 `l0_count` 一期别名 = `tree_root_count`（避免旧前端崩），随后删除。
+Ready VO 增加：`subject_count`、`tree_root_count`、`procurement_object_count`、`welding_fee_count`（**当前树拆解对齐的费行**，不含旧 id / 孤儿行）、`welding_fee_level_counts`（同上口径）、`stamping_complete`、`stamping_incomplete_suppliers`、`welding_calc_complete`。保留 `l0_count` 一期别名 = `tree_root_count`（避免旧前端崩），随后删除。计算页芯片与 P20 同一套覆盖；未就绪黄条展示 `message`，禁止只数范围内存量行却把按钮关掉。
 
 缺清单：警告「采购对象未生成，本趟只出装配∪树根」（不挡计算）。年度价/包装为 0：黄灯，不挡。
 
