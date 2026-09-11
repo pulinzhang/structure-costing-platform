@@ -10,7 +10,7 @@ import {
     updateCostFilterCapsules,
     shortPartNumber,
     syncBreakdownColumnVisibility,
-} from './template.js?v=59';
+} from './template.js?v=62';
 import {
     DEFAULT_PAGE_SIZE,
     bindPageSizeSelect,

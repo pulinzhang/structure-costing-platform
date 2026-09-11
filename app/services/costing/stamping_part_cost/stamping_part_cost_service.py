@@ -17,6 +17,7 @@ from app.models.costing import StampingPartCost, StampingPartCostCalcLog
 from app.repositories.costing.stamping_part_cost.stamping_part_cost_repository import (
     PartCostListFilters,
     StampingPartCostRepository,
+    empty_part_cost_summary,
 )
 from app.repositories.costing.steel_price.steel_price_repository import SteelPriceRepository
 from app.repositories.stamping.tailor_weld_blank_repository import (
@@ -258,11 +259,7 @@ class StampingPartCostService:
                     "suppliers": SupplierService().list_registered_names(db),
                     "vehicle_models": VehicleModelService().list_filter_codes(db, query.location),
                     "versions": [],
-                    "summary": {
-                        "avg_unit_cost": None,
-                        "pending_count": 0,
-                        "approved_count": 0,
-                    },
+                    "summary": empty_part_cost_summary(),
                 }
                 return [], 0, empty_filters
         supplier_names = SupplierService().names_for_query(db, query.stamping_supplier)
@@ -274,11 +271,7 @@ class StampingPartCostService:
                 "suppliers": SupplierService().list_registered_names(db),
                 "vehicle_models": VehicleModelService().list_filter_codes(db, query.location),
                 "versions": [],
-                "summary": {
-                    "avg_unit_cost": None,
-                    "pending_count": 0,
-                    "approved_count": 0,
-                },
+                "summary": empty_part_cost_summary(),
             }
             return [], 0, empty_filters
         rows, total = self.cost_repo.paginate(

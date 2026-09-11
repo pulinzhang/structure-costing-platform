@@ -2,8 +2,6 @@
 
 from __future__ import annotations
 
-from decimal import Decimal
-
 from sqlalchemy.orm import Session
 
 from app.common.audit import display_name
@@ -21,6 +19,7 @@ from app.repositories.bom.welding_fee_repository import BomWeldingFeeRepository
 from app.repositories.costing.assembly_cost.assembly_cost_repository import (
     AssemblyCostListFilters,
     AssemblyCostRepository,
+    empty_assembly_cost_summary,
 )
 from app.repositories.costing.stamping_part_cost.stamping_part_cost_repository import (
     StampingPartCostRepository,
@@ -267,15 +266,7 @@ class AssemblyCostService:
                     "view": query.view,
                     "level": query.level,
                     "object_kind": query.object_kind,
-                    "summary": {
-                        "total_count": 0,
-                        "ok_count": 0,
-                        "partial_count": 0,
-                        "pending_count": 0,
-                        "approved_count": 0,
-                        "grand_total_sum": Decimal("0"),
-                        "total_amount_sum": Decimal("0"),
-                    },
+                    "summary": empty_assembly_cost_summary(),
                 }
                 return [], 0, empty_filters
         rows, total, filters = self.cost_repo.paginate(

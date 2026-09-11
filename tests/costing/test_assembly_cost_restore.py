@@ -102,7 +102,6 @@ def _bind(service: AssemblyCostRestoreService) -> None:
     service.scrap_repo.list_by_ids = MagicMock(return_value=[])
     service.base_price_repo.list_by_ids = MagicMock(return_value=[])
     service.packaging_repo.list_by_location_year = MagicMock(return_value=[])
-    service.cost_repo.list_by_scope_source_nodes = MagicMock(return_value=[])
     service.upload_file_repo.list_active_by_scope = MagicMock(return_value=[])
     service.settings_service.get_config = MagicMock(return_value=SimpleNamespace(company_name=""))
 
@@ -168,7 +167,7 @@ def test_restore_identity_short_codes_and_skipped() -> None:
     service.cost_repo.get_by_id = MagicMock(return_value=card)
     vo = service.get_restore(MagicMock(), 8, view="finance")
     assert vo.short_code == "6873"
-    assert vo.highlight_label == "总费用"
+    assert vo.highlight_label == "总成价"
     assert vo.highlight_amount == Decimal("5.1000")
     by_code = {row.code: row for row in vo.identity_checks}
     assert by_code["material"].is_match
@@ -205,7 +204,7 @@ def test_restore_procurement_highlight_and_title_fields() -> None:
     service.cost_repo.get_by_id = MagicMock(return_value=card)
     vo = service.get_restore(MagicMock(), 8, view="procurement")
     assert vo.view == "procurement"
-    assert vo.highlight_label == "总成本"
+    assert vo.highlight_label == "结算价"
     assert vo.highlight_amount == Decimal("5.0000")
     assert vo.part_number == "501006873AA"
     assert vo.year == 2026
@@ -366,29 +365,14 @@ def test_restore_inserts_sub_assembly_from_snapshot() -> None:
         node_role=None,
         seq_no=None,
     )
-    sibling = _card(
-        id=9,
-        source_node_id=15,
-        is_tree_root=False,
-        part_number="502015931AA",
-        part_name="前安全带滑轨上固定板总成",
-        level=1,
-        should_cost=Decimal("99.0000"),
-        total_amount=Decimal("11.6053"),
-        material_amount=Decimal("11.5000"),
-        welding_amount=Decimal("0.1053"),
-        items=[],
-    )
     service.node_repo.list_by_snapshot = MagicMock(return_value=[root, assembly, leaf])
-    service.cost_repo.list_by_scope_source_nodes = MagicMock(return_value=[sibling])
     service.cost_repo.get_by_id = MagicMock(return_value=card)
     vo = service.get_restore(MagicMock(), 8, view="finance")
     assert [node.cost_source for node in vo.material_nodes] == ["sub_assembly", "stamping"]
     parent = vo.material_nodes[0]
     assert parent.part_number == "502015931AA"
-    assert parent.line_amount == Decimal("11.6053")
-    assert parent.unit_price == Decimal("11.6053")
-    assert parent.assembly_welding_amount == Decimal("0.1053")
+    assert parent.line_amount == Decimal("11.5000")
+    assert parent.unit_price == Decimal("11.5000")
     assert parent.indent_level == 0
     assert parent.seq_label == "22-1"
     assert vo.material_nodes[1].indent_level == 1

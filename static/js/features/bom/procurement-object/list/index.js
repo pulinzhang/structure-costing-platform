@@ -6,7 +6,7 @@ import {
     procurementObjectListTemplate,
     renderPoPagination,
     renderProcurementObjectRows,
-} from './template.js?v=13';
+} from './template.js?v=15';
 import {
     DEFAULT_PAGE_SIZE,
     bindPageSizeSelect,
@@ -413,10 +413,11 @@ async function loadList(page) {
         listState.total = data.total || 0;
         listState.totalPages = data.total_pages || 1;
         const summary = (data.filters && data.filters.summary) || {};
-        setText('poHudObject', String(summary.object_count ?? 0));
-        setText('poHudOther', String(summary.other_leaf_count ?? 0));
-        setText('poHudPending', String(summary.pending_count ?? 0));
-        setText('poHudApproved', String(summary.approved_count ?? 0));
+        setText('poHudObject', Number(summary.object_count ?? 0).toLocaleString('zh-CN'));
+        setText('poHudDegenerate', Number(summary.object_l0_degenerate_count ?? 0).toLocaleString('zh-CN'));
+        setText('poHudOther', Number(summary.other_leaf_count ?? 0).toLocaleString('zh-CN'));
+        setText('poHudPending', Number(summary.pending_count ?? 0).toLocaleString('zh-CN'));
+        setText('poHudApproved', Number(summary.approved_count ?? 0).toLocaleString('zh-CN'));
         setText('poTotalLabel', `共 ${listState.total} 条`);
         const body = document.getElementById('poTableBody');
         if (body) body.innerHTML = renderProcurementObjectRows(listState.items);

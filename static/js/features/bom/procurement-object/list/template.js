@@ -15,7 +15,8 @@ export function procurementObjectListTemplate() {
                      style="background: linear-gradient(135deg, #0E0E12 0%, #121218 45%, #0C0C10 100%);">
                     <div class="flex items-start justify-between gap-4 mb-3">
                         <div class="grid grid-cols-2 lg:grid-cols-4 gap-3 font-mono flex-1 min-w-0">
-                            <div class="bg-gradient-to-b from-[#18080A] to-[#0D0708] border border-[#FF1E27]/50 p-3.5 relative overflow-hidden">
+                            <div class="bg-gradient-to-b from-[#18080A] to-[#0D0708] border border-[#FF1E27]/50 p-3.5 relative overflow-hidden"
+                                 style="box-shadow: 0 0 30px rgba(255,30,39,0.15), inset 0 1px 0 rgba(255,30,39,0.12);">
                                 <div class="absolute top-0 left-0 right-0 h-[2px] bg-gradient-to-r from-transparent via-[#FF1E27] to-transparent"
                                      style="box-shadow: 0 0 10px #FF1E27;"></div>
                                 <div class="flex justify-between items-start">
@@ -23,32 +24,38 @@ export function procurementObjectListTemplate() {
                                     <span class="w-2 h-2 rounded-full bg-[#FF1E27] animate-pulse"
                                           style="box-shadow: 0 0 8px #FF1E27;"></span>
                                 </div>
-                                <div class="text-[26px] font-black text-[#FF1E27] font-mono mt-1 tracking-tight tabular-nums"
-                                     style="text-shadow: 0 0 12px rgba(255,30,39,0.7);">
+                                <div class="text-[26px] font-black text-[#FF1E27] font-mono mt-1 tracking-tight tabular-nums leading-none"
+                                     style="text-shadow: 0 0 12px rgba(255,30,39,0.7), 0 0 25px rgba(255,30,39,0.3);">
                                     <span id="poHudObject">—</span>
                                     <span class="text-[10px] text-[#FF1E27]/50 ml-1 font-semibold">条</span>
                                 </div>
                             </div>
-                            <div class="bg-[#0D0D11]/80 border border-[#1E1E26] p-3"
+                            <div class="bg-[#0D0D11]/80 border border-[#1E1E26] p-3.5 backdrop-blur-sm"
+                                 style="box-shadow: inset 0 1px 0 rgba(255,255,255,0.03);">
+                                <div class="text-[#555555] text-[10px] tracking-wider">${KIND_LABELS.l0_degenerate}</div>
+                                <div class="text-[22px] font-black text-[#FFFFFF] mt-1 tracking-tight tabular-nums leading-none">
+                                    <span id="poHudDegenerate">—</span>
+                                    <span class="text-[10px] text-[#555555] ml-1 font-bold">件</span>
+                                </div>
+                            </div>
+                            <div class="bg-[#0D0D11]/80 border border-[#1E1E26] p-3.5 backdrop-blur-sm"
                                  style="box-shadow: inset 0 1px 0 rgba(255,255,255,0.03);">
                                 <div class="text-[#555555] text-[10px] tracking-wider">${SECTION_LABELS.other_leaf}</div>
-                                <div class="text-[18px] font-bold text-[#FFFFFF] mt-1 tabular-nums">
-                                    <span id="poHudOther" class="text-[#F0F0F2] font-bold tabular-nums">—</span>
-                                    <span class="text-[10px] text-[#555555] ml-1">条</span>
+                                <div class="text-[22px] font-black text-[#FFFFFF] mt-1 tracking-tight tabular-nums leading-none">
+                                    <span id="poHudOther">—</span>
+                                    <span class="text-[10px] text-[#555555] ml-1 font-bold">条</span>
                                 </div>
                             </div>
-                            <div class="bg-[#0D0D11]/80 border border-[#1E1E26] p-3">
-                                <div class="text-[#555555] text-[10px] tracking-wider">${AUDIT_LABELS.pending}</div>
-                                <div class="text-[18px] font-bold text-[#FFFFFF] mt-1 tabular-nums">
+                            <div class="bg-[#0D0D11]/80 border border-[#1E1E26] p-3.5 backdrop-blur-sm"
+                                 style="box-shadow: inset 0 1px 0 rgba(255,255,255,0.03);">
+                                <div class="text-[#555555] text-[10px] tracking-wider">审核进度</div>
+                                <div class="text-[22px] font-black text-[#FFFFFF] mt-1 tracking-tight tabular-nums leading-none">
                                     <span id="poHudPending">—</span>
-                                    <span class="text-[10px] text-[#555555] ml-1">条</span>
+                                    <span class="text-[10px] text-[#555555] ml-1 font-bold">条待审</span>
                                 </div>
-                            </div>
-                            <div class="bg-[#0D0D11]/80 border border-[#1E1E26] p-3">
-                                <div class="text-[#555555] text-[10px] tracking-wider">${AUDIT_LABELS.approved}</div>
-                                <div class="text-[18px] font-bold text-[#FFFFFF] mt-1 tabular-nums">
-                                    <span id="poHudApproved">—</span>
-                                    <span class="text-[10px] text-[#555555] ml-1">条</span>
+                                <div class="text-[9px] font-mono text-[#6E6E73] mt-2 flex items-center justify-between gap-2">
+                                    <span>已审</span>
+                                    <span class="text-[#A1A1A6] tabular-nums"><span id="poHudApproved">—</span> 条</span>
                                 </div>
                             </div>
                         </div>

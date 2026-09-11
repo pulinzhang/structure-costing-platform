@@ -30,6 +30,7 @@ from app.services.async_task import (
     calc_status_label,
     outcome_from_calc_status,
 )
+from app.services.costing.steel_price.calc.coverage import assert_steel_calc_thickness
 from app.services.costing.steel_price.calc.models import (
     SteelPriceCalcRequest,
     SteelPriceCalcResult,
@@ -169,6 +170,7 @@ class SteelPriceCalcOrchestrator:
             month=dto.month,
             location=location,
         )
+        assert_steel_calc_thickness(db, request)
         lock_log = self.begin_processing(
             db,
             request,

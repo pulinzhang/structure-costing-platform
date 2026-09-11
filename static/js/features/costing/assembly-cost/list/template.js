@@ -16,46 +16,61 @@ export function assemblyCostListTemplate() {
                      style="background: linear-gradient(135deg, #0E0E12 0%, #121218 45%, #0C0C10 100%);">
                     <div class="flex items-start justify-between gap-4 mb-3">
                         <div class="grid grid-cols-2 lg:grid-cols-4 gap-3 font-mono flex-1 min-w-0">
-                            <div class="bg-[#0D0D11]/80 border border-[#1E1E26] p-3 backdrop-blur-sm"
-                                 style="box-shadow: inset 0 1px 0 rgba(255,255,255,0.03);">
-                                <div class="text-[#555555] text-[10px] tracking-wider">核价条数</div>
-                                <div class="text-[18px] font-bold text-[#FFFFFF] mt-1 tabular-nums">
-                                    <span id="lacHudTotal" class="text-[#F0F0F2] font-bold tabular-nums">—</span>
-                                    <span class="text-[10px] text-[#555555] ml-1">条</span>
-                                </div>
-                            </div>
-                            <div class="bg-gradient-to-b from-[#18080A] to-[#0D0708] border border-[#FF1E27]/50 p-3.5 relative overflow-hidden group"
+                            <!-- 1. 总成本：管理者靶心 -->
+                            <div class="bg-gradient-to-b from-[#18080A] to-[#0D0708] border border-[#FF1E27]/50 p-3.5 relative overflow-hidden"
                                  style="box-shadow: 0 0 30px rgba(255,30,39,0.15), inset 0 1px 0 rgba(255,30,39,0.12);">
                                 <div class="absolute top-0 left-0 right-0 h-[2px] bg-gradient-to-r from-transparent via-[#FF1E27] to-transparent"
                                      style="box-shadow: 0 0 10px #FF1E27;"></div>
                                 <div class="flex justify-between items-start">
-                                    <span class="text-[#FF1E27] text-[10px] font-bold tracking-widest">总费用合计</span>
+                                    <span class="text-[#FF1E27] text-[10px] font-bold tracking-widest">总成本</span>
                                     <span class="w-2 h-2 rounded-full bg-[#FF1E27] animate-pulse"
                                           style="box-shadow: 0 0 8px #FF1E27;"></span>
                                 </div>
-                                <div class="text-[26px] font-black text-[#FF1E27] font-mono mt-1 tracking-tight tabular-nums"
+                                <div class="text-[26px] font-black text-[#FF1E27] font-mono mt-1 tracking-tight tabular-nums leading-none"
                                      style="text-shadow: 0 0 12px rgba(255,30,39,0.7), 0 0 25px rgba(255,30,39,0.3);">
-                                    ￥<span id="lacHudGrand">—</span>
+                                    ¥ <span id="lacHudGrand">—</span>
                                 </div>
-                                <div class="text-[9px] font-mono text-[#FF1E27]/60 mt-1 flex justify-between">
-                                    <span>月总账 ￥<span id="lacHudMonthly">—</span></span>
-                                    <span id="lacHudSkuCount">— 条</span>
+                                <div class="text-[9px] font-mono text-[#FF1E27]/60 mt-2">总费用合计</div>
+                            </div>
+                            <!-- 2. 总成规模 + 件均 -->
+                            <div class="bg-[#0D0D11]/80 border border-[#1E1E26] p-3.5 backdrop-blur-sm"
+                                 style="box-shadow: inset 0 1px 0 rgba(255,255,255,0.03);">
+                                <div class="text-[#555555] text-[10px] tracking-wider">总成</div>
+                                <div class="text-[22px] font-black text-[#FFFFFF] mt-1 tracking-tight tabular-nums leading-none">
+                                    <span id="lacHudTotal">—</span>
+                                    <span class="text-[10px] text-[#555555] ml-1 font-bold">件</span>
+                                </div>
+                                <div class="text-[9px] font-mono text-[#6E6E73] mt-2 flex items-center justify-between gap-2">
+                                    <span>件均</span>
+                                    <span class="text-[#A1A1A6] tabular-nums">¥ <span id="lacHudAvg">—</span></span>
                                 </div>
                             </div>
-                            <div class="bg-[#0D0D11]/80 border border-[#1E1E26] p-3 backdrop-blur-sm"
+                            <!-- 3. 成本构成：材料费 / 焊接费 -->
+                            <div class="bg-[#0D0D11]/80 border border-[#1E1E26] p-3.5 backdrop-blur-sm"
                                  style="box-shadow: inset 0 1px 0 rgba(255,255,255,0.03);">
-                                <div class="text-[#555555] text-[10px] tracking-wider">待审</div>
-                                <div class="text-[18px] font-bold text-[#FFFFFF] mt-1 tabular-nums">
+                                <div class="text-[#555555] text-[10px] tracking-wider">成本构成</div>
+                                <div class="text-[9px] font-mono text-[#6E6E73] mt-2 space-y-1.5">
+                                    <div class="flex items-center justify-between gap-2">
+                                        <span>材料费</span>
+                                        <span class="text-[#A1A1A6] tabular-nums whitespace-nowrap">¥ <span id="lacHudMaterial">—</span> <span id="lacHudMaterialShare" class="text-[#555555]">—</span></span>
+                                    </div>
+                                    <div class="flex items-center justify-between gap-2">
+                                        <span>焊接费</span>
+                                        <span class="text-[#A1A1A6] tabular-nums whitespace-nowrap">¥ <span id="lacHudWelding">—</span> <span id="lacHudWeldingShare" class="text-[#555555]">—</span></span>
+                                    </div>
+                                </div>
+                            </div>
+                            <!-- 4. 审核进度：待审 / 已审合并 -->
+                            <div class="bg-[#0D0D11]/80 border border-[#1E1E26] p-3.5 backdrop-blur-sm"
+                                 style="box-shadow: inset 0 1px 0 rgba(255,255,255,0.03);">
+                                <div class="text-[#555555] text-[10px] tracking-wider">审核进度</div>
+                                <div class="text-[22px] font-black text-[#FFFFFF] mt-1 tracking-tight tabular-nums leading-none">
                                     <span id="lacHudPending">—</span>
-                                    <span class="text-[10px] text-[#555555] ml-1">条</span>
+                                    <span class="text-[10px] text-[#555555] ml-1 font-bold">条待审</span>
                                 </div>
-                            </div>
-                            <div class="bg-[#0D0D11]/80 border border-[#1E1E26] p-3 backdrop-blur-sm"
-                                 style="box-shadow: inset 0 1px 0 rgba(255,255,255,0.03);">
-                                <div class="text-[#555555] text-[10px] tracking-wider">已审</div>
-                                <div class="text-[18px] font-bold text-[#FFFFFF] mt-1 tabular-nums">
-                                    <span id="lacHudApproved">—</span>
-                                    <span class="text-[10px] text-[#555555] ml-1">条</span>
+                                <div class="text-[9px] font-mono text-[#6E6E73] mt-2 flex items-center justify-between gap-2">
+                                    <span>已审</span>
+                                    <span class="text-[#A1A1A6] tabular-nums"><span id="lacHudApproved">—</span> 条</span>
                                 </div>
                             </div>
                         </div>
@@ -453,12 +468,33 @@ export function updateLacHud(total, summary) {
         if (el) el.textContent = value;
     };
     const data = summary && typeof summary === 'object' ? summary : {};
-    setText('lacHudTotal', Number(total || 0).toLocaleString('zh-CN'));
-    setText('lacHudSkuCount', `${Number(total || 0).toLocaleString('zh-CN')} 条`);
-    setText('lacHudPending', String(data.pending_count ?? 0));
-    setText('lacHudApproved', String(data.approved_count ?? 0));
-    setText('lacHudGrand', fmtNum(data.grand_total_sum, 4));
-    setText('lacHudMonthly', fmtNum(data.total_amount_sum, 4));
+    const fmtMoney = (value) => {
+        const fixed = formatDecimalFixed(value, 2, { allowNegative: true });
+        return fixed == null ? '—' : withThousandsSep(fixed);
+    };
+    const toAmount = (value) => {
+        if (value == null || value === '') return null;
+        const amount = Number(value);
+        return Number.isFinite(amount) ? amount : null;
+    };
+    const fmtShare = (part, whole) => {
+        if (part == null || whole == null || whole === 0) return '—';
+        return `${((part / whole) * 100).toFixed(1)}%`;
+    };
+    const totalCount = Number(data.total_count ?? total ?? 0);
+    const totalCost = toAmount(data.grand_total_sum);
+    const materialAmount = toAmount(data.material_amount_sum);
+    const weldingAmount = toAmount(data.welding_amount_sum);
+
+    setText('lacHudGrand', fmtMoney(data.grand_total_sum));
+    setText('lacHudTotal', totalCount.toLocaleString('zh-CN'));
+    setText('lacHudAvg', fmtMoney(data.avg_grand_total));
+    setText('lacHudMaterial', fmtMoney(data.material_amount_sum));
+    setText('lacHudMaterialShare', fmtShare(materialAmount, totalCost));
+    setText('lacHudWelding', fmtMoney(data.welding_amount_sum));
+    setText('lacHudWeldingShare', fmtShare(weldingAmount, totalCost));
+    setText('lacHudPending', Number(data.pending_count ?? 0).toLocaleString('zh-CN'));
+    setText('lacHudApproved', Number(data.approved_count ?? 0).toLocaleString('zh-CN'));
 }
 
 export function updateLacFilterCapsules() {

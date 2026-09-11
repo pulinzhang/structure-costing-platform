@@ -19,11 +19,25 @@ from app.schemas.dto.stamping_part_cost_dto import (
 
 
 class PartCostFilterSummary(TypedDict):
-    """列表筛选汇总：均单价 / 待审 / 已审。"""
+    """列表 HUD 汇总（全量筛选，非本页）。字段名 = 列名 + _sum，避免和行上金额撞名。"""
 
+    unit_cost_sum: Decimal
     avg_unit_cost: Decimal | None
+    material_net_per_part_sum: Decimal
+    process_fee_amount_sum: Decimal
     pending_count: int
     approved_count: int
+
+
+def empty_part_cost_summary() -> PartCostFilterSummary:
+    return {
+        "unit_cost_sum": Decimal("0"),
+        "avg_unit_cost": None,
+        "material_net_per_part_sum": Decimal("0"),
+        "process_fee_amount_sum": Decimal("0"),
+        "pending_count": 0,
+        "approved_count": 0,
+    }
 
 
 class PartCostListFilters(TypedDict):
@@ -242,7 +256,7 @@ class StampingPartCostRepository:
         part_number: str | None = None,
         audit_status: str | None = None,
     ) -> PartCostFilterSummary:
-        """按与列表相同的筛选条件汇总：均单价 / 待审 / 已审。"""
+        """按与列表相同的筛选条件汇总：总成本 / 件均 / 材料费 / 加工费 / 待审 / 已审。"""
         q = self._build_list_query(
             db,
             year=year,
@@ -257,7 +271,14 @@ class StampingPartCostRepository:
             audit_status=audit_status,
         )
         row = q.with_entities(
+            func.coalesce(func.sum(StampingPartCost.unit_cost), 0).label("unit_cost_sum"),
             func.avg(StampingPartCost.unit_cost).label("avg_unit_cost"),
+            func.coalesce(func.sum(StampingPartCost.material_net_per_part), 0).label(
+                "material_net_per_part_sum"
+            ),
+            func.coalesce(func.sum(StampingPartCost.process_fee_amount), 0).label(
+                "process_fee_amount_sum"
+            ),
             func.sum(case((StampingPartCost.audit_status == AUDIT_PENDING, 1), else_=0)).label(
                 "pending_count"
             ),
@@ -267,7 +288,10 @@ class StampingPartCostRepository:
         ).one()
         avg_value = row.avg_unit_cost
         return {
+            "unit_cost_sum": Decimal(str(row.unit_cost_sum or 0)),
             "avg_unit_cost": (Decimal(str(avg_value)) if avg_value is not None else None),
+            "material_net_per_part_sum": Decimal(str(row.material_net_per_part_sum or 0)),
+            "process_fee_amount_sum": Decimal(str(row.process_fee_amount_sum or 0)),
             "pending_count": int(row.pending_count or 0),
             "approved_count": int(row.approved_count or 0),
         }

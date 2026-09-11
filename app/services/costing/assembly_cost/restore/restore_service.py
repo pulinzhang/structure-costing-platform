@@ -67,7 +67,8 @@ from app.services.costing.assembly_cost.codes import (
     tree_item_short_code,
 )
 from app.services.costing.assembly_cost.restore.labels import (
-    HIGHLIGHT_GRAND_TOTAL,
+    HIGHLIGHT_ASSEMBLY_PRICE,
+    HIGHLIGHT_SETTLEMENT_PRICE,
     HIGHLIGHT_TOTAL_COST,
     INDIRECT_KIND_LABELS,
     INDIRECT_UNIT_TRANSPORT,
@@ -196,15 +197,6 @@ class AssemblyCostRestoreService:
         tree_from_snapshot, parent_by_id, snapshot_nodes = self._snapshot_parents(
             db, card, exceptions
         )
-        children_by_parent: dict[int | None, list[BomNode]] = defaultdict(list)
-        for snap in snapshot_nodes:
-            children_by_parent[snap.parent_id].append(snap)
-        assembly_ids = [
-            snap.id
-            for snap in snapshot_nodes
-            if snap.id != card.source_node_id and children_by_parent.get(snap.id)
-        ]
-        sibling_by_node = self._sibling_cards(db, card, items, extra_node_ids=assembly_ids)
         stamping_by_part = self._load_stamping(db, card, items)
         annual_by_part = self._load_annual(db, card, items)
         process_by_id, die_by_id, gauge_ids = self._collect_fee_ids(stamping_by_part)
@@ -259,7 +251,6 @@ class AssemblyCostRestoreService:
                 item_nodes=material_nodes,
                 snapshot_nodes=snapshot_nodes,
                 parent_by_id=parent_by_id,
-                sibling_by_node=sibling_by_node,
                 view=report_view,
             )
 
@@ -279,7 +270,7 @@ class AssemblyCostRestoreService:
         identity = self._identity_checks(card, items, exceptions)
         highlight_amount = card.total_amount if report_view == "procurement" else card.grand_total
         highlight_label = (
-            HIGHLIGHT_TOTAL_COST if report_view == "procurement" else HIGHLIGHT_GRAND_TOTAL
+            HIGHLIGHT_SETTLEMENT_PRICE if report_view == "procurement" else HIGHLIGHT_ASSEMBLY_PRICE
         )
 
         return AssemblyCostRestoreVO(
@@ -416,7 +407,6 @@ class AssemblyCostRestoreService:
         item_nodes: list[RestoreMaterialNodeVO],
         snapshot_nodes: list[BomNode],
         parent_by_id: dict[int, int | None],
-        sibling_by_node: dict[int, AssemblyCost],
         view: str,
     ) -> list[RestoreMaterialNodeVO]:
         children_by_parent: dict[int | None, list[BomNode]] = defaultdict(list)
@@ -463,7 +453,6 @@ class AssemblyCostRestoreService:
                             path_qty=child_qty,
                             sort_no=sort_no,
                             seq_label=seq_label,
-                            sibling=sibling_by_node.get(child.id),
                             item_nodes=item_nodes,
                             parent_by_id=parent_by_id,
                             view=view,
@@ -488,32 +477,26 @@ class AssemblyCostRestoreService:
         path_qty: Decimal,
         sort_no: int,
         seq_label: str,
-        sibling: AssemblyCost | None,
         item_nodes: list[RestoreMaterialNodeVO],
         parent_by_id: dict[int, int | None],
         view: str,
     ) -> RestoreMaterialNodeVO:
         indent = self._indent_from_card(bom_node.id, card.source_node_id, parent_by_id)
-        if sibling is not None:
-            unit = _money(sibling.total_amount)
-            material_amt = _money(sibling.material_amount)
-            welding_amt = _money(sibling.welding_amount)
-            line = _money(unit * path_qty)
-        else:
-            material_amt = _money(
-                sum(
-                    (
-                        node.line_amount
-                        for node in item_nodes
-                        if node.bom_node_id
-                        and self._is_bom_descendant(node.bom_node_id, bom_node.id, parent_by_id)
-                    ),
-                    Decimal("0"),
-                )
+        counted = {"stamping", "annual", "bundle"}
+        material_amt = _money(
+            sum(
+                (
+                    node.line_amount
+                    for node in item_nodes
+                    if node.bom_node_id
+                    and node.cost_source in counted
+                    and self._is_bom_descendant(node.bom_node_id, bom_node.id, parent_by_id)
+                ),
+                Decimal("0"),
             )
-            welding_amt = Decimal("0")
-            unit = material_amt
-            line = material_amt
+        )
+        line = material_amt
+        unit = _money(material_amt / path_qty) if path_qty else Decimal("0")
         return RestoreMaterialNodeVO(
             sort_no=sort_no,
             indent_level=indent,
@@ -534,8 +517,6 @@ class AssemblyCostRestoreService:
             unit_price=unit,
             effective_qty=path_qty,
             line_amount=line,
-            assembly_material_amount=material_amt,
-            assembly_welding_amount=welding_amt,
         )
 
     def _is_bom_descendant(
@@ -554,32 +535,6 @@ class AssemblyCostRestoreService:
             seen.add(current)
             current = parent_by_id.get(current)
         return False
-
-    def _sibling_cards(
-        self,
-        db: Session,
-        card: AssemblyCost,
-        items: list[AssemblyCostItem],
-        extra_node_ids: list[int] | None = None,
-    ) -> dict[int, AssemblyCost]:
-        node_ids = [item.bom_node_id for item in items if item.bom_node_id]
-        if extra_node_ids:
-            node_ids.extend(extra_node_ids)
-        rows = self.cost_repo.list_by_scope_source_nodes(
-            db,
-            year=card.year,
-            month=card.month,
-            location=card.location,
-            vehicle_model=card.vehicle_model,
-            bom_version=card.bom_version,
-            source_node_ids=node_ids,
-        )
-        found: dict[int, AssemblyCost] = {}
-        for row in rows:
-            if row.id == card.id:
-                continue
-            found[row.source_node_id] = row
-        return found
 
     def _load_stamping(
         self,
@@ -1245,7 +1200,7 @@ class AssemblyCostRestoreService:
             ),
             RestoreIdentityCheckVO(
                 code="grand",
-                label=HIGHLIGHT_GRAND_TOTAL,
+                label=HIGHLIGHT_ASSEMBLY_PRICE,
                 recorded=_money(card.grand_total),
                 summed=_money(_money(card.total_amount) + _money(card.indirect_amount)),
                 is_match=_match(

@@ -124,6 +124,8 @@ class AssemblyCostUpsertPayload:
 
 
 class AssemblyCostFilterSummary(TypedDict):
+    """列表 HUD 汇总（全量筛选，非本页）。`total_amount_sum` 是月总账，看板不展示。"""
+
     total_count: int
     ok_count: int
     partial_count: int
@@ -131,6 +133,24 @@ class AssemblyCostFilterSummary(TypedDict):
     approved_count: int
     grand_total_sum: Decimal
     total_amount_sum: Decimal
+    avg_grand_total: Decimal | None
+    material_amount_sum: Decimal
+    welding_amount_sum: Decimal
+
+
+def empty_assembly_cost_summary() -> AssemblyCostFilterSummary:
+    return {
+        "total_count": 0,
+        "ok_count": 0,
+        "partial_count": 0,
+        "pending_count": 0,
+        "approved_count": 0,
+        "grand_total_sum": Decimal("0"),
+        "total_amount_sum": Decimal("0"),
+        "avg_grand_total": None,
+        "material_amount_sum": Decimal("0"),
+        "welding_amount_sum": Decimal("0"),
+    }
 
 
 class AssemblyCostListFilters(TypedDict):
@@ -430,45 +450,30 @@ class AssemblyCostRepository:
         )
         agg = self._apply_filters(
             db.query(
-                func.count(AssemblyCost.id),
+                func.count(AssemblyCost.id).label("total_count"),
                 func.coalesce(
-                    func.sum(
-                        case(
-                            (AssemblyCost.calc_status == "ok", 1),
-                            else_=0,
-                        )
-                    ),
+                    func.sum(case((AssemblyCost.calc_status == "ok", 1), else_=0)),
                     0,
-                ),
+                ).label("ok_count"),
                 func.coalesce(
-                    func.sum(
-                        case(
-                            (AssemblyCost.calc_status == "partial", 1),
-                            else_=0,
-                        )
-                    ),
+                    func.sum(case((AssemblyCost.calc_status == "partial", 1), else_=0)),
                     0,
-                ),
+                ).label("partial_count"),
                 func.coalesce(
-                    func.sum(
-                        case(
-                            (AssemblyCost.audit_status == AUDIT_PENDING, 1),
-                            else_=0,
-                        )
-                    ),
+                    func.sum(case((AssemblyCost.audit_status == AUDIT_PENDING, 1), else_=0)),
                     0,
-                ),
+                ).label("pending_count"),
                 func.coalesce(
-                    func.sum(
-                        case(
-                            (AssemblyCost.audit_status == AUDIT_APPROVED, 1),
-                            else_=0,
-                        )
-                    ),
+                    func.sum(case((AssemblyCost.audit_status == AUDIT_APPROVED, 1), else_=0)),
                     0,
+                ).label("approved_count"),
+                func.coalesce(func.sum(AssemblyCost.grand_total), 0).label("grand_total_sum"),
+                func.coalesce(func.sum(AssemblyCost.total_amount), 0).label("total_amount_sum"),
+                func.avg(AssemblyCost.grand_total).label("avg_grand_total"),
+                func.coalesce(func.sum(AssemblyCost.material_amount), 0).label(
+                    "material_amount_sum"
                 ),
-                func.coalesce(func.sum(AssemblyCost.grand_total), 0),
-                func.coalesce(func.sum(AssemblyCost.total_amount), 0),
+                func.coalesce(func.sum(AssemblyCost.welding_amount), 0).label("welding_amount_sum"),
             ),
             year=year,
             month=month,
@@ -484,14 +489,18 @@ class AssemblyCostRepository:
             object_kind=object_kind,
             confirm_status=confirm_status,
         ).one()
+        avg_value = agg.avg_grand_total
         summary: AssemblyCostFilterSummary = {
-            "total_count": int(agg[0] or 0),
-            "ok_count": int(agg[1] or 0),
-            "partial_count": int(agg[2] or 0),
-            "pending_count": int(agg[3] or 0),
-            "approved_count": int(agg[4] or 0),
-            "grand_total_sum": Decimal(str(agg[5] or 0)),
-            "total_amount_sum": Decimal(str(agg[6] or 0)),
+            "total_count": int(agg.total_count or 0),
+            "ok_count": int(agg.ok_count or 0),
+            "partial_count": int(agg.partial_count or 0),
+            "pending_count": int(agg.pending_count or 0),
+            "approved_count": int(agg.approved_count or 0),
+            "grand_total_sum": Decimal(str(agg.grand_total_sum or 0)),
+            "total_amount_sum": Decimal(str(agg.total_amount_sum or 0)),
+            "avg_grand_total": Decimal(str(avg_value)) if avg_value is not None else None,
+            "material_amount_sum": Decimal(str(agg.material_amount_sum or 0)),
+            "welding_amount_sum": Decimal(str(agg.welding_amount_sum or 0)),
         }
         filters: AssemblyCostListFilters = {
             "year": year,

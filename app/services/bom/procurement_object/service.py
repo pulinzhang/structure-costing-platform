@@ -14,6 +14,7 @@ from app.exceptions.base import NotFoundException
 from app.repositories.bom.procurement_object_repository import (
     BomProcurementObjectRepository,
     ProcurementObjectAuditSummary,
+    empty_procurement_object_summary,
 )
 from app.schemas.dto.bom_procurement_object_dto import (
     BomProcurementObjectBatchApproveDTO,
@@ -167,14 +168,7 @@ class BomProcurementObjectService:
     ) -> ProcurementObjectListFilters:
         _unused, _models, versions = self.repository.get_filter_options(db)
         if empty:
-            summary: ProcurementObjectAuditSummary = {
-                "total_count": 0,
-                "pending_count": 0,
-                "approved_count": 0,
-                "object_count": 0,
-                "other_leaf_count": 0,
-                "anomaly_count": 0,
-            }
+            summary: ProcurementObjectAuditSummary = empty_procurement_object_summary()
         else:
             supplier_names = SupplierService().names_for_query(db, query.supplier_name)
             summary = self.repository.summarize_objects(
