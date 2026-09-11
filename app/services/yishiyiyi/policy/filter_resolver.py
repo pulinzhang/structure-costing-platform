@@ -7,9 +7,7 @@ from dataclasses import dataclass
 from sqlalchemy.orm import Session
 
 from app.common.steel_grade_category import normalize_category_name
-from app.repositories.masterdata.steel_grade_category import (
-    SteelGradeCategoryRepository,
-)
+from app.services.masterdata.steel_grade_category import SteelGradeCategoryService
 from app.services.yishiyiyi.policy.match.adjustment_common import category_aliases
 
 
@@ -27,11 +25,10 @@ def _aliases_for_category(category_name: str) -> frozenset[str]:
 
 
 def _categories_for_grade(db: Session, grade_value: str) -> frozenset[str] | None:
-    repo = SteelGradeCategoryRepository()
-    exact = repo.get_by_grade(db, grade_value)
-    if exact is None:
+    archive = SteelGradeCategoryService().match_by_grade_key(db, grade_value)
+    if archive is None:
         return None
-    return _aliases_for_category(exact.category_name)
+    return _aliases_for_category(archive.category_name)
 
 
 def resolve_policy_category_filter(

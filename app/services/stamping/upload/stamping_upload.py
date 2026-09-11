@@ -20,7 +20,10 @@ from app.config import settings
 from app.exceptions.base import BusinessException
 from app.parsers.stamping.models.part import Part
 from app.parsers.stamping.models.process import Process
-from app.parsers.stamping.models.tailor_weld import TailorWeldAssemblyParsed
+from app.parsers.stamping.models.tailor_weld import (
+    TailorWeldAssemblyParsed,
+    TailorWeldBlankParsed,
+)
 from app.parsers.stamping.stamping_parser import parse_stamping_excel
 from app.parsers.stamping.tailor_weld_parser import parse_tailor_weld_excel
 from app.repositories.stamping.stamping_repository import (
@@ -144,10 +147,7 @@ class StampingUploadService:
                 raise BusinessException(
                     format_duplicate_process_seq_issues(duplicate_seqs, source_name="工艺确认表")
                 )
-            SteelGradeCategoryService().require_existing_grades(
-                self.db,
-                self._collect_material_grades(parse_result.parts, tailor_result.assemblies),
-            )
+            self._canonicalize_materials(parse_result.parts, tailor_result.assemblies)
 
             logger.info(
                 "解析 Excel 完成：%d 个零件、%d 道工序、%d 个拼焊总成",
@@ -269,25 +269,21 @@ class StampingUploadService:
             if os.path.exists(tmp_path):
                 os.unlink(tmp_path)
 
-    @staticmethod
-    def _collect_material_grades(
+    def _canonicalize_materials(
+        self,
         parts: list[Part],
         assemblies: list[TailorWeldAssemblyParsed],
-    ) -> list[str]:
-        grades: list[str] = []
-
-        def add_material(raw: str | None) -> None:
-            grade = (raw or "").strip()
-            if grade:
-                grades.append(grade)
-
-        for part in parts:
-            add_material(part.material)
+    ) -> None:
+        holders: list[Part | TailorWeldAssemblyParsed | TailorWeldBlankParsed] = [*parts]
         for assembly in assemblies:
-            add_material(assembly.material)
-            for blank in assembly.blanks:
-                add_material(blank.material)
-        return grades
+            holders.append(assembly)
+            holders.extend(assembly.blanks)
+        bound = SteelGradeCategoryService().bind_stored_grades(
+            self.db,
+            [holder.material for holder in holders],
+        )
+        for holder, grade in zip(holders, bound, strict=True):
+            holder.material = grade
 
     def _save_file(
         self,

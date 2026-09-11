@@ -44,6 +44,7 @@ from app.schemas.vo.stamping_vo import (
 )
 from app.schemas.vo.user_vo import UserVO
 from app.services.masterdata.location.location_service import LocationService
+from app.services.masterdata.steel_grade_category import SteelGradeCategoryService
 from app.services.masterdata.supplier import SupplierService
 from app.services.masterdata.vehicle_model import VehicleModelService
 
@@ -422,7 +423,11 @@ class StampingPartService:
         current_user: UserVO,
     ) -> list[StampingPart]:
         audit = audit_create(current_user)
-        for row in parts_data:
+        grades = SteelGradeCategoryService().bind_stored_grades(
+            db, [row.material for row in parts_data]
+        )
+        for row, grade in zip(parts_data, grades, strict=True):
+            row.material = grade
             row.created_by = audit["created_by"]
             row.updated_by = audit["updated_by"]
         parts = self.repository.bulk_create(db, parts_data)
@@ -437,6 +442,10 @@ class StampingPartService:
         current_user: UserVO,
     ) -> StampingPart | None:
         payload: StampingPartPatch = {**update_data}
+        if "material" in payload:
+            payload["material"] = SteelGradeCategoryService().bind_stored_grade(
+                db, payload.get("material")
+            )
         payload["updated_by"] = display_name(current_user)
         part = self.repository.update(db, part_id, payload)
         if part is not None:

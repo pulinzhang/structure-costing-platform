@@ -183,16 +183,27 @@ def test_get_by_grade_and_map_grades(memory_db: Session) -> None:
     assert mapped["DC01"].category_name == "冷轧"
 
 
-def test_require_existing_grades_rejects_missing(memory_db: Session) -> None:
+def test_require_matched_grades_rewrites_and_rejects_missing(memory_db: Session) -> None:
     service = _service()
     service.create(
         memory_db,
         SteelGradeCategoryCreate(grade="DC01", category_name="冷轧"),
         current_user=SYSTEM_USER,
     )
-    service.require_existing_grades(memory_db, ["DC01", ""])
+    matched = service.require_matched_grades(memory_db, ["DCO1", "dc01", ""])
+    assert matched["DCO1"].grade == "DC01"
+    assert matched["dc01"].grade == "DC01"
+    single = service.require_matched_grade(memory_db, "dco1")
+    assert single is not None
+    assert single.grade == "DC01"
+    assert service.bind_stored_grades(memory_db, ["DCO1", "", "dc01"]) == [
+        "DC01",
+        None,
+        "DC01",
+    ]
+    assert service.bind_stored_grade(memory_db, "") is None
     with pytest.raises(BusinessException, match="主数据 → 牌号分类") as missing:
-        service.require_existing_grades(memory_db, ["DC01", "HC340/590DP"])
+        service.require_matched_grades(memory_db, ["DC01", "HC340/590DP"])
     assert "HC340/590DP" in str(missing.value)
 
 
@@ -323,6 +334,10 @@ def test_base_price_write_uses_archive_grade_and_category(memory_db: Session) ->
     assert write.grade == "DC01"
     assert write.category_name == "冷轧"
     assert any("镀锌钢" in item and "冷轧" in item for item in warnings)
+
+    write.grade = "   "
+    with pytest.raises(BusinessException, match="牌号不能为空"):
+        _canonicalize_grade_and_category(memory_db, [write])
 
 
 def test_delete_blocked_when_base_price_references_grade(memory_db: Session) -> None:

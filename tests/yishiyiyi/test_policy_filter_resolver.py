@@ -62,6 +62,14 @@ def test_resolve_unknown_grade(db_session):
     assert resolved.no_match is True
 
 
+def test_resolve_grade_letter_o_matches_archive_zero(db_session):
+    _seed_grade(db_session, grade="POLICY_TEST_DC01", category_name="冷轧")
+    resolved = resolve_policy_category_filter(db_session, grade_value="POLICY_TEST_DCO1")
+    assert resolved.no_match is False
+    assert resolved.policy_category_names is not None
+    assert "冷轧" in resolved.policy_category_names
+
+
 def test_canonical_category_names():
     assert list(CANONICAL_CATEGORY_NAMES) == ["冷轧", "镀锌", "酸洗"]
 

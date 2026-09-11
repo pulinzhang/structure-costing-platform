@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import logging
+from collections.abc import Sequence
 from typing import NoReturn
 
 from sqlalchemy.exc import IntegrityError
@@ -154,21 +155,56 @@ class SteelGradeCategoryService:
             hit = vo
         return hit
 
-    def reject_unknown_grades(self, missing: list[str]) -> None:
+    def require_matched_grade(self, db: Session, raw: str | None) -> SteelGradeCategoryVO | None:
+        """单条写入：空返回 None；非空必须命中档案，落库用返回行的 grade。"""
+        key = (raw or "").strip()
+        if not key:
+            return None
+        return self.require_matched_grades(db, [key])[key]
+
+    def bind_stored_grade(self, db: Session, raw: str | None) -> str | None:
+        """单条落库值：空→None，非空→档案 grade。"""
+        return self.bind_stored_grades(db, [raw])[0]
+
+    def bind_stored_grades(self, db: Session, raws: Sequence[str | None]) -> list[str | None]:
+        """与 raws 等长：空→None，非空→档案 grade。缺档整批拒绝。"""
+        matched = self.require_matched_grades(db, raws)
+        bound: list[str | None] = []
+        for raw in raws:
+            key = (raw or "").strip()
+            if not key:
+                bound.append(None)
+            else:
+                bound.append(matched[key].grade)
+        return bound
+
+    def require_matched_grades(
+        self, db: Session, grades: Sequence[str | None]
+    ) -> dict[str, SteelGradeCategoryVO]:
+        """
+        下游写入前：非空牌号必须 match_by_grade_key 命中。不插行。
+        返回 strip(原文) → 档案行；调用方落库用档案 grade。
+        """
+        matched: dict[str, SteelGradeCategoryVO] = {}
+        missing: list[str] = []
+        seen_missing: set[str] = set()
+        for raw in grades:
+            key = (raw or "").strip()
+            if not key or key in matched or key in seen_missing:
+                continue
+            archive = self.match_by_grade_key(db, key)
+            if archive is None:
+                seen_missing.add(key)
+                missing.append(key)
+                continue
+            matched[key] = archive
+        self._reject_unknown_grades(missing)
+        return matched
+
+    def _reject_unknown_grades(self, missing: list[str]) -> None:
         cleaned = [item.strip() for item in missing if (item or "").strip()]
         if cleaned:
             self._raise_missing_grades(cleaned)
-
-    def require_existing_grades(self, db: Session, grades: list[str]) -> None:
-        """下游写入前校验：非空牌号必须已在档案。不插行。按原文精确匹配。"""
-        cleaned = sorted({(item or "").strip() for item in grades if (item or "").strip()})
-        if not cleaned:
-            return
-        mapped = self.map_grades(db, cleaned)
-        missing = [grade for grade in cleaned if grade not in mapped]
-        if not missing:
-            return
-        self._raise_missing_grades(missing)
 
     def create(
         self,

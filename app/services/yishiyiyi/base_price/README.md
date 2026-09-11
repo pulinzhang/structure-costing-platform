@@ -109,7 +109,7 @@ parsers.yishiyiyi.base_price     （仅 importing 调用）
 ### 5.1 导入（`importing`）
 
 - 整批 **单事务**：失败全回滚。
-- 牌号 / 钢种：`SteelGradeCategoryService.match_by_grade_key` 命中后落档案 `grade` 与档案大类（Excel `DCO1`、档案 `DC01` → 存 `DC01`）。
+- 牌号 / 钢种：`SteelGradeCategoryService.require_matched_grades`（内部 `match_by_grade_key`）命中后落档案 `grade` 与档案大类（Excel `DCO1`、档案 `DC01` → 存 `DC01`）。工艺导入同一入口。
 - Repository `upsert`：按业务唯一键创建或更新。
 - 导入前按年/月归档（`save_steel_price_upload`，`FILE_KIND_BASE_PRICE`），便于与政策文件成对核对。
 - 进度通过 `ProgressCallback` 上报；进度写辅助库，不与本事务写锁耦合。

@@ -32,6 +32,7 @@ from app.schemas.dto.stamping_tailor_weld_blank_dto import (
 from app.schemas.dto.stamping_upload_dto import StampingPartPatch
 from app.schemas.vo.stamping_tailor_weld_blank_vo import StampingTailorWeldBlankVO
 from app.schemas.vo.user_vo import UserVO
+from app.services.masterdata.steel_grade_category import SteelGradeCategoryService
 
 logger = logging.getLogger("service.stamping.tailor_weld_blank")
 
@@ -143,6 +144,11 @@ class StampingTailorWeldBlankService:
     ) -> list[StampingTailorWeldBlankVO]:
         """整组替换父件下子片，并标记父件为拼焊件。"""
         part = self._require_parent(db, part_id)
+        grades = SteelGradeCategoryService().bind_stored_grades(
+            db, [item.material for item in dto.items]
+        )
+        for item, grade in zip(dto.items, grades, strict=True):
+            item.material = grade
         audit = audit_create(current_user)
         payloads: list[TailorWeldBlankWrite] = []
         for blank_seq, item in self._assign_seqs(dto.items):
@@ -185,11 +191,16 @@ class StampingTailorWeldBlankService:
                 f"子片序号已存在: blank_seq={dto.blank_seq}（part_id={part_id}）"
             )
 
+        item = dto.model_copy(
+            update={
+                "material": SteelGradeCategoryService().bind_stored_grade(db, dto.material),
+            }
+        )
         audit = audit_create(current_user)
         payload = self._item_to_payload(
             part=part,
             blank_seq=dto.blank_seq,
-            item=dto,
+            item=item,
             created_by=audit["created_by"],
             updated_by=audit["updated_by"],
         )
@@ -227,7 +238,7 @@ class StampingTailorWeldBlankService:
         if "blank_part_number" in dto.model_fields_set and dto.blank_part_number is not None:
             patch["blank_part_number"] = dto.blank_part_number
         if "material" in dto.model_fields_set:
-            patch["material"] = dto.material
+            patch["material"] = SteelGradeCategoryService().bind_stored_grade(db, dto.material)
         if "thickness" in dto.model_fields_set:
             patch["thickness"] = dto.thickness
         if "part_weight" in dto.model_fields_set:
@@ -328,6 +339,13 @@ class StampingTailorWeldBlankService:
         """
         if not assemblies:
             return 0, 0, []
+
+        blanks = [blank for assembly in assemblies for blank in assembly.blanks]
+        grades = SteelGradeCategoryService().bind_stored_grades(
+            db, [blank.material for blank in blanks]
+        )
+        for blank, grade in zip(blanks, grades, strict=True):
+            blank.material = grade
 
         audit = audit_create(current_user)
         warnings: list[str] = []
