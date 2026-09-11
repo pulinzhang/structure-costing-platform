@@ -8,6 +8,7 @@ from __future__ import annotations
 
 import importlib
 import pkgutil
+from pathlib import Path
 from types import ModuleType
 
 from fastapi import APIRouter, FastAPI
@@ -33,10 +34,9 @@ def _collect_routers(package: ModuleType) -> list[APIRouter]:
 
 
 def _scan_package(package: ModuleType, seen: set[int], found: list[APIRouter]) -> None:
-    pkg_prefix = f"{package.__name__}."
     # pkgutil.iter_modules 按字母序。扫描不重排：跨模块禁止路径覆盖（/api/x/{id} vs /api/x/special）；
     # 同类冲突放同一 APIRouter，静态路径写在参数路径之前。
-    for _finder, name, is_package in pkgutil.iter_modules(package.__path__, pkg_prefix):
+    for name, is_package in _iter_child_modules(package):
         # import_module 会执行模块顶层。扫描能成立的前提：router 顶层只 import schema / service
         # （及 FastAPI/deps），禁止 import main 或入口 app 实例，否则循环导入。
         module = importlib.import_module(name)
@@ -47,6 +47,42 @@ def _scan_package(package: ModuleType, seen: set[int], found: list[APIRouter]) -
             _warn_if_router_misnamed(name, module)
         if is_package:
             _scan_package(module, seen, found)
+
+
+def _iter_child_modules(package: ModuleType) -> list[tuple[str, bool]]:
+    pkg_prefix = f"{package.__name__}."
+    children: list[tuple[str, bool]] = []
+    seen_short: set[str] = set()
+    for _finder, name, is_package in pkgutil.iter_modules(package.__path__, pkg_prefix):
+        seen_short.add(name.removeprefix(pkg_prefix))
+        children.append((name, is_package))
+    for extra in _packages_missing_init(package, seen_short):
+        logger.warning(
+            "包 %s 缺少 __init__.py，pkgutil.iter_modules 扫不到；已兜底导入，请补包标记",
+            extra,
+        )
+        children.append((extra, True))
+    return children
+
+
+def _packages_missing_init(package: ModuleType, already: set[str]) -> list[str]:
+    missing: list[str] = []
+    for path_entry in package.__path__:
+        root = Path(path_entry)
+        if not root.is_dir():
+            continue
+        for child in sorted(root.iterdir()):
+            if not child.is_dir() or child.name.startswith(".") or child.name == "__pycache__":
+                continue
+            if child.name in already:
+                continue
+            has_py = any(
+                item.is_file() and item.suffix == ".py" and item.name != "__init__.py"
+                for item in child.iterdir()
+            )
+            if has_py:
+                missing.append(f"{package.__name__}.{child.name}")
+    return missing
 
 
 def _accept_or_skip(

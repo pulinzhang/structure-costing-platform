@@ -59,7 +59,7 @@ def _local_ipv4_addresses() -> list[str]:
         hostname = socket.gethostname()
         for info in socket.getaddrinfo(hostname, None, socket.AF_INET, socket.SOCK_STREAM):
             ip = info[4][0]
-            if ip.startswith("127.") or ip in addresses:
+            if not isinstance(ip, str) or ip.startswith("127.") or ip in addresses:
                 continue
             addresses.append(ip)
     except OSError:
