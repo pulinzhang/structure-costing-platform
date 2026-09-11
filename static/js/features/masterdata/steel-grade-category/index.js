@@ -136,7 +136,6 @@ function openCreateDrawer() {
     document.getElementById('sgcEditId').value = '';
     document.getElementById('sgcEditGrade').value = '';
     document.getElementById('sgcEditGrade').disabled = false;
-    document.getElementById('sgcEditGradeHint')?.classList.add('hidden');
     document.getElementById('sgcEditCategory').value = pageState.tab !== 'all'
         ? pageState.tab
         : '';
@@ -152,8 +151,7 @@ function openEditDrawer(record) {
     document.getElementById('sgcEditTitle').textContent = '编辑牌号';
     document.getElementById('sgcEditId').value = String(record.id);
     document.getElementById('sgcEditGrade').value = record.grade || '';
-    document.getElementById('sgcEditGrade').disabled = true;
-    document.getElementById('sgcEditGradeHint')?.classList.remove('hidden');
+    document.getElementById('sgcEditGrade').disabled = false;
     document.getElementById('sgcEditCategory').value = record.category_name || '';
     document.getElementById('sgcEditRemark').value = record.remark || '';
     openDrawer('sgcEditDrawer', 'sgcEditBackdrop');
@@ -173,10 +171,10 @@ function openDeleteDrawer(recordId, grade) {
 async function submitEdit() {
     if (pageState.isSaving) return;
     const recordId = document.getElementById('sgcEditId')?.value;
-    const grade = document.getElementById('sgcEditGrade')?.value?.trim() || '';
+    const grade = (document.getElementById('sgcEditGrade')?.value || '').trim().toUpperCase();
     const categoryName = document.getElementById('sgcEditCategory')?.value || '';
     const remark = document.getElementById('sgcEditRemark')?.value?.trim() || null;
-    if (!recordId && !grade) {
+    if (!grade) {
         showToast('请填写牌号', 'warning');
         return;
     }
@@ -191,6 +189,7 @@ async function submitEdit() {
     try {
         if (recordId) {
             await HttpClient.put(`${API_BASE}/${recordId}`, {
+                grade,
                 category_name: categoryName,
                 remark,
             });

@@ -1138,7 +1138,7 @@ class DatabaseConfig:
 
     @classmethod
     def _ensure_steel_grade_category_child_fks(cls, engine: Engine) -> None:
-        """已有 SQLite 表补零件材质 / 子片材质 / 基价牌号 → steel_grade_categories.grade。"""
+        """已有 SQLite 表补零件材质 / 子片材质 / 基价牌号 → steel_grade_categories.grade（删 RESTRICT、改 CASCADE）。"""
         if not str(engine.url).startswith("sqlite"):
             return
         from sqlalchemy import inspect
@@ -1197,7 +1197,9 @@ class DatabaseConfig:
             if str(row[2]) != "steel_grade_categories":
                 continue
             if str(row[3]) == column_name and str(row[4]) == "grade":
-                return True
+                on_update = str(row[5]).upper()
+                on_delete = str(row[6]).upper()
+                return on_update == "CASCADE" and on_delete == "RESTRICT"
         return False
 
     @staticmethod

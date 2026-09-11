@@ -3,11 +3,13 @@
 from __future__ import annotations
 
 import logging
+from typing import NoReturn
 
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
 
 from app.common.audit import SYSTEM_USER, audit_create, display_name
+from app.common.steel_grade import grade_match_key, stored_grade
 from app.common.steel_grade_category import (
     CANONICAL_CATEGORIES,
     CANONICAL_CATEGORY_NAMES,
@@ -50,7 +52,7 @@ class SteelGradeCategoryService:
                 self.repository.create(
                     db,
                     SteelGradeCategoryInsert(
-                        grade=grade,
+                        grade=stored_grade(grade),
                         category_name=name,
                         category_seq=self._seq_for_canonical(name),
                         remark=None,
@@ -121,8 +123,44 @@ class SteelGradeCategoryService:
         records = self.repository.list_by_grades(db, cleaned)
         return {row.grade: SteelGradeCategoryVO.model_validate(row) for row in records}
 
+    def match_by_grade_key(
+        self,
+        db: Session,
+        raw: str,
+        *,
+        exclude_id: int | None = None,
+    ) -> SteelGradeCategoryVO | None:
+        """
+        外部统一匹配：主数据内做 O/o→0 再大写，与档案逐行比较。
+        命中返回档案行（库中原文 grade / 大类）；未命中 None。不改录入、不插档。
+        """
+        key = grade_match_key(raw)
+        if not key:
+            return None
+        hit: SteelGradeCategoryVO | None = None
+        for row in self.repository.list_for_export(db):
+            if exclude_id is not None and row.id == exclude_id:
+                continue
+            if grade_match_key(row.grade) != key:
+                continue
+            vo = SteelGradeCategoryVO.model_validate(row)
+            if hit is not None:
+                raise BusinessException(
+                    "牌号分类档案存在 O/0 冲突："
+                    f"{hit.grade} 与 {vo.grade} 视为同一牌号。"
+                    "请只保留一行。",
+                    code=409,
+                )
+            hit = vo
+        return hit
+
+    def reject_unknown_grades(self, missing: list[str]) -> None:
+        cleaned = [item.strip() for item in missing if (item or "").strip()]
+        if cleaned:
+            self._raise_missing_grades(cleaned)
+
     def require_existing_grades(self, db: Session, grades: list[str]) -> None:
-        """下游写入前校验：非空牌号必须已在档案。不插行。"""
+        """下游写入前校验：非空牌号必须已在档案。不插行。按原文精确匹配。"""
         cleaned = sorted({(item or "").strip() for item in grades if (item or "").strip()})
         if not cleaned:
             return
@@ -130,12 +168,7 @@ class SteelGradeCategoryService:
         missing = [grade for grade in cleaned if grade not in mapped]
         if not missing:
             return
-        sample = "、".join(missing[:10])
-        extra = f"\n共 {len(missing)} 个牌号未在档案中。" if len(missing) > 10 else ""
-        raise BusinessException(
-            "本次未导入。请到侧栏「主数据 → 牌号分类」点新增，"
-            f"把下面牌号补上并保存，再重新上传：\n{sample}{extra}"
-        )
+        self._raise_missing_grades(missing)
 
     def create(
         self,
@@ -143,10 +176,13 @@ class SteelGradeCategoryService:
         dto: SteelGradeCategoryCreate,
         current_user: UserVO,
     ) -> SteelGradeCategoryVO:
-        grade = dto.grade.strip()
+        grade = stored_grade(dto.grade)
+        if not grade:
+            raise BusinessException("牌号不能为空")
         category_name = self._require_canonical(dto.category_name)
-        if self.repository.get_by_grade(db, grade) is not None:
-            raise BusinessException(f"牌号已存在：{grade}", code=409)
+        existing = self.match_by_grade_key(db, grade)
+        if existing is not None:
+            raise BusinessException(f"牌号已存在：{existing.grade}", code=409)
         audit = audit_create(current_user)
         try:
             record = self.repository.create(
@@ -186,6 +222,16 @@ class SteelGradeCategoryService:
         if record is None:
             raise NotFoundException("牌号分类不存在")
         patch: SteelGradeCategoryPatch = {"updated_by": display_name(current_user)}
+        new_grade: str | None = None
+        if "grade" in dto.model_fields_set:
+            new_grade = stored_grade(dto.grade)
+            if not new_grade:
+                raise BusinessException("牌号不能为空")
+            if new_grade != record.grade:
+                existing = self.match_by_grade_key(db, new_grade, exclude_id=record.id)
+                if existing is not None:
+                    raise BusinessException(f"牌号已存在：{existing.grade}", code=409)
+                patch["grade"] = new_grade
         if "category_name" in dto.model_fields_set:
             if dto.category_name is None:
                 raise BusinessException("大类不能为空")
@@ -201,6 +247,9 @@ class SteelGradeCategoryService:
         except BusinessException:
             db.rollback()
             raise
+        except IntegrityError:
+            db.rollback()
+            raise BusinessException(f"牌号已存在：{new_grade or record.grade}", code=409) from None
         except Exception:
             db.rollback()
             logger.exception("更新牌号分类失败: id=%s", record_id)
@@ -220,6 +269,14 @@ class SteelGradeCategoryService:
             db.rollback()
             logger.exception("删除牌号分类失败: id=%s", record_id)
             raise
+
+    def _raise_missing_grades(self, missing: list[str]) -> NoReturn:
+        sample = "、".join(missing[:10])
+        extra = f"\n共 {len(missing)} 个牌号未在档案中。" if len(missing) > 10 else ""
+        raise BusinessException(
+            "本次未导入。请到侧栏「主数据 → 牌号分类」点新增，"
+            f"把下面牌号补上并保存，再重新上传：\n{sample}{extra}"
+        )
 
     def _require_canonical(self, raw: str) -> str:
         name = normalize_category_name(raw)

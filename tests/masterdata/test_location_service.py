@@ -127,6 +127,22 @@ def test_expand_for_query_includes_canonical(memory_db: Session) -> None:
     assert service.resolve_canonical(memory_db, "青岛厂") is None
 
 
+def test_enabled_name_lookup_skips_disabled(memory_db: Session) -> None:
+    service = LocationService()
+    insert_sample_locations(memory_db)
+    service.update(
+        memory_db,
+        "芜湖",
+        LocationUpdateDTO(is_enabled=False),
+        current_user=SYSTEM_USER,
+    )
+    lookup = service.enabled_name_lookup(memory_db)
+    assert lookup["青岛"] == "青岛"
+    assert lookup["青岛基地"] == "青岛"
+    assert "芜湖" not in lookup
+    assert "芜湖基地" not in lookup
+
+
 def test_delete_integrity_error_message(memory_db: Session) -> None:
     service = LocationService()
     insert_sample_locations(memory_db)
@@ -140,11 +156,14 @@ def test_delete_integrity_error_message(memory_db: Session) -> None:
 
 
 def test_parser_does_not_import_location_service() -> None:
-    from app.parsers.yishiyiyi.base_price import steel_base_price_parser
+    from pathlib import Path
 
-    source = inspect.getsource(steel_base_price_parser)
-    assert "LocationService" not in source
-    assert "app.services.masterdata" not in source
+    package_dir = (
+        Path(__file__).resolve().parents[2] / "app" / "parsers" / "yishiyiyi" / "base_price"
+    )
+    sources = "\n".join(path.read_text(encoding="utf-8") for path in package_dir.glob("*.py"))
+    assert "LocationService" not in sources
+    assert "app.services.masterdata" not in sources
 
 
 def test_llm_scope_expands_aliases_not_unregistered(memory_db: Session) -> None:

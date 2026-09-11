@@ -139,6 +139,7 @@ def check_base_price() -> list[str]:
     from app.parsers.yishiyiyi.base_price import parse_base_price_excel
     from app.services.yishiyiyi.base_price.importing.template_builder import (
         build_steel_base_price_template,
+        sample_location_lookup,
     )
 
     issues: list[str] = []
@@ -167,11 +168,11 @@ def check_base_price() -> list[str]:
         if token not in real_merges:
             issues.append(f"基价实样缺少预期合并 {token}")
 
-    parsed = parse_base_price_excel(content)
+    parsed = parse_base_price_excel(content, location_lookup=sample_location_lookup())
     locations = {str(row.get("location")) for row in parsed.records}
     if len(parsed.records) < 8 or parsed.errors:
         issues.append(f"基价模板解析异常: records={len(parsed.records)} errors={parsed.errors}")
-    if not {"芜湖", "青岛", "大连", "鄂尔多斯"}.issubset(locations):
+    if not set(sample_location_lookup().values()).issubset(locations):
         issues.append(f"基价模板基地不全: {sorted(locations)}")
 
     print(

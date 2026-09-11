@@ -8,7 +8,7 @@
 
 ## 0. 一句话
 
-> **牌号分类表是牌号主数据：`grade` 是唯一键，全库一行；挂且只挂一个 `category_name`（冷轧 / 镀锌 / 酸洗）。档案只能在主数据页手工新增/编辑。冲压工艺、基准价导入不往本表插行；有材质/牌号则必须已在档案，否则整批拒绝。删除档案时若仍被零件或基价引用则 RESTRICT。**
+> **牌号分类表是牌号主数据：`grade` 是唯一键，全库一行；挂且只挂一个 `category_name`（冷轧 / 镀锌 / 酸洗）。档案只能在主数据页手工新增/编辑。新增/编辑落库只去空格并大写，不改字母 O。是否已存在：录入与库中 `grade` 都把 O/o 改成 0 再大写后比较。冲压工艺、基准价导入不往本表插行。基价新写入命中档案后落档案 `grade` 与档案大类。缺档整批拒绝。删除档案时若仍被零件或基价引用则 RESTRICT；档案改牌号 `ON UPDATE CASCADE`。**
 
 不是核价公式，不是基价替代表。
 
@@ -64,13 +64,13 @@
 | API | `/api/masterdata/steel-grade-category`（档案 CRUD）。核算 **不另做一套 API**，Service 内调 `SteelGradeCategoryService` |
 | Hash | `#/steel-grade-category`（与基地 `#/location`、供应商 `#/supplier-list` 一样用功能名，不加 `masterdata` 前缀） |
 | 权限 | `menu:steel-grade-category` 挂在 `menu:masterdata` 下；`op:…:view/create/update/delete/export`。码与 Hash 对齐功能名，不随包路径改字面量 |
-| 唯一键 | **只有 `grade`**（strip 后）。`UNIQUE (grade)`。**不是** `(category_name, grade)` |
+| 唯一键 | **只有 `grade`**（去空格并大写后）。`UNIQUE (grade)`。**不是** `(category_name, grade)` |
 | 大类 | `category_name` 是属性，不是键。写死 `("冷轧", "镀锌", "酸洗")`；必填，禁止空 |
 | 大类序号 | **写死** 冷轧=1、镀锌=2、酸洗=3。列 `category_seq`，由 `category_name` 派生，禁止手填。列表/下拉/导出按 1→2→3 排 |
-| 零件表 | `stamping_parts.material`、`stamping_tailor_weld_blanks.material` → `steel_grade_categories.grade`，`ON DELETE/UPDATE RESTRICT`；空材质不引用 |
-| 基价表 | `steel_base_prices.grade` → 同一档案列，`RESTRICT`；行上仍保留 `category_name` |
+| 零件表 | `stamping_parts.material`、`stamping_tailor_weld_blanks.material` → `steel_grade_categories.grade`，删档 `RESTRICT`，档案改牌号 `CASCADE`；空材质不引用 |
+| 基价表 | `steel_base_prices.grade` → 同一档案列，删档 `RESTRICT`，档案改牌号 `CASCADE`；行上仍保留 `category_name` |
 | 读法 | 一事一议、核算都走本切片稳定查询（如 `get_by_grade` / `map_grades`）。**禁止**各切片直接 `query` 这张表绕过 Service（核算热路径可只读本切片 Repository） |
-| 写 | **仅本切片 CRUD**。禁止下游插档。工艺/基价导入前 `require_existing_grades`：缺档整批拒绝，进度区写明到「主数据 → 牌号分类」补档，不弹 Toast |
+| 写 | **仅本切片 CRUD**。禁止下游插档。基价导入/手工创建：每条调用 `match_by_grade_key`，命中后落档案 `grade` 与档案 `category_name`。工艺导入仍 `require_existing_grades`（原文精确匹配）。缺档整批拒绝，进度区写明到「主数据 → 牌号分类」补档，不弹 Toast |
 
 依赖（允许、单向、禁止成环）：
 
@@ -108,9 +108,10 @@ year, month, location, mill, spec…   （无年月、无基地、无钢厂）  
 |------|------|
 | 档案要不要抄基价的年/月/基地/钢厂？ | **不要。** 分类与行情无关。 |
 | 档案唯一键是不是 `(category_name, grade)`？ | **不是。唯一键只有 `grade`。** |
-| 零件 `material` 改成外键？ | **要。** 指向档案 `grade`，删档/改牌号 `RESTRICT`。拼焊总成材质可空。 |
+| 零件 `material` 改成外键？ | **要。** 指向档案 `grade`，删档 `RESTRICT`，档案改牌号 `CASCADE`。拼焊总成材质可空。 |
 | 政策里的「冷轧钢」进不进档案？ | **不进第四种。** 手建时按 §5.3 别名收口成 `冷轧`。 |
 | 导入缺档怎么办？ | **整批拒绝**，请先到主数据牌号分类补档。不自动插档。 |
+| 基价表头写 DCO1 / 冷轧钢？ | **改写后落库。** `match_by_grade_key`（内部 `grade_match_key`：O→0 再大写）命中档案后落档案 `grade`（`DC01`）；钢种用档案大类。表头大类与档案不一致只警告。禁止把 `DCO1` 当新牌号补进档案。 |
 
 ---
 
@@ -123,7 +124,7 @@ year, month, location, mill, spec…   （无年月、无基地、无钢厂）  
 | `id` | Integer PK | ✓ | |
 | `category_name` | String(50) | ✓ | 与基价同名字段。只允许：`冷轧` / `镀锌` / `酸洗` |
 | `category_seq` | Integer | ✓ | **展示序号。** 由 `category_name` 派生：冷轧=1、镀锌=2、酸洗=3 |
-| `grade` | String(50) | ✓ | **唯一键。** 与基价同名字段 |
+| `grade` | String(50) | ✓ | **唯一键。** 落库去空格、全部大写（`qste420tm` → `QSTE420TM`）。不把字母 O 改成数字 0。种子不灌 `DCO3`/`DCO4` |
 | `remark` | Text | | 人工备注 |
 | AuditUserMixin | | ✓ | |
 
@@ -139,7 +140,7 @@ Index:  category_name / category_seq
 ```
 
 查、核算取大类：一律按 `grade` 命中。  
-SQLite 下 `grade` 比较按入库规范化后的字符串（strip，不改大小写、不拆斜杠双牌号）。  
+SQLite 下 `grade` 比较按入库规范化后的字符串（去空格、全部大写；不改 O/0、不拆斜杠双牌号）。  
 `B170P1/HC180Y` 与 `HC180Y` 是两行；互认仍走现网 `grades_match`。
 
 ### 5.3 大类合法值（按现网基价写死）
@@ -163,10 +164,10 @@ CANONICAL_CATEGORIES: tuple[tuple[int, str], ...] = (
 
 | 操作 | 规则 |
 |------|------|
-| 新增 | `grade` + `category_name` 都必填；牌号冲突 → `BusinessException` 409 |
-| 编辑 | 可改大类、备注；**不改 `grade`**（`ON UPDATE RESTRICT`） |
+| 新增 | `grade` + `category_name` 都必填。落库只去前后空格并全部大写，**不改字母 O**。是否已存在：录入与库中每一行都做「O/o→0 再大写」后比较，命中 → 409 |
+| 编辑 | **与新增同一套。** 同一条 `apply_patch`，可改 `grade`、大类、备注。引用列靠外键 `ON UPDATE CASCADE`，禁止另写一套迁引用 |
 | 删除 | 仍被工艺 `material` 或基价 `grade` 引用 → `仍被引用，不能删除` |
-| 空库种子 | 无库 / 表为空时，启动写入现网牌号（`ensure_seed_if_empty`）。已有任意行则跳过。不灌 `DC01 HC180YD+Z`、不灌 `POLICY_TEST_*` |
+| 空库种子 | 无库 / 表为空时，启动写入现网牌号（`ensure_seed_if_empty`）。已有任意行则跳过。不灌 `DC01 HC180YD+Z`、不灌 `POLICY_TEST_*`、不灌 `DCO3`/`DCO4`（只灌 `DC03`/`DC04`） |
 
 禁止：
 
@@ -174,7 +175,8 @@ CANONICAL_CATEGORIES: tuple[tuple[int, str], ...] = (
 - 下游 Service 写本表  
 - 有数据后再按种子覆盖大类
 
-缺档：工艺/基价导入 `require_existing_grades` 整批失败。空材质（拼焊总成）不校验。
+缺档：冲压工艺导入 `require_existing_grades`（原文）整批失败；基价导入/手工创建经 `match_by_grade_key` 仍找不到则同样失败。空材质（拼焊总成）不校验。
+新增、编辑档案时去空格、大写后落库；查重按 `grade_match_key`（O→0 再大写）单行比较。不把 O 改成 0 写入。与已有行冲突 → 409。
 
 ---
 
@@ -228,7 +230,7 @@ CANONICAL_CATEGORIES: tuple[tuple[int, str], ...] = (
 ```text
 app/models/masterdata/steel_grade_category.py
 app/repositories/masterdata/steel_grade_category/
-app/services/masterdata/steel_grade_category/   # CRUD + get_by_grade / map_grades
+app/services/masterdata/steel_grade_category/   # CRUD；外部匹配 match_by_grade_key
 app/routers/masterdata/steel_grade_category/crud.py
 app/common/steel_grade_category.py              # 大类常量；Parser 可读
 app/schemas/dto/steel_grade_category_dto.py
@@ -247,6 +249,7 @@ static/js/features/masterdata/steel-grade-category/{template,index}.js
 - [x] 大类写死 **`冷轧`、`镀锌`、`酸洗`**，序号 **1 / 2 / 3**
 - [x] 归属 **masterdata**；禁止放 costing；masterdata 不回调一事一议
 - [x] 下游只读；缺档手工新增，导入不插档
-- [x] 缺档则拒绝整份基价/工艺导入（外键 RESTRICT）
+- [x] 档案新增/编辑只去空格并大写；查重两边都 O→0 再大写；禁止第二套落库
+- [x] 基价新写入落档案已有 `grade` + 档案 `category_name`
 - [x] 核算单向读本切片
-- [x] 零件 `material`、子片 `material`、基价 `grade` 外键指向档案；删档/改牌号 RESTRICT
+- [x] 零件 `material`、子片 `material`、基价 `grade` 外键指向档案；删档 RESTRICT；改牌号 CASCADE

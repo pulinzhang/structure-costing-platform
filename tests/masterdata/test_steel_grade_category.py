@@ -11,6 +11,7 @@ from sqlalchemy.orm import Session, sessionmaker
 from sqlalchemy.pool import StaticPool
 
 from app.common.audit import SYSTEM_USER
+from app.common.steel_grade import stored_grade
 from app.common.steel_grade_category import (
     normalize_category_name,
     seq_for_category,
@@ -67,11 +68,14 @@ def test_ensure_seed_if_empty_writes_production_catalog(memory_db: Session) -> N
     grades = {row.grade for row in items}
     assert "DC01 HC180YD+Z" not in grades
     assert not any(grade.startswith("POLICY_TEST_") for grade in grades)
-    assert {"DC01", "DC51D+Z", "QStE420TM", "DCO3"} <= grades
+    assert {"DC01", "DC03", "DC04", "DC51D+Z", "QSTE420TM"} <= grades
+    assert "DCO3" not in grades
+    assert "DCO4" not in grades
+    assert all(grade == stored_grade(grade) for grade in grades)
     by_grade = {row.grade: row.category_name for row in items}
     assert by_grade["DC01"] == "冷轧"
     assert by_grade["DC51D+Z"] == "镀锌"
-    assert by_grade["QStE420TM"] == "酸洗"
+    assert by_grade["QSTE420TM"] == "酸洗"
 
     service.ensure_seed_if_empty(memory_db)
     _, again = service.paginate(memory_db, SteelGradeCategoryQuery(page=1, size=100))
@@ -114,11 +118,22 @@ def test_create_update_delete_unique_grade(memory_db: Session) -> None:
     updated = service.update(
         memory_db,
         created.id,
-        SteelGradeCategoryUpdate(category_name="镀锌", remark=None),
+        SteelGradeCategoryUpdate(grade="  dc01  ", category_name="镀锌", remark=None),
         current_user=SYSTEM_USER,
     )
+    assert updated.grade == "DC01"
+    assert updated.id == created.id
     assert updated.category_name == "镀锌"
     assert updated.category_seq == 2
+
+    renamed = service.update(
+        memory_db,
+        created.id,
+        SteelGradeCategoryUpdate(grade="dco1"),
+        current_user=SYSTEM_USER,
+    )
+    assert renamed.grade == "DCO1"
+    assert service.get_by_grade(memory_db, "DC01") is None
 
     service.delete(memory_db, created.id)
     with pytest.raises(NotFoundException):
@@ -179,6 +194,135 @@ def test_require_existing_grades_rejects_missing(memory_db: Session) -> None:
     with pytest.raises(BusinessException, match="主数据 → 牌号分类") as missing:
         service.require_existing_grades(memory_db, ["DC01", "HC340/590DP"])
     assert "HC340/590DP" in str(missing.value)
+
+
+def test_match_by_grade_key_returns_archive_row(memory_db: Session) -> None:
+    service = _service()
+    service.create(
+        memory_db,
+        SteelGradeCategoryCreate(grade="DC01", category_name="冷轧"),
+        current_user=SYSTEM_USER,
+    )
+    vo = service.match_by_grade_key(memory_db, "DCO1")
+    assert vo is not None
+    assert vo.grade == "DC01"
+    assert vo.category_name == "冷轧"
+    assert service.match_by_grade_key(memory_db, "MISSING") is None
+    again = service.match_by_grade_key(memory_db, "dc01")
+    assert again is not None
+    assert again.grade == "DC01"
+    with pytest.raises(BusinessException, match="牌号已存在"):
+        service.create(
+            memory_db,
+            SteelGradeCategoryCreate(grade="DCO1", category_name="冷轧"),
+            current_user=SYSTEM_USER,
+        )
+
+
+def test_create_uppercases_and_keeps_letter_o(memory_db: Session) -> None:
+    service = _service()
+    created = service.create(
+        memory_db,
+        SteelGradeCategoryCreate(grade="  dco3  ", category_name="冷轧"),
+        current_user=SYSTEM_USER,
+    )
+    assert created.grade == "DCO3"
+    assert service.get_by_grade(memory_db, "DC03") is None
+
+
+def test_update_grade_rejects_match_key_conflict(memory_db: Session) -> None:
+    service = _service()
+    service.create(
+        memory_db,
+        SteelGradeCategoryCreate(grade="DC03", category_name="冷轧"),
+        current_user=SYSTEM_USER,
+    )
+    other = service.create(
+        memory_db,
+        SteelGradeCategoryCreate(grade="DC01", category_name="冷轧"),
+        current_user=SYSTEM_USER,
+    )
+    with pytest.raises(BusinessException, match="牌号已存在") as conflict:
+        service.update(
+            memory_db,
+            other.id,
+            SteelGradeCategoryUpdate(grade="DCO3"),
+            current_user=SYSTEM_USER,
+        )
+    assert conflict.value.code == 409
+
+
+def test_update_grade_cascades_base_price(memory_db: Session) -> None:
+    service = _service()
+    created = service.create(
+        memory_db,
+        SteelGradeCategoryCreate(grade="DC01", category_name="冷轧"),
+        current_user=SYSTEM_USER,
+    )
+    memory_db.add(
+        SteelBasePrice(
+            year=2026,
+            month=1,
+            location="芜湖",
+            steel_mill="马钢",
+            category_name="冷轧",
+            grade="DC01",
+            spec="1.00*1250.00",
+            thick=Decimal("1.00"),
+            width=Decimal("1250.00"),
+            base_price=Decimal("4000.00"),
+            processing_fee=Decimal("120.00"),
+            excel_filename="fixture.xlsx",
+            sheet_name="定价表",
+            excel_row=1,
+            created_by="system",
+            updated_by="system",
+        )
+    )
+    memory_db.commit()
+    renamed = service.update(
+        memory_db,
+        created.id,
+        SteelGradeCategoryUpdate(grade="DC02"),
+        current_user=SYSTEM_USER,
+    )
+    assert renamed.grade == "DC02"
+    assert renamed.id == created.id
+    assert service.get_by_grade(memory_db, "DC01") is None
+    assert [row.grade for row in memory_db.query(SteelBasePrice).all()] == ["DC02"]
+
+
+def test_base_price_write_uses_archive_grade_and_category(memory_db: Session) -> None:
+    from app.schemas.dto.steel_base_price_dto import SteelBasePriceWrite
+    from app.services.yishiyiyi.base_price.importing.import_service import (
+        _canonicalize_grade_and_category,
+    )
+
+    service = _service()
+    service.create(
+        memory_db,
+        SteelGradeCategoryCreate(grade="DC01", category_name="冷轧"),
+        current_user=SYSTEM_USER,
+    )
+    write = SteelBasePriceWrite(
+        year=2026,
+        month=1,
+        location="青岛",
+        steel_mill="本钢",
+        category_name="镀锌钢",
+        grade="DCO1",
+        thick=Decimal("1.00"),
+        width=Decimal("1250.00"),
+        base_price=Decimal("4000.00"),
+        processing_fee=Decimal("120.00"),
+        excel_filename="a.xlsx",
+        sheet_name="Sheet1",
+        excel_row=6,
+    )
+    warnings = _canonicalize_grade_and_category(memory_db, [write])
+    assert write.grade == "DC01"
+    assert write.category_name == "冷轧"
+    assert any("镀锌钢" in item and "冷轧" in item for item in warnings)
 
 
 def test_delete_blocked_when_base_price_references_grade(memory_db: Session) -> None:

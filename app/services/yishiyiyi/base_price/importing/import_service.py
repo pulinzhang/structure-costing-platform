@@ -14,6 +14,7 @@ from decimal import Decimal, InvalidOperation
 from sqlalchemy.orm import Session
 
 from app.common.audit import audit_create
+from app.common.steel_grade_category import as_canonical_category
 from app.exceptions import BusinessException
 from app.parsers.yishiyiyi.base_price import parse_base_price_excel
 from app.repositories.yishiyiyi.base_price import SteelBasePriceRepository
@@ -35,15 +36,6 @@ from app.utils.steel_price_archive import (
 ProgressCallback = Callable[[int, str], None]
 
 logger = logging.getLogger("service.steel_base_price.import")
-
-
-def _build_location_lookup(db: Session) -> dict[str, str]:
-    lookup: dict[str, str] = {}
-    for vo in LocationService().list_all(db):
-        lookup[vo.location] = vo.location
-        for alias in vo.aliases:
-            lookup[alias] = vo.location
-    return lookup
 
 
 # 钢厂名不得为纯数字（含小数），防止列错位把价格读进钢厂
@@ -139,6 +131,35 @@ def _base_price_write_from_record(
     )
 
 
+def _canonicalize_grade_and_category(db: Session, writes: list[SteelBasePriceWrite]) -> list[str]:
+    """每条直接问主数据；落库用档案 grade 与档案大类。"""
+    service = SteelGradeCategoryService()
+    missing: list[str] = []
+    seen_missing: set[str] = set()
+    warnings: list[str] = []
+    seen_mismatch: set[tuple[str, str, str]] = set()
+    for write in writes:
+        archive = service.match_by_grade_key(db, write.grade)
+        if archive is None:
+            raw = write.grade.strip()
+            if raw not in seen_missing:
+                seen_missing.add(raw)
+                missing.append(raw)
+            continue
+        excel_category = as_canonical_category(write.category_name)
+        if excel_category and excel_category != archive.category_name:
+            seen_mismatch.add((write.grade, write.category_name, archive.category_name))
+        write.grade = archive.grade
+        write.category_name = archive.category_name
+    if missing:
+        service.reject_unknown_grades(missing)
+    for raw_grade, excel_category, archive_category in sorted(seen_mismatch):
+        warnings.append(
+            f"牌号「{raw_grade}」表头钢种「{excel_category}」已按档案改为「{archive_category}」"
+        )
+    return warnings
+
+
 class SteelBasePriceImportService:
     """钢材基准价格 Excel 导入。"""
 
@@ -182,15 +203,18 @@ class SteelBasePriceImportService:
         stored_relpath = to_upload_relpath(archive_path)
 
         _report(10, "正在解析基准价格 Excel...")
-        lookup = _build_location_lookup(db)
+        location_service = LocationService()
+        lookup = location_service.enabled_name_lookup(db)
+        if not lookup:
+            raise BusinessException("没有已启用基地，请到基地页手工增加或启用（#/location）")
         parse_result = parse_base_price_excel(file_content, location_lookup=lookup)
         _assert_steel_mills_not_numeric(parse_result.records)
+        # lookup 只过滤宽表列；落库仍走写入门禁。
         unique_locations = {
             str(record.get("location") or "").strip()
             for record in parse_result.records
             if str(record.get("location") or "").strip()
         }
-        location_service = LocationService()
         for name in unique_locations:
             location_service.require_enabled(db, name)
 
@@ -231,10 +255,8 @@ class SteelBasePriceImportService:
                 errors=parse_result.errors,
             )
 
-        SteelGradeCategoryService().require_existing_grades(
-            db,
-            [write.grade for write in writes],
-        )
+        grade_warnings = _canonicalize_grade_and_category(db, writes)
+        parse_result.warnings.extend(grade_warnings)
         _report(50, f"解析完成，共 {len(writes)} 条，正在写入数据库...")
         try:
             counts = self.repository.upsert(db, writes)

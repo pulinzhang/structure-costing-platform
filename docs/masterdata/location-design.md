@@ -55,7 +55,7 @@ stamping / bom / yishiyiyi / costing / dashboard / llm
 只按 `location` 写的路径（**基价**、钢材联动结果、冲次单价）只过本文。  
 **废料月度价**同样只按 `location` 写，且本表是直接下一跳：见 [scrap-price-design.md](../yishiyiyi/scrap-price-design.md)。  
 按 `(location, vehicle_model)` 写的路径：先过本文，再过项目设计。  
-**基准价格**（`steel_base_prices`）有 `location`：新写入 `require_enabled` 只落规范名；列表/核价读历史用 `expand_for_query`。不改写已有行，不加基地外键（不是下一跳）。  
+**基准价格**（`steel_base_prices`）源文件是奇瑞多基地宽表。本系统只导入**已启用**基地对应列（表头规范名或别名命中），落规范名；表头上其它基地是噪声，跳过，不报「没有这座基地」、不代建、不整批失败。禁用与未登记同等跳过。宽表上没有任何已启用列才失败。牌号/钢种落档案规范名，见 [steel-grade-category-design.md](steel-grade-category-design.md)。列表/核价读历史用 `expand_for_query`。不改写已有行，不加基地外键（不是下一跳）。  
 **厚度加减价政策没有 `location` 列**（键是年 + 月 + 钢厂 + 大类），不过本文、不加基地外键。核价：基地只用来取该基地基价；加减价按钢厂 + 大类命中政策，见 [thickness-policy-category-level-design.md](../yishiyiyi/thickness-policy-category-level-design.md)。
 
 下游继续存字符串 `location` = **规范名**（新写入）。历史行可能仍是别名，读时用 §6.2 展开，**不改写历史业务行**。零件/钢价的 `location` 列不是基地的下一跳，不加基地外键（宪法 §4.3）。
@@ -271,6 +271,8 @@ CRUD 路由：`view` 看，写操作对应该 `op`。按钮 `can('op:location:�
 
 查库、门禁、展开别名只发生在 **Service**（本切片或下游切片调本切片）。**禁止 Parser 调 Service / Repository**（宪法：Parser 只许 `app/common/` 纯函数）。上传 Service 先 `require_enabled` / `expand_for_query`，把规范名和别名列表传给 Parser，Parser 只做字符串比对。
 
+**基准价格宽表例外：** Service 只把**已启用**基地做成 lookup 传给 Parser（`enabled_name_lookup`）。Parser **必须**收 lookup，禁止 `None` 把表头原文当规范名；只导入命中列，未命中列跳过并警告。禁止为宽表上的外地基地去本页代建。年月以上传表单为准。
+
 规范化：输入 `strip`；空串不是基地。不做全角转换、不发明未登记别名。
 
 | 方法 | 行为 |
@@ -279,13 +281,16 @@ CRUD 路由：`view` 看，写操作对应该 `op`。按钮 `can('op:location:�
 | `require_enabled(raw)` | 得到规范名且 `is_enabled` → 返回规范名。不存在 / 已禁用 → `BusinessException`，提示去基地页（可带 `#/location`）。**写入和新计算入口用这个** |
 | `expand_for_query(raw)` | 先 `resolve_canonical`；返回 `[规范名] + 该行全部别名`（去重保序）。用于读历史业务行。解析失败 → 空列表或由调用方当找不到 |
 | `list_enabled()` | 已启用，按 `sort_order`。上传 / 计算 / 引擎下拉 |
+| `enabled_name_lookup()` | 已启用：规范名与别名 → 规范名。只给 Parser 过滤宽表列，**不是**写入门禁 |
 | `list_registered()` | 全部已登记（含禁用），按 `sort_order`。列表筛选项 |
 
 列表筛选项必须来自 `list_registered()`，**禁止**再 `DISTINCT` 业务表 `location`（否则「青岛基地」会变成第二个选项，违背 B7）。用户选规范名后，**查询条件**用 `expand_for_query`，才能命中历史别名行。
 
 ### 6.1 写
 
-新引入、新计算、引擎 `start_run`：用户选的或文件对上的字符串必须 `require_enabled`。落库只写**规范名**。文件里写「青岛基地」、已选「青岛」：别名命中同一规范名则通过，仍落 `青岛`。
+新引入、新计算、引擎 `start_run`：用户选的或**本系统要写入的**字符串必须 `require_enabled`。落库只写**规范名**。文件里写「青岛基地」、已选「青岛」：别名命中同一规范名则通过，仍落 `青岛`。
+
+基准价格宽表：未启用、未登记的表头列不是写入对象，跳过即可，不要按 §7「找不到 → 来本页增加」硬停。已启用列写入前仍 `require_enabled`。
 
 ### 6.2 读
 
@@ -324,7 +329,7 @@ B8 与宪法「不加外键则不准提供改主键、不准提供删除」不�
 - 废止 `location_candidates`（`stamping_part_cost/helpers.py` 及引擎 / 零件核价 / 导出引用）
 - 前端写死 `['大连', '芜湖', '鄂尔多斯', '青岛']` 的列表筛选与 `<option>`
 - 各切片 `/filters/locations`（及仪表盘范围选项）：改为调 `list_enabled` / `list_registered`，查询带 `expand_for_query`
-- 布点 / 检具 / 冲次单价 / BOM 上传与列表（选手选基地后 `require_enabled`）、一事一议**基价**（上传表头经别名收成规范名再 `require_enabled`；筛选用 `expand_for_query`）、钢材联动与零件核价计算、核价引擎门禁。工艺确认上传不选手选，落库基地仍是项目行上的规范名
+- 布点 / 检具 / 冲次单价 / BOM 上传与列表（选手选基地后 `require_enabled`）、一事一议**基价**（宽表只导入已启用列，表头经别名收成规范名再 `require_enabled`；其它基地列跳过；筛选用 `expand_for_query`）、钢材联动与零件核价计算、核价引擎门禁。工艺确认上传不选手选，落库基地仍是项目行上的规范名
 - 采购对象生成 / 列表 / 导出：见 [bom-procurement-objects-design.md](../bom/bom-procurement-objects-design.md)（生成 `require_enabled`；列表筛 `list_registered` + 查询 `expand_for_query`；清单头不加基地外键）
 - 废料月度销售价：矩阵行 `list_enabled`；写入 `require_enabled`；`stamping_scrap_prices.location` 声明基地 FK（`RESTRICT` / `RESTRICT`）。见 [scrap-price-design.md](../yishiyiyi/scrap-price-design.md)
 - LLM：只读本表 Model（解释层隔离，**禁止**调 LocationService）。现网写死的「青岛厂 / 芜湖厂 / 大连厂」**不进种子**；要对上就在基地页加别名，不要在 LLM 里保留第二套地图

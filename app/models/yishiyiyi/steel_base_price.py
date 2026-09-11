@@ -37,7 +37,7 @@ class SteelBasePrice(AuditUserMixin, Base):
     location: Mapped[str] = mapped_column(
         String(50),
         nullable=False,
-        comment="采购基地，例：芜湖基地、大连基地、青岛基地、鄂尔多斯基地",
+        comment="采购基地规范名，例：青岛",
     )
 
     # 【钢厂与牌号维度】
@@ -52,7 +52,7 @@ class SteelBasePrice(AuditUserMixin, Base):
         ForeignKey(
             "steel_grade_categories.grade",
             ondelete="RESTRICT",
-            onupdate="RESTRICT",
+            onupdate="CASCADE",
         ),
         nullable=False,
         comment="钢材牌号，例：DC51D+Z、DC01；必须已在牌号分类档案",

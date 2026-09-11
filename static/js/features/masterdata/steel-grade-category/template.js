@@ -125,7 +125,6 @@ export function steelGradeCategoryTemplate() {
                         <input type="text" id="sgcEditGrade" required maxlength="50"
                                class="w-full h-8 px-3 text-xs font-mono bg-[#0a0a0c] border border-[#2c2c2c] text-white placeholder:text-[#616161] focus:outline-none focus:border-[#ff5252]"
                                placeholder="如 DC01、DC51D+Z" autocomplete="off">
-                        <p id="sgcEditGradeHint" class="hidden text-[10px] text-[#616161] mt-1">牌号不可修改</p>
                     </div>
                     <div>
                         <label class="text-[10px] font-semibold text-[#616161] tracking-wider mb-1 block">大类 <span class="text-[#FF1E27]">*</span></label>

@@ -62,10 +62,11 @@ def main() -> None:
     from app.parsers.yishiyiyi.base_price import parse_base_price_excel
     from app.services.yishiyiyi.base_price.importing.template_builder import (
         build_steel_base_price_template,
+        sample_location_lookup,
     )
 
     content, name = build_steel_base_price_template()
-    base = parse_base_price_excel(content)
+    base = parse_base_price_excel(content, location_lookup=sample_location_lookup())
     locations = sorted({str(row.get("location")) for row in base.records})
     ok = len(base.records) >= 8 and not base.errors
     print(
