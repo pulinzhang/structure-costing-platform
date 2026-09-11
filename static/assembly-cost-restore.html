@@ -8,21 +8,32 @@
     <link href="/static/css/fonts.css?v=1" rel="stylesheet">
     <style>
         :root {
-            --paper: #ffffff;
-            --margin: #f4f4f5;
-            --ink: #121212;
-            --muted: #6e6e73;
-            --line: #e5e5e5;
-            --accent: #d32f2f;
+            --bg-canvas: #F4F4F5;
+            --paper: #FFFFFF;
+            --elevated: #FAFAFA;
+            --ink: #18181B;
+            --muted: #52525B;
+            --dim: #71717A;
+            --numeric: #3F3F46;
+            --line: #E4E4E7;
+            --border: #D4D4D8;
+            --brabus-red: #d32f2f;
+            --brabus-red-hover: #b71c1c;
+            --brabus-red-soft: #FEF2F2;
+            --accent: var(--brabus-red);
             --mono: "JetBrains Mono", ui-monospace, Consolas, monospace;
         }
         * { box-sizing: border-box; }
         html, body {
             margin: 0;
-            background: var(--margin);
+            background: var(--bg-canvas);
             color: var(--ink);
             font-family: Inter, "Segoe UI", system-ui, sans-serif;
             -webkit-font-smoothing: antialiased;
+        }
+        ::selection {
+            background: var(--brabus-red-soft);
+            color: var(--ink);
         }
         .wm {
             position: fixed;
@@ -42,7 +53,7 @@
             transform: rotate(-22deg);
             font-size: 22px;
             letter-spacing: 0.18em;
-            color: rgba(18, 18, 18, 0.040);
+            color: rgba(24, 24, 27, 0.04);
             white-space: nowrap;
             font-weight: 500;
         }
@@ -53,13 +64,12 @@
         }
         .sheet {
             background: var(--paper);
-            border: 1px solid var(--line);
+            border: 1px solid var(--border);
             box-shadow: 0 8px 24px rgba(10, 10, 10, 0.06);
         }
         .cover {
             padding: 28px 32px 24px;
-            border-top: 2px solid var(--accent);
-            border-bottom: 1px solid var(--line);
+            border-bottom: 3px solid var(--accent);
         }
         .report-badge {
             display: inline-block;
@@ -126,7 +136,7 @@
         .part-name {
             margin: 6px 0 0;
             font-size: 14px;
-            color: #3a3a3a;
+            color: var(--numeric);
         }
         .cover-money {
             text-align: right;
@@ -172,8 +182,8 @@
         }
         .status-word {
             margin: 14px 0 0;
-            font-size: 12px;
-            color: var(--muted);
+            font-size: 11px;
+            color: var(--dim);
         }
         .chapter {
             padding: 28px 32px 8px;
@@ -195,6 +205,7 @@
         }
         .chap-title {
             margin: 0;
+            font-family: Inter, "Segoe UI", system-ui, sans-serif;
             font-size: 15px;
             font-weight: 600;
             letter-spacing: 0.04em;
@@ -202,7 +213,7 @@
         .quiet {
             margin: 0;
             font-size: 13px;
-            color: #3a3a3a;
+            color: var(--numeric);
         }
         .ex-list { list-style: none; padding: 0; margin: 0; }
         .ex-list li {
@@ -217,7 +228,7 @@
             font-size: 16px;
             font-weight: 700;
         }
-        .ex-msg { font-size: 13px; color: #3a3a3a; }
+        .ex-msg { font-size: 13px; color: var(--numeric); }
         .ledger-head,
         .id-row {
             display: grid;
@@ -256,7 +267,7 @@
             padding: 10px 0;
             border-bottom: 1px solid var(--line);
         }
-        .waterfall .k { font-size: 13px; color: #3a3a3a; }
+        .waterfall .k { font-size: 13px; color: var(--numeric); }
         .waterfall .amt { font-size: 15px; text-align: right; }
         .waterfall .hero {
             margin-top: 4px;
@@ -305,7 +316,7 @@
             border-left: 1px solid var(--line);
         }
         .bom-tree > li { border-bottom: 1px solid var(--line); }
-        .bom-tree .bom-tree > li { border-bottom: 1px solid #f0f4f5; }
+        .bom-tree .bom-tree > li { border-bottom: 1px solid var(--line); }
         .node-fold > summary {
             list-style: none;
             cursor: pointer;
@@ -343,7 +354,7 @@
             font-size: 11px;
             color: var(--muted);
         }
-        .node-name { margin-top: 2px; font-size: 13px; color: #3a3a3a; }
+        .node-name { margin-top: 2px; font-size: 13px; color: var(--numeric); }
         .node-src { color: var(--muted); }
         .node-open {
             margin-left: 8px;
@@ -392,7 +403,7 @@
         }
         .fee-ledger .is-total { font-weight: 600; }
         .fee-ledger .is-total span:last-child { color: var(--accent); }
-        .fee-ledger .is-sub { padding-left: 0; color: #3a3a3a; }
+        .fee-ledger .is-sub { padding-left: 0; color: var(--numeric); }
         .fee-ledger .is-sub .k { padding-left: 10px; }
         .fact-note {
             margin: -2px 0 6px 5.5rem;
@@ -418,7 +429,7 @@
         }
         .ops-row {
             padding: 6px 0;
-            color: #3a3a3a;
+            color: var(--numeric);
             border-top: 1px solid var(--line);
         }
         .ops-row span:last-child { text-align: right; }
@@ -451,7 +462,7 @@
         .calc-proof {
             margin: 6px 0 0;
             font-size: 11px;
-            color: #3a3a3a;
+            color: var(--numeric);
         }
         .calc-eq { font-family: var(--mono); }
         .calc-proof { color: var(--muted); }
@@ -461,7 +472,7 @@
             border-left: 2px solid var(--accent);
             font-size: 13px;
             line-height: 1.6;
-            color: #3a3a3a;
+            color: var(--numeric);
             white-space: pre-wrap;
         }
         .refs-chapter {
@@ -484,13 +495,13 @@
             line-height: 1.65;
         }
         .refs li { padding: 3px 0; }
-        .refs-cat { color: #8a8a8e; }
+        .refs-cat { color: var(--dim); }
         .sign-off {
             padding: 4px 32px 28px;
             display: flex;
             flex-wrap: wrap;
             gap: 8px 28px;
-            color: #b0b0b4;
+            color: var(--dim);
             font-size: 10px;
             letter-spacing: 0.06em;
         }
@@ -526,7 +537,7 @@
             }
             .cover {
                 padding: 0 0 10px;
-                border-top-width: 1.5px;
+                border-bottom-width: 1.5px;
             }
             .chapter { padding: 12px 0 4px; }
             .cover-row {
@@ -555,7 +566,7 @@
                 overflow: visible !important;
             }
             .wm span {
-                color: rgba(18, 18, 18, 0.05);
+                color: rgba(24, 24, 27, 0.05);
                 -webkit-print-color-adjust: exact;
                 print-color-adjust: exact;
             }

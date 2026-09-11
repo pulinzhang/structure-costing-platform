@@ -8,22 +8,34 @@
     <link href="/static/css/fonts.css?v=1" rel="stylesheet">
     <style>
         :root {
-            --paper: #fffdfa;
-            --ink: #1c1917;
-            --muted: #57534e;
-            --line: #e7e5e4;
-            --ok: #166534;
-            --partial: #b45309;
-            --failed: #b91c1c;
-            --skipped: #57534e;
-            --accent: #9f1239;
+            --bg-canvas: #F4F4F5;
+            --paper: #FFFFFF;
+            --elevated: #FAFAFA;
+            --ink: #18181B;
+            --muted: #52525B;
+            --dim: #71717A;
+            --numeric: #3F3F46;
+            --line: #E4E4E7;
+            --border: #D4D4D8;
+            --partial: #C2410C;
+            --failed: #B91C1C;
+            --skipped: #71717A;
+            --brabus-red: #d32f2f;
+            --brabus-red-hover: #b71c1c;
+            --brabus-red-soft: #FEF2F2;
+            --mono: "JetBrains Mono", ui-monospace, Consolas, monospace;
         }
         * { box-sizing: border-box; }
         html, body {
             margin: 0;
-            background: #f3efe6;
+            background: var(--bg-canvas);
             color: var(--ink);
             font-family: Inter, "Segoe UI", system-ui, sans-serif;
+            -webkit-font-smoothing: antialiased;
+        }
+        ::selection {
+            background: var(--brabus-red-soft);
+            color: var(--ink);
         }
         .page {
             max-width: 1100px;
@@ -32,8 +44,8 @@
         }
         .sheet {
             background: var(--paper);
-            border: 1px solid #ddd6c8;
-            box-shadow: 0 10px 30px rgba(28, 25, 23, 0.06);
+            border: 1px solid var(--border);
+            box-shadow: 0 8px 24px rgba(10, 10, 10, 0.06);
         }
         header.report-head {
             display: flex;
@@ -42,20 +54,22 @@
             gap: 16px;
             flex-wrap: wrap;
             padding: 28px 32px 20px;
-            border-bottom: 3px solid var(--accent);
+            border-bottom: 3px solid var(--brabus-red);
         }
         header.report-head p {
             margin: 0 0 6px;
-            font-size: 11px;
+            font-size: 10px;
+            font-weight: 600;
             letter-spacing: 0.18em;
             text-transform: uppercase;
-            color: var(--accent);
+            color: var(--brabus-red);
         }
         header.report-head h1 {
             margin: 0;
-            font-family: "Source Serif 4", Georgia, serif;
-            font-size: 28px;
+            font-family: Inter, "Segoe UI", system-ui, sans-serif;
+            font-size: 26px;
             font-weight: 700;
+            letter-spacing: -0.02em;
         }
         .report-actions {
             display: flex;
@@ -66,9 +80,11 @@
         .report-actions button {
             height: 36px;
             padding: 0 14px;
-            border: 1px solid #d6d3d1;
-            background: #fff;
+            border: 1px solid var(--border);
+            border-radius: 4px;
+            background: var(--paper);
             color: var(--ink);
+            font-family: inherit;
             font-size: 13px;
             cursor: pointer;
             display: inline-flex;
@@ -76,27 +92,27 @@
             gap: 6px;
         }
         .report-actions button:hover {
-            border-color: #a8a29e;
+            border-color: var(--muted);
         }
         .report-actions button:disabled {
             opacity: 0.55;
             cursor: wait;
         }
         .report-actions .btn-export {
-            border-color: var(--accent);
-            background: var(--accent);
+            border-color: var(--brabus-red);
+            background: var(--brabus-red);
             color: #fff;
         }
         .report-actions .btn-export:hover {
-            background: #881337;
-            border-color: #881337;
+            background: var(--brabus-red-hover);
+            border-color: var(--brabus-red-hover);
         }
         .report-actions .btn-ghost {
             color: var(--muted);
         }
         .export-hint {
             font-size: 11px;
-            color: var(--muted);
+            color: var(--dim);
             max-width: 140px;
             line-height: 1.35;
         }
@@ -106,17 +122,18 @@
             bottom: 24px;
             z-index: 20;
             padding: 10px 14px;
-            background: #1c1917;
-            color: #fffdfa;
+            background: var(--elevated);
+            color: var(--ink);
+            border: 1px solid var(--border);
             font-size: 13px;
-            box-shadow: 0 10px 30px rgba(28, 25, 23, 0.18);
+            box-shadow: 0 8px 24px rgba(10, 10, 10, 0.08);
             opacity: 0;
             pointer-events: none;
             transform: translateY(8px);
             transition: opacity 0.2s ease, transform 0.2s ease;
         }
         .toast.is-on { opacity: 1; transform: none; }
-        .toast.is-error { background: #9f1239; }
+        .toast.is-error { background: var(--brabus-red); color: #fff; border-color: var(--brabus-red); }
         .meta {
             display: grid;
             grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
@@ -126,58 +143,135 @@
             font-size: 13px;
             color: var(--muted);
         }
-        .meta strong { color: var(--ink); font-weight: 600; }
+        .meta strong {
+            color: var(--ink);
+            font-weight: 600;
+            font-family: var(--mono);
+            font-size: 12px;
+        }
         .filters {
             display: flex;
             flex-wrap: wrap;
             gap: 10px;
             align-items: center;
             padding: 14px 32px;
-            background: #faf7f2;
+            background: var(--elevated);
             border-bottom: 1px solid var(--line);
             position: sticky;
             top: 0;
             z-index: 2;
         }
-        .filters input, .filters select {
+        .filters input {
             height: 34px;
             padding: 0 10px;
-            border: 1px solid #d6d3d1;
-            background: #fff;
+            border: 1px solid var(--border);
+            border-radius: 4px;
+            background: var(--paper);
             color: var(--ink);
+            font-family: inherit;
             font-size: 13px;
         }
         .filters input { min-width: 220px; }
+        .filters input:focus {
+            outline: none;
+            border-color: var(--brabus-red);
+        }
         .filters button {
             height: 34px;
             padding: 0 12px;
-            border: 1px solid #d6d3d1;
-            background: #fff;
+            border: 1px solid var(--border);
+            border-radius: 4px;
+            background: var(--paper);
             color: var(--muted);
+            font-family: inherit;
             font-size: 12px;
             cursor: pointer;
         }
         .filters button.is-on {
-            border-color: var(--accent);
-            color: var(--accent);
-            background: #fff1f2;
+            border-color: var(--brabus-red);
+            color: var(--brabus-red);
+            background: var(--brabus-red-soft);
+        }
+        .filter-select { position: relative; }
+        .filter-select-btn {
+            position: relative;
+            height: 34px;
+            padding: 0 28px 0 12px;
+            border: 1px solid var(--border);
+            border-radius: 4px;
+            background: var(--paper);
+            color: var(--ink);
+            font-family: inherit;
+            font-size: 13px;
+            cursor: pointer;
+            min-width: 7.5rem;
+            text-align: left;
+        }
+        .filter-select-btn::after {
+            content: "";
+            position: absolute;
+            right: 10px;
+            top: 50%;
+            width: 6px;
+            height: 6px;
+            border-right: 1.5px solid var(--muted);
+            border-bottom: 1.5px solid var(--muted);
+            transform: translateY(-70%) rotate(45deg);
+        }
+        .filter-select.is-open .filter-select-btn {
+            border-color: var(--brabus-red);
+            color: var(--brabus-red);
+        }
+        .filter-select-menu {
+            position: absolute;
+            top: calc(100% + 4px);
+            left: 0;
+            min-width: 100%;
+            margin: 0;
+            padding: 4px 0;
+            list-style: none;
+            background: var(--paper);
+            border: 1px solid var(--border);
+            box-shadow: 0 8px 24px rgba(10, 10, 10, 0.08);
+            z-index: 6;
+        }
+        .filter-select-menu[hidden] { display: none; }
+        .filter-select-menu li {
+            padding: 8px 12px;
+            font-size: 13px;
+            color: var(--ink);
+            cursor: pointer;
+            white-space: nowrap;
+        }
+        .filter-select-menu li.is-on {
+            background: var(--brabus-red);
+            color: #fff;
+        }
+        .filter-select-menu:hover li.is-on {
+            background: transparent;
+            color: var(--ink);
+        }
+        .filter-select-menu li:hover,
+        .filter-select-menu li.is-on:hover {
+            background: var(--brabus-red);
+            color: #fff;
         }
         .body { padding: 20px 32px 32px; }
         .summary {
             margin: 0 0 12px;
-            color: #57534e;
+            color: var(--muted);
             font-size: 13px;
         }
         .narrative {
             margin: 0 0 22px;
             padding: 16px 18px;
-            background: #fafaf9;
+            background: var(--elevated);
             border: 1px solid var(--line);
             white-space: pre-wrap;
-            font-family: ui-monospace, Consolas, monospace;
+            font-family: var(--mono);
             font-size: 12px;
             line-height: 1.65;
-            color: #44403c;
+            color: var(--numeric);
         }
         table {
             width: 100%;
@@ -186,19 +280,38 @@
         }
         th {
             text-align: left;
-            font-size: 11px;
+            font-size: 9px;
             font-weight: 600;
+            letter-spacing: 0.08em;
+            text-transform: uppercase;
             color: var(--muted);
-            border-bottom: 1px solid #d6d3d1;
+            border-bottom: 1px solid var(--border);
             padding: 8px 8px;
         }
         td {
             padding: 9px 8px;
-            border-bottom: 1px solid #f0ece4;
+            border-bottom: 1px solid var(--line);
             vertical-align: top;
         }
-        td.num { text-align: right; font-variant-numeric: tabular-nums; font-family: ui-monospace, Consolas, monospace; }
-        .status-ok { color: var(--ok); font-weight: 600; }
+        tbody tr:hover { background: var(--bg-canvas); }
+        td.num {
+            text-align: right;
+            font-variant-numeric: tabular-nums;
+            font-family: var(--mono);
+            color: var(--numeric);
+            font-size: 12px;
+        }
+        .part-number {
+            font-family: var(--mono);
+            font-weight: 600;
+            font-size: 12px;
+        }
+        .part-name {
+            color: var(--dim);
+            font-size: 12px;
+            margin-top: 2px;
+        }
+        .status-ok { color: var(--dim); font-weight: 300; font-size: 9px; }
         .status-partial { color: var(--partial); font-weight: 600; }
         .status-failed { color: var(--failed); font-weight: 600; }
         .status-skipped { color: var(--skipped); }
@@ -209,7 +322,7 @@
         }
         .error { color: var(--failed); }
         .count { font-size: 12px; color: var(--muted); margin-left: auto; }
-        .missing { color: #9f1239; font-size: 12px; }
+        .missing { color: var(--brabus-red); font-size: 12px; }
         @media print {
             body { background: #fff; }
             .filters, .report-actions, .toast { display: none !important; }
@@ -224,6 +337,6 @@
     </div>
     <div class="toast" id="reportToast" role="status"></div>
     <script src="/static/js/main.js?v=20"></script>
-    <script type="module" src="/static/js/features/costing/assembly-cost/calc-report/boot.js?v=10"></script>
+    <script type="module" src="/static/js/features/costing/assembly-cost/calc-report/boot.js?v=12"></script>
 </body>
 </html>

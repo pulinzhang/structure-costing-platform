@@ -17,6 +17,7 @@ from app.repositories.costing.assembly_cost.assembly_cost_calc_log_repository im
 from app.schemas.dto.assembly_cost_dto import AssemblyCostCalcDTO
 from app.services.costing.assembly_cost.calc.calc_log_service import (
     STATUS_FAILED,
+    STATUS_PARTIAL,
     STATUS_PROCESSING,
     AssemblyCostCalcLogService,
     DuplicateScopeCalcError,
@@ -103,3 +104,33 @@ def test_duplicate_processing_rows_are_collapsed_before_index(lock_db: Session) 
         )
     ).scalar()
     assert exists == 1
+
+
+def test_persist_writes_completed_history_without_processing_lock(lock_db: Session) -> None:
+    service = AssemblyCostCalcLogService()
+    log_id = service.persist(
+        lock_db,
+        year=_DTO.year,
+        month=_DTO.month,
+        location=_DTO.location,
+        vehicle_model=_DTO.vehicle_model,
+        bom_version=_DTO.bom_version,
+        status=STATUS_PARTIAL,
+        message="成功 1，部分成功 2，失败 0，跳过 0",
+        subject_total=3,
+        ok_count=1,
+        partial_count=2,
+        failed_count=0,
+        skipped_approved_count=0,
+        detail_text="卡 A 部分成功：缺冲压件价",
+        detail_json='{"cards":[]}',
+        operator_id=1,
+        operator_name="tester",
+    )
+    assert log_id is not None
+    row = lock_db.get(AssemblyCostCalcLog, log_id)
+    assert row is not None
+    assert row.status == STATUS_PARTIAL
+    assert row.partial_count == 2
+    assert row.detail_text.startswith("卡 A")
+    assert row.finished_at is not None

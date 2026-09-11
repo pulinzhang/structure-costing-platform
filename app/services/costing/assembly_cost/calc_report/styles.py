@@ -1,4 +1,4 @@
-"""计算报告浅色纸面色板与单元格样式。"""
+"""计算报告浅色纸面色板（Brabus light）与单元格样式。"""
 
 from decimal import Decimal
 
@@ -8,14 +8,14 @@ from app.common.money import Q4, excel_money_cell
 
 FONT_NAME = "微软雅黑"
 MONEY_FORMAT = "0.0000"
-ACCENT = "9F1239"
-INK = "1C1917"
-MUTED = "57534E"
-PAPER = "FFFDF8"
-CREAM = "FAF7F2"
-STONE = "44403C"
-MONEY_HEADER = "BE123C"
-SUMMARY_FILL = "FAFAF9"
+ACCENT = "D32F2F"
+INK = "18181B"
+MUTED = "52525B"
+PAPER = "FFFFFF"
+CREAM = "FAFAFA"
+STONE = "3F3F46"
+MONEY_HEADER = "D32F2F"
+SUMMARY_FILL = "FAFAFA"
 
 
 def fill(hex_color: str) -> PatternFill:
@@ -27,7 +27,7 @@ def font(*, size: int = 10, bold: bool = False, color: str = "000000") -> Font:
 
 
 def thin_border() -> Border:
-    side = Side(style="thin", color="E7E5E4")
+    side = Side(style="thin", color="E4E4E7")
     return Border(left=side, right=side, top=side, bottom=side)
 
 

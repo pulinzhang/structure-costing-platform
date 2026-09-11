@@ -2,10 +2,94 @@
 
 from __future__ import annotations
 
+from typing import NamedTuple
+
 from sqlalchemy.orm import Session
 
+from app.repositories.stamping.stamping_process_fee_repository import (
+    StampingProcessFeeRepository,
+)
+from app.repositories.stamping.stamping_repository import StampingPartRepository
 from app.schemas.vo.stamping_process_fee_vo import StampingProcessFeeCalcReadyVO
 from app.services.stamping.process_fee.calc.orchestrator.deps import ProcessFeeCalcDeps
+
+
+class ProcessFeeCoverage(NamedTuple):
+    complete: bool
+    message: str
+    part_count: int
+    fee_count: int
+
+
+def evaluate_process_fee_coverage(
+    db: Session,
+    *,
+    year: int,
+    aliases: list[str],
+    vehicle_model: str,
+    version: str | None = None,
+    part_repo: StampingPartRepository | None = None,
+    fee_repo: StampingProcessFeeRepository | None = None,
+) -> ProcessFeeCoverage:
+    """工艺零件是否都有对应加工费行（引擎补算与零件核价同一把钥匙）。"""
+    part_repo = part_repo or StampingPartRepository()
+    fee_repo = fee_repo or StampingProcessFeeRepository()
+    parts = []
+    fee_keys: set[tuple[str, str, str, str]] = set()
+    for alias in aliases:
+        scoped_parts = part_repo.list_by_location_and_vehicle(
+            db,
+            location=alias,
+            vehicle_model=vehicle_model,
+        )
+        if version is not None:
+            scoped_parts = [part for part in scoped_parts if part.version == version]
+        parts.extend(scoped_parts)
+        for fee in fee_repo.list_by_scope(
+            db,
+            year=year,
+            location=alias,
+            vehicle_model=vehicle_model,
+            version=version,
+        ):
+            if fee.final_processing_fee is None:
+                continue
+            fee_keys.add(
+                (
+                    fee.location,
+                    fee.stamping_supplier or "",
+                    fee.version or "",
+                    fee.part_number,
+                )
+            )
+
+    if not parts:
+        return ProcessFeeCoverage(False, "无冲压零件", 0, 0)
+
+    aligned = 0
+    for part in parts:
+        key = (
+            part.location,
+            part.stamping_supplier or "",
+            part.version or "",
+            part.part_number,
+        )
+        if key in fee_keys:
+            aligned += 1
+
+    part_count = len(parts)
+    if aligned != part_count:
+        return ProcessFeeCoverage(
+            False,
+            (
+                f"冲压零件没有对应的加工费行"
+                f"（工艺零件 {part_count} 条，对齐 {aligned} 条），"
+                "请先完成冲压加工费计算"
+            ),
+            part_count,
+            aligned,
+        )
+    return ProcessFeeCoverage(True, "冲压加工费已完成", part_count, aligned)
 
 
 def collect_calc_ready(

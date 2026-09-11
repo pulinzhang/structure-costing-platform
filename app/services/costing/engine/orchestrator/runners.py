@@ -26,6 +26,14 @@ if TYPE_CHECKING:
 logger = logging.getLogger("service.costing.engine.orchestrator")
 
 
+def _calc_step_message(label: str, status: str) -> str:
+    if status == "partial":
+        return f"{label}部分成功，请到对应计算历史查看缺项"
+    if status == "failed":
+        return f"{label}失败"
+    return f"{label}已完成"
+
+
 def find_l0(discovery: DiscoveryResult, vehicle_model: str, bom_version: str) -> L0Scope | None:
     for scope in discovery.l0_scopes:
         if scope.vehicle_model == vehicle_model and scope.bom_version == bom_version:
@@ -114,7 +122,7 @@ def run_steel(
             ok = False
         return (
             ok,
-            f"钢材联动 status={result.status}",
+            _calc_step_message("钢材联动", result.status),
             {
                 "status": result.status,
                 "created_count": getattr(result, "created_count", None),
@@ -145,7 +153,7 @@ def run_part_cost(
         result = orch.part_cost_orch.calculate(db, dto, current_user=current_user)
         status = getattr(result, "status", "success")
         ok = status != "failed"
-        return ok, f"零件价 {vehicle_model} status={status}", {"status": status}
+        return ok, _calc_step_message("零件核价", status), {"status": status}
     except Exception as exc:
         logger.exception("零件价失败: %s", vehicle_model)
         db.rollback()
@@ -171,7 +179,7 @@ def run_assembly(
         result = orch.assembly_orch.calculate(db, dto, current_user=current_user)
         status = getattr(result, "status", "success")
         ok = status != "failed"
-        return ok, f"总成核价 status={status}", {"status": status}
+        return ok, _calc_step_message("总成核价", status), {"status": status}
     except Exception as exc:
         logger.exception("总成核价失败: %s/%s", scope.vehicle_model, scope.bom_version)
         db.rollback()

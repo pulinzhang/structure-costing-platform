@@ -199,6 +199,64 @@ class AssemblyCostCalcLogService:
         row.finished_at = now()
         db.commit()
 
+    def persist(
+        self,
+        db: Session,
+        *,
+        year: int,
+        month: int,
+        location: str,
+        vehicle_model: str,
+        bom_version: str,
+        status: str,
+        message: str | None,
+        subject_total: int,
+        ok_count: int,
+        partial_count: int,
+        failed_count: int,
+        skipped_approved_count: int,
+        detail_text: str,
+        detail_json: str | None,
+        operator_id: int | None,
+        operator_name: str | None,
+        calc_batch_id: str | None = None,
+    ) -> int | None:
+        """引擎等同步调用未走 begin_processing 时，补写终态历史。"""
+        operator = (operator_name or "").strip() or "系统"
+        finished_at = now()
+        row = AssemblyCostCalcLog(
+            year=year,
+            month=month,
+            location=location.strip(),
+            vehicle_model=vehicle_model.strip(),
+            bom_version=bom_version.strip(),
+            calc_batch_id=calc_batch_id or uuid.uuid4().hex,
+            status=status,
+            message=message,
+            subject_total=subject_total,
+            ok_count=ok_count,
+            partial_count=partial_count,
+            failed_count=failed_count,
+            skipped_approved_count=skipped_approved_count,
+            detail_text=detail_text,
+            detail_json=detail_json,
+            started_at=finished_at,
+            finished_at=finished_at,
+            operator_id=operator_id,
+            operator_name=operator,
+            created_by=operator,
+            updated_by=operator,
+        )
+        try:
+            self.calc_log_repo.create(db, row)
+            db.commit()
+            db.refresh(row)
+            return row.id
+        except Exception:
+            db.rollback()
+            logger.exception("写入总成核价计算日志失败: batch=%s", row.calc_batch_id)
+            return None
+
     def list_calc_logs(
         self,
         db: Session,

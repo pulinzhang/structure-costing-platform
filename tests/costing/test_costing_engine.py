@@ -16,6 +16,10 @@ from app.services.costing.engine.progress import map_progress
 from app.services.costing.engine.scope_discovery import DiscoveryResult, L0Scope, ScopeDiscovery
 
 
+def _plan_item(items: list[CostingEngineAnnualItemVO], code: str) -> CostingEngineAnnualItemVO:
+    return next(item for item in items if item.code == code)
+
+
 def test_thickness_policy_is_hard_gate() -> None:
     assert "thickness_policy" not in SOFT_UPLOAD_GATE_CODES
     assert "packaging_transport" in SOFT_UPLOAD_GATE_CODES
@@ -214,6 +218,22 @@ def test_run_orchestrator_does_not_submit_nested_async_task() -> None:
     assert any(s["stage"] == "assembly" for s in summary["steps"])
 
 
+def test_delete_all_runs_marks_parent_tasks() -> None:
+    from app.services.costing.engine.costing_engine_service import CostingEngineService
+
+    service = CostingEngineService()
+    db = MagicMock()
+    service.run_repo.list_running_task_ids = MagicMock(return_value=["t-1", "t-2"])
+    service.run_repo.delete_all = MagicMock(return_value=3)
+    service.async_task_service.update_task_standalone = MagicMock()
+
+    result = service.delete_all_runs(db)
+
+    assert result.deleted_count == 3
+    service.run_repo.delete_all.assert_called_once_with(db)
+    assert service.async_task_service.update_task_standalone.call_count == 2
+
+
 def test_delete_running_allows_new_key(monkeypatch: pytest.MonkeyPatch) -> None:
     """删除 running 后同键不再视为进行中。"""
     from app.services.costing.engine.costing_engine_service import CostingEngineService
@@ -250,32 +270,212 @@ def test_gate_item_ok_false_requires_navigate_shape() -> None:
     assert payload["navigate"]["query"]["month"] == 2
 
 
-def test_annual_planner_welding_fee_exists_covers_all_levels() -> None:
-    """焊接费是否已有结果按整树计，不按 level=0。"""
+def test_annual_planner_welding_fee_auto_calc_when_coverage_incomplete(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """拆解未全覆盖时视为缺失，引擎应补算焊接费（不能只凭「有几条费行」就跳过）。"""
+    from app.services.costing.assembly_cost.calc.orchestrator.ready import WeldingCoverage
+    from app.services.costing.engine.scope_discovery import L0Scope
+    from app.services.stamping.process_fee.calc.orchestrator.ready import ProcessFeeCoverage
+
     planner = AnnualCalcPlanner()
     db = MagicMock()
-    planner.l0_welding_fee_repo = MagicMock()
-    planner.l0_welding_fee_repo.count_by_scope_and_statuses.return_value = 0
-
-    exists = planner._l0_welding_fee_exists(
-        db,
-        year=2026,
-        location="青岛",
-        vehicle_model="T28",
-        bom_version="D-00",
+    monkeypatch.setattr(
+        "app.services.costing.engine.annual_calc_planner.evaluate_process_fee_coverage",
+        lambda *args, **kwargs: ProcessFeeCoverage(True, "冲压加工费已完成", 1, 1),
+    )
+    monkeypatch.setattr(
+        "app.services.costing.engine.annual_calc_planner.evaluate_welding_coverage",
+        lambda *args, **kwargs: WeldingCoverage(
+            False,
+            "拆解节点没有对应的焊接费行（当前树拆解 86 条，对齐 9 条），请先完成焊接费计算",
+            9,
+            {},
+        ),
     )
 
-    assert exists is False
-    kwargs = planner.l0_welding_fee_repo.count_by_scope_and_statuses.call_args.kwargs
-    assert kwargs["level"] is None
-    assert kwargs["year"] == 2026
-    assert kwargs["vehicle_model"] == "T28"
+    discovery = DiscoveryResult(
+        location="青岛",
+        year=2026,
+        month=1,
+        location_aliases=["青岛"],
+        vehicle_models=["T2AA"],
+        stamping_vehicle_models=["T2AA"],
+        l0_scopes=[
+            L0Scope(vehicle_model="T2AA", bom_version="D/00", location="青岛"),
+        ],
+    )
+    items = planner.plan(db, discovery)
+    weld = _plan_item(items, "annual_welding_fee")
+    breakdown = _plan_item(items, "annual_welding_breakdown")
+    assert weld.exists is False
+    assert weld.will_auto_calc is True
+    assert breakdown.exists is True
+    assert breakdown.will_auto_calc is False
 
 
-def test_annual_planner_skips_process_fee_without_stamping_process() -> None:
+def test_annual_planner_skips_welding_fee_when_coverage_complete(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    from app.services.costing.assembly_cost.calc.orchestrator.ready import WeldingCoverage
+    from app.services.costing.engine.scope_discovery import L0Scope
+    from app.services.stamping.process_fee.calc.orchestrator.ready import ProcessFeeCoverage
+
     planner = AnnualCalcPlanner()
     db = MagicMock()
-    planner.process_fee_repo = MagicMock()
+    monkeypatch.setattr(
+        "app.services.costing.engine.annual_calc_planner.evaluate_process_fee_coverage",
+        lambda *args, **kwargs: ProcessFeeCoverage(True, "冲压加工费已完成", 1, 1),
+    )
+    monkeypatch.setattr(
+        "app.services.costing.engine.annual_calc_planner.evaluate_welding_coverage",
+        lambda *args, **kwargs: WeldingCoverage(True, "焊接费已完成", 86, {}),
+    )
+
+    discovery = DiscoveryResult(
+        location="青岛",
+        year=2026,
+        month=1,
+        location_aliases=["青岛"],
+        vehicle_models=["T2AA"],
+        stamping_vehicle_models=["T2AA"],
+        l0_scopes=[
+            L0Scope(vehicle_model="T2AA", bom_version="D/00", location="青岛"),
+        ],
+    )
+    items = planner.plan(db, discovery)
+    weld = _plan_item(items, "annual_welding_fee")
+    breakdown = _plan_item(items, "annual_welding_breakdown")
+    assert weld.exists is True
+    assert weld.will_auto_calc is False
+    assert breakdown.exists is True
+    assert breakdown.will_auto_calc is False
+
+
+def test_annual_planner_process_fee_auto_calc_when_coverage_incomplete(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    from app.services.stamping.process_fee.calc.orchestrator.ready import ProcessFeeCoverage
+
+    planner = AnnualCalcPlanner()
+    db = MagicMock()
+    monkeypatch.setattr(
+        "app.services.costing.engine.annual_calc_planner.evaluate_process_fee_coverage",
+        lambda *args, **kwargs: ProcessFeeCoverage(
+            False,
+            "冲压零件没有对应的加工费行（工艺零件 20 条，对齐 3 条），请先完成冲压加工费计算",
+            20,
+            3,
+        ),
+    )
+    discovery = DiscoveryResult(
+        location="青岛",
+        year=2026,
+        month=1,
+        location_aliases=["青岛"],
+        vehicle_models=["T28"],
+        stamping_vehicle_models=["T28"],
+        l0_scopes=[],
+    )
+    items = planner.plan(db, discovery)
+    process_fee = _plan_item(items, "annual_process_fee")
+    assert process_fee.exists is False
+    assert process_fee.will_auto_calc is True
+
+
+def test_annual_planner_welding_breakdown_auto_calc_when_tree_stale(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    from app.services.costing.assembly_cost.calc.orchestrator.ready import WeldingCoverage
+    from app.services.costing.engine.scope_discovery import L0Scope
+    from app.services.stamping.process_fee.calc.orchestrator.ready import ProcessFeeCoverage
+
+    planner = AnnualCalcPlanner()
+    db = MagicMock()
+    monkeypatch.setattr(
+        "app.services.costing.engine.annual_calc_planner.evaluate_process_fee_coverage",
+        lambda *args, **kwargs: ProcessFeeCoverage(True, "冲压加工费已完成", 1, 1),
+    )
+    monkeypatch.setattr(
+        "app.services.costing.engine.annual_calc_planner.evaluate_welding_coverage",
+        lambda *args, **kwargs: WeldingCoverage(
+            False,
+            "焊接拆解/费行未对齐当前 BOM 树（当前树对齐 9 条），请重导后重算焊接费",
+            9,
+            {},
+            False,
+        ),
+    )
+    discovery = DiscoveryResult(
+        location="青岛",
+        year=2026,
+        month=1,
+        location_aliases=["青岛"],
+        vehicle_models=["T2AA"],
+        stamping_vehicle_models=[],
+        l0_scopes=[
+            L0Scope(vehicle_model="T2AA", bom_version="D/00", location="青岛"),
+        ],
+    )
+    items = planner.plan(db, discovery)
+    breakdown = _plan_item(items, "annual_welding_breakdown")
+    weld = _plan_item(items, "annual_welding_fee")
+    assert breakdown.will_auto_calc is True
+    assert weld.will_auto_calc is True
+
+
+def test_process_fee_coverage_requires_every_part_row() -> None:
+    from app.services.stamping.process_fee.calc.orchestrator.ready import (
+        evaluate_process_fee_coverage,
+    )
+
+    deps = MagicMock()
+    deps.part_repo.list_by_location_and_vehicle.return_value = [
+        SimpleNamespace(
+            location="青岛",
+            stamping_supplier="一工厂",
+            version="V1",
+            part_number="P001",
+        ),
+        SimpleNamespace(
+            location="青岛",
+            stamping_supplier="一工厂",
+            version="V1",
+            part_number="P002",
+        ),
+    ]
+    deps.fee_repo.list_by_scope.return_value = [
+        SimpleNamespace(
+            location="青岛",
+            stamping_supplier="一工厂",
+            version="V1",
+            part_number="P001",
+            final_processing_fee=1,
+        )
+    ]
+    coverage = evaluate_process_fee_coverage(
+        MagicMock(),
+        year=2026,
+        aliases=["青岛"],
+        vehicle_model="T28",
+        part_repo=deps.part_repo,
+        fee_repo=deps.fee_repo,
+    )
+    assert coverage.complete is False
+    assert coverage.part_count == 2
+    assert coverage.fee_count == 1
+
+
+def test_annual_planner_skips_process_fee_without_stamping_process(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    planner = AnnualCalcPlanner()
+    db = MagicMock()
+    coverage_fn = MagicMock()
+    monkeypatch.setattr(
+        "app.services.costing.engine.annual_calc_planner.evaluate_process_fee_coverage",
+        coverage_fn,
+    )
     discovery = DiscoveryResult(
         location="青岛",
         year=2026,
@@ -289,14 +489,20 @@ def test_annual_planner_skips_process_fee_without_stamping_process() -> None:
     items = planner.plan(db, discovery)
 
     assert all(item.code != "annual_process_fee" for item in items)
-    planner.process_fee_repo.count_by_scope_and_statuses.assert_not_called()
+    coverage_fn.assert_not_called()
 
 
-def test_annual_planner_skips_welding_without_bom() -> None:
+def test_annual_planner_skips_welding_without_bom(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    from app.services.stamping.process_fee.calc.orchestrator.ready import ProcessFeeCoverage
+
     planner = AnnualCalcPlanner()
     db = MagicMock()
-    planner.breakdown_repo = MagicMock()
-    planner.l0_welding_fee_repo = MagicMock()
+    monkeypatch.setattr(
+        "app.services.costing.engine.annual_calc_planner.evaluate_process_fee_coverage",
+        lambda *args, **kwargs: ProcessFeeCoverage(True, "冲压加工费已完成", 1, 1),
+    )
     discovery = DiscoveryResult(
         location="青岛",
         year=2026,
@@ -306,15 +512,11 @@ def test_annual_planner_skips_welding_without_bom() -> None:
         stamping_vehicle_models=["T28"],
         l0_scopes=[],
     )
-    planner.process_fee_repo = MagicMock()
-    planner.process_fee_repo.count_by_scope_and_statuses.return_value = 1
 
     items = planner.plan(db, discovery)
 
     assert any(item.code == "annual_process_fee" for item in items)
     assert all(not item.code.startswith("annual_welding") for item in items)
-    planner.breakdown_repo.count_by_scope.assert_not_called()
-    planner.l0_welding_fee_repo.count_by_scope_and_statuses.assert_not_called()
 
 
 def test_gate_skips_tonnage_without_stamping_process() -> None:
@@ -451,3 +653,11 @@ def test_execute_assembly_runs_without_stamping_process() -> None:
 
     assert run_asm.called
     assert any(s["status"] == "succeeded" for s in carry.step_summaries)
+
+
+def test_calc_step_message_uses_plain_chinese() -> None:
+    from app.services.costing.engine.orchestrator.runners import _calc_step_message
+
+    assert _calc_step_message("总成核价", "success") == "总成核价已完成"
+    assert "部分成功" in _calc_step_message("总成核价", "partial")
+    assert _calc_step_message("零件核价", "failed") == "零件核价失败"

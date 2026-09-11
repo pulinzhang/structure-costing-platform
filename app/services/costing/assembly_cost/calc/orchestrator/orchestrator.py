@@ -91,6 +91,7 @@ class AssemblyCostCalcOrchestrator:
                 self._deps,
                 ctx=ctx,
                 batch=batch,
+                current_user=current_user,
                 log_id=log_id,
                 progress=progress,
             )

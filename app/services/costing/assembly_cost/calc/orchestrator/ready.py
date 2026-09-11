@@ -8,8 +8,10 @@ from typing import NamedTuple
 from sqlalchemy.orm import Session
 
 from app.exceptions.base import BusinessException
+from app.repositories.bom.bom_repository import BomNodeRepository, BomSnapshotRepository
 from app.repositories.bom.procurement_object_repository import BomProcurementObjectRepository
 from app.repositories.bom.welding_fee_calc_log_repository import BomWeldingFeeCalcLogRepository
+from app.repositories.bom.welding_fee_repository import BomWeldingFeeRepository
 from app.repositories.bom.welding_process_breakdown_repository import (
     BomWeldingProcessBreakdownRepository,
 )
@@ -28,6 +30,35 @@ class WeldingCoverage(NamedTuple):
     message: str
     fee_count: int
     level_counts: dict[int, int]
+    breakdown_complete: bool = True
+
+
+def evaluate_welding_coverage(
+    db: Session,
+    *,
+    year: int,
+    location: str,
+    vehicle_model: str,
+    bom_version: str,
+    welding_fee_repo: BomWeldingFeeRepository | None = None,
+) -> WeldingCoverage:
+    """当前 BOM 树上拆解是否齐、拆解节点是否都有焊接费行。"""
+    snap = BomSnapshotRepository().get_by_unique_key(db, location, vehicle_model, bom_version)
+    if snap is None:
+        return WeldingCoverage(False, "未找到对应 BOM 快照", 0, {}, False)
+    orm_nodes = BomNodeRepository().list_by_snapshot(db, snap.id)
+    current_ids = {int(n.id) for n in orm_nodes}
+    weld_info_count = sum(1 for n in orm_nodes if (n.weld_info or "").strip())
+    return _welding_coverage(
+        db,
+        year=year,
+        location=location,
+        vehicle_model=vehicle_model,
+        bom_version=bom_version,
+        current_ids=current_ids,
+        weld_info_count=weld_info_count,
+        welding_fee_repo=welding_fee_repo,
+    )
 
 
 def collect_calc_ready(
@@ -87,13 +118,13 @@ def collect_calc_ready(
     )
     welding = _welding_coverage(
         db,
-        deps,
         year=year,
         location=location,
         vehicle_model=vehicle_model,
         bom_version=bom_version,
         current_ids=current_ids,
         weld_info_count=weld_info_count,
+        welding_fee_repo=deps.welding_fee_repo,
     )
 
     ready = True
@@ -226,7 +257,6 @@ def _stamping_complete(
 
 def _welding_coverage(
     db: Session,
-    deps: AssemblyCalcDeps,
     *,
     year: int,
     location: str,
@@ -234,7 +264,9 @@ def _welding_coverage(
     bom_version: str,
     current_ids: set[int],
     weld_info_count: int,
+    welding_fee_repo: BomWeldingFeeRepository | None = None,
 ) -> WeldingCoverage:
+    fee_repo = welding_fee_repo or BomWeldingFeeRepository()
     breakdowns = BomWeldingProcessBreakdownRepository().list_by_scope(
         db, location=location, vehicle_model=vehicle_model, bom_version=bom_version
     )
@@ -244,7 +276,7 @@ def _welding_coverage(
         if bd.source_node_id is not None and int(bd.source_node_id) in current_ids
     ]
     live_breakdown_ids = {int(bd.id) for bd in live_breakdowns}
-    fees = deps.welding_fee_repo.list_by_calc_scope(
+    fees = fee_repo.list_by_calc_scope(
         db,
         year=year,
         location=location,
@@ -268,6 +300,9 @@ def _welding_coverage(
         for fee in aligned_fees
         if (breakdown_id := fee.source_breakdown_node_id) is not None
     }
+    missing_weld_info = weld_info_count > 0 and len(breakdowns) < weld_info_count
+    stale_tree = len(live_breakdowns) != len(breakdowns)
+    breakdown_complete = bool(breakdowns) and not missing_weld_info and not stale_tree
 
     latest = BomWeldingFeeCalcLogRepository().get_latest(
         db,
@@ -278,7 +313,11 @@ def _welding_coverage(
     )
     if latest is None:
         return WeldingCoverage(
-            False, "从未算过焊接费，请先到焊接费计算页完成", fee_count, level_counts
+            False,
+            "从未算过焊接费，请先到焊接费计算页完成",
+            fee_count,
+            level_counts,
+            breakdown_complete,
         )
     if latest.status in {"processing", "failed"}:
         return WeldingCoverage(
@@ -286,20 +325,23 @@ def _welding_coverage(
             f"焊接费最新日志为 {latest.status}，请先完成焊接费计算",
             fee_count,
             level_counts,
+            breakdown_complete,
         )
-    if weld_info_count > 0 and len(breakdowns) < weld_info_count:
+    if missing_weld_info:
         return WeldingCoverage(
             False,
             "有焊信的节点尚未全部进入拆解，请先生成焊接工艺拆解",
             fee_count,
             level_counts,
+            False,
         )
-    if len(live_breakdowns) != len(breakdowns):
+    if stale_tree:
         return WeldingCoverage(
             False,
             f"焊接拆解/费行未对齐当前 BOM 树（当前树对齐 {fee_count} 条），请重导后重算焊接费",
             fee_count,
             level_counts,
+            False,
         )
     if any(bd.id not in covered_ids for bd in live_breakdowns):
         return WeldingCoverage(
@@ -311,5 +353,6 @@ def _welding_coverage(
             ),
             fee_count,
             level_counts,
+            True,
         )
-    return WeldingCoverage(True, "焊接费已完成", fee_count, level_counts)
+    return WeldingCoverage(True, "焊接费已完成", fee_count, level_counts, True)

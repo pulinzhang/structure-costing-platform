@@ -15,12 +15,12 @@ STATUS_LABEL: dict[str, str] = {
 }
 
 STATUS_COLOR: dict[str, str] = {
-    "ok": "166534",
+    "ok": "71717A",
     "partial": "B45309",
     "failed": "B91C1C",
     "skipped": "57534E",
     "processing": "1D4ED8",
-    "success": "166534",
+    "success": "71717A",
 }
 
 

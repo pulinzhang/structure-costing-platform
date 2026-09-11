@@ -19,6 +19,7 @@ from app.exceptions.base import BusinessException, NotFoundException
 from app.repositories.costing.engine.costing_engine_run_repository import (
     CostingEngineRunRepository,
 )
+from app.schemas.common import DeletedCountVO
 from app.schemas.dto.costing_engine_dto import CostingEngineRunCreateDTO
 from app.schemas.vo.async_task_vo import AsyncTaskAcceptedVO, AsyncTaskProgressVO
 from app.schemas.vo.costing_engine_vo import (
@@ -257,16 +258,30 @@ class CostingEngineService:
             raise NotFoundException(f"引擎 Run 不存在: {run_id}")
         db.commit()
         if task_id:
-            try:
-                self.async_task_service.update_task_standalone(
-                    task_id,
-                    status=STATUS_FAILED,
-                    progress=100,
-                    message="用户删除 Run",
-                    result={"run_id": run_id, "status": "deleted"},
-                )
-            except Exception:
-                logger.exception("标记父任务失败可忽略: task_id=%s", task_id)
+            self._mark_task_deleted(task_id, run_id)
+
+    def delete_all_runs(self, db: Session) -> DeletedCountVO:
+        task_ids = self.run_repo.list_running_task_ids(db)
+        deleted_count = self.run_repo.delete_all(db)
+        db.commit()
+        for task_id in task_ids:
+            self._mark_task_deleted(task_id, run_id=None)
+        return DeletedCountVO(deleted_count=deleted_count)
+
+    def _mark_task_deleted(self, task_id: str, run_id: int | None) -> None:
+        result: EngineWorkerResultJson = {"status": "deleted"}
+        if run_id is not None:
+            result["run_id"] = run_id
+        try:
+            self.async_task_service.update_task_standalone(
+                task_id,
+                status=STATUS_FAILED,
+                progress=100,
+                message="用户删除 Run",
+                result=result,
+            )
+        except Exception:
+            logger.exception("标记父任务失败可忽略: task_id=%s", task_id)
 
     def _submit_run_worker(
         self,
