@@ -1,4 +1,4 @@
-import { policyUploadTemplate } from './template.js?v=2';
+import { policyUploadTemplate } from './template.js?v=3';
 
 const MAX_RECENT_UPLOADS = 8;
 const POLL_INTERVAL_MS = 2000;
@@ -108,8 +108,6 @@ const PolicyUploadPage = {
             event.preventDefault();
             this.submit();
         });
-
-        window.resetPolicyUploadForm = () => this.reset();
     },
 
     failOnPanel(message) {

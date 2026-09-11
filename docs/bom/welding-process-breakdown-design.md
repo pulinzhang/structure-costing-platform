@@ -230,7 +230,7 @@ Parser  仅 generate / 改量映射 经 Service 调用
 | 文档 | 关系 |
 |------|------|
 | [welding-fee-design.md](welding-fee-design.md) | 按拆解 `level` 计费；一表 `bom_welding_fees` |
-| [l0-assembly-costing-design.md](../costing/l0-assembly-costing-design.md) | 成品账读焊接费 **level=0** |
+| [assembly-costing-design.md](../costing/assembly-costing-design.md) | 成品账读焊接费 **level=0** |
 | [l1-assembly-costing-design.md](../costing/l1-assembly-costing-design.md) | 应成本工艺量来自 L1 拆解行 |
 | [costing-engine-design.md](../costing/costing-engine-design.md) | 年度步骤可补算拆解 |
 | [bom-procurement-objects-design.md](bom-procurement-objects-design.md) | 认人不读拆解 |

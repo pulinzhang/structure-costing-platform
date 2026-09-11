@@ -1,8 +1,8 @@
 # 月度智能自动核价引擎 — 详细设计
 
 > 面向产品、实施与开发复核。  
-> 入口仅 **基地 + 年度 + 月份**；在既有钢材联动 / 冲压零件价 / 成品 L0 计算之上增加 **编排层**。  
-> 硬约束见 [architecture.md](../architecture.md)；L0 取价规则见 [l0-assembly-costing-design.md](l0-assembly-costing-design.md)。  
+> 入口仅 **基地 + 年度 + 月份**；在既有钢材联动 / 冲压零件价 / 总成核价之上增加 **编排层**。  
+> 硬约束见 [architecture.md](../architecture.md)；总成取价规则见 [assembly-costing-design.md](assembly-costing-design.md)。  
 > **状态：已上线。** 产品规则仍以本文为准；实现见 §19 代码锚点。  
 > **产品入口：** `#/costing`；API `/api/costing/engine`。
 

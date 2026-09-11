@@ -17,7 +17,6 @@ _FASTENER_PN_RE = re.compile(r"^(N|Q|QR|FQ)", re.I)
 
 # 需要与子件用量交叉核对的工艺
 CHECKABLE_TOKENS = frozenset({"凸焊", "植焊", "铆接", "搭铁"})
-_CHECKABLE_TOKENS = CHECKABLE_TOKENS  # 兼容旧引用
 
 
 @dataclass(frozen=True)
@@ -59,7 +58,7 @@ def check_process_qty_against_children(
 
     非核对类工艺 → skipped。
     """
-    if process_token not in _CHECKABLE_TOKENS or process_qty <= 0:
+    if process_token not in CHECKABLE_TOKENS or process_qty <= 0:
         return FastenerQtyCheckResult(None, "skipped", None)
 
     fastener_sum, detail = sum_child_fastener_qty(children)

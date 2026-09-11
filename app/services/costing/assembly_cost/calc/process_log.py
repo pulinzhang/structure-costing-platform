@@ -103,51 +103,6 @@ def operator_write_error(exc: BaseException, *, part_number: str) -> str:
     return f"{part_number} 计算失败，未保存"
 
 
-def _looks_like_sql_dump(text: str) -> bool:
-    return any(
-        token in text
-        for token in (
-            "UNIQUE constraint",
-            "IntegrityError",
-            "[SQL:",
-            "[parameters:",
-            "Background on this error",
-        )
-    )
-
-
-def _part_number_from_legacy_line(line: str) -> str:
-    if line.startswith("[") and "] L" in line:
-        bits = line.split()
-        if len(bits) >= 3:
-            return bits[2]
-    return "（见该卡）"
-
-
-def humanize_legacy_card_message(message: str | None, *, part_number: str) -> str | None:
-    """展示旧日志时去掉 SQL。"""
-    if not message:
-        return None
-    if _looks_like_sql_dump(message):
-        return operator_write_error(Exception(message), part_number=part_number)
-    return message
-
-
-def humanize_legacy_detail_text(text: str | None) -> str:
-    if not text:
-        return ""
-    if not _looks_like_sql_dump(text):
-        return text
-    rewritten: list[str] = []
-    for line in text.splitlines():
-        if _looks_like_sql_dump(line):
-            part_number = _part_number_from_legacy_line(line)
-            rewritten.append(operator_write_error(Exception(line), part_number=part_number))
-        else:
-            rewritten.append(line)
-    return "\n".join(rewritten)
-
-
 @dataclass
 class ProcessLogBuilder:
     _lines: list[str] = field(default_factory=list)

@@ -1,3 +1,1 @@
-from app.routers.settings.logs.crud import router
-
-__all__ = ["router"]
+"""操作日志路由包。"""

@@ -32,7 +32,6 @@ _MODULE_RULES: list[tuple[str, str]] = [
     ("/api/bom/annual-part-price", "BOM年度零件价"),
     ("/api/bom/welding-process-breakdown", "焊接工艺拆解"),
     ("/api/bom/welding-fees", "焊接费"),
-    ("/api/bom/l0-welding-fees", "焊接费"),
     ("/api/bom", "材料清单"),
     ("/api/stamping", "冲压工程"),
     ("/api/costing/steel-price/calc", "钢材联动计算"),

@@ -24,7 +24,7 @@ class SteelPriceListSummaryVO(BaseModel):
         return optional_format_money(value, Q4, 4)
 
 
-class SteelPriceFilterOptions(BaseModel):
+class SteelPriceFilterOptionsVO(BaseModel):
     """列表筛选选项"""
 
     years: list[int] = []

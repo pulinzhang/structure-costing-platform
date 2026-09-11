@@ -19,7 +19,10 @@ from app.schemas.dto.steel_base_price_dto import (
     SteelBasePriceQuery,
     SteelBasePriceUpdate,
 )
-from app.schemas.vo.steel_base_price_vo import FilterOptionsVO, SteelBasePriceResponse
+from app.schemas.vo.steel_base_price_vo import (
+    SteelBasePriceFilterOptionsVO,
+    SteelBasePriceResponse,
+)
 from app.schemas.vo.user_vo import UserVO
 from app.services.masterdata.location.location_service import LocationService
 from app.services.masterdata.steel_grade_category import SteelGradeCategoryService
@@ -33,9 +36,9 @@ class SteelBasePriceCrudService:
     def __init__(self) -> None:
         self.repository = SteelBasePriceRepository()
 
-    def get_filter_options(self, db: Session) -> FilterOptionsVO:
+    def get_filter_options(self, db: Session) -> SteelBasePriceFilterOptionsVO:
         options = self.repository.get_filter_options(db)
-        return FilterOptionsVO.model_validate(
+        return SteelBasePriceFilterOptionsVO.model_validate(
             {**options, "locations": LocationService().list_registered(db)}
         )
 

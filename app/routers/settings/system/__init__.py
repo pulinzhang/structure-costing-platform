@@ -1,3 +1,1 @@
-from app.routers.settings.system.crud import router
-
-__all__ = ["router"]
+"""系统设置路由包。"""

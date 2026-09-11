@@ -5,7 +5,7 @@ from __future__ import annotations
 from datetime import datetime
 from decimal import ROUND_HALF_UP, Decimal
 
-from pydantic import BaseModel, ConfigDict, Field, field_serializer, model_validator
+from pydantic import BaseModel, ConfigDict, Field, field_serializer
 
 from app.common.money import Q4
 from app.common.timezone import datetime_to_iso
@@ -175,7 +175,6 @@ class AssemblyCostVO(BaseModel):
 
 
 class AssemblyCostCalcReadyVO(BaseModel):
-    l0_count: int
     tree_root_count: int = 0
     subject_count: int = 0
     procurement_object_count: int = 0
@@ -237,7 +236,6 @@ class AssemblyCostCalcLogVO(BaseModel):
     status: str
     message: str | None = None
     subject_total: int
-    l0_total: int | None = None
     ok_count: int
     partial_count: int
     failed_count: int
@@ -247,12 +245,6 @@ class AssemblyCostCalcLogVO(BaseModel):
     started_at: datetime | None = None
     finished_at: datetime | None = None
     operator_name: str | None = None
-
-    @model_validator(mode="after")
-    def _alias_l0_total(self) -> AssemblyCostCalcLogVO:
-        if self.l0_total is None:
-            object.__setattr__(self, "l0_total", self.subject_total)
-        return self
 
     @field_serializer("started_at", "finished_at")
     def _ser_dt(self, value: datetime | None) -> str | None:

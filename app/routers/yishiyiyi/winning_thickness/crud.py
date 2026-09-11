@@ -13,7 +13,7 @@ from app.common.permissions.codes import Perm
 from app.database import get_db
 from app.deps.permissions import require_any_perm, require_perm
 from app.schemas.common import PageResult
-from app.schemas.vo.steel_base_price_vo import FilterOptionsVO
+from app.schemas.vo.steel_base_price_vo import SteelBasePriceFilterOptionsVO
 from app.schemas.vo.user_vo import UserVO
 from app.schemas.vo.winning_thickness_vo import WinningThicknessRowVO
 from app.services.yishiyiyi.base_price import SteelBasePriceService
@@ -33,7 +33,7 @@ _base_price_service = SteelBasePriceService()
 
 @router.get(
     "/options",
-    response_model=ApiResponse[FilterOptionsVO],
+    response_model=ApiResponse[SteelBasePriceFilterOptionsVO],
 )
 def get_options(
     db: Session = Depends(get_db),
@@ -43,7 +43,7 @@ def get_options(
             Perm.BASE_PRICE_DOWNLOAD_VIEW,
         )
     ),
-) -> ApiResponse[FilterOptionsVO]:
+) -> ApiResponse[SteelBasePriceFilterOptionsVO]:
     """筛选下拉（复用基准价维度）。"""
     return ApiResponse.ok(data=_base_price_service.get_filter_options(db))
 

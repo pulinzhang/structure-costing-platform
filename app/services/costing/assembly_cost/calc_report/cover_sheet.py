@@ -63,7 +63,7 @@ def write_cover_sheet(ws: Worksheet, log: AssemblyCostCalcLogVO, filter_text: st
         ("开始", format_when(log.started_at), "结束", format_when(log.finished_at)),
         (
             "核价卡",
-            str(log.subject_total if log.subject_total is not None else log.l0_total or 0),
+            str(log.subject_total or 0),
             "批次",
             log.calc_batch_id,
         ),

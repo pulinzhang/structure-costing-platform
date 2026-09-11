@@ -8,12 +8,10 @@ from app.exceptions.base import (
     BusinessException,
     NotFoundException,
     PermissionException,
-    ValidationException,
 )
 
 __all__ = [
     "BusinessException",
     "NotFoundException",
     "PermissionException",
-    "ValidationException",
 ]

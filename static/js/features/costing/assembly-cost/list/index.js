@@ -127,10 +127,10 @@ function syncViewButtons() {
 
 function applyPermissionUi() {
     const canFn = typeof can === 'function' ? can : () => true;
-    listState.canDelete = canFn('op:assembly-cost:delete') || canFn('op:l0-assembly-cost:delete');
-    listState.canApprove = canFn('op:assembly-cost:approve') || canFn('op:l0-assembly-cost:approve');
-    listState.canReverse = canFn('op:assembly-cost:reverse') || canFn('op:l0-assembly-cost:reverse');
-    listState.canExport = canFn('op:assembly-cost:export') || canFn('op:l0-assembly-cost:export');
+    listState.canDelete = canFn('op:assembly-cost:delete');
+    listState.canApprove = canFn('op:assembly-cost:approve');
+    listState.canReverse = canFn('op:assembly-cost:reverse');
+    listState.canExport = canFn('op:assembly-cost:export');
     if (!listState.canApprove) {
         document.getElementById('lacBatchApproveBtn')?.classList.add('hidden');
     }

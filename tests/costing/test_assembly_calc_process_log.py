@@ -8,8 +8,6 @@ from app.services.costing.assembly_cost.calc.process_log import (
     ProcessLogBuilder,
     compose_card_message,
     format_missing_part_label,
-    humanize_legacy_card_message,
-    humanize_legacy_detail_text,
     operator_write_error,
     parse_card_traces,
 )
@@ -103,16 +101,3 @@ def test_compose_card_message_welding_only() -> None:
         weld_incomplete=True,
     )
     assert message == "焊接费不完整"
-
-
-def test_humanize_legacy_detail_text_strips_sql() -> None:
-    dump = (
-        "[FAILED] L1 551001137AA 左后门上铰链安装板总成 应成本=— 总费用=— 缺叶=0 "
-        "(sqlite3.IntegrityError) UNIQUE constraint failed: costing_assembly_costs.year, "
-        "costing_assembly_costs.part_number [SQL: INSERT INTO costing_assembly_costs"
-    )
-    text = humanize_legacy_detail_text(dump)
-    assert "INSERT INTO" not in text
-    assert "551001137AA" in text
-    assert "未保存" in text
-    assert "INSERT" not in (humanize_legacy_card_message(dump, part_number="551001137AA") or "")

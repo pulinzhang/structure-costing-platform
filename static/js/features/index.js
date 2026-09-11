@@ -187,16 +187,6 @@ export const pageMeta = {
         en: 'PART_COST_LIST',
         breadcrumb: ['核价', '冲压零件价格核算', '冲压零件价格一览'],
     },
-    'l0-assembly-cost-calc': {
-        title: '总成核价计算',
-        en: 'ASSEMBLY_COST_CALC',
-        breadcrumb: ['核价', '总成核价', '总成核价计算'],
-    },
-    'l0-assembly-cost': {
-        title: '总成核价一览',
-        en: 'ASSEMBLY_COST_LIST',
-        breadcrumb: ['核价', '总成核价', '总成核价一览'],
-    },
     'assembly-cost-calc': {
         title: '总成核价计算',
         en: 'ASSEMBLY_COST_CALC',

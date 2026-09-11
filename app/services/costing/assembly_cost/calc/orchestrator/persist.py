@@ -52,7 +52,7 @@ def persist_calc_result(
             log_id=log_id,
             status=status,
             message=message,
-            l0_total=len(ctx.subjects),
+            subject_total=len(ctx.subjects),
             ok_count=batch.ok_n,
             partial_count=batch.partial_n,
             failed_count=batch.failed_n,

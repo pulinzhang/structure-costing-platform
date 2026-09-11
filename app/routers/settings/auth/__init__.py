@@ -1,3 +1,1 @@
-from app.routers.settings.auth.crud import router
-
-__all__ = ["router"]
+"""登录认证路由包。"""

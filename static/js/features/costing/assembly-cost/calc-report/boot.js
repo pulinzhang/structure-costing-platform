@@ -267,7 +267,7 @@ function render(root) {
             <div>操作人 <strong>${display(log.operator_name)}</strong></div>
             <div>开始 <strong>${display(formatWhen(log.started_at))}</strong></div>
             <div>结束 <strong>${display(formatWhen(log.finished_at))}</strong></div>
-            <div>核价卡 <strong>${display(log.subject_total ?? log.l0_total)}</strong></div>
+            <div>核价卡 <strong>${display(log.subject_total)}</strong></div>
             <div>成功 / 部分成功 / 失败 / 跳过
                 <strong>${display(log.ok_count)} / ${display(log.partial_count)} / ${display(log.failed_count)} / ${display(log.skipped_approved_count)}</strong>
             </div>

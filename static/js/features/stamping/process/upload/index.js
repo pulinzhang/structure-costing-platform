@@ -3,7 +3,7 @@
  * 冲压工艺上传 — 异步 task_id + 进度轮询
  */
 
-import { uploadTemplate } from './template.js?v=17';
+import { uploadTemplate } from './template.js?v=18';
 import {
     setDropzoneDragActive,
     setDropzoneFileSelected,
@@ -132,6 +132,30 @@ export const UploadPage = {
             e.preventDefault();
             this.handleSubmit();
         });
+
+        document.getElementById('stampingResetButton')?.addEventListener('click', () => {
+            this.resetForm();
+        });
+        document.getElementById('filePreview')?.addEventListener('click', (event) => {
+            if (!event.target.closest('[data-action="remove-file"]')) return;
+            if (this.isUploading) return;
+            this.clearSelectedFile();
+        });
+    },
+
+    resetForm() {
+        if (this.isUploading) {
+            showToast('解析进行中，请稍候再重置', 'warning');
+            return;
+        }
+        this.stopPolling();
+        this.hideProgress();
+        this.clearActiveTask();
+        const form = document.getElementById('uploadForm');
+        if (form) {
+            form.reset();
+            this.clearSelectedFile();
+        }
     },
 
     failOnPanel(message) {
@@ -175,7 +199,7 @@ export const UploadPage = {
                     <div class="text-xs font-medium text-white truncate">${esc(file.name)}</div>
                     <div class="text-[10px] text-[#616161]">${window.formatFileSize(file.size)}</div>
                 </div>
-                <button type="button" onclick="window.removeUploadFile()" class="p-1.5 text-[#616161] hover:text-[#d32f2f] hover:bg-[#262626] rounded-sm transition-all">
+                <button type="button" data-action="remove-file" class="p-1.5 text-[#616161] hover:text-[#d32f2f] hover:bg-[#262626] rounded-sm transition-all">
                     ${svgIcon('trash')}
                 </button>
             </div>
@@ -486,24 +510,4 @@ export const pageConfig = {
     render: uploadTemplate,
     init: () => UploadPage.init(),
     destroy: () => UploadPage.destroy(),
-};
-
-window.removeUploadFile = function() {
-    if (UploadPage.isUploading) return;
-    UploadPage.clearSelectedFile();
-};
-
-window.resetUploadForm = function() {
-    if (UploadPage.isUploading) {
-        showToast('解析进行中，请稍候再重置', 'warning');
-        return;
-    }
-    UploadPage.stopPolling();
-    UploadPage.hideProgress();
-    UploadPage.clearActiveTask();
-    const uploadForm = document.getElementById('uploadForm');
-    if (uploadForm) {
-        uploadForm.reset();
-        UploadPage.clearSelectedFile();
-    }
 };

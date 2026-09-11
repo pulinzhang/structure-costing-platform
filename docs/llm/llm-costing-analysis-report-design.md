@@ -2,7 +2,7 @@
 
 > 状态：**已定稿归档**  
 > 业务主体：冲焊装配供应商（可多租户）· 主用户：**采购部**  
-> 关联：`docs/costing/costing-engine-design.md`、`docs/costing/l0-assembly-costing-design.md`、`docs/architecture.md`  
+> 关联：`docs/costing/costing-engine-design.md`、[总成月核价](../costing/assembly-costing-design.md)、`docs/architecture.md`  
 > 参考：仅借鉴「明细事实直查 + 强约束 Prompt」；不复用 Chat/SSE；**禁止**预聚合表与 ETL
 
 **阅读指引**
@@ -218,7 +218,7 @@ BETWEEN start AND end               贡献度、TopN、异常判定
 | 11 | 帮助走 `usage_help` + `static/helper` 语料 |
 | 12 | 分析历史落服务端；本人列表/查看/删除；localStorage 仅会话缓存 |
 | 13 | 轻量 Parser；不做完备 NL Query Engine |
-| 14 | **明细表直查（禁止预聚合）**：Repository **必须**在核价结果明细表（如 `costing_l0_assembly_costs`）上按 `time_range` 一次 `WHERE / GROUP BY / SUM` 聚合；**禁止**为 LLM 分析维护 `monthly_cost_summary` 等预聚合事实表，**禁止**定时 ETL / 物化视图 / 读写缓存表。数据必须与核价一览同源、同口径、实时一致 |
+| 14 | **明细表直查（禁止预聚合）**：Repository **必须**在核价结果明细表（如 `costing_assembly_costs`）上按 `time_range` 一次 `WHERE / GROUP BY / SUM` 聚合；**禁止**为 LLM 分析维护 `monthly_cost_summary` 等预聚合事实表，**禁止**定时 ETL / 物化视图 / 读写缓存表。数据必须与核价一览同源、同口径、实时一致 |
 | 15 | **并发限流**：单用户并发分析任务 ≤ 2 个，超出返回 429（`too many requests`）；**不做** SQL 执行超时熔断（库约 30MB、区间聚合在单机 SQLite 可接受；慢查询仅打 warn 日志，见 C.5.1） |
 | 16 | **切片隔离**：内部工具留在 `llm`，禁止进 `app/common`；上游不得 `import llm`；不为消本切片 Repo 用 `_money` 去改主业务（见 B.2.1） |
 
@@ -509,7 +509,7 @@ def query_l0_monthly_totals(
     end: str,
     tenant_id: ...,
 ) -> list[MonthlyTotalRow]:
-    """在 costing_l0_assembly_costs 上 WHERE + GROUP BY month + SUM；不含环比/贡献度。"""
+    """在 costing_assembly_costs 上 WHERE + GROUP BY month + SUM；不含环比/贡献度。"""
 ```
 
 **禁止**：

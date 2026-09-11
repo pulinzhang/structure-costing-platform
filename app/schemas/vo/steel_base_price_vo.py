@@ -97,7 +97,7 @@ class SteelBasePriceExportRow(BaseModel):
         return optional_format_money(value, Q2, 2)
 
 
-class FilterOptionsVO(BaseModel):
+class SteelBasePriceFilterOptionsVO(BaseModel):
     """筛选选项 VO（API 响应用）"""
 
     years: list[int] = []

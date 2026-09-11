@@ -1,0 +1,81 @@
+---
+description: main.py 只编排预备、开始、结束；实现进 app/bootstrap，禁止堆业务
+globs: main.py,app/bootstrap/**/*.py
+alwaysApply: false
+---
+
+# main.py 职责规范
+
+`main.py` 是应用装配入口，不是业务实现文件。
+**指挥家不拉琴。** 分层与谁调谁 → 架构宪法。
+
+## 只做这些
+
+### 预备（`create_app`，进程 import 时）
+
+- `build_fastapi`：构造 FastAPI（OpenAPI 参数、lifespan）
+- 注册中间件、异常处理器
+- 扫描并 `include_router`
+- 挂载静态资源 / 入口页
+
+### 开始（lifespan：`yield` 之前）
+
+`on_startup()`：目录、建表、种子、启动日志。
+
+### 结束（lifespan：`yield` 之后）
+
+`on_shutdown()`：释放连接池、关闭日志。
+
+### 允许的第四块
+
+`if __name__ == "__main__"` 只许短 `uvicorn.run`（开发器）。业务启动逻辑仍走 lifespan。
+
+允许入口最先 `LoggerConfig.configure()`，不算业务。
+
+## 禁止（写在对应模块）
+
+| 禁止堆在 main.py | 应放 |
+|---|---|
+| 逐行 `include_router` | `app/bootstrap/routers.py` 扫描 `app.routers` |
+| Swagger CSS / `openapi_tags` | `app/bootstrap/openapi.py`（CSS 旁路文件） |
+| 静态挂载、SPA/登录页 | `app/bootstrap/frontend.py`（**不要**放 `app/routers/`，避免当业务 API 扫描） |
+| 中间件类 | `app/middleware/`；main 只调 `register_middleware` |
+| 异常 handler 实现 | `app/exceptions/handlers.py`；main 只调注册函数 |
+| 建表 / 种子 / 关池 / 启动日志 | `app/bootstrap/lifecycle.py` |
+| 本机 IP 探测 | lifecycle 私有函数即可，不必新 `utils/network.py` |
+
+不要再拆成根上的 `app/bootstrap.py` / `app/routers/pages.py`。
+
+## 扫描约定
+
+业务模块导出 **`router = APIRouter(...)`**。`prefix` 写在构造参数里，禁止空 prefix、禁止扫描后再 `include_router(..., prefix=)`。包 `__init__.py` 只作包标记，禁止 `from .crud import router`（扫描会当成重复）。扫描会 `import` 模块顶层：router 只向下 import schema / service（及 FastAPI/deps），禁止 import `main` 或入口 `app` 实例。
+
+`pkgutil.iter_modules` 按字母序，扫描不按路径优先级重排、也不靠文件名抢顺序。跨模块禁止路径覆盖（`/api/x/{id}` 会吃掉 `/api/x/special`）；必须并存时放进同一 `APIRouter`，静态路径写在参数路径之前。包 `__init__` 禁止 re-export `router`；扫描仍用 `id` 去重兜底。
+
+扫描必须看得见，不只是做对。启动日志（`bootstrap.routers`）要能核对：有 `扫描到 router` 才算挂上；`prefix=` 对不对；`跳过重复` 是 re-export 不是丢了；变量名不是 `router` 会 warning。没这行日志 = 没扫到。
+
+## 行数
+
+- `main.py` 目标 ≤ 80；超过 120 必须再拆；超过 200 违规
+- `app/bootstrap/` 只装配与启动编排；种子只调 Service 入口（如 `ensure_default_admin`），禁止把切片业务抄进来
+
+## 判断标准
+
+每写一行 main.py：属于「预备 / 开始 / 结束 / 开发器」哪一块？答不上来就不要写在这里。
+
+```python
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    on_startup()
+    yield
+    on_shutdown()
+
+
+def create_app() -> FastAPI:
+    app = build_fastapi(lifespan=lifespan)
+    register_middleware(app)
+    register_exception_handlers(app)
+    include_scanned_routers(app)
+    register_frontend(app)
+    return app
+```

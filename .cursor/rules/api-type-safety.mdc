@@ -19,7 +19,7 @@ JSON 业务接口必须 `response_model=ApiResponse[T]` 且 `-> ApiResponse[T]`�
 | 非分页列表 | `ApiResponse[list[UserVO]]` |
 | 分页 | `ApiResponse[PageResult[UserVO]]` |
 
-`ApiResponse` 用现成工厂：`ok` / `created` / `updated` / `deleted` / `list_`。不要在规则或业务代码里复制一份 class 定义。`fail().data` 仅给 Pydantic 422 字段错误。`BasePageResponse` 是 `PageResult` 别名，新代码写 `PageResult`。禁止把 `total`/`page` 平铺在 `ApiResponse` 上。
+`ApiResponse` 用现成工厂：`ok` / `created` / `updated` / `deleted` / `list_`。不要在规则或业务代码里复制一份 class 定义。`fail().data` 仅给 Pydantic 422 字段错误。分页用 `PageResult`。禁止把 `total`/`page` 平铺在 `ApiResponse` 上。
 
 列表查询：`page`（从 1）+ `size`。禁止 Router/DTO 暴露 `skip`/`limit`。
 

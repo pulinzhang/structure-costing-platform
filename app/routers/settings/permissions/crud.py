@@ -1,4 +1,4 @@
-"""权限目录与用户授权路由"""
+"""权限目录与用户授权路由。"""
 
 from fastapi import APIRouter, Depends, Request
 from sqlalchemy.orm import Session
@@ -13,12 +13,12 @@ from app.schemas.vo.user_vo import UserVO
 from app.services.settings.users.permission_service import PermissionService
 from app.utils.response import ApiResponse
 
-router = APIRouter(tags=["权限管理"])
+router = APIRouter(prefix="/api/settings", tags=["权限管理"])
 _permission_service = PermissionService()
 
 
 @router.get(
-    "/api/settings/permissions/tree",
+    "/permissions/tree",
     response_model=ApiResponse[list[PermissionNodeVO]],
 )
 def get_permission_tree(
@@ -30,7 +30,7 @@ def get_permission_tree(
 
 
 @router.get(
-    "/api/settings/users/{user_id}/permissions",
+    "/users/{user_id}/permissions",
     response_model=ApiResponse[list[str]],
 )
 def get_user_permissions(
@@ -44,7 +44,7 @@ def get_user_permissions(
 
 
 @router.put(
-    "/api/settings/users/{user_id}/permissions",
+    "/users/{user_id}/permissions",
     response_model=ApiResponse[list[str]],
 )
 def set_user_permissions(
