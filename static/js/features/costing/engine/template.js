@@ -215,15 +215,10 @@ ${engineMotionStyles}
   </div>
 
   <div id="engineResultPanel" class="hidden mb-8">
-    <div class="flex items-center justify-between gap-4">
-      <div>
-        <div class="text-[10px] text-neutral-600">执行结果</div>
-        <div id="engineResultStatus" class="text-sm font-medium text-white mt-0.5">—</div>
-      </div>
-      <div id="engineResultCounts" class="text-xs font-mono text-neutral-500 tabular-nums">
-        成功 0 · 失败 0 · 跳过 0
-      </div>
-    </div>
+    <div class="text-[10px] text-neutral-600">执行结果</div>
+    <div id="engineResultStatus" class="text-sm font-medium text-white mt-0.5">—</div>
+    <p id="engineResultHeadline" class="text-[11px] text-neutral-400 mt-1 leading-relaxed"></p>
+    <div id="engineResultSteps" class="mt-4"></div>
   </div>
 
   <!-- 三列：靠留白分区，极淡边框 -->
@@ -266,6 +261,10 @@ ${engineMotionStyles}
     <div class="flex flex-wrap items-center justify-between gap-4 mb-4">
       <span class="text-[11px] text-neutral-300 tracking-wide">引擎运行历史</span>
       <div class="flex items-center gap-4">
+        <button id="engineHistoryDeleteAllBtn" type="button"
+                class="hidden text-[10px] text-neutral-600 hover:text-[#FF1E27] transition-colors">
+          全部删除
+        </button>
         <span id="engineHistoryTotal" class="text-[10px] font-mono text-neutral-600 tabular-nums">共 0 条</span>
         <select id="engineHistoryPageSize" class="engine-select-source engine-select-source-sm">
           <option value="10">10 / 页</option>

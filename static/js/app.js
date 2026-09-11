@@ -46,7 +46,7 @@ import { pageConfig as assemblyCostPage } from './features/costing/assembly-cost
 import { pageConfig as procurementContractReportPage } from './features/costing/procurement-contract-report/index.js?v=37';
 import { pageConfig as steelPricePolicyUploadPage } from './features/yishiyiyi/policy/upload/index.js?v=41';
 import { pageConfig as steelPricePolicyDownloadPage } from './features/yishiyiyi/policy/list/index.js?v=40';
-import { pageConfig as basePriceUploadPage } from './features/yishiyiyi/base-price/upload/index.js?v=43';
+import { pageConfig as basePriceUploadPage } from './features/yishiyiyi/base-price/upload/index.js?v=44';
 import { pageConfig as basePriceDownloadPage } from './features/yishiyiyi/base-price/list/index.js?v=37';
 import { pageConfig as winningThicknessDownloadPage } from './features/yishiyiyi/winning-thickness/list/index.js?v=16';
 import { pageConfig as steelGradeCategoryPage } from './features/masterdata/steel-grade-category/index.js?v=5';
@@ -68,7 +68,7 @@ import { pageConfig as bomWeldingProcessBreakdownGeneratePage } from './features
 import { pageConfig as bomWeldingProcessBreakdownListPage } from './features/bom/welding-process-breakdown/list/index.js?v=41';
 import { pageConfig as bomWeldingFeeCalcPage } from './features/bom/welding-fee/calc/index.js?v=7';
 import { pageConfig as bomWeldingFeeListPage } from './features/bom/welding-fee/list/index.js?v=9';
-import { pageConfig as costingPage }        from './features/costing/engine/index.js?v=32';
+import { pageConfig as costingPage }        from './features/costing/engine/index.js?v=34';
 import { pageConfig as fileTracePage }       from './features/file-trace/index.js?v=8';
 import { pageConfig as locationPage }        from './features/masterdata/location/index.js?v=7';
 import { pageConfig as vehicleModelUploadPage } from './features/masterdata/vehicle-model/upload/index.js?v=4';

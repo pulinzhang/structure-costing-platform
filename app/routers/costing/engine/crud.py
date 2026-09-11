@@ -6,7 +6,7 @@ from sqlalchemy.orm import Session
 from app.common.permissions.codes import Perm
 from app.database import get_db
 from app.deps.permissions import require_perm
-from app.schemas.common.page_result import PageResult
+from app.schemas.common import DeletedCountVO, PageResult
 from app.schemas.dto.costing_engine_dto import CostingEngineRunCreateDTO
 from app.schemas.vo.async_task_vo import AsyncTaskAcceptedVO, AsyncTaskProgressVO
 from app.schemas.vo.costing_engine_vo import (
@@ -104,6 +104,21 @@ def list_runs(
         total=total,
         page=page,
         page_size=size,
+    )
+
+
+@router.delete(
+    "/runs",
+    response_model=ApiResponse[DeletedCountVO],
+)
+def delete_all_runs(
+    db: Session = Depends(get_db),
+    current_user: UserVO = Depends(require_perm(Perm.COSTING_DELETE)),
+) -> ApiResponse[DeletedCountVO]:
+    result = _service.delete_all_runs(db)
+    return ApiResponse.ok(
+        data=result,
+        message=f"已删除 {result.deleted_count} 条引擎 Run（不撤销已写入的业务价格）",
     )
 
 

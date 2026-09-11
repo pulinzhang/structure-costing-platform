@@ -4,10 +4,12 @@ from __future__ import annotations
 
 from sqlalchemy.orm import Session
 
-from app.common.audit import AUDIT_APPROVED, AUDIT_PENDING, AUDIT_REJECTED
 from app.schemas.vo.stamping_part_cost_vo import StampingPartCostCalcReadyVO
 from app.services.costing.stamping_part_cost.calc.orchestrator.deps import PartCostCalcDeps
 from app.services.masterdata.location.location_service import LocationService
+from app.services.stamping.process_fee.calc.orchestrator.ready import (
+    evaluate_process_fee_coverage,
+)
 
 
 def collect_calc_ready(
@@ -23,6 +25,7 @@ def collect_calc_ready(
     location_value = (location or "").strip() or None
     vehicle_value = (vehicle_model or "").strip() or None
     version_value = (version or "").strip() or None
+    aliases = LocationService().expand_for_query(db, location_value) if location_value else []
 
     part_count = 0
     if location_value and vehicle_value:
@@ -37,12 +40,12 @@ def collect_calc_ready(
     steel_price_count = 0
     scrap_price_count = 0
     process_fee_count = 0
+    process_fee_complete = False
     die_fee_count = 0
     gauge_fee_count = 0
 
     if year and month and location_value:
-        names = LocationService().expand_for_query(db, location_value)
-        for candidate in names:
+        for candidate in aliases:
             count = deps.steel_repo.count_by_year_month_location(
                 db, year=year, month=month, location=candidate
             )
@@ -54,15 +57,18 @@ def collect_calc_ready(
         )
         scrap_price_count = 1 if scrap is not None else 0
 
-    if year and location_value:
-        process_fee_count = deps.process_fee_repo.count_by_scope_and_statuses(
+    if year and location_value and vehicle_value:
+        coverage = evaluate_process_fee_coverage(
             db,
             year=year,
-            location=location_value,
+            aliases=aliases or [location_value],
             vehicle_model=vehicle_value,
             version=version_value,
-            statuses=[AUDIT_PENDING, AUDIT_APPROVED, AUDIT_REJECTED],
+            part_repo=deps.part_repo,
+            fee_repo=deps.process_fee_repo,
         )
+        process_fee_count = coverage.fee_count
+        process_fee_complete = coverage.complete
 
     if year and location_value:
         die_fee_count = deps.die_fee_resolver.count_for_ready(
@@ -85,7 +91,7 @@ def collect_calc_ready(
         and part_count > 0
         and steel_price_count > 0
         and scrap_price_count > 0
-        and process_fee_count > 0
+        and process_fee_complete
     )
 
     return StampingPartCostCalcReadyVO(

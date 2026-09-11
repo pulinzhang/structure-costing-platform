@@ -178,6 +178,17 @@ class CostingEngineRunRepository:
         rows = q.order_by(CostingEngineRun.id.desc()).offset(skip).limit(limit).all()
         return rows, total
 
+    def list_running_task_ids(self, db: Session) -> list[str]:
+        rows = (
+            db.query(CostingEngineRun.task_id)
+            .filter(
+                CostingEngineRun.task_id.isnot(None),
+                CostingEngineRun.status == "running",
+            )
+            .all()
+        )
+        return [task_id for (task_id,) in rows if task_id]
+
     def delete(self, db: Session, run_id: int) -> bool:
         row = db.query(CostingEngineRun).filter(CostingEngineRun.id == run_id).first()
         if row is None:
@@ -185,3 +196,9 @@ class CostingEngineRunRepository:
         db.delete(row)
         db.flush()
         return True
+
+    def delete_all(self, db: Session) -> int:
+        db.query(CostingEngineRunStep).delete(synchronize_session=False)
+        deleted = db.query(CostingEngineRun).delete(synchronize_session=False)
+        db.flush()
+        return int(deleted)

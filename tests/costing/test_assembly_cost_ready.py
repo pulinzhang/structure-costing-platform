@@ -27,13 +27,13 @@ def _coverage(
         bd_cls.return_value.list_by_scope.return_value = breakdowns or []
         return _welding_coverage(
             db,
-            deps,
             year=2025,
             location="青岛",
             vehicle_model="T28",
             bom_version="D/00",
             current_ids=current_ids if current_ids is not None else {10},
             weld_info_count=weld_info_count,
+            welding_fee_repo=deps.welding_fee_repo,
         )
 
 
@@ -52,6 +52,7 @@ def test_welding_coverage_ignores_stale_and_orphan_fee_rows() -> None:
     assert cov.level_counts == {0: 1}
     assert "未对齐当前 BOM 树" in cov.message
     assert "对齐 1 条" in cov.message
+    assert cov.breakdown_complete is False
 
 
 def test_welding_coverage_complete_counts_only_live_fees() -> None:
@@ -65,6 +66,7 @@ def test_welding_coverage_complete_counts_only_live_fees() -> None:
     assert cov.complete is True
     assert cov.fee_count == 1
     assert cov.level_counts == {0: 1}
+    assert cov.breakdown_complete is True
 
 
 def test_welding_coverage_missing_fee_uses_aligned_count() -> None:

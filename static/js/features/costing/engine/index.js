@@ -2,7 +2,7 @@
  * 月度智能自动核价引擎 — 页面逻辑 (BRABUS Pure Industrial Spec)
  */
 
-import { costingTemplate } from './template.js?v=21';
+import { costingTemplate } from './template.js?v=23';
 import {
     DEFAULT_PAGE_SIZE,
     bindPageSizeSelect,
@@ -85,6 +85,23 @@ const STATUS_META = {
     deleted: { label: '已删除', className: 'text-neutral-700' },
 };
 
+const STEP_STAGE_META = {
+    steel: { label: '钢材联动', page: 'steel-price-calc', action: '去看钢材价' },
+    part_cost: { label: '零件核价', page: 'stamping-part-cost-calc', action: '去看零件价' },
+    assembly: { label: '总成核价', page: 'assembly-cost-calc', action: '去看计算历史' },
+    annual_process_fee: {
+        label: '冲压加工费',
+        page: 'stamping-process-fee-calc',
+        action: '去看加工费',
+    },
+    annual_welding_breakdown: {
+        label: '焊接工艺拆解',
+        page: 'bom-welding-process-breakdown',
+        action: '去看拆解',
+    },
+    annual_welding_fee: { label: '焊接费', page: 'bom-welding-fee-calc', action: '去看焊接费' },
+};
+
 const engineState = {
     canRun: true,
     canDelete: true,
@@ -152,6 +169,9 @@ export function destroy() {
 function applyPermissionUi() {
     engineState.canRun = typeof can === 'function' ? can('op:costing:run') : true;
     engineState.canDelete = typeof can === 'function' ? can('op:costing:delete') : true;
+    document
+        .getElementById('engineHistoryDeleteAllBtn')
+        ?.classList.toggle('hidden', !engineState.canDelete);
     updateStartButton();
 }
 
@@ -312,11 +332,33 @@ function mountEngineCustomSelect(selectId) {
 function bindEvents() {
     document.getElementById('engineReadyBtn')?.addEventListener('click', () => checkReady());
     document.getElementById('engineStartBtn')?.addEventListener('click', () => startRun());
+    document
+        .getElementById('engineHistoryDeleteAllBtn')
+        ?.addEventListener('click', () => deleteAllRuns());
     document.getElementById('engineHistoryBody')?.addEventListener('click', (event) => {
-        const btn = event.target.closest('[data-action="delete-run"]');
-        if (!btn) return;
-        const runId = Number(btn.getAttribute('data-run-id'));
-        if (runId) deleteRun(runId);
+        const delBtn = event.target.closest('[data-action="delete-run"]');
+        if (delBtn) {
+            const runId = Number(delBtn.getAttribute('data-run-id'));
+            if (runId) deleteRun(runId);
+            return;
+        }
+        const openBtn = event.target.closest('[data-action="open-run"]');
+        if (!openBtn) return;
+        const runId = Number(openBtn.getAttribute('data-run-id'));
+        if (runId) openRun(runId);
+    });
+    document.getElementById('engineResultSteps')?.addEventListener('click', (event) => {
+        const navBtn = event.target.closest('[data-action="navigate"]');
+        if (!navBtn) return;
+        const page = navBtn.getAttribute('data-page');
+        const queryRaw = navBtn.getAttribute('data-query') || '{}';
+        let query = {};
+        try {
+            query = JSON.parse(queryRaw);
+        } catch (_) {
+            query = {};
+        }
+        navigateWithQuery(page, query);
     });
     document.getElementById('engineGateHardList')?.addEventListener('click', (event) => {
         const toggle = event.target.closest('[data-action="toggle-gates-detail"]');
@@ -1328,16 +1370,177 @@ function showResult(result) {
         statusEl.textContent = meta.label;
         statusEl.className = `text-sm font-bold tracking-[0.06em] mt-0.5 ${meta.className}`;
     }
-    const counts = result?.counts || {};
-    const countsEl = document.getElementById('engineResultCounts');
-    if (countsEl) {
-        countsEl.textContent = `成功 ${counts.succeeded || 0} · 失败 ${counts.failed || 0} · 跳过 ${counts.skipped || 0}`;
-    }
     if (result?.run_id) {
         engineState.activeRunId = result.run_id;
     }
+    const groups = classifyEngineSteps(result);
+    const headlineEl = document.getElementById('engineResultHeadline');
+    if (headlineEl) headlineEl.textContent = engineResultHeadline(groups);
+    const stepsEl = document.getElementById('engineResultSteps');
+    if (stepsEl) stepsEl.innerHTML = renderEngineStepGroups(result, groups);
     renderPipeline();
     updateIgnitionLed();
+}
+
+function classifyEngineSteps(result) {
+    const groups = { failed: [], blocked: [], review: [], done: [] };
+    const steps = Array.isArray(result?.steps) ? result.steps : [];
+    steps.forEach((step) => {
+        const message = String(step.message || '');
+        if (step.status === 'failed') {
+            groups.failed.push(step);
+            return;
+        }
+        if (step.status === 'skipped') {
+            if (message.includes('已有结果')) {
+                groups.done.push(step);
+            } else {
+                groups.blocked.push(step);
+            }
+            return;
+        }
+        if (message.includes('部分成功') || /\bpartial\b/.test(message)) {
+            groups.review.push(step);
+            return;
+        }
+        groups.done.push(step);
+    });
+    return groups;
+}
+
+function engineResultHeadline(groups) {
+    const failN = groups.failed.length;
+    const blockN = groups.blocked.length;
+    const reviewN = groups.review.length;
+    if (failN) {
+        return failN === 1
+            ? `有 1 项核算失败：${formatStepTitle(groups.failed[0])}。请先处理下面清单。`
+            : `有 ${failN} 项核算失败，请先处理下面清单。`;
+    }
+    if (blockN) {
+        return `有 ${blockN} 项因上游未完成而未算，不是「已审核跳过」。`;
+    }
+    if (reviewN) {
+        return `核算已跑完，有 ${reviewN} 项需到计算历史核对缺件。`;
+    }
+    return '本月计划内核算已完成。';
+}
+
+function formatStepScope(step) {
+    const key = String(step.scope_key || '').trim();
+    if (!key) return '';
+    if (key.includes('|')) {
+        const [vehicleModel, bomVersion] = key.split('|');
+        return `${vehicleModel} · ${bomVersion}`;
+    }
+    return key;
+}
+
+function formatStepTitle(step) {
+    const meta = STEP_STAGE_META[step.stage] || { label: step.stage || '核算步骤' };
+    const scope = formatStepScope(step);
+    return scope ? `${meta.label} ${scope}` : meta.label;
+}
+
+function stepNavQuery(result, step) {
+    const query = {};
+    if (result?.year != null) query.year = result.year;
+    if (result?.month != null) query.month = result.month;
+    if (result?.location) query.location = result.location;
+    const key = String(step.scope_key || '');
+    if (
+        step.stage === 'assembly' ||
+        step.stage === 'annual_welding_fee' ||
+        step.stage === 'annual_welding_breakdown'
+    ) {
+        const [vehicleModel, bomVersion] = key.split('|');
+        if (vehicleModel) query.vehicle_model = vehicleModel;
+        if (bomVersion) query.bom_version = bomVersion;
+    } else if (step.stage === 'part_cost' || step.stage === 'annual_process_fee') {
+        if (key) query.vehicle_model = key;
+    }
+    return query;
+}
+
+function renderStepRows(result, steps, toneClass) {
+    return steps
+        .map((step) => {
+            const meta = STEP_STAGE_META[step.stage] || {};
+            const canPage =
+                meta.page && typeof canAccessPage === 'function'
+                    ? canAccessPage(meta.page)
+                    : Boolean(meta.page);
+            const query = stepNavQuery(result, step);
+            const action = canPage
+                ? `<button type="button" data-action="navigate" data-page="${esc(meta.page)}"
+                        data-query='${esc(JSON.stringify(query))}'
+                        class="shrink-0 text-[10px] ${toneClass}">${esc(meta.action || '去查看')} →</button>`
+                : meta.page
+                  ? '<span class="shrink-0 text-[9px] text-neutral-700">无权限</span>'
+                  : '';
+            const reason = step.message ? esc(step.message) : '';
+            return `
+            <div class="flex items-start justify-between gap-3 py-2.5 border-b border-white/5">
+                <div class="min-w-0">
+                    <div class="text-[11px] text-neutral-200">${esc(formatStepTitle(step))}</div>
+                    ${reason ? `<div class="text-[10px] text-neutral-600 mt-0.5 leading-relaxed">${reason}</div>` : ''}
+                </div>
+                ${action}
+            </div>`;
+        })
+        .join('');
+}
+
+function renderEngineStepGroups(result, groups) {
+    const blocks = [];
+    if (groups.failed.length) {
+        blocks.push(`
+            <div class="mb-4">
+                <div class="text-[10px] text-[#FF1E27] mb-1">需要处理 · 失败 ${groups.failed.length}</div>
+                ${renderStepRows(result, groups.failed, 'text-[#FF1E27] hover:text-white')}
+            </div>`);
+    }
+    if (groups.blocked.length) {
+        blocks.push(`
+            <div class="mb-4">
+                <div class="text-[10px] text-amber-500/80 mb-1">未执行 · 上游未完成 ${groups.blocked.length}</div>
+                ${renderStepRows(result, groups.blocked, 'text-amber-500/80 hover:text-amber-400')}
+            </div>`);
+    }
+    if (groups.review.length) {
+        blocks.push(`
+            <div class="mb-4">
+                <div class="text-[10px] text-amber-500/80 mb-1">需要核对 · 部分成功 ${groups.review.length}</div>
+                ${renderStepRows(result, groups.review, 'text-amber-500/80 hover:text-amber-400')}
+            </div>`);
+    }
+    if (groups.done.length && (groups.failed.length || groups.blocked.length || groups.review.length)) {
+        blocks.push(`
+            <div class="text-[10px] text-neutral-700">其余 ${groups.done.length} 项已完成或已有结果，无需处理。</div>`);
+    }
+    return blocks.join('');
+}
+
+async function openRun(runId) {
+    try {
+        const res = await HttpClient.get(`${RUNS_API}/${runId}`);
+        const run = res.data || {};
+        const summary = run.summary_json || {};
+        showResult({
+            status: run.status || summary.status,
+            location: run.location,
+            year: run.year,
+            month: run.month,
+            run_id: run.id,
+            steps: (run.steps && run.steps.length ? run.steps : summary.steps) || [],
+        });
+        document.getElementById('engineResultPanel')?.scrollIntoView({
+            block: 'nearest',
+            behavior: 'smooth',
+        });
+    } catch (_) {
+        /* toast 由 HttpClient 统一拦截 */
+    }
 }
 
 function startPolling(taskId) {
@@ -1433,9 +1636,11 @@ function renderHistory() {
                 className: 'text-neutral-600',
             };
             const fingerprint = auditFingerprint(row);
+            const viewBtn = `<button type="button" data-action="open-run" data-run-id="${row.id}"
+                        class="px-2 py-1 text-[10px] text-neutral-500 hover:text-white transition-colors">查看</button>`;
             const deleteBtn = engineState.canDelete
                 ? `<button type="button" data-action="delete-run" data-run-id="${row.id}"
-                        class="opacity-0 group-hover:opacity-100 focus:opacity-100 px-2 py-1 text-[10px] text-neutral-600 hover:text-[#FF1E27] transition-opacity"
+                        class="px-2 py-1 text-[10px] text-neutral-600 hover:text-[#FF1E27] transition-colors"
                         title="删除记录（不撤销已算价格）">删除</button>`
                 : '';
             return `
@@ -1451,7 +1656,7 @@ function renderHistory() {
                 <td class="px-2 py-2.5 text-center text-[10px] ${meta.className}">${esc(meta.label)}</td>
                 <td class="px-2 py-2.5 text-[10px] text-neutral-500 overflow-hidden truncate">${esc(row.created_by || '-')}</td>
                 <td class="px-2 py-2.5 text-[10px] text-neutral-600 tabular-nums">${esc(formatTs(row.started_at))}</td>
-                <td class="px-2 py-2.5 text-center">${deleteBtn}</td>
+                <td class="px-2 py-2.5 text-center">${viewBtn}${deleteBtn}</td>
             </tr>`;
         })
         .join('');
@@ -1503,6 +1708,36 @@ async function deleteRun(runId) {
             updateStartButton();
         }
         loadHistory(engineState.history.page);
+    } catch (_) {
+        /* toasted */
+    } finally {
+        engineState.isDeleting = false;
+    }
+}
+
+async function deleteAllRuns() {
+    if (!engineState.canDelete) {
+        showToast('无删除权限', 'warning');
+        return;
+    }
+    if (engineState.isDeleting) return;
+    const ok = window.confirm(
+        '确认删除全部引擎运行历史？\n用于清理中断/卡住任务；不会撤销已写入的钢材/零件/L0 等业务价格。'
+    );
+    if (!ok) return;
+    engineState.isDeleting = true;
+    try {
+        const res = await HttpClient.delete(RUNS_API);
+        const count = res.data?.deleted_count ?? 0;
+        showToast(`已删除 ${count} 条 Run 记录`, 'success');
+        stopPolling();
+        engineState.isRunning = false;
+        engineState.isStarting = false;
+        engineState.activeRunId = null;
+        engineState.activeTaskId = null;
+        setReadyButtonBusy(false);
+        updateStartButton();
+        loadHistory(1);
     } catch (_) {
         /* toasted */
     } finally {

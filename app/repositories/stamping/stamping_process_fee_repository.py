@@ -427,6 +427,23 @@ class StampingProcessFeeRepository:
         )
         return [row[0] for row in rows if row[0]]
 
+    def list_by_scope(
+        self,
+        db: Session,
+        *,
+        year: int,
+        location: str,
+        vehicle_model: str | None = None,
+        version: str | None = None,
+    ) -> list[StampingProcessFee]:
+        return self._scope_query(
+            db,
+            year=year,
+            location=location,
+            vehicle_model=vehicle_model,
+            version=version,
+        ).all()
+
     def count_by_scope_and_statuses(
         self,
         db: Session,
