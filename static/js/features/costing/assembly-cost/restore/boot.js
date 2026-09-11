@@ -224,9 +224,9 @@ function waterfallHtml(row) {
     const isProcurement = row.view === 'procurement';
     const weldLabel = isProcurement ? '焊装' : '本总成焊装';
     const items = [
-        ['自制冲压', row.stamping_amount],
-        ['外购件', row.purchased_amount],
-        ['一口价', row.bundle_amount],
+        ['冲压件', row.stamping_amount],
+        ['分总成', row.purchased_amount],
+        ['外购件', row.bundle_amount],
         [weldLabel, row.welding_amount],
     ];
     if (isProcurement) {
@@ -448,7 +448,7 @@ function nodeFold(item, report) {
     const kidsHtml = item.children.length ? treeList(item.children, report) : '';
     const broken = node.cost_source === 'missing' || (node.stamping && node.stamping.record_missing);
         const annual = node.annual && !node.annual.record_missing
-        ? `<div class="facts">${fact('外购单价', money(node.annual.unit_price))}</div>`
+        ? `<div class="facts">${fact('单价', money(node.annual.unit_price))}</div>`
         : '';
     const body = `${annual}${stampingBlock(node)}`;
     const mark = broken ? ' is-break' : '';

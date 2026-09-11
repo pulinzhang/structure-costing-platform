@@ -14,10 +14,10 @@ HIGHLIGHT_ASSEMBLY_PRICE = "总成价"
 HIGHLIGHT_TOTAL_COST = "未摊入前"
 
 COST_SOURCE_LABELS = {
-    "stamping": "自制冲压",
-    "annual": "外购件",
-    "bundle": "一口价",
-    "skipped_by_bundle": "已含在一口价",
+    "stamping": "冲压件",
+    "annual": "分总成",
+    "bundle": "外购件",
+    "skipped_by_bundle": "已含在外购件",
     "missing": "缺价",
     "sub_assembly": "分总成",
 }

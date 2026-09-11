@@ -1151,21 +1151,21 @@ class AssemblyCostRestoreService:
         checks = [
             RestoreIdentityCheckVO(
                 code="stamping",
-                label="自制冲压",
+                label="冲压件",
                 recorded=_money(card.stamping_amount),
                 summed=stamp_sum,
                 is_match=_match(card.stamping_amount, stamp_sum),
             ),
             RestoreIdentityCheckVO(
                 code="purchased",
-                label="外购件",
+                label="分总成",
                 recorded=_money(card.purchased_amount),
                 summed=purchased_sum,
                 is_match=_match(card.purchased_amount, purchased_sum),
             ),
             RestoreIdentityCheckVO(
                 code="bundle",
-                label="一口价",
+                label="外购件",
                 recorded=_money(card.bundle_amount),
                 summed=bundle_sum,
                 is_match=_match(card.bundle_amount, bundle_sum),
