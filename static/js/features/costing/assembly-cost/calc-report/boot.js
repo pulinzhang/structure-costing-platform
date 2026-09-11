@@ -1,5 +1,5 @@
 /**
- * 总成核价计算报告（独立浅色页签）
+ * 总成核价计算报告（独立浅色页签 · Brabus light）
  */
 
 const STATUS_LABEL = {
@@ -88,6 +88,63 @@ function matches(card) {
     return hay.includes(keyword);
 }
 
+function filterSelectHtml(id, options) {
+    const items = options.map(([value, label]) => (
+        `<li role="option" data-value="${display(value)}">${display(label)}</li>`
+    )).join('');
+    return `
+        <div class="filter-select" id="${id}">
+            <button type="button" class="filter-select-btn" aria-haspopup="listbox" aria-expanded="false"></button>
+            <ul class="filter-select-menu" hidden role="listbox">${items}</ul>
+        </div>
+    `;
+}
+
+function closeFilterSelects(root) {
+    root.querySelectorAll('.filter-select').forEach((host) => {
+        host.classList.remove('is-open');
+        const btn = host.querySelector('.filter-select-btn');
+        const menu = host.querySelector('.filter-select-menu');
+        if (btn) btn.setAttribute('aria-expanded', 'false');
+        if (menu) menu.hidden = true;
+    });
+}
+
+function syncFilterSelect(host, currentValue) {
+    const btn = host.querySelector('.filter-select-btn');
+    host.querySelectorAll('[data-value]').forEach((item) => {
+        const on = item.dataset.value === String(currentValue);
+        item.classList.toggle('is-on', on);
+        if (on && btn) btn.textContent = item.textContent.trim();
+    });
+}
+
+function bindFilterSelect(root, hostId, stateKey) {
+    const host = root.querySelector(`#${hostId}`);
+    if (!host) return;
+    const btn = host.querySelector('.filter-select-btn');
+    const menu = host.querySelector('.filter-select-menu');
+    syncFilterSelect(host, state[stateKey]);
+    btn.addEventListener('click', (event) => {
+        event.stopPropagation();
+        const willOpen = menu.hidden;
+        closeFilterSelects(root);
+        if (willOpen) {
+            host.classList.add('is-open');
+            menu.hidden = false;
+            btn.setAttribute('aria-expanded', 'true');
+        }
+    });
+    menu.addEventListener('click', (event) => {
+        const item = event.target.closest('[data-value]');
+        if (!item) return;
+        state[stateKey] = item.dataset.value;
+        closeFilterSelects(root);
+        syncFilterSelect(host, state[stateKey]);
+        refreshRows(root);
+    });
+}
+
 function bindFilters(root) {
     const keyword = root.querySelector('#reportKeyword');
     keyword.value = state.keyword;
@@ -101,18 +158,9 @@ function bindFilters(root) {
             refreshRows(root);
         });
     });
-    const levelSelect = root.querySelector('#reportLevel');
-    levelSelect.value = state.level;
-    levelSelect.addEventListener('change', () => {
-        state.level = levelSelect.value;
-        refreshRows(root);
-    });
-    const treeSelect = root.querySelector('#reportTreeRoot');
-    treeSelect.value = state.treeRoot;
-    treeSelect.addEventListener('change', () => {
-        state.treeRoot = treeSelect.value;
-        refreshRows(root);
-    });
+    bindFilterSelect(root, 'reportLevel', 'level');
+    bindFilterSelect(root, 'reportTreeRoot', 'treeRoot');
+    document.addEventListener('click', () => closeFilterSelects(root));
     root.querySelector('#reportPrintBtn')?.addEventListener('click', () => window.print());
     root.querySelector('#reportExportBtn')?.addEventListener('click', () => exportExcel(true));
     root.querySelector('#reportExportAllBtn')?.addEventListener('click', () => exportExcel(false));
@@ -231,15 +279,15 @@ function render(root) {
             <button type="button" data-status="partial">部分成功</button>
             <button type="button" data-status="failed">失败</button>
             <button type="button" data-status="skipped">跳过</button>
-            <select id="reportLevel">
-                <option value="all">全部层级</option>
-                ${levels.map((level) => `<option value="${level}">L${level}</option>`).join('')}
-            </select>
-            <select id="reportTreeRoot">
-                <option value="all">树根/非树根</option>
-                <option value="yes">仅树根</option>
-                <option value="no">非树根</option>
-            </select>
+            ${filterSelectHtml('reportLevel', [
+                ['all', '全部层级'],
+                ...levels.map((level) => [String(level), `L${level}`]),
+            ])}
+            ${filterSelectHtml('reportTreeRoot', [
+                ['all', '树根/非树根'],
+                ['yes', '仅树根'],
+                ['no', '非树根'],
+            ])}
             <span class="count">显示 ${filtered.length} / ${cards.length} 张卡</span>
         </div>
         <div class="body">
@@ -253,6 +301,11 @@ function render(root) {
 }
 
 function onKeydown(event) {
+    if (event.key === 'Escape') {
+        const root = document.getElementById('reportRoot');
+        if (root) closeFilterSelects(root);
+        return;
+    }
     if ((event.ctrlKey || event.metaKey) && event.key.toLowerCase() === 'e') {
         event.preventDefault();
         exportExcel(true);
@@ -271,8 +324,8 @@ function renderTable(cards) {
                 <td>L${display(card.level)}</td>
                 <td>${card.is_tree_root ? '树根' : '—'}</td>
                 <td>
-                    <div style="font-weight:600;">${display(card.part_number)}</div>
-                    <div style="color:#78716c;font-size:12px;">${display(card.part_name)}</div>
+                    <div class="part-number">${display(card.part_number)}</div>
+                    <div class="part-name">${display(card.part_name)}</div>
                 </td>
                 <td class="${statusClass}">${display(STATUS_LABEL[card.status] || card.status)}</td>
                 <td class="num">${display(card.material_amount)}</td>

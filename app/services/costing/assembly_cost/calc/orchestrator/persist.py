@@ -4,7 +4,9 @@ from __future__ import annotations
 
 from sqlalchemy.orm import Session
 
+from app.common.audit import display_name
 from app.schemas.vo.assembly_cost_vo import AssemblyCostCalcResultVO
+from app.schemas.vo.user_vo import UserVO
 from app.services.costing.assembly_cost.calc.calc_log_service import (
     STATUS_FAILED,
     STATUS_PARTIAL,
@@ -29,6 +31,7 @@ def persist_calc_result(
     *,
     ctx: CalcPrepContext,
     batch: BatchCalcOutcome,
+    current_user: UserVO,
     log_id: int | None,
     progress: ProgressNotifier,
 ) -> AssemblyCostCalcResultVO:
@@ -56,6 +59,26 @@ def persist_calc_result(
             skipped_approved_count=batch.skipped,
             detail_text=detail_text,
             detail_json=detail_json,
+        )
+    else:
+        deps.calc_log_service.persist(
+            db,
+            year=ctx.year,
+            month=ctx.month,
+            location=ctx.location,
+            vehicle_model=ctx.vehicle_model,
+            bom_version=ctx.bom_version,
+            status=status,
+            message=message,
+            subject_total=len(ctx.subjects),
+            ok_count=batch.ok_n,
+            partial_count=batch.partial_n,
+            failed_count=batch.failed_n,
+            skipped_approved_count=batch.skipped,
+            detail_text=detail_text,
+            detail_json=detail_json,
+            operator_id=current_user.id,
+            operator_name=display_name(current_user),
         )
     progress.report(100, message)
     return AssemblyCostCalcResultVO(

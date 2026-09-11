@@ -3,7 +3,7 @@
  * 基准价格上传 — 异步 task_id + 进度轮询
  */
 
-import { basePriceUploadTemplate } from './template.js?v=38';
+import { basePriceUploadTemplate } from './template.js?v=39';
 
 const POLL_INTERVAL_MS = 2000;
 
@@ -18,7 +18,6 @@ const BasePriceUploadPage = {
         this.stopPolling();
         this.applyPermissionUi();
         this.bindEvents();
-        this.fillDefaultPeriod();
 
         if (this.isUploading && this.activeTaskId) {
             this.setUploading(true);
@@ -104,13 +103,6 @@ const BasePriceUploadPage = {
         window.resetBasePriceUploadForm = () => this.reset();
     },
 
-    fillDefaultPeriod() {
-        const monthInput = document.getElementById('basePriceMonth');
-        if (monthInput && !monthInput.value) {
-            monthInput.value = String(new Date().getMonth() + 1);
-        }
-    },
-
     failOnPanel(message) {
         const text = String(message || '操作失败').trim() || '操作失败';
         this.showProgress(0, text);
@@ -176,7 +168,6 @@ const BasePriceUploadPage = {
         const monthInput = document.getElementById('basePriceMonth');
         if (yearInput) yearInput.value = '';
         if (monthInput) monthInput.value = '';
-        this.fillDefaultPeriod();
     },
 
     showProgress(progress = 0, msg = '已提交解析队列') {
@@ -369,18 +360,12 @@ const BasePriceUploadPage = {
         const year = yearInput?.value?.trim();
         const month = monthInput?.value?.trim();
 
-        if (!year || !month) {
-            showToast('请填写生效年度和月份', 'warning');
+        if (!year || !/^\d{4}$/.test(year)) {
+            showToast('请输入有效的 4 位年度，如 2026', 'warning');
             return;
         }
-
-        if (!/^\d{4}$/.test(year)) {
-            showToast('年度格式不正确，请填写4位年份', 'warning');
-            return;
-        }
-
-        if (!/^\d{1,2}$/.test(month) || parseInt(month, 10) < 1 || parseInt(month, 10) > 12) {
-            showToast('月份格式不正确，请填写1-12', 'warning');
+        if (!month || !/^\d{1,2}$/.test(month) || Number(month) < 1 || Number(month) > 12) {
+            showToast('请输入有效的月份（1-12）', 'warning');
             return;
         }
 
