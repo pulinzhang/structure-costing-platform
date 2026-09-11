@@ -135,7 +135,7 @@ export function basePriceUploadTemplate() {
                         <h6 class="${UPLOAD_LABEL} mb-2.5">数据位置</h6>
                         <ul class="list-disc list-inside text-xs text-[#616161] space-y-1.5 mb-4">
                             <li>表头位于第4-5行，数据从第6行开始</li>
-                            <li>包含钢种、牌号、参考规格及芜湖/青岛基地的中标钢厂和到厂价格</li>
+                            <li>包含钢种、牌号、参考规格及各基地的中标钢厂和到厂价格</li>
                             <li>具体列位置由后端解析器自动识别</li>
                         </ul>
                         <h6 class="${UPLOAD_LABEL} mb-2.5">Upsert 规则</h6>
@@ -146,8 +146,8 @@ export function basePriceUploadTemplate() {
                         </ul>
                         <h6 class="${UPLOAD_LABEL} mb-2.5">支持的数据</h6>
                         <ul class="list-disc list-inside text-xs text-[#616161] space-y-1.5">
-                            <li>芜湖基地中标钢厂及到厂原卷承兑价格</li>
-                            <li>青岛基地中标钢厂及到厂原卷承兑价格</li>
+                            <li>只导入基地页已启用的采购基地；宽表其它基地列会跳过</li>
+                            <li>中标钢厂及到厂原卷承兑价格</li>
                             <li>价格单位：元/吨，不含税</li>
                         </ul>
                     </div>

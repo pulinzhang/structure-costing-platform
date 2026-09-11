@@ -42,6 +42,15 @@ class LocationService:
     def list_registered(self, db: Session) -> list[str]:
         return [row.location for row in self.repository.list_all(db)]
 
+    def enabled_name_lookup(self, db: Session) -> dict[str, str]:
+        """已启用基地：规范名与别名 → 规范名。给 Parser 过滤宽表列，不是写入门禁。"""
+        lookup: dict[str, str] = {}
+        for row in self.repository.list_enabled(db):
+            lookup[row.location] = row.location
+            for alias_row in row.aliases:
+                lookup[alias_row.alias] = row.location
+        return lookup
+
     def resolve_canonical(self, db: Session, raw: str) -> str | None:
         text = (raw or "").strip()
         if not text:

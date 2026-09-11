@@ -21,6 +21,7 @@ from app.schemas.dto.steel_base_price_dto import (
 from app.schemas.vo.steel_base_price_vo import FilterOptionsVO, SteelBasePriceResponse
 from app.schemas.vo.user_vo import UserVO
 from app.services.masterdata.location.location_service import LocationService
+from app.services.masterdata.steel_grade_category import SteelGradeCategoryService
 
 logger = logging.getLogger("service.steel_base_price.crud")
 
@@ -77,8 +78,18 @@ class SteelBasePriceCrudService:
     ) -> SteelBasePriceResponse:
         try:
             canonical = LocationService().require_enabled(db, body.location)
-            if canonical != body.location:
-                body = body.model_copy(update={"location": canonical})
+            grade_service = SteelGradeCategoryService()
+            archive = grade_service.match_by_grade_key(db, body.grade)
+            if archive is None:
+                grade_service.reject_unknown_grades([body.grade])
+            assert archive is not None
+            body = body.model_copy(
+                update={
+                    "location": canonical,
+                    "grade": archive.grade,
+                    "category_name": archive.category_name,
+                }
+            )
             audit = audit_create(current_user)
             record = self.repository.create(
                 db,

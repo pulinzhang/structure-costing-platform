@@ -61,12 +61,13 @@ class SteelGradeCategoryCreate(BaseModel):
 
 
 class SteelGradeCategoryUpdate(BaseModel):
-    """编辑：可改大类与备注，不改牌号。"""
+    """编辑：可改牌号、大类与备注。牌号规则与新增相同。"""
 
+    grade: str | None = Field(None, description="钢材牌号")
     category_name: str | None = Field(None, description="大类")
     remark: str | None = Field(None, description="备注")
 
-    @field_validator("category_name", "remark", mode="before")
+    @field_validator("grade", "category_name", "remark", mode="before")
     @classmethod
     def strip_optional(cls, value: object) -> str | None:
         return _strip(value)
@@ -90,4 +91,5 @@ class SteelGradeCategoryPatch(TypedDict, total=False):
     category_name: str
     category_seq: int
     remark: str | None
+    grade: str
     updated_by: str

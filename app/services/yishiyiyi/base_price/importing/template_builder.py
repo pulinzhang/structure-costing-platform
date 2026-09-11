@@ -11,6 +11,23 @@ from openpyxl.worksheet.worksheet import Worksheet
 
 CellValue = str | int | None
 
+# 样例宽表表头，对齐发布价实样。不是系统基地花名册。
+_SAMPLE_LOCATION_COLUMNS: tuple[tuple[str, str], ...] = (
+    ("芜湖", "芜湖基地"),
+    ("大连", "大连基地"),
+    ("青岛", "青岛基地"),
+    ("鄂尔多斯", "鄂尔多斯基地"),
+)
+
+
+def sample_location_lookup() -> dict[str, str]:
+    """校验样例模板用：别名与规范名都映射到规范名。正式导入请用已启用主数据。"""
+    lookup: dict[str, str] = {}
+    for canonical, alias in _SAMPLE_LOCATION_COLUMNS:
+        lookup[canonical] = canonical
+        lookup[alias] = canonical
+    return lookup
+
 
 def build_steel_base_price_template() -> tuple[bytes, str]:
     """生成基准价格样例宽表（表头跨行/跨列合并，对齐发布价实样）。"""
@@ -51,25 +68,18 @@ def build_steel_base_price_template() -> tuple[bytes, str]:
     sheet.merge_cells("E4:E5")
     sheet["E4"] = "参考规格"
 
-    # 基地名跨两列（R4）
-    sheet.merge_cells("F4:G4")
-    sheet["F4"] = "芜湖基地"
-    sheet.merge_cells("H4:I4")
-    sheet["H4"] = "大连基地"
-    sheet.merge_cells("J4:K4")
-    sheet["J4"] = "青岛基地"
-    sheet.merge_cells("L4:M4")
-    sheet["L4"] = "鄂尔多斯基地"
+    # 基地名跨两列（R4）；写发布价常用别名，导入时由 lookup 收成规范名
+    start_col = 6
+    for offset, (_canonical, alias) in enumerate(_SAMPLE_LOCATION_COLUMNS):
+        col = start_col + offset * 2
+        sheet.merge_cells(start_row=4, start_column=col, end_row=4, end_column=col + 1)
+        sheet.cell(row=4, column=col, value=alias)
 
     # R5 子列
-    sheet["F5"] = "钢厂"
-    sheet["G5"] = "到厂原卷承兑价格"
-    sheet["H5"] = "钢厂"
-    sheet["I5"] = "到厂原卷承兑价格"
-    sheet["J5"] = "钢厂"
-    sheet["K5"] = "到厂原卷承兑价格"
-    sheet["L5"] = "钢厂"
-    sheet["M5"] = "到厂原卷承兑价格"
+    for offset, _pair in enumerate(_SAMPLE_LOCATION_COLUMNS):
+        col = start_col + offset * 2
+        sheet.cell(row=5, column=col, value="钢厂")
+        sheet.cell(row=5, column=col + 1, value="到厂原卷承兑价格")
 
     for row in (4, 5):
         for col in range(1, 14):
@@ -132,6 +142,7 @@ def build_steel_base_price_template() -> tuple[bytes, str]:
             "第 5 行为「钢厂 / 到厂原卷承兑价格」子列；数据从第 6 行起。",
             "价格单位：元/吨，不含税；钢厂列不得填数字（防列错位）。",
             "上传页须手工填写生效年度与月份。",
+            "本系统只导入基地页已启用的采购基地；宽表上其它基地列会跳过，样例四列只演示形状。",
         ],
     )
 

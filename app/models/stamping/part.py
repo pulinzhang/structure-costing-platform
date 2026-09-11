@@ -99,7 +99,7 @@ class StampingPart(AuditUserMixin, Base):
         ForeignKey(
             "steel_grade_categories.grade",
             ondelete="RESTRICT",
-            onupdate="RESTRICT",
+            onupdate="CASCADE",
         ),
         nullable=True,
         comment="材质（牌号）；空不引用档案",

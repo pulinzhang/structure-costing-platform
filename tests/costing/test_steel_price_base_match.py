@@ -2,7 +2,7 @@
 
 from types import SimpleNamespace
 
-from app.common.steel_grade import grade_match_key
+from app.common.steel_grade import grade_match_key, stored_grade
 from app.services.costing.steel_price.calc.category import resolve_canonical_category
 from app.services.costing.steel_price.calc.steps.enrich_base_price import (
     select_winning_base_records,
@@ -29,6 +29,8 @@ def _row(
 
 
 def test_grade_match_key_treats_letter_o_as_zero() -> None:
+    assert stored_grade("  dco3  ") == "DCO3"
+    assert stored_grade("QStE420TM") == "QSTE420TM"
     assert grade_match_key("DCO3") == grade_match_key("DC03")
     assert grade_match_key("DCO4") == grade_match_key("DC04")
     assert grade_match_key(" dc03 ") == "DC03"
