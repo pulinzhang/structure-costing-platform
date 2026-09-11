@@ -11,6 +11,7 @@ import re
 from collections.abc import Callable
 from decimal import Decimal, InvalidOperation
 
+from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
 
 from app.common.audit import audit_create
@@ -132,27 +133,24 @@ def _base_price_write_from_record(
 
 
 def _canonicalize_grade_and_category(db: Session, writes: list[SteelBasePriceWrite]) -> list[str]:
-    """每条直接问主数据；落库用档案 grade 与档案大类。"""
+    """每条直接问主数据；落库用档案 grade 与档案大类。空牌号视为脏数据，整批拒绝。"""
+    empty_rows = [write.excel_row for write in writes if not (write.grade or "").strip()]
+    if empty_rows:
+        sample = "、".join(str(row) for row in empty_rows[:10])
+        extra = f"，共 {len(empty_rows)} 行" if len(empty_rows) > 10 else ""
+        raise BusinessException(f"牌号不能为空（Excel 第{sample}行{extra}）")
     service = SteelGradeCategoryService()
-    missing: list[str] = []
-    seen_missing: set[str] = set()
+    matched = service.require_matched_grades(db, [write.grade for write in writes])
     warnings: list[str] = []
     seen_mismatch: set[tuple[str, str, str]] = set()
     for write in writes:
-        archive = service.match_by_grade_key(db, write.grade)
-        if archive is None:
-            raw = write.grade.strip()
-            if raw not in seen_missing:
-                seen_missing.add(raw)
-                missing.append(raw)
-            continue
+        key = write.grade.strip()
+        archive = matched[key]
         excel_category = as_canonical_category(write.category_name)
         if excel_category and excel_category != archive.category_name:
             seen_mismatch.add((write.grade, write.category_name, archive.category_name))
         write.grade = archive.grade
         write.category_name = archive.category_name
-    if missing:
-        service.reject_unknown_grades(missing)
     for raw_grade, excel_category, archive_category in sorted(seen_mismatch):
         warnings.append(
             f"牌号「{raw_grade}」表头钢种「{excel_category}」已按档案改为「{archive_category}」"
@@ -271,6 +269,15 @@ class SteelBasePriceImportService:
             )
             _report(90, "正在提交事务...")
             db.commit()
+        except IntegrityError:
+            db.rollback()
+            raise BusinessException(
+                "基准价格写入失败。牌号必须已在「主数据 → 牌号分类」，"
+                "且同年月、基地、钢厂、牌号、规格不能重复。"
+            ) from None
+        except BusinessException:
+            db.rollback()
+            raise
         except Exception:
             db.rollback()
             logger.exception("导入基准价格失败: filename=%s", filename)

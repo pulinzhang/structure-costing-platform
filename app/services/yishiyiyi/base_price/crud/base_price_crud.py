@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import logging
 
+from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
 
 from app.common.audit import audit_create, display_name
@@ -78,11 +79,9 @@ class SteelBasePriceCrudService:
     ) -> SteelBasePriceResponse:
         try:
             canonical = LocationService().require_enabled(db, body.location)
-            grade_service = SteelGradeCategoryService()
-            archive = grade_service.match_by_grade_key(db, body.grade)
+            archive = SteelGradeCategoryService().require_matched_grade(db, body.grade)
             if archive is None:
-                grade_service.reject_unknown_grades([body.grade])
-            assert archive is not None
+                raise BusinessException("牌号不能为空")
             body = body.model_copy(
                 update={
                     "location": canonical,
@@ -99,6 +98,12 @@ class SteelBasePriceCrudService:
             )
             db.commit()
             return SteelBasePriceResponse.model_validate(record)
+        except IntegrityError:
+            db.rollback()
+            raise BusinessException("基准价格已存在，或牌号不在「主数据 → 牌号分类」") from None
+        except (BusinessException, NotFoundException):
+            db.rollback()
+            raise
         except Exception:
             db.rollback()
             logger.exception("创建基准价格失败")

@@ -70,7 +70,7 @@
 | 零件表 | `stamping_parts.material`、`stamping_tailor_weld_blanks.material` → `steel_grade_categories.grade`，删档 `RESTRICT`，档案改牌号 `CASCADE`；空材质不引用 |
 | 基价表 | `steel_base_prices.grade` → 同一档案列，删档 `RESTRICT`，档案改牌号 `CASCADE`；行上仍保留 `category_name` |
 | 读法 | 一事一议、核算都走本切片稳定查询（如 `get_by_grade` / `map_grades`）。**禁止**各切片直接 `query` 这张表绕过 Service（核算热路径可只读本切片 Repository） |
-| 写 | **仅本切片 CRUD**。禁止下游插档。基价导入/手工创建：每条调用 `match_by_grade_key`，命中后落档案 `grade` 与档案 `category_name`。工艺导入仍 `require_existing_grades`（原文精确匹配）。缺档整批拒绝，进度区写明到「主数据 → 牌号分类」补档，不弹 Toast |
+| 写 | **仅本切片 CRUD**。禁止下游插档。缺档拒绝。基价要档案行（`grade`+大类）走 `require_matched_grade(s)`；零件/子片只落 `material` 走 `bind_stored_grade(s)`。二者都经 `match_by_grade_key`，命中后写档案 `grade`。 |
 
 依赖（允许、单向、禁止成环）：
 
@@ -111,7 +111,7 @@ year, month, location, mill, spec…   （无年月、无基地、无钢厂）  
 | 零件 `material` 改成外键？ | **要。** 指向档案 `grade`，删档 `RESTRICT`，档案改牌号 `CASCADE`。拼焊总成材质可空。 |
 | 政策里的「冷轧钢」进不进档案？ | **不进第四种。** 手建时按 §5.3 别名收口成 `冷轧`。 |
 | 导入缺档怎么办？ | **整批拒绝**，请先到主数据牌号分类补档。不自动插档。 |
-| 基价表头写 DCO1 / 冷轧钢？ | **改写后落库。** `match_by_grade_key`（内部 `grade_match_key`：O→0 再大写）命中档案后落档案 `grade`（`DC01`）；钢种用档案大类。表头大类与档案不一致只警告。禁止把 `DCO1` 当新牌号补进档案。 |
+| 基价或工艺写 DCO1 / 冷轧钢？ | **改写后落库。** `require_matched_grades`（内部 `match_by_grade_key`：O→0 再大写）命中档案后落档案 `grade`（`DC01`）；基价钢种用档案大类，表头大类与档案不一致只警告。禁止把 `DCO1` 当新牌号补进档案。 |
 
 ---
 
@@ -175,7 +175,7 @@ CANONICAL_CATEGORIES: tuple[tuple[int, str], ...] = (
 - 下游 Service 写本表  
 - 有数据后再按种子覆盖大类
 
-缺档：冲压工艺导入 `require_existing_grades`（原文）整批失败；基价导入/手工创建经 `match_by_grade_key` 仍找不到则同样失败。空材质（拼焊总成）不校验。
+缺档：工艺导入、基价导入/手工创建、拼焊子片改材质均经 `require_matched_grades`（`match_by_grade_key`）找不到则失败。空材质（拼焊总成/子片可空）不校验。工艺 `material` 与基价 `grade` 都改写成档案 `grade` 再落库。政策按牌号筛选走 `match_by_grade_key`，不直接查 Repository。
 新增、编辑档案时去空格、大写后落库；查重按 `grade_match_key`（O→0 再大写）单行比较。不把 O 改成 0 写入。与已有行冲突 → 409。
 
 ---
@@ -230,7 +230,7 @@ CANONICAL_CATEGORIES: tuple[tuple[int, str], ...] = (
 ```text
 app/models/masterdata/steel_grade_category.py
 app/repositories/masterdata/steel_grade_category/
-app/services/masterdata/steel_grade_category/   # CRUD；外部匹配 match_by_grade_key
+app/services/masterdata/steel_grade_category/   # CRUD；写入 require_matched_grade(s)；筛选 match_by_grade_key
 app/routers/masterdata/steel_grade_category/crud.py
 app/common/steel_grade_category.py              # 大类常量；Parser 可读
 app/schemas/dto/steel_grade_category_dto.py
