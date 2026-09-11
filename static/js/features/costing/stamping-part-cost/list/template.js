@@ -1,6 +1,7 @@
 /**
  * Stamping Part Cost List Template
- * 冲压零件价格一览—Brabus Carbon & Precision Dark（HUD 与加工费列表一致）
+ * 冲压零件价格一览—Brabus Carbon & Precision Dark
+ * HUD：总成本为靶心；冲压件 / 成本构成 / 审核进度为辅卡
  */
 
 import { pageSizeSelectHtml } from '../../../../page-size.js?v=2';
@@ -16,47 +17,61 @@ export function partCostListTemplate() {
                      style="background: linear-gradient(135deg, #0E0E12 0%, #121218 45%, #0C0C10 100%);">
                     <div class="flex items-start justify-between gap-4 mb-3">
                         <div class="grid grid-cols-2 lg:grid-cols-4 gap-3 font-mono flex-1 min-w-0">
-                            <div class="bg-[#0D0D11]/80 border border-[#1E1E26] p-3 backdrop-blur-sm"
-                                 style="box-shadow: inset 0 1px 0 rgba(255,255,255,0.03);">
-                                <div class="text-[#555555] text-[10px] tracking-wider">核价条数</div>
-                                <div class="text-[18px] font-bold text-[#FFFFFF] mt-1 tabular-nums">
-                            <span id="costHudTotal" class="text-[#F0F0F2] font-bold tabular-nums">—</span>
-                                    <span class="text-[10px] text-[#555555] ml-1">条</span>
-                                </div>
-                            </div>
-                            <!-- 巴博斯霓虹红全本期均价 -->
-                            <div class="bg-gradient-to-b from-[#18080A] to-[#0D0708] border border-[#FF1E27]/50 p-3.5 relative overflow-hidden group"
+                            <!-- 1. 总成本：管理者靶心 -->
+                            <div class="bg-gradient-to-b from-[#18080A] to-[#0D0708] border border-[#FF1E27]/50 p-3.5 relative overflow-hidden"
                                  style="box-shadow: 0 0 30px rgba(255,30,39,0.15), inset 0 1px 0 rgba(255,30,39,0.12);">
                                 <div class="absolute top-0 left-0 right-0 h-[2px] bg-gradient-to-r from-transparent via-[#FF1E27] to-transparent"
                                      style="box-shadow: 0 0 10px #FF1E27;"></div>
                                 <div class="flex justify-between items-start">
-                                    <span class="text-[#FF1E27] text-[10px] font-bold tracking-widest">本期均价</span>
+                                    <span class="text-[#FF1E27] text-[10px] font-bold tracking-widest">总成本</span>
                                     <span class="w-2 h-2 rounded-full bg-[#FF1E27] animate-pulse"
                                           style="box-shadow: 0 0 8px #FF1E27;"></span>
                                 </div>
-                                <div class="text-[26px] font-black text-[#FF1E27] font-mono mt-1 tracking-tight tabular-nums"
+                                <div class="text-[26px] font-black text-[#FF1E27] font-mono mt-1 tracking-tight tabular-nums leading-none"
                                      style="text-shadow: 0 0 12px rgba(255,30,39,0.7), 0 0 25px rgba(255,30,39,0.3);">
-                                ￥<span id="costHudAvg">—</span>
+                                    ¥ <span id="costHudTotalCost">—</span>
                                 </div>
-                                <div class="text-[9px] font-mono text-[#FF1E27]/60 mt-1 flex justify-between">
-                                    <span id="costHudAvgCaption">整车各厂混合</span>
-                                    <span id="costHudSkuCount">— 条</span>
+                                <div class="text-[9px] font-mono text-[#FF1E27]/60 mt-2">单件成本合计</div>
+                            </div>
+                            <!-- 2. 冲压件规模 + 件均 -->
+                            <div class="bg-[#0D0D11]/80 border border-[#1E1E26] p-3.5 backdrop-blur-sm"
+                                 style="box-shadow: inset 0 1px 0 rgba(255,255,255,0.03);">
+                                <div class="text-[#555555] text-[10px] tracking-wider">冲压件</div>
+                                <div class="text-[22px] font-black text-[#FFFFFF] mt-1 tracking-tight tabular-nums leading-none">
+                                    <span id="costHudTotal">—</span>
+                                    <span class="text-[10px] text-[#555555] ml-1 font-bold">件</span>
+                                </div>
+                                <div class="text-[9px] font-mono text-[#6E6E73] mt-2 flex items-center justify-between gap-2">
+                                    <span>件均</span>
+                                    <span class="text-[#A1A1A6] tabular-nums">¥ <span id="costHudAvg">—</span></span>
                                 </div>
                             </div>
-                            <div class="bg-[#0D0D11]/80 border border-[#1E1E26] p-3 backdrop-blur-sm"
+                            <!-- 3. 成本构成：材料费 / 加工费 -->
+                            <div class="bg-[#0D0D11]/80 border border-[#1E1E26] p-3.5 backdrop-blur-sm"
                                  style="box-shadow: inset 0 1px 0 rgba(255,255,255,0.03);">
-                                <div class="text-[#555555] text-[10px] tracking-wider">待审</div>
-                                <div class="text-[18px] font-bold text-[#FFFFFF] mt-1 tabular-nums">
+                                <div class="text-[#555555] text-[10px] tracking-wider">成本构成</div>
+                                <div class="text-[9px] font-mono text-[#6E6E73] mt-2 space-y-1.5">
+                                    <div class="flex items-center justify-between gap-2">
+                                        <span>材料费</span>
+                                        <span class="text-[#A1A1A6] tabular-nums whitespace-nowrap">¥ <span id="costHudMaterial">—</span> <span id="costHudMaterialShare" class="text-[#555555]">—</span></span>
+                                    </div>
+                                    <div class="flex items-center justify-between gap-2">
+                                        <span>加工费</span>
+                                        <span class="text-[#A1A1A6] tabular-nums whitespace-nowrap">¥ <span id="costHudProcessFee">—</span> <span id="costHudProcessFeeShare" class="text-[#555555]">—</span></span>
+                                    </div>
+                                </div>
+                            </div>
+                            <!-- 4. 审核进度：待审 / 已审合并 -->
+                            <div class="bg-[#0D0D11]/80 border border-[#1E1E26] p-3.5 backdrop-blur-sm"
+                                 style="box-shadow: inset 0 1px 0 rgba(255,255,255,0.03);">
+                                <div class="text-[#555555] text-[10px] tracking-wider">审核进度</div>
+                                <div class="text-[22px] font-black text-[#FFFFFF] mt-1 tracking-tight tabular-nums leading-none">
                                     <span id="costHudPending">—</span>
-                                    <span class="text-[10px] text-[#555555] ml-1">条</span>
+                                    <span class="text-[10px] text-[#555555] ml-1 font-bold">条待审</span>
                                 </div>
-                            </div>
-                            <div class="bg-[#0D0D11]/80 border border-[#1E1E26] p-3 backdrop-blur-sm"
-                                 style="box-shadow: inset 0 1px 0 rgba(255,255,255,0.03);">
-                                <div class="text-[#555555] text-[10px] tracking-wider">已审</div>
-                                <div class="text-[18px] font-bold text-[#FFFFFF] mt-1 tabular-nums">
-                                    <span id="costHudApproved">—</span>
-                                    <span class="text-[10px] text-[#555555] ml-1">条</span>
+                                <div class="text-[9px] font-mono text-[#6E6E73] mt-2 flex items-center justify-between gap-2">
+                                    <span>已审</span>
+                                    <span class="text-[#A1A1A6] tabular-nums"><span id="costHudApproved">—</span> 条</span>
                                 </div>
                             </div>
                         </div>
@@ -453,26 +468,40 @@ function swingShearCostCell(row) {
         </div>`;
 }
 
-/** 用筛选汇总刷新HUD（均价/ 待审 / 已审均为全量筛选结果，非本页） */
+/** 用筛选汇总刷新 HUD（金额 / 件均 / 待审均为全量筛选结果，非本页） */
 export function updatePartCostHud(total, summary) {
     const setText = (id, value) => {
         const el = document.getElementById(id);
         if (el) el.textContent = value;
     };
     const data = summary && typeof summary === 'object' ? summary : {};
-    const avg = data.avg_unit_cost;
-    const avgFixed = formatDecimalFixed(avg, 4, { allowNegative: true });
+    const fmtMoney = (value) => {
+        const fixed = formatDecimalFixed(value, 2, { allowNegative: true });
+        return fixed == null ? '—' : withThousandsSep(fixed);
+    };
 
+    const toAmount = (value) => {
+        if (value == null || value === '') return null;
+        const amount = Number(value);
+        return Number.isFinite(amount) ? amount : null;
+    };
+    const fmtShare = (part, whole) => {
+        if (part == null || whole == null || whole === 0) return '—';
+        return `${((part / whole) * 100).toFixed(1)}%`;
+    };
+    const totalCost = toAmount(data.unit_cost_sum);
+    const materialAmount = toAmount(data.material_net_per_part_sum);
+    const processFeeAmount = toAmount(data.process_fee_amount_sum);
+
+    setText('costHudTotalCost', fmtMoney(data.unit_cost_sum));
     setText('costHudTotal', Number(total || 0).toLocaleString('zh-CN'));
-    setText(
-        'costHudAvg',
-        avgFixed == null ? '—' : withThousandsSep(avgFixed),
-    );
-    setText('costHudSkuCount', `${Number(total || 0).toLocaleString('zh-CN')} 条`);
-    setText('costHudPending', String(data.pending_count ?? 0));
-    setText('costHudApproved', String(data.approved_count ?? 0));
-    const mill = document.getElementById('costSupplierFilter')?.value || '';
-    setText('costHudAvgCaption', mill ? `工厂 ${mill}` : '整车各厂混合');
+    setText('costHudAvg', fmtMoney(data.avg_unit_cost));
+    setText('costHudMaterial', fmtMoney(data.material_net_per_part_sum));
+    setText('costHudMaterialShare', fmtShare(materialAmount, totalCost));
+    setText('costHudProcessFee', fmtMoney(data.process_fee_amount_sum));
+    setText('costHudProcessFeeShare', fmtShare(processFeeAmount, totalCost));
+    setText('costHudPending', Number(data.pending_count ?? 0).toLocaleString('zh-CN'));
+    setText('costHudApproved', Number(data.approved_count ?? 0).toLocaleString('zh-CN'));
 }
 
 /**

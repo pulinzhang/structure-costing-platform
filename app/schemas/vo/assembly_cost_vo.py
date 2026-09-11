@@ -174,20 +174,6 @@ class AssemblyCostVO(BaseModel):
         return datetime_to_iso(value)
 
 
-class AssemblyCostListSummaryVO(BaseModel):
-    total_count: int
-    ok_count: int
-    partial_count: int
-    pending_count: int
-    approved_count: int
-    grand_total_sum: Decimal
-    total_amount_sum: Decimal
-
-    @field_serializer("grand_total_sum", "total_amount_sum")
-    def _ser_money(self, value: Decimal) -> str:
-        return _money_str(value) or "0.0000"
-
-
 class AssemblyCostCalcReadyVO(BaseModel):
     l0_count: int
     tree_root_count: int = 0

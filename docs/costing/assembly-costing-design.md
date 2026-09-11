@@ -476,7 +476,7 @@ persist:
 
 `calculate` 与 Ready 同一套门：未完成直接 `BusinessException`，不写总成卡、不入队装成「先算着」。
 
-Ready VO 增加：`subject_count`、`tree_root_count`、`procurement_object_count`、`welding_fee_count`（全 level）、`welding_fee_level_counts`、`stamping_complete`、`stamping_incomplete_suppliers`、`welding_calc_complete`。保留 `l0_count` 一期别名 = `tree_root_count`（避免旧前端崩），随后删除。
+Ready VO 增加：`subject_count`、`tree_root_count`、`procurement_object_count`、`welding_fee_count`（**当前树拆解对齐的费行**，不含旧 id / 孤儿行）、`welding_fee_level_counts`（同上口径）、`stamping_complete`、`stamping_incomplete_suppliers`、`welding_calc_complete`。保留 `l0_count` 一期别名 = `tree_root_count`（避免旧前端崩），随后删除。计算页芯片与 P20 同一套覆盖；未就绪黄条展示 `message`，禁止只数范围内存量行却把按钮关掉。
 
 缺清单：警告「采购对象未生成，本趟只出装配∪树根」（不挡计算）。年度价/包装为 0：黄灯，不挡。
 
@@ -619,7 +619,9 @@ D5  退化树根财务专项签字
 | [welding-fee-design.md](../bom/welding-fee-design.md) | 按节点工费 |
 | [bom-procurement-objects-design.md](../bom/bom-procurement-objects-design.md) | 集合 C |
 | [bom-procurement-object-supplier-design.md](../bom/bom-procurement-object-supplier-design.md) | 合同对方（供应商第二期已落地）；本切片不存 |
-| [procurement-contract-report-design.md](procurement-contract-report-design.md) | 签约横表只读 `should_cost`（已落地） |
+| [procurement-contract-report-design.md](procurement-contract-report-design.md) | 签约横表只读 `should_cost`（已落地）；点「计算过程」不改本页 |
+| [assembly-cost-restore-design.md](assembly-cost-restore-design.md) | 计算过程画册（已落地） |
+| [assembly-cost-restore-ledger-display-design.md](assembly-cost-restore-ledger-display-design.md) | 计算过程：总成（商务）vs 采购对象（采购）展示（已落地） |
 | [costing-engine-design.md](costing-engine-design.md) | 阶段改为全卡 |
 | [permission-design.md](../permission-design.md) | 改名 |
 
@@ -644,3 +646,4 @@ D5  退化树根财务专项签字
 | 2026-09-05 | 采购成本一览：表头本册对象合计 + 表外 SUM；不进筛选。 |
 | 2026-09-05 | 成品核价一览同样：表头本表合计 + 表外 SUM；不进筛选。 |
 | 2026-09-09 | P20：无冲压工艺不判零件价完成；无 BOM 不判焊接、总成不开始。 |
+| 2026-09-11 | 计算过程报告：分总成节点不得把兄弟卡焊装画进成品账材料行；协议页不改。见 restore-ledger-display。 |

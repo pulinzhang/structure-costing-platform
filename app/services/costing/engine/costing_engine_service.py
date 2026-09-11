@@ -52,9 +52,7 @@ logger = logging.getLogger("service.costing.engine")
 
 # 仍展示「去处理」提示，但不计入 hard_stop / 不阻断 can_start
 # 缺工艺/无 BOM 只提示，不阻断另一条核价路径
-SOFT_UPLOAD_GATE_CODES = frozenset(
-    {"thickness_policy", "packaging_transport", "stamping_process", "bom_snapshot"}
-)
+SOFT_UPLOAD_GATE_CODES = frozenset({"packaging_transport", "stamping_process", "bom_snapshot"})
 
 
 class CostingEngineHardStopError(BusinessException):

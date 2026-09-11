@@ -226,18 +226,12 @@ class RestoreMaterialNodeVO(BaseModel):
     unit_price: Decimal
     effective_qty: Decimal
     line_amount: Decimal
-    assembly_material_amount: Decimal | None = None
-    assembly_welding_amount: Decimal | None = None
     stamping: RestoreStampingVO | None = None
     annual: RestoreAnnualVO | None = None
 
     @field_serializer("unit_price", "line_amount")
     def _ser_money(self, value: Decimal) -> str:
         return _money_str(value) or "0.0000"
-
-    @field_serializer("assembly_material_amount", "assembly_welding_amount")
-    def _ser_opt_money(self, value: Decimal | None) -> str | None:
-        return _money_str(value)
 
     @field_serializer("effective_qty")
     def _ser_qty(self, value: Decimal) -> str:

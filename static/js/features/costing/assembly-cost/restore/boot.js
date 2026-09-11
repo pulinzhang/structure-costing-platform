@@ -150,7 +150,7 @@ function signOffHtml(row) {
 function coverHtml(row) {
     const month = padMonth(row.month);
     const moneyHint = row.highlight_label
-        || (row.view === 'procurement' ? '总成本' : '总费用');
+        || (row.view === 'procurement' ? '结算价' : '总成价');
     const company = (row.company_name || '').trim();
     return `
         <header class="cover">
@@ -203,7 +203,7 @@ function identityHtml(row) {
     if (!bad.length) return null;
     const rows = `
         <div class="ledger-head">
-            <span>项目</span><span class="num">卡上金额</span><span class="num">明细加总</span><span class="num">结论</span>
+            <span>项目</span><span class="num">本页</span><span class="num">明细加总</span><span class="num">结论</span>
         </div>
         ${bad.map((item) => `
         <div class="id-row">
@@ -222,18 +222,18 @@ function isZero(value) {
 
 function waterfallHtml(row) {
     const isProcurement = row.view === 'procurement';
+    const weldLabel = isProcurement ? '焊装' : '本总成焊装';
     const items = [
-        ['自制冲压', row.stamping_amount],
-        ['外购件', row.purchased_amount],
-        ['一口价', row.bundle_amount],
-        ['焊装', row.welding_amount],
+        ['冲压件', row.stamping_amount],
+        ['分总成', row.purchased_amount],
+        ['外购件', row.bundle_amount],
+        [weldLabel, row.welding_amount],
     ];
     if (isProcurement) {
-        items.push(['总成本', row.total_amount, true]);
+        items.push(['结算价', row.total_amount, true]);
     } else {
-        items.push(['月总账', row.total_amount]);
         items.push(['摊入费用', row.indirect_amount]);
-        items.push(['总费用', row.grand_total, true]);
+        items.push(['总成价', row.grand_total, true]);
     }
     const body = `<ul class="waterfall">${items.map(([label, amount, hero]) => {
         if (!hero && isZero(amount)) return '';
@@ -376,15 +376,6 @@ function stampingBlock(node) {
     `;
 }
 
-function assemblyBlock(node) {
-    if (node.cost_source !== 'sub_assembly') return '';
-    return `<div class="facts">
-        ${fact('材料', money(node.assembly_material_amount))}
-        ${fact('焊装', money(node.assembly_welding_amount))}
-        ${fact('总成本', `${money(node.unit_price)} × 用量 ${display(node.effective_qty)} = ${money(node.line_amount)}`)}
-    </div>`;
-}
-
 function nestByIndent(nodes) {
     const root = { children: [], indent: -1 };
     const stack = [root];
@@ -432,8 +423,9 @@ function nodeHead(node, childCount, report) {
     const hint = childCount
         ? `<span class="fold-hint"> · 下级 ${childCount} 件</span>`
         : '';
+    const openLabel = node.cost_source === 'sub_assembly' ? '采购对象' : '计算过程';
     const openLink = report && canOpenRestore(node)
-        ? `<a class="node-open" href="${restoreHref(report, node)}" target="_blank" rel="noopener noreferrer" onclick="event.stopPropagation()">计算过程</a>`
+        ? `<a class="node-open" href="${restoreHref(report, node)}" target="_blank" rel="noopener noreferrer" onclick="event.stopPropagation()">${openLabel}</a>`
         : '';
     const hideFull = Boolean(node.part_number) && node.short_code === node.part_number;
     const fullLine = hideFull
@@ -455,10 +447,10 @@ function nodeFold(item, report) {
     const node = item.node;
     const kidsHtml = item.children.length ? treeList(item.children, report) : '';
     const broken = node.cost_source === 'missing' || (node.stamping && node.stamping.record_missing);
-    const annual = node.annual && !node.annual.record_missing
-        ? `<div class="facts">${fact('外购单价', money(node.annual.unit_price))}</div>`
+        const annual = node.annual && !node.annual.record_missing
+        ? `<div class="facts">${fact('单价', money(node.annual.unit_price))}</div>`
         : '';
-    const body = `${assemblyBlock(node)}${annual}${stampingBlock(node)}`;
+    const body = `${annual}${stampingBlock(node)}`;
     const mark = broken ? ' is-break' : '';
     if (!kidsHtml && !body) {
         return `<article class="node${mark}"><div class="node-head">${nodeHead(node, 0, report)}</div></article>`;
@@ -481,8 +473,18 @@ function nodesHtml(row) {
     if (!nested.length) {
         return { title: '零件构成', inner: '<p class="quiet">无子件</p>' };
     }
+    const hasSubAssembly = (row.material_nodes || []).some(
+        (node) => node.cost_source === 'sub_assembly',
+    );
+    const reason = row.view !== 'procurement' && hasSubAssembly
+        ? `<details class="why-fold">
+            <summary>为什么分总成只计材料</summary>
+            <p>总成的焊信上已经包含所有分总成焊信。采购对象结算价另含焊装，两页不能加在一起。</p>
+        </details>`
+        : '';
     const inner = `
         <p class="compose-lead">${display(row.short_code)}　点行展开下级与算价</p>
+        ${reason}
         ${treeList(nested, row)}
     `;
     return { title: '零件构成', inner };

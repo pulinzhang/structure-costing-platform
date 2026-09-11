@@ -3,8 +3,9 @@
 from datetime import datetime
 from typing import TypedDict
 
-from sqlalchemy import func
+from sqlalchemy import case, func
 from sqlalchemy.orm import Query, Session
+from sqlalchemy.sql.elements import ColumnElement
 
 from app.common.audit import AUDIT_APPROVED, AUDIT_PENDING
 from app.models.bom.procurement_object import (
@@ -19,8 +20,9 @@ from app.schemas.dto.bom_procurement_object_dto import (
     BomProcurementObjectWrite,
 )
 
-# 与 classify.SECTION_OBJECT 同值；本层不 import Service，避免仓储→服务成环
+# 与 classify 同值；本层不 import Service，避免仓储→服务成环
 _SECTION_OBJECT = "object"
+_KIND_L0_DEGENERATE = "l0_degenerate"
 
 
 class ProcurementObjectAuditSummary(TypedDict):
@@ -28,8 +30,29 @@ class ProcurementObjectAuditSummary(TypedDict):
     pending_count: int
     approved_count: int
     object_count: int
+    object_l0_degenerate_count: int
     other_leaf_count: int
     anomaly_count: int
+
+
+def _count_matching(*conditions: ColumnElement[bool]) -> ColumnElement[int]:
+    """HUD 分桶：所列条件同时成立计 1。新增看板计数只加一列 label，不要再 .count()。"""
+    predicate = conditions[0]
+    for extra in conditions[1:]:
+        predicate = predicate & extra
+    return func.coalesce(func.sum(case((predicate, 1), else_=0)), 0)
+
+
+def empty_procurement_object_summary() -> ProcurementObjectAuditSummary:
+    return {
+        "total_count": 0,
+        "pending_count": 0,
+        "approved_count": 0,
+        "object_count": 0,
+        "object_l0_degenerate_count": 0,
+        "other_leaf_count": 0,
+        "anomaly_count": 0,
+    }
 
 
 class BomProcurementObjectRepository:
@@ -281,25 +304,32 @@ class BomProcurementObjectRepository:
             supplier_names=supplier_names,
             has_supplier=has_supplier,
         )
-        total = base.count()
-        pending = base.filter(
-            BomProcurementObject.section == _SECTION_OBJECT,
-            BomProcurementObject.audit_status == AUDIT_PENDING,
-        ).count()
-        approved = base.filter(
-            BomProcurementObject.section == _SECTION_OBJECT,
-            BomProcurementObject.audit_status == AUDIT_APPROVED,
-        ).count()
-        object_count = base.filter(BomProcurementObject.section == _SECTION_OBJECT).count()
-        other_leaf = base.filter(BomProcurementObject.section == "other_leaf").count()
-        anomaly = base.filter(BomProcurementObject.section == "anomaly").count()
+        row = base.with_entities(
+            func.count(BomProcurementObject.id).label("total_count"),
+            _count_matching(
+                BomProcurementObject.section == _SECTION_OBJECT,
+                BomProcurementObject.audit_status == AUDIT_PENDING,
+            ).label("pending_count"),
+            _count_matching(
+                BomProcurementObject.section == _SECTION_OBJECT,
+                BomProcurementObject.audit_status == AUDIT_APPROVED,
+            ).label("approved_count"),
+            _count_matching(BomProcurementObject.section == _SECTION_OBJECT).label("object_count"),
+            _count_matching(
+                BomProcurementObject.section == _SECTION_OBJECT,
+                BomProcurementObject.object_kind == _KIND_L0_DEGENERATE,
+            ).label("object_l0_degenerate_count"),
+            _count_matching(BomProcurementObject.section == "other_leaf").label("other_leaf_count"),
+            _count_matching(BomProcurementObject.section == "anomaly").label("anomaly_count"),
+        ).one()
         return {
-            "total_count": total,
-            "pending_count": pending,
-            "approved_count": approved,
-            "object_count": object_count,
-            "other_leaf_count": other_leaf,
-            "anomaly_count": anomaly,
+            "total_count": int(row.total_count or 0),
+            "pending_count": int(row.pending_count or 0),
+            "approved_count": int(row.approved_count or 0),
+            "object_count": int(row.object_count or 0),
+            "object_l0_degenerate_count": int(row.object_l0_degenerate_count or 0),
+            "other_leaf_count": int(row.other_leaf_count or 0),
+            "anomaly_count": int(row.anomaly_count or 0),
         }
 
     def approve_objects_by_list_id(

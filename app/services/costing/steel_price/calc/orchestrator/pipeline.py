@@ -9,6 +9,7 @@ from sqlalchemy.orm import Session
 
 from app.exceptions.base import BusinessException
 from app.schemas.vo.user_vo import UserVO
+from app.services.costing.steel_price.calc.coverage import raise_if_thickness_gaps
 from app.services.costing.steel_price.calc.orchestrator.deps import SteelPriceCalcDeps
 from app.services.costing.steel_price.calc.orchestrator.prep import CalcPrepContext
 from app.services.costing.steel_price.calc.orchestrator.progress import ProgressNotifier
@@ -88,6 +89,7 @@ class SteelPricePipeline:
                 collect_row_warnings(rows, keyword="厚度"),
                 is_error=True,
             )
+            raise_if_thickness_gaps(rows)
             progress.report(
                 55,
                 f"Step3 完成：厚度命中 {thickness['hit']}，未命中 {thickness['miss']}",

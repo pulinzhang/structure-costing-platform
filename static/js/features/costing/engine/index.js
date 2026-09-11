@@ -16,7 +16,6 @@ const POLL_INTERVAL_MS = 1500;
 const STORAGE_KEY = 'costing_engine_context';
 /** 与后端 SOFT_UPLOAD_GATE_CODES 对齐：仅提示，不阻断启动 */
 const SOFT_GATE_CODES = new Set([
-    'thickness_policy',
     'packaging_transport',
     'stamping_process',
     'bom_snapshot',

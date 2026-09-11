@@ -5,7 +5,6 @@ from __future__ import annotations
 from sqlalchemy.orm import Session
 
 from app.common.audit import AUDIT_APPROVED, AUDIT_PENDING, AUDIT_REJECTED
-from app.common.money import Q4, format_money
 from app.repositories.bom.annual_part_price_repository import BomAnnualPartPriceRepository
 from app.repositories.bom.packaging_transport_fee_repository import (
     BomPackagingTransportFeeRepository,
@@ -17,12 +16,8 @@ from app.schemas.vo.costing_engine_vo import CostingEngineGateItemVO
 from app.services.costing.engine.gate_navigate import build_navigate
 from app.services.costing.engine.scope_discovery import DiscoveryResult
 from app.services.costing.stamping_part_cost.calc.resolvers import PriceResolver
+from app.services.costing.steel_price.calc.coverage import inspect_steel_coverage
 from app.services.costing.steel_price.calc.models import SteelPriceCalcRequest
-from app.services.costing.steel_price.calc.steps import (
-    AdjustmentApplier,
-    BasePriceEnricher,
-    MaterialThicknessLoader,
-)
 
 _USABLE = [AUDIT_PENDING, AUDIT_APPROVED, AUDIT_REJECTED]
 
@@ -36,9 +31,6 @@ class GateChecker:
         self.annual_part_repo = BomAnnualPartPriceRepository()
         self.packaging_repo = BomPackagingTransportFeeRepository()
         self.system_config_repo = SystemConfigRepository()
-        self.material_loader = MaterialThicknessLoader()
-        self.base_price_enricher = BasePriceEnricher()
-        self.adjustment_applier = AdjustmentApplier()
         self.price_resolver = PriceResolver()
 
     def check(
@@ -383,9 +375,8 @@ class GateChecker:
         year = discovery.year
         month = discovery.month
         request = SteelPriceCalcRequest(year=year, month=month, location=location)
-        materials = self.material_loader.load(db, request)
-        if not materials:
-            # 无材料规格时钢价链无可覆盖对象：仍视为可过（工艺门禁会另拦）
+        report = inspect_steel_coverage(db, request)
+        if not report.has_materials:
             ok_msg = "无材料规格，跳过钢种覆盖检查"
             return [
                 self._item(
@@ -408,31 +399,21 @@ class GateChecker:
                 ),
             ]
 
-        rows, no_base_count, no_base_details = self.base_price_enricher.enrich(
-            db, request, materials
-        )
-        missing_base = no_base_details[:20]
-        base_ok = no_base_count == 0 and len(rows) > 0
-        if no_base_count == 0 and len(rows) == 0:
-            base_ok = False
-            missing_base = ["材料有规格但未展开任何基价行"]
-
         base_item = self._item(
             code="base_price",
-            ok=base_ok,
-            missing=missing_base,
+            ok=report.base_ok,
+            missing=report.missing_base,
             message=(
-                f"基价覆盖完整，展开 {len(rows)} 行"
-                if base_ok
-                else f"基价覆盖不全：{no_base_count} 个规格无匹配"
+                f"基价覆盖完整，展开 {report.row_count} 行"
+                if report.base_ok
+                else f"基价覆盖不全：{report.no_base_count} 个规格无匹配"
             ),
             location=location,
             year=year,
             month=month,
         )
 
-        if not base_ok:
-            # 无完整基价则厚度无法可靠检查：仅提示，不硬停（基价项本身会硬停）
+        if not report.base_ok:
             return [
                 base_item,
                 self._item(
@@ -447,33 +428,17 @@ class GateChecker:
                 ),
             ]
 
-        policies = self.adjustment_applier.load_policies(db, request)
-        thickness_missing: list[str] = []
-
-        for row in rows:
-            self.adjustment_applier.apply_thickness(db, [row], policies)
-            if row.thickness_policy_id is None and row.thickness_applicable:
-                thickness_missing.append(
-                    f"{row.grade}@{format_money(row.thickness, Q4, 4)}/{row.steel_mill}"
-                )
-
-        thickness_missing = list(dict.fromkeys(thickness_missing))[:20]
-        thickness_ok = len(thickness_missing) == 0
-
+        thickness_ok = len(report.thickness_missing) == 0
         return [
             base_item,
             self._item(
                 code="thickness_policy",
-                # 厚度缺口只提示，允许启动引擎；钢价计算仍按现网匹配逻辑
-                ok=True,
-                missing=thickness_missing,
+                ok=thickness_ok,
+                missing=report.thickness_missing,
                 message=(
                     "厚度加减价政策可匹配"
                     if thickness_ok
-                    else (
-                        f"厚度政策匹配失败 {len(thickness_missing)} 项"
-                        "（不阻断启动，建议去上传厚度加减价政策）"
-                    )
+                    else (f"厚度政策匹配失败 {len(report.thickness_missing)} 项" "，须补齐后再启动")
                 ),
                 location=location,
                 year=year,

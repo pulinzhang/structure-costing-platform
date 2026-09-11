@@ -92,9 +92,7 @@ export function assemblyCostCalcTemplate() {
                 <p id="lacCalcProgressMsg" class="text-[11px] text-[#9e9e9e] leading-relaxed mb-0">已提交计算队列</p>
             </div>
 
-            <div id="lacDataReadyErrorBanner" class="hidden text-[10px] text-[#d69e2e] bg-[#1a1710] px-2.5 py-1.5 border-l-2 border-[#d69e2e]">
-                提示：须选定年度、月份、基地、项目、BOM 版本；冲压价与焊接费须算完。
-            </div>
+            <div id="lacDataReadyErrorBanner" class="hidden text-[10px] text-[#d69e2e] bg-[#1a1710] px-2.5 py-1.5 border-l-2 border-[#d69e2e]"></div>
 
             <div class="pt-2">
                 <div class="flex items-center justify-between mb-1.5">

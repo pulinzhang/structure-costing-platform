@@ -1,6 +1,7 @@
 # 总成核价 — 计算过程
 
 > **状态：已落地。** 只读装配已落库记录，不算第二遍价。  
+> 分总成展示口径见 [assembly-cost-restore-ledger-display-design.md](assembly-cost-restore-ledger-display-design.md)（已落地）。  
 > 切片：`costing` / `assembly_cost`。公式与结果表仍以 [assembly-costing-design.md](assembly-costing-design.md) 为准。  
 > 硬约束：[architecture.md](../architecture.md)。  
 > 入口：一览操作列「**计算过程**」→ 浏览器新页签 `/assembly-cost-restore?...`。  
@@ -238,7 +239,7 @@ grand_total          = total_amount + indirect_amount
 - 匹配键仍用完整零件号（系统取价），不要用短码去匹配
 - 多工厂 `unit_cost` 相同：注明「记录任取一条，金额一致」。冲突：已是 `missing`，展开冲突工厂与单价（客观证据）
 
-**禁止**把另一张子卡的 `should_cost` 嵌进来充当本对象材料。子卡是独立成本对象。若 walk 经过的节点自己也有核价卡，只注明「另有核价卡」+ **短码** + 完整零件号，不要在本报告里嵌套或跳转。
+**禁止**把另一张采购对象卡的结算价嵌进来充当本页材料。分组节点行金额 = **本页**该子树材料贡献；链接文案「采购对象」（新页签、`view=procurement`）。不要在本报告里嵌套整份子卡还原。自制冲压链接仍写「计算过程」。原因句只在总成零件构成里收起的「为什么分总成只计材料」。
 
 ### 5.3 冲压件标准成本还原（`unit_cost`）
 
@@ -395,7 +396,7 @@ URL：`/assembly-cost-restore?year={year}&month={month}&part_number={part_number
 ### 6.5 静态（报告上无交互）
 
 - 一览：`window.open('/assembly-cost-restore?year=&month=&part_number=…')`，`noopener`。同号冲突时带基地/项目/版本。
-- 取数一次，渲成 HTML。构成树 `<details>` 可折叠；自制冲压 / 分总成可开下级「计算过程」。外购件无链接。
+- 取数一次，渲成 HTML。构成树 `<details>` 可折叠；自制冲压可开下级「计算过程」；分总成开「采购对象」。外购件无链接。封面无教育导语。
 - `boot.js` 取数填纸。鉴权带登录态；401 印「请先登录核价台后再打开」。页签头 `{part_number} {year}年{month}月计算过程`。
 - 水印：公司核心机密 + 当前操作人 + 打开/打印时刻。
 - `view` 从 URL 带入（一览当前财务/采购）。缺省 `finance`。
@@ -454,6 +455,7 @@ VO 分层（禁止 `dict[str, Any]` 把上游整行 dump 出去）：
 
 ```text
 docs/costing/assembly-cost-restore-design.md          # 本文
+docs/costing/assembly-cost-restore-ledger-display-design.md  # 总成/采购对象展示（已落地）
 app/services/costing/assembly_cost/restore/        # 装配 VO
 app/routers/costing/assembly_cost/crud.py        # GET restore（无 export-download）
 app/schemas/vo/assembly_cost_restore_vo.py
@@ -477,7 +479,7 @@ tests/costing/test_assembly_cost_restore.py
 6. 冲压叶子能还原到加工费、模具、钢价指针。  
 7. I3～I6 标明**分配**与费率快照；I1/I2 标明**直接归集**到包装记录。  
 8. 无上传件的数据只印核算记录。  
-9. 财务入口封面是总费用；采购入口是总成本，不展示摊入章。构成树里点分总成「计算过程」仍开采购口径（总成本）。  
+9. 商务入口封面是总成价；采购入口是结算价，不展示摊入章。构成树里点分总成「采购对象」仍开采购口径。总成树上分总成行金额不含采购对象焊装。原因只在零件构成收起项。  
 10. 紧固件短码列是全码（如 `QR36410`），外购板是末四位（如 `1133`）。  
 11. 不写库、不调用上游计算。  
 12. 恒等式展示值与卡上余额一致。  
@@ -488,4 +490,4 @@ tests/costing/test_assembly_cost_restore.py
 
 ## 10. 与总成核价正文的关系
 
-公式、P1–P22、表结构仍只维护在 [assembly-costing-design.md](assembly-costing-design.md)。本文只增加 **成本对象怎么还原给人看**。若公式变更，本报告跟随结果表，不单独改口径。
+公式、P1–P22、表结构仍只维护在 [assembly-costing-design.md](assembly-costing-design.md)。本文只增加 **成本对象怎么还原给人看**。若公式变更，本报告跟随结果表，不单独改口径。总成 vs 采购对象的展示见 [assembly-cost-restore-ledger-display-design.md](assembly-cost-restore-ledger-display-design.md)。

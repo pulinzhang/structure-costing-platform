@@ -9,10 +9,16 @@ import pytest
 
 from app.schemas.vo.costing_engine_vo import CostingEngineAnnualItemVO, CostingEngineGateItemVO
 from app.services.costing.engine.annual_calc_planner import AnnualCalcPlanner
+from app.services.costing.engine.costing_engine_service import SOFT_UPLOAD_GATE_CODES
 from app.services.costing.engine.gate_navigate import build_navigate
 from app.services.costing.engine.orchestrator import RunOrchestrator
 from app.services.costing.engine.progress import map_progress
 from app.services.costing.engine.scope_discovery import DiscoveryResult, L0Scope, ScopeDiscovery
+
+
+def test_thickness_policy_is_hard_gate() -> None:
+    assert "thickness_policy" not in SOFT_UPLOAD_GATE_CODES
+    assert "packaging_transport" in SOFT_UPLOAD_GATE_CODES
 
 
 def test_gate_navigate_hard_stop_codes_have_page() -> None:
