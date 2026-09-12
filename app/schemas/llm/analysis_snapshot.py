@@ -7,7 +7,7 @@ from typing import Any, Literal
 from pydantic import BaseModel, Field
 
 from app.schemas.llm.analysis_query import AnalysisQuery
-from app.services.llm.analysis.constants import ANALYSIS_VERSION
+from app.services.llm.analysis.shared.constants import ANALYSIS_VERSION
 
 
 class SnapshotScope(BaseModel):

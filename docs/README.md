@@ -84,4 +84,5 @@
 
 | 文档 | 状态 |
 |------|------|
-| [llm-costing-analysis-report-design.md](llm/llm-costing-analysis-report-design.md) | AI 助理解释层（已定稿） |
+| [llm-slice-design.md](llm/llm-slice-design.md) | 切片实现导读（已上线）：流水线、目录、分发、改哪里 |
+| [llm-costing-analysis-report-design.md](llm/llm-costing-analysis-report-design.md) | 产品契约（已定稿）：用户保证、公式、API |

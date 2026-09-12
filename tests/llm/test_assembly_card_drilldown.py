@@ -5,12 +5,12 @@ from __future__ import annotations
 from decimal import Decimal
 
 from app.repositories.llm.cost_analysis_repository import L0PartPeriodRow
-from app.services.llm.analysis.drilldown import (
+from app.services.llm.analysis.shared.drilldown import (
     assembly_card_role,
     build_drilldown,
     pick_finance_card,
 )
-from app.services.llm.analysis.part_lookup import (
+from app.services.llm.analysis.shared.part_lookup import (
     build_part_existence,
     resolve_part_data_profile,
 )

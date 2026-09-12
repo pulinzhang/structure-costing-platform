@@ -312,6 +312,6 @@ ApiResponse[AsyncTaskAcceptedVO]
 | **yishiyiyi** | [分类级厚度政策](yishiyiyi/thickness-policy-category-level-design.md) |
 | **costing** | [核价引擎](costing/costing-engine-design.md) · [总成核价](costing/assembly-costing-design.md) · [L0 成品核价（冻结）](costing/l0-assembly-costing-design.md) · [采购价格协议](costing/procurement-contract-report-design.md) · [协议价生效期](costing/effective-period-design.md) · [暂估正式](costing/provisional-final-settlement-design.md) · [锚点送货](costing/anchor-true-up-design.md) |
 | **file_trace** | [文件溯源](file-trace/file-trace-design.md) |
-| **llm** | [核价结果智能分析](llm/llm-costing-analysis-report-design.md) |
+| **llm** | [切片实现导读](llm/llm-slice-design.md) · [产品契约](llm/llm-costing-analysis-report-design.md) |
 
 规范正文只改 `.cursor/rules/`；改完不必再贴一份到 `docs/`。

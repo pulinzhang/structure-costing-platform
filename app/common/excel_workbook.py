@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+from decimal import Decimal
 from typing import cast
 
 from openpyxl import Workbook
@@ -9,6 +10,15 @@ from openpyxl.worksheet.worksheet import Worksheet
 
 # openpyxl 新建 Workbook 时默认首表名；仅此类「尚未占用」的空表可改名复用
 _DEFAULT_SHEET_TITLES = frozenset({"Sheet", "工作表1"})
+
+
+def excel_write_value(value: object) -> str | int | float | Decimal | bool:
+    """把业务导出值收成 openpyxl Worksheet.cell 可写的类型。"""
+    if value is None:
+        return ""
+    if isinstance(value, bool | int | float | Decimal | str):
+        return value
+    return str(value)
 
 
 def resolve_worksheet(wb: Workbook, sheet_title: str) -> Worksheet:

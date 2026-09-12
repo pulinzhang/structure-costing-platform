@@ -1,61 +1,39 @@
 """PolicyAssembler：封装所有"业务语义解析"逻辑。
 
-职责：
-- 块定位（locate_thickness_block / locate_width_block）
-- 边界推断（collect_boundaries / infer_upper_bound）
-- grade_type 推断（infer_grade_type）
-- 阶梯项构建（build_items_for_row / build_item）
-- 政策构建（build_policies_from_block）
-- category 推断（category_from_grade_name / infer_block_category）
+职责拆到同目录独立类，本文件只装配并委托：
+- 块定位 / 边界推断 → locate_blocks.py
+- 阶梯项构建 → build_items.py
+- 政策构建 → build_policies.py
+- category 推断 → category_inference.py
 
-所有方法均依赖 SheetScanner 完成底层读取，自己只负责"语义"层面。
+对外仍从此文件导入 PolicyAssembler。
 """
 
-from decimal import Decimal
+from __future__ import annotations
+
 from typing import Any
 
 from openpyxl.worksheet.worksheet import Worksheet
 
-from app.common.steel_grade_category import (
-    CANONICAL_CATEGORY_NAMES,
-    normalize_category_name,
-)
-from app.exceptions.base import BusinessException
-from app.parsers.yishiyiyi.policy.boundary_parser import (
-    _Boundary,
-    _parse_boundary,
-    is_lte,
-    is_strict_gt,
-)
-from app.parsers.yishiyiyi.policy.handlers.constants import GRADE_LABELS
+from app.parsers.yishiyiyi.policy.boundary_parser import _Boundary
 from app.parsers.yishiyiyi.policy.models import ParsedLadderItem, ParsedPolicy
-from app.parsers.yishiyiyi.policy.models.policy import (
-    GRADE_TYPE_CATEGORY,
-    GRADE_TYPE_GRADE,
-    GRADE_TYPE_WIDTH_RANGE,
-    POLICY_TYPE_THICKNESS,
-    POLICY_TYPE_WIDTH,
-)
-from app.parsers.yishiyiyi.policy.value_parser import (
-    _to_int_price,
-    is_carry_forward_price,
-)
 
+from .build_items import ItemBuilder
+from .build_policies import PolicyBuilder
+from .category_inference import CategoryInference
+from .locate_blocks import BlockLocator
 from .sheet_scanner import SheetScanner
-
-_WIDTH_RANGE_KEYWORDS = ("≤", "≥", "＜", "＞", "W", "宽")
-_CATEGORY_NAMES = frozenset({"冷轧钢", "镀锌钢", "酸洗钢", "热轧钢"})
 
 
 class PolicyAssembler:
     """政策装配器：封装业务语义解析逻辑。"""
 
-    def __init__(self, scanner: SheetScanner | None = None):
+    def __init__(self, scanner: SheetScanner | None = None) -> None:
         self.scanner = scanner or SheetScanner()
-
-    # ------------------------------------------------------------------ #
-    # 块定位（5步 / 3步定位协议）
-    # ------------------------------------------------------------------ #
+        self._locator = BlockLocator(self.scanner)
+        self._items = ItemBuilder(self.scanner, self._locator)
+        self._policies = PolicyBuilder(self.scanner, self._locator, self._items)
+        self._categories = CategoryInference()
 
     def locate_thickness_block(
         self,
@@ -63,37 +41,7 @@ class PolicyAssembler:
         label_row: int,
         block_end: int,
     ) -> dict[str, Any] | None:
-        """执行厚度块的 5 步定位，返回块描述或 None。"""
-        title_row = self.scanner.find_thickness_title_row(
-            sheet, label_row, block_end, scan_cols=None
-        )
-        if title_row is None:
-            return None
-
-        header_row = self.scanner.find_header_row(sheet, title_row + 1, block_end, scan_cols=None)
-        if header_row is None:
-            return None
-
-        # header 行遇到第一个空 cell 即终止扫描
-        price_cols = self.scanner.collect_price_cols_thickness(sheet, header_row, start_col=2)
-        if not price_cols:
-            return None
-
-        data_end = block_end
-        base_thickness = self.scanner.infer_base_thickness(sheet, header_row, label_row)
-        category = self.scanner.infer_category(sheet, label_row)
-
-        return {
-            "category_name": category,
-            "policy_type": "THICKNESS",
-            "grade_col": 1,
-            "header_row": header_row,
-            "price_cols": price_cols,
-            "data_row_start": header_row + 1,
-            "data_row_end": data_end,
-            "base_thickness": base_thickness,
-            "grade_blacklist": GRADE_LABELS,
-        }
+        return self._locator.locate_thickness_block(sheet, label_row, block_end)
 
     def locate_width_block(
         self,
@@ -108,35 +56,17 @@ class PolicyAssembler:
         header_row_offset: int = 1,
         scan_cols: list[int] | None = None,
     ) -> dict[str, Any] | None:
-        """执行宽度块的 3 步定位，返回块描述。"""
-        header_row = title_row + header_row_offset
-        if header_row > block_end:
-            return None
-
-        price_cols = self.scanner.collect_price_cols(
-            sheet, header_row, start_col=data_col_start, end_col=max_col
+        return self._locator.locate_width_block(
+            sheet,
+            title_row,
+            block_end,
+            grade_col,
+            data_col_start,
+            max_col,
+            category=category,
+            header_row_offset=header_row_offset,
+            scan_cols=scan_cols,
         )
-        if not price_cols:
-            return None
-
-        data_start = header_row + 1
-        data_end = block_end
-
-        return {
-            "category_name": category,
-            "policy_type": "WIDTH",
-            "grade_col": grade_col,
-            "header_row": header_row,
-            "price_cols": price_cols,
-            "data_row_start": data_start,
-            "data_row_end": data_end,
-            "base_thickness": None,
-            "grade_blacklist": GRADE_LABELS,
-        }
-
-    # ------------------------------------------------------------------ #
-    # 边界收集与推断
-    # ------------------------------------------------------------------ #
 
     def collect_boundaries(
         self,
@@ -144,14 +74,7 @@ class PolicyAssembler:
         header_row: int,
         price_cols: list[int],
     ) -> dict[int, _Boundary]:
-        """从列头行收集所有边界定义（通用版）。"""
-        result = {}
-        for c in price_cols:
-            v = sheet.cell(row=header_row, column=c).value
-            b = _parse_boundary(v)
-            if b is not None:
-                result[c] = b
-        return result
+        return self._locator.collect_boundaries(sheet, header_row, price_cols)
 
     def collect_boundaries_thickness(
         self,
@@ -159,29 +82,7 @@ class PolicyAssembler:
         header_row: int,
         price_cols: list[int],
     ) -> dict[int, _Boundary]:
-        """从列头行收集所有边界定义（厚度专用）。
-
-        纯数字（如 "0.5"）规范化为 "<=0.5" 后解析，解析为 min=None, max=数字, max_operator="<="。
-        """
-        import re
-
-        from app.parsers.yishiyiyi.policy.boundary_parser import _parse_boundary_thickness
-
-        _PURE_NUM_RE = re.compile(r"^\s*(-?\d+(?:\.\d+)?)\s*$")
-        result = {}
-        for c in price_cols:
-            raw = sheet.cell(row=header_row, column=c).value
-            # 纯数字开头：原始数据不规范，补全为 "<=数字" 使其规范
-            if isinstance(raw, int | float):
-                normalized = "<=" + str(raw)
-            elif isinstance(raw, str) and _PURE_NUM_RE.match(raw):
-                normalized = "<=" + raw.strip()
-            else:
-                normalized = str(raw) if raw is not None else ""
-            b = _parse_boundary_thickness(normalized)
-            if b is not None:
-                result[c] = b
-        return result
+        return self._locator.collect_boundaries_thickness(sheet, header_row, price_cols)
 
     def infer_upper_bound(
         self,
@@ -191,77 +92,12 @@ class PolicyAssembler:
         boundaries: dict[int, _Boundary],
         policy_type: str = "WIDTH",
     ) -> _Boundary:
-        """推断完整边界：
-        1. 厚度第一列纯数字（min=None, max=数字）：隐含 0 < t <= max
-        2. 通用第一列（min=None）：min >= 0
-        3. 非第一列：从前一列的 max_val 推断 min
-        4. 推断上界（见下方逻辑）
-        """
-        min_val = boundary.min_val
-        min_op = boundary.min_operator
-        max_val = boundary.max_val
-        max_op = boundary.max_operator
-
-        # 1. 推断下界
-        if min_val is None:
-            if col_idx == 0:
-                if policy_type == "THICKNESS" and is_lte(boundary.max_operator):
-                    # 厚度纯数字列（如 "0.5"）：隐含 0 < t <= 0.5
-                    min_val = Decimal("0")
-                    min_op = ">"
-                else:
-                    # 通用：min >= 0
-                    min_val = Decimal("0")
-                    min_op = ">="
-            else:
-                # 从前一列的 max 推断
-                prev_c = sorted_cols[col_idx - 1]
-                if prev_c in boundaries:
-                    prev_boundary = boundaries[prev_c]
-                    if prev_boundary.max_val is not None:
-                        min_val = prev_boundary.max_val
-                        # 操作符：若前一列是 <=，则 min 用 >；若是 <，则 min 用 >=
-                        min_op = ">" if is_lte(prev_boundary.max_operator) else ">="
-
-        # 2. 推断上界
-        if max_val is None and col_idx < len(sorted_cols) - 1:
-            # 有下一列，从下一列的 min_val / min_operator 推断
-            # 例：≥1.0 | ＞2.0 → 当前 1.0≤t≤2.0（下一档严格大于，本档闭上界）
-            # 例：≥0.9 | ≥1.0 → 当前 0.9≤t<1.0（下一档含等号，本档开上界）
-            # 全角/半角（＞/>、≥/>=）均通过 is_strict_gt 识别
-            next_c = sorted_cols[col_idx + 1]
-            if next_c in boundaries:
-                next_boundary = boundaries[next_c]
-                if next_boundary.min_val is not None:
-                    max_val = next_boundary.min_val
-                    max_op = "<=" if is_strict_gt(next_boundary.min_operator) else "<"
-        # else: 最后一列且无上界，max_val 保持 None（表示 ∞）
-
-        return _Boundary(
-            min_val=min_val,
-            min_operator=min_op,
-            max_val=max_val,
-            max_operator=max_op,
+        return self._locator.infer_upper_bound(
+            boundary, sorted_cols, col_idx, boundaries, policy_type
         )
 
-    # ------------------------------------------------------------------ #
-    # grade_type 推断
-    # ------------------------------------------------------------------ #
-
     def infer_grade_type(self, grade: str, policy_type: str) -> str:
-        """推断 grade 的语义类型。"""
-        if policy_type == POLICY_TYPE_THICKNESS:
-            return GRADE_TYPE_CATEGORY
-        grade_stripped = grade.strip()
-        if any(kw in grade_stripped for kw in _WIDTH_RANGE_KEYWORDS):
-            return GRADE_TYPE_WIDTH_RANGE
-        if grade_stripped in _CATEGORY_NAMES:
-            return GRADE_TYPE_CATEGORY
-        return GRADE_TYPE_GRADE
-
-    # ------------------------------------------------------------------ #
-    # 阶梯项构建
-    # ------------------------------------------------------------------ #
+        return self._items.infer_grade_type(grade, policy_type)
 
     def build_items_for_row(
         self,
@@ -272,98 +108,8 @@ class PolicyAssembler:
         policy_type: str = "THICKNESS",
         sort_order: int = 0,
     ) -> tuple[list[ParsedLadderItem], Any]:
-        """构建行内阶梯明细项列表。返回 (items, extra)。"""
-        items: list[ParsedLadderItem] = []
-        sorted_cols = sorted(price_cols)
-        last_ladder_col = next((col for col in reversed(sorted_cols) if col in boundaries), None)
-        for i, c in enumerate(sorted_cols):
-            if c not in boundaries:
-                continue
-
-            price, price_row, raw_value = self._read_row_price(sheet, r, c)
-            # 厚度末档填「/」或「无」：页内约定沿用上一阶梯，不得落成 0
-            if (
-                policy_type == POLICY_TYPE_THICKNESS
-                and c == last_ladder_col
-                and items
-                and is_carry_forward_price(raw_value)
-            ):
-                price = items[-1].price_adjustment
-
-            boundary = self.infer_upper_bound(
-                boundaries[c], sorted_cols, i, boundaries, policy_type
-            )
-
-            if policy_type == "THICKNESS":
-                items.append(self._make_thickness_item(boundary, price, sort_order, price_row, c))
-            else:
-                items.append(self._make_width_item(boundary, price, sort_order, price_row, c))
-
-        return items, None
-
-    def _read_row_price(
-        self,
-        sheet: Worksheet,
-        row_index: int,
-        col: int,
-    ) -> tuple[int, int, object]:
-        """读取阶梯加减价，返回 (price, excel_row, raw_value)。"""
-        raw_value = sheet.cell(row=row_index, column=col).value
-        if raw_value is not None:
-            return _to_int_price(raw_value), row_index, raw_value
-
-        start_row = self.scanner.find_start_row(sheet, row_index, col)
-        if start_row is None:
-            return 0, row_index, None
-
-        start_val = sheet.cell(row=start_row, column=col).value
-        if start_val is not None:
-            return _to_int_price(start_val), start_row, start_val
-
-        price, price_row = self.scanner.find_value_above_with_row(sheet, start_row, col)
-        above_raw = sheet.cell(row=price_row, column=col).value
-        return price, price_row, above_raw
-
-    @staticmethod
-    def _make_thickness_item(
-        boundary: _Boundary, price: int, sort_order: int, excel_row: int, excel_col: int
-    ) -> ParsedLadderItem:
-        return ParsedLadderItem(
-            target_sub_group=None,
-            thick_min=boundary.min_val,
-            thick_min_operator=boundary.min_operator,
-            thick_max=boundary.max_val,
-            thick_max_operator=boundary.max_operator,
-            width_min=None,
-            width_min_operator=">=",
-            width_max=None,
-            width_max_operator="<",
-            price_adjustment=price,
-            is_base=False,
-            sort_order=sort_order,
-            excel_row=excel_row,
-            excel_col=excel_col,
-        )
-
-    @staticmethod
-    def _make_width_item(
-        boundary: _Boundary, price: int, sort_order: int, excel_row: int, excel_col: int
-    ) -> ParsedLadderItem:
-        return ParsedLadderItem(
-            target_sub_group=None,
-            thick_min=None,
-            thick_min_operator=">=",
-            thick_max=None,
-            thick_max_operator="<",
-            width_min=boundary.min_val,
-            width_min_operator=boundary.min_operator,
-            width_max=boundary.max_val,
-            width_max_operator=boundary.max_operator,
-            price_adjustment=price,
-            is_base=False,
-            sort_order=sort_order,
-            excel_row=excel_row,
-            excel_col=excel_col,
+        return self._items.build_items_for_row(
+            sheet, r, price_cols, boundaries, policy_type, sort_order
         )
 
     def build_item(
@@ -374,60 +120,7 @@ class PolicyAssembler:
         excel_row: int = 0,
         excel_col: int = 0,
     ) -> ParsedLadderItem:
-        """构建阶梯明细项（单维度或双维度）。"""
-        if width_boundary is not None:
-            return ParsedLadderItem(
-                target_sub_group=None,
-                thick_min=boundary.min_val,
-                thick_min_operator=boundary.min_operator,
-                thick_max=boundary.max_val,
-                thick_max_operator=boundary.max_operator,
-                width_min=width_boundary.min_val,
-                width_min_operator=width_boundary.min_operator,
-                width_max=width_boundary.max_val,
-                width_max_operator=width_boundary.max_operator,
-                price_adjustment=price,
-                is_base=False,
-                sort_order=0,
-                excel_row=excel_row,
-                excel_col=excel_col,
-            )
-        else:
-            return ParsedLadderItem(
-                target_sub_group=None,
-                thick_min=boundary.min_val,
-                thick_min_operator=boundary.min_operator,
-                thick_max=boundary.max_val,
-                thick_max_operator=boundary.max_operator,
-                width_min=None,
-                width_min_operator=">=",
-                width_max=None,
-                width_max_operator="<",
-                price_adjustment=price,
-                is_base=False,
-                sort_order=0,
-                excel_row=excel_row,
-                excel_col=excel_col,
-            )
-
-    # ------------------------------------------------------------------ #
-    # 政策构建（单块 → ParsedPolicy 列表）
-    # ------------------------------------------------------------------ #
-
-    @staticmethod
-    def _ladder_items_signature(items: list[ParsedLadderItem]) -> tuple[tuple[object, ...], ...]:
-        ordered = sorted(items, key=lambda item: (item.sort_order or 0, item.excel_row or 0))
-        return tuple(
-            (
-                item.thick_min,
-                item.thick_min_operator,
-                item.thick_max,
-                item.thick_max_operator,
-                item.price_adjustment,
-                bool(item.is_base),
-            )
-            for item in ordered
-        )
+        return self._items.build_item(boundary, price, width_boundary, excel_row, excel_col)
 
     def build_policies_from_block(
         self,
@@ -435,230 +128,14 @@ class PolicyAssembler:
         steel_mill: str,
         block: dict[str, Any],
     ) -> list[ParsedPolicy]:
-        """给定块描述，构建 ParsedPolicy 列表。"""
-        policy_type = block.get("policy_type", POLICY_TYPE_THICKNESS)
-        if policy_type == POLICY_TYPE_WIDTH:
-            return []
-        if policy_type == POLICY_TYPE_THICKNESS:
-            return self._build_category_thickness_policies_from_block(sheet, steel_mill, block)
-        return self._build_legacy_policies_from_block(sheet, steel_mill, block)
-
-    def _build_category_thickness_policies_from_block(
-        self,
-        sheet: Worksheet,
-        steel_mill: str,
-        block: dict[str, Any],
-    ) -> list[ParsedPolicy]:
-        """厚度块：每个大类一条 CATEGORY 政策（冷轧钢 / 镀锌钢 / 酸洗钢）。"""
-        grade_col = block.get("grade_col")
-        header_row = block["header_row"]
-        price_cols = list(block["price_cols"])
-        data_start = block["data_row_start"]
-        data_end = block["data_row_end"]
-        category_name = (block.get("category_name") or "冷轧钢").strip()
-        base_thickness = block.get("base_thickness")
-        grade_blacklist = block.get("grade_blacklist", GRADE_LABELS)
-
-        canonical = normalize_category_name(category_name)
-        if canonical not in CANONICAL_CATEGORY_NAMES:
-            return []
-
-        boundaries = self.collect_boundaries_thickness(sheet, header_row, price_cols)
-        if not boundaries:
-            return []
-
-        sorted_price_cols = sorted(price_cols)
-        representative_items: list[ParsedLadderItem] | None = None
-        representative_signature: tuple[tuple[object, ...], ...] | None = None
-
-        for row_index in range(data_start, data_end + 1):
-            if grade_col is None:
-                continue
-            grade = self.scanner.text_or_none(sheet, row_index, grade_col)
-            if not grade:
-                continue
-            if "//" in grade:
-                grade = grade.replace("//", "/")
-            if grade in grade_blacklist:
-                continue
-
-            items, _ = self.build_items_for_row(
-                sheet,
-                row_index,
-                sorted_price_cols,
-                boundaries,
-                POLICY_TYPE_THICKNESS,
-                sort_order=row_index,
-            )
-            if not items:
-                continue
-
-            signature = self._ladder_items_signature(items)
-            if representative_items is None:
-                representative_items = items
-                representative_signature = signature
-                continue
-            if signature != representative_signature:
-                raise BusinessException(
-                    f"厚度块「{category_name}」多行牌号阶梯不一致（行 {row_index}），请核对 Excel"
-                )
-
-        if not representative_items:
-            return []
-
-        grade_value = category_name
-        return [
-            ParsedPolicy(
-                steel_mill=steel_mill,
-                category_name=category_name,
-                grade_type=GRADE_TYPE_CATEGORY,
-                grade_value=grade_value,
-                policy_type=POLICY_TYPE_THICKNESS,
-                base_thickness=base_thickness,
-                items=representative_items,
-            )
-        ]
-
-    def _build_legacy_policies_from_block(
-        self,
-        sheet: Worksheet,
-        steel_mill: str,
-        block: dict[str, Any],
-    ) -> list[ParsedPolicy]:
-        """非厚度块遗留路径（本期应无调用）。"""
-        grade_col = block.get("grade_col")
-        header_row = block["header_row"]
-        price_cols = list(block["price_cols"])
-        data_start = block["data_row_start"]
-        data_end = block["data_row_end"]
-        category_name = block.get("category_name", "冷轧钢")
-        base_thickness = block.get("base_thickness")
-        grade_blacklist = block.get("grade_blacklist", GRADE_LABELS)
-        policy_type = block.get("policy_type", POLICY_TYPE_THICKNESS)
-
-        boundaries = self.collect_boundaries(sheet, header_row, price_cols)
-        if not boundaries:
-            return []
-
-        sorted_price_cols = sorted(price_cols)
-        policies: list[ParsedPolicy] = []
-
-        for r in range(data_start, data_end + 1):
-            if grade_col is None:
-                continue
-            grade = self.scanner.text_or_none(sheet, r, grade_col)
-            if not grade:
-                continue
-            # 钢种列 "B250P1//HC260Y" 可能是操作人员笔误，将 "//" 替换为 "/"
-            if "//" in grade:
-                grade = grade.replace("//", "/")
-            if grade in grade_blacklist:
-                continue
-
-            grade_type = self.infer_grade_type(grade, policy_type)
-            items, _ = self.build_items_for_row(
-                sheet, r, sorted_price_cols, boundaries, policy_type, sort_order=r
-            )
-            if not items:
-                continue
-
-            policies.append(
-                ParsedPolicy(
-                    steel_mill=steel_mill,
-                    category_name=category_name,
-                    grade_type=grade_type,
-                    grade_value=grade,
-                    policy_type=policy_type,
-                    base_thickness=base_thickness,
-                    items=items,
-                )
-            )
-        return policies
-
-    # ------------------------------------------------------------------ #
-    # category 推断
-    # ------------------------------------------------------------------ #
-
-    _GALVANIZED_SUFFIXES: tuple[str, ...] = ("+Z", "+ZF", "+ZM", "+ZA", "+AZ")
-    _PICKLED_SUFFIXES: tuple[str, ...] = ("+A",)
-    _PICKLED_GRADES: frozenset[str] = frozenset(
-        {
-            "SPHC",
-            "SPHD",
-            "SPHE",
-            "SPHF",
-            "SAPH370",
-            "SAPH400",
-            "SAPH440",
-            "QStE340TM",
-            "QStE380TM",
-            "QStE420TM",
-            "QStE460TM",
-            "QStE500TM",
-            "QSTE420TM",
-            "QSTE460TM",
-            "QSTE500TM",
-            "B510L",
-            "B590L",
-        }
-    )
+        return self._policies.build_policies_from_block(sheet, steel_mill, block)
 
     def category_from_grade_name(self, grade: str) -> str:
-        """按钢种名后缀/名称推断 category。"""
-        if not grade:
-            return "冷轧钢"
-        for suf in self._GALVANIZED_SUFFIXES:
-            if grade.endswith(suf):
-                return "镀锌钢"
-        if grade in self._PICKLED_GRADES:
-            return "酸洗钢"
-        for suf in self._PICKLED_SUFFIXES:
-            if grade.endswith(suf):
-                return "酸洗钢"
-        return "冷轧钢"
+        return self._categories.category_from_grade_name(grade)
 
     def infer_block_category(
         self,
         sheet: Worksheet,
         block: dict[str, Any],
     ) -> str:
-        """综合'字面 hint'与'grade 后缀'推断块的 category。"""
-        literal_cat = block.get("category_name") or "冷轧钢"
-        if literal_cat != "冷轧钢":
-            return literal_cat
-
-        data_start = block["data_row_start"]
-        data_end = block["data_row_end"]
-        grade_col = block.get("grade_col", 1)
-        galvanized = pickled = cold = 0
-        for r in range(data_start, data_end + 1):
-            v = sheet.cell(row=r, column=grade_col).value
-            if v is None:
-                continue
-            t = str(v).strip()
-            # 钢种列 "B250P1//HC260Y" 可能是操作人员笔误，将 "//" 替换为 "/"
-            if "//" in t:
-                t = t.replace("//", "/")
-            if not t or t in GRADE_LABELS:
-                continue
-            cat = self.category_from_grade_name(t)
-            if cat == "镀锌钢":
-                galvanized += 1
-            elif cat == "酸洗钢":
-                pickled += 1
-            else:
-                cold += 1
-
-        if galvanized and not cold:
-            return "镀锌钢"
-        if pickled and not cold:
-            return "酸洗钢"
-        if galvanized and cold:
-            if galvanized > cold:
-                return "镀锌钢"
-            if pickled > cold:
-                return "酸洗钢"
-            return "冷轧钢"
-        if pickled and cold:
-            return "酸洗钢" if pickled > cold else "冷轧钢"
-        return "冷轧钢"
+        return self._categories.infer_block_category(sheet, block)

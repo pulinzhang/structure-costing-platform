@@ -67,7 +67,7 @@ def test_build_welding_fee_mom_anomalies_requires_ten_percent() -> None:
     from decimal import Decimal
 
     from app.repositories.llm.l0_welding_fee_analysis_repository import L0WeldingFeeRow
-    from app.services.llm.analysis.cost_driver import build_welding_fee_mom_anomalies
+    from app.services.llm.analysis.shared.cost_driver import build_welding_fee_mom_anomalies
 
     def row(year: int, fee: Decimal) -> L0WeldingFeeRow:
         return L0WeldingFeeRow(

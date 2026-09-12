@@ -38,8 +38,8 @@ from app.services.async_task import (
     STATUS_RUNNING,
     AsyncTaskService,
 )
-from app.services.llm.analysis.idempotency import build_idempotency_key
 from app.services.llm.analysis.runner import AnalysisRunner
+from app.services.llm.analysis.shared.idempotency import build_idempotency_key
 from app.services.llm.client import LlmClientError
 from app.services.llm.context.snapshot_builder import SnapshotBuilder
 from app.services.llm.engine_readiness import EngineReadinessRunner

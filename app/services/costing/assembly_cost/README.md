@@ -194,20 +194,21 @@ log_id + keyword/status/level/tree_root
 
 ---
 
-## 6. 扩展时改哪里
+## 6. 职责
 
-| 需求 | 落点 |
+| 模块 | 职责 |
 |------|------|
-| 列表筛选项、审核规则 | `assembly_cost_service.py` + Repository |
-| 单卡公式、公式版本号 | `calc/rollup.py` |
-| 上游是否齐、拉哪些价表 | `orchestrator/ready.py` / `prep.py` |
-| 逐卡落库、SAVEPOINT | `batch_engine.py` |
-| 过程文案 / 核价卡 JSON | `process_log.py` |
-| 结果表列、财务 vs 采购 Sheet 名 | `export/workbook/columns.py` |
-| 结果表取值、短码、焊费 ID | 对应 `*_sheet.py` + `codes.py` / `collect_welding_fee_ids` |
-| 合册叠哪些成品 Sheet | `write_to_workbook` + `monthly_bundle_export` |
-| 报告筛选是否与浅色页一致 | `calc_report/match.py`（前端筛选勿在此文件复制第二套口径而不改测试） |
-| 报告列 / 封面文案 | `calc_report/columns.py` / `labels.py` / `*_sheet.py` |
+| `assembly_cost_service.py` + Repository | 列表筛选项、审核 |
+| `calc/rollup.py` | 单卡公式、公式版本号 |
+| `orchestrator/ready.py` / `prep.py` | 上游是否齐、拉哪些价表 |
+| `batch_engine.py` | 逐卡落库、SAVEPOINT |
+| `process_log.py` | 过程文案 / 核价卡 JSON |
+| `export/workbook/columns.py` | 结果表列、财务 vs 采购 Sheet 名 |
+| 对应 `*_sheet.py` + `codes.py` | 结果表取值、短码、焊费 ID |
+| `write_to_workbook` + `monthly_bundle_export` | 合册叠哪些成品 Sheet |
+| `calc_report/match.py` | 报告筛选口径（与浅色页同一套） |
+| `calc_report/columns.py` / `labels.py` / `*_sheet.py` | 报告列 / 封面文案 |
+
 
 ---
 

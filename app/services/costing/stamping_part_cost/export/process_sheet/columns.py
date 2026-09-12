@@ -1,0 +1,121 @@
+"""工艺清单导出列布局。增删列先改 PROCESS_SHEET_HEADERS，再核对合并列集合。"""
+
+from __future__ import annotations
+
+# 拼焊总成共用列：跨子片行合并（料厚/长/宽/消耗/单价等按片分行）
+_TAILOR_MERGED_COLS = frozenset(
+    {
+        "A",
+        "B",
+        "C",
+        "D",
+        "E",
+        "F",
+        "G",
+        "I",
+        "O",
+        "P",
+        "R",
+        "S",
+        "T",
+        "U",
+        "V",
+        "W",
+        "X",
+        "Y",
+        "Z",
+        "AA",
+        "AB",
+        "AC",
+        "AD",
+        "AE",
+        "AG",
+        "AH",
+        "AJ",
+        "AK",
+        "AL",
+        "AM",
+        "AN",
+        "AO",
+        "AP",
+        "AQ",
+    }
+)
+_NUMBER_COLS = frozenset(
+    {
+        "H",
+        "I",
+        "K",
+        "L",
+        "M",
+        "N",
+        "O",
+        "P",
+        "Q",
+        "R",
+        "S",
+        "T",
+        "U",
+        "V",
+        "W",
+        "X",
+        "Y",
+        "Z",
+        "AA",
+        "AB",
+        "AQ",
+    }
+)
+_TRACE_COLS = frozenset({"AC", "AD", "AE", "AF", "AG", "AH", "AI", "AJ", "AK", "AL", "AM"})
+_ID_COLS = frozenset({"AI", "AJ", "AK", "AL", "AM"})
+_RESULT_COLS = frozenset({"S"})
+_FINAL_COLS = frozenset({"AB"})
+_FEE_RATE_COLS = frozenset({"X", "Y", "Z", "AA"})
+_TEXT_LEFT_COLS = frozenset({"B", "C", "D", "E", "F", "G", "J"})
+PROCESS_SHEET_HEADERS: tuple[tuple[str, str], ...] = (
+    ("A", "序号"),
+    ("B", "总成供货号"),
+    ("C", "零件号"),
+    ("D", "短码"),
+    ("E", "零件名称"),
+    ("F", "零件简图"),
+    ("G", "材质"),
+    ("H", "料厚"),
+    ("I", "净重"),
+    ("J", "零件尺寸"),
+    ("K", "长"),
+    ("L", "宽(步距)"),
+    ("M", "可制件数"),
+    ("N", "预估单件材料消耗(KG)"),
+    ("O", "材料利用率"),
+    ("P", "废料重量"),
+    ("Q", "钢板单价(元/KG)"),
+    ("R", "废料单价(元/KG)"),
+    ("S", "原材料成本"),
+    ("T", "加工费"),
+    ("U", "模具费"),
+    ("V", "检具费"),
+    ("W", "直接成本"),
+    ("X", "仓储+包装"),
+    ("Y", "管理费"),
+    ("Z", "财务费"),
+    ("AA", "税前利润"),
+    ("AB", "最终价"),
+    ("AC", "来源Excel"),
+    ("AD", "工作表"),
+    ("AE", "行/列"),
+    ("AF", "钢材价溯源"),
+    ("AG", "废料价溯源"),
+    ("AH", "加工费溯源"),
+    ("AI", "钢材价ID"),
+    ("AJ", "废料价ID"),
+    ("AK", "加工费ID"),
+    ("AL", "模具费ID"),
+    ("AM", "检具费ID"),
+    ("AN", "是否利废"),
+    ("AO", "利用哪类废料"),
+    ("AP", "是否摆剪"),
+    ("AQ", "摆剪加价(元/吨)"),
+)
+_PROCESS_COL_LETTERS = tuple(letter for letter, _title in PROCESS_SHEET_HEADERS)
+_FILENAME_ILLEGAL = '<>:"/\\|?*'

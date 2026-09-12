@@ -86,13 +86,13 @@ repositories.yishiyiyi.scrap_price
 
 ---
 
-## 6. 扩展时改哪里
+## 6. 职责
 
-| 需求 | 落点 |
+| 模块 | 职责 |
 |------|------|
-| 月表字段 / 复制校验 | `crud/scrap_price_crud.py` |
-| 导出取数范围 | `export/export_service.py` |
-| 宽表版式 / 公式 | `export/excel_exporter.py` |
+| `crud/scrap_price_crud.py` | 月表字段 / 复制校验 |
+| `export/export_service.py` | 导出取数范围 |
+| `export/excel_exporter.py` | 宽表版式 / 公式 |
 
 ---
 

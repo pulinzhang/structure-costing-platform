@@ -6,18 +6,12 @@
 
 from __future__ import annotations
 
-from decimal import ROUND_HALF_UP, Decimal
-
 from sqlalchemy.orm import Session
 
-from app.common.audit import AUDIT_APPROVED, display_name
-from app.common.timezone import now
-from app.exceptions.base import BusinessException, NotFoundException
-from app.models.costing import StampingPartCost, StampingPartCostCalcLog
+from app.models.costing import StampingPartCostCalcLog
 from app.repositories.costing.stamping_part_cost.stamping_part_cost_repository import (
     PartCostListFilters,
     StampingPartCostRepository,
-    empty_part_cost_summary,
 )
 from app.repositories.costing.steel_price.steel_price_repository import SteelPriceRepository
 from app.repositories.stamping.tailor_weld_blank_repository import (
@@ -42,32 +36,34 @@ from app.schemas.vo.stamping_part_cost_vo import (
     StampingPartCostVO,
 )
 from app.schemas.vo.user_vo import UserVO
-from app.services.async_task import (
-    TASK_TYPE_STAMPING_PART_COST_CALC,
-    AsyncTaskService,
-    WorkerTaskOutcome,
-    calc_status_label,
-    outcome_from_calc_status,
+from app.services.costing.stamping_part_cost.audit import (
+    batch_approve_costs,
+    batch_delete_costs,
+    batch_reverse_audit_costs,
+    update_manual_unit_cost,
 )
-from app.services.costing.stamping_part_cost.calc.constants import (
-    AMOUNT_QUANTIZE,
-    STATUS_FAILED,
-)
-from app.services.costing.stamping_part_cost.calc.models import (
-    ProgressCallback,
-)
+from app.services.costing.stamping_part_cost.calc.models import ProgressCallback
 from app.services.costing.stamping_part_cost.calc.orchestrator import (
     StampingPartCostCalcOrchestrator,
 )
-from app.services.costing.stamping_part_cost.calc.scope import require_audit_scope, require_scope
-from app.services.costing.stamping_part_cost.export.tailor_weld_display import (
-    build_steel_price_index,
-    load_blanks_by_part_id,
-    resolve_part_cost_display,
+from app.services.costing.stamping_part_cost.calc_ops import (
+    begin_processing,
+    calculate,
+    delete_all_calc_logs,
+    delete_calc_log,
+    get_calc_log,
+    get_calc_ready,
+    list_calc_logs,
+    mark_log_failed,
+    start_calc,
 )
-from app.services.masterdata.location.location_service import LocationService
-from app.services.masterdata.supplier import SupplierService
-from app.services.masterdata.vehicle_model import VehicleModelService
+from app.services.costing.stamping_part_cost.queries import (
+    get_cost_by_id,
+    list_locations,
+    list_suppliers,
+    list_years,
+    paginate_costs,
+)
 
 
 class StampingPartCostService:
@@ -89,7 +85,8 @@ class StampingPartCostService:
         vehicle_model: str | None = None,
         version: str | None = None,
     ) -> StampingPartCostCalcReadyVO:
-        return self.orchestrator.get_calc_ready(
+        return get_calc_ready(
+            self,
             db,
             year=year,
             month=month,
@@ -106,12 +103,7 @@ class StampingPartCostService:
         operator_id: int | None,
         operator_name: str | None,
     ) -> StampingPartCostCalcLog:
-        return self.orchestrator.begin_processing(
-            db,
-            dto,
-            operator_id=operator_id,
-            operator_name=operator_name,
-        )
+        return begin_processing(self, db, dto, operator_id=operator_id, operator_name=operator_name)
 
     def mark_log_failed(
         self,
@@ -120,7 +112,7 @@ class StampingPartCostService:
         log_id: int,
         detail_text: str,
     ) -> None:
-        self.orchestrator.mark_log_failed(db, log_id=log_id, detail_text=detail_text)
+        mark_log_failed(self, db, log_id=log_id, detail_text=detail_text)
 
     def calculate(
         self,
@@ -132,7 +124,8 @@ class StampingPartCostService:
         log_id: int | None = None,
         calc_batch_id: str | None = None,
     ) -> StampingPartCostCalcResultVO:
-        return self.orchestrator.calculate(
+        return calculate(
+            self,
             db,
             dto,
             current_user,
@@ -147,62 +140,7 @@ class StampingPartCostService:
         dto: StampingPartCostCalcDTO,
         current_user: UserVO,
     ) -> AsyncTaskAcceptedVO:
-        canonical, vehicle_model = VehicleModelService().require_introducible(
-            db, dto.location, dto.vehicle_model, dto.year, dto.month
-        )
-        if canonical != dto.location or vehicle_model != dto.vehicle_model:
-            dto = dto.model_copy(update={"location": canonical, "vehicle_model": vehicle_model})
-        lock_log = self.begin_processing(
-            db,
-            dto,
-            operator_id=current_user.id,
-            operator_name=display_name(current_user),
-        )
-        log_id = lock_log.id
-        calc_batch_id = lock_log.calc_batch_id
-        async_task_service = AsyncTaskService()
-        task = async_task_service.create_task(
-            task_type=TASK_TYPE_STAMPING_PART_COST_CALC,
-            message="已提交计算队列",
-            operator_id=current_user.id,
-            operator_name=display_name(current_user),
-        )
-
-        def work(worker_db: Session, on_progress: ProgressCallback) -> WorkerTaskOutcome:
-            result = self.calculate(
-                worker_db,
-                dto,
-                current_user=current_user,
-                progress_callback=on_progress,
-                log_id=log_id,
-                calc_batch_id=calc_batch_id,
-            )
-            label = calc_status_label(result.status)
-            return outcome_from_calc_status(
-                result.status,
-                failed_message=(
-                    f"计算失败：成功 {result.success_count}，失败 {result.failed_count}"
-                ),
-                completed_message=(
-                    f"计算{label}：成功 {result.success_count}，" f"失败 {result.failed_count}"
-                ),
-                result=result.model_dump(),
-            )
-
-        def on_crash(worker_db: Session, error: BaseException) -> None:
-            self.mark_log_failed(
-                worker_db,
-                log_id=log_id,
-                detail_text=f"计算失败: {error}",
-            )
-
-        async_task_service.submit_session_worker(
-            task.task_id,
-            start_message="后台开始计算...",
-            work=work,
-            on_crash=on_crash,
-        )
-        return AsyncTaskAcceptedVO(task_id=task.task_id)
+        return start_calc(self, db, dto, current_user)
 
     def list_calc_logs(
         self,
@@ -215,7 +153,8 @@ class StampingPartCostService:
         page: int = 1,
         size: int = 20,
     ) -> tuple[list[StampingPartCostCalcLogVO], int]:
-        return self.orchestrator.calc_log_service.list_calc_logs(
+        return list_calc_logs(
+            self,
             db,
             year=year,
             month=month,
@@ -226,97 +165,21 @@ class StampingPartCostService:
         )
 
     def get_calc_log(self, db: Session, log_id: int) -> StampingPartCostCalcLogVO:
-        return self.orchestrator.calc_log_service.get_calc_log(db, log_id)
+        return get_calc_log(self, db, log_id)
 
     def delete_calc_log(self, db: Session, log_id: int) -> None:
-        self.orchestrator.calc_log_service.delete_calc_log(db, log_id)
+        delete_calc_log(self, db, log_id)
 
     def delete_all_calc_logs(self, db: Session) -> DeletedCountVO:
-        return self.orchestrator.calc_log_service.delete_all_logs(db)
+        return delete_all_calc_logs(self, db)
 
     def paginate(
         self, db: Session, query: StampingPartCostQuery
     ) -> tuple[list[StampingPartCostVO], int, PartCostListFilters]:
-        skip = (query.page - 1) * query.size
-        location_service = LocationService()
-        locations: list[str] | None = None
-        if query.location:
-            locations = location_service.expand_for_query(db, query.location)
-            if not locations:
-                empty_filters: PartCostListFilters = {
-                    "years": self.cost_repo.get_distinct_years(db),
-                    "months": self.cost_repo.get_distinct_months(db, year=query.year),
-                    "locations": location_service.list_registered(db),
-                    "suppliers": SupplierService().list_registered_names(db),
-                    "vehicle_models": VehicleModelService().list_filter_codes(db, query.location),
-                    "versions": [],
-                    "summary": empty_part_cost_summary(),
-                }
-                return [], 0, empty_filters
-        supplier_names = SupplierService().names_for_query(db, query.stamping_supplier)
-        if supplier_names is not None and not supplier_names:
-            empty_filters = {
-                "years": self.cost_repo.get_distinct_years(db),
-                "months": self.cost_repo.get_distinct_months(db, year=query.year),
-                "locations": location_service.list_registered(db),
-                "suppliers": SupplierService().list_registered_names(db),
-                "vehicle_models": VehicleModelService().list_filter_codes(db, query.location),
-                "versions": [],
-                "summary": empty_part_cost_summary(),
-            }
-            return [], 0, empty_filters
-        rows, total = self.cost_repo.paginate(
-            db,
-            year=query.year,
-            month=query.month,
-            locations=locations,
-            stamping_suppliers=supplier_names,
-            vehicle_model=query.vehicle_model,
-            version=query.version,
-            part_number=query.part_number,
-            audit_status=query.audit_status,
-            skip=skip,
-            limit=query.size,
-        )
-        filters: PartCostListFilters = {
-            "years": self.cost_repo.get_distinct_years(db),
-            "months": self.cost_repo.get_distinct_months(db, year=query.year),
-            "locations": location_service.list_registered(db),
-            "suppliers": SupplierService().list_registered_names(db),
-            "vehicle_models": VehicleModelService().list_filter_codes(db, query.location),
-            "versions": self.cost_repo.get_distinct_versions(
-                db,
-                year=query.year,
-                month=query.month,
-                locations=locations,
-                vehicle_model=query.vehicle_model,
-            ),
-            "summary": self.cost_repo.summarize_by_filters(
-                db,
-                year=query.year,
-                month=query.month,
-                locations=locations,
-                stamping_suppliers=supplier_names,
-                vehicle_model=query.vehicle_model,
-                version=query.version,
-                part_number=query.part_number,
-                audit_status=query.audit_status,
-            ),
-        }
-        return (
-            self._to_cost_vos(db, rows),
-            total,
-            filters,
-        )
+        return paginate_costs(self.cost_repo, self.blank_repo, self.steel_repo, db, query)
 
     def get_by_id(self, db: Session, cost_id: int) -> StampingPartCostVO:
-        record = self.cost_repo.get_by_id(db, cost_id)
-        if record is None:
-            raise NotFoundException(f"核算记录不存在: id={cost_id}")
-        vos = self._to_cost_vos(db, [record])
-        if not vos:
-            raise NotFoundException(f"核算记录不存在: id={cost_id}")
-        return vos[0]
+        return get_cost_by_id(self.cost_repo, self.blank_repo, self.steel_repo, db, cost_id)
 
     def update_manual_unit_cost(
         self,
@@ -325,68 +188,21 @@ class StampingPartCostService:
         dto: StampingPartCostManualUnitCostDTO,
         current_user: UserVO,
     ) -> StampingPartCostVO:
-        """仅允许对计算失败且未审核的记录手工录入最终单件成本。"""
-        record = self.cost_repo.get_by_id(db, cost_id)
-        if not record:
-            raise NotFoundException(f"核算记录不存在: id={cost_id}")
-        if record.calc_status != STATUS_FAILED:
-            raise BusinessException("仅计算失败的记录允许手工改价")
-        if record.audit_status == AUDIT_APPROVED:
-            raise BusinessException("已审核通过，请先反审核后再改价")
-
-        remark = (dto.remark or "").strip()
-        if not remark:
-            raise BusinessException("备注不能为空")
-
-        unit_cost = Decimal(str(dto.unit_cost)).quantize(AMOUNT_QUANTIZE, rounding=ROUND_HALF_UP)
-        updated = self.cost_repo.update_fields(
+        return update_manual_unit_cost(
+            self.cost_repo,
+            self.blank_repo,
+            self.steel_repo,
             db,
             cost_id,
-            {
-                "unit_cost": unit_cost,
-                "remark": remark,
-                "updated_by": display_name(current_user),
-            },
+            dto,
+            current_user,
         )
-        if not updated:
-            raise NotFoundException(f"核算记录不存在: id={cost_id}")
-        db.commit()
-        db.refresh(updated)
-        vos = self._to_cost_vos(db, [updated])
-        return vos[0]
-
-    def _to_cost_vos(self, db: Session, rows: list[StampingPartCost]) -> list[StampingPartCostVO]:
-        if not rows:
-            return []
-        blanks_by_part = load_blanks_by_part_id(db, rows, blank_repo=self.blank_repo)
-        price_index = build_steel_price_index(db, rows, steel_repo=self.steel_repo)
-        result: list[StampingPartCostVO] = []
-        for row in rows:
-            display = resolve_part_cost_display(
-                row,
-                blanks_by_part.get(int(row.source_part_id or 0), []),
-                price_index,
-            )
-            vo = StampingPartCostVO.model_validate(row)
-            result.append(
-                vo.model_copy(
-                    update={
-                        "thickness": display.thickness,
-                        "sheet_length": display.sheet_length,
-                        "sheet_width": display.sheet_width,
-                        "steel_ton_price": display.steel_ton_price,
-                    }
-                )
-            )
-        return result
 
     def list_years(self, db: Session) -> list[int]:
-        years = set(self.cost_repo.get_distinct_years(db))
-        years.update(self.steel_repo.list_distinct_years(db))
-        return sorted(years, reverse=True)
+        return list_years(self.cost_repo, self.steel_repo, db)
 
     def list_locations(self, db: Session, year: int | None = None) -> list[str]:
-        return LocationService().list_registered(db)
+        return list_locations(db, year)
 
     def list_suppliers(
         self,
@@ -395,49 +211,12 @@ class StampingPartCostService:
         month: int | None = None,
         location: str | None = None,
     ) -> list[str]:
-        locations: list[str] | None = None
-        if location:
-            locations = LocationService().expand_for_query(db, location)
-            if not locations:
-                return []
-        return self.cost_repo.get_distinct_suppliers(
-            db, year=year, month=month, locations=locations
-        )
+        return list_suppliers(self.cost_repo, db, year=year, month=month, location=location)
 
     def batch_delete(
         self, db: Session, dto: StampingPartCostDeleteDTO
     ) -> StampingPartCostBatchDeleteResultVO:
-        scope = require_scope(dto)
-        skipped = self.cost_repo.count_by_scope_and_statuses(
-            db,
-            year=scope.year,
-            month=scope.month,
-            location=scope.location,
-            stamping_supplier=scope.stamping_supplier,
-            vehicle_model=scope.vehicle_model,
-            version=scope.version,
-            statuses=[AUDIT_APPROVED],
-        )
-        deleted = self.cost_repo.delete_unaudited_by_scope(
-            db,
-            year=scope.year,
-            month=scope.month,
-            location=scope.location,
-            stamping_supplier=scope.stamping_supplier,
-            vehicle_model=scope.vehicle_model,
-            version=scope.version,
-        )
-        db.commit()
-        return StampingPartCostBatchDeleteResultVO(
-            deleted_count=deleted,
-            skipped_approved_count=skipped,
-            year=scope.year,
-            month=scope.month,
-            location=scope.location,
-            vehicle_model=scope.vehicle_model,
-            version=scope.version,
-            stamping_supplier=scope.stamping_supplier,
-        )
+        return batch_delete_costs(self.cost_repo, db, dto)
 
     def batch_approve(
         self,
@@ -445,44 +224,7 @@ class StampingPartCostService:
         dto: StampingPartCostBatchApproveDTO,
         current_user: UserVO,
     ) -> StampingPartCostBatchAuditResultVO:
-        scope = require_audit_scope(dto)
-        updated = self.cost_repo.approve_by_scope(
-            db,
-            year=scope.year,
-            month=scope.month,
-            location=scope.location,
-            stamping_supplier=scope.stamping_supplier,
-            vehicle_model=scope.vehicle_model,
-            version=scope.version,
-            audited_by=display_name(current_user),
-            audited_at=now(),
-            audit_remark=dto.audit_remark,
-            updated_by=display_name(current_user),
-        )
-        skipped = (
-            self.cost_repo.count_by_scope_and_statuses(
-                db,
-                year=scope.year,
-                month=scope.month,
-                location=scope.location,
-                stamping_supplier=scope.stamping_supplier,
-                vehicle_model=scope.vehicle_model,
-                version=scope.version,
-                statuses=[AUDIT_APPROVED],
-            )
-            - updated
-        )
-        db.commit()
-        return StampingPartCostBatchAuditResultVO(
-            updated_count=updated,
-            skipped_count=max(skipped, 0),
-            year=scope.year,
-            month=scope.month,
-            location=scope.location,
-            vehicle_model=scope.vehicle_model,
-            version=scope.version,
-            stamping_supplier=scope.stamping_supplier,
-        )
+        return batch_approve_costs(self.cost_repo, db, dto, current_user)
 
     def batch_reverse_audit(
         self,
@@ -490,28 +232,4 @@ class StampingPartCostService:
         dto: StampingPartCostBatchReverseAuditDTO,
         current_user: UserVO,
     ) -> StampingPartCostBatchAuditResultVO:
-        scope = require_audit_scope(dto)
-        updated = self.cost_repo.reverse_by_scope(
-            db,
-            year=scope.year,
-            month=scope.month,
-            location=scope.location,
-            stamping_supplier=scope.stamping_supplier,
-            vehicle_model=scope.vehicle_model,
-            version=scope.version,
-            reverse_audited_by=display_name(current_user),
-            reverse_audited_at=now(),
-            reverse_audit_remark=dto.reverse_audit_remark,
-            updated_by=display_name(current_user),
-        )
-        db.commit()
-        return StampingPartCostBatchAuditResultVO(
-            updated_count=updated,
-            skipped_count=0,
-            year=scope.year,
-            month=scope.month,
-            location=scope.location,
-            vehicle_model=scope.vehicle_model,
-            version=scope.version,
-            stamping_supplier=scope.stamping_supplier,
-        )
+        return batch_reverse_audit_costs(self.cost_repo, db, dto, current_user)

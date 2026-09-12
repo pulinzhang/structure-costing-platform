@@ -9,12 +9,13 @@ from unittest.mock import MagicMock
 from app.repositories.llm.annual_part_price_analysis_repository import AnnualPartPriceRow
 from app.repositories.llm.cost_analysis_repository import L0CompositionLineRow
 from app.schemas.llm.analysis_query import AnalysisQuery, TimeRange
-from app.services.llm.analysis.drilldown import (
+from app.services.llm.analysis.assembly.run import AssemblyAnalysis
+from app.services.llm.analysis.runner import AnalysisRunner
+from app.services.llm.analysis.shared.drilldown import (
     build_annual_leaf_price,
     build_item_price_drilldown,
     build_missing_part_price,
 )
-from app.services.llm.analysis.runner import AnalysisRunner
 from app.services.llm.query.query_parser import QueryParser
 
 
@@ -154,7 +155,7 @@ def test_query_parser_bare_part_price_phrase() -> None:
 
 
 def test_runner_prefers_costing_item_over_annual() -> None:
-    runner = AnalysisRunner()
+    runner = AssemblyAnalysis()
     runner._l0_repo.query_part_rows = MagicMock(return_value=[])
     runner._l0_repo.query_item_price_rows = MagicMock(
         return_value=[_item_row(), _item_row(parent="502008026AA")]
@@ -180,7 +181,7 @@ def test_runner_prefers_costing_item_over_annual() -> None:
         analyses=["drilldown"],
         user_question="FQ199D0616T25F19N零件价格是多少？",
     )
-    result = runner._run_part_price_drilldown(MagicMock(), query)
+    result = runner.run_part_price_drilldown(MagicMock(), query)
     assert result.has_data is True
     assert result.result["price_source_label"] == "核价表"
     assert result.result["unit_price"] == "18.68"
@@ -188,7 +189,7 @@ def test_runner_prefers_costing_item_over_annual() -> None:
 
 
 def test_runner_falls_back_to_annual_when_costing_empty() -> None:
-    runner = AnalysisRunner()
+    runner = AssemblyAnalysis()
     runner._l0_repo.query_part_rows = MagicMock(return_value=[])
     runner._l0_repo.query_item_price_rows = MagicMock(return_value=[])
     runner._annual_part_price_repo.query_rows = MagicMock(
@@ -215,13 +216,13 @@ def test_runner_falls_back_to_annual_when_costing_empty() -> None:
         analyses=["drilldown"],
         user_question="FQ199D0616T25F19N零件价格是多少？",
     )
-    result = runner._run_part_price_drilldown(MagicMock(), query)
+    result = runner.run_part_price_drilldown(MagicMock(), query)
     assert result.result["price_source_label"] == "年度零件价列表"
     assert result.result["unit_price"] == "18.68"
 
 
 def test_runner_missing_part() -> None:
-    runner = AnalysisRunner()
+    runner = AssemblyAnalysis()
     runner._l0_repo.query_part_rows = MagicMock(return_value=[])
     runner._l0_repo.query_item_price_rows = MagicMock(return_value=[])
     runner._annual_part_price_repo.query_rows = MagicMock(return_value=[])
@@ -233,15 +234,15 @@ def test_runner_missing_part() -> None:
         analyses=["drilldown"],
         user_question="NO-SUCH-PART零件价格是多少？",
     )
-    result = runner._run_part_price_drilldown(MagicMock(), query)
+    result = runner.run_part_price_drilldown(MagicMock(), query)
     assert result.has_data is False
     assert result.result["found"] is False
 
 
 def test_runner_part_subject_bare_price_uses_item_fallback() -> None:
     runner = AnalysisRunner()
-    runner._l0_repo.query_part_rows = MagicMock(return_value=[])
-    runner._l0_repo.query_item_price_rows = MagicMock(
+    runner._assembly._l0_repo.query_part_rows = MagicMock(return_value=[])
+    runner._assembly._l0_repo.query_item_price_rows = MagicMock(
         return_value=[
             L0CompositionLineRow(
                 year=2026,
@@ -260,7 +261,7 @@ def test_runner_part_subject_bare_price_uses_item_fallback() -> None:
             )
         ]
     )
-    runner._annual_part_price_repo.query_rows = MagicMock(return_value=[])
+    runner._assembly._annual_part_price_repo.query_rows = MagicMock(return_value=[])
     query = AnalysisQuery(
         time_range=TimeRange(start="2026-09", end="2026-09"),
         filters={"part_number": "551001137AA"},

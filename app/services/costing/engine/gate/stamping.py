@@ -1,0 +1,124 @@
+"""核价引擎门禁：项目、冲压工艺、冲次单价。"""
+
+from __future__ import annotations
+
+from sqlalchemy.orm import Session
+
+from app.repositories.stamping.tonnage_price_repository import StampingTonnagePriceRepository
+from app.schemas.vo.costing_engine_vo import CostingEngineGateItemVO
+from app.services.costing.engine.gate.item import USABLE_STATUSES, make_item, make_skipped
+from app.services.costing.engine.scope_discovery import DiscoveryResult
+
+
+def check_period_projects(
+    discovery: DiscoveryResult,
+    location: str,
+    year: int,
+    month: int,
+) -> CostingEngineGateItemVO:
+    if not discovery.vehicle_models:
+        return make_item(
+            code="vehicle_model",
+            ok=False,
+            missing=["本期没有可引入项目"],
+            message="没有本期可引入项目，请到项目一览表手工增加或调整生效失效（#/vehicle-model-list）",
+            location=location,
+            year=year,
+            month=month,
+        )
+    return make_item(
+        code="vehicle_model",
+        ok=True,
+        missing=[],
+        message=f"本期项目 {len(discovery.vehicle_models)} 个",
+        location=location,
+        year=year,
+        month=month,
+    )
+
+
+def check_stamping_process(
+    discovery: DiscoveryResult,
+    location: str,
+    year: int,
+    month: int,
+) -> CostingEngineGateItemVO:
+    if not discovery.vehicle_models:
+        return make_item(
+            code="stamping_process",
+            ok=True,
+            missing=[],
+            message="无本期项目，未展开工艺检查",
+            location=location,
+            year=year,
+            month=month,
+        )
+    part_models = set(discovery.stamping_vehicle_models)
+    missing = [name for name in discovery.vehicle_models if name not in part_models]
+    if missing:
+        preview = "、".join(missing[:8])
+        extra = f" 等 {len(missing)} 个" if len(missing) > 8 else ""
+        return make_item(
+            code="stamping_process",
+            ok=False,
+            missing=missing[:20],
+            message=(
+                f"缺少冲压工艺：{preview}{extra}。"
+                "已跳过这些项目的冲压加工费与零件价；有 BOM 的仍可总成核价"
+            ),
+            location=location,
+            year=year,
+            month=month,
+        )
+    return make_item(
+        code="stamping_process",
+        ok=True,
+        missing=[],
+        message=f"已发现 {len(discovery.vehicle_models)} 个项目",
+        location=location,
+        year=year,
+        month=month,
+    )
+
+
+def check_tonnage_price(
+    repo: StampingTonnagePriceRepository,
+    db: Session,
+    discovery: DiscoveryResult,
+    location: str,
+    year: int,
+    month: int,
+) -> CostingEngineGateItemVO:
+    if not discovery.stamping_vehicle_models:
+        return make_skipped(
+            code="tonnage_price",
+            message="无冲压工艺，跳过冲次单价与冲压加工费检查",
+            location=location,
+            year=year,
+            month=month,
+        )
+    aliases = discovery.location_aliases
+    total = 0
+    for alias in aliases:
+        total += repo.count_by_location_year_and_statuses(
+            db, location=alias, year=year, statuses=USABLE_STATUSES
+        )
+    if total <= 0:
+        return make_item(
+            code="tonnage_price",
+            ok=False,
+            missing=[f"{location} / {year} 无冲次单价"],
+            message="缺少冲次单价，无法补算冲压加工费",
+            location=location,
+            year=year,
+            month=month,
+        )
+    return make_item(
+        code="tonnage_price",
+        ok=True,
+        missing=[],
+        message=f"冲次单价 {total} 条",
+        location=location,
+        year=year,
+        month=month,
+    )

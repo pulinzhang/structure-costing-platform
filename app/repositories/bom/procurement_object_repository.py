@@ -1,86 +1,52 @@
-"""采购对象清单 Repository。"""
+"""采购对象清单 Repository。
+
+查询见 procurement_object/queries.py，写入见 writes.py。
+本文件是门面：独立查询/写入类，这里只委托。"""
+
+from __future__ import annotations
 
 from datetime import datetime
-from typing import TypedDict
 
-from sqlalchemy import case, func
-from sqlalchemy.orm import Query, Session
-from sqlalchemy.sql.elements import ColumnElement
+from sqlalchemy.orm import Session
 
-from app.common.audit import AUDIT_APPROVED, AUDIT_PENDING
-from app.models.bom.procurement_object import (
-    BomProcurementObject,
-    BomProcurementObjectList,
-)
+from app.models.bom.procurement_object import BomProcurementObject, BomProcurementObjectList
 from app.models.bom.procurement_object_generate_log import BomProcurementObjectGenerateLog
-from app.repositories.persist import model_from_payload, query_update
+from app.repositories.bom.procurement_object.queries import BomProcurementObjectQueries
+from app.repositories.bom.procurement_object.types import (
+    ProcurementObjectAuditSummary,
+    empty_procurement_object_summary,
+)
+from app.repositories.bom.procurement_object.writes import BomProcurementObjectWrites
 from app.schemas.dto.bom_procurement_object_dto import (
     BomProcurementObjectGenerateLogWrite,
     BomProcurementObjectListWrite,
     BomProcurementObjectWrite,
 )
 
-# 与 classify 同值；本层不 import Service，避免仓储→服务成环
-_SECTION_OBJECT = "object"
-_KIND_L0_DEGENERATE = "l0_degenerate"
-
-
-class ProcurementObjectAuditSummary(TypedDict):
-    total_count: int
-    pending_count: int
-    approved_count: int
-    object_count: int
-    object_l0_degenerate_count: int
-    other_leaf_count: int
-    anomaly_count: int
-
-
-def _count_matching(*conditions: ColumnElement[bool]) -> ColumnElement[int]:
-    """HUD 分桶：所列条件同时成立计 1。新增看板计数只加一列 label，不要再 .count()。"""
-    predicate = conditions[0]
-    for extra in conditions[1:]:
-        predicate = predicate & extra
-    return func.coalesce(func.sum(case((predicate, 1), else_=0)), 0)
-
-
-def empty_procurement_object_summary() -> ProcurementObjectAuditSummary:
-    return {
-        "total_count": 0,
-        "pending_count": 0,
-        "approved_count": 0,
-        "object_count": 0,
-        "object_l0_degenerate_count": 0,
-        "other_leaf_count": 0,
-        "anomaly_count": 0,
-    }
+__all__ = [
+    "BomProcurementObjectRepository",
+    "ProcurementObjectAuditSummary",
+    "empty_procurement_object_summary",
+]
 
 
 class BomProcurementObjectRepository:
     """采购对象清单数据访问。"""
 
+    def __init__(self) -> None:
+        self._queries = BomProcurementObjectQueries()
+        self._writes = BomProcurementObjectWrites(self._queries)
+
     def get_list_by_id(self, db: Session, list_id: int) -> BomProcurementObjectList | None:
-        return (
-            db.query(BomProcurementObjectList)
-            .filter(BomProcurementObjectList.id == list_id)
-            .first()
-        )
+        return self._queries.get_list_by_id(db, list_id)
 
     def get_list_by_snapshot_id(
         self, db: Session, snapshot_id: int
     ) -> BomProcurementObjectList | None:
-        return (
-            db.query(BomProcurementObjectList)
-            .filter(BomProcurementObjectList.snapshot_id == snapshot_id)
-            .first()
-        )
+        return self._queries.get_list_by_snapshot_id(db, snapshot_id)
 
     def has_list_for_location(self, db: Session, location: str) -> bool:
-        return (
-            db.query(BomProcurementObjectList.id)
-            .filter(BomProcurementObjectList.location == location)
-            .first()
-            is not None
-        )
+        return self._queries.has_list_for_location(db, location)
 
     def get_list_by_scope(
         self,
@@ -90,82 +56,27 @@ class BomProcurementObjectRepository:
         vehicle_model: str,
         bom_version: str,
     ) -> BomProcurementObjectList | None:
-        return (
-            db.query(BomProcurementObjectList)
-            .filter(
-                BomProcurementObjectList.location == location,
-                BomProcurementObjectList.vehicle_model == vehicle_model,
-                BomProcurementObjectList.bom_version == bom_version,
-            )
-            .first()
+        return self._queries.get_list_by_scope(
+            db, location=location, vehicle_model=vehicle_model, bom_version=bom_version
         )
 
     def get_latest_list(self, db: Session) -> BomProcurementObjectList | None:
-        return (
-            db.query(BomProcurementObjectList)
-            .order_by(
-                BomProcurementObjectList.generated_at.desc(),
-                BomProcurementObjectList.id.desc(),
-            )
-            .first()
-        )
+        return self._queries.get_latest_list(db)
 
     def get_object_by_id(self, db: Session, object_id: int) -> BomProcurementObject | None:
-        return db.query(BomProcurementObject).filter(BomProcurementObject.id == object_id).first()
+        return self._queries.get_object_by_id(db, object_id)
 
     def get_confirm_status_by_id(self, db: Session, object_id: int) -> str | None:
-        obj = self.get_object_by_id(db, object_id)
-        if obj is None:
-            return None
-        return obj.confirm_status
+        return self._queries.get_confirm_status_by_id(db, object_id)
 
     def map_confirm_status_by_ids(self, db: Session, object_ids: list[int]) -> dict[int, str]:
-        unique_ids = [item for item in object_ids if item is not None]
-        if not unique_ids:
-            return {}
-        rows = (
-            db.query(BomProcurementObject.id, BomProcurementObject.confirm_status)
-            .filter(BomProcurementObject.id.in_(unique_ids))
-            .all()
-        )
-        return {int(row_id): status for row_id, status in rows}
+        return self._queries.map_confirm_status_by_ids(db, object_ids)
 
     def list_objects_by_list_id(self, db: Session, list_id: int) -> list[BomProcurementObject]:
-        return (
-            db.query(BomProcurementObject)
-            .filter(BomProcurementObject.list_id == list_id)
-            .order_by(BomProcurementObject.section, BomProcurementObject.id)
-            .all()
-        )
+        return self._queries.list_objects_by_list_id(db, list_id)
 
     def count_approved_objects(self, db: Session, list_id: int) -> int:
-        return (
-            db.query(BomProcurementObject)
-            .filter(
-                BomProcurementObject.list_id == list_id,
-                BomProcurementObject.section == _SECTION_OBJECT,
-                BomProcurementObject.audit_status == AUDIT_APPROVED,
-            )
-            .count()
-        )
-
-    def create_list(
-        self, db: Session, payload: BomProcurementObjectListWrite
-    ) -> BomProcurementObjectList:
-        row = model_from_payload(BomProcurementObjectList, payload)
-        db.add(row)
-        db.flush()
-        db.refresh(row)
-        return row
-
-    def bulk_create_objects(self, db: Session, payloads: list[BomProcurementObjectWrite]) -> None:
-        for payload in payloads:
-            db.add(model_from_payload(BomProcurementObject, payload))
-        db.flush()
-
-    def delete_list(self, db: Session, header: BomProcurementObjectList) -> None:
-        db.delete(header)
-        db.flush()
+        return self._queries.count_approved_objects(db, list_id)
 
     def paginate_objects(
         self,
@@ -187,8 +98,8 @@ class BomProcurementObjectRepository:
         skip: int = 0,
         limit: int = 20,
     ) -> tuple[list[BomProcurementObject], int]:
-        query = self._apply_object_filters(
-            db.query(BomProcurementObject).join(BomProcurementObjectList),
+        return self._queries.paginate_objects(
+            db,
             location=location,
             locations=locations,
             vehicle_model=vehicle_model,
@@ -202,10 +113,9 @@ class BomProcurementObjectRepository:
             excel_row=excel_row,
             supplier_names=supplier_names,
             has_supplier=has_supplier,
+            skip=skip,
+            limit=limit,
         )
-        total = query.count()
-        rows = self._apply_check_order(query).offset(skip).limit(limit).all()
-        return rows, total
 
     def list_objects_for_export(
         self,
@@ -225,8 +135,8 @@ class BomProcurementObjectRepository:
         supplier_names: list[str] | None = None,
         has_supplier: bool | None = None,
     ) -> list[BomProcurementObject]:
-        query = self._apply_object_filters(
-            db.query(BomProcurementObject).join(BomProcurementObjectList),
+        return self._queries.list_objects_for_export(
+            db,
             location=location,
             locations=locations,
             vehicle_model=vehicle_model,
@@ -241,34 +151,9 @@ class BomProcurementObjectRepository:
             supplier_names=supplier_names,
             has_supplier=has_supplier,
         )
-        return self._apply_check_order(query).all()
 
     def get_filter_options(self, db: Session) -> tuple[list[str], list[str], list[str]]:
-        locations = [
-            row[0]
-            for row in db.query(BomProcurementObjectList.location)
-            .distinct()
-            .order_by(BomProcurementObjectList.location)
-            .all()
-            if row[0]
-        ]
-        models = [
-            row[0]
-            for row in db.query(BomProcurementObjectList.vehicle_model)
-            .distinct()
-            .order_by(BomProcurementObjectList.vehicle_model)
-            .all()
-            if row[0]
-        ]
-        versions = [
-            row[0]
-            for row in db.query(BomProcurementObjectList.bom_version)
-            .distinct()
-            .order_by(BomProcurementObjectList.bom_version)
-            .all()
-            if row[0]
-        ]
-        return locations, models, versions
+        return self._queries.get_filter_options(db)
 
     def summarize_objects(
         self,
@@ -288,8 +173,8 @@ class BomProcurementObjectRepository:
         supplier_names: list[str] | None = None,
         has_supplier: bool | None = None,
     ) -> ProcurementObjectAuditSummary:
-        base = self._apply_object_filters(
-            db.query(BomProcurementObject).join(BomProcurementObjectList),
+        return self._queries.summarize_objects(
+            db,
             location=location,
             locations=locations,
             vehicle_model=vehicle_model,
@@ -304,191 +189,11 @@ class BomProcurementObjectRepository:
             supplier_names=supplier_names,
             has_supplier=has_supplier,
         )
-        row = base.with_entities(
-            func.count(BomProcurementObject.id).label("total_count"),
-            _count_matching(
-                BomProcurementObject.section == _SECTION_OBJECT,
-                BomProcurementObject.audit_status == AUDIT_PENDING,
-            ).label("pending_count"),
-            _count_matching(
-                BomProcurementObject.section == _SECTION_OBJECT,
-                BomProcurementObject.audit_status == AUDIT_APPROVED,
-            ).label("approved_count"),
-            _count_matching(BomProcurementObject.section == _SECTION_OBJECT).label("object_count"),
-            _count_matching(
-                BomProcurementObject.section == _SECTION_OBJECT,
-                BomProcurementObject.object_kind == _KIND_L0_DEGENERATE,
-            ).label("object_l0_degenerate_count"),
-            _count_matching(BomProcurementObject.section == "other_leaf").label("other_leaf_count"),
-            _count_matching(BomProcurementObject.section == "anomaly").label("anomaly_count"),
-        ).one()
-        return {
-            "total_count": int(row.total_count or 0),
-            "pending_count": int(row.pending_count or 0),
-            "approved_count": int(row.approved_count or 0),
-            "object_count": int(row.object_count or 0),
-            "object_l0_degenerate_count": int(row.object_l0_degenerate_count or 0),
-            "other_leaf_count": int(row.other_leaf_count or 0),
-            "anomaly_count": int(row.anomaly_count or 0),
-        }
-
-    def approve_objects_by_list_id(
-        self,
-        db: Session,
-        *,
-        list_id: int,
-        audited_by: str,
-        audited_at: datetime,
-        audit_remark: str,
-        updated_by: str,
-    ) -> int:
-        count = query_update(
-            db.query(BomProcurementObject).filter(
-                BomProcurementObject.list_id == list_id,
-                BomProcurementObject.section == _SECTION_OBJECT,
-                BomProcurementObject.audit_status == AUDIT_PENDING,
-            ),
-            {
-                "audit_status": AUDIT_APPROVED,
-                "audited_by": audited_by,
-                "audited_at": audited_at,
-                "audit_remark": audit_remark,
-                "updated_by": updated_by,
-            },
-        )
-        db.flush()
-        return count
-
-    def reverse_objects_by_list_id(
-        self,
-        db: Session,
-        *,
-        list_id: int,
-        reverse_audited_by: str,
-        reverse_audited_at: datetime,
-        reverse_audit_remark: str,
-        updated_by: str,
-    ) -> int:
-        count = query_update(
-            db.query(BomProcurementObject).filter(
-                BomProcurementObject.list_id == list_id,
-                BomProcurementObject.section == _SECTION_OBJECT,
-                BomProcurementObject.audit_status == AUDIT_APPROVED,
-            ),
-            {
-                "audit_status": AUDIT_PENDING,
-                "reverse_audited_by": reverse_audited_by,
-                "reverse_audited_at": reverse_audited_at,
-                "reverse_audit_remark": reverse_audit_remark,
-                "updated_by": updated_by,
-            },
-        )
-        db.flush()
-        return count
-
-    def delete_pending_objects_by_list_id(self, db: Session, list_id: int) -> int:
-        count = (
-            db.query(BomProcurementObject)
-            .filter(
-                BomProcurementObject.list_id == list_id,
-                BomProcurementObject.section == _SECTION_OBJECT,
-                BomProcurementObject.audit_status == AUDIT_PENDING,
-            )
-            .delete(synchronize_session=False)
-        )
-        db.flush()
-        return int(count)
-
-    def recount_header_from_rows(self, db: Session, header: BomProcurementObjectList) -> None:
-        rows = self.list_objects_by_list_id(db, header.id)
-        header.object_l0_degenerate_count = sum(
-            1 for row in rows if row.object_kind == "l0_degenerate"
-        )
-        header.object_l1_subassembly_count = sum(
-            1 for row in rows if row.object_kind == "l1_subassembly"
-        )
-        header.object_l1_stamping_count = sum(1 for row in rows if row.object_kind == "l1_stamping")
-        header.other_leaf_count = sum(1 for row in rows if row.section == "other_leaf")
-        header.anomaly_count = sum(1 for row in rows if row.section == "anomaly")
-        header.qa_passed = False
-        header.qa_error_text = "清单已被部分删除，须重新生成后才能审核"
-        db.flush()
-
-    def _apply_object_filters(
-        self,
-        query: Query[BomProcurementObject],
-        *,
-        location: str | None,
-        locations: list[str] | None = None,
-        vehicle_model: str | None,
-        bom_version: str | None,
-        section: str | None,
-        object_kind: str | None,
-        confirm_status: str | None,
-        audit_status: str | None,
-        part_number: str | None,
-        l0_part_number: str | None,
-        excel_row: int | None,
-        supplier_names: list[str] | None = None,
-        has_supplier: bool | None = None,
-    ) -> Query[BomProcurementObject]:
-        if locations is not None:
-            query = query.filter(BomProcurementObjectList.location.in_(locations))
-        elif location:
-            query = query.filter(BomProcurementObjectList.location == location)
-        if vehicle_model:
-            query = query.filter(BomProcurementObjectList.vehicle_model == vehicle_model)
-        if bom_version:
-            query = query.filter(BomProcurementObjectList.bom_version == bom_version)
-        if section:
-            query = query.filter(BomProcurementObject.section == section)
-        if object_kind:
-            query = query.filter(BomProcurementObject.object_kind == object_kind)
-        if confirm_status:
-            query = query.filter(BomProcurementObject.confirm_status == confirm_status)
-        if audit_status:
-            query = query.filter(BomProcurementObject.audit_status == audit_status)
-        if part_number:
-            query = query.filter(BomProcurementObject.part_number.like(f"%{part_number}%"))
-        if l0_part_number:
-            query = query.filter(BomProcurementObject.l0_part_number.like(f"%{l0_part_number}%"))
-        if excel_row is not None:
-            query = query.filter(BomProcurementObject.excel_row == excel_row)
-        if supplier_names is not None:
-            query = query.filter(BomProcurementObject.supplier_name.in_(supplier_names))
-        if has_supplier is True:
-            query = query.filter(BomProcurementObject.supplier_name.isnot(None))
-        elif has_supplier is False:
-            query = query.filter(BomProcurementObject.supplier_name.is_(None))
-        return query
-
-    @staticmethod
-    def _apply_check_order(
-        query: Query[BomProcurementObject],
-    ) -> Query[BomProcurementObject]:
-        """核对顺序：基地 → 车型 → BOM版本 → 原始文件名 → 工作表 → Excel行号。"""
-        original_filename = func.coalesce(
-            BomProcurementObject.excel_filename,
-            BomProcurementObjectList.source_filename,
-        )
-        return query.order_by(
-            BomProcurementObjectList.location,
-            BomProcurementObjectList.vehicle_model,
-            BomProcurementObjectList.bom_version,
-            original_filename,
-            BomProcurementObject.excel_sheet_name,
-            BomProcurementObject.excel_row,
-            BomProcurementObject.id,
-        )
 
     def get_generate_log_by_id(
         self, db: Session, log_id: int
     ) -> BomProcurementObjectGenerateLog | None:
-        return (
-            db.query(BomProcurementObjectGenerateLog)
-            .filter(BomProcurementObjectGenerateLog.id == log_id)
-            .first()
-        )
+        return self._queries.get_generate_log_by_id(db, log_id)
 
     def paginate_generate_logs(
         self,
@@ -500,26 +205,71 @@ class BomProcurementObjectRepository:
         skip: int = 0,
         limit: int = 20,
     ) -> tuple[list[BomProcurementObjectGenerateLog], int]:
-        query = db.query(BomProcurementObjectGenerateLog)
-        if location:
-            query = query.filter(BomProcurementObjectGenerateLog.location == location)
-        if vehicle_model:
-            query = query.filter(BomProcurementObjectGenerateLog.vehicle_model == vehicle_model)
-        if bom_version:
-            query = query.filter(BomProcurementObjectGenerateLog.bom_version == bom_version)
-        total = query.count()
-        records = (
-            query.order_by(BomProcurementObjectGenerateLog.id.desc())
-            .offset(skip)
-            .limit(limit)
-            .all()
+        return self._queries.paginate_generate_logs(
+            db,
+            location=location,
+            vehicle_model=vehicle_model,
+            bom_version=bom_version,
+            skip=skip,
+            limit=limit,
         )
-        return records, total
+
+    def create_list(
+        self, db: Session, payload: BomProcurementObjectListWrite
+    ) -> BomProcurementObjectList:
+        return self._writes.create_list(db, payload)
+
+    def bulk_create_objects(self, db: Session, payloads: list[BomProcurementObjectWrite]) -> None:
+        return self._writes.bulk_create_objects(db, payloads)
+
+    def delete_list(self, db: Session, header: BomProcurementObjectList) -> None:
+        return self._writes.delete_list(db, header)
+
+    def approve_objects_by_list_id(
+        self,
+        db: Session,
+        *,
+        list_id: int,
+        audited_by: str,
+        audited_at: datetime,
+        audit_remark: str,
+        updated_by: str,
+    ) -> int:
+        return self._writes.approve_objects_by_list_id(
+            db,
+            list_id=list_id,
+            audited_by=audited_by,
+            audited_at=audited_at,
+            audit_remark=audit_remark,
+            updated_by=updated_by,
+        )
+
+    def reverse_objects_by_list_id(
+        self,
+        db: Session,
+        *,
+        list_id: int,
+        reverse_audited_by: str,
+        reverse_audited_at: datetime,
+        reverse_audit_remark: str,
+        updated_by: str,
+    ) -> int:
+        return self._writes.reverse_objects_by_list_id(
+            db,
+            list_id=list_id,
+            reverse_audited_by=reverse_audited_by,
+            reverse_audited_at=reverse_audited_at,
+            reverse_audit_remark=reverse_audit_remark,
+            updated_by=updated_by,
+        )
+
+    def delete_pending_objects_by_list_id(self, db: Session, list_id: int) -> int:
+        return self._writes.delete_pending_objects_by_list_id(db, list_id)
+
+    def recount_header_from_rows(self, db: Session, header: BomProcurementObjectList) -> None:
+        return self._writes.recount_header_from_rows(db, header)
 
     def create_generate_log(
         self, db: Session, data: BomProcurementObjectGenerateLogWrite
     ) -> BomProcurementObjectGenerateLog:
-        record = model_from_payload(BomProcurementObjectGenerateLog, data)
-        db.add(record)
-        db.flush()
-        return record
+        return self._writes.create_generate_log(db, data)

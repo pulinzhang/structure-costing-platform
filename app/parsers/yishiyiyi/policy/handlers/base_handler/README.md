@@ -31,7 +31,11 @@ base_handler/
 ├── __init__.py                 # 对外导出
 ├── base_handler.py             # BaseSheetHandler：编排 + 钩子 + 薄委托
 ├── sheet_scanner.py            # SheetScanner：单元格原语
-├── policy_assembler.py         # PolicyAssembler：业务语义装配
+├── policy_assembler.py         # PolicyAssembler：对外入口（独立类委托）
+├── locate_blocks.py            # 厚度/宽度块定位、边界收集与推断
+├── build_items.py              # 阶梯项 / grade_type
+├── build_policies.py           # 块 → ParsedPolicy
+├── category_inference.py       # 大类推断
 ├── thickness_block_finder.py   # ThicknessBlockFinder：默认厚度块
 └── zinc_coating.py             # ZincCoatingParser：锌层加价
 ```
@@ -160,7 +164,10 @@ self.assembler.build_policies_from_block(sheet, steel_mill, block)
 |----------|------|
 | 默认厚度块怎么扫 | `thickness_block_finder.py` |
 | 锌层加价表 | `zinc_coating.py` |
-| 边界/阶梯项/政策怎么拼 | `policy_assembler.py` |
+| 块怎么定位、边界怎么补 | `locate_blocks.py` |
+| 阶梯项 / grade_type | `build_items.py` |
+| 块怎么拼成政策 | `build_policies.py` |
+| 大类怎么推断 | `category_inference.py` |
 | 合并格、找标题行、扫价格列 | `sheet_scanner.py` |
 | parse 顺序 / 子类钩子 | `base_handler.py` |
 | 按 sheet 名选 Handler | 上级 `handlers/registry.py` |

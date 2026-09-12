@@ -5,8 +5,8 @@ from __future__ import annotations
 from app.common.timezone import now
 from app.schemas.llm.analysis_query import AnalysisQuery
 from app.schemas.llm.analysis_snapshot import AnalysisSnapshot, SnapshotMeta, SnapshotScope
-from app.services.llm.analysis.constants import ANALYSIS_VERSION
 from app.services.llm.analysis.runner import AnalysisRunResult
+from app.services.llm.analysis.shared.constants import ANALYSIS_VERSION
 from app.services.llm.query.comparison_basis import comparison_basis_label_zh
 from app.services.llm.query.time_range import count_months_in_span
 
