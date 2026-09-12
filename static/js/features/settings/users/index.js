@@ -8,11 +8,12 @@
  * - 删除确认  →deleteDrawer
  */
 
-import { usersTemplate, renderTableRows, renderPagination } from './template.js?v=4';
+import { usersTemplate, renderTableRows } from './template.js?v=6';
 import {
     DEFAULT_PAGE_SIZE,
-    bindPageSizeSelect,
-} from '../../../page-size.js?v=2';
+    bindPagination,
+    paintPagination,
+} from '../../../page-size.js?v=3';
 import { setSearchBusy } from '../../../search-busy.js?v=1';
 
 const usersState = {
@@ -57,12 +58,14 @@ function closeDrawer(drawerId, backdropId) {
 function init() {
     loadData();
     bindEvents();
-    bindPageSizeSelect('usersPageSize', {
+    bindPagination({
+        selectId: 'usersPageSize',
+        buttonsId: 'paginationBtns',
         getSize: () => usersState.pageSize,
         setSize: (size) => {
             usersState.pageSize = size;
         },
-        onChange: () => loadData(1),
+        onPage: (page) => loadData(page),
     });
     const btnAdd = document.getElementById('btnAddUser');
     if (btnAdd && typeof can === 'function' && !can('op:settings-users:create')) {
@@ -79,7 +82,6 @@ async function loadData(page = 1) {
     const emptyState = document.getElementById('emptyState');
     const loadingState = document.getElementById('loadingState');
     const totalCountPagination = document.getElementById('totalCountPagination');
-    const paginationBtns = document.getElementById('paginationBtns');
 
     if (tableBody) tableBody.innerHTML = '';
     if (emptyState) emptyState.classList.add('hidden');
@@ -121,9 +123,7 @@ async function loadData(page = 1) {
         if (totalCountPagination) {
             totalCountPagination.textContent = `全${usersState.total} 条`;
         }
-        if (paginationBtns) {
-            paginationBtns.innerHTML = renderPagination(usersState.page, usersState.totalPages);
-        }
+        paintPagination('paginationBtns', usersState.page, usersState.totalPages);
     } catch (error) {
         console.error('加载用户失败:', error);
         if (tableBody) {
@@ -230,7 +230,6 @@ function bindEvents() {
     bindPasswordDrawerEvents();
     bindDeleteDrawerEvents();
     bindGrantDrawerEvents();
-    bindPaginationEvents();
 }
 
 function applyFilters() {
@@ -307,18 +306,6 @@ function bindDeleteDrawerEvents() {
     }
 }
 
-function bindPaginationEvents() {
-    const container = document.getElementById('paginationBtns');
-    if (container) {
-        container.addEventListener('click', (e) => {
-            const btn = e.target.closest('.page-btn');
-            if (btn && !btn.disabled) {
-                const page = parseInt(btn.dataset.page, 10);
-                if (page) loadData(page);
-            }
-        });
-    }
-}
 
 function openAddDrawer() {
     const title = document.getElementById('editDrawerTitle');

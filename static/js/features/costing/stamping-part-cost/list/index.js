@@ -4,17 +4,17 @@
 
 import {
     partCostListTemplate,
-    renderCostPagination,
     renderCostRows,
     updatePartCostHud,
     updateCostFilterCapsules,
-    shortPartNumber,
     syncBreakdownColumnVisibility,
-} from './template.js?v=62';
+} from './template.js?v=65';
+import { shortPartNumber } from '../../../../part-identity.js?v=3';
 import {
     DEFAULT_PAGE_SIZE,
-    bindPageSizeSelect,
-} from '../../../../page-size.js?v=2';
+    bindPagination,
+    paintPagination,
+} from '../../../../page-size.js?v=3';
 import { setSearchBusy } from '../../../../search-busy.js?v=1';
 
 const API_BASE = '/api/costing/stamping-part-cost';
@@ -78,12 +78,14 @@ function closeDrawer(drawerId, backdropId) {
 function init() {
     applyPermissionUi();
     bindEvents();
-    bindPageSizeSelect('costPageSize', {
+    bindPagination({
+        selectId: 'costPageSize',
+        buttonsId: 'costPagination',
         getSize: () => listState.pageSize,
         setSize: (size) => {
             listState.pageSize = size;
         },
-        onChange: () => loadList(1),
+        onPage: (page) => loadList(page),
     });
     fillMonthOptions();
     fillAuditOptions();
@@ -268,13 +270,6 @@ function bindEvents() {
     document.getElementById('costBatchDeleteBtn')?.addEventListener('click', () => batchDelete());
     bindBatchAuditDrawerEvents();
     document.getElementById('costExportBtn')?.addEventListener('click', () => exportExcel());
-    document.getElementById('costPagination')?.addEventListener('click', (event) => {
-        const btn = event.target.closest('.cost-page-btn');
-        if (btn && !btn.disabled) {
-            const page = parseInt(btn.dataset.page, 10);
-            if (page) loadList(page);
-        }
-    });
 }
 
 function fillMonthOptions() {
@@ -423,10 +418,7 @@ async function loadList(page = 1) {
         if (pageInfo) {
             pageInfo.textContent = `第${listState.page} / ${Math.max(listState.totalPages, 1)} 页· ${listState.total} 条`;
         }
-        const pagination = document.getElementById('costPagination');
-        if (pagination) {
-            pagination.innerHTML = renderCostPagination(listState.page, listState.totalPages);
-        }
+        paintPagination('costPagination', listState.page, listState.totalPages);
         if (pageData.filters) {
             if (pageData.filters.years) fillSelect('costYearFilter', pageData.filters.years, filters.year, fmtYear);
             if (pageData.filters.locations) {

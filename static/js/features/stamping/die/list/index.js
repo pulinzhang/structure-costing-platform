@@ -1,10 +1,12 @@
-import { dieListTemplate } from './template.js?v=6';
+import { dieListTemplate } from './template.js?v=9';
 import {
     DEFAULT_PAGE_SIZE,
-    bindPageSizeSelect,
+    bindPagination,
+    paintPagination,
     normalizePageSize,
-} from '../../../../page-size.js?v=2';
+} from '../../../../page-size.js?v=3';
 import { setSearchBusy } from '../../../../search-busy.js?v=1';
+import { partShortCodeCellHtml, partNumberNameCellHtml, shortPartNumber } from '../../../../part-identity.js?v=3';
 
 const STORAGE_KEY = 'dieListPageSize';
 
@@ -23,31 +25,6 @@ function dieDimMm(value) {
     return String(Math.round(number));
 }
 
-function renderPagination(total, page, pageSize) {
-    const totalPages = total > 0 ? Math.ceil(total / pageSize) : 0;
-    const wrap = document.getElementById('dieListPagination');
-    if (!wrap) return;
-    if (totalPages <= 1) {
-        wrap.innerHTML = '';
-        return;
-    }
-    const btn = (target, label, disabled, active) =>
-        `<button type="button" data-page="${target}" ${disabled ? 'disabled' : ''}
-            class="flex items-center justify-center w-6 h-6 rounded-sm text-[10px] ${
-                active ? 'bg-[#FF1E27] text-white' : 'text-[#585858] hover:text-[#c0c0c0] hover:bg-[#232323]'
-            } ${disabled ? 'opacity-30' : ''}">${label}</button>`;
-    let html = btn(page - 1, '‹', page <= 1, false);
-    for (let i = 1; i <= totalPages; i += 1) {
-        if (totalPages > 7 && Math.abs(i - page) > 2 && i !== 1 && i !== totalPages) {
-            if (i === 2 || i === totalPages - 1) html += `<span class="text-[#555555] px-1">…</span>`;
-            continue;
-        }
-        html += btn(i, String(i), false, i === page);
-    }
-    html += btn(page + 1, '›', page >= totalPages, false);
-    wrap.innerHTML = html;
-}
-
 export const DieListPage = {
     canUpdate: true,
     canDelete: true,
@@ -61,13 +38,15 @@ export const DieListPage = {
         if (!this.canDelete) document.getElementById('dieBatchDeleteBtn')?.classList.add('hidden');
         if (!this.canExport) document.getElementById('dieExportBtn')?.classList.add('hidden');
         this.bindEvents();
-        bindPageSizeSelect('dieListPageSize', {
+        bindPagination({
+            selectId: 'dieListPageSize',
+            buttonsId: 'dieListPagination',
             getSize: () => dieState.pageSize,
             setSize: (size) => {
                 dieState.pageSize = size;
                 localStorage.setItem(STORAGE_KEY, String(size));
             },
-            onChange: () => this.loadList(1),
+            onPage: (page) => this.loadList(page),
         });
         this.loadFilters();
         this.renderEmpty('请先选择基地和项目', '未选齐范围时不会请求列表');
@@ -100,11 +79,6 @@ export const DieListPage = {
                     this.showDetail(Number(actionBtn.getAttribute('data-id')));
                 }
                 return;
-            }
-            const pageBtn = e.target.closest('#dieListPagination button[data-page]');
-            if (pageBtn && !pageBtn.disabled) {
-                const target = Number(pageBtn.getAttribute('data-page'));
-                if (!Number.isNaN(target) && target >= 1) this.loadList(target);
             }
         });
     },
@@ -218,7 +192,11 @@ export const DieListPage = {
             document.getElementById('dieHudTotal').textContent = String(dieState.total);
             this.renderRows();
             document.getElementById('dieListTotalLabel').textContent = `共 ${dieState.total} 条`;
-            renderPagination(dieState.total, dieState.page, dieState.pageSize);
+            paintPagination(
+                'dieListPagination',
+                dieState.page,
+                dieState.total > 0 ? Math.ceil(dieState.total / dieState.pageSize) : 0,
+            );
             if (!dieState.items.length) {
                 this.renderEmpty('本范围暂无模具数据', '请先上传模具布点清单');
             } else {
@@ -244,11 +222,11 @@ export const DieListPage = {
                         <div class="absolute left-0 top-0 bottom-0 w-[2px] bg-[#FF1E27] opacity-0 group-hover:opacity-70 transition-opacity"></div>
                     </td>
                     <td class="px-2 py-2 text-[#8E8E93]">${esc(row.seq_no ?? '-')}</td>
-                    <td class="px-2 py-2 overflow-hidden">
-                        <div class="text-[14px] font-bold text-[#F0F0F2] truncate" title="${esc(row.part_number)}">${esc(row.part_number)}</div>
+                    <td class="px-2 py-2 overflow-hidden whitespace-nowrap">
+                        ${partShortCodeCellHtml(row.part_number)}
                     </td>
                     <td class="px-2 py-2 overflow-hidden">
-                        <div class="text-[11px] text-[#C8C8D0] truncate" title="${esc(row.part_name)}">${esc(row.part_name)}</div>
+                        ${partNumberNameCellHtml(row.part_number, row.part_name)}
                     </td>
                     <td class="px-2 py-2 text-[#8E8E93] truncate">${esc(row.die_type)}</td>
                     <td class="px-2 py-2 text-[#8E8E93] truncate">${esc(row.die_method)}</td>
@@ -304,8 +282,9 @@ export const DieListPage = {
         }).join('');
         content.innerHTML = `
             <div class="mb-4">
-                <div class="text-[14px] font-bold text-[#F0F0F2] font-mono">${esc(part.part_number)}</div>
-                <div class="text-[11px] text-[#8E8E93] mt-0.5">${esc(part.part_name)}</div>
+                <div class="text-[16px] font-bold text-[#F0F0F2] font-mono tracking-[0.12em]">${esc(shortPartNumber(part.part_number) || part.part_number)}</div>
+                <div class="text-[10px] font-mono text-[#3A3A42] mt-0.5">${esc(part.part_number)}</div>
+                <div class="text-[11px] text-[#555555] mt-0.5">${esc(part.part_name)}</div>
                 <div class="text-[10px] text-[#555555] mt-1">${esc(part.location)} · ${esc(part.vehicle_model)}</div>
             </div>
             <div class="grid grid-cols-3 gap-3 text-[11px] mb-5">

@@ -3,7 +3,8 @@
  * 布局对齐零件列表：HUD + 胶囊筛选（默认收起）
  */
 
-import { pageSizeSelectHtml } from '../../../../page-size.js?v=2';
+import { paginationBarHtml } from '../../../../page-size.js?v=3';
+import { partShortCodeCellHtml, partNumberNameCellHtml } from '../../../../part-identity.js?v=3';
 
 function canOp(code) {
     return typeof window.can === 'function' ? window.can(code) : true;
@@ -144,8 +145,8 @@ export function gaugeFeeListTemplate() {
                             <col style="width: 8px;">
                             <col style="width: 80px;">
                             <col style="width: 80px;">
-                            <col style="width: 120px;">
-                            <col style="width: 140px;">
+                            <col style="width: 72px;">
+                            <col style="width: 160px;">
                             <col style="width: 110px;">
                             <col style="width: 110px;">
                             <col style="width: 72px;">
@@ -156,8 +157,8 @@ export function gaugeFeeListTemplate() {
                                 <th class="p-0" aria-hidden="true"></th>
                                 <th class="px-2 py-2 text-left text-[9px] font-medium tracking-[0.08em] text-[#555555]">基地</th>
                                 <th class="px-2 py-2 text-left text-[9px] font-medium tracking-[0.08em] text-[#555555]">项目</th>
-                                <th class="px-2 py-2 text-left text-[9px] font-medium tracking-[0.08em] text-[#555555]">零件号</th>
-                                <th class="px-2 py-2 text-left text-[9px] font-medium tracking-[0.08em] text-[#555555]">零件名称</th>
+                                <th class="px-2 py-2 text-left text-[9px] font-medium tracking-[0.08em] text-[#A1A1A6]">短代码</th>
+                                <th class="px-2 py-2 text-left text-[9px] font-medium tracking-[0.08em] text-[#555555]">零件</th>
                                 <th class="px-2 py-2 text-right text-[9px] font-semibold tracking-[0.06em] text-[#FF1E27]/90 bg-[#1A080A]">检具费（万）</th>
                                 <th class="px-2 py-2 text-right text-[9px] font-medium tracking-[0.06em] text-[#555555]">分摊（万台）</th>
                                 <th class="px-1 py-2 text-center text-[9px] font-medium tracking-[0.06em] text-[#555555]">状态</th>
@@ -167,13 +168,7 @@ export function gaugeFeeListTemplate() {
                         <tbody id="gflTableBody"></tbody>
                     </table>
                 </div>
-                <div class="flex items-center justify-between px-5 py-2.5 border-t border-[#14141A] bg-[#0A0A0E]">
-                    <div class="flex items-center gap-3 min-w-0">
-                        <span id="gflTotalCount" class="text-[10px] font-mono text-[#555555]"></span>
-                        ${pageSizeSelectHtml('gflPageSize')}
-                    </div>
-                    <div class="flex items-center gap-0.5" id="gflPaginationBtns"></div>
-                </div>
+                ${paginationBarHtml({ infoId: 'gflTotalCount', selectId: 'gflPageSize', buttonsId: 'gflPaginationBtns' })}
                 <div id="gflEmptyState" class="hidden flex flex-col items-center justify-center py-14">
                     <div class="w-10 h-10 flex items-center justify-center mb-3 rounded-md bg-[#121218] border border-[#2A2A35]">
                         ${window.svgIcon('clipboard-list', 'w-4 h-4 text-[#555555]')}
@@ -272,8 +267,8 @@ export function renderTableRows(records) {
             </td>
             <td class="px-2 py-2 overflow-hidden text-[12px] font-semibold text-[#F0F0F2] truncate" title="${esc(record.location)}">${esc(record.location)}</td>
             <td class="px-2 py-2 overflow-hidden text-[14px] font-bold text-[#F0F0F2] truncate" title="${esc(record.vehicle_model)}">${esc(record.vehicle_model)}</td>
-            <td class="px-2 py-2 overflow-hidden text-[12px] font-bold text-[#F0F0F2] truncate" title="${esc(record.part_number)}">${esc(record.part_number)}</td>
-            <td class="px-2 py-2 overflow-hidden text-[11px] text-[#8E8E93] truncate" title="${esc(record.part_name)}">${esc(record.part_name)}</td>
+            <td class="px-2 py-2 overflow-hidden whitespace-nowrap">${partShortCodeCellHtml(record.part_number)}</td>
+            <td class="px-2 py-2 overflow-hidden">${partNumberNameCellHtml(record.part_number, record.part_name)}</td>
             <td class="px-2 py-1.5 text-right font-mono font-black tabular-nums text-[12px] text-[#FF1E27] bg-[#1A080A] border-x border-[#FF1E27]/20">${esc(fmtNum(record.gauge_fee, 4))}</td>
             <td class="${numCell}">${esc(fmtNum(record.allocation_qty, 0))}</td>
             <td class="px-1 py-2 text-center"><span class="text-[9px] font-medium ${statusClass}">${esc(record.status_label || record.status)}</span></td>
@@ -348,21 +343,3 @@ export function updateGaugeFeeHud(summary) {
     setText('gflHudInvalidCount', hasCount ? String(data.invalid_count ?? 0) : '—');
 }
 
-export function renderPagination(currentPage, totalPages) {
-    if (totalPages <= 1) return '';
-    let buttons = `
-        <button type="button" class="page-btn flex items-center justify-center w-6 h-6 text-[10px] ${currentPage === 1 ? 'text-[#333333] cursor-not-allowed' : 'text-[#585858] hover:text-[#c0c0c0] hover:bg-[#232323]'}"
-                data-page="${currentPage - 1}" ${currentPage === 1 ? 'disabled' : ''}>‹</button>`;
-    const maxVisible = 5;
-    let startPage = Math.max(1, currentPage - Math.floor(maxVisible / 2));
-    let endPage = Math.min(totalPages, startPage + maxVisible - 1);
-    if (endPage - startPage < maxVisible - 1) startPage = Math.max(1, endPage - maxVisible + 1);
-    for (let i = startPage; i <= endPage; i += 1) {
-        const isActive = i === currentPage;
-        buttons += `<button type="button" class="page-btn flex items-center justify-center w-6 h-6 text-[10px] ${isActive ? 'bg-[#FF1E27] text-white' : 'text-[#585858] hover:text-[#c0c0c0] hover:bg-[#232323]'}" data-page="${i}">${i}</button>`;
-    }
-    buttons += `
-        <button type="button" class="page-btn flex items-center justify-center w-6 h-6 text-[10px] ${currentPage === totalPages ? 'text-[#333333] cursor-not-allowed' : 'text-[#585858] hover:text-[#c0c0c0] hover:bg-[#232323]'}"
-                data-page="${currentPage + 1}" ${currentPage === totalPages ? 'disabled' : ''}>›</button>`;
-    return buttons;
-}

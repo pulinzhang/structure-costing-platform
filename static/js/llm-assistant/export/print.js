@@ -1,10 +1,18 @@
 /**
- * AI 回答「打印」：新标签页打开可打印 HTML 文档（不自动调系统打印对话框）。
+ * AI 回答「打印」：新标签页打开带网址的报告页（不自动调系统打印对话框）。
  * 弹窗被拦时回退全屏预览，用户可自行再点打印。
  */
 
 import { buildAssistantDocumentHtml, canExportAssistantMessage } from './document.js?v=6';
 import { llmIconClose, llmIconPrint, PANEL_ICON_BTN_CLASS } from '../icons.js';
+
+/**
+ * @param {number|string} reportId
+ * @returns {string}
+ */
+export function analysisReportPageUrl(reportId) {
+    return `/llm-analysis-report?report_id=${encodeURIComponent(String(reportId))}`;
+}
 
 const FULLSCREEN_OVERLAY_ID = 'llmPrintFullscreenOverlay';
 
@@ -36,23 +44,57 @@ export function printAssistantMessage(msg) {
         return;
     }
 
-    const html = buildAssistantDocumentHtml(msg);
-    if (openPrintWindow(html)) {
+    const reportId = msg.report_id;
+    if (reportId != null && String(reportId).trim() !== '') {
+        if (openReportPage(reportId)) {
+            return;
+        }
+        fallbackFullscreen(msg);
         return;
     }
 
-    if (typeof window.showToast === 'function') {
-        window.showToast('弹窗被拦截，已改用全屏预览', 'warning');
+    const html = buildAssistantDocumentHtml(msg);
+    if (openBlankDocument(html)) {
+        return;
     }
-    openFullscreenPreview(msg, html);
+    fallbackFullscreen(msg, html);
 }
 
 /**
- * 新标签页打开文档，不调用 print()。
+ * @param {object} msg
+ * @param {string} [html]
+ */
+function fallbackFullscreen(msg, html) {
+    if (typeof window.showToast === 'function') {
+        window.showToast('弹窗被拦截，已改用全屏预览', 'warning');
+    }
+    openFullscreenPreview(msg, html || buildAssistantDocumentHtml(msg));
+}
+
+/**
+ * @param {number|string} reportId
+ * @returns {boolean}
+ */
+function openReportPage(reportId) {
+    const tab = window.open(analysisReportPageUrl(reportId), '_blank');
+    if (!tab) {
+        return false;
+    }
+    try {
+        tab.opener = null;
+    } catch {
+        /* ignore */
+    }
+    tab.focus();
+    return true;
+}
+
+/**
+ * 无 report_id 时回退：about:blank 写入文档。
  * @param {string} html
  * @returns {boolean}
  */
-function openPrintWindow(html) {
+function openBlankDocument(html) {
     const printWindow = window.open('', '_blank');
     if (!printWindow) {
         return false;

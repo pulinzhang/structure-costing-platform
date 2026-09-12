@@ -9,8 +9,7 @@ import {
     renderDetailContent,
     updatePartsFilterCapsules,
     updatePartsHud,
-    renderPartsPagination,
-} from './template.js?v=33';
+} from './template.js?v=36';
 import {
     BTN_SAVE_ACTIVE,
     BTN_SAVE_DEFAULT,
@@ -21,10 +20,12 @@ import {
 import {
     DEFAULT_PAGE_SIZE,
     PAGE_SIZE_OPTIONS,
-    bindPageSizeSelect,
+    bindPagination,
+    paintPagination,
     normalizePageSize,
-} from '../../../../page-size.js?v=2';
+} from '../../../../page-size.js?v=3';
 import { setSearchBusy } from '../../../../search-busy.js?v=1';
+import { partShortCodeCellHtml, partNumberNameCellHtml } from '../../../../part-identity.js?v=3';
 
 function offalCell(part) {
     if (!part.is_offal_nested) {
@@ -140,13 +141,15 @@ export const PartsPage = {
         const savedSize = localStorage.getItem(PARTS_CONFIG.STORAGE_KEY);
         partsState.pageSize = normalizePageSize(savedSize);
 
-        bindPageSizeSelect('partsPageSize', {
+        bindPagination({
+            selectId: 'partsPageSize',
+            buttonsId: 'pagination',
             getSize: () => partsState.pageSize,
             setSize: (size) => {
                 partsState.pageSize = size;
                 localStorage.setItem(PARTS_CONFIG.STORAGE_KEY, String(size));
             },
-            onChange: () => this.loadParts(1),
+            onPage: (page) => this.loadParts(page),
         });
     },
 
@@ -207,11 +210,6 @@ export const PartsPage = {
                 if (action === 'detail') this.showDetail(id);
                 else if (action === 'delete') this.deletePart(id);
                 return;
-            }
-            const pageBtn = e.target.closest('button[data-page]');
-            if (pageBtn && !pageBtn.disabled) {
-                const targetPage = parseInt(pageBtn.getAttribute('data-page'), 10);
-                if (!Number.isNaN(targetPage) && targetPage >= 1) this.loadParts(targetPage);
             }
         });
     },
@@ -357,10 +355,7 @@ export const PartsPage = {
                 this.renderParts(items);
             }
 
-            const pagination = document.getElementById('pagination');
-            if (pagination) {
-                pagination.innerHTML = renderPartsPagination(page, totalPages);
-            }
+            paintPagination('pagination', page, totalPages);
         } catch (error) {
             console.error('加载零件列表失败:', error);
             showToast(error.message || '加载失败', 'error');
@@ -407,9 +402,11 @@ export const PartsPage = {
                     <div class="flex items-center justify-center">${thumbnailCell}</div>
                 </td>
                 <td class="${cell} font-sans whitespace-nowrap">
-                    <span class="text-[12px] font-semibold text-white font-mono tracking-wide group-hover:text-[#FF1E27] transition-colors">${esc(part.part_number)}</span>
+                    ${partShortCodeCellHtml(part.part_number)}
                 </td>
-                <td class="${cell} ${muted} font-sans">${esc(part.part_name) || '—'}</td>
+                <td class="${cell} font-sans overflow-hidden">
+                    ${partNumberNameCellHtml(part.part_number, part.part_name)}
+                </td>
                 <td class="${cell} ${muted}">${esc(part.location) || '—'}</td>
                 <td class="${cell} ${muted}">${esc(part.vehicle_model) || '—'}</td>
                 <td class="${cell} ${muted}">${esc(part.version) || '—'}</td>

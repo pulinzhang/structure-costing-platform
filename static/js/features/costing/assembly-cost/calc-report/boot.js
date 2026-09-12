@@ -2,6 +2,8 @@
  * 总成核价计算报告（独立浅色页签 · Brabus light）
  */
 
+import { resolveBomNodeShortCode } from '../../../../part-identity.js?v=3';
+
 const STATUS_LABEL = {
     ok: '成功',
     partial: '部分成功',
@@ -52,6 +54,40 @@ function display(value) {
     return window.esc(value);
 }
 
+function partShortCode(card) {
+    const partNumber = card?.part_number || '';
+    const shortNo = resolveBomNodeShortCode(partNumber, {
+        level: card?.level,
+        nodeRole: card?.is_tree_root ? 'supply' : undefined,
+    });
+    return shortNo || partNumber;
+}
+
+function restoreView(card) {
+    return card?.object_kind ? 'procurement' : 'finance';
+}
+
+function restoreHref(card) {
+    const log = state.log || {};
+    const query = new URLSearchParams({
+        year: String(log.year || ''),
+        month: String(log.month || ''),
+        part_number: card.part_number || '',
+        view: restoreView(card),
+    });
+    if (log.location) query.set('location', log.location);
+    if (log.vehicle_model) query.set('vehicle_model', log.vehicle_model);
+    if (log.bom_version) query.set('bom_version', log.bom_version);
+    return `/assembly-cost-restore?${query.toString()}`;
+}
+
+const CALCULATOR_ICON = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" aria-hidden="true"><rect x="4" y="2" width="16" height="20" rx="2"/><path d="M8 6h8"/><path d="M8 10h8"/><path d="M8 14h2"/><path d="M14 14h2"/><path d="M8 18h2"/><path d="M14 18h2"/></svg>';
+
+function restoreBadgeHtml(card) {
+    if (!card?.part_number) return '';
+    return `<a class="restore-badge" href="${restoreHref(card)}" target="_blank" rel="noopener noreferrer" title="计算过程" aria-label="计算过程">${CALCULATOR_ICON}</a>`;
+}
+
 function logIdFromUrl() {
     const params = new URLSearchParams(window.location.search);
     return parseInt(params.get('log_id') || '', 10);
@@ -67,6 +103,48 @@ function formatWhen(value) {
     return String(value).replace('T', ' ').slice(0, 19);
 }
 
+function printDateText() {
+    const now = new Date();
+    const month = String(now.getMonth() + 1).padStart(2, '0');
+    const day = String(now.getDate()).padStart(2, '0');
+    const hour = String(now.getHours()).padStart(2, '0');
+    const minute = String(now.getMinutes()).padStart(2, '0');
+    return `${now.getFullYear()}年${month}月${day}日 ${hour}:${minute}`;
+}
+
+function printHeadInnerHtml() {
+    const log = state.log || {};
+    const period = fmtPeriod(log.year, log.month);
+    const scope = [log.location, log.vehicle_model, log.bom_version].filter(Boolean).join(' / ');
+    return `
+        <div class="print-running-brand">
+            <span class="print-kicker">Assembly Costing Process Report</span>
+            <strong>总成核价计算报告</strong>
+        </div>
+        <div class="print-running-meta">
+            <span>${display(scope || '—')}</span>
+            <span>${display(period)}</span>
+            <span>打印 ${display(printDateText())}</span>
+        </div>
+    `;
+}
+
+function paintPrintHead() {
+    const node = document.getElementById('reportPrintHead');
+    if (!node || !state.log) return;
+    node.innerHTML = printHeadInnerHtml();
+}
+
+function printBannerRowHtml() {
+    return `
+        <tr class="print-page-banner">
+            <th colspan="11">
+                <div class="print-running-head" id="reportPrintHead">${printHeadInnerHtml()}</div>
+            </th>
+        </tr>
+    `;
+}
+
 function uniqueLevels(cards) {
     return [...new Set(cards.map((card) => Number(card.level)).filter((n) => Number.isFinite(n)))].sort((a, b) => a - b);
 }
@@ -79,6 +157,8 @@ function matches(card) {
     const keyword = state.keyword.trim().toLowerCase();
     if (!keyword) return true;
     const hay = [
+        card.seq_label,
+        partShortCode(card),
         card.part_number,
         card.part_name,
         card.message,
@@ -161,7 +241,10 @@ function bindFilters(root) {
     bindFilterSelect(root, 'reportLevel', 'level');
     bindFilterSelect(root, 'reportTreeRoot', 'treeRoot');
     document.addEventListener('click', () => closeFilterSelects(root));
-    root.querySelector('#reportPrintBtn')?.addEventListener('click', () => window.print());
+    root.querySelector('#reportPrintBtn')?.addEventListener('click', () => {
+        paintPrintHead();
+        window.print();
+    });
     root.querySelector('#reportExportBtn')?.addEventListener('click', () => exportExcel(true));
     root.querySelector('#reportExportAllBtn')?.addEventListener('click', () => exportExcel(false));
 }
@@ -237,6 +320,7 @@ function refreshRows(root) {
     refreshExportButtons();
     const tableHost = root.querySelector('#reportTableHost');
     if (tableHost) tableHost.innerHTML = renderTable(filtered);
+    paintPrintHead();
 }
 
 function render(root) {
@@ -273,7 +357,7 @@ function render(root) {
             </div>
         </div>
         <div class="filters">
-            <input id="reportKeyword" type="search" placeholder="零件号、名称、说明">
+            <input id="reportKeyword" type="search" placeholder="短码、零件号、名称、说明">
             <button type="button" data-status="all">全部</button>
             <button type="button" data-status="ok">成功</button>
             <button type="button" data-status="partial">部分成功</button>
@@ -312,17 +396,45 @@ function onKeydown(event) {
     }
 }
 
+function tableColgroupHtml() {
+    return `
+        <colgroup>
+            <col class="col-seq">
+            <col class="col-short">
+            <col class="col-part">
+            <col class="col-status">
+            <col class="col-money">
+            <col class="col-money">
+            <col class="col-money">
+            <col class="col-money">
+            <col class="col-money">
+            <col class="col-missing">
+            <col class="col-note">
+        </colgroup>
+    `;
+}
+
 function renderTable(cards) {
     if (!cards.length) {
-        return '<p class="empty" style="padding:24px 0;">没有符合筛选的核价卡。</p>';
+        return `
+            <table>
+                ${tableColgroupHtml()}
+                <thead>${printBannerRowHtml()}</thead>
+                <tbody>
+                    <tr>
+                        <td colspan="11" class="empty" style="padding:24px 0;">没有符合筛选的核价卡。</td>
+                    </tr>
+                </tbody>
+            </table>
+        `;
     }
     const rows = cards.map((card) => {
         const statusClass = CARD_STATUS_CLASS[card.status] || '';
         const missing = (card.missing_parts || []).join('；');
         return `
             <tr>
-                <td>L${display(card.level)}</td>
-                <td>${card.is_tree_root ? '树根' : '—'}</td>
+                <td class="seq">${display(card.seq_label)}</td>
+                <td class="short-code"><span class="short-code-text">${display(partShortCode(card))}</span>${restoreBadgeHtml(card)}</td>
                 <td>
                     <div class="part-number">${display(card.part_number)}</div>
                     <div class="part-name">${display(card.part_name)}</div>
@@ -331,23 +443,27 @@ function renderTable(cards) {
                 <td class="num">${display(card.material_amount)}</td>
                 <td class="num">${display(card.welding_amount)}</td>
                 <td class="num">${display(card.should_cost)}</td>
+                <td class="num">${display(card.indirect_amount)}</td>
                 <td class="num">${display(card.grand_total)}</td>
-                <td class="num">${display(card.missing_leaf_count)}</td>
-                <td>${display(card.message)}${missing ? `<div class="missing">${display(missing)}</div>` : ''}</td>
+                <td class="num">${Number(card.missing_leaf_count) > 0 ? display(card.missing_leaf_count) : ''}</td>
+                <td>${card.message ? display(card.message) : ''}${missing ? `<div class="missing">${display(missing)}</div>` : ''}</td>
             </tr>
         `;
     }).join('');
     return `
         <table>
+            ${tableColgroupHtml()}
             <thead>
+                ${printBannerRowHtml()}
                 <tr>
-                    <th>层级</th>
-                    <th>树根</th>
+                    <th>序号</th>
+                    <th>短码</th>
                     <th>零件</th>
                     <th>状态</th>
                     <th style="text-align:right;">材料</th>
                     <th style="text-align:right;">焊接</th>
                     <th style="text-align:right;">应成本</th>
+                    <th style="text-align:right;">间接费用</th>
                     <th style="text-align:right;">总费用</th>
                     <th style="text-align:right;">缺价</th>
                     <th>说明</th>
@@ -367,6 +483,7 @@ async function boot() {
     }
     state.logId = logId;
     document.addEventListener('keydown', onKeydown);
+    window.addEventListener('beforeprint', paintPrintHead);
     try {
         state.log = await loadLog(logId);
         render(root);

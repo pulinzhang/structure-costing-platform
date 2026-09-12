@@ -30,6 +30,7 @@ from app.services.costing.assembly_cost.calc.rollup import (
     RollupPackagingFee,
     RollupWeldingFee,
 )
+from app.services.costing.assembly_cost.calc.seq_label import calc_card_seq_labels
 
 
 @dataclass(frozen=True, slots=True)
@@ -58,6 +59,7 @@ class CalcPrepContext:
     packaging_by_part: dict[str, RollupPackagingFee]
     rates: RollupFinishedRates
     procurement_missing: bool
+    seq_label_by_node_id: dict[int, str]
     log_builder: ProcessLogBuilder
 
 
@@ -143,8 +145,10 @@ def prepare_calc_run(
     subject_meta: dict[int, SubjectMeta] = {}
     set_c: set[int] = set()
     procurement_missing = header is None
+    procurement_objects = []
     if header is not None:
-        for obj in procurement_repo.list_objects_by_list_id(db, header.id):
+        procurement_objects = procurement_repo.list_objects_by_list_id(db, header.id)
+        for obj in procurement_objects:
             if obj.section != SECTION_OBJECT:
                 continue
             set_c.add(obj.source_node_id)
@@ -165,6 +169,11 @@ def prepare_calc_run(
     )
     if not subjects:
         raise BusinessException("无核价主体（装配∪树根∪采购对象）")
+    seq_label_by_node_id = calc_card_seq_labels(
+        orm_nodes,
+        procurement_objects,
+        {node.id for node in subjects},
+    )
 
     progress.report(15, "加载上游价表…")
     stamping_prices, conflicted = _build_stamping_price_maps(
@@ -268,6 +277,7 @@ def prepare_calc_run(
         packaging_by_part=packaging_by_part,
         rates=rates,
         procurement_missing=procurement_missing,
+        seq_label_by_node_id=seq_label_by_node_id,
         log_builder=log_builder,
     )
 

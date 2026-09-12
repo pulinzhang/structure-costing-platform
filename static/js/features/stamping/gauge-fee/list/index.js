@@ -5,15 +5,15 @@
 import {
     gaugeFeeListTemplate,
     renderTableRows,
-    renderPagination,
     updateGaugeFeeHud,
     updateGaugeFeeFilterCapsules,
-} from './template.js?v=9';
+} from './template.js?v=13';
 import {
     DEFAULT_PAGE_SIZE,
-    bindPageSizeSelect,
+    bindPagination,
+    paintPagination,
     normalizePageSize,
-} from '../../../../page-size.js?v=2';
+} from '../../../../page-size.js?v=3';
 import { setSearchBusy } from '../../../../search-busy.js?v=1';
 
 const API_BASE = '/api/stamping/gauge-fees';
@@ -128,8 +128,7 @@ function renderList() {
     );
     const totalEl = document.getElementById('gflTotalCount');
     if (totalEl) totalEl.textContent = `共 ${pageState.total} 条`;
-    const pager = document.getElementById('gflPaginationBtns');
-    if (pager) pager.innerHTML = renderPagination(pageState.page, pageState.totalPages);
+    paintPagination('gflPaginationBtns', pageState.page, pageState.totalPages);
     updateGaugeFeeHud(pageState.summary);
     updateGaugeFeeFilterCapsules();
 }
@@ -361,13 +360,6 @@ function bindEvents() {
         event.preventDefault();
         loadData(1);
     });
-    document.getElementById('gflPaginationBtns')?.addEventListener('click', (event) => {
-        const btn = event.target.closest('.page-btn');
-        if (!btn || btn.disabled) return;
-        const nextPage = Number(btn.getAttribute('data-page'));
-        if (!nextPage || nextPage === pageState.page) return;
-        loadData(nextPage);
-    });
     document.getElementById('gflTableBody')?.addEventListener('click', (event) => {
         const actionEl = event.target.closest('[data-action]');
         if (!actionEl) return;
@@ -411,13 +403,15 @@ function bindEvents() {
 function init() {
     pageState.pageSize = normalizePageSize(localStorage.getItem(STORAGE_KEY));
     bindEvents();
-    bindPageSizeSelect('gflPageSize', {
+    bindPagination({
+        selectId: 'gflPageSize',
+        buttonsId: 'gflPaginationBtns',
         getSize: () => pageState.pageSize,
         setSize: (size) => {
             pageState.pageSize = size;
             localStorage.setItem(STORAGE_KEY, String(size));
         },
-        onChange: () => loadData(1),
+        onPage: (page) => loadData(page),
     });
     loadListFilters().then(() => loadData(1)).catch(() => loadData(1));
 }

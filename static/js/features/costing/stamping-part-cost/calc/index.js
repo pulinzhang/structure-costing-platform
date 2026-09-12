@@ -4,12 +4,12 @@
 
 import {
     partCostCalcTemplate,
-    renderCalcHistoryPagination,
-} from './template.js?v=11';
+} from './template.js?v=12';
 import {
     DEFAULT_PAGE_SIZE,
-    bindPageSizeSelect,
-} from '../../../../page-size.js?v=2';
+    bindPagination,
+    paintPagination,
+} from '../../../../page-size.js?v=3';
 
 const CASCADE_API = '/api/stamping/filters/cascade';
 const API_BASE = '/api/costing/stamping-part-cost';
@@ -57,12 +57,14 @@ const calcState = {
 function init() {
     stopPolling();
     bindEvents();
-    bindPageSizeSelect('partCostCalcHistoryPageSize', {
+    bindPagination({
+        selectId: 'partCostCalcHistoryPageSize',
+        buttonsId: 'calcHistoryPagination',
         getSize: () => calcState.history.size,
         setSize: (size) => {
             calcState.history.size = size;
         },
-        onChange: () => loadCalcHistory(1),
+        onPage: (page) => loadCalcHistory(page),
     });
     applyPermissionUi();
     fillMonthOptions();
@@ -134,13 +136,6 @@ function bindEvents() {
     document.getElementById('startCalcBtn')?.addEventListener('click', () => startCalculation());
     document.getElementById('calcHistoryRefreshBtn')?.addEventListener('click', () => loadCalcHistory(1));
     document.getElementById('calcHistoryDeleteAllBtn')?.addEventListener('click', () => deleteAllCalcLogs());
-    document.getElementById('calcHistoryPagination')?.addEventListener('click', (event) => {
-        const btn = event.target.closest('.calc-history-page-btn');
-        if (btn && !btn.disabled) {
-            const page = parseInt(btn.dataset.page, 10);
-            if (page) loadCalcHistory(page);
-        }
-    });
 }
 
 function resetDependentFilters(ids) {
@@ -332,13 +327,10 @@ async function loadCalcHistory(page = calcState.history.page) {
         renderHistoryRows(items);
         const totalEl = document.getElementById('calcHistoryTotal');
         if (totalEl) totalEl.textContent = `全${calcState.history.total} 条`;
-        const pagination = document.getElementById('calcHistoryPagination');
-        if (pagination) {
-            pagination.innerHTML = renderCalcHistoryPagination(
+        paintPagination('calcHistoryPagination', 
                 calcState.history.page,
                 calcState.history.totalPages,
             );
-        }
     } catch (error) {
         console.error('加载计算历史失败:', error);
         body.innerHTML = `<tr><td colspan="12" class="py-8 text-center text-[#ef5350]">加载失败</td></tr>`;

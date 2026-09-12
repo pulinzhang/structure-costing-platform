@@ -6,7 +6,8 @@
  * 单价一律按十进制字符串处理（不经 Number/parseFloat）。
  */
 
-import { pageSizeSelectHtml } from '../../../../page-size.js?v=2';
+import { paginationBarHtml } from '../../../../page-size.js?v=3';
+import { partShortCodeCellHtml, partNumberNameCellHtml } from '../../../../part-identity.js?v=3';
 
 /** 格式化为固定 4 位小数字符串；非法值返回 '-'。 */
 export function formatUnitPrice4(value) {
@@ -158,8 +159,8 @@ export function annualPartPriceTemplate() {
                             <col style="width:2px">
                             <col style="width:6%">
                             <col style="width:5%">
-                            <col style="width:9%">
-                            <col style="width:9%">
+                            <col style="width:6%">
+                            <col style="width:10%">
                             <col style="width:7%">
                             <col style="width:6%">
                             <col style="width:7%">
@@ -180,8 +181,8 @@ export function annualPartPriceTemplate() {
                                 <th class="p-0"></th>
                                 <th class="px-2 py-2 text-left text-[9px] font-medium tracking-[0.08em] text-[#555555]">基地</th>
                                 <th class="px-2 py-2 text-left text-[9px] font-medium tracking-[0.08em] text-[#555555]">年份</th>
-                                <th class="px-2 py-2 text-left text-[9px] font-medium tracking-[0.08em] text-[#555555]">零件号</th>
-                                <th class="px-2 py-2 text-left text-[9px] font-medium tracking-[0.08em] text-[#555555]">零件名称</th>
+                                <th class="px-2 py-2 text-left text-[9px] font-medium tracking-[0.08em] text-[#A1A1A6]">短代码</th>
+                                <th class="px-2 py-2 text-left text-[9px] font-medium tracking-[0.08em] text-[#555555]">零件</th>
                                 <th class="px-2 py-2 text-left text-[9px] font-medium tracking-[0.08em] text-[#555555]">规格</th>
                                 <th class="px-2 py-2 text-left text-[9px] font-medium tracking-[0.08em] text-[#555555]">采购单位</th>
                                 <th class="px-2 py-2 text-right text-[9px] font-medium tracking-[0.06em] text-[#555555]">采购单价</th>
@@ -203,13 +204,7 @@ export function annualPartPriceTemplate() {
                     </table>
                 </div>
 
-                <div class="flex items-center justify-between px-5 py-2.5 border-t border-[#14141A] bg-[#0A0A0E]" id="annualPaginationContainer">
-                    <div class="flex items-center gap-3 min-w-0">
-                        <span id="annualTotalCountPagination" class="text-[10px] font-mono text-[#555555]"></span>
-                        ${pageSizeSelectHtml('annualPartPricePageSize')}
-                    </div>
-                    <div class="flex items-center gap-0.5" id="annualPaginationBtns"></div>
-                </div>
+                ${paginationBarHtml({ infoId: 'annualTotalCountPagination', selectId: 'annualPartPricePageSize', buttonsId: 'annualPaginationBtns', wrapperId: 'annualPaginationContainer' })}
 
                 <div id="annualEmptyState" class="hidden flex flex-col items-center justify-center py-14">
                     <div class="w-10 h-10 flex items-center justify-center mb-3 rounded-md bg-[#121218] border border-[#2A2A35]">
@@ -513,11 +508,11 @@ export function renderTableRows(records) {
                 <div class="font-semibold text-[#F0F0F2]">${esc(record.location)}</div>
             </td>
             <td class="px-2 py-2 text-[#8E8E93] tabular-nums">${esc(fmtYear(record.year))}</td>
-            <td class="px-2 py-2 overflow-hidden">
-                <div class="text-[14px] font-bold text-[#F0F0F2] truncate" title="${esc(record.part_number)}">${esc(record.part_number)}</div>
+            <td class="px-2 py-2 overflow-hidden whitespace-nowrap">
+                ${partShortCodeCellHtml(record.part_number)}
             </td>
             <td class="px-2 py-2 overflow-hidden">
-                <div class="text-[#C8C8D0] truncate" title="${esc(record.part_name || '')}">${esc(record.part_name || '—')}</div>
+                ${partNumberNameCellHtml(record.part_number, record.part_name)}
             </td>
             <td class="px-2 py-2 text-[#8E8E93] overflow-hidden truncate" title="${esc(record.specification || '')}">${esc(record.specification || '—')}</td>
             <td class="px-2 py-2 text-[#8E8E93] overflow-hidden truncate">${esc(record.purchase_unit || '—')}</td>
@@ -552,36 +547,6 @@ export function renderTableRows(records) {
     }).join('');
 }
 
-export function renderPagination(currentPage, totalPages) {
-    if (totalPages <= 1) return '';
-    let buttons = `
-        <button class="page-btn flex items-center justify-center w-6 h-6 rounded-sm text-[10px] ${currentPage === 1 ? 'text-[#333333] cursor-not-allowed' : 'text-[#585858] hover:text-[#c0c0c0] hover:bg-[#232323]'} transition-all"
-                data-page="${currentPage - 1}" ${currentPage === 1 ? 'disabled' : ''}>
-            <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"></path></svg>
-        </button>`;
-    const maxVisible = 5;
-    let startPage = Math.max(1, currentPage - Math.floor(maxVisible / 2));
-    let endPage = Math.min(totalPages, startPage + maxVisible - 1);
-    if (endPage - startPage < maxVisible - 1) startPage = Math.max(1, endPage - maxVisible + 1);
-    if (startPage > 1) {
-        buttons += `<button class="page-btn flex items-center justify-center w-6 h-6 rounded-sm text-[10px] text-[#585858] hover:text-[#c0c0c0] hover:bg-[#232323]" data-page="1">1</button>`;
-        if (startPage > 2) buttons += `<span class="px-0.5 text-[#333333] text-[9px]">—</span>`;
-    }
-    for (let i = startPage; i <= endPage; i++) {
-        const isActive = i === currentPage;
-        buttons += `<button class="page-btn flex items-center justify-center w-6 h-6 rounded-sm text-[10px] ${isActive ? 'bg-[#FF1E27] text-white' : 'text-[#585858] hover:text-[#c0c0c0] hover:bg-[#232323]'}" data-page="${i}">${i}</button>`;
-    }
-    if (endPage < totalPages) {
-        if (endPage < totalPages - 1) buttons += `<span class="px-0.5 text-[#333333] text-[9px]">—</span>`;
-        buttons += `<button class="page-btn flex items-center justify-center w-6 h-6 rounded-sm text-[10px] text-[#585858] hover:text-[#c0c0c0] hover:bg-[#232323]" data-page="${totalPages}">${totalPages}</button>`;
-    }
-    buttons += `
-        <button class="page-btn flex items-center justify-center w-6 h-6 rounded-sm text-[10px] ${currentPage === totalPages ? 'text-[#333333] cursor-not-allowed' : 'text-[#585858] hover:text-[#c0c0c0] hover:bg-[#232323]'} transition-all"
-                data-page="${currentPage + 1}" ${currentPage === totalPages ? 'disabled' : ''}>
-            <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"></path></svg>
-        </button>`;
-    return buttons;
-}
 
 function auditBadge(status) {
     const label = { pending: '待审', approved: '已通过' }[status] || status || '-';

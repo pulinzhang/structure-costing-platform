@@ -5,7 +5,7 @@ from __future__ import annotations
 from datetime import datetime
 from decimal import ROUND_HALF_UP, Decimal
 
-from pydantic import BaseModel, ConfigDict, Field, field_serializer
+from pydantic import BaseModel, ConfigDict, Field, field_serializer, model_validator
 
 from app.common.money import Q4
 from app.common.timezone import datetime_to_iso
@@ -209,16 +209,35 @@ class AssemblyCostCalcCardTraceVO(BaseModel):
     level: int = 0
     is_tree_root: bool = False
     object_kind: str | None = None
+    seq_label: str = ""
+    source_node_id: int | None = None
     status: str
     should_cost: Decimal | None = None
     grand_total: Decimal | None = None
     material_amount: Decimal | None = None
     welding_amount: Decimal | None = None
+    indirect_amount: Decimal | None = None
     missing_leaf_count: int = 0
     message: str | None = None
     missing_parts: list[str] = Field(default_factory=list)
 
-    @field_serializer("should_cost", "grand_total", "material_amount", "welding_amount")
+    @model_validator(mode="after")
+    def fill_indirect_amount(self) -> AssemblyCostCalcCardTraceVO:
+        if (
+            self.indirect_amount is None
+            and self.grand_total is not None
+            and self.should_cost is not None
+        ):
+            self.indirect_amount = self.grand_total - self.should_cost
+        return self
+
+    @field_serializer(
+        "should_cost",
+        "grand_total",
+        "material_amount",
+        "welding_amount",
+        "indirect_amount",
+    )
     def _ser_money(self, value: Decimal | None) -> str | None:
         return _money_str(value)
 

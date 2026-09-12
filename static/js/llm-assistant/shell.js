@@ -17,7 +17,7 @@ import { mountComposer, setComposerBusy } from './chat/composer.js';
 import { humanizeUserFacingError } from './errors.js';
 import { renderThread } from './chat/thread.js?v=11';
 
-import { printAssistantMessage, closePrintPreview } from './export/print.js?v=10';
+import { printAssistantMessage, closePrintPreview } from './export/print.js?v=11';
 
 import { downloadWordDocument } from './export/word.js?v=6';
 

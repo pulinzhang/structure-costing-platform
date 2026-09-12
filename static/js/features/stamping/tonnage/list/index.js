@@ -6,16 +6,16 @@
 import {
     tonnagePriceTemplate,
     renderTableRows,
-    renderPagination,
     pricePerStrokeInputValue,
     parsePricePerStrokeInput,
     updateTonnageHud,
     updateTonnageFilterCapsules,
-} from './template.js?v=22';
+} from './template.js?v=23';
 import {
     DEFAULT_PAGE_SIZE,
-    bindPageSizeSelect,
-} from '../../../../page-size.js?v=2';
+    bindPagination,
+    paintPagination,
+} from '../../../../page-size.js?v=3';
 import { setSearchBusy } from '../../../../search-busy.js?v=1';
 
 const tonnagePriceState = {
@@ -65,12 +65,14 @@ function closeDrawer(drawerId, backdropId) {
 function init() {
     loadFilterOptions().then(() => loadData());
     bindEvents();
-    bindPageSizeSelect('tonnagePageSize', {
+    bindPagination({
+        selectId: 'tonnagePageSize',
+        buttonsId: 'paginationBtns',
         getSize: () => tonnagePriceState.pageSize,
         setSize: (size) => {
             tonnagePriceState.pageSize = size;
         },
-        onChange: () => loadData(1),
+        onPage: (page) => loadData(page),
     });
     applyPermissionUi();
     updateTonnageFilterCapsules();
@@ -174,7 +176,6 @@ async function loadData(page = 1) {
     const emptyState = document.getElementById('emptyState');
     const loadingState = document.getElementById('loadingState');
     const totalCountPagination = document.getElementById('totalCountPagination');
-    const paginationBtns = document.getElementById('paginationBtns');
 
     if (tableBody) tableBody.innerHTML = '';
     if (emptyState) emptyState.classList.add('hidden');
@@ -216,12 +217,7 @@ async function loadData(page = 1) {
         if (totalCountPagination) {
             totalCountPagination.textContent = `共 ${tonnagePriceState.total} 条`;
         }
-        if (paginationBtns) {
-            paginationBtns.innerHTML = renderPagination(
-                tonnagePriceState.page,
-                tonnagePriceState.totalPages
-            );
-        }
+        paintPagination('paginationBtns', tonnagePriceState.page, tonnagePriceState.totalPages);
     } catch (error) {
         console.error('加载数据失败:', error);
         if (tableBody) {
@@ -298,7 +294,6 @@ function bindEvents() {
     bindEditDrawerEvents();
     bindDeleteDrawerEvents();
     bindBatchAuditDrawerEvents();
-    bindPaginationEvents();
 }
 
 function bindEditDrawerEvents() {
@@ -334,15 +329,6 @@ function bindBatchAuditDrawerEvents() {
     document.getElementById('confirmTonnageBatchAuditBtn')?.addEventListener('click', submitBatchAudit);
 }
 
-function bindPaginationEvents() {
-    document.getElementById('paginationBtns')?.addEventListener('click', (e) => {
-        const btn = e.target.closest('.page-btn');
-        if (btn && !btn.disabled) {
-            const page = parseInt(btn.dataset.page, 10);
-            if (page) loadData(page);
-        }
-    });
-}
 
 function openEditDrawer(record) {
     document.getElementById('editDrawerTitle').textContent = '编辑价格';

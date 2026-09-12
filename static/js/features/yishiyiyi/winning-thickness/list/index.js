@@ -6,13 +6,15 @@
 
 import {
     DEFAULT_PREVIEW_PAGE_SIZE,
-    renderPageButtons,
-} from '../../../../page-size.js?v=2';
+    PREVIEW_PAGE_SIZE_OPTIONS,
+    bindPagination,
+    paintPagination,
+} from '../../../../page-size.js?v=3';
 import { setSearchBusy } from '../../../../search-busy.js?v=1';
 import {
     winningThicknessDownloadTemplate,
     renderWinningThicknessRows,
-} from './template.js?v=12';
+} from './template.js?v=13';
 
 const winningThicknessState = {
     records: [],
@@ -28,6 +30,20 @@ const GRADE_CATEGORY_API = '/api/masterdata/steel-grade-category';
 
 function init() {
     bindEvents();
+    bindPagination({
+        selectId: 'winningThicknessPageSize',
+        buttonsId: 'winningThicknessPagination',
+        getSize: () => winningThicknessState.pageSize,
+        setSize: (size) => {
+            winningThicknessState.pageSize = size;
+        },
+        onPage: (page) => {
+            winningThicknessState.page = page;
+            previewData();
+        },
+        options: PREVIEW_PAGE_SIZE_OPTIONS,
+        defaultSize: DEFAULT_PREVIEW_PAGE_SIZE,
+    });
     fillMonthOptions();
     loadFilterOptions();
     applyPermissionUi();
@@ -149,14 +165,6 @@ function bindEvents() {
     });
     document.getElementById('btnExportWinningThickness')?.addEventListener('click', () => exportExcel());
 
-    document.getElementById('winningThicknessPagination')?.addEventListener('click', (event) => {
-        const button = event.target.closest('[data-page]');
-        if (!button || button.disabled) return;
-        const nextPage = parseInt(button.dataset.page, 10);
-        if (!Number.isFinite(nextPage) || nextPage < 1) return;
-        winningThicknessState.page = nextPage;
-        previewData();
-    });
 
     [
         'winningThicknessYear',
@@ -293,11 +301,8 @@ async function previewData() {
             tableBody.innerHTML = renderWinningThicknessRows(records);
         }
 
-        const pagination = document.getElementById('winningThicknessPagination');
-        if (pagination) {
-            const totalPages = Math.max(1, Math.ceil(total / pageSize));
-            pagination.innerHTML = renderPageButtons(page, totalPages, 'wt-page-btn');
-        }
+        const totalPages = Math.max(1, Math.ceil(total / pageSize));
+        paintPagination('winningThicknessPagination', page, totalPages);
 
         updateConditionsDisplay();
     } catch (error) {

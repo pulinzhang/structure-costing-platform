@@ -5,14 +5,14 @@
 import {
     bomMaterialListTemplate,
     renderBomMatTableRows,
-    renderBomMatPagination,
     updateBomMatHud,
     updateBomMatCapsules,
-} from './template.js?v=3';
+} from './template.js?v=4';
 import {
     DEFAULT_PAGE_SIZE,
-    bindPageSizeSelect,
-} from '../../../../page-size.js?v=2';
+    bindPagination,
+    paintPagination,
+} from '../../../../page-size.js?v=3';
 import { setSearchBusy } from '../../../../search-busy.js?v=1';
 
 const API_BASE = '/api/bom';
@@ -38,12 +38,14 @@ const bomMatState = {
 function init() {
     applyHashQuery();
     bindEvents();
-    bindPageSizeSelect('bomMatPageSize', {
+    bindPagination({
+        selectId: 'bomMatPageSize',
+        buttonsId: 'bomMatPaginationBtns',
         getSize: () => bomMatState.pageSize,
         setSize: (size) => {
             bomMatState.pageSize = size;
         },
-        onChange: () => loadData(1),
+        onPage: (page) => loadData(page),
     });
     applyPermissionUi();
     if (bomMatState.advancedOpen) {
@@ -109,12 +111,6 @@ function bindEvents() {
         }
     });
 
-    document.getElementById('bomMatPaginationBtns')?.addEventListener('click', (event) => {
-        const btn = event.target.closest('button[data-page]');
-        if (!btn || btn.disabled) return;
-        const page = Number(btn.getAttribute('data-page'));
-        if (page) loadData(page);
-    });
 }
 
 function readFiltersFromDom() {
@@ -215,8 +211,7 @@ async function loadData(page = 1) {
         }
         const totalEl = document.getElementById('bomMatTotalCount');
         if (totalEl) totalEl.textContent = `共 ${bomMatState.total} 条`;
-        const pager = document.getElementById('bomMatPaginationBtns');
-        if (pager) pager.innerHTML = renderBomMatPagination(bomMatState.page, bomMatState.totalPages);
+        paintPagination('bomMatPaginationBtns', bomMatState.page, bomMatState.totalPages);
 
         if (!bomMatState.records.length) empty?.classList.remove('hidden');
     } catch (error) {

@@ -5,17 +5,17 @@
 import {
     pkgTransportFeeTemplate,
     renderTableRows,
-    renderPagination,
     feeInputValue,
     parseFeeInput,
     updatePkgHud,
     updatePkgFilterCapsules,
     renderDetailBody,
-} from './template.js?v=5';
+} from './template.js?v=8';
 import {
     DEFAULT_PAGE_SIZE,
-    bindPageSizeSelect,
-} from '../../../../page-size.js?v=2';
+    bindPagination,
+    paintPagination,
+} from '../../../../page-size.js?v=3';
 import { setSearchBusy } from '../../../../search-busy.js?v=1';
 
 const pkgState = {
@@ -68,12 +68,14 @@ function closeDrawer(drawerId, backdropId) {
 function init() {
     loadFilterOptions().then(() => loadData());
     bindEvents();
-    bindPageSizeSelect('pkgTransportFeePageSize', {
+    bindPagination({
+        selectId: 'pkgTransportFeePageSize',
+        buttonsId: 'pkgPaginationBtns',
         getSize: () => pkgState.pageSize,
         setSize: (size) => {
             pkgState.pageSize = size;
         },
-        onChange: () => loadData(1),
+        onPage: (page) => loadData(page),
     });
     applyPermissionUi();
     updatePkgFilterCapsules(pkgState);
@@ -208,10 +210,7 @@ async function loadData(page = 1) {
 
         const totalCountPagination = document.getElementById('pkgTotalCountPagination');
         if (totalCountPagination) totalCountPagination.textContent = `共 ${pkgState.total} 条`;
-        const paginationBtns = document.getElementById('pkgPaginationBtns');
-        if (paginationBtns) {
-            paginationBtns.innerHTML = renderPagination(pkgState.page, pkgState.totalPages);
-        }
+        paintPagination('pkgPaginationBtns', pkgState.page, pkgState.totalPages);
 
         // refresh vehicle options from filters if present
         const filters = pageResult.filters || {};
@@ -266,12 +265,6 @@ function bindEvents() {
         loadData(1);
     });
 
-    document.getElementById('pkgPaginationBtns')?.addEventListener('click', (e) => {
-        const btn = e.target.closest('.pkg-page-btn');
-        if (!btn) return;
-        const page = Number(btn.dataset.page);
-        if (page) loadData(page);
-    });
 
     document.getElementById('pkgTransportFeeTableBody')?.addEventListener('click', (e) => {
         const btn = e.target.closest('[data-action]');

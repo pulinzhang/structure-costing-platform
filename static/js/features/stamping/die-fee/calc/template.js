@@ -2,7 +2,7 @@
  * 冲压模具费计算页模板
  */
 
-import { pageSizeSelectHtml } from '../../../../page-size.js?v=2';
+import { paginationBarHtml } from '../../../../page-size.js?v=3';
 
 export const CALC_HISTORY_COLSPAN = 12;
 
@@ -99,13 +99,7 @@ export function dieFeeCalcTemplate() {
                             </tbody>
                         </table>
                     </div>
-                    <div class="flex items-center justify-between px-3 py-2 border-t border-[#1e1e1e] bg-[#141414]">
-                        <div class="flex items-center gap-3 min-w-0">
-                            <span id="calcHistoryTotal" class="text-[10px] text-[#484848]"></span>
-                            ${pageSizeSelectHtml('dieFeeCalcHistoryPageSize')}
-                        </div>
-                        <div class="flex items-center gap-0.5" id="calcHistoryPagination"></div>
-                    </div>
+                    ${paginationBarHtml({ infoId: 'calcHistoryTotal', selectId: 'dieFeeCalcHistoryPageSize', buttonsId: 'calcHistoryPagination', wrapperClass: 'flex items-center justify-between px-3 py-2 border-t border-[#1e1e1e] bg-[#141414]' })}
                 </div>
             </div>
         </div>
@@ -122,12 +116,3 @@ function filterSelect(id, label, required = false, emptyLabel = '请选择') {
     </label>`;
 }
 
-export function renderCalcHistoryPagination(currentPage, totalPages) {
-    if (totalPages <= 1) return '';
-    let buttons = '';
-    for (let i = 1; i <= totalPages; i += 1) {
-        const isActive = i === currentPage;
-        buttons += `<button class="calc-history-page-btn flex items-center justify-center w-6 h-6 rounded-sm text-[10px] ${isActive ? 'bg-[#d32f2f] text-white' : 'text-[#585858] hover:text-[#c0c0c0] hover:bg-[#232323]'}" data-page="${i}">${i}</button>`;
-    }
-    return buttons;
-}

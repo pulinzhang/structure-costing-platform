@@ -3,7 +3,8 @@
  * 冲压加工费计算结果浏览—Brabus Carbon & Precision Dark
  */
 
-import { pageSizeSelectHtml } from '../../../../page-size.js?v=2';
+import { paginationBarHtml } from '../../../../page-size.js?v=3';
+import { partShortCodeCellHtml, partNumberNameCellHtml } from '../../../../part-identity.js?v=3';
 
 export function processFeeListTemplate() {
     return `
@@ -155,14 +156,14 @@ export function processFeeListTemplate() {
                 </div>
 
                 <div class="overflow-x-auto brabus-bg-grid">
-                    <table class="w-full min-w-[2280px] bg-transparent">
+                    <table class="w-full min-w-[2100px] bg-transparent">
                         <thead>
                             <tr class="border-b border-[#17171C] bg-[#0B0B0D]/95">
                                 <th class="p-0 w-0"></th>
-                                <!-- 关注区：零件标识 + 系统计算 / 其它费用 / 确认单价 -->
+                                <!-- 关注区：短代码 + 系统计算 / 其它费用 / 确认单价 -->
                                 <th class="px-3 py-3 text-left text-[10px] font-semibold uppercase tracking-[0.18em] text-[#6E6E73] whitespace-nowrap">核价维度</th>
-                                <th class="px-3 py-3 text-left text-[10px] font-semibold uppercase tracking-[0.18em] text-[#A1A1A6] whitespace-nowrap">零件号</th>
-                                <th class="px-3 py-3 text-left text-[10px] font-semibold uppercase tracking-[0.18em] text-[#6E6E73] whitespace-nowrap">零件名称</th>
+                                <th class="px-3 py-3 text-left text-[10px] font-semibold uppercase tracking-[0.18em] text-[#A1A1A6] whitespace-nowrap">短代码</th>
+                                <th class="px-3 py-3 text-left text-[10px] font-semibold uppercase tracking-[0.18em] text-[#6E6E73] whitespace-nowrap">零件</th>
                                 <th class="px-3 py-3 text-left text-[10px] font-semibold uppercase tracking-[0.18em] text-[#6E6E73] whitespace-nowrap border-r border-[#22222A]">项目/版本</th>
                                 <th class="px-3 py-3 text-right text-[10px] font-semibold uppercase tracking-[0.18em] text-[#6E6E73] whitespace-nowrap">工序数</th>
                                 <th class="px-3 py-3 text-right text-[10px] font-semibold uppercase tracking-[0.18em] text-[#6E6E73] whitespace-nowrap">系统计算</th>
@@ -189,13 +190,7 @@ export function processFeeListTemplate() {
                     </table>
                 </div>
 
-                <div class="flex items-center justify-between px-5 py-2.5 border-t border-[#14141A] bg-[#0A0A0E]">
-                    <div class="flex items-center gap-3 min-w-0">
-                        <span id="feeTotalLabel" class="text-[10px] font-mono text-[#555555]"></span>
-                        ${pageSizeSelectHtml('feePageSize')}
-                    </div>
-                    <div class="flex items-center gap-0.5" id="feePagination"></div>
-                </div>
+                ${paginationBarHtml({ infoId: 'feeTotalLabel', selectId: 'feePageSize', buttonsId: 'feePagination' })}
 
                 <div id="feeEmpty" class="hidden flex flex-col items-center justify-center py-14">
                     <div class="w-10 h-10 flex items-center justify-center mb-3 rounded-md bg-[#121218] border border-[#2A2A35]">
@@ -520,9 +515,11 @@ export function renderFeeRows(records) {
                 <div class="text-[#555555] text-[10px] mt-0.5">${esc(row.location)} · ${esc(row.stamping_supplier)}</div>
             </td>
             <td class="${cell} font-sans whitespace-nowrap">
-                ${partNumberCell(row.part_number, row.is_tailor_welded)}
+                ${partShortCodeCellHtml(row.part_number)}
             </td>
-            <td class="${cell} ${muted} font-sans">${esc(row.part_name)}</td>
+            <td class="${cell} font-sans overflow-hidden">
+                ${partNumberNameCellHtml(row.part_number, row.part_name, tailorBadge(row.is_tailor_welded))}
+            </td>
             <td class="${cell} ${muted} font-sans ${zoneEnd}">${esc(row.vehicle_model)} / ${esc(row.version)}</td>
             <td class="${cell} text-right ${muted} tabular-nums">${esc(row.process_count)}</td>
             <td class="${cell} text-right tabular-nums ${isZero ? 'text-[#FF1E27]' : muted}">${formatNum(row.processing_fee, 3)}</td>
@@ -693,37 +690,6 @@ export function updateFeeFilterCapsules() {
     if (countEl) countEl.textContent = `(${advancedActive})`;
 }
 
-export function renderFeePagination(currentPage, totalPages) {
-    if (totalPages <= 1) return '';
-    let buttons = `
-        <button type="button" data-fee-page="${currentPage - 1}" ${currentPage === 1 ? 'disabled' : ''}
-                class="fee-page-btn flex items-center justify-center w-6 h-6 rounded-sm text-[10px] ${currentPage === 1 ? 'text-[#333333] cursor-not-allowed' : 'text-[#585858] hover:text-[#c0c0c0] hover:bg-[#232323]'} transition-all">
-            <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"></path></svg>
-        </button>`;
-    const maxVisible = 5;
-    let startPage = Math.max(1, currentPage - Math.floor(maxVisible / 2));
-    let endPage = Math.min(totalPages, startPage + maxVisible - 1);
-    if (endPage - startPage < maxVisible - 1) startPage = Math.max(1, endPage - maxVisible + 1);
-    if (startPage > 1) {
-        buttons += `<button type="button" data-fee-page="1" class="fee-page-btn flex items-center justify-center w-6 h-6 rounded-sm text-[10px] text-[#585858] hover:text-[#c0c0c0] hover:bg-[#232323]">1</button>`;
-        if (startPage > 2) buttons += `<span class="px-0.5 text-[#333333] text-[9px]">—</span>`;
-    }
-    for (let i = startPage; i <= endPage; i++) {
-        const isActive = i === currentPage;
-        buttons += `<button type="button" data-fee-page="${i}"
-            class="fee-page-btn flex items-center justify-center w-6 h-6 rounded-sm text-[10px] ${isActive ? 'bg-[#FFFFFF] text-[#0a0a0a] font-bold' : 'text-[#585858] hover:text-[#c0c0c0] hover:bg-[#232323]'}">${i}</button>`;
-    }
-    if (endPage < totalPages) {
-        if (endPage < totalPages - 1) buttons += `<span class="px-0.5 text-[#333333] text-[9px]">—</span>`;
-        buttons += `<button type="button" data-fee-page="${totalPages}" class="fee-page-btn flex items-center justify-center w-6 h-6 rounded-sm text-[10px] text-[#585858] hover:text-[#c0c0c0] hover:bg-[#232323]">${totalPages}</button>`;
-    }
-    buttons += `
-        <button type="button" data-fee-page="${currentPage + 1}" ${currentPage === totalPages ? 'disabled' : ''}
-                class="fee-page-btn flex items-center justify-center w-6 h-6 rounded-sm text-[10px] ${currentPage === totalPages ? 'text-[#333333] cursor-not-allowed' : 'text-[#585858] hover:text-[#c0c0c0] hover:bg-[#232323]'} transition-all">
-            <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"></path></svg>
-        </button>`;
-    return buttons;
-}
 
 function filterSelect(id, label) {
     return `<label class="space-y-1">
@@ -748,33 +714,10 @@ function viewRow(label, id, isHighlight = false) {
     </div>`;
 }
 
-/**
- * 企业口语短号：取零件号数字段术4 位（中BOM 一致）。
- * 例：554002087AA →2087（01006873AA →6873
- */
-export function shortPartNumber(partNumber) {
-    if (!partNumber) return null;
-    const digits = String(partNumber).replace(/\D/g, '');
-    if (digits.length < 4) return null;
-    return digits.slice(-4);
-}
-
-/** 列表单元格：短号主角，完整号次要；拼焊件加徽章 */
-function partNumberCell(partNumber, isTailorWelded) {
-    const full = partNumber || '';
-    const shortNo = shortPartNumber(full);
-    const badge = isTailorWelded
+function tailorBadge(isTailorWelded) {
+    return isTailorWelded
         ? `<span class="mt-1 inline-block text-[9px] font-sans tracking-[0.08em] text-[#FF1E27] border border-[#FF1E27]/30 bg-[#1A080A] px-1.5 py-0.5">拼焊件</span>`
         : '';
-    if (shortNo) {
-        return `
-            <div class="text-[18px] font-mono font-bold tabular-nums text-white tracking-[0.14em] leading-none
-                        drop-shadow-[0_0_16px_rgba(211,47,47,0.18)] group-hover:text-[#FF1E27] transition-colors"
-                 title="${esc(full)}">${esc(shortNo)}</div>
-            <div class="text-[10px] font-mono text-[#555555] tracking-wider mt-1">${esc(full)}</div>
-            ${badge}`;
-    }
-    return `<div class="text-xs font-mono text-[#8E8E93] tracking-wider" title="${esc(full)}">${esc(full) || '—'}</div>${badge}`;
 }
 
 /** 抽屉：短史+ 完整零件号*/

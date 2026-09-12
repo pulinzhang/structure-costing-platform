@@ -3,13 +3,13 @@
  * 基准价格导出页面逻辑
  */
 
-import { basePriceDownloadTemplate } from './template.js?v=31';
+import { basePriceDownloadTemplate } from './template.js?v=32';
 import {
     DEFAULT_PREVIEW_PAGE_SIZE,
     PREVIEW_PAGE_SIZE_OPTIONS,
-    bindPageSizeSelect,
-    renderPageButtons,
-} from '../../../../page-size.js?v=2';
+    bindPagination,
+    paintPagination,
+} from '../../../../page-size.js?v=3';
 import { setSearchBusy } from '../../../../search-busy.js?v=1';
 
 // 状态管理
@@ -31,12 +31,14 @@ const API_BASE = '/api/yishiyiyi/base-price';
  */
 function init() {
     bindEvents();
-    bindPageSizeSelect('basePricePageSize', {
+    bindPagination({
+        selectId: 'basePricePageSize',
+        buttonsId: 'basePricePagination',
         getSize: () => basePriceDownloadState.pageSize,
         setSize: (size) => {
             basePriceDownloadState.pageSize = size;
         },
-        onChange: () => previewData(1),
+        onPage: (page) => previewData(page),
         options: PREVIEW_PAGE_SIZE_OPTIONS,
         defaultSize: DEFAULT_PREVIEW_PAGE_SIZE,
     });
@@ -160,12 +162,6 @@ function bindEvents() {
         });
     }
 
-    document.getElementById('basePricePagination')?.addEventListener('click', (event) => {
-        const btn = event.target.closest('.base-price-page-btn');
-        if (!btn || btn.disabled) return;
-        const page = Number(btn.getAttribute('data-page'));
-        if (Number.isFinite(page) && page >= 1) previewData(page);
-    });
 }
 
 function queryAfterFilterSelect() {
@@ -284,14 +280,10 @@ async function previewData(page = 1) {
         if (tableBody) {
             tableBody.innerHTML = renderBasePriceRows(records);
         }
-        const pagination = document.getElementById('basePricePagination');
-        if (pagination) {
-            pagination.innerHTML = renderPageButtons(
+        paintPagination('basePricePagination', 
                 basePriceDownloadState.page,
                 basePriceDownloadState.totalPages,
-                'base-price-page-btn',
             );
-        }
     } catch (error) {
         console.error('预览数据失败:', error);
         if (tableBody) {

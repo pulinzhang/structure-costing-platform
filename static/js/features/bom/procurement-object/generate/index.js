@@ -4,12 +4,12 @@
 
 import {
     procurementObjectGenerateTemplate,
-    renderPoGenHistoryPagination,
-} from './template.js?v=6';
+} from './template.js?v=7';
 import {
     DEFAULT_PAGE_SIZE,
-    bindPageSizeSelect,
-} from '../../../../page-size.js?v=2';
+    bindPagination,
+    paintPagination,
+} from '../../../../page-size.js?v=3';
 import { SECTION_LABELS } from '../labels.js?v=2';
 
 const API_BASE = '/api/bom/procurement-objects';
@@ -49,12 +49,14 @@ const genState = {
 
 function init() {
     bindEvents();
-    bindPageSizeSelect('poGenHistoryPageSize', {
+    bindPagination({
+        selectId: 'poGenHistoryPageSize',
+        buttonsId: 'poGenHistoryPagination',
         getSize: () => genState.history.size,
         setSize: (size) => {
             genState.history.size = size;
         },
-        onChange: () => loadGenHistory(1),
+        onPage: (page) => loadGenHistory(page),
     });
     applyPermissionUi();
     loadCascadeFilters().then(() => loadPrepStats());
@@ -92,13 +94,6 @@ function bindEvents() {
     });
     document.getElementById('poGenSubmitBtn')?.addEventListener('click', startGenerate);
     document.getElementById('poGenHistoryRefreshBtn')?.addEventListener('click', () => loadGenHistory(1));
-    document.getElementById('poGenHistoryPagination')?.addEventListener('click', (event) => {
-        const btn = event.target.closest('.po-gen-history-page-btn');
-        if (btn && !btn.disabled) {
-            const page = parseInt(btn.dataset.page, 10);
-            if (page) loadGenHistory(page);
-        }
-    });
 }
 
 function val(id) {
@@ -331,13 +326,10 @@ async function loadGenHistory(page = genState.history.page) {
 
         const totalEl = document.getElementById('poGenHistoryTotal');
         if (totalEl) totalEl.textContent = `全${genState.history.total} 条`;
-        const pagination = document.getElementById('poGenHistoryPagination');
-        if (pagination) {
-            pagination.innerHTML = renderPoGenHistoryPagination(
+        paintPagination('poGenHistoryPagination', 
                 genState.history.page,
                 genState.history.totalPages,
             );
-        }
     } catch (error) {
         console.error('加载生成历史失败:', error);
         body.innerHTML = `<tr><td colspan="9" class="py-8 text-center text-[#ef5350]">加载失败</td></tr>`;

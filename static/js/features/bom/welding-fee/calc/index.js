@@ -5,12 +5,12 @@
 
 import {
     l0WeldingFeeCalcTemplate,
-    renderCalcHistoryPagination,
-} from './template.js?v=9';
+} from './template.js?v=10';
 import {
     DEFAULT_PAGE_SIZE,
-    bindPageSizeSelect,
-} from '../../../../page-size.js?v=2';
+    bindPagination,
+    paintPagination,
+} from '../../../../page-size.js?v=3';
 
 const API_BASE = '/api/bom/welding-fees';
 const UNIT_PRICE_YEARS_API = '/api/bom/welding-unit-price/filters/years';
@@ -54,12 +54,14 @@ const calcState = {
 function init() {
     stopPolling();
     bindEvents();
-    bindPageSizeSelect('l0wfCalcHistoryPageSize', {
+    bindPagination({
+        selectId: 'l0wfCalcHistoryPageSize',
+        buttonsId: 'l0wfCalcHistoryPagination',
         getSize: () => calcState.history.size,
         setSize: (size) => {
             calcState.history.size = size;
         },
-        onChange: () => loadCalcHistory(1),
+        onPage: (page) => loadCalcHistory(page),
     });
     applyPermissionUi();
     validateDataPreparation();
@@ -103,13 +105,6 @@ function bindEvents() {
     document.getElementById('l0wfStartCalcBtn')?.addEventListener('click', startCalculation);
     document.getElementById('l0wfCalcHistoryRefreshBtn')?.addEventListener('click', () => loadCalcHistory(1));
     document.getElementById('l0wfCalcHistoryDeleteAllBtn')?.addEventListener('click', () => deleteAllCalcLogs());
-    document.getElementById('l0wfCalcHistoryPagination')?.addEventListener('click', (event) => {
-        const btn = event.target.closest('.wf-calc-history-page-btn');
-        if (btn && !btn.disabled) {
-            const page = parseInt(btn.dataset.page, 10);
-            if (page) loadCalcHistory(page);
-        }
-    });
 }
 
 function val(id) {
@@ -334,13 +329,10 @@ async function loadCalcHistory(page = calcState.history.page) {
         const totalEl = document.getElementById('l0wfCalcHistoryTotal');
         if (totalEl) totalEl.textContent = `共 ${calcState.history.total} 条`;
 
-        const pagination = document.getElementById('l0wfCalcHistoryPagination');
-        if (pagination) {
-            pagination.innerHTML = renderCalcHistoryPagination(
+        paintPagination('l0wfCalcHistoryPagination', 
                 calcState.history.page,
                 calcState.history.totalPages,
             );
-        }
     } catch (error) {
         console.error('加载计算历史失败:', error);
         body.innerHTML = `<tr><td colspan="14" class="py-8 text-center text-[#ef5350]">加载失败</td></tr>`;

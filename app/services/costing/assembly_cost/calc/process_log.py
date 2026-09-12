@@ -24,11 +24,14 @@ class CardTracePayload(TypedDict):
     level: int
     is_tree_root: bool
     object_kind: str | None
+    seq_label: str
+    source_node_id: int | None
     status: str
     should_cost: str | None
     grand_total: str | None
     material_amount: str | None
     welding_amount: str | None
+    indirect_amount: str | None
     missing_leaf_count: int
     message: str | None
     missing_parts: list[str]
@@ -129,11 +132,14 @@ class ProcessLogBuilder:
         level: int,
         is_tree_root: bool,
         object_kind: str | None,
+        seq_label: str = "",
+        source_node_id: int | None = None,
         status: str,
         should_cost: Decimal | None = None,
         grand_total: Decimal | None = None,
         material_amount: Decimal | None = None,
         welding_amount: Decimal | None = None,
+        indirect_amount: Decimal | None = None,
         missing_leaf_count: int = 0,
         message: str | None = None,
         missing_parts: list[str] | None = None,
@@ -145,11 +151,14 @@ class ProcessLogBuilder:
             "level": level,
             "is_tree_root": is_tree_root,
             "object_kind": object_kind,
+            "seq_label": seq_label,
+            "source_node_id": source_node_id,
             "status": status,
             "should_cost": _money(should_cost),
             "grand_total": _money(grand_total),
             "material_amount": _money(material_amount),
             "welding_amount": _money(welding_amount),
+            "indirect_amount": _money(indirect_amount),
             "missing_leaf_count": missing_leaf_count,
             "message": message,
             "missing_parts": parts,
@@ -190,6 +199,10 @@ def parse_card_traces(raw: str | None) -> list[CardTracePayload]:
                 "level": int(level_raw) if isinstance(level_raw, int) else 0,
                 "is_tree_root": bool(item.get("is_tree_root")),
                 "object_kind": str(item["object_kind"]) if item.get("object_kind") else None,
+                "seq_label": str(item["seq_label"]) if item.get("seq_label") else "",
+                "source_node_id": int(item["source_node_id"])
+                if isinstance(item.get("source_node_id"), int)
+                else None,
                 "status": status,
                 "should_cost": str(item["should_cost"])
                 if item.get("should_cost") is not None
@@ -202,6 +215,9 @@ def parse_card_traces(raw: str | None) -> list[CardTracePayload]:
                 else None,
                 "welding_amount": str(item["welding_amount"])
                 if item.get("welding_amount") is not None
+                else None,
+                "indirect_amount": str(item["indirect_amount"])
+                if item.get("indirect_amount") is not None
                 else None,
                 "missing_leaf_count": int(item.get("missing_leaf_count") or 0),
                 "message": str(item["message"]) if item.get("message") else None,

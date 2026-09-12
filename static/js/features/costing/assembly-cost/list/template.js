@@ -2,8 +2,13 @@
  * 总成核价一览 — Brabus Carbon & Precision Dark（对齐冲压零件价格一览 HUD）
  */
 
-import { pageSizeSelectHtml } from '../../../../page-size.js?v=2';
+import { paginationBarHtml } from '../../../../page-size.js?v=3';
 import { CONFIRM_LABELS, KIND_LABELS } from '../../../bom/procurement-object/labels.js?v=2';
+import {
+    partShortCodeCellHtml,
+    partNumberNameCellHtml,
+    resolveBomNodeShortCode,
+} from '../../../../part-identity.js?v=3';
 
 export function assemblyCostListTemplate() {
     return `
@@ -167,10 +172,11 @@ export function assemblyCostListTemplate() {
                 </div>
 
                 <div class="overflow-x-auto bg-[#0A0A0E] brabus-bg-grid">
-                    <table id="lacDataTable" class="w-full table-fixed bg-transparent border-collapse" style="min-width: 1180px;">
-                        <colgroup>
+                    <table id="lacDataTable" class="w-full table-fixed bg-transparent border-collapse" style="min-width: 1252px;">
+                        <colgroup id="lacColgroup">
                             <col style="width:3px">
                             <col style="width:96px">
+                            <col style="width:72px">
                             <col style="width:140px">
                             <col style="width:100px">
                             <col style="width:88px">
@@ -186,6 +192,7 @@ export function assemblyCostListTemplate() {
                             <tr class="border-b border-[#17171C] bg-[#0B0B0D]/95">
                                 <th class="p-0"></th>
                                 <th class="px-2 py-2 text-left text-[9px] font-medium tracking-[0.08em] text-[#555555]">年月/基地</th>
+                                <th class="px-2 py-2 text-left text-[9px] font-medium tracking-[0.08em] text-[#A1A1A6]">短代码</th>
                                 <th class="px-2 py-2 text-left text-[9px] font-medium tracking-[0.08em] text-[#6E6E73]">零件</th>
                                 <th class="px-2 py-2 text-left text-[9px] font-medium tracking-[0.08em] text-[#555555]">项目/版本</th>
                                 <th class="px-2 py-2 text-right text-[9px] font-medium tracking-[0.06em] text-[#555555]">材料</th>
@@ -202,13 +209,7 @@ export function assemblyCostListTemplate() {
                     </table>
                 </div>
 
-                <div class="flex items-center justify-between px-5 py-2.5 border-t border-[#14141A] bg-[#0A0A0E]">
-                    <div class="flex items-center gap-3 min-w-0">
-                        <span id="lacPageInfo" class="text-[10px] font-mono text-[#555555]"></span>
-                        ${pageSizeSelectHtml('lacPageSize')}
-                    </div>
-                    <div class="flex items-center gap-0.5" id="lacPagination"></div>
-                </div>
+                ${paginationBarHtml({ infoId: 'lacPageInfo', selectId: 'lacPageSize', buttonsId: 'lacPagination' })}
 
                 <div id="lacEmpty" class="hidden flex flex-col items-center justify-center py-14">
                     <div class="w-10 h-10 flex items-center justify-center mb-3 rounded-md bg-[#121218] border border-[#2A2A35]">
@@ -293,30 +294,11 @@ function filterInput(id, label, placeholder) {
     </label>`;
 }
 
-export function shortPartNumber(partNumber) {
-    if (!partNumber) return null;
-    const digits = String(partNumber).replace(/\D/g, '');
-    if (digits.length < 4) return null;
-    return digits.slice(-4);
-}
-
-function partInfoCell(partNumber, partName) {
-    const full = partNumber || '';
-    const shortNo = shortPartNumber(full);
-    const name = partName || '';
-    const nameLine = name
-        ? `<div class="text-[9px] text-[#555555] mt-0.5 truncate" title="${esc(name)}">${esc(name)}</div>`
-        : '';
-    if (shortNo) {
-        return `
-            <div class="text-[14px] font-mono font-bold tabular-nums text-[#F0F0F2] tracking-[0.08em] leading-none"
-                 title="${esc(full)}">${esc(shortNo)}</div>
-            <div class="text-[9px] font-mono text-[#3A3A42] tracking-wide mt-0.5 truncate" title="${esc(full)}">${esc(full)}</div>
-            ${nameLine}`;
-    }
+function partIdentityTds(row) {
+    const shortNo = resolveBomNodeShortCode(row.part_number, { level: row.level });
     return `
-        <div class="text-[10px] font-mono text-[#8E8E93] tracking-wide truncate" title="${esc(full)}">${esc(full) || '—'}</div>
-        ${nameLine}`;
+            <td class="px-2 py-2 overflow-hidden whitespace-nowrap">${partShortCodeCellHtml(row.part_number, shortNo)}</td>
+            <td class="px-2 py-2 overflow-hidden">${partNumberNameCellHtml(row.part_number, row.part_name)}</td>`;
 }
 
 function calcStatusBadge(status) {
@@ -379,7 +361,7 @@ export function renderLacRows(records, view = 'finance') {
                 <div class="font-mono font-semibold text-[#F0F0F2] text-[11px] tabular-nums">${ym}</div>
                 <div class="text-[#555555] text-[9px] mt-0.5 leading-tight truncate" title="${location}">${location}</div>
             </td>
-            <td class="px-2 py-2 overflow-hidden">${partInfoCell(row.part_number, row.part_name)}</td>
+            ${partIdentityTds(row)}
             <td class="px-2 py-2 overflow-hidden">
                 <div class="text-[#C8C8D0] text-[10px] truncate">${esc(KIND_LABELS[row.object_kind] || row.object_kind || '—')}</div>
                 <div class="text-[#555555] text-[9px] mt-0.5">第${esc(row.level ?? 0)}层</div>
@@ -404,7 +386,7 @@ export function renderLacRows(records, view = 'finance') {
                 <div class="font-mono font-semibold text-[#F0F0F2] text-[11px] tabular-nums">${ym}</div>
                 <div class="text-[#555555] text-[9px] mt-0.5 leading-tight truncate" title="${location}">${location}</div>
             </td>
-            <td class="px-2 py-2 overflow-hidden">${partInfoCell(row.part_number, row.part_name)}</td>
+            ${partIdentityTds(row)}
             <td class="px-2 py-2 overflow-hidden">
                 <div class="text-[#C8C8D0] text-[10px] truncate" title="${esc(row.vehicle_model || '')}">${esc(row.vehicle_model || '—')}</div>
                 <div class="text-[#555555] text-[9px] mt-0.5 font-mono truncate">${esc(row.bom_version || '—')}</div>
@@ -426,14 +408,35 @@ export function renderLacRows(records, view = 'finance') {
 export function updateLacTableHead(view = 'finance') {
     const head = document.getElementById('lacTableHead');
     if (!head) return;
+    const table = document.getElementById('lacDataTable');
+    const colgroup = document.getElementById('lacColgroup');
     const th = (label, extra = '') =>
         `<th class="px-2 py-2 text-[9px] font-medium tracking-[0.06em] text-[#555555] ${extra}">${label}</th>`;
+    const identityHeads = `
+                ${th('短代码', 'text-left tracking-[0.08em] text-[#A1A1A6]')}
+                ${th('零件', 'text-left tracking-[0.08em] text-[#6E6E73]')}`;
     if (view === 'procurement') {
+        if (table) table.style.minWidth = '1180px';
+        if (colgroup) {
+            colgroup.innerHTML = `
+                            <col style="width:3px">
+                            <col style="width:96px">
+                            <col style="width:72px">
+                            <col style="width:140px">
+                            <col style="width:100px">
+                            <col style="width:88px">
+                            <col style="width:88px">
+                            <col style="width:100px">
+                            <col style="width:52px">
+                            <col style="width:52px">
+                            <col style="width:52px">
+                            <col style="width:44px">`;
+        }
         head.innerHTML = `
             <tr class="border-b border-[#17171C] bg-[#0B0B0D]/95">
                 <th class="p-0"></th>
                 ${th('年月/基地', 'text-left tracking-[0.08em]')}
-                ${th('零件', 'text-left tracking-[0.08em] text-[#6E6E73]')}
+                ${identityHeads}
                 ${th('对象/层', 'text-left tracking-[0.08em]')}
                 ${th('材料成本', 'text-right')}
                 ${th('焊接费/电泳黑漆等', 'text-right leading-tight')}
@@ -445,11 +448,28 @@ export function updateLacTableHead(view = 'finance') {
             </tr>`;
         return;
     }
+    if (table) table.style.minWidth = '1252px';
+    if (colgroup) {
+        colgroup.innerHTML = `
+                            <col style="width:3px">
+                            <col style="width:96px">
+                            <col style="width:72px">
+                            <col style="width:140px">
+                            <col style="width:100px">
+                            <col style="width:88px">
+                            <col style="width:72px">
+                            <col style="width:88px">
+                            <col style="width:80px">
+                            <col style="width:100px">
+                            <col style="width:52px">
+                            <col style="width:52px">
+                            <col style="width:44px">`;
+    }
     head.innerHTML = `
             <tr class="border-b border-[#17171C] bg-[#0B0B0D]/95">
                 <th class="p-0"></th>
                 ${th('年月/基地', 'text-left tracking-[0.08em]')}
-                ${th('零件', 'text-left tracking-[0.08em] text-[#6E6E73]')}
+                ${identityHeads}
                 ${th('项目/版本', 'text-left tracking-[0.08em]')}
                 ${th('材料', 'text-right')}
                 ${th('焊接费', 'text-right')}
@@ -542,33 +562,3 @@ export function updateLacFilterCapsules() {
     if (countEl) countEl.textContent = `(${advancedActive})`;
 }
 
-export function renderLacPagination(currentPage, totalPages) {
-    if (totalPages <= 1) return '';
-    let buttons = `
-        <button class="lac-page-btn flex items-center justify-center w-6 h-6 text-[10px] ${currentPage === 1 ? 'text-[#2E2E36] cursor-not-allowed' : 'text-[#555555] hover:text-[#C8C8D0] hover:bg-[#161620]'} transition-all"
-                data-page="${currentPage - 1}" ${currentPage === 1 ? 'disabled' : ''}>
-            <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"></path></svg>
-        </button>`;
-    const maxVisible = 5;
-    let startPage = Math.max(1, currentPage - Math.floor(maxVisible / 2));
-    let endPage = Math.min(totalPages, startPage + maxVisible - 1);
-    if (endPage - startPage < maxVisible - 1) startPage = Math.max(1, endPage - maxVisible + 1);
-    if (startPage > 1) {
-        buttons += `<button class="lac-page-btn flex items-center justify-center w-6 h-6 text-[10px] text-[#555555] hover:text-[#C8C8D0] hover:bg-[#161620]" data-page="1">1</button>`;
-        if (startPage > 2) buttons += `<span class="px-0.5 text-[#2E2E36] text-[9px]">—</span>`;
-    }
-    for (let i = startPage; i <= endPage; i++) {
-        const isActive = i === currentPage;
-        buttons += `<button class="lac-page-btn flex items-center justify-center w-6 h-6 text-[10px] ${isActive ? 'bg-[#E8E8ED] text-[#0A0A0C] font-bold' : 'text-[#555555] hover:text-[#C8C8D0] hover:bg-[#161620]'}" data-page="${i}">${i}</button>`;
-    }
-    if (endPage < totalPages) {
-        if (endPage < totalPages - 1) buttons += `<span class="px-0.5 text-[#2E2E36] text-[9px]">—</span>`;
-        buttons += `<button class="lac-page-btn flex items-center justify-center w-6 h-6 text-[10px] text-[#555555] hover:text-[#C8C8D0] hover:bg-[#161620]" data-page="${totalPages}">${totalPages}</button>`;
-    }
-    buttons += `
-        <button class="lac-page-btn flex items-center justify-center w-6 h-6 text-[10px] ${currentPage === totalPages ? 'text-[#2E2E36] cursor-not-allowed' : 'text-[#555555] hover:text-[#C8C8D0] hover:bg-[#161620]'}"
-                data-page="${currentPage + 1}" ${currentPage === totalPages ? 'disabled' : ''}>
-            <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"></path></svg>
-        </button>`;
-    return buttons;
-}

@@ -6,15 +6,15 @@
 import {
     dieFeeListTemplate,
     renderDieFeeRows,
-    renderDieFeePagination,
     updateDieFeeHud,
     updateDieFeeFilterCapsules,
-    shortPartNumber,
-} from './template.js?v=8';
+} from './template.js?v=13';
+import { shortPartNumber } from '../../../../part-identity.js?v=3';
 import {
     DEFAULT_PAGE_SIZE,
-    bindPageSizeSelect,
-} from '../../../../page-size.js?v=2';
+    bindPagination,
+    paintPagination,
+} from '../../../../page-size.js?v=3';
 import { setSearchBusy } from '../../../../search-busy.js?v=1';
 
 const API_BASE = '/api/stamping/die-fees';
@@ -62,12 +62,14 @@ function closeDrawer(drawerId, backdropId) {
 
 function init() {
     bindEvents();
-    bindPageSizeSelect('dieFeePageSize', {
+    bindPagination({
+        selectId: 'dieFeePageSize',
+        buttonsId: 'dieFeePagination',
         getSize: () => feeState.pageSize,
         setSize: (size) => {
             feeState.pageSize = size;
         },
-        onChange: () => loadData(1),
+        onPage: (page) => loadData(page),
     });
     applyPermissionUi();
     applyHashFilters();
@@ -209,13 +211,6 @@ function bindEvents() {
         updateDieFeeFilterCapsules();
     });
 
-    document.getElementById('dieFeePagination')?.addEventListener('click', (event) => {
-        const btn = event.target.closest('[data-die-fee-page]');
-        if (!btn) return;
-        const page = Number(btn.getAttribute('data-die-fee-page'));
-        if (!Number.isFinite(page) || page < 1) return;
-        loadData(page);
-    });
 
     bindEditDrawerEvents();
     bindViewDrawerEvents();
@@ -465,12 +460,9 @@ async function loadData(page = 1) {
             bindRowEvents();
         }
 
-        const pagination = document.getElementById('dieFeePagination');
-        if (pagination) {
-            pagination.innerHTML = renderDieFeePagination(feeState.page, feeState.totalPages);
-        }
+        paintPagination('dieFeePagination', feeState.page, feeState.totalPages);
     } catch (error) {
-        showToast(error.message || '加载失败', 'error');
+        showToast(error.message || '加载失败');
         showEmpty('加载失败，请稍后重试');
         updateDieFeeHud(0, null, feeState.onlyZero, scopeLabel(filters));
     } finally {

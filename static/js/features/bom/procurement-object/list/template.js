@@ -2,8 +2,9 @@
  * 采购对象清单列表 — HUD 密表（对齐冲压零件价格一览）
  */
 
-import { pageSizeSelectHtml } from '../../../../page-size.js?v=2';
+import { paginationBarHtml } from '../../../../page-size.js?v=3';
 import { AUDIT_LABELS, CONFIRM_LABELS, KIND_LABELS, SECTION_LABELS } from '../labels.js?v=2';
+import { partShortCodeCellHtml, partNumberNameCellHtml } from '../../../../part-identity.js?v=3';
 
 export function procurementObjectListTemplate() {
     return `
@@ -142,7 +143,9 @@ export function procurementObjectListTemplate() {
                         <colgroup>
                             <col style="width:3px">
                             <col style="width:88px">
+                            <col style="width:72px">
                             <col style="width:140px">
+                            <col style="width:72px">
                             <col style="width:140px">
                             <col style="width:96px">
                             <col style="width:88px">
@@ -156,8 +159,10 @@ export function procurementObjectListTemplate() {
                             <tr class="border-b border-[#17171C] bg-[#0B0B0D]/95">
                                 <th class="p-0"></th>
                                 <th class="px-2 py-2 text-left text-[9px] font-medium tracking-[0.08em] text-[#555555]">Excel</th>
+                                <th class="px-2 py-2 text-left text-[9px] font-medium tracking-[0.08em] text-[#A1A1A6]">总成短码</th>
                                 <th class="px-2 py-2 text-left text-[9px] font-medium tracking-[0.08em] text-[#555555]">供货总成</th>
-                                <th class="px-2 py-2 text-left text-[9px] font-medium tracking-[0.08em] text-[#555555]">零件号</th>
+                                <th class="px-2 py-2 text-left text-[9px] font-medium tracking-[0.08em] text-[#A1A1A6]">短代码</th>
+                                <th class="px-2 py-2 text-left text-[9px] font-medium tracking-[0.08em] text-[#555555]">零件</th>
                                 <th class="px-2 py-2 text-left text-[9px] font-medium tracking-[0.06em] text-[#555555]">对象种类</th>
                                 <th class="px-2 py-2 text-left text-[9px] font-medium tracking-[0.06em] text-[#555555]">材料</th>
                                 <th class="px-2 py-2 text-left text-[9px] font-medium tracking-[0.06em] text-[#555555]">确认</th>
@@ -171,13 +176,7 @@ export function procurementObjectListTemplate() {
                     </table>
                 </div>
 
-                <div class="flex items-center justify-between px-5 py-2.5 border-t border-[#14141A] bg-[#0A0A0E]">
-                    <div class="flex items-center gap-3">
-                        <span id="poTotalLabel" class="text-[10px] font-mono text-[#555555]"></span>
-                        ${pageSizeSelectHtml('poPageSize')}
-                    </div>
-                    <div class="flex items-center gap-0.5" id="poPagination"></div>
-                </div>
+                ${paginationBarHtml({ infoId: 'poTotalLabel', selectId: 'poPageSize', buttonsId: 'poPagination' })}
 
                 <div id="poLoadingState" class="hidden flex items-center justify-center py-14">
                     <div class="w-5 h-5 border-2 border-[#2A2A35] border-t-[#FF1E27] rounded-full animate-spin"
@@ -310,38 +309,88 @@ function detailDrawerHtml() {
     `;
 }
 
+function consecutiveRowSpans(records, keyOf) {
+    const spans = records.map(() => 1);
+    let start = 0;
+    while (start < records.length) {
+        const key = keyOf(records[start]);
+        if (!key) {
+            start += 1;
+            continue;
+        }
+        let end = start + 1;
+        while (end < records.length && keyOf(records[end]) === key) end += 1;
+        spans[start] = end - start;
+        for (let index = start + 1; index < end; index += 1) spans[index] = 0;
+        start = end;
+    }
+    return spans;
+}
+
+function excelTraceHtml(records, start, span) {
+    const group = records.slice(start, start + span);
+    const first = group[0];
+    const filename = first.excel_filename || '—';
+    const rowNumbers = group
+        .map((item) => item.excel_row)
+        .filter((value) => value != null);
+    let rowLabel = '行 —';
+    if (rowNumbers.length) {
+        const lowest = Math.min(...rowNumbers);
+        const highest = Math.max(...rowNumbers);
+        rowLabel = lowest === highest ? `行 ${lowest}` : `行 ${lowest}–${highest}`;
+    }
+    return `
+        <div class="text-[10px] text-[#8E8E93] truncate" title="${esc(first.excel_filename || '')}">${esc(filename)}</div>
+        <div class="text-[9px] text-[#555555]">${esc(rowLabel)}</div>`;
+}
+
 export function renderProcurementObjectRows(records) {
     if (!records || records.length === 0) {
-        return `<tr><td colspan="11" class="py-10 text-center text-[#8E8E93] text-[12px]">暂无数据</td></tr>`;
+        return `<tr><td colspan="13" class="py-10 text-center text-[#8E8E93] text-[12px]">暂无数据</td></tr>`;
     }
     const kindLabel = KIND_LABELS;
     const sectionLabel = SECTION_LABELS;
     const confirmLabel = CONFIRM_LABELS;
-    return records.map((row) => {
+    const excelSpans = consecutiveRowSpans(records, (row) => row.excel_filename || '');
+    const l0Spans = consecutiveRowSpans(
+        records,
+        (row) => (row.l0_part_number ? `${row.l0_part_number}\0${row.l0_part_name || ''}` : ''),
+    );
+    const mergeCell = 'px-2 py-2 overflow-hidden align-middle border-r border-[#22222A]';
+    return records.map((row, index) => {
         const confirmBtn = row.section === 'object'
             ? `<button type="button" data-action="confirm" data-id="${esc(row.id)}"
                     class="inline-flex items-center justify-center w-7 h-7 rounded-sm opacity-0 group-hover:opacity-100 focus:opacity-100 text-[#555555] hover:text-[#FF1E27] hover:bg-[#161620]"
                     title="确认" aria-label="确认">${window.svgIcon('pencil', 'w-3.5 h-3.5')}</button>`
+            : '';
+        const excelSpan = excelSpans[index];
+        const l0Span = l0Spans[index];
+        const excelTd = excelSpan > 0
+            ? `<td class="${mergeCell}" rowspan="${excelSpan}">${excelTraceHtml(records, index, excelSpan)}</td>`
+            : '';
+        const l0Td = l0Span > 0
+            ? `<td class="${mergeCell}" rowspan="${l0Span}">${partShortCodeCellHtml(row.l0_part_number)}</td>
+               <td class="${mergeCell}" rowspan="${l0Span}">${partNumberNameCellHtml(row.l0_part_number, row.l0_part_name)}</td>`
             : '';
         return `
         <tr class="group relative font-mono text-[11px] border-b border-[#141418] hover:bg-[#161620] transition-colors duration-100">
             <td class="p-0 relative">
                 <div class="absolute left-0 top-0 bottom-0 w-[2px] bg-[#FF1E27] opacity-0 group-hover:opacity-70 transition-opacity"></div>
             </td>
-            <td class="px-2 py-2 overflow-hidden">
-                <div class="text-[10px] text-[#8E8E93] truncate" title="${esc(row.excel_filename)}">${esc(row.excel_filename || '—')}</div>
-                <div class="text-[9px] text-[#555555]">行 ${esc(row.excel_row ?? '—')}</div>
+            ${excelTd}
+            ${l0Td}
+            <td class="px-2 py-2 overflow-hidden whitespace-nowrap">
+                ${partShortCodeCellHtml(row.part_number)}
             </td>
             <td class="px-2 py-2 overflow-hidden">
-                <div class="font-semibold text-[#F0F0F2] truncate">${esc(row.l0_part_number)}</div>
-                <div class="text-[9px] text-[#555555] truncate" title="${esc(row.l0_part_name)}">${esc(row.l0_part_name || '')}</div>
-            </td>
-            <td class="px-2 py-2 overflow-hidden">
-                <div class="font-semibold text-[#F0F0F2] truncate">${esc(row.part_number)}</div>
-                <div class="text-[9px] text-[#555555] truncate">${esc(row.part_name || '')}</div>
-                ${row.internal_number
-                    ? `<div class="text-[9px] text-[#3A3A42] truncate" title="内部号（ERP）">${esc(row.internal_number)}</div>`
-                    : ''}
+                ${partNumberNameCellHtml(
+                    row.part_number,
+                    row.part_name,
+                    row.internal_number
+                        ? `<div class="text-[9px] text-[#3A3A42] truncate" title="内部号（ERP）">${esc(row.internal_number)}</div>`
+                        : '',
+                )}
             </td>
             <td class="px-2 py-2 text-[10px] text-[#8E8E93]">${esc(kindLabel[row.object_kind] || sectionLabel[row.section] || row.section)}</td>
             <td class="px-2 py-2 overflow-hidden text-[10px] text-[#8E8E93]">
@@ -368,18 +417,3 @@ export function renderProcurementObjectRows(records) {
     }).join('');
 }
 
-export function renderPoPagination(currentPage, totalPages) {
-    if (totalPages <= 1) return '';
-    let buttons = `
-        <button class="po-page-btn flex items-center justify-center w-6 h-6 text-[10px] ${currentPage === 1 ? 'text-[#2E2E36] cursor-not-allowed' : 'text-[#555555] hover:text-[#C8C8D0] hover:bg-[#161620]'}"
-                data-page="${currentPage - 1}" ${currentPage === 1 ? 'disabled' : ''}>‹</button>`;
-    for (let i = 1; i <= totalPages; i += 1) {
-        if (totalPages > 7 && Math.abs(i - currentPage) > 2 && i !== 1 && i !== totalPages) continue;
-        const active = i === currentPage;
-        buttons += `<button class="po-page-btn flex items-center justify-center w-6 h-6 text-[10px] ${active ? 'bg-[#FF1E27] text-white font-bold' : 'text-[#555555] hover:text-[#C8C8D0] hover:bg-[#161620]'}" data-page="${i}">${i}</button>`;
-    }
-    buttons += `
-        <button class="po-page-btn flex items-center justify-center w-6 h-6 text-[10px] ${currentPage === totalPages ? 'text-[#2E2E36] cursor-not-allowed' : 'text-[#555555] hover:text-[#C8C8D0] hover:bg-[#161620]'}"
-                data-page="${currentPage + 1}" ${currentPage === totalPages ? 'disabled' : ''}>›</button>`;
-    return buttons;
-}

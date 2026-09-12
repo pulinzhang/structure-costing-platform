@@ -1,4 +1,4 @@
-import { pageSizeSelectHtml } from '../../../../page-size.js?v=2';
+import { paginationBarHtml } from '../../../../page-size.js?v=3';
 
 export function dieListTemplate() {
     return `
@@ -66,8 +66,8 @@ export function dieListTemplate() {
                         <colgroup>
                             <col style="width: 8px">
                             <col style="width: 56px">
-                            <col style="width: 160px">
-                            <col>
+                            <col style="width: 72px">
+                            <col style="width: 180px">
                             <col style="width: 90px">
                             <col style="width: 90px">
                             <col style="width: 90px">
@@ -78,8 +78,8 @@ export function dieListTemplate() {
                             <tr class="border-b border-[#17171C] bg-[#0B0B0D]/95">
                                 <th class="p-0"></th>
                                 <th class="px-2 py-2 text-left text-[9px] font-medium tracking-[0.08em] text-[#555555]">序号</th>
-                                <th class="px-2 py-2 text-left text-[9px] font-medium tracking-[0.08em] text-[#555555]">零件号</th>
-                                <th class="px-2 py-2 text-left text-[9px] font-medium tracking-[0.08em] text-[#555555]">零件名称</th>
+                                <th class="px-2 py-2 text-left text-[9px] font-medium tracking-[0.08em] text-[#A1A1A6]">短代码</th>
+                                <th class="px-2 py-2 text-left text-[9px] font-medium tracking-[0.08em] text-[#555555]">零件</th>
                                 <th class="px-2 py-2 text-left text-[9px] font-medium tracking-[0.08em] text-[#555555]">模具类型</th>
                                 <th class="px-2 py-2 text-left text-[9px] font-medium tracking-[0.08em] text-[#555555]">模具方式</th>
                                 <th class="px-2 py-2 text-left text-[9px] font-medium tracking-[0.08em] text-[#555555]">生产方式</th>
@@ -90,13 +90,7 @@ export function dieListTemplate() {
                         <tbody id="dieListTableBody" class="bg-transparent"></tbody>
                     </table>
                 </div>
-                <div class="flex items-center justify-between px-5 py-2.5 border-t border-[#14141A] bg-[#0A0A0E]">
-                    <div class="flex items-center gap-3">
-                        <span id="dieListTotalLabel" class="text-[10px] font-mono text-[#555555]"></span>
-                        ${pageSizeSelectHtml('dieListPageSize')}
-                    </div>
-                    <div class="flex items-center gap-0.5" id="dieListPagination"></div>
-                </div>
+                ${paginationBarHtml({ infoId: 'dieListTotalLabel', selectId: 'dieListPageSize', buttonsId: 'dieListPagination' })}
                 <div id="dieListEmpty" class="flex flex-col items-center justify-center py-14">
                     <div class="w-10 h-10 flex items-center justify-center mb-3 rounded-md bg-[#121218] border border-[#2A2A35]">
                         ${window.svgIcon('clipboard-list', 'w-4 h-4 text-[#555555]')}

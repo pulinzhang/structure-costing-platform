@@ -2,7 +2,7 @@
  * 牌号分类档案 — HUD 密表 + 抽屉增改
  */
 
-import { pageSizeSelectHtml } from '../../../page-size.js?v=2';
+import { paginationBarHtml } from '../../../page-size.js?v=3';
 
 export const CATEGORY_TABS = Object.freeze([
     { id: 'all', label: '全部' },
@@ -96,13 +96,7 @@ export function steelGradeCategoryTemplate() {
                     <span class="text-[11px] text-[#555555]">加载中</span>
                 </div>
 
-                <div class="flex items-center justify-between px-5 py-2.5 border-t border-[#14141A] bg-[#0A0A0E]">
-                    <div class="flex items-center gap-3">
-                        <span id="sgcTotalCount" class="text-[10px] font-mono text-[#555555]"></span>
-                        ${pageSizeSelectHtml('sgcPageSize')}
-                    </div>
-                    <div class="flex items-center gap-0.5" id="sgcPaginationBtns"></div>
-                </div>
+                ${paginationBarHtml({ infoId: 'sgcTotalCount', selectId: 'sgcPageSize', buttonsId: 'sgcPaginationBtns' })}
             </div>
         </div>
 
@@ -223,36 +217,6 @@ export function renderTableRows(records) {
         .join('');
 }
 
-export function renderPagination(currentPage, totalPages) {
-    if (totalPages <= 1) return '';
-    let buttons = `
-        <button type="button" class="page-btn flex items-center justify-center w-6 h-6 text-[10px] ${currentPage === 1 ? 'text-[#333333] cursor-not-allowed' : 'text-[#585858] hover:text-[#c0c0c0] hover:bg-[#232323]'} transition-all"
-                data-page="${currentPage - 1}" ${currentPage === 1 ? 'disabled' : ''}>
-            ${window.svgIcon('chevron-left', 'w-3 h-3')}
-        </button>`;
-    const maxVisible = 5;
-    let startPage = Math.max(1, currentPage - Math.floor(maxVisible / 2));
-    let endPage = Math.min(totalPages, startPage + maxVisible - 1);
-    if (endPage - startPage < maxVisible - 1) startPage = Math.max(1, endPage - maxVisible + 1);
-    if (startPage > 1) {
-        buttons += `<button type="button" class="page-btn flex items-center justify-center w-6 h-6 text-[10px] text-[#585858] hover:text-[#c0c0c0] hover:bg-[#232323]" data-page="1">1</button>`;
-        if (startPage > 2) buttons += `<span class="px-0.5 text-[#333333] text-[9px]">…</span>`;
-    }
-    for (let i = startPage; i <= endPage; i += 1) {
-        const isActive = i === currentPage;
-        buttons += `<button type="button" class="page-btn flex items-center justify-center w-6 h-6 text-[10px] ${isActive ? 'bg-[#FF1E27] text-white' : 'text-[#585858] hover:text-[#c0c0c0] hover:bg-[#232323]'}" data-page="${i}">${i}</button>`;
-    }
-    if (endPage < totalPages) {
-        if (endPage < totalPages - 1) buttons += `<span class="px-0.5 text-[#333333] text-[9px]">…</span>`;
-        buttons += `<button type="button" class="page-btn flex items-center justify-center w-6 h-6 text-[10px] text-[#585858] hover:text-[#c0c0c0] hover:bg-[#232323]" data-page="${totalPages}">${totalPages}</button>`;
-    }
-    buttons += `
-        <button type="button" class="page-btn flex items-center justify-center w-6 h-6 text-[10px] ${currentPage === totalPages ? 'text-[#333333] cursor-not-allowed' : 'text-[#585858] hover:text-[#c0c0c0] hover:bg-[#232323]'}"
-                data-page="${currentPage + 1}" ${currentPage === totalPages ? 'disabled' : ''}>
-            ${window.svgIcon('chevron-right', 'w-3 h-3')}
-        </button>`;
-    return buttons;
-}
 
 export function syncTabStyles(activeTab) {
     document.querySelectorAll('.sgc-tab').forEach((btn) => {

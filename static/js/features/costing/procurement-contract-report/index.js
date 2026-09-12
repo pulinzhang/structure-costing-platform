@@ -4,7 +4,6 @@
 
 import {
     procurementContractReportTemplate,
-    renderPcrPagination,
     renderPcrRows,
     renderPcrTableHead,
     bindPcrChipMenus,
@@ -14,11 +13,12 @@ import {
     cancelPcrHudCountUp,
     updatePcrViewButtons,
     updateRingIndicators,
-} from './template.js?v=37';
+} from './template.js?v=38';
 import {
     DEFAULT_PAGE_SIZE,
-    bindPageSizeSelect,
-} from '../../../page-size.js?v=2';
+    bindPagination,
+    paintPagination,
+} from '../../../page-size.js?v=3';
 
 const API_BASE = '/api/costing/procurement-contract-report';
 const CASCADE_API = '/api/bom/filters/cascade';
@@ -46,12 +46,14 @@ function init() {
     applyPermissionUi();
     bindEvents();
     bindPcrChipMenus();
-    bindPageSizeSelect('pcrPageSize', {
+    bindPagination({
+        selectId: 'pcrPageSize',
+        buttonsId: 'pcrPagination',
         getSize: () => listState.pageSize,
         setSize: (size) => {
             listState.pageSize = size;
         },
-        onChange: () => loadList(1),
+        onPage: (page) => loadList(page),
     });
     fillYearMonthOptions();
     renderPcrTableHead([]);
@@ -187,13 +189,6 @@ function bindEvents() {
     });
     partEl?.addEventListener('blur', () => {
         flushPartFilterAndReload();
-    });
-    document.getElementById('pcrPagination')?.addEventListener('click', (event) => {
-        const btn = event.target.closest('.pcr-page-btn');
-        if (btn && !btn.disabled) {
-            const page = parseInt(btn.dataset.page, 10);
-            if (page) loadList(page);
-        }
     });
     document.getElementById('pcrTableBody')?.addEventListener('click', (event) => {
         const restoreBtn = event.target.closest('.btn-open-restore');
@@ -542,10 +537,7 @@ async function loadList(page = 1) {
             pageInfo.textContent =
                 `第 ${listState.page} / ${Math.max(listState.totalPages, 1)} 页 · ${listState.total} 条`;
         }
-        const pagination = document.getElementById('pcrPagination');
-        if (pagination) {
-            pagination.innerHTML = renderPcrPagination(listState.page, listState.totalPages);
-        }
+        paintPagination('pcrPagination', listState.page, listState.totalPages);
     } catch (error) {
         listState.items = [];
         body.innerHTML = '';

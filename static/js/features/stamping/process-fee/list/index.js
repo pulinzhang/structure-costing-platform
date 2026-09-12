@@ -6,15 +6,15 @@
 import {
     processFeeListTemplate,
     renderFeeRows,
-    renderFeePagination,
     updateFeeHud,
     updateFeeFilterCapsules,
-    shortPartNumber,
-} from './template.js?v=43';
+} from './template.js?v=48';
+import { shortPartNumber } from '../../../../part-identity.js?v=3';
 import {
     DEFAULT_PAGE_SIZE,
-    bindPageSizeSelect,
-} from '../../../../page-size.js?v=2';
+    bindPagination,
+    paintPagination,
+} from '../../../../page-size.js?v=3';
 import { setSearchBusy } from '../../../../search-busy.js?v=1';
 
 const API_BASE = '/api/stamping/process-fees';
@@ -70,12 +70,14 @@ function closeDrawer(drawerId, backdropId) {
 
 function init() {
     bindEvents();
-    bindPageSizeSelect('feePageSize', {
+    bindPagination({
+        selectId: 'feePageSize',
+        buttonsId: 'feePagination',
         getSize: () => feeState.pageSize,
         setSize: (size) => {
             feeState.pageSize = size;
         },
-        onChange: () => loadData(1),
+        onPage: (page) => loadData(page),
     });
     applyPermissionUi();
     applyHashFilters();
@@ -225,13 +227,6 @@ function bindEvents() {
         updateFeeFilterCapsules();
     });
 
-    document.getElementById('feePagination')?.addEventListener('click', (event) => {
-        const btn = event.target.closest('[data-fee-page]');
-        if (!btn) return;
-        const page = Number(btn.getAttribute('data-fee-page'));
-        if (!Number.isFinite(page) || page < 1) return;
-        loadData(page);
-    });
 
     bindEditDrawerEvents();
     bindViewDrawerEvents();
@@ -568,12 +563,9 @@ async function loadData(page = 1) {
             bindRowEvents();
         }
 
-        const pagination = document.getElementById('feePagination');
-        if (pagination) {
-            pagination.innerHTML = renderFeePagination(feeState.page, feeState.totalPages);
-        }
+        paintPagination('feePagination', feeState.page, feeState.totalPages);
     } catch (error) {
-        showToast(error.message || '加载失败', 'error');
+        showToast(error.message || '加载失败');
         empty?.classList.remove('hidden');
         updateFeeHud(0, null, feeState.onlyZero);
     } finally {

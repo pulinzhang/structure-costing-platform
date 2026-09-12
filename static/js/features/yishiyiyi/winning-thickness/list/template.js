@@ -3,6 +3,12 @@
  * 必填基地/年/月；中标基价叠厚度加减价后外发
  */
 
+import {
+    DEFAULT_PREVIEW_PAGE_SIZE,
+    PREVIEW_PAGE_SIZE_OPTIONS,
+    paginationBarHtml,
+} from '../../../../page-size.js?v=3';
+
 export function winningThicknessDownloadTemplate() {
     return `
         <div class="space-y-2 w-full max-w-full">
@@ -95,13 +101,17 @@ export function winningThicknessDownloadTemplate() {
                         </div>
                     </div>
 
-                    <div class="flex items-center justify-between mt-4">
-                        <div class="text-[11px] text-[#616161]">
+                    ${paginationBarHtml({
+                        infoHtml: `<div class="text-[11px] text-[#616161]">
                             共 <span id="winningThicknessRecordCount" class="text-[#9e9e9e] font-mono">0</span> 条阶梯行
                             <span class="text-[#484848] ml-2">（同牌号多行 = 各厚度区间）</span>
-                        </div>
-                        <div id="winningThicknessPagination" class="flex items-center gap-0.5"></div>
-                    </div>
+                        </div>`,
+                        selectId: 'winningThicknessPageSize',
+                        buttonsId: 'winningThicknessPagination',
+                        currentSize: DEFAULT_PREVIEW_PAGE_SIZE,
+                        options: PREVIEW_PAGE_SIZE_OPTIONS,
+                        wrapperClass: 'flex items-center justify-between mt-4',
+                    })}
                 </div>
             </div>
         </div>

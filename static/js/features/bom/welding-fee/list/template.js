@@ -2,7 +2,12 @@
  * BOM 焊接费列表模板 — HUD 密表
  */
 
-import { pageSizeSelectHtml } from '../../../../page-size.js?v=2';
+import { paginationBarHtml } from '../../../../page-size.js?v=3';
+import {
+    partShortCodeCellHtml,
+    partNumberNameCellHtml,
+    resolveBomNodeShortCode,
+} from '../../../../part-identity.js?v=3';
 
 const AUDIT_LABEL = {
     pending: { text: '待审', cls: 'bg-[#ffb74d]/15 text-[#ffb74d]' },
@@ -151,7 +156,7 @@ export function l0WeldingFeeListTemplate() {
                             <col style="width: 100px;">
                             <col style="width: 110px;">
                             <col style="width: 48px;">
-                            <col style="width: 120px;">
+                            <col style="width: 72px;">
                             <col style="width: 140px;">
                             <col style="width: 200px;">
                             <col style="width: 52px;">
@@ -170,8 +175,8 @@ export function l0WeldingFeeListTemplate() {
                                 <th class="px-2 py-2 text-left text-[9px] font-medium tracking-[0.08em] text-[#555555]">基地 / 年</th>
                                 <th class="px-2 py-2 text-left text-[9px] font-medium tracking-[0.08em] text-[#555555]">项目 / 版本</th>
                                 <th class="px-2 py-2 text-center text-[9px] font-medium tracking-[0.06em] text-[#555555]">层级</th>
-                                <th class="px-2 py-2 text-left text-[9px] font-medium tracking-[0.08em] text-[#555555]">零件号</th>
-                                <th class="px-2 py-2 text-left text-[9px] font-medium tracking-[0.08em] text-[#555555]">零件名称</th>
+                                <th class="px-2 py-2 text-left text-[9px] font-medium tracking-[0.08em] text-[#A1A1A6]">短代码</th>
+                                <th class="px-2 py-2 text-left text-[9px] font-medium tracking-[0.08em] text-[#555555]">零件</th>
                                 <th class="px-2 py-2 text-left text-[9px] font-medium tracking-[0.08em] text-[#555555]">焊接信息原文</th>
                                 <th class="px-2 py-2 text-right text-[9px] font-medium tracking-[0.06em] text-[#555555]">工艺数</th>
                                 <th class="px-2 py-2 text-right text-[9px] font-medium tracking-[0.06em] text-[#555555]">命中</th>
@@ -188,13 +193,7 @@ export function l0WeldingFeeListTemplate() {
                     </table>
                 </div>
 
-                <div class="flex items-center justify-between px-5 py-2.5 border-t border-[#14141A] bg-[#0A0A0E]">
-                    <div class="flex items-center gap-3">
-                        <span id="l0wfTotalLabel" class="text-[10px] font-mono text-[#555555]"></span>
-                        ${pageSizeSelectHtml('l0wfPageSize')}
-                    </div>
-                    <div class="flex items-center gap-0.5" id="l0wfPagination"></div>
-                </div>
+                ${paginationBarHtml({ infoId: 'l0wfTotalLabel', selectId: 'l0wfPageSize', buttonsId: 'l0wfPagination' })}
 
                 <div id="l0wfEmpty" class="hidden flex flex-col items-center justify-center py-14">
                     <div class="w-10 h-10 flex items-center justify-center mb-3 rounded-md bg-[#121218] border border-[#2A2A35]">
@@ -457,21 +456,6 @@ function partNumberViewBlock(prefix) {
     </div>`;
 }
 
-/** 与 BOM viz 一致：数字末四位（501005123AA → 5123） */
-function shortPartNumber(partNumber) {
-    if (!partNumber) return null;
-    const digits = String(partNumber).replace(/\D/g, '');
-    if (digits.length < 4) return null;
-    return digits.slice(-4);
-}
-
-/** 成品 / 供货总成短号展示 */
-export function resolveL0ShortPartNumber(partNumber) {
-    const full = String(partNumber || '').trim();
-    if (!full) return '—';
-    return shortPartNumber(full) || full;
-}
-
 /** HUD 只用 API filters.summary（筛选全量），禁止用本页 items 加总。 */
 export function updateL0WeldingFeeHud(summary = {}, versionLabel = '—') {
     const set = (id, value) => {
@@ -532,7 +516,7 @@ export function renderL0WeldingFeeRows(records) {
     return records.map((row) => {
         const audit = AUDIT_LABEL[row.audit_status] || { text: row.audit_status || '-', cls: 'text-[#8E8E93]' };
         const calc = CALC_LABEL[row.calc_status] || { text: row.calc_status || '-', cls: 'text-[#8E8E93]' };
-        const shortNo = resolveL0ShortPartNumber(row.part_number);
+        const shortNo = resolveBomNodeShortCode(row.part_number, { level: row.level });
         const systemFee = row.total_welding_fee != null ? fmtNum(row.total_welding_fee, 4) : '-';
         const otherFee = row.other_fee != null && Number(row.other_fee) !== 0
             ? fmtNum(row.other_fee, 4)
@@ -556,12 +540,11 @@ export function renderL0WeldingFeeRows(records) {
                     <div class="text-[9px] text-[#555555]">${esc(row.bom_version || '-')}</div>
                 </td>
                 <td class="px-1 py-2 text-center font-mono text-[10px] text-[#8E8E93]">L${esc(row.level ?? 0)}</td>
-                <td class="px-2 py-2 overflow-hidden">
-                    <div class="text-[14px] font-bold text-[#F0F0F2]">${esc(shortNo)}</div>
-                    <div class="text-[9px] text-[#3A3A42] truncate" title="${esc(row.part_number)}">${esc(row.part_number || '-')}</div>
+                <td class="px-2 py-2 overflow-hidden whitespace-nowrap">
+                    ${partShortCodeCellHtml(row.part_number, shortNo)}
                 </td>
                 <td class="px-2 py-2 overflow-hidden">
-                    <div class="text-[#C8C8D0] truncate" title="${esc(row.part_name || '')}">${esc(row.part_name || '-')}</div>
+                    ${partNumberNameCellHtml(row.part_number, row.part_name)}
                 </td>
                 <td class="px-2 py-2 overflow-hidden">
                     <div class="text-[10px] text-[#555555] truncate" title="${esc(weld || '')}">${esc(weld || '—')}</div>
@@ -596,27 +579,6 @@ export function renderL0WeldingFeeRows(records) {
     }).join('');
 }
 
-export function renderL0WeldingFeePagination(currentPage, totalPages) {
-    if (totalPages <= 1) return '';
-    let html = `
-        <button class="flex items-center justify-center w-6 h-6 rounded-sm text-[10px] ${currentPage === 1 ? 'text-[#333] cursor-not-allowed' : 'text-[#585858] hover:text-[#c0c0c0] hover:bg-[#232323]'}"
-                data-wf-page="${currentPage - 1}" ${currentPage === 1 ? 'disabled' : ''}>
-            <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"></path></svg>
-        </button>`;
-    const maxVisible = 5;
-    let start = Math.max(1, currentPage - Math.floor(maxVisible / 2));
-    let end = Math.min(totalPages, start + maxVisible - 1);
-    if (end - start < maxVisible - 1) start = Math.max(1, end - maxVisible + 1);
-    for (let i = start; i <= end; i++) {
-        html += `<button class="flex items-center justify-center w-6 h-6 rounded-sm text-[10px] ${i === currentPage ? 'bg-[#FF1E27] text-white' : 'text-[#585858] hover:text-[#c0c0c0] hover:bg-[#232323]'}" data-wf-page="${i}">${i}</button>`;
-    }
-    html += `
-        <button class="flex items-center justify-center w-6 h-6 rounded-sm text-[10px] ${currentPage === totalPages ? 'text-[#333] cursor-not-allowed' : 'text-[#585858] hover:text-[#c0c0c0] hover:bg-[#232323]'}"
-                data-wf-page="${currentPage + 1}" ${currentPage === totalPages ? 'disabled' : ''}>
-            <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"></path></svg>
-        </button>`;
-    return html;
-}
 
 export function renderFeeDetailItems(items) {
     if (!items?.length) {

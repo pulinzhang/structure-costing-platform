@@ -1,12 +1,12 @@
 import {
     dieFeeCalcTemplate,
-    renderCalcHistoryPagination,
     CALC_HISTORY_COLSPAN,
-} from './template.js?v=9';
+} from './template.js?v=10';
 import {
     DEFAULT_PAGE_SIZE,
-    bindPageSizeSelect,
-} from '../../../../page-size.js?v=2';
+    bindPagination,
+    paintPagination,
+} from '../../../../page-size.js?v=3';
 
 const API_BASE = '/api/stamping/die-fees';
 const DIE_FILTERS_API = '/api/stamping/die/filters';
@@ -37,12 +37,14 @@ const calcState = {
 function init() {
     stopPolling();
     bindEvents();
-    bindPageSizeSelect('dieFeeCalcHistoryPageSize', {
+    bindPagination({
+        selectId: 'dieFeeCalcHistoryPageSize',
+        buttonsId: 'calcHistoryPagination',
         getSize: () => calcState.history.size,
         setSize: (size) => {
             calcState.history.size = size;
         },
-        onChange: () => loadCalcHistory(1),
+        onPage: (page) => loadCalcHistory(page),
     });
     applyPermissionUi();
     loadYearOptions().then(() => {
@@ -83,13 +85,6 @@ function bindEvents() {
     document.getElementById('startCalcBtn')?.addEventListener('click', () => startCalculation());
     document.getElementById('calcHistoryRefreshBtn')?.addEventListener('click', () => loadCalcHistory(1));
     document.getElementById('calcHistoryDeleteAllBtn')?.addEventListener('click', () => deleteAllCalcLogs());
-    document.getElementById('calcHistoryPagination')?.addEventListener('click', (event) => {
-        const btn = event.target.closest('.calc-history-page-btn');
-        if (btn && !btn.disabled) {
-            const page = parseInt(btn.dataset.page, 10);
-            if (page) loadCalcHistory(page);
-        }
-    });
 }
 
 function fillSelect(id, values, preferredValue, placeholder = '请选择', formatLabel = null) {
@@ -260,13 +255,10 @@ async function loadCalcHistory(page = calcState.history.page) {
         renderHistoryRows(items);
         const totalEl = document.getElementById('calcHistoryTotal');
         if (totalEl) totalEl.textContent = `共 ${calcState.history.total} 条`;
-        const pagination = document.getElementById('calcHistoryPagination');
-        if (pagination) {
-            pagination.innerHTML = renderCalcHistoryPagination(
+        paintPagination('calcHistoryPagination', 
                 calcState.history.page,
                 calcState.history.totalPages,
             );
-        }
     } catch (error) {
             body.innerHTML = `<tr><td colspan="${CALC_HISTORY_COLSPAN}" class="py-8 text-center text-[#ef5350]">加载失败</td></tr>`;
     }

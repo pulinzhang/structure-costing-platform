@@ -333,5 +333,7 @@ def test_export_merges_same_l0_assembly_cells(db: Session) -> None:
     merged = {str(item) for item in object_sheet.merged_cells.ranges}
     assert "G6:G7" in merged
     assert "H6:H7" in merged
+    assert "T6:T7" in merged
     assert object_sheet["G6"].value == "L0-A"
+    assert object_sheet["T6"].value == "t13j.xlsx"
     workbook.close()

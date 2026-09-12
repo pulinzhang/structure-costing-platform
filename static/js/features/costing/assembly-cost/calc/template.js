@@ -2,7 +2,7 @@
  * 总成核价计算页模板
  */
 
-import { pageSizeSelectHtml } from '../../../../page-size.js?v=2';
+import { paginationBarHtml } from '../../../../page-size.js?v=3';
 
 export function assemblyCostCalcTemplate() {
     return `
@@ -135,13 +135,7 @@ export function assemblyCostCalcTemplate() {
                             </tbody>
                         </table>
                     </div>
-                    <div class="flex items-center justify-between px-3 py-2 border-t border-[#1e1e1e] bg-[#141414]">
-                        <div class="flex items-center gap-3 min-w-0">
-                            <span id="lacCalcHistoryTotal" class="text-[10px] text-[#484848]"></span>
-                            ${pageSizeSelectHtml('lacCalcHistoryPageSize')}
-                        </div>
-                        <div class="flex items-center gap-0.5" id="lacCalcHistoryPagination"></div>
-                    </div>
+                    ${paginationBarHtml({ infoId: 'lacCalcHistoryTotal', selectId: 'lacCalcHistoryPageSize', buttonsId: 'lacCalcHistoryPagination', wrapperClass: 'flex items-center justify-between px-3 py-2 border-t border-[#1e1e1e] bg-[#141414]' })}
                 </div>
             </div>
 
@@ -160,33 +154,3 @@ function filterSelect(id, label, required = false) {
     </label>`;
 }
 
-export function renderCalcHistoryPagination(currentPage, totalPages) {
-    if (totalPages <= 1) return '';
-    let buttons = `
-        <button class="lac-calc-history-page-btn flex items-center justify-center w-6 h-6 rounded-sm text-[10px] ${currentPage === 1 ? 'text-[#333333] cursor-not-allowed' : 'text-[#585858] hover:text-[#c0c0c0] hover:bg-[#232323]'} transition-all"
-                data-page="${currentPage - 1}" ${currentPage === 1 ? 'disabled' : ''}>
-            <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"></path></svg>
-        </button>`;
-    const maxVisible = 5;
-    let startPage = Math.max(1, currentPage - Math.floor(maxVisible / 2));
-    let endPage = Math.min(totalPages, startPage + maxVisible - 1);
-    if (endPage - startPage < maxVisible - 1) startPage = Math.max(1, endPage - maxVisible + 1);
-    if (startPage > 1) {
-        buttons += `<button class="lac-calc-history-page-btn flex items-center justify-center w-6 h-6 rounded-sm text-[10px] text-[#585858] hover:text-[#c0c0c0] hover:bg-[#232323]" data-page="1">1</button>`;
-        if (startPage > 2) buttons += `<span class="px-0.5 text-[#333333] text-[9px]">—</span>`;
-    }
-    for (let i = startPage; i <= endPage; i++) {
-        const isActive = i === currentPage;
-        buttons += `<button class="lac-calc-history-page-btn flex items-center justify-center w-6 h-6 rounded-sm text-[10px] ${isActive ? 'bg-[#d32f2f] text-white' : 'text-[#585858] hover:text-[#c0c0c0] hover:bg-[#232323]'}" data-page="${i}">${i}</button>`;
-    }
-    if (endPage < totalPages) {
-        if (endPage < totalPages - 1) buttons += `<span class="px-0.5 text-[#333333] text-[9px]">—</span>`;
-        buttons += `<button class="lac-calc-history-page-btn flex items-center justify-center w-6 h-6 rounded-sm text-[10px] text-[#585858] hover:text-[#c0c0c0] hover:bg-[#232323]" data-page="${totalPages}">${totalPages}</button>`;
-    }
-    buttons += `
-        <button class="lac-calc-history-page-btn flex items-center justify-center w-6 h-6 rounded-sm text-[10px] ${currentPage === totalPages ? 'text-[#333333] cursor-not-allowed' : 'text-[#585858] hover:text-[#c0c0c0] hover:bg-[#232323]'}"
-                data-page="${currentPage + 1}" ${currentPage === totalPages ? 'disabled' : ''}>
-            <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"></path></svg>
-        </button>`;
-    return buttons;
-}

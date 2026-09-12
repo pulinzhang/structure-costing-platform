@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+from collections.abc import Callable
 from datetime import datetime
 from typing import Protocol, cast
 
@@ -174,9 +175,11 @@ _WIDTHS = (
     10,
     12,
 )
+_SHEET_COL = 2
 _L0_NO_COL = 7
 _L0_NAME_COL = 8
 _CONFIRM_COL = 10
+_FILENAME_COL = 20
 _SHORT_CODE_COL = 4
 _INTERNAL_NUMBER_COL = 5
 _PRIMARY_COLS = frozenset({1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12})
@@ -275,6 +278,7 @@ class BomProcurementObjectExportService:
         if rows:
             self._write_rows(sheet, rows)
             self._merge_same_l0(sheet, rows)
+            self._merge_same_excel_trace(sheet, rows)
             last_row = _DATA_START + len(rows) - 1
         else:
             last_row = _DATA_START
@@ -476,21 +480,52 @@ class BomProcurementObjectExportService:
 
     def _merge_same_l0(self, sheet: Worksheet, rows: list[BomProcurementObject]) -> None:
         """相邻且供货总成零件号、名称都相同的行，纵向合并这两列。"""
+        self._merge_consecutive(
+            sheet,
+            rows,
+            columns=_L0_COLS,
+            key_of=self._l0_merge_key,
+            fill=_FILL_L0,
+        )
+
+    def _merge_same_excel_trace(self, sheet: Worksheet, rows: list[BomProcurementObject]) -> None:
+        """相邻且同一原始文件的行，合并文件名；同一文件+工作表再合并工作表列。"""
+        self._merge_consecutive(
+            sheet,
+            rows,
+            columns=(_FILENAME_COL,),
+            key_of=self._excel_filename_key,
+        )
+        self._merge_consecutive(
+            sheet,
+            rows,
+            columns=(_SHEET_COL,),
+            key_of=self._excel_sheet_key,
+        )
+
+    def _merge_consecutive(
+        self,
+        sheet: Worksheet,
+        rows: list[BomProcurementObject],
+        *,
+        columns: tuple[int, ...],
+        key_of: Callable[[BomProcurementObject], tuple[str, ...]],
+        fill: PatternFill | None = None,
+    ) -> None:
         if len(rows) < 2:
             return
         start = 0
         for index in range(1, len(rows) + 1):
-            still_same = index < len(rows) and self._l0_merge_key(
-                rows[index]
-            ) == self._l0_merge_key(rows[start])
+            still_same = index < len(rows) and key_of(rows[index]) == key_of(rows[start])
             if still_same:
                 continue
             end = index - 1
-            if end > start and self._l0_merge_key(rows[start])[0]:
+            key = key_of(rows[start])
+            if end > start and key[0]:
                 start_excel = _DATA_START + start
                 end_excel = _DATA_START + end
                 align = Alignment(horizontal="left", vertical="center", wrap_text=True)
-                for col in _L0_COLS:
+                for col in columns:
                     sheet.merge_cells(
                         start_row=start_excel,
                         start_column=col,
@@ -499,14 +534,23 @@ class BomProcurementObjectExportService:
                     )
                     cell = sheet.cell(row=start_excel, column=col)
                     cell.alignment = align
-                    cell.fill = _FILL_L0
-                    for excel_row in range(start_excel, end_excel + 1):
-                        grouped = sheet.cell(row=excel_row, column=col)
-                        grouped.fill = _FILL_L0
+                    if fill is not None:
+                        cell.fill = fill
+                        for excel_row in range(start_excel, end_excel + 1):
+                            sheet.cell(row=excel_row, column=col).fill = fill
             start = index
 
-    def _l0_merge_key(self, row: BomProcurementObject) -> tuple[str, str]:
+    def _l0_merge_key(self, row: BomProcurementObject) -> tuple[str, ...]:
         return (row.l0_part_number or "", row.l0_part_name or "")
+
+    def _excel_filename_key(self, row: BomProcurementObject) -> tuple[str, ...]:
+        header = row.object_list
+        name = row.excel_filename or (header.source_filename if header else "") or ""
+        return (name,)
+
+    def _excel_sheet_key(self, row: BomProcurementObject) -> tuple[str, ...]:
+        sheet_name = row.excel_sheet_name or ""
+        return (*self._excel_filename_key(row), sheet_name)
 
     def _cell_fill(
         self,

@@ -4,7 +4,8 @@
  * HUD：总成本为靶心；冲压件 / 成本构成 / 审核进度为辅卡
  */
 
-import { pageSizeSelectHtml } from '../../../../page-size.js?v=2';
+import { paginationBarHtml } from '../../../../page-size.js?v=3';
+import { partShortCodeCellHtml, partNumberNameCellHtml } from '../../../../part-identity.js?v=3';
 
 export function partCostListTemplate() {
     return `
@@ -153,11 +154,12 @@ export function partCostListTemplate() {
                 </div>
 
                 <div class="overflow-x-auto bg-[#0A0A0E] brabus-bg-grid">
-                    <table id="costDataTable" class="w-full table-fixed bg-transparent border-collapse" style="min-width: 1780px;">
+                    <table id="costDataTable" class="w-full table-fixed bg-transparent border-collapse" style="min-width: 1874px;">
                         <colgroup id="costColgroup">
                             <col style="width:3px">
                             <col style="width:72px">
-                            <col style="width:118px">
+                            <col style="width:72px">
+                            <col style="width:140px">
                             <col style="width:64px">
                             <col style="width:52px">
                             <col style="width:128px">
@@ -189,6 +191,7 @@ export function partCostListTemplate() {
                             <tr class="border-b border-[#17171C] bg-[#0B0B0D]/95">
                                 <th class="p-0"></th>
                                 <th class="px-2 py-2 text-left text-[9px] font-medium tracking-[0.08em] text-[#555555]">年月/基地</th>
+                                <th class="px-2 py-2 text-left text-[9px] font-medium tracking-[0.08em] text-[#A1A1A6]">短代码</th>
                                 <th class="px-2 py-2 text-left text-[9px] font-medium tracking-[0.08em] text-[#6E6E73]">零件</th>
                                 <th class="px-2 py-2 text-left text-[9px] font-medium tracking-[0.08em] text-[#555555]" title="本月核价快照；下月废料不足可改零件后再算下月">利废</th>
                                 <th class="px-2 py-2 text-center text-[9px] font-medium tracking-[0.06em] text-[#555555]" title="工艺含摆剪时，材料核算把系统摆剪吨价加进钢价；金额为当月快照">摆剪</th>
@@ -227,13 +230,7 @@ export function partCostListTemplate() {
                     </table>
                 </div>
 
-                <div class="flex items-center justify-between px-5 py-2.5 border-t border-[#14141A] bg-[#0A0A0E]">
-                    <div class="flex items-center gap-3 min-w-0">
-                        <span id="costPageInfo" class="text-[10px] font-mono text-[#555555]"></span>
-                        ${pageSizeSelectHtml('costPageSize')}
-                    </div>
-                    <div class="flex items-center gap-0.5" id="costPagination"></div>
-                </div>
+                ${paginationBarHtml({ infoId: 'costPageInfo', selectId: 'costPageSize', buttonsId: 'costPagination' })}
 
                 <div id="costEmpty" class="hidden flex flex-col items-center justify-center py-14">
                     <div class="w-10 h-10 flex items-center justify-center mb-3 rounded-md bg-[#121218] border border-[#2A2A35]">
@@ -352,7 +349,8 @@ export function renderCostRows(records, breakdownOpen = false) {
                 <div class="text-[#555555] text-[9px] mt-0.5 leading-tight truncate" title="${location}">${location}</div>
                 <div class="text-[#3A3A42] text-[9px] leading-tight truncate" title="${supplier}">${supplier}</div>
             </td>
-            <td class="px-2 py-2 overflow-hidden">${partInfoCell(row.part_number, row.part_name)}</td>
+            <td class="px-2 py-2 overflow-hidden whitespace-nowrap">${partShortCodeCellHtml(row.part_number)}</td>
+            <td class="px-2 py-2 overflow-hidden">${partNumberNameCellHtml(row.part_number, row.part_name)}</td>
             <td class="px-2 py-2 overflow-hidden">${offalCostCell(row)}</td>
             <td class="px-1 py-2 text-center">${swingShearCostCell(row)}</td>
             <td class="px-2 py-2 overflow-hidden">
@@ -411,39 +409,8 @@ export function syncBreakdownColumnVisibility(isOpen) {
     }
     const table = document.getElementById('costDataTable');
     if (table) {
-                table.style.minWidth = isOpen ? '1780px' : '1520px';
+                table.style.minWidth = isOpen ? '1874px' : '1614px';
     }
-}
-
-/**
- * 企业口语短号：取零件号数字段术4 位（中BOM / 加工费一致）。
- * 例：554002087AA →2087（01006873AA →6873
- */
-export function shortPartNumber(partNumber) {
-    if (!partNumber) return null;
-    const digits = String(partNumber).replace(/\D/g, '');
-    if (digits.length < 4) return null;
-    return digits.slice(-4);
-}
-
-/** 列表单元格：短号主角，完整号 + 零件名次要*/
-function partInfoCell(partNumber, partName) {
-    const full = partNumber || '';
-    const shortNo = shortPartNumber(full);
-    const name = partName || '';
-    const nameLine = name
-        ? `<div class="text-[9px] text-[#555555] mt-0.5 truncate" title="${esc(name)}">${esc(name)}</div>`
-        : '';
-    if (shortNo) {
-        return `
-            <div class="text-[14px] font-mono font-bold tabular-nums text-[#F0F0F2] tracking-[0.08em] leading-none"
-                 title="${esc(full)}">${esc(shortNo)}</div>
-            <div class="text-[9px] font-mono text-[#3A3A42] tracking-wide mt-0.5 truncate" title="${esc(full)}">${esc(full)}</div>
-            ${nameLine}`;
-    }
-    return `
-        <div class="text-[10px] font-mono text-[#8E8E93] tracking-wide truncate" title="${esc(full)}">${esc(full) || '—'}</div>
-        ${nameLine}`;
 }
 
 function offalCostCell(row) {
@@ -558,36 +525,6 @@ export function updateCostFilterCapsules() {
     if (countEl) countEl.textContent = `(${advancedActive})`;
 }
 
-export function renderCostPagination(currentPage, totalPages) {
-    if (totalPages <= 1) return '';
-    let buttons = `
-        <button class="cost-page-btn flex items-center justify-center w-6 h-6 text-[10px] ${currentPage === 1 ? 'text-[#2E2E36] cursor-not-allowed' : 'text-[#555555] hover:text-[#C8C8D0] hover:bg-[#161620]'} transition-all"
-                data-page="${currentPage - 1}" ${currentPage === 1 ? 'disabled' : ''}>
-            <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"></path></svg>
-        </button>`;
-    const maxVisible = 5;
-    let startPage = Math.max(1, currentPage - Math.floor(maxVisible / 2));
-    let endPage = Math.min(totalPages, startPage + maxVisible - 1);
-    if (endPage - startPage < maxVisible - 1) startPage = Math.max(1, endPage - maxVisible + 1);
-    if (startPage > 1) {
-        buttons += `<button class="cost-page-btn flex items-center justify-center w-6 h-6 text-[10px] text-[#555555] hover:text-[#C8C8D0] hover:bg-[#161620]" data-page="1">1</button>`;
-        if (startPage > 2) buttons += `<span class="px-0.5 text-[#2E2E36] text-[9px]">—</span>`;
-    }
-    for (let i = startPage; i <= endPage; i++) {
-        const isActive = i === currentPage;
-        buttons += `<button class="cost-page-btn flex items-center justify-center w-6 h-6 text-[10px] ${isActive ? 'bg-[#E8E8ED] text-[#0A0A0C] font-bold' : 'text-[#555555] hover:text-[#C8C8D0] hover:bg-[#161620]'}" data-page="${i}">${i}</button>`;
-    }
-    if (endPage < totalPages) {
-        if (endPage < totalPages - 1) buttons += `<span class="px-0.5 text-[#2E2E36] text-[9px]">—</span>`;
-        buttons += `<button class="cost-page-btn flex items-center justify-center w-6 h-6 text-[10px] text-[#555555] hover:text-[#C8C8D0] hover:bg-[#161620]" data-page="${totalPages}">${totalPages}</button>`;
-    }
-    buttons += `
-        <button class="cost-page-btn flex items-center justify-center w-6 h-6 text-[10px] ${currentPage === totalPages ? 'text-[#2E2E36] cursor-not-allowed' : 'text-[#555555] hover:text-[#C8C8D0] hover:bg-[#161620]'}"
-                data-page="${currentPage + 1}" ${currentPage === totalPages ? 'disabled' : ''}>
-            <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"></path></svg>
-        </button>`;
-    return buttons;
-}
 
 /** 无错即隐：成功不占视觉；失败才露「失败。*/
 function calcStatusBadge(isFailed) {

@@ -169,6 +169,19 @@ def _month_amounts(
     ]
 
 
+def format_procurement_seq_label(
+    *,
+    object_kind: str | None,
+    l0_seq_no: int | None,
+    index_in_group: int,
+) -> str:
+    """采购协议序号：退化供货件只写 seq_no；其余 `{seq_no}-{组内顺序}`。"""
+    if object_kind == KIND_L0_DEGENERATE:
+        return "" if l0_seq_no is None else str(l0_seq_no)
+    prefix = "" if l0_seq_no is None else str(l0_seq_no)
+    return f"{prefix}-{index_in_group}" if prefix else str(index_in_group)
+
+
 def assign_seq_labels(rows: list[PrepRow]) -> None:
     grouped: dict[int, list[PrepRow]] = defaultdict(list)
     for row in rows:
@@ -176,11 +189,11 @@ def assign_seq_labels(rows: list[PrepRow]) -> None:
     for group in grouped.values():
         group.sort(key=lambda row: (row.sort_no, row.source_node_id))
         for index, row in enumerate(group, start=1):
-            if row.object_kind == KIND_L0_DEGENERATE:
-                row.seq_label = "" if row.l0_seq_no is None else str(row.l0_seq_no)
-                continue
-            prefix = "" if row.l0_seq_no is None else str(row.l0_seq_no)
-            row.seq_label = f"{prefix}-{index}" if prefix else str(index)
+            row.seq_label = format_procurement_seq_label(
+                object_kind=row.object_kind,
+                l0_seq_no=row.l0_seq_no,
+                index_in_group=index,
+            )
 
 
 _SEQ_MISSING = 10**9

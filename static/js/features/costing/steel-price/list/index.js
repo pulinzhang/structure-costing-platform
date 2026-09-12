@@ -5,15 +5,15 @@
 
 import {
     steelPriceListTemplate,
-    renderSteelPricePagination,
     renderSteelPriceRows,
     updateSteelPriceHud,
     updateActiveFilterCapsules,
-} from './template.js?v=49';
+} from './template.js?v=50';
 import {
     DEFAULT_PAGE_SIZE,
-    bindPageSizeSelect,
-} from '../../../../page-size.js?v=2';
+    bindPagination,
+    paintPagination,
+} from '../../../../page-size.js?v=3';
 import { setSearchBusy } from '../../../../search-busy.js?v=1';
 
 const steelPriceState = {
@@ -59,12 +59,14 @@ function closeDrawer(drawerId, backdropId) {
 
 function init() {
     bindEvents();
-    bindPageSizeSelect('steelPricePageSize', {
+    bindPagination({
+        selectId: 'steelPricePageSize',
+        buttonsId: 'steelPricePagination',
         getSize: () => steelPriceState.size,
         setSize: (size) => {
             steelPriceState.size = size;
         },
-        onChange: () => loadData(1),
+        onPage: (page) => loadData(page),
     });
     applyPermissionUi();
     steelPriceState.filtersLoaded = false;
@@ -148,13 +150,10 @@ async function loadData(page = 1) {
         if (total) total.textContent = `全${steelPriceState.total} 条`;
         updateSteelPriceHud(steelPriceState.total, payload.filters?.summary || null);
 
-        const pagination = document.getElementById('steelPricePagination');
-        if (pagination) {
-            pagination.innerHTML = renderSteelPricePagination(
+        paintPagination('steelPricePagination', 
                 steelPriceState.page,
                 steelPriceState.totalPages
             );
-        }
 
         if (!steelPriceState.filtersLoaded && payload.filters) {
             renderFilters(payload.filters);
@@ -311,14 +310,6 @@ function bindEvents() {
     document.getElementById('steelPriceBatchApproveButton')?.addEventListener('click', () => openBatchAuditDrawer('approve'));
     document.getElementById('steelPriceBatchReverseButton')?.addEventListener('click', () => openBatchAuditDrawer('reverse'));
     document.getElementById('steelPriceExportButton')?.addEventListener('click', () => exportExcel());
-
-    document.getElementById('steelPricePagination')?.addEventListener('click', event => {
-        const btn = event.target.closest('.steel-price-page-btn');
-        if (btn && !btn.disabled) {
-            const page = parseInt(btn.dataset.page);
-            if (page) loadData(page);
-        }
-    });
 
     bindEditDrawerEvents();
     bindViewDrawerEvents();

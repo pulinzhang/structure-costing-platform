@@ -31,6 +31,7 @@ def match_calc_report_card(
             card.part_name or "",
             card.message or "",
             card.object_kind or "",
+            card.seq_label or "",
             *card.missing_parts,
         ]
     ).lower()

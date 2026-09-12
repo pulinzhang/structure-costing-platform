@@ -3,11 +3,12 @@
  * 钢价计算 —过滤条件 + 异步后台计算 + 进度轮询 + 历史过程日志
  */
 
-import { steelPriceCalcTemplate, renderCalcHistoryPagination } from './template.js?v=10';
+import { steelPriceCalcTemplate } from './template.js?v=12';
 import {
     DEFAULT_PAGE_SIZE,
-    bindPageSizeSelect,
-} from '../../../../page-size.js?v=2';
+    bindPagination,
+    paintPagination,
+} from '../../../../page-size.js?v=3';
 
 const STEEL_PRICE_CALC_STATS_API = '/api/dashboard/stats/steel-price-calc';
 const STEEL_PRICE_CALC_API = '/api/costing/steel-price/calc';
@@ -46,12 +47,14 @@ const calcState = {
 export function init() {
     stopPolling();
     bindEvents();
-    bindPageSizeSelect('steelCalcHistoryPageSize', {
+    bindPagination({
+        selectId: 'steelCalcHistoryPageSize',
+        buttonsId: 'calcHistoryPagination',
         getSize: () => calcState.history.size,
         setSize: (size) => {
             calcState.history.size = size;
         },
-        onChange: () => loadCalcHistory(1),
+        onPage: (page) => loadCalcHistory(page),
     });
     applyPermissionUi();
     loadCalcStats();
@@ -90,13 +93,6 @@ function bindEvents() {
     document.getElementById('startCalcBtn')?.addEventListener('click', () => startCalculation());
     document.getElementById('calcHistoryRefreshBtn')?.addEventListener('click', () => loadCalcHistory(1));
     document.getElementById('calcHistoryDeleteAllBtn')?.addEventListener('click', () => deleteAllCalcLogs());
-    document.getElementById('calcHistoryPagination')?.addEventListener('click', event => {
-        const btn = event.target.closest('.calc-history-page-btn');
-        if (btn && !btn.disabled) {
-            const page = parseInt(btn.dataset.page, 10);
-            if (page) loadCalcHistory(page);
-        }
-    });
 }
 
 function getSelectedPeriod() {
@@ -194,13 +190,10 @@ async function loadCalcHistory(page = calcState.history.page) {
         const totalEl = document.getElementById('calcHistoryTotal');
         if (totalEl) totalEl.textContent = `全${calcState.history.total} 条`;
 
-        const pagination = document.getElementById('calcHistoryPagination');
-        if (pagination) {
-            pagination.innerHTML = renderCalcHistoryPagination(
+        paintPagination('calcHistoryPagination', 
                 calcState.history.page,
                 calcState.history.totalPages
             );
-        }
     } catch (error) {
         console.error('加载计算历史失败:', error);
         body.innerHTML = `<tr><td colspan="12" class="py-8 text-center text-[#ef5350]">加载失败</td></tr>`;

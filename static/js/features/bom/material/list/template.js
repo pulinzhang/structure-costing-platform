@@ -2,7 +2,7 @@
  * BOM 材料清单列表 — HUD 密表
  */
 
-import { pageSizeSelectHtml } from '../../../../page-size.js?v=2';
+import { paginationBarHtml } from '../../../../page-size.js?v=3';
 
 const STATUS_LABEL = {
     draft: { text: '草稿', cls: 'text-[#ffb74d] bg-[#ffb74d]/15' },
@@ -112,13 +112,7 @@ export function bomMaterialListTemplate() {
                     </table>
                 </div>
 
-                <div class="flex items-center justify-between px-5 py-2.5 border-t border-[#14141A] bg-[#0A0A0E]" id="bomMatPaginationContainer">
-                    <div class="flex items-center gap-3 min-w-0">
-                        <span id="bomMatTotalCount" class="text-[10px] font-mono text-[#555555]"></span>
-                        ${pageSizeSelectHtml('bomMatPageSize')}
-                    </div>
-                    <div class="flex items-center gap-0.5" id="bomMatPaginationBtns"></div>
-                </div>
+                ${paginationBarHtml({ infoId: 'bomMatTotalCount', selectId: 'bomMatPageSize', buttonsId: 'bomMatPaginationBtns', wrapperId: 'bomMatPaginationContainer' })}
 
                 <div id="bomMatEmptyState" class="hidden flex flex-col items-center justify-center py-14">
                     <div class="w-10 h-10 flex items-center justify-center mb-3 rounded-md bg-[#121218] border border-[#2A2A35]">
@@ -272,28 +266,3 @@ function formatUpdatedAt(value) {
     return `${y}-${m}-${d} ${hh}:${mm}`;
 }
 
-export function renderBomMatPagination(page, totalPages) {
-    if (totalPages <= 1) return '';
-    const buttons = [];
-    const pushBtn = (p, label, disabled = false, active = false) => {
-        const cls = active
-            ? 'bg-[#FF1E27] text-white'
-            : 'text-[#8E8E93] hover:text-white hover:bg-[#161620]';
-        buttons.push(`
-            <button type="button" data-page="${p}" ${disabled ? 'disabled' : ''}
-                    class="min-w-[28px] h-7 px-2 text-[10px] font-mono rounded-sm transition-colors ${cls} disabled:opacity-30 disabled:cursor-not-allowed">
-                ${label}
-            </button>
-        `);
-    };
-    pushBtn(Math.max(1, page - 1), '‹', page <= 1);
-    const windowSize = 5;
-    let start = Math.max(1, page - Math.floor(windowSize / 2));
-    let end = Math.min(totalPages, start + windowSize - 1);
-    start = Math.max(1, end - windowSize + 1);
-    for (let p = start; p <= end; p += 1) {
-        pushBtn(p, String(p), false, p === page);
-    }
-    pushBtn(Math.min(totalPages, page + 1), '›', page >= totalPages);
-    return buttons.join('');
-}

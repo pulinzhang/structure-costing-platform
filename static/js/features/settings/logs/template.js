@@ -2,7 +2,7 @@
  * 操作日志 — 与用户管理同一套设置页表格（非 HUD）
  */
 
-import { pageSizeSelectHtml } from '../../../page-size.js?v=2';
+import { paginationBarHtml } from '../../../page-size.js?v=3';
 
 export function logsTemplate() {
     return `
@@ -71,13 +71,7 @@ export function logsTemplate() {
                     </table>
                 </div>
 
-                <div class="flex items-center justify-between px-4 py-2.5 border-t border-[#222222] bg-[#0e0e11]" id="paginationContainer">
-                    <div class="flex items-center gap-3 min-w-0">
-                        <span id="totalCountPagination" class="text-xs text-[#616161] font-mono"></span>
-                        ${pageSizeSelectHtml('logsPageSize')}
-                    </div>
-                    <div class="flex items-center gap-1" id="paginationBtns"></div>
-                </div>
+                ${paginationBarHtml({ infoId: 'totalCountPagination', selectId: 'logsPageSize', buttonsId: 'paginationBtns', wrapperId: 'paginationContainer', wrapperClass: 'flex items-center justify-between px-4 py-2.5 border-t border-[#222222] bg-[#0e0e11]' })}
 
                 <div id="emptyState" class="hidden flex flex-col items-center justify-center py-16 text-center">
                     <div class="p-3 bg-[#1e1e1e] border border-[#2c2c2c] text-[#616161] mb-2">
@@ -215,53 +209,4 @@ export function renderTableRows(records, catalogByCode) {
         </tr>
         `;
     }).join('');
-}
-
-/**
- * @param {number} currentPage
- * @param {number} totalPages
- */
-export function renderPagination(currentPage, totalPages) {
-    if (totalPages <= 1) {
-        return '';
-    }
-
-    let buttons = '';
-
-    buttons += `
-        <button class="page-btn px-2 h-6 text-[11px] border ${currentPage === 1 ? 'border-[#2c2c2c]/50 text-[#333333] cursor-not-allowed' : 'border-[#2c2c2c] text-[#9e9e9e] hover:text-white hover:bg-[#262626]'} transition-all"
-                data-page="${currentPage - 1}" ${currentPage === 1 ? 'disabled' : ''}>上一页</button>
-    `;
-
-    const maxVisible = 5;
-    let startPage = Math.max(1, currentPage - Math.floor(maxVisible / 2));
-    let endPage = Math.min(totalPages, startPage + maxVisible - 1);
-    if (endPage - startPage < maxVisible - 1) {
-        startPage = Math.max(1, endPage - maxVisible + 1);
-    }
-
-    if (startPage > 1) {
-        buttons += `<button class="page-btn w-6 h-6 text-[11px] border border-[#2c2c2c] text-[#9e9e9e] hover:text-white hover:bg-[#262626] transition-all" data-page="1">1</button>`;
-        if (startPage > 2) buttons += `<span class="px-1 text-[#616161] text-xs">—</span>`;
-    }
-
-    for (let i = startPage; i <= endPage; i++) {
-        const isActive = i === currentPage;
-        buttons += `
-            <button class="page-btn w-6 h-6 text-[11px] font-mono ${isActive ? 'bg-[#d32f2f] border border-[#d32f2f] text-white' : 'border border-[#2c2c2c] text-[#9e9e9e] hover:text-white hover:bg-[#262626]'} transition-all"
-                    data-page="${i}">${i}</button>
-        `;
-    }
-
-    if (endPage < totalPages) {
-        if (endPage < totalPages - 1) buttons += `<span class="px-1 text-[#616161] text-xs">—</span>`;
-        buttons += `<button class="page-btn w-6 h-6 text-[11px] border border-[#2c2c2c] text-[#9e9e9e] hover:text-white hover:bg-[#262626] transition-all" data-page="${totalPages}">${totalPages}</button>`;
-    }
-
-    buttons += `
-        <button class="page-btn px-2 h-6 text-[11px] border ${currentPage === totalPages ? 'border-[#2c2c2c]/50 text-[#333333] cursor-not-allowed' : 'border-[#2c2c2c] text-[#9e9e9e] hover:text-white hover:bg-[#262626]'} transition-all"
-                data-page="${currentPage + 1}" ${currentPage === totalPages ? 'disabled' : ''}>下一页</button>
-    `;
-
-    return buttons;
 }

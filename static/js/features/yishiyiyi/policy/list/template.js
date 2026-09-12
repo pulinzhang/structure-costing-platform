@@ -7,8 +7,8 @@
 import {
     DEFAULT_PREVIEW_PAGE_SIZE,
     PREVIEW_PAGE_SIZE_OPTIONS,
-    pageSizeSelectHtml,
-} from '../../../../page-size.js?v=2';
+    paginationBarHtml,
+} from '../../../../page-size.js?v=3';
 
 export function policyDownloadTemplate() {
     return `
@@ -130,15 +130,7 @@ export function policyDownloadTemplate() {
                     </div>
 
                     <!-- 分页 -->
-                    <div class="flex items-center justify-between mt-4 gap-3">
-                        <div class="flex items-center gap-3 min-w-0">
-                            <div class="text-[11px] text-[#616161]">
-                                共 <span id="recordCount" class="text-[#9e9e9e] font-mono">0</span> 条记录
-                            </div>
-                            ${pageSizeSelectHtml('policyPageSize', DEFAULT_PREVIEW_PAGE_SIZE, PREVIEW_PAGE_SIZE_OPTIONS)}
-                        </div>
-                        <div class="flex items-center gap-0.5" id="policyPagination"></div>
-                    </div>
+                    ${paginationBarHtml({ infoHtml: `<div class="text-[11px] text-[#616161]">共 <span id="recordCount" class="text-[#9e9e9e] font-mono">0</span> 条记录</div>`, selectId: 'policyPageSize', buttonsId: 'policyPagination', currentSize: DEFAULT_PREVIEW_PAGE_SIZE, options: PREVIEW_PAGE_SIZE_OPTIONS, wrapperClass: 'flex items-center justify-between mt-4 gap-3' })}
                 </div>
             </div>
         </div>

@@ -40,7 +40,7 @@ JS 标识符：camelCase；页面对象 PascalCase；常量 `UPPER_SNAKE`；与�
 - 表头 `text-[9px] text-[#555555]`；文本左、金额右、状态中。
 - 行 `font-mono text-[11px]`；hover `bg-[#161620]`；左 2px 红条仅视觉。
 - **操作只走操作列按钮**（`data-action`）。禁止整行点击进明细；不要给数据行 `cursor-pointer`。
-- 分页：当前页品牌红；每页条数用 `static/js/page-size.js`（`pageSizeSelectHtml` / `bindPageSizeSelect`），禁止各页复制常量。
+- 分页：当前页品牌红；整条栏用 `static/js/page-size.js`（`paginationBarHtml` / `paintPagination` / `bindPagination`），禁止各页复制页码按钮或每页常量。
 - 抽屉：遮罩 `z-[80]`、面板 `z-[85]`，append 到 `body`。禁止 `z-40`/`z-50`。
 - 禁止 Bootstrap、浅色底（`bg-white` 等）、`rounded-lg` 及以上、`shadow-md` 等。控件可用 `rounded`/`rounded-sm`/`rounded-md`。
 

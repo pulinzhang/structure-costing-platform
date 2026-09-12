@@ -27,11 +27,13 @@ def _card(**overrides: object) -> AssemblyCostCalcCardTraceVO:
         "level": 0,
         "is_tree_root": True,
         "object_kind": None,
+        "seq_label": "5",
         "status": "ok",
         "should_cost": Decimal("12.3400"),
         "grand_total": Decimal("13.0000"),
         "material_amount": Decimal("10.0000"),
         "welding_amount": Decimal("2.3400"),
+        "indirect_amount": Decimal("0.6600"),
         "missing_leaf_count": 0,
         "message": "核算成功",
         "missing_parts": [],
@@ -73,6 +75,7 @@ def test_match_calc_report_card_filters() -> None:
         part_name="分总成",
         level=1,
         is_tree_root=False,
+        seq_label="5-1",
         status="partial",
         missing_parts=["P-MISS（缺价）"],
         message="缺价 1",
@@ -95,6 +98,7 @@ def test_write_calc_report_workbook_sheets() -> None:
             part_name="分总成",
             level=1,
             is_tree_root=False,
+            seq_label="5-1",
             status="partial",
             missing_leaf_count=1,
             missing_parts=["P-MISS（缺价）"],
@@ -117,11 +121,17 @@ def test_write_calc_report_workbook_sheets() -> None:
     assert cover["A1"].value == "总成核价计算报告"
     assert "芜湖" in str(cover["B4"].value)
     cards_sheet = loaded["核价卡"]
-    assert cards_sheet["D4"].value == "零件号"
-    assert cards_sheet["E4"].value == "短码"
-    assert cards_sheet["D5"].value == "5010002AA"
-    assert cards_sheet["E5"].value == "0002"
-    assert cards_sheet["H5"].value == "部分成功"
-    assert cards_sheet["L5"].value == Decimal("13.0000")
-    assert "P-MISS" in str(cards_sheet["O5"].value)
+    assert cards_sheet["A4"].value == "序号"
+    assert cards_sheet["A5"].value == "5-1"
+    assert cards_sheet["B4"].value == "短码"
+    assert cards_sheet["B5"].value == "0002"
+    assert cards_sheet["C4"].value == "零件号"
+    assert cards_sheet["C5"].value == "5010002AA"
+    assert cards_sheet["F5"].value == "部分成功"
+    assert cards_sheet["I4"].value == "应成本"
+    assert cards_sheet["J4"].value == "间接费用"
+    assert cards_sheet["K4"].value == "总费用"
+    assert Decimal(str(cards_sheet["J5"].value)) == Decimal("0.6600")
+    assert cards_sheet["K5"].value == Decimal("13.0000")
+    assert "P-MISS" in str(cards_sheet["N5"].value)
     assert "芜湖/T13J" in str(loaded["过程说明"]["A3"].value)

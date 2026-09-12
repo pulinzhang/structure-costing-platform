@@ -1,15 +1,15 @@
 import {
     assemblyCostListTemplate,
-    renderLacPagination,
     renderLacRows,
     updateLacHud,
     updateLacFilterCapsules,
     updateLacTableHead,
-} from './template.js?v=25';
+} from './template.js?v=27';
 import {
     DEFAULT_PAGE_SIZE,
-    bindPageSizeSelect,
-} from '../../../../page-size.js?v=2';
+    bindPagination,
+    paintPagination,
+} from '../../../../page-size.js?v=3';
 import { setSearchBusy } from '../../../../search-busy.js?v=1';
 
 const API_BASE = '/api/costing/assembly-costs';
@@ -71,12 +71,14 @@ function init() {
     applyPermissionUi();
     bindEvents();
     syncViewButtons();
-    bindPageSizeSelect('lacPageSize', {
+    bindPagination({
+        selectId: 'lacPageSize',
+        buttonsId: 'lacPagination',
         getSize: () => listState.pageSize,
         setSize: (size) => {
             listState.pageSize = size;
         },
-        onChange: () => loadList(1),
+        onPage: (page) => loadList(page),
     });
     fillMonthOptions();
     fillAuditOptions();
@@ -282,13 +284,6 @@ function bindEvents() {
     document.getElementById('lacExportBtn')?.addEventListener('click', () => exportExcel());
     document.getElementById('lacExportBundleBtn')?.addEventListener('click', () => exportBundleExcel());
 
-    document.getElementById('lacPagination')?.addEventListener('click', (event) => {
-        const btn = event.target.closest('.lac-page-btn');
-        if (btn && !btn.disabled) {
-            const page = parseInt(btn.dataset.page, 10);
-            if (page) loadList(page);
-        }
-    });
 
     document.getElementById('lacTableBody')?.addEventListener('click', (event) => {
         const restoreBtn = event.target.closest('.btn-open-restore');
@@ -505,10 +500,7 @@ async function loadList(page = 1) {
             pageInfo.textContent =
                 `第 ${listState.page} / ${Math.max(listState.totalPages, 1)} 页 · ${listState.total} 条`;
         }
-        const pagination = document.getElementById('lacPagination');
-        if (pagination) {
-            pagination.innerHTML = renderLacPagination(listState.page, listState.totalPages);
-        }
+        paintPagination('lacPagination', listState.page, listState.totalPages);
     } catch (error) {
         body.innerHTML = '';
         setListEmpty(true);
