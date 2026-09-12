@@ -6,7 +6,7 @@ from decimal import Decimal
 from unittest.mock import MagicMock
 
 from app.repositories.llm.cost_analysis_repository import L0CompositionLineRow
-from app.services.llm.analysis.composition import (
+from app.services.llm.analysis.shared.composition import (
     build_composition_anomalies,
     composition_risk_entry,
 )
@@ -102,7 +102,7 @@ def test_query_parser_generic_costing_anomaly_routes_to_l0() -> None:
 
 
 def test_standard_part_line_high_price_is_flagged() -> None:
-    from app.services.llm.analysis.standard_part_price import (
+    from app.services.llm.analysis.shared.standard_part_price import (
         build_standard_part_price_anomalies,
     )
 
@@ -123,7 +123,7 @@ def test_standard_part_line_high_price_is_flagged() -> None:
 
 
 def test_cheap_nut_not_flagged_as_standard_part_price() -> None:
-    from app.services.llm.analysis.standard_part_price import (
+    from app.services.llm.analysis.shared.standard_part_price import (
         build_standard_part_price_anomalies,
     )
 

@@ -146,18 +146,16 @@ Router (welding_process_breakdown.py)
 
 ---
 
-## 7. 扩展时改哪里
+## 7. 职责
 
-| 需求 | 落点 |
+| 模块 | 职责 |
 |------|------|
-| 增删列、改表头文案、列宽、行高 | `columns.py` |
-| 计费口径、标准名/单位回填、文件名规则 | `values.py` |
-| 颜色、字体、解析/映射状态配色 | `styles.py` |
-| 合并主表、冻结窗格、斑马纹、空工艺高亮 | `workbook.py` |
-| 筛选字段、取数范围、日志 | `prep.py` / `persist.py` + Repository `list_l0_for_export` |
-| 权限 / HTTP 参数 | `app/routers/bom/welding_process_breakdown.py` |
-
-改列时注意：`HEADERS` 变更后，`COL` / `STD_COLS` / `BILLING_COLS` 等由列名派生的集合会跟着变；`workbook` 里若有硬编码列语义，一并核对。
+| `columns.py` | 列、表头、列宽、行高；`HEADERS` 派生 `COL` / `STD_COLS` / `BILLING_COLS` |
+| `values.py` | 计费口径、标准名/单位回填、文件名 |
+| `styles.py` | 颜色、字体、解析/映射状态配色 |
+| `workbook.py` | 合并主表、冻结窗格、斑马纹、空工艺高亮 |
+| `prep.py` / `persist.py` | 筛选字段、取数范围、日志；Repository `list_l0_for_export` |
+| `app/routers/bom/welding_process_breakdown.py` | 权限 / HTTP 参数 |
 
 ---
 

@@ -130,23 +130,18 @@ parsers.yishiyiyi.policy         （仅 importing 调用）
 
 ---
 
-## 6. 扩展时改哪里
+## 6. 职责
 
-| 需求 | 落点 |
+| 模块 | 职责 |
 |------|------|
-| 列表字段 / 写操作审计 | `crud/policy_crud.py` |
-| 导入替换策略或进度分段 | `importing/import_service.py` |
-| 区间运算符或命中维度 | `match/ladder_matcher.py` |
-| 钢厂别名 / 加减价候选排序 | `match/adjustment_common.py` |
-| fallback 策略 | `match/match_service.py` |
-| 导出列或 Excel 样式 | `export/excel_exporter.py` 或 `export_service.py` |
-| 新增对外能力 | 先在对应子服务实现，再在门面加一行委托 |
+| `crud/policy_crud.py` | 列表字段 / 写操作审计 |
+| `importing/import_service.py` | 导入替换策略、进度分段 |
+| `match/ladder_matcher.py` | 区间运算符、命中维度 |
+| `match/adjustment_common.py` | 钢厂别名 / 加减价候选排序 |
+| `match/match_service.py` | fallback 策略 |
+| `export/excel_exporter.py` / `export_service.py` | 导出列、Excel 样式 |
 
-约束：
-
-- 门面不堆业务逻辑  
-- Router 不直接调 Parser  
-- 子包之间避免互相调用成环（共享逻辑抽 helpers，或由门面编排）
+约束：门面不堆业务逻辑；Router 不直接调 Parser；子包之间避免成环（共享逻辑抽 helpers，或由门面编排）。
 
 ---
 

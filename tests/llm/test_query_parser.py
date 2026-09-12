@@ -7,12 +7,12 @@ from types import SimpleNamespace
 from unittest.mock import MagicMock
 
 from app.repositories.llm.cost_analysis_repository import L0MonthlyTotalRow, L0PartPeriodRow
-from app.services.llm.analysis.cost_trend import build_cost_trend
-from app.services.llm.analysis.idempotency import (
+from app.services.llm.analysis.shared.cost_trend import build_cost_trend
+from app.services.llm.analysis.shared.idempotency import (
     build_idempotency_key,
     question_fingerprint,
 )
-from app.services.llm.analysis.summary import build_summary
+from app.services.llm.analysis.shared.summary import build_summary
 from app.services.llm.query.comparison_basis import default_comparison_basis
 from app.services.llm.query.query_parser import QueryParser
 from app.services.llm.query.time_range import DefaultScopeMonth, normalize_time_range
@@ -465,7 +465,7 @@ def test_build_stamping_process_summary() -> None:
     from app.repositories.llm.stamping_process_analysis_repository import (
         StampingProcessPartRow,
     )
-    from app.services.llm.analysis.stamping_process_summary import (
+    from app.services.llm.analysis.stamping.process import (
         build_stamping_process_summary,
     )
 
@@ -533,7 +533,7 @@ def test_build_stamping_summary() -> None:
     from app.repositories.llm.stamping_cost_analysis_repository import (
         StampingPartPeriodRow,
     )
-    from app.services.llm.analysis.summary import build_stamping_summary
+    from app.services.llm.analysis.shared.summary import build_stamping_summary
 
     rows = [
         StampingPartPeriodRow(
@@ -680,7 +680,7 @@ def test_build_l0_mom_anomalies_ranks_jump() -> None:
     from decimal import Decimal
 
     from app.repositories.llm.cost_analysis_repository import L0PartPeriodRow
-    from app.services.llm.analysis.cost_driver import build_l0_mom_anomalies
+    from app.services.llm.analysis.shared.cost_driver import build_l0_mom_anomalies
 
     rows = [
         L0PartPeriodRow(
@@ -759,7 +759,7 @@ def _assembly_row(
 
 
 def test_build_l0_mom_anomalies_requires_ten_percent() -> None:
-    from app.services.llm.analysis.cost_driver import build_l0_mom_anomalies
+    from app.services.llm.analysis.shared.cost_driver import build_l0_mom_anomalies
 
     under = [
         _assembly_row(month=12, total_amount=Decimal("100"), year=2025),
@@ -777,7 +777,7 @@ def test_build_l0_mom_anomalies_requires_ten_percent() -> None:
 
 
 def test_build_risks_zero_unit_price() -> None:
-    from app.services.llm.analysis.anomaly import build_risks
+    from app.services.llm.analysis.shared.anomaly import build_risks
 
     rows = [
         _assembly_row(month=1, part_number="ZERO1", total_amount=Decimal("0")),
@@ -837,7 +837,7 @@ def test_query_parser_stamping_cost_anomaly_routes_to_part_cost() -> None:
 
 def test_build_stamping_mom_anomalies_requires_ten_percent() -> None:
     from app.repositories.llm.stamping_cost_analysis_repository import StampingPartPeriodRow
-    from app.services.llm.analysis.cost_driver import build_stamping_mom_anomalies
+    from app.services.llm.analysis.shared.cost_driver import build_stamping_mom_anomalies
 
     def row(month: int, year: int, unit_cost: Decimal) -> StampingPartPeriodRow:
         return StampingPartPeriodRow(
@@ -895,7 +895,7 @@ def test_build_base_price_mom_anomalies() -> None:
     from decimal import Decimal
 
     from app.repositories.llm.base_price_analysis_repository import BasePricePeriodRow
-    from app.services.llm.analysis.base_price_summary import build_base_price_mom_anomalies
+    from app.services.llm.analysis.steel.base_price import build_base_price_mom_anomalies
 
     rows = [
         BasePricePeriodRow(
@@ -997,7 +997,7 @@ def test_build_policy_mom_anomalies() -> None:
     from decimal import Decimal
 
     from app.repositories.llm.policy_analysis_repository import PolicyLadderRow
-    from app.services.llm.analysis.policy_summary import build_policy_mom_anomalies
+    from app.services.llm.analysis.steel.policy import build_policy_mom_anomalies
 
     rows = [
         PolicyLadderRow(

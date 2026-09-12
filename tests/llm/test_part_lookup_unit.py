@@ -7,7 +7,7 @@ from decimal import Decimal
 from app.repositories.llm.cost_analysis_repository import L0PartPeriodRow
 from app.repositories.llm.stamping_cost_analysis_repository import StampingPartPeriodRow
 from app.repositories.llm.stamping_process_analysis_repository import StampingProcessPartRow
-from app.services.llm.analysis.part_lookup import (
+from app.services.llm.analysis.shared.part_lookup import (
     build_part_existence,
     build_part_lookup_summary,
     format_part_lookup_message,

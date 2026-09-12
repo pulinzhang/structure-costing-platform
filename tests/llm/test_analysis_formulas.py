@@ -4,7 +4,7 @@ from __future__ import annotations
 
 from decimal import Decimal
 
-from app.services.llm.analysis._formulas import (
+from app.services.llm.analysis.shared.formulas import (
     ANOMALY_MIN_POINTS_FOR_STAT,
     build_drivers_payload,
     build_period_diff,

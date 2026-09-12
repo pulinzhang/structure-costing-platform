@@ -3,6 +3,7 @@
 > 状态：**已定稿归档**  
 > 业务主体：冲焊装配供应商（可多租户）· 主用户：**采购部**  
 > 关联：`docs/costing/costing-engine-design.md`、[总成月核价](../costing/assembly-costing-design.md)、`docs/architecture.md`  
+> 代码目录与一次提问怎么走：见 [llm-slice-design.md](llm-slice-design.md)  
 > 参考：仅借鉴「明细事实直查 + 强约束 Prompt」；不复用 Chat/SSE；**禁止**预聚合表与 ETL
 
 **阅读指引**
@@ -466,18 +467,20 @@ POST body：仅 user_question
 
 ### C.7 目录结构
 
+现网分包与主题分发以 [llm-slice-design.md](llm-slice-design.md) §5–§7 为准。
+
 ```text
 app/services/llm/
-  query/                  # parser, condition_extractor, entity_aligner, time_range, comparison_basis
-  analysis/               # summary, trend, driver, comparison, drilldown, runner
+  report_service.py       # 编排入口
+  query/                  # parser / intent / 词典 / 时间 / 口径
+  analysis/               # 薄 runner + shared 公式 + 主题包（ops/stamping/steel/welding/bom/assembly）
   context/                # snapshot_builder
   catalog/                # field_labels
   usage/                  # usage_help 语料检索
   engine_readiness/       # 核算就绪（对接 costing 引擎 get_ready）
-  generator.py
-  report_service.py
+  generator.py / prompts/ / client/
 
-app/repositories/llm/     # cost/steel/stamping analysis repos, scope_options, report_repository
+app/repositories/llm/     # 各主题 analysis repo、scope_options、report_repository
 app/schemas/llm/
 app/routers/llm/
 static/js/llm-assistant/
@@ -537,6 +540,7 @@ def query_l0_monthly_totals(
 
 | 日期 | 说明 |
 |------|------|
+| 2026-09-12 | 指向切片实现导读 [llm-slice-design.md](llm-slice-design.md)；C.7 目录与现网分包对齐 |
 | 2026-08-25 | **LLM 切片特例**：B.2.1 / B.7 #16；内部工具不进 `common`，不改主业务消分层 |
 | 2026-08-24 | **引擎就绪问句**：`query_mode=engine_readiness`；「还差什么才能核算」走 `CostingEngineService.get_ready`，与检查就绪同源；BOM 跨年复用，禁止误报缺清单 |
 | 2026-08-24 | **去掉 SQL 熔断**：B.7 #14/#15、B.7.1、B.8 韧性；库约 30MB 区间聚合无需 5s 熔断，保留并发限流与 C.5.1 慢查询日志 |

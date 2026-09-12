@@ -2,8 +2,6 @@
 
 from __future__ import annotations
 
-import inspect
-
 import pytest
 
 from app.services.llm.analysis.runner import AnalysisRunner
@@ -11,13 +9,9 @@ from app.services.llm.menu_catalog import ENTITY_LIST_PAGES, MENU_COVERAGE, SUBJ
 
 
 def _runner_dispatch_subjects() -> set[str]:
-    source = inspect.getsource(AnalysisRunner.run)
-    subjects: set[str] = set()
-    for line in source.splitlines():
-        stripped = line.strip()
-        if stripped.startswith('if query.subject == "') and stripped.endswith('":'):
-            subject = stripped.split('"')[1]
-            subjects.add(subject)
+    runner = AnalysisRunner()
+    subjects = set(runner._handlers)
+    subjects.add("part")
     return subjects
 
 
@@ -58,10 +52,10 @@ def test_runner_dispatches_all_entity_list_subjects() -> None:
 
 def test_runner_has_repos_for_bom_subjects() -> None:
     runner = AnalysisRunner()
-    assert hasattr(runner, "_bom_material_repo")
-    assert hasattr(runner, "_welding_breakdown_repo")
-    assert hasattr(runner, "_l0_welding_fee_repo")
-    assert hasattr(runner, "_ops_workbench_repo")
-    assert hasattr(runner, "_die_fee_repo")
-    assert hasattr(runner, "_gauge_fee_repo")
-    assert hasattr(runner, "_procurement_object_repo")
+    assert hasattr(runner._bom, "_bom_material_repo")
+    assert hasattr(runner._welding, "_welding_breakdown_repo")
+    assert hasattr(runner._welding, "_l0_welding_fee_repo")
+    assert hasattr(runner._ops, "_ops_workbench_repo")
+    assert hasattr(runner._ops, "_die_fee_repo")
+    assert hasattr(runner._ops, "_gauge_fee_repo")
+    assert hasattr(runner._ops, "_procurement_object_repo")

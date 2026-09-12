@@ -1,54 +1,39 @@
-"""
-BOM 焊接费结果 Repository
-"""
+"""BOM 焊接费结果 Repository。
+
+查询见 welding_fee/queries.py，写入见 writes.py。
+本文件是门面：独立查询/写入类，这里只委托。"""
 
 from __future__ import annotations
 
-import logging
 from datetime import datetime
-from decimal import Decimal
-from typing import TypedDict
 
-from sqlalchemy import case, func
-from sqlalchemy.orm import Query, Session, joinedload, noload
+from sqlalchemy.orm import Session
 
-from app.common.audit import AUDIT_APPROVED, AUDIT_PENDING, AUDIT_REJECTED
-from app.models.bom import BomNode, BomWeldingFee, BomWeldingFeeItem, BomWeldingProcessBreakdownNode
-from app.repositories.persist import apply_payload_fields, model_from_payload, query_update
+from app.models.bom import BomWeldingFee
+from app.repositories.bom.welding_fee.queries import BomWeldingFeeQueries
+from app.repositories.bom.welding_fee.types import WeldingFeeFilterSummary
+from app.repositories.bom.welding_fee.writes import BomWeldingFeeWrites
 from app.schemas.dto.bom_welding_fee_dto import (
     BomWeldingFeeItemPayload,
     BomWeldingFeeUpsertPayload,
     WeldingFeePatch,
-    resolve_welding_fee_levels,
 )
 
-logger = logging.getLogger("repository.bom.welding_fee")
-
-_UPSERT_SKIP = frozenset({"id", "created_by", "created_at"})
-
-
-class WeldingFeeFilterSummary(TypedDict):
-    """列表筛选汇总（全量，无分页）。"""
-
-    total_count: int
-    total_fee: Decimal
-    pending_count: int
-    approved_count: int
-    partial_count: int
-    failed_count: int
-    missing_price_count: int
+__all__ = [
+    "BomWeldingFeeRepository",
+    "WeldingFeeFilterSummary",
+]
 
 
 class BomWeldingFeeRepository:
     """焊接费结果数据访问"""
 
+    def __init__(self) -> None:
+        self._queries = BomWeldingFeeQueries()
+        self._writes = BomWeldingFeeWrites(self._queries)
+
     def get_by_id(self, db: Session, fee_id: int) -> BomWeldingFee | None:
-        return (
-            db.query(BomWeldingFee)
-            .options(joinedload(BomWeldingFee.items))
-            .filter(BomWeldingFee.id == fee_id)
-            .first()
-        )
+        return self._queries.get_by_id(db, fee_id)
 
     def get_by_business_key(
         self,
@@ -60,115 +45,14 @@ class BomWeldingFeeRepository:
         bom_version: str,
         source_breakdown_node_id: int | None,
     ) -> BomWeldingFee | None:
-        return (
-            db.query(BomWeldingFee)
-            .filter(
-                BomWeldingFee.year == year,
-                BomWeldingFee.location == location,
-                BomWeldingFee.vehicle_model == vehicle_model,
-                BomWeldingFee.bom_version == bom_version,
-                BomWeldingFee.source_breakdown_node_id == source_breakdown_node_id,
-            )
-            .first()
-        )
-
-    def replace_items(
-        self,
-        db: Session,
-        fee_id: int,
-        items_data: list[BomWeldingFeeItemPayload],
-    ) -> None:
-        record = (
-            db.query(BomWeldingFee)
-            .options(joinedload(BomWeldingFee.items))
-            .filter(BomWeldingFee.id == fee_id)
-            .first()
-        )
-        if record is None:
-            return
-        record.items.clear()
-        for item in items_data:
-            record.items.append(model_from_payload(BomWeldingFeeItem, item))
-        db.flush()
-
-    def upsert(self, db: Session, data: BomWeldingFeeUpsertPayload) -> tuple[BomWeldingFee, bool]:
-        """返回 (record, created)。"""
-        existing = self.get_by_business_key(
+        return self._queries.get_by_business_key(
             db,
-            year=data.year,
-            location=data.location,
-            vehicle_model=data.vehicle_model,
-            bom_version=data.bom_version,
-            source_breakdown_node_id=data.source_breakdown_node_id,
+            year=year,
+            location=location,
+            vehicle_model=vehicle_model,
+            bom_version=bom_version,
+            source_breakdown_node_id=source_breakdown_node_id,
         )
-        if existing:
-            apply_payload_fields(existing, data, skip=_UPSERT_SKIP)
-            db.flush()
-            self.replace_items(db, existing.id, data.items)
-            return existing, False
-
-        record = model_from_payload(BomWeldingFee, data)
-        if not record.audit_status:
-            record.audit_status = AUDIT_PENDING
-        db.add(record)
-        db.flush()
-        self.replace_items(db, record.id, data.items)
-        return record, True
-
-    def update_fields(
-        self, db: Session, fee_id: int, update_data: WeldingFeePatch
-    ) -> BomWeldingFee | None:
-        record = self.get_by_id(db, fee_id)
-        if not record:
-            return None
-        apply_payload_fields(record, update_data)
-        db.flush()
-        db.refresh(record)
-        return record
-
-    def bulk_upsert(
-        self, db: Session, data_list: list[BomWeldingFeeUpsertPayload]
-    ) -> tuple[list[BomWeldingFee], int, int]:
-        """批量 upsert，返回 (records, created_count, updated_count)。"""
-        records: list[BomWeldingFee] = []
-        created_count = 0
-        updated_count = 0
-        for data in data_list:
-            record, created = self.upsert(db, data)
-            records.append(record)
-            if created:
-                created_count += 1
-            else:
-                updated_count += 1
-        db.flush()
-        for record in records:
-            db.refresh(record)
-        logger.info(
-            "批量 upsert 焊接费: %s 条 (new=%s update=%s)",
-            len(records),
-            created_count,
-            updated_count,
-        )
-        return records, created_count, updated_count
-
-    def _scope_query(
-        self,
-        db: Session,
-        *,
-        year: int,
-        location: str,
-        vehicle_model: str,
-        bom_version: str,
-        level: int | None = None,
-        levels: list[int] | None = None,
-    ) -> Query[BomWeldingFee]:
-        q = db.query(BomWeldingFee).filter(
-            BomWeldingFee.year == year,
-            BomWeldingFee.location == location,
-            BomWeldingFee.vehicle_model == vehicle_model,
-            BomWeldingFee.bom_version == bom_version,
-        )
-        return self._filter_levels(q, level=level, levels=levels)
 
     def count_by_calc_scope(
         self,
@@ -180,15 +64,13 @@ class BomWeldingFeeRepository:
         bom_version: str,
         level: int | None = None,
     ) -> int:
-        return int(
-            self._scope_query(
-                db,
-                year=year,
-                location=location,
-                vehicle_model=vehicle_model,
-                bom_version=bom_version,
-                level=level,
-            ).count()
+        return self._queries.count_by_calc_scope(
+            db,
+            year=year,
+            location=location,
+            vehicle_model=vehicle_model,
+            bom_version=bom_version,
+            level=level,
         )
 
     def list_by_calc_scope(
@@ -201,88 +83,13 @@ class BomWeldingFeeRepository:
         bom_version: str,
         level: int | None = None,
     ) -> list[BomWeldingFee]:
-        return (
-            self._scope_query(
-                db,
-                year=year,
-                location=location,
-                vehicle_model=vehicle_model,
-                bom_version=bom_version,
-                level=level,
-            )
-            .order_by(BomWeldingFee.part_number, BomWeldingFee.id.asc())
-            .all()
-        )
-
-    def _build_list_query(
-        self,
-        db: Session,
-        *,
-        year: int | None = None,
-        location: str | None = None,
-        locations: list[str] | None = None,
-        vehicle_model: str | None = None,
-        bom_version: str | None = None,
-        part_number: str | None = None,
-        audit_status: str | None = None,
-        calc_status: str | None = None,
-        level: int | None = None,
-        levels: list[int] | None = None,
-    ) -> Query[BomWeldingFee]:
-        q = db.query(BomWeldingFee)
-        if year is not None:
-            q = q.filter(BomWeldingFee.year == year)
-        if locations is not None:
-            q = q.filter(BomWeldingFee.location.in_(locations))
-        elif location is not None:
-            q = q.filter(BomWeldingFee.location == location)
-        if vehicle_model is not None:
-            q = q.filter(BomWeldingFee.vehicle_model == vehicle_model)
-        if bom_version is not None:
-            q = q.filter(BomWeldingFee.bom_version == bom_version)
-        if part_number:
-            q = q.filter(BomWeldingFee.part_number.like(f"%{part_number}%"))
-        if audit_status:
-            q = q.filter(BomWeldingFee.audit_status == audit_status)
-        if calc_status:
-            q = q.filter(BomWeldingFee.calc_status == calc_status)
-        return self._filter_levels(q, level=level, levels=levels)
-
-    @staticmethod
-    def _filter_levels(
-        q: Query[BomWeldingFee],
-        *,
-        level: int | None,
-        levels: list[int] | None,
-    ) -> Query[BomWeldingFee]:
-        resolved = resolve_welding_fee_levels(level=level, levels=levels)
-        if not resolved:
-            return q
-        if len(resolved) == 1:
-            return q.filter(BomWeldingFee.level == resolved[0])
-        return q.filter(BomWeldingFee.level.in_(resolved))
-
-    @staticmethod
-    def _order_like_bom_nodes(q: Query[BomWeldingFee]) -> Query[BomWeldingFee]:
-        """与材料清单 ``list_by_snapshot`` 一致：level → sort_no → id。"""
-        return (
-            q.outerjoin(
-                BomWeldingProcessBreakdownNode,
-                BomWeldingFee.source_breakdown_node_id == BomWeldingProcessBreakdownNode.id,
-            )
-            .outerjoin(
-                BomNode,
-                BomWeldingProcessBreakdownNode.source_node_id == BomNode.id,
-            )
-            .order_by(
-                BomWeldingFee.level.asc(),
-                func.coalesce(
-                    BomNode.sort_no,
-                    BomWeldingProcessBreakdownNode.excel_row,
-                    0,
-                ).asc(),
-                BomWeldingFee.id.asc(),
-            )
+        return self._queries.list_by_calc_scope(
+            db,
+            year=year,
+            location=location,
+            vehicle_model=vehicle_model,
+            bom_version=bom_version,
+            level=level,
         )
 
     def paginate(
@@ -302,7 +109,7 @@ class BomWeldingFeeRepository:
         skip: int = 0,
         limit: int = 20,
     ) -> tuple[list[BomWeldingFee], int]:
-        q = self._build_list_query(
+        return self._queries.paginate(
             db,
             year=year,
             location=location,
@@ -314,15 +121,9 @@ class BomWeldingFeeRepository:
             calc_status=calc_status,
             level=level,
             levels=levels,
+            skip=skip,
+            limit=limit,
         )
-        total = q.count()
-        rows = (
-            self._order_like_bom_nodes(q.options(noload(BomWeldingFee.items)))
-            .offset(skip)
-            .limit(limit)
-            .all()
-        )
-        return rows, total
 
     def list_for_export(
         self,
@@ -340,9 +141,7 @@ class BomWeldingFeeRepository:
         levels: list[int] | None = None,
         ids: list[int] | None = None,
     ) -> list[BomWeldingFee]:
-        if ids is not None and not ids:
-            return []
-        q = self._build_list_query(
+        return self._queries.list_for_export(
             db,
             year=year,
             location=location,
@@ -354,23 +153,8 @@ class BomWeldingFeeRepository:
             calc_status=calc_status,
             level=level,
             levels=levels,
+            ids=ids,
         )
-        if ids is not None:
-            q = q.filter(BomWeldingFee.id.in_(ids))
-        ordered_ids = [
-            int(row.id)
-            for row in self._order_like_bom_nodes(q.with_entities(BomWeldingFee.id)).all()
-        ]
-        if not ordered_ids:
-            return []
-        loaded = (
-            db.query(BomWeldingFee)
-            .options(joinedload(BomWeldingFee.items))
-            .filter(BomWeldingFee.id.in_(ordered_ids))
-            .all()
-        )
-        by_id = {int(record.id): record for record in loaded}
-        return [by_id[fee_id] for fee_id in ordered_ids if fee_id in by_id]
 
     def summarize_by_filters(
         self,
@@ -387,7 +171,7 @@ class BomWeldingFeeRepository:
         level: int | None = None,
         levels: list[int] | None = None,
     ) -> WeldingFeeFilterSummary:
-        q = self._build_list_query(
+        return self._queries.summarize_by_filters(
             db,
             year=year,
             location=location,
@@ -400,33 +184,6 @@ class BomWeldingFeeRepository:
             level=level,
             levels=levels,
         )
-        row = q.with_entities(
-            func.count(BomWeldingFee.id).label("total_count"),
-            func.coalesce(func.sum(BomWeldingFee.final_welding_fee), 0).label("total_fee"),
-            func.sum(case((BomWeldingFee.audit_status == AUDIT_PENDING, 1), else_=0)).label(
-                "pending_count"
-            ),
-            func.sum(case((BomWeldingFee.audit_status == AUDIT_APPROVED, 1), else_=0)).label(
-                "approved_count"
-            ),
-            func.sum(case((BomWeldingFee.calc_status == "partial", 1), else_=0)).label(
-                "partial_count"
-            ),
-            func.sum(case((BomWeldingFee.calc_status == "failed", 1), else_=0)).label(
-                "failed_count"
-            ),
-            func.sum(BomWeldingFee.missing_price_count).label("missing_price_count"),
-        ).one()
-
-        return {
-            "total_count": int(row.total_count or 0),
-            "total_fee": Decimal(str(row.total_fee or 0)),
-            "pending_count": int(row.pending_count or 0),
-            "approved_count": int(row.approved_count or 0),
-            "partial_count": int(row.partial_count or 0),
-            "failed_count": int(row.failed_count or 0),
-            "missing_price_count": int(row.missing_price_count or 0),
-        }
 
     def count_by_scope_and_statuses(
         self,
@@ -440,19 +197,56 @@ class BomWeldingFeeRepository:
         level: int | None = None,
         levels: list[int] | None = None,
     ) -> int:
-        return int(
-            self._scope_query(
-                db,
-                year=year,
-                location=location,
-                vehicle_model=vehicle_model,
-                bom_version=bom_version,
-                level=level,
-                levels=levels,
-            )
-            .filter(BomWeldingFee.audit_status.in_(statuses))
-            .count()
+        return self._queries.count_by_scope_and_statuses(
+            db,
+            year=year,
+            location=location,
+            vehicle_model=vehicle_model,
+            bom_version=bom_version,
+            statuses=statuses,
+            level=level,
+            levels=levels,
         )
+
+    def get_distinct_years(self, db: Session) -> list[int]:
+        return self._queries.get_distinct_years(db)
+
+    def get_distinct_locations(self, db: Session, year: int | None = None) -> list[str]:
+        return self._queries.get_distinct_locations(db, year)
+
+    def get_distinct_bom_versions(
+        self,
+        db: Session,
+        *,
+        year: int | None = None,
+        location: str | None = None,
+        locations: list[str] | None = None,
+        vehicle_model: str | None = None,
+    ) -> list[str]:
+        return self._queries.get_distinct_bom_versions(
+            db, year=year, location=location, locations=locations, vehicle_model=vehicle_model
+        )
+
+    def replace_items(
+        self,
+        db: Session,
+        fee_id: int,
+        items_data: list[BomWeldingFeeItemPayload],
+    ) -> None:
+        return self._writes.replace_items(db, fee_id, items_data)
+
+    def upsert(self, db: Session, data: BomWeldingFeeUpsertPayload) -> tuple[BomWeldingFee, bool]:
+        return self._writes.upsert(db, data)
+
+    def update_fields(
+        self, db: Session, fee_id: int, update_data: WeldingFeePatch
+    ) -> BomWeldingFee | None:
+        return self._writes.update_fields(db, fee_id, update_data)
+
+    def bulk_upsert(
+        self, db: Session, data_list: list[BomWeldingFeeUpsertPayload]
+    ) -> tuple[list[BomWeldingFee], int, int]:
+        return self._writes.bulk_upsert(db, data_list)
 
     def delete_unaudited_by_scope(
         self,
@@ -465,52 +259,15 @@ class BomWeldingFeeRepository:
         level: int | None = None,
         levels: list[int] | None = None,
     ) -> int:
-        fee_ids = [
-            row.id
-            for row in (
-                self._scope_query(
-                    db,
-                    year=year,
-                    location=location,
-                    vehicle_model=vehicle_model,
-                    bom_version=bom_version,
-                    level=level,
-                    levels=levels,
-                )
-                .filter(BomWeldingFee.audit_status != AUDIT_APPROVED)
-                .with_entities(BomWeldingFee.id)
-                .all()
-            )
-        ]
-        if fee_ids:
-            (
-                db.query(BomWeldingFeeItem)
-                .filter(BomWeldingFeeItem.fee_id.in_(fee_ids))
-                .delete(synchronize_session=False)
-            )
-        count = (
-            self._scope_query(
-                db,
-                year=year,
-                location=location,
-                vehicle_model=vehicle_model,
-                bom_version=bom_version,
-                level=level,
-                levels=levels,
-            )
-            .filter(BomWeldingFee.audit_status != AUDIT_APPROVED)
-            .delete(synchronize_session=False)
+        return self._writes.delete_unaudited_by_scope(
+            db,
+            year=year,
+            location=location,
+            vehicle_model=vehicle_model,
+            bom_version=bom_version,
+            level=level,
+            levels=levels,
         )
-        db.flush()
-        logger.info(
-            "批量删除未审核焊接费: year=%s location=%s vehicle=%s version=%s count=%s",
-            year,
-            location,
-            vehicle_model,
-            bom_version,
-            count,
-        )
-        return int(count)
 
     def approve_by_scope(
         self,
@@ -527,28 +284,19 @@ class BomWeldingFeeRepository:
         level: int | None = None,
         levels: list[int] | None = None,
     ) -> int:
-        values: dict[str, str | datetime | None] = {
-            "audit_status": AUDIT_APPROVED,
-            "audited_by": audited_by,
-            "audited_at": audited_at,
-            "audit_remark": audit_remark,
-        }
-        if updated_by is not None:
-            values["updated_by"] = updated_by
-        count = query_update(
-            self._scope_query(
-                db,
-                year=year,
-                location=location,
-                vehicle_model=vehicle_model,
-                bom_version=bom_version,
-                level=level,
-                levels=levels,
-            ).filter(BomWeldingFee.audit_status.in_([AUDIT_PENDING, AUDIT_REJECTED])),
-            values,
+        return self._writes.approve_by_scope(
+            db,
+            year=year,
+            location=location,
+            vehicle_model=vehicle_model,
+            bom_version=bom_version,
+            audited_by=audited_by,
+            audited_at=audited_at,
+            audit_remark=audit_remark,
+            updated_by=updated_by,
+            level=level,
+            levels=levels,
         )
-        db.flush()
-        return int(count)
 
     def reverse_by_scope(
         self,
@@ -565,57 +313,16 @@ class BomWeldingFeeRepository:
         level: int | None = None,
         levels: list[int] | None = None,
     ) -> int:
-        values: dict[str, str | datetime | None] = {
-            "audit_status": AUDIT_PENDING,
-            "reverse_audited_by": reverse_audited_by,
-            "reverse_audited_at": reverse_audited_at,
-            "reverse_audit_remark": reverse_audit_remark,
-        }
-        if updated_by is not None:
-            values["updated_by"] = updated_by
-        count = query_update(
-            self._scope_query(
-                db,
-                year=year,
-                location=location,
-                vehicle_model=vehicle_model,
-                bom_version=bom_version,
-                level=level,
-                levels=levels,
-            ).filter(BomWeldingFee.audit_status == AUDIT_APPROVED),
-            values,
+        return self._writes.reverse_by_scope(
+            db,
+            year=year,
+            location=location,
+            vehicle_model=vehicle_model,
+            bom_version=bom_version,
+            reverse_audited_by=reverse_audited_by,
+            reverse_audited_at=reverse_audited_at,
+            reverse_audit_remark=reverse_audit_remark,
+            updated_by=updated_by,
+            level=level,
+            levels=levels,
         )
-        db.flush()
-        return int(count)
-
-    def get_distinct_years(self, db: Session) -> list[int]:
-        results = db.query(BomWeldingFee.year).distinct().order_by(BomWeldingFee.year.desc()).all()
-        return [r[0] for r in results]
-
-    def get_distinct_locations(self, db: Session, year: int | None = None) -> list[str]:
-        q = db.query(BomWeldingFee.location).distinct()
-        if year is not None:
-            q = q.filter(BomWeldingFee.year == year)
-        results = q.order_by(BomWeldingFee.location).all()
-        return [r[0] for r in results if r[0]]
-
-    def get_distinct_bom_versions(
-        self,
-        db: Session,
-        *,
-        year: int | None = None,
-        location: str | None = None,
-        locations: list[str] | None = None,
-        vehicle_model: str | None = None,
-    ) -> list[str]:
-        q = db.query(BomWeldingFee.bom_version).distinct()
-        if year is not None:
-            q = q.filter(BomWeldingFee.year == year)
-        if locations is not None:
-            q = q.filter(BomWeldingFee.location.in_(locations))
-        elif location is not None:
-            q = q.filter(BomWeldingFee.location == location)
-        if vehicle_model is not None:
-            q = q.filter(BomWeldingFee.vehicle_model == vehicle_model)
-        results = q.order_by(BomWeldingFee.bom_version).all()
-        return [r[0] for r in results if r[0]]

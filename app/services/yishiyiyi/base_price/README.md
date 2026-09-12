@@ -125,21 +125,16 @@ parsers.yishiyiyi.base_price     （仅 importing 调用）
 
 ---
 
-## 6. 扩展时改哪里
+## 6. 职责
 
-| 需求 | 落点 |
+| 模块 | 职责 |
 |------|------|
-| 列表字段 / 写操作审计 | `crud/base_price_crud.py` |
-| 导入 upsert 策略或进度分段 | `importing/import_service.py` |
-| 导出预览字段 | `export/export_service.py` |
-| Excel 列或样式 | `export/excel_exporter.py` |
-| 新增对外能力 | 先在对应子服务实现，再在门面（或 `__init__`）暴露 |
+| `crud/base_price_crud.py` | 列表字段 / 写操作审计 |
+| `importing/import_service.py` | 导入 upsert 策略、进度分段 |
+| `export/export_service.py` | 导出预览字段 |
+| `export/excel_exporter.py` | Excel 列与样式 |
 
-约束：
-
-- 门面不堆业务逻辑  
-- Router 不直接调 Parser  
-- 子包之间避免互相调用成环
+约束：门面不堆业务逻辑；Router 不直接调 Parser；子包之间避免成环。
 
 ---
 

@@ -9,7 +9,8 @@
     audit_service.py       确认 / 按范围审核、反审核、删除
     supplier_template.py   导入窄表第一页 / 填写说明
     supplier_upload_service.py  下载模板 + 上传改供应商
-    export.py              Excel 导出
+    export.py              Excel 导出门面
+    columns.py / styles.py / values.py / workbook.py / export_service.py
   mapping.py             ORM → VO
   service.py             门面：查询 + 委托上述服务
 """

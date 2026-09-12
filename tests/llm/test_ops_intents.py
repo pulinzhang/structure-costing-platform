@@ -7,7 +7,7 @@ from unittest.mock import MagicMock
 import pytest
 
 from app.repositories.llm.ops_workbench_repository import WorkbenchBoardRow
-from app.services.llm.analysis.ops_workbench import (
+from app.services.llm.analysis.ops.workbench import (
     build_ops_workbench_risks,
     build_ops_workbench_summary,
 )

@@ -85,7 +85,7 @@ def _price_row(**kwargs):
 
 
 def test_glue_skipped_conversion_is_flagged() -> None:
-    from app.services.llm.analysis.annual_part_price_summary import (
+    from app.services.llm.analysis.bom.annual_part_price import (
         build_annual_part_price_conversion_anomalies,
     )
 
@@ -101,7 +101,7 @@ def test_glue_skipped_conversion_is_flagged() -> None:
 def test_correct_mm_unit_price_not_flagged() -> None:
     from decimal import Decimal
 
-    from app.services.llm.analysis.annual_part_price_summary import (
+    from app.services.llm.analysis.bom.annual_part_price import (
         build_annual_part_price_conversion_anomalies,
     )
 
@@ -161,7 +161,7 @@ def test_query_parser_standard_part_price_anomaly_routes_to_annual() -> None:
 def test_standard_part_high_piece_price_is_flagged() -> None:
     from decimal import Decimal
 
-    from app.services.llm.analysis.standard_part_price import (
+    from app.services.llm.analysis.shared.standard_part_price import (
         build_standard_part_price_anomalies,
         standard_part_price_risk_entry,
     )

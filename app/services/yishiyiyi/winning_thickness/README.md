@@ -100,17 +100,17 @@ Router
 
 ---
 
-## 6. 扩展时改哪里
+## 6. 职责
 
-| 需求 | 落点 |
+| 模块 | 职责 |
 |------|------|
-| 匹配规则 / 展开逻辑 | `assemble/row_assembler.py` |
-| 外发抬头 / 打印 | `export/letterhead.py` |
-| 阅读页列或样式 | `export/overview_sheet.py` |
-| 计算页列或公式 | `export/calc_sheet.py` |
-| 示例页摘录 / 公式说明 | `export/example_sheet.py` |
-| 色板字体 | `export/styles.py` |
-| 预览分页策略 | 门面 `preview` |
+| `assemble/row_assembler.py` | 匹配规则 / 展开逻辑 |
+| `export/letterhead.py` | 外发抬头 / 打印 |
+| `export/overview_sheet.py` | 阅读页列或样式 |
+| `export/calc_sheet.py` | 计算页列或公式 |
+| `export/example_sheet.py` | 示例页摘录 / 公式说明 |
+| `export/styles.py` | 色板字体 |
+| 门面 `preview` | 预览分页 |
 
 ---
 
