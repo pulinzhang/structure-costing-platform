@@ -3,17 +3,17 @@
  */
 
 import {
-    bindPageSizeSelect,
+    bindPagination,
+    paintPagination,
     DEFAULT_PAGE_SIZE,
     normalizePageSize,
-} from '../../../../page-size.js?v=2';
+} from '../../../../page-size.js?v=3';
 import { setSearchBusy } from '../../../../search-busy.js?v=1';
 import {
     renderAliasItems,
-    renderPagination,
     renderSupplierRows,
     supplierListTemplate,
-} from './template.js?v=3';
+} from './template.js?v=4';
 
 const API_BASE = '/api/masterdata/suppliers';
 const DRAWER_ANIMATION_MS = 300;
@@ -97,7 +97,6 @@ function renderList() {
     const empty = document.getElementById('supplierEmptyState');
     const hint = document.getElementById('supplierEmptyHint');
     const totalEl = document.getElementById('supplierTotalCount');
-    const btns = document.getElementById('supplierPaginationBtns');
     const hasRows = listState.records.length > 0;
     if (body) body.innerHTML = renderSupplierRows(listState.records);
     empty?.classList.toggle('hidden', hasRows || listState.isLoading);
@@ -108,7 +107,7 @@ function renderList() {
             : '点右上角新增，或到上传页导入 Excel';
     }
     if (totalEl) totalEl.textContent = `共 ${listState.total} 条`;
-    if (btns) btns.innerHTML = renderPagination(listState.page, listState.totalPages);
+    paintPagination('supplierPaginationBtns', listState.page, listState.totalPages);
     renderStatusCapsules();
 }
 
@@ -416,21 +415,17 @@ function bindFilters() {
             loadData();
         });
     });
-    document.getElementById('supplierPaginationBtns')?.addEventListener('click', (event) => {
-        const btn = event.target.closest('.page-btn');
-        if (!btn || btn.disabled) return;
-        const next = Number.parseInt(btn.getAttribute('data-page') || '0', 10);
-        if (!next || next === listState.page) return;
-        listState.page = next;
-        loadData();
-    });
-    bindPageSizeSelect('supplierPageSize', {
+    bindPagination({
+        selectId: 'supplierPageSize',
+        buttonsId: 'supplierPaginationBtns',
         getSize: () => listState.pageSize,
         setSize: (size) => {
             listState.pageSize = normalizePageSize(size);
-            listState.page = 1;
         },
-        onChange: () => loadData(),
+        onPage: (page) => {
+            listState.page = page;
+            loadData();
+        },
     });
 }
 

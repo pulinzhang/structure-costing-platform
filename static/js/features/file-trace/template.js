@@ -2,7 +2,7 @@
  * 文件溯源 — HUD 密表 + 筛选 + 详情抽屉
  */
 
-import { pageSizeSelectHtml } from '../../page-size.js?v=2';
+import { paginationBarHtml } from '../../page-size.js?v=3';
 
 const CATEGORY_BADGE = 'inline-flex items-center px-2 py-0.5 text-[9px] font-semibold tracking-[0.06em] border border-[#2A2A35] text-[#8E8E93] bg-[#121218]';
 
@@ -93,7 +93,12 @@ export function fileTraceTemplate() {
                     </table>
                 </div>
 
-                <div id="ftPagination" class="flex items-center justify-between px-5 py-2.5 border-t border-[#14141A] bg-[#0A0A0E]"></div>
+                ${paginationBarHtml({
+                    wrapperId: 'ftPagination',
+                    infoId: 'ftPageInfo',
+                    selectId: 'ftPageSize',
+                    buttonsId: 'ftPageButtons',
+                })}
             </div>
         </div>
 
@@ -154,27 +159,6 @@ export function renderTableRows(items) {
     `).join('');
 }
 
-export function renderPagination(total, page, pageSize) {
-    const totalPages = Math.max(1, Math.ceil(total / pageSize));
-    const buttons = [];
-    for (let i = 1; i <= totalPages; i += 1) {
-        if (totalPages > 7 && Math.abs(i - page) > 2 && i !== 1 && i !== totalPages) {
-            if (i === 2 || i === totalPages - 1) buttons.push('<span class="px-2 text-[#555555]">…</span>');
-            continue;
-        }
-        const active = i === page
-            ? 'bg-[#FF1E27] text-white'
-            : 'text-[#8E8E93] hover:text-white hover:bg-[#262626]';
-        buttons.push(`<button type="button" data-page="${i}" class="min-w-[28px] h-7 px-2 text-[10px] font-mono rounded ${active}">${i}</button>`);
-    }
-    return `
-        <div class="flex items-center gap-3">
-            <span class="text-[10px] font-mono text-[#555555]">共 ${total} 条</span>
-            ${pageSizeSelectHtml('ftPageSize', pageSize)}
-        </div>
-        <div class="flex items-center gap-0.5">${buttons.join('')}</div>
-    `;
-}
 
 export function renderDrawerDetail(item) {
     const rows = [

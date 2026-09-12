@@ -5,12 +5,12 @@
 
 import {
     weldingProcessBreakdownGenerateTemplate,
-    renderCalcHistoryPagination,
-} from './template.js?v=6';
+} from './template.js?v=7';
 import {
     DEFAULT_PAGE_SIZE,
-    bindPageSizeSelect,
-} from '../../../../page-size.js?v=2';
+    bindPagination,
+    paintPagination,
+} from '../../../../page-size.js?v=3';
 
 const API_BASE = '/api/bom/welding-process-breakdown';
 const CASCADE_API = '/api/bom/filters/cascade';
@@ -56,12 +56,14 @@ const genState = {
 function init() {
     stopPolling();
     bindEvents();
-    bindPageSizeSelect('wpbGenHistoryPageSize', {
+    bindPagination({
+        selectId: 'wpbGenHistoryPageSize',
+        buttonsId: 'calcHistoryPagination',
         getSize: () => genState.history.size,
         setSize: (size) => {
             genState.history.size = size;
         },
-        onChange: () => loadCalcHistory(1),
+        onPage: (page) => loadCalcHistory(page),
     });
     applyPermissionUi();
     loadCascadeFilters().then(() => loadPrepStats());
@@ -104,13 +106,6 @@ function bindEvents() {
     document.getElementById('wpbGenSubmitBtn')?.addEventListener('click', startGenerate);
     document.getElementById('calcHistoryRefreshBtn')?.addEventListener('click', () => loadCalcHistory(1));
     document.getElementById('calcHistoryDeleteAllBtn')?.addEventListener('click', () => deleteAllGenerateLogs());
-    document.getElementById('calcHistoryPagination')?.addEventListener('click', (event) => {
-        const btn = event.target.closest('.calc-history-page-btn');
-        if (btn && !btn.disabled) {
-            const page = parseInt(btn.dataset.page, 10);
-            if (page) loadCalcHistory(page);
-        }
-    });
 }
 
 function val(id) {
@@ -303,13 +298,10 @@ async function loadCalcHistory(page = genState.history.page) {
 
         const totalEl = document.getElementById('calcHistoryTotal');
         if (totalEl) totalEl.textContent = `全${genState.history.total} 条`;
-        const pagination = document.getElementById('calcHistoryPagination');
-        if (pagination) {
-            pagination.innerHTML = renderCalcHistoryPagination(
+        paintPagination('calcHistoryPagination', 
                 genState.history.page,
                 genState.history.totalPages,
             );
-        }
     } catch (error) {
         console.error('加载拆解历史失败:', error);
         body.innerHTML = `<tr><td colspan="9" class="py-8 text-center text-[#ef5350]">加载失败</td></tr>`;

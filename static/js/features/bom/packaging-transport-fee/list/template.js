@@ -3,7 +3,8 @@
  * 批量操作范围 = 基地 + 年度 + 项目
  */
 
-import { pageSizeSelectHtml } from '../../../../page-size.js?v=2';
+import { paginationBarHtml } from '../../../../page-size.js?v=3';
+import { partShortCodeCellHtml, partNumberNameCellHtml } from '../../../../part-identity.js?v=3';
 
 export function formatFee4(value) {
     return formatDecimalFixed(value, 4) ?? '-';
@@ -133,7 +134,7 @@ export function pkgTransportFeeTemplate() {
                             <col style="width:7%">
                             <col style="width:5%">
                             <col style="width:6%">
-                            <col style="width:12%">
+                            <col style="width:6%">
                             <col style="width:12%">
                             <col style="width:8%">
                             <col style="width:6%">
@@ -151,8 +152,8 @@ export function pkgTransportFeeTemplate() {
                                 <th class="px-2 py-2 text-left text-[9px] font-medium tracking-[0.08em] text-[#555555]">基地</th>
                                 <th class="px-2 py-2 text-left text-[9px] font-medium tracking-[0.08em] text-[#555555]">年份</th>
                                 <th class="px-2 py-2 text-left text-[9px] font-medium tracking-[0.08em] text-[#555555]">项目</th>
-                                <th class="px-2 py-2 text-left text-[9px] font-medium tracking-[0.08em] text-[#555555]">零件号</th>
-                                <th class="px-2 py-2 text-left text-[9px] font-medium tracking-[0.08em] text-[#555555]">产品</th>
+                                <th class="px-2 py-2 text-left text-[9px] font-medium tracking-[0.08em] text-[#A1A1A6]">短代码</th>
+                                <th class="px-2 py-2 text-left text-[9px] font-medium tracking-[0.08em] text-[#555555]">零件</th>
                                 <th class="px-2 py-2 text-left text-[9px] font-medium tracking-[0.08em] text-[#555555]">包装类型</th>
                                 <th class="px-2 py-2 text-right text-[9px] font-medium tracking-[0.06em] text-[#555555]">包装费</th>
                                 <th class="px-2 py-2 text-right text-[9px] font-medium tracking-[0.06em] text-[#555555]">运输费</th>
@@ -168,13 +169,7 @@ export function pkgTransportFeeTemplate() {
                     </table>
                 </div>
 
-                <div class="flex items-center justify-between px-5 py-2.5 border-t border-[#14141A] bg-[#0A0A0E]" id="pkgPaginationContainer">
-                    <div class="flex items-center gap-3 min-w-0">
-                        <span id="pkgTotalCountPagination" class="text-[10px] font-mono text-[#555555]"></span>
-                        ${pageSizeSelectHtml('pkgTransportFeePageSize')}
-                    </div>
-                    <div class="flex items-center gap-0.5" id="pkgPaginationBtns"></div>
-                </div>
+                ${paginationBarHtml({ infoId: 'pkgTotalCountPagination', selectId: 'pkgTransportFeePageSize', buttonsId: 'pkgPaginationBtns', wrapperId: 'pkgPaginationContainer' })}
 
                 <div id="pkgEmptyState" class="hidden flex flex-col items-center justify-center py-14">
                     <h5 class="text-[11px] font-medium text-[#8E8E93] mb-1">暂无包装运输费数据</h5>
@@ -393,10 +388,12 @@ export function renderTableRows(records) {
             <td class="px-2 py-2 text-[#F0F0F2] overflow-hidden truncate">${esc(record.location)}</td>
             <td class="px-2 py-2 text-[#8E8E93]">${esc(fmtYear(record.year))}</td>
             <td class="px-2 py-2 text-[#F0F0F2] overflow-hidden truncate">${esc(record.vehicle_model)}</td>
-            <td class="px-2 py-2 overflow-hidden">
-                <div class="text-[12px] font-bold text-[#F0F0F2] truncate" title="${esc(record.part_number)}">${esc(record.part_number)}</div>
+            <td class="px-2 py-2 overflow-hidden whitespace-nowrap">
+                ${partShortCodeCellHtml(record.part_number)}
             </td>
-            <td class="px-2 py-2 text-[#8E8E93] overflow-hidden truncate" title="${esc(record.part_name || '')}">${esc(record.part_name || '—')}</td>
+            <td class="px-2 py-2 overflow-hidden">
+                ${partNumberNameCellHtml(record.part_number, record.part_name)}
+            </td>
             <td class="px-2 py-2 text-[#8E8E93] overflow-hidden truncate">${esc(record.packaging_type || '—')}</td>
             <td class="${numCell}">${esc(formatFee4(record.unit_packaging_fee))}</td>
             <td class="${numCell}">${esc(formatFee4(record.unit_transport_fee))}</td>
@@ -412,24 +409,6 @@ export function renderTableRows(records) {
     }).join('');
 }
 
-export function renderPagination(page, totalPages) {
-    if (totalPages <= 1) return '';
-    const btn = (p, label, active = false, disabled = false) => `
-        <button type="button" data-page="${p}"
-                class="pkg-page-btn min-w-[28px] h-7 px-2 text-[11px] font-mono rounded-sm border transition-colors
-                       ${active ? 'bg-[#FF1E27] text-white border-[#FF1E27]' : 'bg-transparent text-[#8E8E93] border-[#2A2A35] hover:border-[#FF1E27]/50'}
-                       ${disabled ? 'opacity-40 pointer-events-none' : ''}">
-            ${label}
-        </button>`;
-    let html = btn(Math.max(1, page - 1), '‹', false, page <= 1);
-    const windowSize = 5;
-    let start = Math.max(1, page - Math.floor(windowSize / 2));
-    let end = Math.min(totalPages, start + windowSize - 1);
-    start = Math.max(1, end - windowSize + 1);
-    for (let p = start; p <= end; p += 1) html += btn(p, String(p), p === page);
-    html += btn(Math.min(totalPages, page + 1), '›', false, page >= totalPages);
-    return html;
-}
 
 export function renderDetailBody(record) {
     const row = (label, value) => `

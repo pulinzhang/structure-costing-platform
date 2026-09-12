@@ -2,7 +2,8 @@
  * 冲压模具费列表—对齐冲压加工费列表：HUD + 胶囊筛选 + 查看/编辑抽屉 + 批量审核/反审核/删除 + Excel 导出
  */
 
-import { pageSizeSelectHtml } from '../../../../page-size.js?v=2';
+import { paginationBarHtml } from '../../../../page-size.js?v=3';
+import { partShortCodeCellHtml, partNumberNameCellHtml } from '../../../../part-identity.js?v=3';
 
 export function dieFeeListTemplate() {
     return `
@@ -147,15 +148,15 @@ export function dieFeeListTemplate() {
                 </div>
 
                 <div class="overflow-x-auto brabus-bg-grid">
-                    <table class="w-full min-w-[2100px] bg-transparent">
+                    <table class="w-full min-w-[1960px] bg-transparent">
                         <thead>
                             <tr class="border-b border-[#17171C] bg-[#0B0B0D]/95">
                                 <th class="p-0 w-0"></th>
                                 <th class="px-3 py-3 text-left text-[10px] font-semibold uppercase tracking-[0.18em] text-[#6E6E73] whitespace-nowrap">核价维度</th>
                                 <th class="px-3 py-3 text-left text-[10px] font-semibold uppercase tracking-[0.18em] text-[#6E6E73] whitespace-nowrap">供应商</th>
                                 <th class="px-3 py-3 text-left text-[10px] font-semibold uppercase tracking-[0.18em] text-[#6E6E73] whitespace-nowrap">版本</th>
-                                <th class="px-3 py-3 text-left text-[10px] font-semibold uppercase tracking-[0.18em] text-[#A1A1A6] whitespace-nowrap">零件号</th>
-                                <th class="px-3 py-3 text-left text-[10px] font-semibold uppercase tracking-[0.18em] text-[#6E6E73] whitespace-nowrap">零件名称</th>
+                                <th class="px-3 py-3 text-left text-[10px] font-semibold uppercase tracking-[0.18em] text-[#A1A1A6] whitespace-nowrap">短代码</th>
+                                <th class="px-3 py-3 text-left text-[10px] font-semibold uppercase tracking-[0.18em] text-[#6E6E73] whitespace-nowrap">零件</th>
                                 <th class="px-3 py-3 text-left text-[10px] font-semibold uppercase tracking-[0.18em] text-[#6E6E73] whitespace-nowrap border-r border-[#22222A]">生产方式</th>
                                 <th class="px-3 py-3 text-right text-[10px] font-semibold uppercase tracking-[0.18em] text-[#6E6E73] whitespace-nowrap">单价</th>
                                 <th class="px-3 py-3 text-right text-[10px] font-semibold uppercase tracking-[0.18em] text-[#6E6E73] whitespace-nowrap">分摊万台</th>
@@ -179,13 +180,7 @@ export function dieFeeListTemplate() {
                     </table>
                 </div>
 
-                <div class="flex items-center justify-between px-5 py-2.5 border-t border-[#14141A] bg-[#0A0A0E]">
-                    <div class="flex items-center gap-3 min-w-0">
-                        <span id="dieFeeTotalLabel" class="text-[10px] font-mono text-[#555555]"></span>
-                        ${pageSizeSelectHtml('dieFeePageSize')}
-                    </div>
-                    <div class="flex items-center gap-0.5" id="dieFeePagination"></div>
-                </div>
+                ${paginationBarHtml({ infoId: 'dieFeeTotalLabel', selectId: 'dieFeePageSize', buttonsId: 'dieFeePagination' })}
 
                 <div id="dieFeeEmpty" class="hidden flex flex-col items-center justify-center py-14">
                     <div class="w-10 h-10 flex items-center justify-center mb-3 rounded-md bg-[#121218] border border-[#2A2A35]">
@@ -473,9 +468,11 @@ export function renderDieFeeRows(records) {
             <td class="${cell} ${muted} font-sans whitespace-nowrap">${esc(row.stamping_supplier)}</td>
             <td class="${cell} ${muted} font-mono whitespace-nowrap">${esc(row.version)}</td>
             <td class="${cell} font-sans whitespace-nowrap">
-                ${partNumberCell(row.part_number)}
+                ${partShortCodeCellHtml(row.part_number)}
             </td>
-            <td class="${cell} ${muted} font-sans">${esc(row.part_name)}</td>
+            <td class="${cell} font-sans overflow-hidden">
+                ${partNumberNameCellHtml(row.part_number, row.part_name)}
+            </td>
             <td class="${cell} ${muted} font-sans ${zoneEnd}">
                 <div>${esc(row.production_mode || '—')}</div>
                 <div class="text-[10px] text-[#555555] mt-0.5">${esc(priceKind)}</div>
@@ -637,44 +634,6 @@ export function updateDieFeeFilterCapsules() {
     if (countEl) countEl.textContent = `(${advancedActive})`;
 }
 
-export function renderDieFeePagination(currentPage, totalPages) {
-    if (totalPages <= 1) return '';
-    let buttons = `
-        <button type="button" data-die-fee-page="${currentPage - 1}" ${currentPage === 1 ? 'disabled' : ''}
-                class="die-fee-page-btn flex items-center justify-center w-6 h-6 rounded-sm text-[10px] ${currentPage === 1 ? 'text-[#333333] cursor-not-allowed' : 'text-[#585858] hover:text-[#c0c0c0] hover:bg-[#232323]'} transition-all">
-            <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"></path></svg>
-        </button>`;
-    const maxVisible = 5;
-    let startPage = Math.max(1, currentPage - Math.floor(maxVisible / 2));
-    let endPage = Math.min(totalPages, startPage + maxVisible - 1);
-    if (endPage - startPage < maxVisible - 1) startPage = Math.max(1, endPage - maxVisible + 1);
-    if (startPage > 1) {
-        buttons += `<button type="button" data-die-fee-page="1" class="die-fee-page-btn flex items-center justify-center w-6 h-6 rounded-sm text-[10px] text-[#585858] hover:text-[#c0c0c0] hover:bg-[#232323]">1</button>`;
-        if (startPage > 2) buttons += `<span class="px-0.5 text-[#333333] text-[9px]">—</span>`;
-    }
-    for (let i = startPage; i <= endPage; i++) {
-        const isActive = i === currentPage;
-        buttons += `<button type="button" data-die-fee-page="${i}"
-            class="die-fee-page-btn flex items-center justify-center w-6 h-6 rounded-sm text-[10px] ${isActive ? 'bg-[#FFFFFF] text-[#0a0a0a] font-bold' : 'text-[#585858] hover:text-[#c0c0c0] hover:bg-[#232323]'}">${i}</button>`;
-    }
-    if (endPage < totalPages) {
-        if (endPage < totalPages - 1) buttons += `<span class="px-0.5 text-[#333333] text-[9px]">—</span>`;
-        buttons += `<button type="button" data-die-fee-page="${totalPages}" class="die-fee-page-btn flex items-center justify-center w-6 h-6 rounded-sm text-[10px] text-[#585858] hover:text-[#c0c0c0] hover:bg-[#232323]">${totalPages}</button>`;
-    }
-    buttons += `
-        <button type="button" data-die-fee-page="${currentPage + 1}" ${currentPage === totalPages ? 'disabled' : ''}
-                class="die-fee-page-btn flex items-center justify-center w-6 h-6 rounded-sm text-[10px] ${currentPage === totalPages ? 'text-[#333333] cursor-not-allowed' : 'text-[#585858] hover:text-[#c0c0c0] hover:bg-[#232323]'} transition-all">
-            <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"></path></svg>
-        </button>`;
-    return buttons;
-}
-
-export function shortPartNumber(partNumber) {
-    if (!partNumber) return null;
-    const digits = String(partNumber).replace(/\D/g, '');
-    if (digits.length < 4) return null;
-    return digits.slice(-4);
-}
 
 function filterSelect(id, label) {
     return `<label class="space-y-1">
@@ -697,19 +656,6 @@ function viewRow(label, id, isHighlight = false) {
         <span class="block text-[9px] font-semibold text-[#555555] uppercase tracking-[0.1em] mb-1">${label}</span>
         <span id="${id}" class="block text-xs ${isHighlight ? 'text-[#d32f2f] font-mono' : 'text-[#cccccc]'} truncate"></span>
     </div>`;
-}
-
-function partNumberCell(partNumber) {
-    const full = partNumber || '';
-    const shortNo = shortPartNumber(full);
-    if (shortNo) {
-        return `
-            <div class="text-[18px] font-mono font-bold tabular-nums text-white tracking-[0.14em] leading-none
-                        drop-shadow-[0_0_16px_rgba(211,47,47,0.18)] group-hover:text-[#FF1E27] transition-colors"
-                 title="${esc(full)}">${esc(shortNo)}</div>
-            <div class="text-[10px] font-mono text-[#555555] tracking-wider mt-1">${esc(full)}</div>`;
-    }
-    return `<div class="text-xs font-mono text-[#8E8E93] tracking-wider" title="${esc(full)}">${esc(full) || '—'}</div>`;
 }
 
 function partNumberViewBlock(prefix) {

@@ -5,13 +5,13 @@
 import {
     fileTraceTemplate,
     renderDrawerDetail,
-    renderPagination,
     renderTableRows,
-} from './template.js?v=2';
+} from './template.js?v=3';
 import {
     DEFAULT_PAGE_SIZE,
-    bindPageSizeSelect,
-} from '../../page-size.js?v=2';
+    bindPagination,
+    paintPagination,
+} from '../../page-size.js?v=3';
 import { setSearchBusy } from '../../search-busy.js?v=1';
 
 const ftState = {
@@ -118,17 +118,10 @@ async function loadData(page = 1) {
 function renderList() {
     const tbody = document.getElementById('ftTableBody');
     if (tbody) tbody.innerHTML = renderTableRows(ftState.items);
-    const pagination = document.getElementById('ftPagination');
-    if (pagination) {
-        pagination.innerHTML = renderPagination(ftState.total, ftState.page, ftState.pageSize);
-        bindPageSizeSelect('ftPageSize', {
-            getSize: () => ftState.pageSize,
-            setSize: (size) => {
-                ftState.pageSize = size;
-            },
-            onChange: () => loadData(1),
-        });
-    }
+    const info = document.getElementById('ftPageInfo');
+    if (info) info.textContent = `共 ${ftState.total} 条`;
+    const totalPages = Math.max(1, Math.ceil((ftState.total || 0) / ftState.pageSize));
+    paintPagination('ftPageButtons', ftState.page, totalPages);
 }
 
 function openDrawer(item) {
@@ -180,6 +173,15 @@ function resetFilters() {
 }
 
 function bindEvents() {
+    bindPagination({
+        selectId: 'ftPageSize',
+        buttonsId: 'ftPageButtons',
+        getSize: () => ftState.pageSize,
+        setSize: (size) => {
+            ftState.pageSize = size;
+        },
+        onPage: (page) => loadData(page),
+    });
     document.getElementById('ftBtnSearch')?.addEventListener('click', () => loadData(1));
     document.getElementById('ftBtnReset')?.addEventListener('click', resetFilters);
     [
@@ -215,12 +217,6 @@ function bindEvents() {
         if (btn.dataset.action === 'download') {
             downloadFile(fileId);
         }
-    });
-
-    document.getElementById('ftPagination')?.addEventListener('click', (event) => {
-        const btn = event.target.closest('[data-page]');
-        if (!btn) return;
-        loadData(Number(btn.dataset.page));
     });
 
     document.getElementById('ftDrawerBody')?.addEventListener('click', (event) => {

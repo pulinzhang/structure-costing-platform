@@ -4,13 +4,13 @@
 
 import {
     procurementObjectListTemplate,
-    renderPoPagination,
     renderProcurementObjectRows,
-} from './template.js?v=15';
+} from './template.js?v=19';
 import {
     DEFAULT_PAGE_SIZE,
-    bindPageSizeSelect,
-} from '../../../../page-size.js?v=2';
+    bindPagination,
+    paintPagination,
+} from '../../../../page-size.js?v=3';
 import { setSearchBusy } from '../../../../search-busy.js?v=1';
 import { AUDIT_LABELS, CONFIRM_LABELS, KIND_LABELS, SECTION_LABELS } from '../labels.js?v=2';
 
@@ -47,12 +47,14 @@ const supplierPicker = {
 function init() {
     applyPermissionUi();
     bindEvents();
-    bindPageSizeSelect('poPageSize', {
+    bindPagination({
+        selectId: 'poPageSize',
+        buttonsId: 'poPagination',
         getSize: () => listState.pageSize,
         setSize: (size) => {
             listState.pageSize = size;
         },
-        onChange: () => loadList(1),
+        onPage: (page) => loadList(page),
     });
     fillStaticSelects();
     loadCascade().then(() => loadList(1));
@@ -112,13 +114,6 @@ function bindEvents() {
         });
     });
     document.getElementById('poTableBody')?.addEventListener('click', onTableClick);
-    document.getElementById('poPagination')?.addEventListener('click', (event) => {
-        const btn = event.target.closest('.po-page-btn');
-        if (btn && !btn.disabled) {
-            const page = parseInt(btn.dataset.page, 10);
-            if (page) loadList(page);
-        }
-    });
     document.getElementById('poBatchApproveBtn')?.addEventListener('click', () => openAuditDrawer('approve'));
     document.getElementById('poBatchReverseBtn')?.addEventListener('click', () => openAuditDrawer('reverse'));
     document.getElementById('poBatchDeleteBtn')?.addEventListener('click', openDeleteDrawer);
@@ -421,8 +416,7 @@ async function loadList(page) {
         setText('poTotalLabel', `共 ${listState.total} 条`);
         const body = document.getElementById('poTableBody');
         if (body) body.innerHTML = renderProcurementObjectRows(listState.items);
-        const pager = document.getElementById('poPagination');
-        if (pager) pager.innerHTML = renderPoPagination(listState.page, listState.totalPages);
+        paintPagination('poPagination', listState.page, listState.totalPages);
         loadSummaryBanner();
     } catch (error) {
         console.error('加载采购对象清单失败', error);

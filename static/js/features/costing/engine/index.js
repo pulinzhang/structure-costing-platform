@@ -2,11 +2,12 @@
  * 月度智能自动核价引擎 — 页面逻辑 (BRABUS Pure Industrial Spec)
  */
 
-import { costingTemplate } from './template.js?v=23';
+import { costingTemplate } from './template.js?v=25';
 import {
     DEFAULT_PAGE_SIZE,
-    bindPageSizeSelect,
-} from '../../../page-size.js?v=2';
+    bindPagination,
+    paintPagination,
+} from '../../../page-size.js?v=3';
 
 const READY_API = '/api/costing/engine/ready';
 const RUNS_API = '/api/costing/engine/runs';
@@ -137,14 +138,15 @@ export const CostingPage = {
             'engineLocation',
             'engineYear',
             'engineMonth',
-            'engineHistoryPageSize',
         ]);
-        bindPageSizeSelect('engineHistoryPageSize', {
+        bindPagination({
+            selectId: 'engineHistoryPageSize',
+            buttonsId: 'engineHistoryPager',
             getSize: () => engineState.history.size,
             setSize: (size) => {
                 engineState.history.size = size;
             },
-            onChange: () => loadHistory(1),
+            onPage: (page) => loadHistory(page),
         });
         applyPermissionUi();
         restoreContext();
@@ -1664,30 +1666,11 @@ function renderHistory() {
 }
 
 function renderPager() {
-    const pager = document.getElementById('engineHistoryPager');
-    if (!pager) return;
     const totalPages = Math.max(
         1,
         Math.ceil(engineState.history.total / engineState.history.size) || 1
     );
-    const page = engineState.history.page;
-    const buttons = [];
-    for (let i = 1; i <= totalPages && i <= 8; i += 1) {
-        const active = i === page;
-        buttons.push(`
-            <button type="button" data-page="${i}"
-                class="min-w-[28px] h-7 px-2 text-[10px] font-mono transition-colors ${
-                    active
-                        ? 'text-white border-b border-[#FF1E27]'
-                        : 'text-neutral-600 hover:text-neutral-300'
-                }">${i}</button>`);
-    }
-    pager.innerHTML = buttons.join('');
-    pager.querySelectorAll('button[data-page]').forEach((btn) => {
-        btn.addEventListener('click', () => {
-            loadHistory(Number(btn.getAttribute('data-page')));
-        });
-    });
+    paintPagination('engineHistoryPager', engineState.history.page, totalPages);
 }
 
 async function deleteRun(runId) {

@@ -5,17 +5,17 @@
 import {
     l0WeldingFeeListTemplate,
     renderL0WeldingFeeRows,
-    renderL0WeldingFeePagination,
     updateL0WeldingFeeHud,
     updateL0WeldingFeeFilterCapsules,
     renderFeeDetailItems,
-    resolveL0ShortPartNumber,
-} from './template.js?v=20';
+} from './template.js?v=24';
 import {
     DEFAULT_PAGE_SIZE,
-    bindPageSizeSelect,
-} from '../../../../page-size.js?v=2';
+    bindPagination,
+    paintPagination,
+} from '../../../../page-size.js?v=3';
 import { setSearchBusy } from '../../../../search-busy.js?v=1';
+import { shortPartNumber } from '../../../../part-identity.js?v=3';
 
 const API_BASE = '/api/bom/welding-fees';
 const DRAWER_ANIMATION_MS = 300;
@@ -64,12 +64,14 @@ function closeDrawer(drawerId, backdropId) {
 
 function init() {
     bindEvents();
-    bindPageSizeSelect('l0wfPageSize', {
+    bindPagination({
+        selectId: 'l0wfPageSize',
+        buttonsId: 'l0wfPagination',
         getSize: () => feeState.pageSize,
         setSize: (size) => {
             feeState.pageSize = size;
         },
-        onChange: () => loadData(1),
+        onPage: (page) => loadData(page),
     });
     applyPermissionUi();
     fillAuditStatusOptions();
@@ -332,12 +334,6 @@ function bindEvents() {
     });
     document.getElementById('l0wfPartNumberFilter')?.addEventListener('input', updateCapsules);
 
-    document.getElementById('l0wfPagination')?.addEventListener('click', (event) => {
-        const btn = event.target.closest('[data-wf-page]');
-        if (!btn || btn.disabled) return;
-        const page = Number(btn.getAttribute('data-wf-page'));
-        if (Number.isFinite(page) && page >= 1) loadData(page);
-    });
 
     document.getElementById('l0wfTableBody')?.addEventListener('click', (event) => {
         const editBtn = event.target.closest('[data-action="edit"]');
@@ -469,10 +465,7 @@ async function loadData(page = feeState.page) {
         const totalLabel = document.getElementById('l0wfTotalLabel');
         if (totalLabel) totalLabel.textContent = `共 ${feeState.total} 条`;
 
-        const pagination = document.getElementById('l0wfPagination');
-        if (pagination) {
-            pagination.innerHTML = renderL0WeldingFeePagination(feeState.page, feeState.totalPages);
-        }
+        paintPagination('l0wfPagination', feeState.page, feeState.totalPages);
 
         if (!items.length) {
             if (body) body.innerHTML = '';
@@ -512,7 +505,7 @@ function fillPartNumberFields(prefix, partNumber) {
     const shortEl = document.getElementById(`${prefix}-part-short`);
     const fullEl = document.getElementById(`${prefix}-part-number`);
     const full = String(partNumber || '').trim();
-    const shortNo = resolveL0ShortPartNumber(full);
+    const shortNo = shortPartNumber(full) || full || '—';
     if (shortEl) shortEl.textContent = shortNo;
     if (fullEl) {
         const showFull = Boolean(full) && shortNo !== full && shortNo !== '—';

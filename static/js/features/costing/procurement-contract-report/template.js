@@ -2,7 +2,7 @@
  * 采购价格 — BRABUS 800 中控交车（协议黑匣）
  */
 
-import { pageSizeSelectHtml } from '../../../page-size.js?v=2';
+import { paginationBarHtml } from '../../../page-size.js?v=3';
 
 const HUD_SHELL_STYLE = 'background:#0D0D11;border:1px solid rgba(255,255,255,0.08);';
 
@@ -181,13 +181,12 @@ export function procurementContractReportTemplate() {
                     </div>
                 </div>
 
-                <div class="px-5 py-2.5 border-t border-[#14141A] flex items-center justify-between gap-3">
-                    <div class="flex items-center gap-3 min-w-0">
-                        <span id="pcrPageInfo" class="text-[10px] font-mono text-[#555555]">—</span>
-                        ${pageSizeSelectHtml('pcrPageSize')}
-                    </div>
-                    <div id="pcrPagination" class="flex items-center gap-0.5"></div>
-                </div>
+                ${paginationBarHtml({
+                    infoId: 'pcrPageInfo',
+                    selectId: 'pcrPageSize',
+                    buttonsId: 'pcrPagination',
+                    wrapperClass: 'px-5 py-2.5 border-t border-[#14141A] flex items-center justify-between gap-3',
+                })}
             </div>
         </div>
     `;
@@ -670,39 +669,3 @@ export function renderPcrRows(rows, months, showSupplier = true) {
     }).join('');
 }
 
-function pageBtnClass(isActive, isDisabled) {
-    const base = 'pcr-page-btn flex items-center justify-center w-6 h-6 text-[10px] border border-transparent box-border';
-    if (isDisabled) return `${base} text-[#2E2E36] cursor-not-allowed`;
-    if (isActive) return `${base} border-[#FF1E27] text-white bg-transparent`;
-    return `${base} text-[#555555] hover:text-[#C8C8D0] hover:bg-[#161620]`;
-}
-
-export function renderPcrPagination(currentPage, totalPages) {
-    if (totalPages <= 1) return '';
-    let buttons = `
-        <button class="${pageBtnClass(false, currentPage === 1)}"
-                data-page="${currentPage - 1}" ${currentPage === 1 ? 'disabled' : ''}>
-            <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"></path></svg>
-        </button>`;
-    const maxVisible = 5;
-    let startPage = Math.max(1, currentPage - Math.floor(maxVisible / 2));
-    let endPage = Math.min(totalPages, startPage + maxVisible - 1);
-    if (endPage - startPage < maxVisible - 1) startPage = Math.max(1, endPage - maxVisible + 1);
-    if (startPage > 1) {
-        buttons += `<button class="${pageBtnClass(false, false)}" data-page="1">1</button>`;
-        if (startPage > 2) buttons += `<span class="px-0.5 text-[#2E2E36] text-[9px]">—</span>`;
-    }
-    for (let i = startPage; i <= endPage; i += 1) {
-        buttons += `<button class="${pageBtnClass(i === currentPage, false)}" data-page="${i}">${i}</button>`;
-    }
-    if (endPage < totalPages) {
-        if (endPage < totalPages - 1) buttons += `<span class="px-0.5 text-[#2E2E36] text-[9px]">—</span>`;
-        buttons += `<button class="${pageBtnClass(false, false)}" data-page="${totalPages}">${totalPages}</button>`;
-    }
-    buttons += `
-        <button class="${pageBtnClass(false, currentPage === totalPages)}"
-                data-page="${currentPage + 1}" ${currentPage === totalPages ? 'disabled' : ''}>
-            <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"></path></svg>
-        </button>`;
-    return buttons;
-}

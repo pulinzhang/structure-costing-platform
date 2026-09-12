@@ -25,6 +25,7 @@ from app.schemas.vo.assembly_cost_vo import (
     AssemblyCostCalcLogVO,
 )
 from app.services.costing.assembly_cost.calc.process_log import parse_card_traces
+from app.services.costing.assembly_cost.calc.seq_label import attach_calc_card_seq_labels
 
 STATUS_PROCESSING = "processing"
 STATUS_SUCCESS = "success"
@@ -286,6 +287,7 @@ class AssemblyCostCalcLogService:
             AssemblyCostCalcCardTraceVO.model_validate(card)
             for card in parse_card_traces(row.detail_json)
         ]
+        attach_calc_card_seq_labels(db, vo)
         return vo
 
     def delete_calc_log(self, db: Session, log_id: int) -> None:

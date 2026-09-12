@@ -30,6 +30,10 @@ def register_frontend(app: FastAPI) -> None:
     async def assembly_cost_restore_page() -> FileResponse:
         return FileResponse(_STATIC_DIR / "assembly-cost-restore.html", headers=_NO_CACHE)
 
+    @app.get("/llm-analysis-report", include_in_schema=False)
+    async def llm_analysis_report_page() -> FileResponse:
+        return FileResponse(_STATIC_DIR / "llm-analysis-report.html", headers=_NO_CACHE)
+
     @app.get("/helper", include_in_schema=False)
     async def helper_redirect() -> RedirectResponse:
         return RedirectResponse(url="/helper/", status_code=302)

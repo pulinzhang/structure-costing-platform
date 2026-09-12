@@ -77,7 +77,7 @@ def write_cards_sheet(
     for col, title in enumerate(CARD_HEADERS, start=1):
         cell = ws.cell(row=header_row, column=col, value=title)
         cell.font = font(size=9, bold=True, color="FFFFFF")
-        cell.alignment = center
+        cell.alignment = left if col in {1, 2} else center
         cell.border = border
         if col == CARD_KPI_COL:
             cell.fill = fill(ACCENT)
@@ -106,19 +106,18 @@ def write_cards_sheet(
         stripe = "FAF7F2" if seq % 2 == 0 else "FFFFFF"
         kpi_fill = "FFF1F2" if seq % 2 == 0 else "FFE4E6"
         values: list[str | int | Decimal] = [
-            seq,
-            f"L{card.level}",
-            "树根" if card.is_tree_root else "",
-            card.part_number,
+            card.seq_label or "—",
             part_short_code(part_number=card.part_number, level=card.level),
+            card.part_number,
             card.part_name or "",
             card.object_kind or "",
             status_label(card.status),
             money_cell(card.material_amount),
             money_cell(card.welding_amount),
             money_cell(card.should_cost),
+            money_cell(card.indirect_amount),
             money_cell(card.grand_total),
-            card.missing_leaf_count,
+            card.missing_leaf_count if card.missing_leaf_count else "",
             card.message or "",
             "；".join(card.missing_parts),
         ]
@@ -145,8 +144,8 @@ def write_cards_sheet(
                 cell.alignment = center
             elif col in CARD_CENTER_COLS:
                 cell.fill = fill(stripe)
-                cell.font = font(size=9)
-                cell.alignment = center
+                cell.font = font(size=11 if col == 2 else 9, bold=col == 2)
+                cell.alignment = left if col == 2 else center
             else:
                 cell.fill = fill(stripe)
                 cell.font = font(size=9, color=INK)

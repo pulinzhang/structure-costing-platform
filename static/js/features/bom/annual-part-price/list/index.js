@@ -6,18 +6,18 @@
 import {
     annualPartPriceTemplate,
     renderTableRows,
-    renderPagination,
     unitPriceInputValue,
     parseUnitPriceInput,
     conversionFactorInputValue,
     parseConversionFactorInput,
     updateAnnualHud,
     updateAnnualFilterCapsules,
-} from './template.js?v=11';
+} from './template.js?v=14';
 import {
     DEFAULT_PAGE_SIZE,
-    bindPageSizeSelect,
-} from '../../../../page-size.js?v=2';
+    bindPagination,
+    paintPagination,
+} from '../../../../page-size.js?v=3';
 import { setSearchBusy } from '../../../../search-busy.js?v=1';
 
 const annualPartPriceState = {
@@ -69,12 +69,14 @@ function closeDrawer(drawerId, backdropId) {
 function init() {
     loadFilterOptions().then(() => loadData());
     bindEvents();
-    bindPageSizeSelect('annualPartPricePageSize', {
+    bindPagination({
+        selectId: 'annualPartPricePageSize',
+        buttonsId: 'annualPaginationBtns',
         getSize: () => annualPartPriceState.pageSize,
         setSize: (size) => {
             annualPartPriceState.pageSize = size;
         },
-        onChange: () => loadData(1),
+        onPage: (page) => loadData(page),
     });
     applyPermissionUi();
     updateAnnualFilterCapsules();
@@ -182,7 +184,6 @@ async function loadData(page = 1) {
     const emptyState = document.getElementById('annualEmptyState');
     const loadingState = document.getElementById('annualLoadingState');
     const totalCountPagination = document.getElementById('annualTotalCountPagination');
-    const paginationBtns = document.getElementById('annualPaginationBtns');
 
     if (tableBody) tableBody.innerHTML = '';
     if (emptyState) emptyState.classList.add('hidden');
@@ -228,12 +229,7 @@ async function loadData(page = 1) {
         if (totalCountPagination) {
             totalCountPagination.textContent = `共 ${annualPartPriceState.total} 条`;
         }
-        if (paginationBtns) {
-            paginationBtns.innerHTML = renderPagination(
-                annualPartPriceState.page,
-                annualPartPriceState.totalPages
-            );
-        }
+        paintPagination('annualPaginationBtns', annualPartPriceState.page, annualPartPriceState.totalPages);
     } catch (error) {
         console.error('加载数据失败:', error);
         if (tableBody) {
@@ -318,7 +314,6 @@ function bindEvents() {
     bindEditDrawerEvents();
     bindDeleteDrawerEvents();
     bindBatchAuditDrawerEvents();
-    bindPaginationEvents();
 }
 
 function bindEditDrawerEvents() {
@@ -354,15 +349,6 @@ function bindBatchAuditDrawerEvents() {
     document.getElementById('confirmAnnualBatchAuditBtn')?.addEventListener('click', submitBatchAudit);
 }
 
-function bindPaginationEvents() {
-    document.getElementById('annualPaginationBtns')?.addEventListener('click', (e) => {
-        const btn = e.target.closest('.page-btn');
-        if (btn && !btn.disabled) {
-            const page = parseInt(btn.dataset.page, 10);
-            if (page) loadData(page);
-        }
-    });
-}
 
 function openEditDrawer(record) {
     document.getElementById('annualEditDrawerTitle').textContent = '编辑零件价';

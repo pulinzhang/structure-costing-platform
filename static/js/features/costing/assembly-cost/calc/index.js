@@ -4,12 +4,12 @@
 
 import {
     assemblyCostCalcTemplate,
-    renderCalcHistoryPagination,
-} from './template.js?v=7';
+} from './template.js?v=8';
 import {
     DEFAULT_PAGE_SIZE,
-    bindPageSizeSelect,
-} from '../../../../page-size.js?v=2';
+    bindPagination,
+    paintPagination,
+} from '../../../../page-size.js?v=3';
 
 const API_BASE = '/api/costing/assembly-costs';
 const CASCADE_API = '/api/bom/filters/cascade';
@@ -63,12 +63,14 @@ const calcState = {
 function init() {
     stopPolling();
     bindEvents();
-    bindPageSizeSelect('lacCalcHistoryPageSize', {
+    bindPagination({
+        selectId: 'lacCalcHistoryPageSize',
+        buttonsId: 'lacCalcHistoryPagination',
         getSize: () => calcState.history.size,
         setSize: (size) => {
             calcState.history.size = size;
         },
-        onChange: () => loadCalcHistory(1),
+        onPage: (page) => loadCalcHistory(page),
     });
     applyPermissionUi();
     fillMonthOptions();
@@ -114,13 +116,6 @@ function bindEvents() {
     document.getElementById('lacStartCalcBtn')?.addEventListener('click', startCalculation);
     document.getElementById('lacCalcHistoryRefreshBtn')?.addEventListener('click', () => loadCalcHistory(1));
     document.getElementById('lacCalcHistoryDeleteAllBtn')?.addEventListener('click', () => deleteAllCalcLogs());
-    document.getElementById('lacCalcHistoryPagination')?.addEventListener('click', (event) => {
-        const btn = event.target.closest('.lac-calc-history-page-btn');
-        if (btn && !btn.disabled) {
-            const page = parseInt(btn.dataset.page, 10);
-            if (page) loadCalcHistory(page);
-        }
-    });
     document.getElementById('lacCalcHistoryBody')?.addEventListener('click', (event) => {
         const delBtn = event.target.closest('[data-action="delete-log"]');
         if (delBtn) {
@@ -338,13 +333,10 @@ async function loadCalcHistory(page = calcState.history.page) {
         renderHistoryRows(items);
         const totalEl = document.getElementById('lacCalcHistoryTotal');
         if (totalEl) totalEl.textContent = `共 ${calcState.history.total} 条`;
-        const pagination = document.getElementById('lacCalcHistoryPagination');
-        if (pagination) {
-            pagination.innerHTML = renderCalcHistoryPagination(
+        paintPagination('lacCalcHistoryPagination', 
                 calcState.history.page,
                 calcState.history.totalPages,
             );
-        }
     } catch (error) {
         body.innerHTML = `<tr><td colspan="13" class="py-8 text-center text-[#ef5350]">${esc(error.message || '加载失败')}</td></tr>`;
     }
@@ -377,7 +369,7 @@ function renderHistoryRows(items) {
                 <td class="py-2 px-2 text-right font-mono">${esc(row.skipped_approved_count)}</td>
                 <td class="py-2 px-2 text-right whitespace-nowrap">
                     <button data-action="open-report" data-id="${row.id}"
-                            class="text-[10px] text-[#9e9e9e] hover:text-white mr-2">过程</button>
+                            class="text-[10px] text-[#9e9e9e] hover:text-white mr-2">报告</button>
                     <button data-action="jump-list" data-query="${esc(query)}"
                             class="text-[10px] text-[#9e9e9e] hover:text-white mr-2">结果</button>
                     ${calcState.canDelete ? `<button data-action="delete-log" data-id="${row.id}" class="text-[10px] text-[#ef5350] hover:text-[#ff8a80]" title="含计算中：删除可释放锁">删除</button>` : ''}

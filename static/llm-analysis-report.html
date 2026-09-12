@@ -1,0 +1,411 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AI 分析报告</title>
+    <link rel="icon" type="image/x-icon" href="/static/assets/favicon.ico">
+    <link href="/static/css/fonts.css?v=1" rel="stylesheet">
+    <style>
+        :root {
+            --bg-canvas: #F4F4F5;
+            --paper: #FFFFFF;
+            --elevated: #FAFAFA;
+            --ink: #18181B;
+            --muted: #52525B;
+            --dim: #71717A;
+            --numeric: #3F3F46;
+            --line: #E4E4E7;
+            --border: #D4D4D8;
+            --brabus-red: #d32f2f;
+            --brabus-red-hover: #b71c1c;
+            --brabus-red-soft: #FEF2F2;
+            --failed: #B91C1C;
+            --mono: "JetBrains Mono", ui-monospace, Consolas, monospace;
+        }
+        * { box-sizing: border-box; }
+        html, body {
+            margin: 0;
+            background: var(--bg-canvas);
+            color: var(--ink);
+            font-family: Inter, "Segoe UI", system-ui, sans-serif;
+            -webkit-font-smoothing: antialiased;
+        }
+        ::selection {
+            background: var(--brabus-red-soft);
+            color: var(--ink);
+        }
+        .page {
+            max-width: 1120px;
+            margin: 0 auto;
+            padding: 48px 64px 80px;
+        }
+        .sheet {
+            background: var(--paper);
+            border: 1px solid var(--border);
+            box-shadow: 0 8px 24px rgba(10, 10, 10, 0.06);
+        }
+        header.report-head {
+            display: flex;
+            align-items: flex-end;
+            justify-content: space-between;
+            gap: 16px;
+            flex-wrap: wrap;
+            padding: 36px 48px 24px;
+            border-bottom: 3px solid var(--brabus-red);
+        }
+        header.report-head p {
+            margin: 0 0 6px;
+            font-size: 10px;
+            font-weight: 600;
+            letter-spacing: 0.18em;
+            text-transform: uppercase;
+            color: var(--brabus-red);
+        }
+        header.report-head h1 {
+            margin: 0;
+            font-family: Inter, "Segoe UI", system-ui, sans-serif;
+            font-size: 26px;
+            font-weight: 700;
+            letter-spacing: -0.02em;
+        }
+        .report-actions {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            flex-shrink: 0;
+        }
+        .report-actions button {
+            height: 36px;
+            padding: 0 14px;
+            border: 1px solid var(--border);
+            border-radius: 4px;
+            background: var(--paper);
+            color: var(--ink);
+            font-family: inherit;
+            font-size: 13px;
+            cursor: pointer;
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+        }
+        .report-actions button:hover { border-color: var(--muted); }
+        .report-actions button:disabled {
+            opacity: 0.55;
+            cursor: wait;
+        }
+        .report-actions .btn-export {
+            border-color: var(--brabus-red);
+            background: var(--brabus-red);
+            color: #fff;
+        }
+        .report-actions .btn-export:hover {
+            background: var(--brabus-red-hover);
+            border-color: var(--brabus-red-hover);
+        }
+        .export-hint {
+            font-size: 11px;
+            color: var(--dim);
+            max-width: 160px;
+            line-height: 1.35;
+        }
+        .toast {
+            position: fixed;
+            right: 24px;
+            bottom: 24px;
+            z-index: 20;
+            padding: 10px 14px;
+            background: var(--elevated);
+            color: var(--ink);
+            border: 1px solid var(--border);
+            font-size: 13px;
+            box-shadow: 0 8px 24px rgba(10, 10, 10, 0.08);
+            opacity: 0;
+            pointer-events: none;
+            transform: translateY(8px);
+            transition: opacity 0.2s ease, transform 0.2s ease;
+        }
+        .toast.is-on { opacity: 1; transform: none; }
+        .toast.is-error { background: var(--brabus-red); color: #fff; border-color: var(--brabus-red); }
+        .meta {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+            gap: 10px 24px;
+            padding: 20px 48px;
+            border-bottom: 1px solid var(--line);
+            font-size: 13px;
+            color: var(--muted);
+        }
+        .meta strong {
+            color: var(--ink);
+            font-weight: 600;
+            font-family: var(--mono);
+            font-size: 12px;
+        }
+        .body { padding: 24px 48px 48px; }
+        .summary {
+            margin: 0 0 12px;
+            color: var(--muted);
+            font-size: 13px;
+        }
+        .narrative {
+            margin: 0 0 22px;
+            padding: 16px 18px;
+            background: var(--elevated);
+            border: 1px solid var(--line);
+            white-space: pre-wrap;
+            font-size: 13px;
+            line-height: 1.65;
+            color: var(--ink);
+        }
+        .empty, .error {
+            padding: 48px 32px;
+            text-align: center;
+            color: var(--muted);
+        }
+        .error { color: var(--failed); }
+        .print-page-banner { display: none; }
+        table.print-frame {
+            width: 100%;
+            border-collapse: collapse;
+        }
+        table.print-frame > tbody > tr > td {
+            padding: 0;
+            border: none;
+            vertical-align: top;
+        }
+        .llm-body {
+            font-size: 14px;
+            line-height: 1.75;
+            color: var(--ink);
+        }
+        .llm-body > :first-child { margin-top: 0; }
+        .llm-body h1,
+        .llm-body h2,
+        .llm-body h3 {
+            letter-spacing: -0.02em;
+            color: var(--ink);
+            line-height: 1.35;
+        }
+        .llm-body h1 {
+            font-size: 20px;
+            font-weight: 700;
+            margin: 28px 0 10px;
+        }
+        .llm-body h2 {
+            font-size: 16px;
+            font-weight: 700;
+            margin: 26px 0 10px;
+            padding-bottom: 6px;
+            border-bottom: 1px solid var(--line);
+        }
+        .llm-body h3 {
+            font-size: 14px;
+            font-weight: 600;
+            margin: 18px 0 6px;
+        }
+        .llm-body p { margin: 0 0 12px; }
+        .llm-body ul, .llm-body ol {
+            margin: 0 0 12px;
+            padding: 0 0 0 1.4em;
+        }
+        .llm-body li { margin: 3px 0; }
+        .llm-body .table-scroll {
+            overflow-x: auto;
+            max-width: 100%;
+            margin: 8px 0 20px;
+        }
+        .llm-body table {
+            width: max-content;
+            min-width: 100%;
+            border-collapse: collapse;
+            font-size: 13px;
+        }
+        .llm-body th {
+            text-align: left;
+            font-size: 9px;
+            font-weight: 600;
+            letter-spacing: 0.08em;
+            text-transform: uppercase;
+            color: var(--muted);
+            border-bottom: 1px solid var(--border);
+            padding: 8px 12px;
+            background: transparent;
+            white-space: nowrap;
+        }
+        .llm-body td {
+            padding: 10px 12px;
+            border-bottom: 1px solid var(--line);
+            vertical-align: top;
+            color: var(--ink);
+        }
+        .llm-body tbody tr:hover { background: var(--bg-canvas); }
+        .llm-body .cell-keep {
+            white-space: nowrap;
+            word-break: keep-all;
+            font-variant-numeric: tabular-nums;
+            font-family: var(--mono);
+            font-size: 12px;
+            color: var(--numeric);
+        }
+        .llm-body th.cell-keep {
+            font-family: Inter, "Segoe UI", system-ui, sans-serif;
+            font-size: 9px;
+            color: var(--muted);
+        }
+        .llm-body .cell-wrap {
+            max-width: 10.5em;
+            word-break: break-word;
+            overflow-wrap: break-word;
+        }
+        .llm-body code {
+            font-family: var(--mono);
+            font-size: 12px;
+            background: var(--elevated);
+            padding: 1px 5px;
+            border-radius: 2px;
+        }
+        .llm-body blockquote {
+            margin: 0 0 16px;
+            padding: 10px 16px;
+            border-left: 3px solid var(--brabus-red);
+            color: var(--muted);
+            background: var(--elevated);
+        }
+        .llm-body hr {
+            border: none;
+            border-top: 1px solid var(--line);
+            margin: 22px 0;
+        }
+        .doc-footer {
+            margin-top: 28px;
+            padding-top: 12px;
+            border-top: 1px solid var(--line);
+            font-size: 12px;
+            color: var(--dim);
+        }
+        @media print {
+            @page {
+                size: A4 portrait;
+                margin: 12mm 12mm 16mm 12mm;
+                @bottom-center {
+                    content: "第 " counter(page) " 页 / 共 " counter(pages) " 页";
+                    font-family: Inter, "Segoe UI", "Microsoft YaHei", sans-serif;
+                    font-size: 9pt;
+                    color: #71717A;
+                }
+            }
+            html, body {
+                background: #fff !important;
+                color: #18181b;
+                -webkit-print-color-adjust: exact;
+                print-color-adjust: exact;
+            }
+            .page {
+                max-width: none;
+                margin: 0;
+                padding: 0;
+            }
+            .sheet {
+                border: none;
+                box-shadow: none;
+            }
+            .report-actions, .toast { display: none !important; }
+            header.report-head { display: none; }
+            .print-page-banner { display: table-row; }
+            .print-page-banner th {
+                padding: 0 0 2.5mm;
+                border-bottom: 2px solid var(--brabus-red);
+                background: #fff;
+                text-align: left;
+                text-transform: none;
+                letter-spacing: normal;
+                color: var(--ink);
+                vertical-align: bottom;
+            }
+            .print-running-head {
+                display: flex;
+                align-items: flex-end;
+                justify-content: space-between;
+                gap: 12px;
+                width: 100%;
+            }
+            .print-running-brand {
+                display: flex;
+                flex-direction: column;
+                gap: 0.6mm;
+                min-width: 0;
+            }
+            .print-running-brand .print-kicker {
+                margin: 0;
+                font-size: 7pt;
+                font-weight: 600;
+                letter-spacing: 0.04em;
+                text-transform: uppercase;
+                color: var(--brabus-red);
+                white-space: nowrap;
+            }
+            .print-running-brand strong {
+                font-size: 11pt;
+                font-weight: 700;
+                letter-spacing: -0.02em;
+                text-transform: none;
+            }
+            .print-running-meta {
+                display: flex;
+                flex-wrap: wrap;
+                justify-content: flex-end;
+                gap: 1mm 10px;
+                font-size: 8pt;
+                color: var(--muted);
+                text-align: right;
+                line-height: 1.35;
+            }
+            .print-running-meta span { white-space: nowrap; }
+            .meta {
+                padding: 3mm 0;
+                font-size: 9pt;
+                break-inside: avoid;
+            }
+            .body { padding: 2mm 0 0; }
+            .narrative {
+                font-size: 8.5pt;
+                padding: 3mm 3.5mm;
+                break-inside: avoid;
+            }
+            .llm-body { font-size: 10pt; }
+            .llm-body h1 { font-size: 13pt; }
+            .llm-body h2 { font-size: 11pt; }
+            .llm-body h3 { font-size: 10pt; }
+            .llm-body .table-scroll { overflow: visible; }
+            .llm-body table { font-size: 8.5pt; }
+            thead { display: table-header-group; }
+            tfoot { display: table-footer-group; }
+            .llm-body th {
+                padding: 2mm 1.5mm;
+                font-size: 7pt;
+                background: #fafafa;
+                -webkit-print-color-adjust: exact;
+                print-color-adjust: exact;
+            }
+            .llm-body td { padding: 1.6mm 1.5mm; }
+            .llm-body tbody tr { break-inside: avoid; }
+            .llm-body tbody tr:hover { background: transparent; }
+            .llm-body .cell-keep { font-size: 8pt; }
+            a { color: inherit; text-decoration: none; }
+        }
+    </style>
+</head>
+<body>
+    <div class="page">
+        <div class="sheet" id="reportRoot">
+            <div class="empty">加载分析报告…</div>
+        </div>
+    </div>
+    <div class="toast" id="reportToast" role="status"></div>
+    <script src="/static/js/vendor/marked.min.js"></script>
+    <script src="/static/js/vendor/purify.min.js"></script>
+    <script src="/static/js/main.js?v=21"></script>
+    <script type="module" src="/static/js/llm-assistant/report-page/boot.js?v=2"></script>
+</body>
+</html>

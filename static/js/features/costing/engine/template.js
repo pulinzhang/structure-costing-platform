@@ -3,6 +3,8 @@
  * 视觉原则：唯一焦点 + 异常优先 + 渐进披露；中文为主
  */
 
+import { paginationBarHtml } from '../../../page-size.js?v=3';
+
 const engineMotionStyles = `
 <style id="engineConsoleMotion">
 @keyframes engine-ignite-breathe {
@@ -260,18 +262,10 @@ ${engineMotionStyles}
   <div class="border-t border-white/5 pt-8">
     <div class="flex flex-wrap items-center justify-between gap-4 mb-4">
       <span class="text-[11px] text-neutral-300 tracking-wide">引擎运行历史</span>
-      <div class="flex items-center gap-4">
-        <button id="engineHistoryDeleteAllBtn" type="button"
-                class="hidden text-[10px] text-neutral-600 hover:text-[#FF1E27] transition-colors">
-          全部删除
-        </button>
-        <span id="engineHistoryTotal" class="text-[10px] font-mono text-neutral-600 tabular-nums">共 0 条</span>
-        <select id="engineHistoryPageSize" class="engine-select-source engine-select-source-sm">
-          <option value="10">10 / 页</option>
-          <option value="20">20 / 页</option>
-          <option value="50">50 / 页</option>
-        </select>
-      </div>
+      <button id="engineHistoryDeleteAllBtn" type="button"
+              class="hidden text-[10px] text-neutral-600 hover:text-[#FF1E27] transition-colors">
+        全部删除
+      </button>
     </div>
 
     <div class="overflow-x-auto">
@@ -304,7 +298,12 @@ ${engineMotionStyles}
       </table>
     </div>
 
-    <div id="engineHistoryPager" class="flex items-center justify-end gap-1 pt-4"></div>
+    ${paginationBarHtml({
+      infoId: 'engineHistoryTotal',
+      selectId: 'engineHistoryPageSize',
+      buttonsId: 'engineHistoryPager',
+      wrapperClass: 'flex items-center justify-between pt-4',
+    })}
   </div>
 </div>
 `;

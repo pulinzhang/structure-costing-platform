@@ -6,16 +6,16 @@
 import {
     weldingUnitPriceTemplate,
     renderTableRows,
-    renderPagination,
     unitPriceInputValue,
     parseUnitPriceInput,
     updateWeldingHud,
     updateWeldingFilterCapsules,
-} from './template.js?v=14';
+} from './template.js?v=15';
 import {
     DEFAULT_PAGE_SIZE,
-    bindPageSizeSelect,
-} from '../../../../page-size.js?v=2';
+    bindPagination,
+    paintPagination,
+} from '../../../../page-size.js?v=3';
 import { setSearchBusy } from '../../../../search-busy.js?v=1';
 
 const weldingUnitPriceState = {
@@ -65,12 +65,14 @@ function closeDrawer(drawerId, backdropId) {
 function init() {
     loadFilterOptions().then(() => loadData());
     bindEvents();
-    bindPageSizeSelect('weldingUnitPricePageSize', {
+    bindPagination({
+        selectId: 'weldingUnitPricePageSize',
+        buttonsId: 'paginationBtns',
         getSize: () => weldingUnitPriceState.pageSize,
         setSize: (size) => {
             weldingUnitPriceState.pageSize = size;
         },
-        onChange: () => loadData(1),
+        onPage: (page) => loadData(page),
     });
     applyPermissionUi();
     updateWeldingFilterCapsules();
@@ -174,7 +176,6 @@ async function loadData(page = 1) {
     const emptyState = document.getElementById('emptyState');
     const loadingState = document.getElementById('loadingState');
     const totalCountPagination = document.getElementById('totalCountPagination');
-    const paginationBtns = document.getElementById('paginationBtns');
 
     if (tableBody) tableBody.innerHTML = '';
     if (emptyState) emptyState.classList.add('hidden');
@@ -216,12 +217,7 @@ async function loadData(page = 1) {
         if (totalCountPagination) {
             totalCountPagination.textContent = `共 ${weldingUnitPriceState.total} 条`;
         }
-        if (paginationBtns) {
-            paginationBtns.innerHTML = renderPagination(
-                weldingUnitPriceState.page,
-                weldingUnitPriceState.totalPages
-            );
-        }
+        paintPagination('paginationBtns', weldingUnitPriceState.page, weldingUnitPriceState.totalPages);
     } catch (error) {
         console.error('加载数据失败:', error);
         if (tableBody) {
@@ -298,7 +294,6 @@ function bindEvents() {
     bindEditDrawerEvents();
     bindDeleteDrawerEvents();
     bindBatchAuditDrawerEvents();
-    bindPaginationEvents();
 }
 
 function bindEditDrawerEvents() {
@@ -334,15 +329,6 @@ function bindBatchAuditDrawerEvents() {
     document.getElementById('confirmWeldingBatchAuditBtn')?.addEventListener('click', submitBatchAudit);
 }
 
-function bindPaginationEvents() {
-    document.getElementById('paginationBtns')?.addEventListener('click', (e) => {
-        const btn = e.target.closest('.page-btn');
-        if (btn && !btn.disabled) {
-            const page = parseInt(btn.dataset.page, 10);
-            if (page) loadData(page);
-        }
-    });
-}
 
 function openEditDrawer(record) {
     document.getElementById('editDrawerTitle').textContent = '编辑费用';

@@ -2,7 +2,12 @@
  * BOM 焊接工艺拆解 — 列表模板（HUD 密表，可编辑）
  */
 
-import { pageSizeSelectHtml } from '../../../../page-size.js?v=2';
+import { paginationBarHtml } from '../../../../page-size.js?v=3';
+import {
+    partShortCodeCellHtml,
+    partNumberNameCellHtml,
+    resolveBomNodeShortCode,
+} from '../../../../part-identity.js?v=3';
 
 const AUDIT_LABEL = {
     pending: { text: '待审', cls: 'text-[#ffb74d] bg-[#ffb74d]/15' },
@@ -149,7 +154,8 @@ export function weldingProcessBreakdownListTemplate() {
                             <col style="width:7%">
                             <col style="width:7%">
                             <col style="width:6%">
-                            <col style="width:18%">
+                            <col style="width:8%">
+                            <col style="width:14%">
                             <col style="width:5%">
                             <col style="width:7%">
                             <col style="width:20%">
@@ -164,7 +170,8 @@ export function weldingProcessBreakdownListTemplate() {
                                 <th class="px-2 py-2 text-left text-[9px] font-medium tracking-[0.08em] text-[#555555]">基地</th>
                                 <th class="px-2 py-2 text-left text-[9px] font-medium tracking-[0.08em] text-[#555555]">项目</th>
                                 <th class="px-2 py-2 text-left text-[9px] font-medium tracking-[0.08em] text-[#555555]">版本</th>
-                                <th class="px-2 py-2 text-left text-[9px] font-medium tracking-[0.08em] text-[#6E6E73]">零件</th>
+                                <th class="px-2 py-2 text-left text-[9px] font-medium tracking-[0.08em] text-[#A1A1A6]">短代码</th>
+                                <th class="px-2 py-2 text-left text-[9px] font-medium tracking-[0.08em] text-[#555555]">零件</th>
                                 <th class="px-2 py-2 text-center text-[9px] font-medium tracking-[0.06em] text-[#555555]">层级</th>
                                 <th class="px-2 py-2 text-right text-[9px] font-medium tracking-[0.06em] text-[#555555]">装配用量</th>
                                 <th class="px-2 py-2 text-left text-[9px] font-medium tracking-[0.08em] text-[#555555]">焊接原文</th>
@@ -178,13 +185,7 @@ export function weldingProcessBreakdownListTemplate() {
                     </table>
                 </div>
 
-                <div class="flex items-center justify-between px-5 py-2.5 border-t border-[#14141A] bg-[#0A0A0E]" id="wpbPaginationContainer">
-                    <div class="flex items-center gap-3 min-w-0">
-                        <span id="wpbTotalCount" class="text-[10px] font-mono text-[#555555]"></span>
-                        ${pageSizeSelectHtml('wpbPageSize')}
-                    </div>
-                    <div class="flex items-center gap-0.5" id="wpbPaginationBtns"></div>
-                </div>
+                ${paginationBarHtml({ infoId: 'wpbTotalCount', selectId: 'wpbPageSize', buttonsId: 'wpbPaginationBtns', wrapperId: 'wpbPaginationContainer' })}
 
                 <div id="wpbEmptyState" class="hidden flex flex-col items-center justify-center py-14">
                     <div class="w-10 h-10 flex items-center justify-center mb-3 rounded-md bg-[#121218] border border-[#2A2A35]">
@@ -404,6 +405,10 @@ export function renderWpbTableRows(records, options = {}) {
                 <div class="inline-flex items-center justify-center gap-0.5 opacity-0 pointer-events-none group-hover:opacity-100 group-hover:pointer-events-auto focus-within:opacity-100 focus-within:pointer-events-auto transition-opacity duration-100">
                     ${viewBtn}${editBtn}
                 </div>` : '<span class="text-[#3A3A42]">—</span>';
+        const shortNo = resolveBomNodeShortCode(row.part_number, {
+            level: row.level,
+            nodeRole: row.node_role,
+        });
         return `
             <tr class="group relative font-mono text-[11px] border-b border-[#141418] hover:bg-[#161620] transition-colors duration-100"
                 data-node-id="${row.id}">
@@ -413,7 +418,8 @@ export function renderWpbTableRows(records, options = {}) {
                 <td class="px-2 py-2 text-[#8E8E93] truncate">${esc(row.location)}</td>
                 <td class="px-2 py-2 text-[#F0F0F2] font-semibold truncate">${esc(row.vehicle_model)}</td>
                 <td class="px-2 py-2 text-[#C8C8D0] truncate">${esc(row.bom_version)}</td>
-                <td class="px-2 py-2 overflow-hidden">${wpbPartInfoCell(row)}</td>
+                <td class="px-2 py-2 overflow-hidden whitespace-nowrap">${partShortCodeCellHtml(row.part_number, shortNo)}</td>
+                <td class="px-2 py-2 overflow-hidden">${partNumberNameCellHtml(row.part_number, row.part_name)}</td>
                 <td class="px-2 py-2 text-center text-[#8E8E93]">L${esc(row.level)}</td>
                 <td class="px-2 py-2 text-right tabular-nums text-[#8E8E93]">${esc(fmtQty(row.assembly_qty))}</td>
                 <td class="px-2 py-2 overflow-hidden">
@@ -430,61 +436,6 @@ export function renderWpbTableRows(records, options = {}) {
             </tr>
         `;
     }).join('');
-}
-
-/** 与 BOM viz 一致：数字末四位 */
-function shortPartNumber(partNumber) {
-    if (!partNumber) return null;
-    const digits = String(partNumber).replace(/\D/g, '');
-    if (digits.length < 4) return null;
-    return digits.slice(-4);
-}
-
-/**
- * 与 BOM viz 分总成/焊接件一致：
- * - 无 -N → 数字末四位
- * - 有 -N → 末四位 + 字母尾 + -N（501005123AA-1 → 5123AA-1）
- */
-function shortWeldPartNumber(partNumber) {
-    if (!partNumber) return null;
-    const raw = String(partNumber).trim();
-    if (!raw) return null;
-    const match = raw.match(/(\d{4,})([A-Za-z]*)(-\d+)\s*$/);
-    if (match) {
-        const digitsTail = match[1].slice(-4);
-        const letters = match[2] || '';
-        const dashSuffix = match[3];
-        return `${digitsTail}${letters}${dashSuffix}`;
-    }
-    return shortPartNumber(raw);
-}
-
-/** L0/供货 → 末四位；其余焊接分总成 → shortWeldPartNumber（同 viz） */
-function resolveWpbShortPartNumber(row) {
-    const full = row?.part_number || '';
-    const isSupply = Number(row?.level) === 0 || row?.node_role === 'supply';
-    if (isSupply) return shortPartNumber(full) || full;
-    return shortWeldPartNumber(full) || full;
-}
-
-/** 列表单元格：短号主角，完整号 + 名称次要（对齐零件价格一览） */
-function wpbPartInfoCell(row) {
-    const full = row.part_number || '';
-    const shortNo = resolveWpbShortPartNumber(row);
-    const name = row.part_name || '';
-    const nameLine = name
-        ? `<div class="text-[9px] text-[#555555] mt-0.5 truncate" title="${esc(name)}">${esc(name)}</div>`
-        : '';
-    if (shortNo && shortNo !== full) {
-        return `
-            <div class="text-[14px] font-mono font-bold tabular-nums text-[#F0F0F2] tracking-[0.08em] leading-none"
-                 title="${esc(full)}">${esc(shortNo)}</div>
-            <div class="text-[9px] font-mono text-[#3A3A42] tracking-wide mt-0.5 truncate" title="${esc(full)}">${esc(full)}</div>
-            ${nameLine}`;
-    }
-    return `
-        <div class="text-[10px] font-mono text-[#8E8E93] tracking-wide truncate" title="${esc(full)}">${esc(full) || '—'}</div>
-        ${nameLine}`;
 }
 
 /** 与导出 Excel 标准单位目录对齐（仅前端即时展示） */
@@ -756,27 +707,6 @@ function renderEvidencePanel(evidence) {
     `;
 }
 
-export function renderWpbPagination(page, totalPages) {
-    if (totalPages <= 1) return '';
-    let html = '';
-    const btn = (p, label, disabled = false, active = false) => {
-        const base = 'min-w-[28px] h-7 px-2 text-[10px] font-mono rounded-sm border transition-all';
-        const cls = active
-            ? `${base} bg-[#FF1E27] border-[#FF1E27] text-white`
-            : disabled
-                ? `${base} border-[#1A1A22] text-[#3A3A42] cursor-not-allowed`
-                : `${base} border-[#2A2A35] text-[#8E8E93] hover:border-[#FF1E27]/50 hover:text-white`;
-        return `<button type="button" class="${cls}" data-page="${p}" ${disabled ? 'disabled' : ''}>${label}</button>`;
-    };
-    html += btn(Math.max(1, page - 1), '‹', page <= 1);
-    const start = Math.max(1, page - 2);
-    const end = Math.min(totalPages, start + 4);
-    for (let p = start; p <= end; p += 1) {
-        html += btn(p, String(p), false, p === page);
-    }
-    html += btn(Math.min(totalPages, page + 1), '›', page >= totalPages);
-    return html;
-}
 
 function fmtQty(value) {
     if (value == null || value === '') return '—';

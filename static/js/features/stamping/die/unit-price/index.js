@@ -5,13 +5,13 @@
 import {
     dieUnitPriceTemplate,
     renderTableRows,
-    renderPagination,
-} from './template.js?v=6';
+} from './template.js?v=7';
 import {
     DEFAULT_PAGE_SIZE,
-    bindPageSizeSelect,
+    bindPagination,
+    paintPagination,
     normalizePageSize,
-} from '../../../../page-size.js?v=2';
+} from '../../../../page-size.js?v=3';
 import { setSearchBusy } from '../../../../search-busy.js?v=1';
 
 const API_BASE = '/api/stamping/die-unit-prices';
@@ -174,16 +174,15 @@ function renderList() {
     const body = document.getElementById('dupTableBody');
     const empty = document.getElementById('dupEmptyState');
     const totalEl = document.getElementById('dupTotalCount');
-    const pager = document.getElementById('dupPaginationBtns');
     if (body) body.innerHTML = renderTableRows(pageState.records);
     empty?.classList.toggle('hidden', pageState.records.length > 0 || pageState.isLoading);
     if (totalEl) totalEl.textContent = `共 ${pageState.total} 条`;
-    if (pager) pager.innerHTML = renderPagination(pageState.page, pageState.totalPages);
+    paintPagination('dupPaginationBtns', pageState.page, pageState.totalPages);
 }
 
 async function openCreateDrawer() {
     if (!canOp('op:stamping-die-unit-price:create')) {
-        showToast('无新增权限', 'warning');
+        showToast('无新增权限');
         return;
     }
     document.getElementById('dupEditTitle').textContent = '新增模具单价';
@@ -327,13 +326,6 @@ function bindEvents() {
         }
     });
 
-    document.getElementById('dupPaginationBtns')?.addEventListener('click', (event) => {
-        const btn = event.target.closest('.page-btn');
-        if (!btn || btn.disabled) return;
-        const nextPage = Number(btn.getAttribute('data-page'));
-        if (!nextPage || nextPage === pageState.page) return;
-        loadData(nextPage);
-    });
 
     document.getElementById('dupCloseEdit')?.addEventListener('click', () => {
         closeDrawer('dupEditDrawer', 'dupEditBackdrop');
@@ -366,13 +358,15 @@ function init() {
     pageState.pageSize = normalizePageSize(localStorage.getItem(STORAGE_KEY));
     applyPermissionUi();
     bindEvents();
-    bindPageSizeSelect('dupPageSize', {
+    bindPagination({
+        selectId: 'dupPageSize',
+        buttonsId: 'dupPaginationBtns',
         getSize: () => pageState.pageSize,
         setSize: (size) => {
             pageState.pageSize = size;
             localStorage.setItem(STORAGE_KEY, String(size));
         },
-        onChange: () => loadData(1),
+        onPage: (page) => loadData(page),
     });
     loadListFilters().then(() => loadData(1)).catch(() => loadData(1));
 }

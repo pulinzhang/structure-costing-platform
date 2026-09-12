@@ -1,5 +1,5 @@
 /**
- * 列表分页每页条数。
+ * 列表分页控件：页码 1 2 3 4 + 每页条数。
  * - 常规列表：默认 10，可选 10 / 20 / 50 / 100
  * - 一事一议预览页：默认 200，可选 10 / 20 / 50 / 100 / 200
  */
@@ -9,6 +9,11 @@ export const DEFAULT_PAGE_SIZE = 10;
 
 export const PREVIEW_PAGE_SIZE_OPTIONS = Object.freeze([10, 20, 50, 100, 200]);
 export const DEFAULT_PREVIEW_PAGE_SIZE = 200;
+
+const PAGINATION_BTN_CLASS = 'page-btn';
+
+const HUD_BAR_CLASS =
+    'flex items-center justify-between px-5 py-2.5 border-t border-[#14141A] bg-[#0A0A0E]';
 
 export function normalizePageSize(
     value,
@@ -25,7 +30,7 @@ export function normalizePageSize(
  * @param {number} [currentSize]
  * @param {readonly number[]} [options]
  */
-export function pageSizeSelectHtml(
+function pageSizeSelectHtml(
     selectId,
     currentSize = DEFAULT_PAGE_SIZE,
     options = PAGE_SIZE_OPTIONS,
@@ -48,9 +53,39 @@ export function pageSizeSelectHtml(
 }
 
 /**
+ * 完整分页栏：左侧信息 + 每页条数，右侧页码。
+ * @param {{
+ *   wrapperClass?: string,
+ *   wrapperId?: string,
+ *   infoId?: string,
+ *   infoHtml?: string,
+ *   selectId: string,
+ *   buttonsId: string,
+ *   currentSize?: number,
+ *   options?: readonly number[],
+ * }} spec
+ */
+export function paginationBarHtml(spec) {
+    const wrapperClass = spec.wrapperClass || HUD_BAR_CLASS;
+    const idAttr = spec.wrapperId ? ` id="${spec.wrapperId}"` : '';
+    const infoHtml = spec.infoHtml
+        ?? `<span id="${spec.infoId}" class="text-[10px] font-mono text-[#555555]"></span>`;
+    const currentSize = spec.currentSize ?? DEFAULT_PAGE_SIZE;
+    const options = spec.options ?? PAGE_SIZE_OPTIONS;
+    return `
+        <div class="${wrapperClass}"${idAttr}>
+            <div class="flex items-center gap-3 min-w-0">
+                ${infoHtml}
+                ${pageSizeSelectHtml(spec.selectId, currentSize, options)}
+            </div>
+            <div class="flex items-center gap-0.5" id="${spec.buttonsId}"></div>
+        </div>`;
+}
+
+/**
  * 绑定每页条数变更；变更后回调（通常 reload 第 1 页）。
  */
-export function bindPageSizeSelect(
+function bindPageSizeSelect(
     selectId,
     {
         getSize,
@@ -72,40 +107,85 @@ export function bindPageSizeSelect(
 }
 
 /**
- * 简易页码按钮（预览页等复用）。
+ * 页码按钮（左右箭头 + 最多 5 个数字 + 省略）。
  * @param {number} currentPage
  * @param {number} totalPages
  * @param {string} [btnClass]
  */
-export function renderPageButtons(currentPage, totalPages, btnClass = 'page-btn') {
-    if (totalPages <= 1) return '';
+function renderPageButtons(currentPage, totalPages, btnClass = PAGINATION_BTN_CLASS) {
+    const pages = Number(totalPages) || 0;
+    const page = Number(currentPage) || 1;
+    if (pages <= 1) return '';
+    const idle =
+        'flex items-center justify-center w-6 h-6 text-[10px] text-[#585858] hover:text-[#c0c0c0] hover:bg-[#232323]';
+    const disabledCls =
+        'flex items-center justify-center w-6 h-6 text-[10px] text-[#333333] cursor-not-allowed';
+    const activeCls =
+        'flex items-center justify-center w-6 h-6 text-[10px] bg-[#FF1E27] text-white';
     let buttons = `
-        <button type="button" class="${btnClass} flex items-center justify-center w-6 h-6 text-[10px] ${currentPage === 1 ? 'text-[#333333] cursor-not-allowed' : 'text-[#585858] hover:text-[#c0c0c0] hover:bg-[#232323]'} transition-all"
-                data-page="${currentPage - 1}" ${currentPage === 1 ? 'disabled' : ''}>
+        <button type="button" class="${btnClass} ${page === 1 ? disabledCls : idle} transition-all"
+                data-page="${page - 1}" ${page === 1 ? 'disabled' : ''}>
             <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"></path></svg>
         </button>`;
     const maxVisible = 5;
-    let startPage = Math.max(1, currentPage - Math.floor(maxVisible / 2));
-    let endPage = Math.min(totalPages, startPage + maxVisible - 1);
+    let startPage = Math.max(1, page - Math.floor(maxVisible / 2));
+    let endPage = Math.min(pages, startPage + maxVisible - 1);
     if (endPage - startPage < maxVisible - 1) {
         startPage = Math.max(1, endPage - maxVisible + 1);
     }
     if (startPage > 1) {
-        buttons += `<button type="button" class="${btnClass} flex items-center justify-center w-6 h-6 text-[10px] text-[#585858] hover:text-[#c0c0c0] hover:bg-[#232323]" data-page="1">1</button>`;
+        buttons += `<button type="button" class="${btnClass} ${idle}" data-page="1">1</button>`;
         if (startPage > 2) buttons += `<span class="px-0.5 text-[#333333] text-[9px]">…</span>`;
     }
     for (let i = startPage; i <= endPage; i++) {
-        const isActive = i === currentPage;
-        buttons += `<button type="button" class="${btnClass} flex items-center justify-center w-6 h-6 text-[10px] ${isActive ? 'bg-[#d32f2f] text-white' : 'text-[#585858] hover:text-[#c0c0c0] hover:bg-[#232323]'}" data-page="${i}">${i}</button>`;
+        const isActive = i === page;
+        buttons += `<button type="button" class="${btnClass} ${isActive ? activeCls : idle}" data-page="${i}">${i}</button>`;
     }
-    if (endPage < totalPages) {
-        if (endPage < totalPages - 1) buttons += `<span class="px-0.5 text-[#333333] text-[9px]">…</span>`;
-        buttons += `<button type="button" class="${btnClass} flex items-center justify-center w-6 h-6 text-[10px] text-[#585858] hover:text-[#c0c0c0] hover:bg-[#232323]" data-page="${totalPages}">${totalPages}</button>`;
+    if (endPage < pages) {
+        if (endPage < pages - 1) buttons += `<span class="px-0.5 text-[#333333] text-[9px]">…</span>`;
+        buttons += `<button type="button" class="${btnClass} ${idle}" data-page="${pages}">${pages}</button>`;
     }
     buttons += `
-        <button type="button" class="${btnClass} flex items-center justify-center w-6 h-6 text-[10px] ${currentPage === totalPages ? 'text-[#333333] cursor-not-allowed' : 'text-[#585858] hover:text-[#c0c0c0] hover:bg-[#232323]'}"
-                data-page="${currentPage + 1}" ${currentPage === totalPages ? 'disabled' : ''}>
+        <button type="button" class="${btnClass} ${page === pages ? disabledCls : idle} transition-all"
+                data-page="${page + 1}" ${page === pages ? 'disabled' : ''}>
             <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"></path></svg>
         </button>`;
     return buttons;
+}
+
+export function paintPagination(buttonsId, currentPage, totalPages) {
+    const el = document.getElementById(buttonsId);
+    if (!el) return;
+    el.innerHTML = renderPageButtons(currentPage, totalPages);
+}
+
+function bindPaginationButtons(buttonsId, onPage) {
+    const el = document.getElementById(buttonsId);
+    if (!el) return;
+    el.addEventListener('click', (event) => {
+        const btn = event.target.closest(`.${PAGINATION_BTN_CLASS}`);
+        if (!btn || btn.disabled) return;
+        const page = Number.parseInt(btn.dataset.page, 10);
+        if (!Number.isFinite(page) || page < 1) return;
+        onPage(page);
+    });
+}
+
+export function bindPagination({
+    selectId,
+    buttonsId,
+    getSize,
+    setSize,
+    onPage,
+    options = PAGE_SIZE_OPTIONS,
+    defaultSize = DEFAULT_PAGE_SIZE,
+}) {
+    bindPageSizeSelect(selectId, {
+        getSize,
+        setSize,
+        onChange: () => onPage(1),
+        options,
+        defaultSize,
+    });
+    bindPaginationButtons(buttonsId, onPage);
 }

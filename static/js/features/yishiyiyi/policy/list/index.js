@@ -4,13 +4,13 @@
  * 用于测试部门核对数据，主子表联合查询导出 Excel
  */
 
-import { policyDownloadTemplate, renderPolicyRows } from './template.js?v=34';
+import { policyDownloadTemplate, renderPolicyRows } from './template.js?v=35';
 import {
     DEFAULT_PREVIEW_PAGE_SIZE,
     PREVIEW_PAGE_SIZE_OPTIONS,
-    bindPageSizeSelect,
-    renderPageButtons,
-} from '../../../../page-size.js?v=2';
+    bindPagination,
+    paintPagination,
+} from '../../../../page-size.js?v=3';
 import { setSearchBusy } from '../../../../search-busy.js?v=1';
 
 // 状态管理
@@ -34,12 +34,14 @@ const GRADE_CATEGORY_API = '/api/masterdata/steel-grade-category';
  */
 function init() {
     bindEvents();
-    bindPageSizeSelect('policyPageSize', {
+    bindPagination({
+        selectId: 'policyPageSize',
+        buttonsId: 'policyPagination',
         getSize: () => policyDownloadState.pageSize,
         setSize: (size) => {
             policyDownloadState.pageSize = size;
         },
-        onChange: () => previewData(1),
+        onPage: (page) => previewData(page),
         options: PREVIEW_PAGE_SIZE_OPTIONS,
         defaultSize: DEFAULT_PREVIEW_PAGE_SIZE,
     });
@@ -276,12 +278,6 @@ function bindEvents() {
         });
     }
 
-    document.getElementById('policyPagination')?.addEventListener('click', (event) => {
-        const btn = event.target.closest('.policy-page-btn');
-        if (!btn || btn.disabled) return;
-        const page = Number(btn.getAttribute('data-page'));
-        if (Number.isFinite(page) && page >= 1) previewData(page);
-    });
 }
 
 function queryAfterFilterSelect() {
@@ -401,14 +397,7 @@ async function previewData(page = 1) {
         if (tableBody) {
             tableBody.innerHTML = renderPolicyRows(records);
         }
-        const pagination = document.getElementById('policyPagination');
-        if (pagination) {
-            pagination.innerHTML = renderPageButtons(
-                policyDownloadState.page,
-                policyDownloadState.totalPages,
-                'policy-page-btn',
-            );
-        }
+        paintPagination('policyPagination', policyDownloadState.page, policyDownloadState.totalPages);
     } catch (error) {
         console.error('预览数据失败:', error);
         if (tableBody) {

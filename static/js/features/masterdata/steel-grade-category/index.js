@@ -5,13 +5,13 @@
 import {
     steelGradeCategoryTemplate,
     renderTableRows,
-    renderPagination,
     syncTabStyles,
-} from './template.js?v=5';
+} from './template.js?v=6';
 import {
     DEFAULT_PAGE_SIZE,
-    bindPageSizeSelect,
-} from '../../../page-size.js?v=2';
+    bindPagination,
+    paintPagination,
+} from '../../../page-size.js?v=3';
 
 const API_BASE = '/api/masterdata/steel-grade-category';
 const DRAWER_ANIMATION_MS = 300;
@@ -119,17 +119,16 @@ function renderList() {
     const body = document.getElementById('sgcTableBody');
     const empty = document.getElementById('sgcEmptyState');
     const totalEl = document.getElementById('sgcTotalCount');
-    const pager = document.getElementById('sgcPaginationBtns');
     if (body) body.innerHTML = renderTableRows(pageState.records);
     empty?.classList.toggle('hidden', pageState.records.length > 0 || pageState.isLoading);
     if (totalEl) totalEl.textContent = `共 ${pageState.total} 条`;
-    if (pager) pager.innerHTML = renderPagination(pageState.page, pageState.totalPages);
+    paintPagination('sgcPaginationBtns', pageState.page, pageState.totalPages);
     syncTabStyles(pageState.tab);
 }
 
 function openCreateDrawer() {
     if (!canOp('op:steel-grade-category:create')) {
-        showToast('无新增权限', 'warning');
+        showToast('无新增权限');
         return;
     }
     document.getElementById('sgcEditTitle').textContent = '新增牌号';
@@ -297,13 +296,6 @@ function bindEvents() {
         }
     });
 
-    document.getElementById('sgcPaginationBtns')?.addEventListener('click', (event) => {
-        const btn = event.target.closest('.page-btn');
-        if (!btn || btn.disabled) return;
-        const nextPage = Number(btn.getAttribute('data-page'));
-        if (!nextPage || nextPage === pageState.page) return;
-        loadData(nextPage);
-    });
 
     document.getElementById('sgcCloseEdit')?.addEventListener('click', () => {
         closeDrawer('sgcEditDrawer', 'sgcEditBackdrop');
@@ -335,12 +327,14 @@ function bindEvents() {
 function init() {
     applyPermissionUi();
     bindEvents();
-    bindPageSizeSelect('sgcPageSize', {
+    bindPagination({
+        selectId: 'sgcPageSize',
+        buttonsId: 'sgcPaginationBtns',
         getSize: () => pageState.pageSize,
         setSize: (size) => {
             pageState.pageSize = size;
         },
-        onChange: () => loadData(1),
+        onPage: (page) => loadData(page),
     });
     syncTabStyles(pageState.tab);
     loadData(1);

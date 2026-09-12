@@ -2,11 +2,12 @@
  * 操作日志 — 对接 /api/settings/logs，筛选项来自权限目录
  */
 
-import { logsTemplate, renderTableRows, renderPagination } from './template.js?v=9';
+import { logsTemplate, renderTableRows } from './template.js?v=11';
 import {
     DEFAULT_PAGE_SIZE,
-    bindPageSizeSelect,
-} from '../../../page-size.js?v=2';
+    bindPagination,
+    paintPagination,
+} from '../../../page-size.js?v=3';
 import { setSearchBusy } from '../../../search-busy.js?v=1';
 
 const logsState = {
@@ -31,12 +32,14 @@ const API_BASE = '/api/settings/logs';
 
 function init() {
     bindEvents();
-    bindPageSizeSelect('logsPageSize', {
+    bindPagination({
+        selectId: 'logsPageSize',
+        buttonsId: 'paginationBtns',
         getSize: () => logsState.pageSize,
         setSize: (size) => {
             logsState.pageSize = size;
         },
-        onChange: () => loadData(1),
+        onPage: (page) => loadData(page),
     });
     const btnExport = document.getElementById('btnExportLogs');
     if (btnExport && typeof can === 'function' && !can('op:settings-logs:export')) {
@@ -157,7 +160,6 @@ async function loadData(page = 1) {
     const emptyState = document.getElementById('emptyState');
     const loadingState = document.getElementById('loadingState');
     const totalCountPagination = document.getElementById('totalCountPagination');
-    const paginationBtns = document.getElementById('paginationBtns');
 
     if (tableBody) tableBody.innerHTML = '';
     if (emptyState) emptyState.classList.add('hidden');
@@ -189,10 +191,7 @@ async function loadData(page = 1) {
         if (totalCountPagination) {
             totalCountPagination.textContent = `共 ${logsState.total} 条`;
         }
-        if (paginationBtns) {
-            paginationBtns.innerHTML = renderPagination(logsState.page, logsState.totalPages);
-            bindPaginationEvents();
-        }
+        paintPagination('paginationBtns', logsState.page, logsState.totalPages);
     } catch (error) {
         console.error('加载操作日志失败:', error);
         if (tableBody) {
@@ -214,16 +213,6 @@ async function loadData(page = 1) {
     }
 }
 
-function bindPaginationEvents() {
-    document.querySelectorAll('#paginationBtns .page-btn').forEach((btn) => {
-        btn.addEventListener('click', () => {
-            if (btn.disabled) return;
-            const page = Number(btn.getAttribute('data-page'));
-            if (!Number.isFinite(page) || page < 1) return;
-            loadData(page);
-        });
-    });
-}
 
 function bindEvents() {
     document.getElementById('btnFilter')?.addEventListener('click', () => {
