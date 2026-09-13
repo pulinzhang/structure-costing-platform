@@ -235,7 +235,7 @@ POST   /api/stamping/die/batch-delete      body 必填 location + vehicle_model�
 
 **禁止** `DELETE /api/stamping/die/parts/{id}`。
 
-Parser：`app/parsers/stamping_die/`（或 `parsers/stamping/die/`），可复用读格与合并单元格，**不要抽图**，不要塞进 `StampingExcelParser` 的列映射。
+Parser：`app/parsers/stamping/die/`，可复用读格与合并单元格，**不要抽图**，不要塞进 `StampingExcelParser` 的列映射。
 
 金额尚未出现；`material_utilization` JSON 用固定小数位字符串（0～1），不要 `float`。
 

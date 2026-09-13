@@ -214,6 +214,7 @@ suppliers.full_name
 ### 5.4 上传页模板（已落地）
 
 列：缩写、全称、ERP 代码、别名（可多条）。不要「启用」列。整单事务；已有主键跳过不覆盖。  
+**同步上传**（HTTP 对齐 [vehicle-model-design.md](vehicle-model-design.md) §5.4；上传页无轮询见该文 §4.4）：请求 Session 内解析落库，返回 `ApiResponse[SupplierUploadResultVO]`（条数 VO），**无** `task_id`。建档 Excel 是名册量级，不是工艺大表。入口在宪法 §五同步 Excel 封闭名单；禁止改成 `start_upload`。  
 `GET …/template` · `POST …/upload` · `GET …/export` · 一览 `page` + `size`。  
 `PATCH /api/masterdata/suppliers/{full_name}`：可改 `full_name`（路径是旧全称，须 URL 编码）、`abbreviation`、`erp_code`、`is_enabled`。改全称仍被引用 → 400「仍被引用，不能修改」。  
 `DELETE /api/masterdata/suppliers/{full_name}`：删本体（别名 CASCADE）。仍被引用 → 400「仍被引用，不能删除」。
@@ -417,4 +418,5 @@ ForeignKey("suppliers.full_name", ondelete="RESTRICT", onupdate="RESTRICT")
 | 2026-09-08 | **S14**：核算 calculate / ready 不过本文 |
 | 2026-09-08 | 第一期落地后整理：**第二期 = 采购对象 S12**；**S15 年度价是报价档案**：导入不门禁，列表手工编辑只改下拉、可空 |
 | 2026-09-08 | **S9 / S16**：修改与删除同时支持。下一跳仅工艺确认表 + 采购对象表，`RESTRICT` / `RESTRICT`。采购对象 `supplier_name` **可空（NULL）**，空不挡删/改主键 |
-| 2026-09-08 | 收口审查：加 FK 先覆盖工艺再 DDL；改全称收旧名为别名；S5 不含年度价 Excel；空串收 `NULL`；§4 标题与第二期补写对齐 |
+| 2026-09-13 | §5.4：建档 Excel **同步**上传（权威口径）；不在 §9 复述 |
+| 2026-09-13 | §5.4：与项目文档分工：HTTP 对 §5.4，UI 无轮询对 §4.4 |

@@ -6,7 +6,7 @@ from decimal import Decimal
 
 from app.common.money import Q2, quantize_money
 from app.models.stamping.die import StampingDiePart
-from app.parsers.stamping_die.parser import ParsedDiePart
+from app.parsers.stamping.die.parser import ParsedDiePart
 from app.services.stamping.die.alloc_ratio_resolver import resolve_alloc_ratio
 
 _SCRAP_BYPRODUCT_ALLOC_RATIO = Decimal("0.00")

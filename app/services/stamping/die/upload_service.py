@@ -16,7 +16,7 @@ from app.common.timezone import now
 from app.common.vehicle_model import normalize_vehicle_model
 from app.config import settings
 from app.exceptions.base import BusinessException
-from app.parsers.stamping_die.parser import layout_has_die_mass, parse_die_layout_excel
+from app.parsers.stamping.die.parser import layout_has_die_mass, parse_die_layout_excel
 from app.repositories.stamping.stamping_die_repository import (
     StampingDiePartRepository,
     StampingDieProcessRepository,

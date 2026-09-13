@@ -5,7 +5,7 @@ from decimal import Decimal
 import pytest
 
 from app.exceptions.base import BusinessException
-from app.parsers.stamping_die.parser import ParsedDiePart, ParsedDieProcess
+from app.parsers.stamping.die.parser import ParsedDiePart, ParsedDieProcess
 from app.services.stamping.die.die_number_assigner import assign_die_numbers
 
 

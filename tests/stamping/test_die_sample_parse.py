@@ -5,7 +5,7 @@ from pathlib import Path
 
 import pytest
 
-from app.parsers.stamping_die.parser import (
+from app.parsers.stamping.die.parser import (
     ParsedDiePart,
     ParsedDieProcess,
     _vehicle_from_text,

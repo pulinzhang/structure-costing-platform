@@ -104,6 +104,7 @@ app/parsers/stamping/     # 仅上传类切片有 Parser
 - 父改主键或删除只动自己；仍被引用 → `IntegrityError` → `BusinessException("仍被引用，不能修改")` / `BusinessException("仍被引用，不能删除")`
 - 有外键的独立主数据必须**同时提供修改和删除**：非主键修改（启用/禁用）外键不管；改主键与删除都走 `RESTRICT`
 - `CASCADE` 只给没有独立身份的附属行（`ondelete` 与 `onupdate` 都 `CASCADE`）；独立主数据之间改主键和删除都用 `RESTRICT`
+- **例外：** 钢材联动价结果行上「当初用了哪条基价/政策」的可选 ID 允许 `SET NULL`（档案可重导，账留下）。这是外键策略，与有没有 `task_id` 无关。列名单只在 [架构宪法](../.cursor/rules/architecture-constitution.mdc) §3.3，禁止扩到身份主键
 
 细则见 [架构宪法](../.cursor/rules/architecture-constitution.mdc)「引用保护」。
 
@@ -143,7 +144,7 @@ stamping-costing-platform/
 
 - 统一包装：`ApiResponse[T]`（`code` / `success` / `message` / `data`）
 - 分页：列表查询参数必须是 `page` + `size`（禁止 HTTP `skip` / `limit`）；`data` 内为 `PageResult`（`items` / `total` / `page` / `page_size` / …）；`list_(items=..., page=..., page_size=...)`
-- `start_*` 入队：HTTP 200 + `ApiResponse.ok(data=accepted)`，不要套 POST 201
+- 长任务 `start_*` 入队：HTTP 200 + `ApiResponse.ok(data=accepted)`，不要套 POST 201。同步 Excel 的 `POST …/upload` 不入队，直接返回结果 VO（入口只在宪法 §五）
 - 下载/导出：`StreamingResponse` / `FileResponse`，不走 `ApiResponse`
 - 业务路由：`Depends(require_perm(Perm.…))`；写操作把 `current_user` 显式传给 Service
 - Service 返回 VO；Repository 返回 Model（聚合签名用具名 `TypedDict`，函数体 `return {…}` 合法；禁止签名写成匿名 `dict`）
@@ -185,7 +186,9 @@ def list_parts(
 
 ---
 
-## 8. 数据流示例：上传工艺 Excel
+## 8. 数据流示例：上传工艺 Excel（长任务）
+
+下图只描述**工艺这类长任务**：立刻返回 `task_id`，后台 runner 开新 Session。名册/窄表类是**同步 Excel**（请求内解析、无 `task_id`），不要拿本图当所有 `upload` 的模板。三种形态见 §9；同步入口只在宪法 §五。
 
 ```
 浏览器 POST /api/stamping/…upload
@@ -203,23 +206,31 @@ ApiResponse[AsyncTaskAcceptedVO]
 
 核价计算则是下游 Service **组合**上游零件、政策、基价、废料价等，再写入 costing 表；长计算同样走 `start_calc` + runner，不要在 Router 里开 Session。
 
-硬约束见 [架构宪法](../.cursor/rules/architecture-constitution.mdc)「异步后台任务」。
+硬约束见 [架构宪法](../.cursor/rules/architecture-constitution.mdc) §五。
 
 ---
 
-## 9. 异步后台任务
+## 9. 长任务、同步 Excel、旁路 Session
 
-上传 / 计算立即返回 `task_id`，后台线程跑业务。请求级 `db` 不能带进线程。
+三种形态（硬名单与禁止事项只在 [架构宪法](../.cursor/rules/architecture-constitution.mdc) §五，本文不抄入口表）：
+
+| 形态 | 请求怎么结束 | 谁开 Session |
+|------|----------------|--------------|
+| **长任务** | 立刻 200 + `task_id`，前端轮询 | `async_task` runner（禁止切片自开） |
+| **同步 Excel** | 本次请求内解析完，返回条数等结果 VO | 请求级 `db`（仅宪法 §五那张入口表） |
+| **旁路 Session** | 与主请求无关，无进度 UI | 调用方自开（仅宪法 §五那张场景表） |
+
+请求级 `db` 不能带进线程。Router **两种上传都只调 Service**：长任务 `start_*`；同步 Excel 本切片 `upload`。禁止在 Router 里解析文件或写 worker 壳。
 
 | 谁 | 做什么 |
 |----|--------|
-| **Router** | 校验、调 `service.start_*`、返回 `AsyncTaskAcceptedVO`、进度查询 |
-| **切片 Service** | `create_task` + `submit`；真正的 `process_upload` / `calculate` / 引擎 `execute`；成功文案；任务终态；崩溃时释放计算锁或回写引擎 Run |
-| **`async_task` runner** | 独立业务 Session、`on_progress` 写辅助库、统一 catch、关 Session |
+| **Router** | 校验；调 `start_*` 或同步 `upload`；返回 `AsyncTaskAcceptedVO` 或结果 VO；查进度 |
+| **切片 Service** | 长任务：`create_task` + `submit_session_worker`；真正的 `process_upload` / `calculate` / 引擎 `execute`；成功文案；任务终态；崩溃时释放计算锁或回写引擎 Run |
+| **`async_task` runner** | 仅服务长任务：任务 Session、`on_progress` 写辅助库、统一 catch、关 Session |
 
-公共 runner 放 `app/services/async_task/`（已有切片归属），**不要**进 `common/`，也**不要**为每个切片复制一份 60 行 worker。
+公共 runner 放 `app/services/async_task/`（已有切片归属），**不要**进 `common/`，也**不要**为每个长任务复制一份 60 行 worker。
 
-**不要做：** 在 Router 写 `_process_*_in_background`；把同一套壳复制进多个 Service（**含引擎 worker**）；让 runner 知道「零件数 / 缺单价 / `run_id`」；为此换 Celery；引擎 worker 内再 `submit` 子任务死等。引擎 `start_run` 的 Session / 进度必须走公共 runner。LLM 报告 worker 同样遵守本节，禁止另写一套壳。
+**不要做：** 在 Router 写 `_process_*_in_background`；长任务（上传 / 核算 / 引擎 / LLM 报告）自开 `get_session_factory()`；让 runner 知道「零件数 / 缺单价 / `run_id`」；为此换 Celery；引擎 worker 内再 `submit` 子任务死等。引擎 `start_run`、LLM 报告的 Session / 进度必须走公共 runner。
 
 ---
 
@@ -228,7 +239,7 @@ ApiResponse[AsyncTaskAcceptedVO]
 1. **Schema**：DTO / VO  
 2. **Model**（若新表）+ 迁移/建表策略按项目惯例  
 3. **Repository**  
-4. **Service**（含权限相关业务判断、事务、业务异常；异步上传/计算/引擎用 `start_*` + `async_task` runner，见 §9）  
+4. **Service**（含权限相关业务判断、事务、业务异常；新上传先对照宪法 §五：默认长任务 `start_*` + runner；只有名单内入口才同步 `upload`）  
 5. **Router**（JSON：`response_model` + `require_perm` + `ApiResponse`；下载例外；不要翻译业务错误）  
 6. **前端**：`pageMeta` + `app.js` 注册 + 侧栏 `data-page` + 权限码  
 7. 递增前端脚本 `?v=`
@@ -245,7 +256,7 @@ ApiResponse[AsyncTaskAcceptedVO]
 - Repository：怎么查/写库（无角色 if）
 
 教学硬约束：**Repository 禁止 `db.commit` / `db.rollback`**，只 `flush`；写成功后由 Service `commit`，失败 `rollback`。口诀：Repo 只改会话，Service 才落库。  
-特例（仍由 Service 提交）：异步任务进度由 `async_task` runner 经辅助库 AUTOCOMMIT 写入；计算锁 DDL 用独立连接，`conn.commit()` 在 Service。
+特例：异步进度由 runner 经辅助库 AUTOCOMMIT 写入；计算锁 DDL 用独立连接；操作日志等旁路 Session 见架构宪法 §五（不进请求/任务业务事务）。
 
 ### 简单查询也要 Service 吗？
 
@@ -257,7 +268,7 @@ ApiResponse[AsyncTaskAcceptedVO]
 
 ### `start_*` 该用 201 还是 200？
 
-200。立刻返回 `task_id` 用 `ApiResponse.ok(data=accepted)`。`created()` / 201 只给 CRUD 创建或同步导入已有结果 VO。
+200。立刻返回 `task_id` 用 `ApiResponse.ok(data=accepted)`。`created()` / 201 只给 CRUD 创建。同步 Excel 的 `upload` 也是 200 + 结果 VO，不是 201，也不是 `task_id`。
 
 ### 下载接口要套 ApiResponse 吗？
 
@@ -273,11 +284,14 @@ ApiResponse[AsyncTaskAcceptedVO]
 
 ### 删除或改主键时该不该先查有没有人用？
 
-不该在父切片里查。直接下游在自己的 Model 上声明 `ON UPDATE RESTRICT` + `ON DELETE RESTRICT`，由数据库拒绝；父只把 `IntegrityError` 译成「仍被引用，不能修改」或「仍被引用，不能删除」。修改与删除必须同时提供。细则见 [架构宪法](../.cursor/rules/architecture-constitution.mdc)「引用保护」。
+不该在父切片里查。直接下游在自己的 Model 上声明 `ON UPDATE RESTRICT` + `ON DELETE RESTRICT`，由数据库拒绝；父只把 `IntegrityError` 译成「仍被引用，不能修改」或「仍被引用，不能删除」。修改与删除必须同时提供。核价结果表上的可选溯源 ID 见宪法 §3.3 `SET NULL` 名单（基价/政策可重导；与 Session / `task_id` 无关）。细则见 [架构宪法](../.cursor/rules/architecture-constitution.mdc)「引用保护」。
 
-### 后台解析/计算为什么不能写在 Router？
+### 后台解析/计算为什么不能写在 Router？为什么有的 upload 又没有 `task_id`？
 
-请求 `db` 在响应后关闭，线程必须新开 Session；进度写辅助库、失败标任务、关 Session 是横切壳，应只有一份 runner。Router 只调 `start_*`。成功文案和释放计算锁仍在切片 Service。引擎虽然已在 Service 里 `submit`，同样不得自建 Session/进度壳。
+两件事不要混：
+
+- **长任务**（工艺、政策、核算、引擎、LLM）：请求 `db` 在响应后关闭，线程必须新开 Session；进度、失败标任务、关 Session 是横切壳，应只有一份 runner。Router 只调 `start_*`。成功文案和释放计算锁仍在切片 Service。引擎 / LLM 即使在 Service 里 `submit`，也不得自建 Session/进度壳。
+- **同步 Excel**（仅宪法 §五那张入口表）：没有后台线程，Router 调本切片 `upload`，仍禁止在 Router 里解析或写库。不是漏做异步。不要把工艺/政策/核算/引擎/LLM 改成这种。
 
 ---
 
@@ -289,7 +303,7 @@ ApiResponse[AsyncTaskAcceptedVO]
 
 | 文档 | 位置 | 用途 |
 |------|------|------|
-| **架构宪法** | [`.cursor/rules/architecture-constitution.mdc`](../.cursor/rules/architecture-constitution.mdc) | 分层、切片依赖、外键、事务、异常通道、worker 归属 |
+| **架构宪法** | [`.cursor/rules/architecture-constitution.mdc`](../.cursor/rules/architecture-constitution.mdc) | 分层、切片依赖、外键、事务、异常通道、长任务 / 同步 Excel / 旁路 Session |
 | **指挥家宪法** | [`.cursor/rules/orchestrator-constitution.mdc`](../.cursor/rules/orchestrator-constitution.mdc) | Orchestrator 主方法只编排 |
 | **前端规范** | [`.cursor/rules/front-end.mdc`](../.cursor/rules/front-end.mdc) | SPA / Brabus / HUD；改 `static/` 时按 glob 加载 |
 | **浅色主题** | [light-theme-design.md](light-theme-design.md) | 浅色主题改造（设计） |
