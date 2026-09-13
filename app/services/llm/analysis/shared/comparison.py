@@ -10,7 +10,7 @@ from app.repositories.llm.cost_analysis_repository import L0MonthlyTotalRow
 from app.schemas.llm.analysis_query import ComparisonBasis
 from app.services.llm._money import money_str, month_key, rate_str
 from app.services.llm.analysis.shared.formulas import compute_change_rate, compute_spread
-from app.services.llm.query.comparison_basis import resolve_comparability
+from app.services.llm.comparison_basis import resolve_comparability
 
 
 def build_location_comparison(

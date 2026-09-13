@@ -5,7 +5,7 @@ from __future__ import annotations
 from typing import Any
 
 
-def _compose_result(parts_result: dict[str, Any], *, default_kind: str) -> dict[str, Any]:
+def compose_result(parts_result: dict[str, Any], *, default_kind: str) -> dict[str, Any]:
     if len(parts_result) == 1:
         return next(iter(parts_result.values()))
     if parts_result:

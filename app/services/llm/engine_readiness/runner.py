@@ -13,8 +13,8 @@ from app.services.costing.engine.costing_engine_service import (
     SOFT_UPLOAD_GATE_CODES,
     CostingEngineService,
 )
-from app.services.llm.analysis.runner import AnalysisRunResult
 from app.services.llm.analysis.shared.constants import ANALYSIS_VERSION
+from app.services.llm.analysis.shared.result import AnalysisRunResult
 
 GATE_LABEL_ZH: dict[str, str] = {
     "stamping_process": "冲压工艺",

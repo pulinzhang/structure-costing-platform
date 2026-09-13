@@ -1,5 +1,1 @@
-"""llm.query 包。"""
-
-from app.services.llm.query.query_parser import QueryParser
-
-__all__ = ["QueryParser"]
+"""问句解析（规则定 analyses / subject；可选 LLM 只抽条件）。"""

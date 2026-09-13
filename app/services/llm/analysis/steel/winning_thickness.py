@@ -1,15 +1,78 @@
-"""中标厚度价 summary / drivers。"""
+"""中标厚度价：调上游导出 Service 取行，再算 summary / drivers。"""
 
 from __future__ import annotations
 
 from collections import defaultdict
+from dataclasses import dataclass
 from decimal import Decimal
 from typing import Any
 
-from app.repositories.llm.winning_thickness_analysis_repository import (
-    WinningThicknessAnalysisRow,
-)
+from sqlalchemy.orm import Session
+
 from app.services.llm._money import money_str, month_key
+from app.services.yishiyiyi.winning_thickness import WinningThicknessExportService
+
+_MAX_ROWS = 8000
+
+
+@dataclass(frozen=True, slots=True)
+class WinningThicknessAnalysisRow:
+    year: int
+    month: int
+    location: str
+    steel_mill: str
+    category_name: str
+    grade: str
+    thickness_range: str
+    base_price: Decimal
+    thickness_adjustment: Decimal
+    processing_fee: Decimal
+    final_price: Decimal
+
+
+def load_winning_thickness_rows(
+    export_service: WinningThicknessExportService,
+    db: Session,
+    *,
+    year: int,
+    month: int,
+    location: str,
+    steel_mill: str | None = None,
+    category_name: str | None = None,
+    grade: str | None = None,
+) -> list[WinningThicknessAnalysisRow]:
+    """下游 Analysis 调上游 Service；不经本切片 Repository。"""
+    location_text = (location or "").strip()
+    if not location_text:
+        return []
+
+    vos = export_service.build_rows(
+        db,
+        year=year,
+        month=month,
+        location=location_text,
+        steel_mill=steel_mill,
+        category_name=category_name,
+        grade=grade,
+    )
+    rows: list[WinningThicknessAnalysisRow] = []
+    for row in vos[:_MAX_ROWS]:
+        rows.append(
+            WinningThicknessAnalysisRow(
+                year=int(row.year),
+                month=int(row.month),
+                location=str(row.location),
+                steel_mill=str(row.steel_mill),
+                category_name=str(row.category_name),
+                grade=str(row.grade),
+                thickness_range=str(row.thickness_range),
+                base_price=Decimal(str(row.base_price)),
+                thickness_adjustment=Decimal(str(row.thickness_adjustment)),
+                processing_fee=Decimal(str(row.processing_fee)),
+                final_price=Decimal(str(row.final_price)),
+            )
+        )
+    return rows
 
 
 def build_winning_thickness_summary(rows: list[WinningThicknessAnalysisRow]) -> dict[str, Any]:

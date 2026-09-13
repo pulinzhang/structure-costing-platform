@@ -299,11 +299,6 @@ ENTITY_LIST_PAGES: tuple[tuple[str, str], ...] = (
 )
 
 
-def expand_base_price_location(location: str) -> str:
-    """列表筛选用规范名；历史「×基地」由基地主数据 expand_for_query 命中。"""
-    return (location or "").strip()
-
-
 def build_list_params(query: AnalysisQuery) -> dict[str, str]:
     """生成与业务列表页 readHashFilters 一致的 query 参数。"""
     year = str(query.time_range.end_year)
@@ -321,7 +316,7 @@ def build_list_params(query: AnalysisQuery) -> dict[str, str]:
 
     if query.subject == "steel_base_price":
         params = {"year": year, "month": month}
-        location = expand_base_price_location(query.location() or "")
+        location = (query.location() or "").strip()
         if location:
             params["location"] = location
         steel_mill = query.filter_get("steel_mill")
@@ -379,7 +374,7 @@ def build_list_params(query: AnalysisQuery) -> dict[str, str]:
 
     if query.subject == "winning_thickness":
         params = {"year": year, "month": month}
-        location = expand_base_price_location(query.location() or "")
+        location = (query.location() or "").strip()
         if location:
             params["location"] = location
         steel_mill = query.filter_get("steel_mill")

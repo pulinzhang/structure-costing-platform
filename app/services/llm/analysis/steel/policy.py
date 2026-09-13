@@ -9,7 +9,7 @@ from typing import Any
 from app.repositories.llm.policy_analysis_repository import PolicyLadderRow
 from app.schemas.llm.analysis_query import ComparisonBasis
 from app.services.llm._money import month_key
-from app.services.llm.analysis.shared.cost_trend import _trend_from_series
+from app.services.llm.analysis.shared.cost_trend import trend_from_series
 
 
 def build_policy_summary(rows: list[PolicyLadderRow]) -> dict[str, Any]:
@@ -100,7 +100,7 @@ def build_policy_trend(
             by_month[month_key(row.year, row.month)] += 1
 
     series = [(month, Decimal(count)) for month, count in sorted(by_month.items())]
-    trend = _trend_from_series(series, value_label="non_zero_ladder_count", basis=basis)
+    trend = trend_from_series(series, value_label="non_zero_ladder_count", basis=basis)
     trend["subject"] = "steel_price_policy"
     return trend
 

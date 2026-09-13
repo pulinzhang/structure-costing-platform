@@ -1,4 +1,4 @@
-"""可比口径默认值。"""
+"""可比口径映射（切片叶模块：query 与 analysis 都只向下依赖这里）。"""
 
 from __future__ import annotations
 

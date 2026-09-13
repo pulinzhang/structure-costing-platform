@@ -15,7 +15,7 @@ from app.services.llm.analysis.shared.formulas import (
     compute_mom_rate,
     detect_anomaly_months,
 )
-from app.services.llm.query.comparison_basis import resolve_comparability
+from app.services.llm.comparison_basis import resolve_comparability
 
 
 def build_cost_trend(
@@ -29,7 +29,7 @@ def build_cost_trend(
         key = month_key(row.year, row.month)
         by_month[key] = by_month.get(key, Decimal("0")) + row.grand_total_sum
 
-    return _trend_from_series(
+    return trend_from_series(
         sorted(by_month.items(), key=lambda item: item[0]),
         value_label="grand_total_sum",
         basis=basis,
@@ -47,7 +47,7 @@ def build_steel_trend(
         (month_key(row.year, row.month), row.avg_final_price)
         for row in sorted(rows, key=lambda item: (item.year, item.month))
     ]
-    return _trend_from_series(
+    return trend_from_series(
         series,
         value_label="avg_final_price",
         basis=basis,
@@ -65,7 +65,7 @@ def build_stamping_trend(
     for row in rows:
         key = month_key(row.year, row.month)
         by_month[key] = by_month.get(key, Decimal("0")) + row.unit_cost
-    return _trend_from_series(
+    return trend_from_series(
         sorted(by_month.items(), key=lambda item: item[0]),
         value_label="unit_cost_sum",
         basis=basis,
@@ -73,7 +73,7 @@ def build_stamping_trend(
     )
 
 
-def _trend_from_series(
+def trend_from_series(
     series: list[tuple[str, Decimal]],
     *,
     value_label: str,

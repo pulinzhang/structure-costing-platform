@@ -6,7 +6,7 @@ from collections import defaultdict
 
 from app.repositories.llm.cost_analysis_repository import L0PartPeriodRow
 from app.schemas.llm.analysis_query import ComparisonBasis
-from app.services.llm.query.comparison_basis import resolve_comparability
+from app.services.llm.comparison_basis import resolve_comparability
 
 
 def resolve_runtime_comparability(

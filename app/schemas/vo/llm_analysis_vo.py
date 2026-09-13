@@ -140,10 +140,8 @@ class LlmAnalysisReportVO(BaseModel):
             except (TypeError, ValueError, json.JSONDecodeError):
                 context_pack_ids = []
 
-        from app.services.llm.prompts.labels import sanitize_report_markdown
-
         raw_markdown = getattr(row, "markdown_content", None)
-        markdown_content = sanitize_report_markdown(str(raw_markdown)) if raw_markdown else None
+        markdown_content = str(raw_markdown) if raw_markdown else None
 
         return cls(
             report_id=int(row.id),

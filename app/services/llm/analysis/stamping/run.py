@@ -6,11 +6,9 @@ from typing import Any
 
 from sqlalchemy.orm import Session
 
-from app.common.part_number import part_numbers_match
 from app.repositories.llm.process_fee_analysis_repository import ProcessFeeAnalysisRepository
 from app.repositories.llm.stamping_cost_analysis_repository import (
     StampingCostAnalysisRepository,
-    StampingPartPeriodRow,
 )
 from app.repositories.llm.stamping_process_analysis_repository import (
     StampingProcessAnalysisRepository,
@@ -19,8 +17,9 @@ from app.repositories.llm.tonnage_price_analysis_repository import (
     TonnagePriceAnalysisRepository,
 )
 from app.schemas.llm.analysis_query import AnalysisQuery
+from app.services.llm._money import shift_month
 from app.services.llm.analysis.shared.anomaly import build_stamping_risks
-from app.services.llm.analysis.shared.compose import _compose_result
+from app.services.llm.analysis.shared.compose import compose_result
 from app.services.llm.analysis.shared.cost_driver import (
     build_stamping_drivers,
     build_stamping_mom_anomalies,
@@ -28,6 +27,7 @@ from app.services.llm.analysis.shared.cost_driver import (
 from app.services.llm.analysis.shared.cost_trend import build_stamping_trend
 from app.services.llm.analysis.shared.result import AnalysisRunResult
 from app.services.llm.analysis.shared.summary import build_stamping_summary
+from app.services.llm.analysis.stamping.part_cost import build_stamping_cost_drilldown
 from app.services.llm.analysis.stamping.process import (
     build_stamping_process_drilldown,
     build_stamping_process_drivers,
@@ -41,8 +41,7 @@ from app.services.llm.analysis.stamping.tonnage import (
     build_tonnage_price_drilldown,
     build_tonnage_price_summary,
 )
-from app.services.llm.query.comparison_basis import resolve_comparability
-from app.services.llm.query.time_range import shift_month
+from app.services.llm.comparison_basis import resolve_comparability
 
 
 class StampingAnalysis:
@@ -89,7 +88,7 @@ class StampingAnalysis:
                 part_number=part_number,
             )
 
-        out.result = _compose_result(parts_result, default_kind="summary")
+        out.result = compose_result(parts_result, default_kind="summary")
         out.evidence["stamping_process_rows"] = [
             {
                 "part_number": row.part_number,
@@ -128,7 +127,7 @@ class StampingAnalysis:
         if "drilldown" in query.analyses or tonnage is not None:
             parts_result["drilldown"] = build_tonnage_price_drilldown(rows, tonnage=tonnage)
 
-        out.result = _compose_result(parts_result, default_kind="summary")
+        out.result = compose_result(parts_result, default_kind="summary")
         out.evidence["tonnage_price_rows"] = [
             {
                 "location": row.location,
@@ -176,7 +175,7 @@ class StampingAnalysis:
                 head=head,
             )
 
-        out.result = _compose_result(parts_result, default_kind="summary")
+        out.result = compose_result(parts_result, default_kind="summary")
         out.evidence["process_fee_rows"] = [
             {
                 "year": row.year,
@@ -252,11 +251,11 @@ class StampingAnalysis:
             )
 
         if "drilldown" in query.analyses:
-            parts_result["drilldown"] = _build_stamping_drilldown(
+            parts_result["drilldown"] = build_stamping_cost_drilldown(
                 focus_rows, part_number=query.part_number() or ""
             )
 
-        out.result = _compose_result(parts_result, default_kind="summary")
+        out.result = compose_result(parts_result, default_kind="summary")
         out.evidence["stamping_part_rows"] = [
             {
                 "month": f"{row.year:04d}-{row.month:02d}",
@@ -269,45 +268,3 @@ class StampingAnalysis:
             for row in focus_rows[:50]
         ]
         return out
-
-
-def _build_stamping_drilldown(
-    rows: list[StampingPartPeriodRow],
-    *,
-    part_number: str,
-) -> dict[str, Any]:
-    matched = (
-        [row for row in rows if part_numbers_match(row.part_number, part_number)]
-        if part_number
-        else rows
-    )
-    if not matched:
-        return {
-            "kind": "drilldown",
-            "part_number": part_number,
-            "found": False,
-            "message": "未找到该冲压零件价格记录",
-        }
-    latest = sorted(matched, key=lambda row: (row.year, row.month))[-1]
-    return {
-        "kind": "drilldown",
-        "part_number": latest.part_number,
-        "found": True,
-        "part_name": latest.part_name,
-        "unit_cost": str(latest.unit_cost),
-        "material_net_per_part": (
-            str(latest.material_net_per_part) if latest.material_net_per_part is not None else None
-        ),
-        "process_fee_amount": (
-            str(latest.process_fee_amount) if latest.process_fee_amount is not None else None
-        ),
-        "die_fee_amount": (
-            str(latest.die_fee_amount) if latest.die_fee_amount is not None else None
-        ),
-        "gauge_fee_amount": (
-            str(latest.gauge_fee_amount) if latest.gauge_fee_amount is not None else None
-        ),
-        "calc_status": latest.calc_status,
-        "stamping_supplier": latest.stamping_supplier,
-        "month": f"{latest.year:04d}-{latest.month:02d}",
-    }

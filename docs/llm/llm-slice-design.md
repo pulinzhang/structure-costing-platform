@@ -90,8 +90,9 @@ _process_in_background
 | 路径 | 职责 |
 |------|------|
 | `report_service.py` | 唯一编排：解析、限流、幂等、入队、落库、权限隔离 |
-| `query/` | 问句 → `AnalysisQuery` |
-| `analysis/` | 确定性分析（查库 + 公式）；薄 `AnalysisRunner` |
+| `query/` | 问句 → `AnalysisQuery`（不 import analysis） |
+| `analysis/` | 确定性分析（查库 + 公式）；只读 Query 字段与叶模块，不 import query |
+| `_money.py` / `comparison_basis.py` | 切片叶模块：金额、移月、口径映射 |
 | `context/snapshot_builder.py` | `AnalysisRunResult` → 喂 Prompt 的 Snapshot |
 | `generator.py` | 拼 Prompt、调模型、失败 fallback |
 | `prompts/` | `manifest.yaml` + 受众 system + `_shared` 铁律 |
@@ -100,7 +101,8 @@ _process_in_background
 | `engine_readiness/` | 核算就绪门禁快照 |
 | `catalog/field_labels.py` | JSON 字段 → 中文释义卡 |
 | `menu_catalog.py` | `subject → hash_page`；**不进产品 UI**，给测试覆盖审计 |
-| `_money.py` | 金额字符串、年月键；仅本切片 |
+| `_money.py` | 金额字符串、年月键、移月；切片叶模块 |
+| `comparison_basis.py` | tight/loose 映射；切片叶模块 |
 
 包根 `__init__.py` 只作标记，不汇总导出。
 
@@ -120,16 +122,21 @@ user_question
 
 | 模块 | 文件 |
 |------|------|
-| 总装 | `query/query_parser.py` |
+| 对外入口 | `query/query_parser.py`（re-export `QueryParser`） |
+| 流水线 | `query/parser/pipeline.py` |
+| 口语 → subject | `query/parser/subjects.py`（顺序即优先级） |
+| analyses[] | `query/parser/analyses.py` |
+| 问价 / 下钻 | `query/parser/part_price.py` |
+| 草稿 / 钉月 | `query/parser/draft.py`、`pin_latest.py` |
 | 模式分流 | `query/intent_router.py` |
 | 条件抽取 | `query/condition_extractor.py` |
 | 词典对齐 | `query/entity_aligner.py` |
-| 时间 | `query/time_range.py` |
-| 口径 | `query/comparison_basis.py` |
+| 时间口语 | `query/time_range.py`（移月在 `_money.shift_month`） |
+| 口径映射 | `comparison_basis.py`（叶模块，非 query） |
 
 **Scope**（查什么）：`time_range` + `filters` 开放字典 + `subject` + `comparison_basis`。新维度进 `filters`，不要在 Schema 根上加字段森林。
 
-**Intent**（做什么）：`analyses[]` = `summary` / `trend` / `drivers` / `comparison` / `risk` / `drilldown`。用户看不到这组枚举。
+**Intent**（做什么）：`analyses[]` = `summary` / `trend` / `drivers` / `comparison` / `risk` / `drilldown`。问价口语写入 `asks_part_price`，Analysis 只读该字段。用户看不到这组枚举。
 
 解析失败走四级降级（产品契约 C.4.2.1），**永远返回一段 Markdown**，不弹「解析失败」。
 
@@ -159,8 +166,8 @@ AnalysisRunner
 
 | 包 | 内容 |
 |----|------|
-| `analysis/runner.py` | 薄分发；re-export `AnalysisRunResult` |
-| `analysis/shared/` | 公式、口径、趋势/驱动/异常/下钻、`result.py`、`compose.py` |
+| `analysis/runner.py` | 薄分发；对外 re-export `AnalysisRunResult` |
+| `analysis/shared/` | 公式、口径、趋势/驱动/异常/下钻、`result.py`、`compose.py`；切片内部从此取 `AnalysisRunResult` |
 | `analysis/{ops,stamping,steel,welding,bom,assembly}/` | 主题 `run.py` + 该主题 summary 函数 |
 
 公式与边界条件（环比分母为 0、缺价不进趋势等）以产品契约 **B.6.1** 为准，实现在 `shared/formulas.py` 及对应 summary。**禁止**在主题 `run.py` 里新写一套环比。
@@ -180,7 +187,13 @@ AnalysisRunner
 | `part` | Assembly | 跨域存在性 / 问价 |
 | `l0` / `cost_total` 及默认 | Assembly | `#/assembly-cost` |
 
-加新实体列表问句：Parser 认 subject → 主题 `run.py` 一条方法 → 本切片 Analysis Repository → `menu_catalog` 覆盖项 → `tests/llm` 问句回归。
+加新实体列表问句：Parser 认 subject → 主题 `run.py` 一条方法 → 本切片 Analysis Repository（或下游 Analysis 调上游 Service）→ `menu_catalog` 覆盖项 → `tests/llm` 问句回归。
+
+中标厚度：`SteelAnalysis` 调上游 `WinningThicknessExportService`（宪法允许下游 Service 组合上游）。**禁止**再经 `repositories/llm` 转发 VO。
+
+`ANALYSIS_VERSION` 定义在 `schemas/llm/analysis_snapshot.py`；Analysis 只引用，Schema 不 import Service。
+
+Markdown 清洗在 `generator`（写入前）和 `report_service._report_vo`（读出时），不在 VO。
 
 ---
 
@@ -192,7 +205,7 @@ AnalysisRunner
 |------|------|
 | `cost_analysis_repository.py` | 总成核价卡 / 材料行 |
 | `stamping_*` / `process_fee_*` / `die_fee_*` / `gauge_fee_*` / `tonnage_*` | 冲压路径 |
-| `steel_price_*` / `policy_*` / `base_price_*` / `winning_thickness_*` / `scrap_price_*` | 钢价与一事一议 |
+| `steel_price_*` / `policy_*` / `base_price_*` / `scrap_price_*` | 钢价与一事一议（中标厚度不经本切片 Repo，见 §7） |
 | `welding_*` / `l0_welding_fee_*` | 焊接 |
 | `annual_part_price_*` / `packaging_transport_*` / `bom_material_*` / `procurement_object_*` | BOM |
 | `ops_workbench_repository.py` | 作业台计数 |
@@ -295,7 +308,7 @@ Body 只有 `user_question`（可选 `audience` / `force_refresh` / `idempotency
 
 | 需求 | 改这里 | 不要改 |
 |------|--------|--------|
-| 新问法仍落已有列表页 | `query/query_parser.py` 口语表 | 不要让 LLM 输出 subject |
+| 新问法仍落已有列表页 | `query/parser/subjects.py` | 不要让 LLM 输出 subject |
 | 新实体表可问 | Parser + 主题 `run.py` + Analysis Repo + `menu_catalog` + 测试 | 不要塞进 `AnalysisRunner.run` 长 if |
 | 环比/缺价口径 | `analysis/shared/` + 产品契约 B.6.1 | 不要在主题 run 里复制公式 |
 | 回答口吻 / 禁止事项 | `prompts/`（bump `manifest.yaml` version） | 不要在 Generator 里写死长文案 |
@@ -312,7 +325,7 @@ Body 只有 `user_question`（可选 `audience` / `force_refresh` / `idempotency
 |------|------|
 | HTTP | `app/routers/llm/reports.py` |
 | 编排 | `app/services/llm/report_service.py` |
-| Query | `app/services/llm/query/` |
+| Query | `app/services/llm/query/`（规则在 `query/parser/`） |
 | Analysis 分发 | `app/services/llm/analysis/runner.py` |
 | 公式与口径 | `app/services/llm/analysis/shared/` |
 | Snapshot | `app/services/llm/context/snapshot_builder.py` |
@@ -345,4 +358,5 @@ Body 只有 `user_question`（可选 `audience` / `force_refresh` / `idempotency
 
 | 日期 | 说明 |
 |------|------|
+| 2026-09-12 | QueryParser 拆到 `query/parser/`：subject / analyses 与流水线分离 |
 | 2026-09-12 | 初稿：as-built 切片导读；Analysis 按主题分包后的目录与分发 |

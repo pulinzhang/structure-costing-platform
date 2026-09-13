@@ -25,9 +25,9 @@ from app.services.llm.analysis.ops.workbench import (
     build_ops_workbench_risks,
     build_ops_workbench_summary,
 )
-from app.services.llm.analysis.shared.compose import _compose_result
+from app.services.llm.analysis.shared.compose import compose_result
 from app.services.llm.analysis.shared.result import AnalysisRunResult
-from app.services.llm.query.comparison_basis import resolve_comparability
+from app.services.llm.comparison_basis import resolve_comparability
 
 
 class OpsAnalysis:
@@ -60,7 +60,7 @@ class OpsAnalysis:
         parts_result: dict[str, Any] = {}
         if "risk" in query.analyses:
             parts_result["risk"] = build_ops_workbench_risks(summary)
-        out.result = _compose_result(parts_result, default_kind="summary")
+        out.result = compose_result(parts_result, default_kind="summary")
         return out
 
     def run_stamping_die_fee(self, db: Session, query: AnalysisQuery) -> AnalysisRunResult:
@@ -109,7 +109,7 @@ class OpsAnalysis:
                 rows, part_token=part_token, head=head
             )
         default_kind = "drilldown" if part_token else "summary"
-        out.result = _compose_result(parts_result, default_kind=default_kind)
+        out.result = compose_result(parts_result, default_kind=default_kind)
         return out
 
     def run_stamping_gauge_fee(self, db: Session, query: AnalysisQuery) -> AnalysisRunResult:
@@ -157,7 +157,7 @@ class OpsAnalysis:
                 rows, part_token=part_token, head=head
             )
         default_kind = "drilldown" if part_token else "summary"
-        out.result = _compose_result(parts_result, default_kind=default_kind)
+        out.result = compose_result(parts_result, default_kind=default_kind)
         return out
 
     def run_procurement_object(self, db: Session, query: AnalysisQuery) -> AnalysisRunResult:
@@ -217,5 +217,5 @@ class OpsAnalysis:
                 )
             parts_result["risk"] = {"kind": "risk", "risks": risks}
         default_kind = "drilldown" if part_token else "summary"
-        out.result = _compose_result(parts_result, default_kind=default_kind)
+        out.result = compose_result(parts_result, default_kind=default_kind)
         return out
