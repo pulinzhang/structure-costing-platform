@@ -6,7 +6,7 @@ from collections import defaultdict
 from decimal import Decimal
 from typing import Any
 
-from app.repositories.llm.cost_analysis_repository import L0MonthlyTotalRow, L0PartPeriodRow
+from app.repositories.llm.cost_analysis import L0MonthlyTotalRow, L0PartPeriodRow
 from app.repositories.llm.stamping_cost_analysis_repository import StampingPartPeriodRow
 from app.repositories.llm.steel_price_analysis_repository import SteelMonthlyAvgRow
 from app.services.llm._money import money_str, month_key

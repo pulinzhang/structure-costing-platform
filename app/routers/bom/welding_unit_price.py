@@ -169,7 +169,6 @@ def download_import_template(
 @router.post(
     "/upload",
     response_model=ApiResponse[BomWeldingUnitPriceImportResultVO],
-    status_code=201,
 )
 async def upload_welding_unit_price_excel(
     location: str = Form(..., description="采购基地（必填）"),
@@ -188,7 +187,7 @@ async def upload_welding_unit_price_excel(
         year=year,
         current_user=current_user,
     )
-    return ApiResponse.created(data=result, message=result.message)
+    return ApiResponse.ok(data=result, message=result.message)
 
 
 @router.post(

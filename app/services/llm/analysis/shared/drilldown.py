@@ -6,7 +6,7 @@ from typing import Any
 
 from app.common.part_number import part_numbers_match
 from app.repositories.llm.annual_part_price_analysis_repository import AnnualPartPriceRow
-from app.repositories.llm.cost_analysis_repository import (
+from app.repositories.llm.cost_analysis import (
     AssemblyCardItemRow,
     L0CompositionLineRow,
     L0PartPeriodRow,

@@ -5,7 +5,7 @@ from __future__ import annotations
 from decimal import Decimal
 from typing import Any
 
-from app.repositories.llm.cost_analysis_repository import L0CompositionLineRow
+from app.repositories.llm.cost_analysis import L0CompositionLineRow
 from app.services.llm._money import money_str, month_key, rate_str
 from app.services.llm.analysis.shared.constants import (
     COMPOSITION_EXTREME_QTY,

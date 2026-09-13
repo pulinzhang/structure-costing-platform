@@ -203,7 +203,7 @@ Markdown 清洗在 `generator`（写入前）和 `report_service._report_vo`（�
 
 | 模块 | 用途 |
 |------|------|
-| `cost_analysis_repository.py` | 总成核价卡 / 材料行 |
+| `cost_analysis/` | 总成核价只读。SQL 在 `monthly_totals` / `part_rows` / `card` / `composition`；`L0CostAnalysisRepository` 只转发 |
 | `stamping_*` / `process_fee_*` / `die_fee_*` / `gauge_fee_*` / `tonnage_*` | 冲压路径 |
 | `steel_price_*` / `policy_*` / `base_price_*` / `scrap_price_*` | 钢价与一事一议（中标厚度不经本切片 Repo，见 §7） |
 | `welding_*` / `l0_welding_fee_*` | 焊接 |

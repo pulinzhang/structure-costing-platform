@@ -4,7 +4,7 @@ from __future__ import annotations
 
 from sqlalchemy.orm import Session
 
-from app.repositories.llm.cost_analysis_repository import L0CostAnalysisRepository
+from app.repositories.llm.cost_analysis import L0CostAnalysisRepository
 from app.schemas.llm.analysis_query import TimeRange
 from app.services.llm._money import month_key
 from app.services.llm.query.parser.part_price import is_drilldown_focused

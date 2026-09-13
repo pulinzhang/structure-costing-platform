@@ -1,4 +1,4 @@
-from app.repositories.llm.cost_analysis_repository import L0CostAnalysisRepository
+from app.repositories.llm.cost_analysis import L0CostAnalysisRepository
 from app.repositories.llm.report_repository import (
     LlmAnalysisReportFailPatch,
     LlmAnalysisReportInsert,
