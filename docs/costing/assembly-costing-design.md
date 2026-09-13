@@ -558,7 +558,7 @@ Ready VO 增加：`subject_count`、`tree_root_count`、`procurement_object_coun
 | 表 | `costing_assembly_costs` / `_items` / `_indirects` / `_calc_logs` |
 | 引擎 | 零件价完成且 **焊接费覆盖全部要抄的 level** 才跑 assembly（P20）。补焊 **禁止** 只传 `levels=[0]`。阶段 id `assembly`；焊接费阶段 `annual_welding_fee`。本切片不得内部触发上游 |
 | 合册 | `monthly_bundle_export_service` → 树根过滤 |
-| LLM | `menu_catalog`、`field_labels`、`cost_analysis_repository`（查现表 `costing_assembly_costs`） |
+| LLM | `menu_catalog`、`field_labels`、`cost_analysis/`（查现表 `costing_assembly_costs`） |
 | 权限 / 种子 | `catalog.json` → `codes.py`（§10.3） |
 | 前端 | `index.html`、`app.js`、`features/index.js`、`static/js/features/costing/assembly-cost/` |
 | 测试适配 | `tests/costing/l0_assembly_sim.py`（领域 L0 树根金样，公式委托 `rollup_assembly`） |

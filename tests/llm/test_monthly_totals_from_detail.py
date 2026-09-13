@@ -7,7 +7,7 @@ from decimal import Decimal
 import pytest
 
 from app.database import DatabaseConfig
-from app.repositories.llm.cost_analysis_repository import L0CostAnalysisRepository
+from app.repositories.llm.cost_analysis import L0CostAnalysisRepository
 from app.services.llm.analysis.runner import AnalysisRunner
 from app.services.llm.context.snapshot_builder import SnapshotBuilder
 from app.services.llm.query.query_parser import QueryParser

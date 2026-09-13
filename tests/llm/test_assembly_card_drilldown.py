@@ -4,7 +4,7 @@ from __future__ import annotations
 
 from decimal import Decimal
 
-from app.repositories.llm.cost_analysis_repository import L0PartPeriodRow
+from app.repositories.llm.cost_analysis import L0PartPeriodRow
 from app.services.llm.analysis.shared.drilldown import (
     assembly_card_role,
     build_drilldown,

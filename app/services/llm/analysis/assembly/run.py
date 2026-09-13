@@ -10,7 +10,7 @@ from sqlalchemy.orm import Session
 from app.repositories.llm.annual_part_price_analysis_repository import (
     AnnualPartPriceAnalysisRepository,
 )
-from app.repositories.llm.cost_analysis_repository import (
+from app.repositories.llm.cost_analysis import (
     L0CostAnalysisRepository,
     L0PartPeriodRow,
 )

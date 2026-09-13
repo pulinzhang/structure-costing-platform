@@ -6,7 +6,7 @@ from decimal import Decimal
 from types import SimpleNamespace
 from unittest.mock import MagicMock
 
-from app.repositories.llm.cost_analysis_repository import L0MonthlyTotalRow, L0PartPeriodRow
+from app.repositories.llm.cost_analysis import L0MonthlyTotalRow, L0PartPeriodRow
 from app.services.llm.analysis.shared.cost_trend import build_cost_trend
 from app.services.llm.analysis.shared.idempotency import (
     build_idempotency_key,
@@ -679,7 +679,7 @@ def test_normalize_year_first_n_months() -> None:
 def test_build_l0_mom_anomalies_ranks_jump() -> None:
     from decimal import Decimal
 
-    from app.repositories.llm.cost_analysis_repository import L0PartPeriodRow
+    from app.repositories.llm.cost_analysis import L0PartPeriodRow
     from app.services.llm.analysis.shared.cost_driver import build_l0_mom_anomalies
 
     rows = [

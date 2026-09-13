@@ -9,7 +9,7 @@ from sqlalchemy.orm import Session
 from app.common.part_number import extract_part_number_from_text, sanitize_part_number_token
 from app.common.timezone import now
 from app.common.tonnage import extract_tonnage_from_text
-from app.repositories.llm.cost_analysis_repository import L0CostAnalysisRepository
+from app.repositories.llm.cost_analysis import L0CostAnalysisRepository
 from app.schemas.llm.analysis_query import AnalysisQuery
 from app.services.llm.client import LlmClientError
 from app.services.llm.comparison_basis import default_comparison_basis

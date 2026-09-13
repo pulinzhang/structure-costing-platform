@@ -66,8 +66,9 @@ JSON 业务接口必须 `response_model=ApiResponse[T]` 且 `-> ApiResponse[T]`�
 | GET 列表 | `list[VO]` 或 `(list, total[, filters])` | `ok` / `list_` | `list` 或 `PageResult` |
 | POST 创建 | `VO` | `created`（201） | `ApiResponse[UserVO]` |
 | POST `start_*` | `AsyncTaskAcceptedVO` | `ok`（**200**） | `ApiResponse[AsyncTaskAcceptedVO]` |
+| POST 同步 Excel `upload` | 结果 VO | `ok`（**200**） | 结果 VO；禁止 `created` / 201 |
 | PUT/PATCH | `VO` | `updated` | `ApiResponse[UserVO]` |
-| POST 批量 | 结果 VO | `ok` | 结果 VO |
+| POST 批量 | 结果 VO | `ok`（**200**） | 结果 VO |
 | DELETE | `None` | `deleted` | `ApiResponse[None]` |
 | GET 下载 | bytes | Stream/File | 无 |
 
