@@ -13,7 +13,8 @@ from app.services.llm.analysis.shared.idempotency import (
     question_fingerprint,
 )
 from app.services.llm.analysis.shared.summary import build_summary
-from app.services.llm.query.comparison_basis import default_comparison_basis
+from app.services.llm.comparison_basis import default_comparison_basis
+from app.services.llm.query.parser.subjects import resolve_subject
 from app.services.llm.query.query_parser import QueryParser
 from app.services.llm.query.time_range import DefaultScopeMonth, normalize_time_range
 
@@ -248,9 +249,8 @@ def test_query_parser_level4_blind_question_forces_safe_analyses() -> None:
 
 def test_query_parser_rule_fallback_when_llm_fails() -> None:
     from app.common.timezone import now
-    from app.services.llm._money import month_key
+    from app.services.llm._money import month_key, shift_month
     from app.services.llm.client import LlmClientError
-    from app.services.llm.query.time_range import shift_month
 
     parser = QueryParser()
     db = MagicMock()
@@ -974,9 +974,8 @@ def test_query_parser_zhongbiao_price_alias() -> None:
 
 
 def test_winning_thickness_not_confused_with_zhongbiao_price() -> None:
-    parser = QueryParser()
     assert (
-        parser._resolve_subject(
+        resolve_subject(
             question="中标厚度价格一览表怎么样",
             analyses=["summary"],
             filters={},
@@ -984,7 +983,7 @@ def test_winning_thickness_not_confused_with_zhongbiao_price() -> None:
         == "winning_thickness"
     )
     assert (
-        parser._resolve_subject(
+        resolve_subject(
             question="2025年中标价波动大吗",
             analyses=["summary"],
             filters={},

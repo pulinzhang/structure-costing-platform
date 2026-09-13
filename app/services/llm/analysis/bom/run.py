@@ -35,13 +35,13 @@ from app.services.llm.analysis.bom.packaging_transport import (
     build_packaging_transport_fee_drivers,
     build_packaging_transport_fee_summary,
 )
-from app.services.llm.analysis.shared.compose import _compose_result
+from app.services.llm.analysis.shared.compose import compose_result
 from app.services.llm.analysis.shared.result import AnalysisRunResult
 from app.services.llm.analysis.shared.standard_part_price import (
     build_standard_part_price_anomalies,
     standard_part_price_risk_entry,
 )
-from app.services.llm.query.comparison_basis import resolve_comparability
+from app.services.llm.comparison_basis import resolve_comparability
 
 
 class BomAnalysis:
@@ -120,7 +120,7 @@ class BomAnalysis:
             default_kind = "drilldown"
         else:
             default_kind = "summary"
-        out.result = _compose_result(parts_result, default_kind=default_kind)
+        out.result = compose_result(parts_result, default_kind=default_kind)
         out.evidence["annual_part_price_rows"] = [
             {
                 "year": row.year,
@@ -199,7 +199,7 @@ class BomAnalysis:
             default_kind = "drilldown"
         else:
             default_kind = "summary"
-        out.result = _compose_result(parts_result, default_kind=default_kind)
+        out.result = compose_result(parts_result, default_kind=default_kind)
         out.evidence["packaging_transport_fee_rows"] = [
             {
                 "year": row.year,
@@ -246,7 +246,7 @@ class BomAnalysis:
                 head=head,
             )
         default_kind = "drilldown" if part_token else "summary"
-        out.result = _compose_result(parts_result, default_kind=default_kind)
+        out.result = compose_result(parts_result, default_kind=default_kind)
         out.evidence["bom_material_rows"] = [
             {
                 "part_number": row.part_number,

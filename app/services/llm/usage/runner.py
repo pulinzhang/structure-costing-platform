@@ -3,14 +3,13 @@
 from __future__ import annotations
 
 from app.schemas.llm.analysis_query import AnalysisQuery
-from app.services.llm.analysis.runner import AnalysisRunResult
-from app.services.llm.query.intent_router import detect_help_topic
+from app.services.llm.analysis.shared.result import AnalysisRunResult
 from app.services.llm.usage.manifest import retrieve_chunks
 
 
 class UsageHelpRunner:
     def run(self, query: AnalysisQuery) -> AnalysisRunResult:
-        topic = query.help_topic or detect_help_topic(query.user_question)
+        topic = query.help_topic
         chunks = retrieve_chunks(query.user_question, primary_topic=topic, top_k=3)
         titles = [chunk.title for chunk in chunks]
         run = AnalysisRunResult(

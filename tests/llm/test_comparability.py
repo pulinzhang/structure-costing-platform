@@ -6,7 +6,7 @@ from decimal import Decimal
 
 from app.repositories.llm.cost_analysis_repository import L0PartPeriodRow
 from app.services.llm.analysis.shared.comparability import resolve_runtime_comparability
-from app.services.llm.query.comparison_basis import default_comparison_basis
+from app.services.llm.comparison_basis import default_comparison_basis
 
 
 def _row(*, part_number: str, bom_version: str, month: int) -> L0PartPeriodRow:

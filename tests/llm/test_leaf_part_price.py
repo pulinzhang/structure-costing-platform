@@ -123,6 +123,7 @@ def test_query_parser_standard_part_price_is_how_much() -> None:
     assert query.part_number() == "FQ199D0616T25F19N"
     assert query.analyses == ["drilldown"]
     assert query.subject == "l0"
+    assert query.asks_part_price is True
     assert query.time_range.start == "2026-01"
     assert query.time_range.end == "2026-01"
 
@@ -151,6 +152,7 @@ def test_query_parser_bare_part_price_phrase() -> None:
     assert query.part_number() == "551001137AA"
     assert query.analyses == ["drilldown"]
     assert query.subject == "l0"
+    assert query.asks_part_price is True
     assert "summary" not in query.analyses
 
 
@@ -267,6 +269,7 @@ def test_runner_part_subject_bare_price_uses_item_fallback() -> None:
         filters={"part_number": "551001137AA"},
         subject="part",
         analyses=["summary", "drilldown"],
+        asks_part_price=True,
         user_question="551001137AA零件价格",
     )
     result = runner.run(MagicMock(), query)

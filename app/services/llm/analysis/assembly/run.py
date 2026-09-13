@@ -21,10 +21,11 @@ from app.repositories.llm.stamping_process_analysis_repository import (
     StampingProcessAnalysisRepository,
 )
 from app.schemas.llm.analysis_query import AnalysisQuery
+from app.services.llm._money import shift_month
 from app.services.llm.analysis.shared.anomaly import build_risks
 from app.services.llm.analysis.shared.comparability import resolve_runtime_comparability
 from app.services.llm.analysis.shared.comparison import build_location_comparison
-from app.services.llm.analysis.shared.compose import _compose_result
+from app.services.llm.analysis.shared.compose import compose_result
 from app.services.llm.analysis.shared.composition import (
     build_composition_anomalies,
     composition_risk_entry,
@@ -56,11 +57,9 @@ from app.services.llm.analysis.shared.standard_part_price import (
     standard_part_price_risk_entry,
 )
 from app.services.llm.analysis.shared.summary import build_summary
+from app.services.llm.analysis.stamping.part_cost import build_stamping_cost_drilldown
 from app.services.llm.analysis.stamping.process import build_stamping_process_drilldown
-from app.services.llm.analysis.stamping.run import _build_stamping_drilldown
-from app.services.llm.query.comparison_basis import resolve_comparability
-from app.services.llm.query.query_parser import question_asks_part_price
-from app.services.llm.query.time_range import shift_month
+from app.services.llm.comparison_basis import resolve_comparability
 
 
 class AssemblyAnalysis:
@@ -90,12 +89,7 @@ class AssemblyAnalysis:
     def should_run_part_price_drilldown(self, query: AnalysisQuery) -> bool:
         if self.is_part_price_drilldown(query):
             return True
-        if not query.part_number():
-            return False
-        question = query.user_question or ""
-        if any(word in question for word in ("存在", "有没有这个", "在不在", "在吗")):
-            return False
-        return question_asks_part_price(question)
+        return bool(query.part_number()) and query.asks_part_price
 
     def run_part_price_drilldown(self, db: Session, query: AnalysisQuery) -> AnalysisRunResult:
         """单件问价：先核价卡，再核价表材料行，再年度零件价。"""
@@ -339,7 +333,7 @@ class AssemblyAnalysis:
                     l0_drilldown["related"] = self._related_branch_costing(db, query, l0_drilldown)
                 parts_result["l0_drilldown"] = l0_drilldown
             if profile.stamping_cost_applicable:
-                parts_result["stamping_cost_drilldown"] = _build_stamping_drilldown(
+                parts_result["stamping_cost_drilldown"] = build_stamping_cost_drilldown(
                     stamping_rows, part_number=part_token
                 )
             if profile.stamping_process_applicable:
@@ -356,7 +350,7 @@ class AssemblyAnalysis:
                     part_number=part_token,
                 )
 
-        out.result = _compose_result(parts_result, default_kind="part_existence")
+        out.result = compose_result(parts_result, default_kind="part_existence")
         out.evidence["part_lookup"] = {
             "l0_rows": len(l0_rows),
             "stamping_cost_rows": len(stamping_rows),
@@ -526,7 +520,7 @@ class AssemblyAnalysis:
                 drilldown["related"] = self._related_branch_costing(db, query, drilldown)
             parts_result["drilldown"] = drilldown
 
-        out.result = _compose_result(parts_result, default_kind="summary")
+        out.result = compose_result(parts_result, default_kind="summary")
         out.has_data = bool(monthly) or bool(part_rows)
         base_message = query.parser_data_message or ""
         missing_message = format_missing_price_message(filtered_missing)

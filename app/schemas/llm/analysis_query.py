@@ -63,6 +63,8 @@ class AnalysisQuery(BaseModel):
     comparison_basis: ComparisonBasis = Field(default_factory=ComparisonBasis)
     analyses: list[AnalysisKind] = Field(default_factory=lambda: list[AnalysisKind](["summary"]))
     user_question: str = ""
+    # 解析阶段写入；Analysis 只读此字段，不再扫问句。
+    asks_part_price: bool = False
     unresolved_mentions: list[str] = Field(default_factory=list)
     query_mode: QueryMode = "analysis"
     help_topic: str | None = None

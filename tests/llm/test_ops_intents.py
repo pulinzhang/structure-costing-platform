@@ -16,6 +16,7 @@ from app.services.llm.query.intent_router import (
     detect_help_topic,
     detect_query_mode,
 )
+from app.services.llm.query.parser.subjects import resolve_subject
 from app.services.llm.query.query_parser import QueryParser
 
 
@@ -61,11 +62,7 @@ def test_ops_help_topic(question: str, expected_topic: str) -> None:
     ],
 )
 def test_ops_subject_resolution(question: str, expected_subject: str) -> None:
-    parser = QueryParser()
-    assert (
-        parser._resolve_subject(question=question, analyses=["summary"], filters={})
-        == expected_subject
-    )
+    assert resolve_subject(question=question, analyses=["summary"], filters={}) == expected_subject
 
 
 def test_query_parser_workbench_includes_risk() -> None:

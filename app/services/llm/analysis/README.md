@@ -23,10 +23,10 @@ AnalysisRunner          # 薄分发，只看 query.subject
 
 | 包 | 职责 |
 |----|------|
-| `runner.py` | 薄分发；仍 re-export `AnalysisRunResult` |
-| `shared/` | 结果容器、公式、口径、趋势/驱动/异常/下钻 |
+| `runner.py` | 薄分发；对外仍 re-export `AnalysisRunResult` |
+| `shared/` | 结果容器（内部从此取）、公式、口径、趋势/驱动/异常/下钻 |
 | `ops/` | 作业台与主数据类档案 |
-| `stamping/` | 冲压工艺与零件价 |
+| `stamping/` | 冲压工艺与零件价（`part_cost.py` 下钻供 assembly 引用） |
 | `steel/` | 钢价与一事一议价格 |
 | `welding/` | 焊接三张表 |
 | `bom/` | BOM 年价 / 包装运输 / 材料 |

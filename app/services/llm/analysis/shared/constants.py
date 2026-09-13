@@ -1,6 +1,6 @@
-"""分析算法版本（Snapshot.meta.analysis_version）。"""
+"""分析阈值；版本号以 Schema 为准（Schema 不得 import Service）。"""
 
-ANALYSIS_VERSION = "v1.0"
+from app.schemas.llm.analysis_snapshot import ANALYSIS_VERSION as ANALYSIS_VERSION
 
 DEFAULT_DRIVER_TOP_N = 5
 ANOMALY_RATE_THRESHOLD = "0.15"

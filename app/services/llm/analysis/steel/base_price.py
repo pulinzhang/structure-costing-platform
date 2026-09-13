@@ -9,7 +9,7 @@ from typing import Any
 from app.repositories.llm.base_price_analysis_repository import BasePricePeriodRow
 from app.schemas.llm.analysis_query import ComparisonBasis
 from app.services.llm._money import money_str, month_key
-from app.services.llm.analysis.shared.cost_trend import _trend_from_series
+from app.services.llm.analysis.shared.cost_trend import trend_from_series
 
 
 def build_base_price_summary(rows: list[BasePricePeriodRow]) -> dict[str, Any]:
@@ -89,7 +89,7 @@ def build_base_price_trend(
         )
         for month, prices in sorted(by_month.items())
     ]
-    trend = _trend_from_series(series, value_label="avg_base_price", basis=basis)
+    trend = trend_from_series(series, value_label="avg_base_price", basis=basis)
     trend["subject"] = "steel_base_price"
     return trend
 

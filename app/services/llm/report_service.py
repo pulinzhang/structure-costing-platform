@@ -44,6 +44,7 @@ from app.services.llm.client import LlmClientError
 from app.services.llm.context.snapshot_builder import SnapshotBuilder
 from app.services.llm.engine_readiness import EngineReadinessRunner
 from app.services.llm.generator import LlmReportGenerator
+from app.services.llm.prompts.labels import sanitize_report_markdown
 from app.services.llm.query.intent_router import detect_audience
 from app.services.llm.query.query_parser import QueryParser
 from app.services.llm.usage import UsageHelpRunner
@@ -180,7 +181,15 @@ class LlmAnalysisReportService:
             raise NotFoundException("报告不存在")
         if int(row.user_id) != int(current_user.id):
             raise PermissionException("只能查看本人的分析报告")
-        return LlmAnalysisReportVO.from_orm_row(row)
+        return self._report_vo(row)
+
+    @staticmethod
+    def _report_vo(row: Any) -> LlmAnalysisReportVO:
+        vo = LlmAnalysisReportVO.from_orm_row(row)
+        markdown = vo.markdown_content
+        if not isinstance(markdown, str) or not markdown:
+            return vo
+        return vo.model_copy(update={"markdown_content": sanitize_report_markdown(markdown)})
 
     def list_reports(
         self,

@@ -10,12 +10,9 @@ from app.repositories.llm.base_price_analysis_repository import BasePriceAnalysi
 from app.repositories.llm.policy_analysis_repository import PolicyAnalysisRepository
 from app.repositories.llm.scrap_price_analysis_repository import ScrapPriceAnalysisRepository
 from app.repositories.llm.steel_price_analysis_repository import SteelPriceAnalysisRepository
-from app.repositories.llm.winning_thickness_analysis_repository import (
-    WinningThicknessAnalysisRepository,
-)
 from app.schemas.llm.analysis_query import AnalysisQuery
 from app.services.llm._money import money_str
-from app.services.llm.analysis.shared.compose import _compose_result
+from app.services.llm.analysis.shared.compose import compose_result
 from app.services.llm.analysis.shared.cost_trend import build_steel_trend
 from app.services.llm.analysis.shared.result import AnalysisRunResult
 from app.services.llm.analysis.shared.summary import build_steel_summary
@@ -38,9 +35,10 @@ from app.services.llm.analysis.steel.scrap import (
 from app.services.llm.analysis.steel.winning_thickness import (
     build_winning_thickness_drivers,
     build_winning_thickness_summary,
+    load_winning_thickness_rows,
 )
-from app.services.llm.menu_catalog import expand_base_price_location
-from app.services.llm.query.comparison_basis import resolve_comparability
+from app.services.llm.comparison_basis import resolve_comparability
+from app.services.yishiyiyi.winning_thickness import WinningThicknessExportService
 
 
 class SteelAnalysis:
@@ -48,7 +46,7 @@ class SteelAnalysis:
         self._steel_repo = SteelPriceAnalysisRepository()
         self._policy_repo = PolicyAnalysisRepository()
         self._base_price_repo = BasePriceAnalysisRepository()
-        self._winning_thickness_repo = WinningThicknessAnalysisRepository()
+        self._winning_thickness_export = WinningThicknessExportService()
         self._scrap_price_repo = ScrapPriceAnalysisRepository()
 
     def run_steel_price_policy(self, db: Session, query: AnalysisQuery) -> AnalysisRunResult:
@@ -79,7 +77,7 @@ class SteelAnalysis:
             parts_result["trend"] = build_policy_trend(rows, basis=query.comparison_basis)
         if rows and query.time_range.month_span() > 1:
             parts_result["policy_anomalies"] = build_policy_mom_anomalies(rows)
-        out.result = _compose_result(parts_result, default_kind="summary")
+        out.result = compose_result(parts_result, default_kind="summary")
         out.evidence["policy_ladder_rows"] = [
             {
                 "month": f"{row.year:04d}-{row.month:02d}",
@@ -123,7 +121,7 @@ class SteelAnalysis:
             parts_result["trend"] = build_base_price_trend(rows, basis=query.comparison_basis)
         if rows and query.time_range.month_span() > 1:
             parts_result["base_price_anomalies"] = build_base_price_mom_anomalies(rows)
-        out.result = _compose_result(parts_result, default_kind="summary")
+        out.result = compose_result(parts_result, default_kind="summary")
         out.evidence["base_price_rows"] = [
             {
                 "month": f"{row.year:04d}-{row.month:02d}",
@@ -140,7 +138,7 @@ class SteelAnalysis:
     def run_winning_thickness(self, db: Session, query: AnalysisQuery) -> AnalysisRunResult:
         """对齐「中标钢厂厚度价格一览表」#/winning-thickness-download。"""
         tr = query.time_range
-        location = expand_base_price_location(query.location() or "")
+        location = (query.location() or "").strip()
         if not location:
             return AnalysisRunResult(
                 comparability=resolve_comparability(query.comparison_basis),
@@ -148,7 +146,8 @@ class SteelAnalysis:
                 data_message="中标厚度价须指定基地",
             )
 
-        rows = self._winning_thickness_repo.query_rows(
+        rows = load_winning_thickness_rows(
+            self._winning_thickness_export,
             db,
             year=tr.end_year,
             month=tr.end_month,
@@ -167,7 +166,7 @@ class SteelAnalysis:
             out.summary = build_winning_thickness_summary(rows)
         if "drivers" in query.analyses:
             parts_result["drivers"] = build_winning_thickness_drivers(rows)
-        out.result = _compose_result(parts_result, default_kind="summary")
+        out.result = compose_result(parts_result, default_kind="summary")
         out.evidence["winning_thickness_rows"] = [
             {
                 "steel_mill": row.steel_mill,
@@ -201,7 +200,7 @@ class SteelAnalysis:
             out.summary = build_scrap_price_summary(rows)
         if "drivers" in query.analyses:
             parts_result["drivers"] = build_scrap_price_drivers(rows)
-        out.result = _compose_result(parts_result, default_kind="summary")
+        out.result = compose_result(parts_result, default_kind="summary")
         out.evidence["scrap_price_rows"] = [
             {
                 "month": f"{row.year:04d}-{row.month:02d}",
@@ -235,7 +234,7 @@ class SteelAnalysis:
         if "trend" in query.analyses:
             parts_result["trend"] = build_steel_trend(steel_rows, basis=query.comparison_basis)
         default_kind = "trend" if "trend" in query.analyses else "summary"
-        out.result = _compose_result(parts_result, default_kind=default_kind)
+        out.result = compose_result(parts_result, default_kind=default_kind)
         out.evidence["steel_series"] = [
             {
                 "month": f"{row.year:04d}-{row.month:02d}",

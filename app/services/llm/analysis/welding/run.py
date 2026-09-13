@@ -17,7 +17,7 @@ from app.repositories.llm.welding_unit_price_analysis_repository import (
 )
 from app.schemas.llm.analysis_query import AnalysisQuery
 from app.services.llm.analysis.shared.anomaly import build_welding_fee_risks
-from app.services.llm.analysis.shared.compose import _compose_result
+from app.services.llm.analysis.shared.compose import compose_result
 from app.services.llm.analysis.shared.cost_driver import build_welding_fee_mom_anomalies
 from app.services.llm.analysis.shared.result import AnalysisRunResult
 from app.services.llm.analysis.welding.breakdown import (
@@ -36,7 +36,7 @@ from app.services.llm.analysis.welding.unit_price import (
     build_welding_unit_price_drivers,
     build_welding_unit_price_summary,
 )
-from app.services.llm.query.comparison_basis import resolve_comparability
+from app.services.llm.comparison_basis import resolve_comparability
 
 
 class WeldingAnalysis:
@@ -74,7 +74,7 @@ class WeldingAnalysis:
             parts_result["drivers"] = build_welding_unit_price_drivers(rows)
 
         default_kind = "comparison" if "comparison" in query.analyses else "summary"
-        out.result = _compose_result(parts_result, default_kind=default_kind)
+        out.result = compose_result(parts_result, default_kind=default_kind)
         out.evidence["welding_unit_price_rows"] = [
             {
                 "year": row.year,
@@ -122,7 +122,7 @@ class WeldingAnalysis:
                 head=head,
             )
         default_kind = "drilldown" if part_token else "summary"
-        out.result = _compose_result(parts_result, default_kind=default_kind)
+        out.result = compose_result(parts_result, default_kind=default_kind)
         out.evidence["welding_breakdown_rows"] = [
             {
                 "part_number": row.part_number,
@@ -205,7 +205,7 @@ class WeldingAnalysis:
             default_kind = "drilldown"
         else:
             default_kind = "summary"
-        out.result = _compose_result(parts_result, default_kind=default_kind)
+        out.result = compose_result(parts_result, default_kind=default_kind)
         out.evidence["l0_welding_fee_rows"] = [
             {
                 "year": row.year,
