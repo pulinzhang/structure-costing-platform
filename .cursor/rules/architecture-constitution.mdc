@@ -1,5 +1,5 @@
 ---
-description: 后端分层、切片依赖、外键引用保护、事务与异常通道、异步 worker 归属。不管 ApiResponse/Decimal/Perm 细节、不管 UI。
+description: 后端分层、切片依赖、外键引用保护、事务与异常通道、长任务/同步 Excel/旁路 Session。不管 ApiResponse/Decimal/Perm 细节、不管 UI。
 globs: app/**/*.py,tests/**/*.py
 alwaysApply: false
 ---
@@ -11,7 +11,7 @@ alwaysApply: false
 > Orchestrator 主方法行数与 `for` → `orchestrator-constitution.mdc`  
 > `main.py` 装配 → `main-structure.mdc`  
 > 标识符 → `naming-convention.mdc`  
-> 领域文档旧编号：§4.3 = 本文 §3.3 引用保护；§5.2 = §四 异常通道；§5.3 = §五 异步任务。
+> 领域文档旧编号：§4.3 = 本文 §3.3 引用保护；§5.2 = §四 异常通道；§5.3 = 本文 §五（长任务、同步 Excel、旁路 Session）。
 
 ```
 请求：  Router ──► Service ──► Repository ──► Database
@@ -97,9 +97,19 @@ app/
 
 `CASCADE` 仅附属行（明细、权限行；`ondelete` 与 `onupdate` 都 `CASCADE`）。独立主数据互引用 `RESTRICT`。SQLite 须 `PRAGMA foreign_keys=ON`。不加 FK 的父实体不准改主键、不准删除，只保留禁用。
 
+身份主键、独立主数据互引用一律 `RESTRICT`（删父或改主键时子行还在 → 引擎拒绝）。**另一类**是核价**结果表**上可选的「当初用了哪条基价/政策」ID：一事一议档案会整表重导，旧 ID 不必永活。这些列可空，`ondelete="SET NULL"`：父删/重导后结果行留下、指针变空；对账靠文件溯源与 Excel 行列。
+
+**溯源指针 `SET NULL` 仅下表列。** 禁止把身份 FK 或附属行改成 `SET NULL`；扩列等于改宪法。与 §五无关：这是外键策略，不是 Session / `task_id`。
+
+| 子表 | 列 | 指向 |
+|------|----|------|
+| `costing` 钢材联动价 | `base_price_id` | 基价 |
+| 同上 | `thickness_policy_id` / `width_policy_id` / `zinc_policy_id` | 政策头 |
+| 同上 | `thickness_ladder_item_id` / `width_ladder_item_id` / `zinc_ladder_item_id` | 阶梯明细 |
+
 ## 四、事务与异常通道
 
-**Repo 只改会话，Service 才落库。** 例外：异步进度经 runner 辅助库 AUTOCOMMIT；计算锁 DDL 用独立连接。二者都不在 Repo 里对业务 `Session` 调 `commit`。
+**Repo 只改会话，Service 才落库。** 例外：异步进度经 runner 辅助库 AUTOCOMMIT；计算锁 DDL 用独立连接；§五旁路 Session 由调用方 `commit`/`close`。三者都不在 Repo 里对**请求/任务**业务 `Session` 调 `commit`。
 
 写事务：`IntegrityError` → rollback + `BusinessException`；`BusinessException` rollback 再抛；未预期 `logger.exception` 后 **原样 raise**（500），禁止 `BusinessException(str(e))`。
 
@@ -116,21 +126,42 @@ app/
 
 业务 Router / 切片 Service **不抛 `HTTPException`**。仅 `deps/auth` 未登录可用 401。允许的元组：分页 `(items, total[, filters])`；Parser/计算领域「未匹配」；worker `WorkerTaskOutcome`（不穿过 HTTP）。
 
-## 五、异步后台任务
+## 五、长任务、同步 Excel、旁路 Session
 
-请求级 `db` 禁止带进线程。
+三种 Session 形态，不要互相抄。请求级 `db` 禁止带进线程。
 
 | 职责 | 归属 |
 |------|------|
-| 校验、`start_*`、返回 `task_id`、查进度 | Router |
-| `create_task`+`submit`、领域 `process_*`/`calculate`/`execute`、成功文案、终态、崩溃释放锁/回写 Run | 切片 Service |
-| 独立 Session、进度 AUTOCOMMIT、统一 catch、`db.close()` | `app/services/async_task` runner |
+| 鉴权与文件校验；长任务调 `start_*`（返回 `task_id`）；同步 Excel 调本切片 `upload`（返回结果 VO）；查进度 | Router（禁止解析、写库、开 `get_session_factory`） |
+| `create_task` + `submit_session_worker`、领域 `process_*`/`calculate`/`execute`、成功文案、终态、崩溃释放锁/回写 Run | 切片 Service |
+| 任务 Session、进度 AUTOCOMMIT、统一 catch、`db.close()` | `app/services/async_task` runner |
 
-禁止：Router 写 worker 壳；多切片复制 Session/进度壳（含引擎）；runner 感知零件数/`run_id` 等；引擎 worker 内再 `submit` 子任务等待（死锁）；为此引入 Celery/Redis。入队前拒绝对 Router 抛异常（冲突 `code=409`）。任务 JSON `result` 的 `model_dump` 只在切片 Service（类型安全）。
+**1. 长任务（有 `task_id`，前端轮询）——形态规则，不是入口封闭名单。** 凡入队后轮询的都走 runner：切片只提供 `work(db, on_progress) → WorkerTaskOutcome`（及可选 `on_crash`）。禁止自开 `get_session_factory()`、禁止自写进度/`close` 壳。现状举例（再加同类仍走 runner，不必改本表）：工艺/布点/BOM、钢价基价与政策、核算、引擎、LLM 报告。禁止把本类改成下面的同步 Excel。
+
+**2. 同步 Excel（请求 Session，无 `task_id`）——封闭名单。** 名册/窄表，一次请求解析并返回结果 VO，前端 Toast。禁止借此把第 1 类改成同步。**仅**下列入口（各切片设计已写死；新增同步入口必须先改本表）：
+
+| 入口 | 为何同步 |
+|------|----------|
+| 项目 `POST …/vehicle-models/upload` | 立项名册，百行级 |
+| 供应商 `POST …/suppliers/upload` | 建档名册，对齐项目 |
+| 检具费 `POST …/gauge-fees/upload` | 布点零件窄档案 |
+| 年度零件价 `POST …/annual-part-prices/upload` | 报价窄表 |
+| 采购对象供应商 `POST …/supplier-upload` | 一份清单对象行，对齐年度价 |
+
+**3. 旁路 Session（无 `task_id`、无进度 UI）——封闭名单。** 允许自开，**仅**下列场景；失败不影响主请求；禁止借此给第 1 类复制 runner：
+
+| 场景 | 为什么不走 runner |
+|------|-------------------|
+| 操作日志中间件写入 | 不能进业务事务；审计失败不得拖垮主请求 |
+| 操作日志 IP 归属地回写 | fire-and-forget，无任务卡 |
+| 计算锁 DDL | 独立连接，不是业务 `Session.commit()` |
+| `bootstrap` 启动建表/种子 | 进程装配，不是切片 worker |
+
+禁止：Router 写 worker 壳；有 `task_id` 的任务在切片内复制 Session/进度壳（含引擎、LLM 报告）；runner 感知零件数/`run_id` 等；引擎 worker 内再 `submit` 子任务等待（死锁）；为此引入 Celery/Redis。入队前拒绝对 Router 抛异常（冲突 `code=409`）。任务 JSON `result` 的 `model_dump` 只在切片 Service（类型安全）。
 
 ## 六、检查清单（仅本文件范围）
 
 - 业务判断 → Service；SQL → Repository；HTTP → Router；表结构 → Model；解析 → Parser（仅 Service 调）
-- 上游不得依赖下游；父不查子、不 `relationship` 独立子 → §3.3
-- worker 壳不在 Router、不在各切片复制 runner
+- 上游不得依赖下游；父不查子、不 `relationship` 独立子 → §3.3；结果表溯源指针 `SET NULL` 仅 §3.3 封闭名单
+- 有 `task_id` 的 worker 壳不在 Router、不在切片复制 runner；旁路 Session 与同步 Excel 仅 §五封闭名单
 - HTTP 错误只抛 `NotFoundException` / `BusinessException`；Orchestrator 主方法无 `for`/写库 → 指挥家宪法

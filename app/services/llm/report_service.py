@@ -2,7 +2,6 @@
 
 from __future__ import annotations
 
-import contextlib
 import json
 import uuid
 from typing import Any
@@ -11,7 +10,6 @@ from sqlalchemy.orm import Session
 
 from app.common.audit import audit_create, display_name
 from app.config import settings
-from app.database import DatabaseConfig
 from app.exceptions.base import BusinessException, NotFoundException, PermissionException
 from app.repositories.llm import (
     LlmAnalysisReportFailPatch,
@@ -34,9 +32,9 @@ from app.schemas.vo.llm_analysis_vo import (
 from app.schemas.vo.user_vo import UserVO
 from app.services.async_task import (
     STATUS_COMPLETED,
-    STATUS_FAILED,
-    STATUS_RUNNING,
     AsyncTaskService,
+    ProgressCallback,
+    WorkerTaskOutcome,
 )
 from app.services.llm.analysis.runner import AnalysisRunner
 from app.services.llm.analysis.shared.idempotency import build_idempotency_key
@@ -45,6 +43,7 @@ from app.services.llm.context.snapshot_builder import SnapshotBuilder
 from app.services.llm.engine_readiness import EngineReadinessRunner
 from app.services.llm.generator import LlmReportGenerator
 from app.services.llm.prompts.labels import sanitize_report_markdown
+from app.services.llm.prompts.registry import PromptRegistry
 from app.services.llm.query.intent_router import detect_audience
 from app.services.llm.query.query_parser import QueryParser
 from app.services.llm.usage import UsageHelpRunner
@@ -59,6 +58,14 @@ REPORT_STATUS_SUCCEEDED = "succeeded"
 REPORT_STATUS_FAILED = "failed"
 
 _async_task_service = AsyncTaskService()
+
+
+def _mode_progress_copy(query_mode: str) -> tuple[str, str, str]:
+    if query_mode == "usage_help":
+        return ("正在检索帮助语料…", "正在生成操作说明…", "帮助回答完成")
+    if query_mode == "engine_readiness":
+        return ("正在检查核算就绪…", "正在生成就绪说明…", "分析完成")
+    return ("正在查询并聚合核价事实…", "AI正在思考中…", "分析完成")
 
 
 class LlmAnalysisReportService:
@@ -154,13 +161,45 @@ class LlmAnalysisReportService:
         )
         db.commit()
 
-        # 把完整 query JSON 暂存到 data_message 不合适；worker 内重新 parse
-        AsyncTaskService.submit(
-            self._process_in_background,
+        report_id = int(row.id)
+        updated_by = str(audit["updated_by"])
+        query_json = json.dumps(analysis_query.model_dump(mode="json"), ensure_ascii=False)
+
+        def work(worker_db: Session, on_progress: ProgressCallback) -> WorkerTaskOutcome:
+            return self._run_report_work(
+                worker_db,
+                on_progress,
+                report_id=report_id,
+                updated_by=updated_by,
+                analysis_query_json=query_json,
+            )
+
+        def on_crash(worker_db: Session, error: BaseException) -> None:
+            try:
+                self.repository.mark_failed(
+                    worker_db,
+                    report_id,
+                    LlmAnalysisReportFailPatch(
+                        status=REPORT_STATUS_FAILED,
+                        error_message=str(error)[:1000],
+                        updated_by=updated_by,
+                    ),
+                )
+                worker_db.commit()
+            except Exception:
+                logger.exception("写入失败状态出错")
+
+        _async_task_service.submit_session_worker(
             task.task_id,
-            int(row.id),
-            str(audit["updated_by"]),
-            json.dumps(analysis_query.model_dump(mode="json"), ensure_ascii=False),
+            start_message="开始分析…",
+            work=work,
+            on_crash=on_crash,
+            crash_message=lambda error: f"分析失败: {error}",
+            crash_progress=100,
+            crash_result=lambda _error: {
+                "report_id": report_id,
+                "status": REPORT_STATUS_FAILED,
+            },
         )
         return self._to_task_vo(row, from_cache=False, message=self._submit_message(analysis_query))
 
@@ -247,167 +286,108 @@ class LlmAnalysisReportService:
         result = AsyncTaskService.parse_result_json(snapshot.get("result_json"))
         return AsyncTaskProgressVO.from_snapshot(snapshot, result=result)
 
-    def _process_in_background(
+    def _run_report_work(
         self,
-        task_id: str,
+        db: Session,
+        on_progress: ProgressCallback,
+        *,
         report_id: int,
         updated_by: str,
         analysis_query_json: str,
-    ) -> None:
-        session_factory = DatabaseConfig.get_session_factory()
-        db = session_factory()
+    ) -> WorkerTaskOutcome:
+        self.repository.mark_running(db, report_id, updated_by=updated_by)
+        db.commit()
+
+        row = self.repository.get_by_id(db, report_id)
+        if row is None:
+            raise RuntimeError(f"报告不存在: {report_id}")
+
+        analysis_query = AnalysisQuery.model_validate(json.loads(analysis_query_json))
+        if not analysis_query.trace_id:
+            analysis_query = analysis_query.model_copy(update={"trace_id": str(uuid.uuid4())})
+
+        fetch_message, generate_message, done_message = _mode_progress_copy(
+            analysis_query.query_mode
+        )
+        on_progress(25, fetch_message)
+        if analysis_query.query_mode == "usage_help":
+            run = self.usage_runner.run(analysis_query)
+        elif analysis_query.query_mode == "engine_readiness":
+            run = self.engine_readiness_runner.run(db, analysis_query)
+        else:
+            run = self.runner.run(db, analysis_query)
+        snapshot = self.snapshot_builder.build(query=analysis_query, run=run)
+
+        on_progress(55, generate_message)
         try:
-            from app.schemas.llm.analysis_query import AnalysisQuery
-
-            _async_task_service.update_task_standalone(
-                task_id,
-                status=STATUS_RUNNING,
-                progress=5,
-                message="开始分析…",
+            generated = self.generator.generate(
+                snapshot=snapshot,
+                audience=row.audience,
             )
-            self.repository.mark_running(db, report_id, updated_by=updated_by)
-            db.commit()
+            markdown = generated.markdown_content
+            llm_model = generated.llm_model
+            prompt_version = generated.prompt_version
+            prompt_hash = generated.prompt_hash
+            prompt_tokens = generated.prompt_tokens
+            completion_tokens = generated.completion_tokens
+            total_tokens = generated.total_tokens
+            prompt_preview = generated.prompt_preview
+            llm_response_preview = generated.llm_response_preview
+        except LlmClientError as exc:
+            logger.warning("LLM 调用失败，降级规则模板: %s", exc)
+            markdown = self.generator.render_fallback_markdown(
+                snapshot=snapshot,
+                error_hint=str(exc),
+            )
+            llm_model = None
+            prompt = PromptRegistry().resolve(row.audience)
+            prompt_version = prompt.prompt_version
+            prompt_hash = prompt.prompt_hash
+            prompt_tokens = None
+            completion_tokens = None
+            total_tokens = None
+            prompt_preview = None
+            llm_response_preview = None
 
-            row = self.repository.get_by_id(db, report_id)
-            if row is None:
-                raise RuntimeError(f"报告不存在: {report_id}")
-
-            analysis_query = AnalysisQuery.model_validate(json.loads(analysis_query_json))
-            if not analysis_query.trace_id:
-                analysis_query = analysis_query.model_copy(update={"trace_id": str(uuid.uuid4())})
-
-            _async_task_service.update_task_standalone(
-                task_id,
-                status=STATUS_RUNNING,
-                progress=25,
-                message=(
-                    "正在检索帮助语料…"
-                    if analysis_query.query_mode == "usage_help"
-                    else "正在检查核算就绪…"
-                    if analysis_query.query_mode == "engine_readiness"
-                    else "正在查询并聚合核价事实…"
+        self.repository.mark_succeeded(
+            db,
+            report_id,
+            LlmAnalysisReportSuccessPatch(
+                status=REPORT_STATUS_SUCCEEDED,
+                markdown_content=markdown,
+                prompt_version=prompt_version,
+                prompt_hash=prompt_hash,
+                llm_model=llm_model,
+                prompt_tokens=prompt_tokens,
+                completion_tokens=completion_tokens,
+                total_tokens=total_tokens,
+                context_pack_ids=json.dumps(
+                    {
+                        "analyses": analysis_query.analyses,
+                        "trace_id": analysis_query.trace_id,
+                        "analysis_version": snapshot.meta.analysis_version,
+                    },
+                    ensure_ascii=False,
                 ),
-            )
-            if analysis_query.query_mode == "usage_help":
-                run = self.usage_runner.run(analysis_query)
-            elif analysis_query.query_mode == "engine_readiness":
-                run = self.engine_readiness_runner.run(db, analysis_query)
-            else:
-                run = self.runner.run(db, analysis_query)
-            snapshot = self.snapshot_builder.build(query=analysis_query, run=run)
-
-            _async_task_service.update_task_standalone(
-                task_id,
-                status=STATUS_RUNNING,
-                progress=55,
-                message=(
-                    "正在生成操作说明…"
-                    if analysis_query.query_mode == "usage_help"
-                    else "正在生成就绪说明…"
-                    if analysis_query.query_mode == "engine_readiness"
-                    else "AI正在思考中…"
-                ),
-            )
-            try:
-                generated = self.generator.generate(
-                    snapshot=snapshot,
-                    audience=row.audience,
-                )
-                markdown = generated.markdown_content
-                llm_model = generated.llm_model
-                prompt_version = generated.prompt_version
-                prompt_hash = generated.prompt_hash
-                prompt_tokens = generated.prompt_tokens
-                completion_tokens = generated.completion_tokens
-                total_tokens = generated.total_tokens
-                prompt_preview = generated.prompt_preview
-                llm_response_preview = generated.llm_response_preview
-            except LlmClientError as exc:
-                logger.warning("LLM 调用失败，降级规则模板: %s", exc)
-                markdown = self.generator.render_fallback_markdown(
-                    snapshot=snapshot,
-                    error_hint=str(exc),
-                )
-                llm_model = None
-                from app.services.llm.prompts.registry import PromptRegistry
-
-                prompt = PromptRegistry().resolve(row.audience)
-                prompt_version = prompt.prompt_version
-                prompt_hash = prompt.prompt_hash
-                prompt_tokens = None
-                completion_tokens = None
-                total_tokens = None
-                prompt_preview = None
-                llm_response_preview = None
-
-            self.repository.mark_succeeded(
-                db,
-                report_id,
-                LlmAnalysisReportSuccessPatch(
-                    status=REPORT_STATUS_SUCCEEDED,
-                    markdown_content=markdown,
-                    prompt_version=prompt_version,
-                    prompt_hash=prompt_hash,
-                    llm_model=llm_model,
-                    prompt_tokens=prompt_tokens,
-                    completion_tokens=completion_tokens,
-                    total_tokens=total_tokens,
-                    context_pack_ids=json.dumps(
-                        {
-                            "analyses": analysis_query.analyses,
-                            "trace_id": analysis_query.trace_id,
-                            "analysis_version": snapshot.meta.analysis_version,
-                        },
-                        ensure_ascii=False,
-                    ),
-                    has_data=1 if snapshot.meta.has_data else 0,
-                    data_message=snapshot.meta.data_message,
-                    audit_hint=None,
-                    prompt_preview=prompt_preview,
-                    llm_response_preview=llm_response_preview,
-                    updated_by=updated_by,
-                ),
-            )
-            db.commit()
-            _async_task_service.update_task_standalone(
-                task_id,
-                status=STATUS_COMPLETED,
-                progress=100,
-                message=(
-                    "帮助回答完成" if analysis_query.query_mode == "usage_help" else "分析完成"
-                ),
-                result={
-                    "report_id": report_id,
-                    "status": REPORT_STATUS_SUCCEEDED,
-                    "analyses": analysis_query.analyses,
-                },
-            )
-        except Exception as exc:
-            logger.exception("LLM 分析任务失败 task_id=%s", task_id)
-            with contextlib.suppress(Exception):
-                db.rollback()
-            try:
-                self.repository.mark_failed(
-                    db,
-                    report_id,
-                    LlmAnalysisReportFailPatch(
-                        status=REPORT_STATUS_FAILED,
-                        error_message=str(exc)[:1000],
-                        updated_by=updated_by,
-                    ),
-                )
-                db.commit()
-            except Exception:
-                logger.exception("写入失败状态出错")
-            _async_task_service.update_task_standalone(
-                task_id,
-                status=STATUS_FAILED,
-                progress=100,
-                message=f"分析失败: {exc}",
-                result={"report_id": report_id, "status": REPORT_STATUS_FAILED},
-            )
-        finally:
-            db.close()
+                has_data=1 if snapshot.meta.has_data else 0,
+                data_message=snapshot.meta.data_message,
+                audit_hint=None,
+                prompt_preview=prompt_preview,
+                llm_response_preview=llm_response_preview,
+                updated_by=updated_by,
+            ),
+        )
+        db.commit()
+        return WorkerTaskOutcome(
+            status=STATUS_COMPLETED,
+            progress=100,
+            message=done_message,
+            result={
+                "report_id": report_id,
+                "status": REPORT_STATUS_SUCCEEDED,
+                "analyses": analysis_query.analyses,
+            },
+        )
 
     def _to_task_vo(
         self,

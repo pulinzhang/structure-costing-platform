@@ -214,7 +214,7 @@ CRUD：上传路由绑 `upload` 叶权限；一览写操作绑 `list` 叶对应 
 - 拖拽区 + 「选择文件」+ 「下载模板」；只选 `.xlsx` / `.xls`
 - **没有**采购基地下拉（基地在 Excel 列里，违反 P3 的那种「先选基地再传」不要抄）
 - 主按钮红底 `#d32f2f`（本页只用这一种红）
-- 同步上传，进度条即可；不走异步任务壳
+- 提交后等本次 HTTP 结束，进度条即可；本页**没有**任务轮询。无 `task_id` 的 HTTP 契约只写在 §5.4（宪法 §五同步 Excel 封闭名单，不是漏做异步）
 - 成功 Toast 后可深链一览表，不在本页画数据表
 
 模板列见 §5.4。整单事务：任一行失败则全部不写入。
@@ -400,7 +400,7 @@ Parser 只被本切片 Service 调用。页面**不传** `location`。列（表�
 
 整单一个事务，任一行失败（含上条冲突、基地禁用、代号非法）则全部回滚。抽屉 `POST` 遇到已有主键 → `BusinessException("该基地已有此项目")`，不要学 Excel 静默跳过。
 
-`GET /api/masterdata/vehicle-models/template` → `StreamingResponse`（无 `ApiResponse`）。`POST /api/masterdata/vehicle-models/upload` 只收文件，返回 `ApiResponse[VehicleModelUploadResultVO]`（`created_count` / `skipped_count`，具名 VO）。百行量级，同步即可，不走异步任务。
+`GET /api/masterdata/vehicle-models/template` → `StreamingResponse`（无 `ApiResponse`）。`POST /api/masterdata/vehicle-models/upload` 只收文件，走**请求 Session**，返回 `ApiResponse[VehicleModelUploadResultVO]`（`created_count` / `skipped_count`，具名 VO），**无** `task_id`。百行名册；入口在宪法 §五同步 Excel 封闭名单。禁止改成 `start_upload`。上传页交互见 §4.4。
 
 `GET /api/masterdata/vehicle-models/export` → `StreamingResponse`。列与模板完全相同（基地、项目代号、生效年、生效月、失效年、失效月、当前供货台数），失效空则空单元格；供货台数写整数（0 也写出）。可选 `location=` 只导出该基地；不传则全量，顺序与一览表相同。不要加「该月状态」列，否则无法再导入。已有主键再导入仍跳过、不覆盖（改期或改台数走抽屉）。
 
@@ -594,7 +594,7 @@ L0Scope 仍来自含 L0 的 BOM 快照，但 `vehicle_model` 必须落在本期�
 
 **做：** 切片 `masterdata` 项目（侧栏二级：上传 + 一览表；抽屉手工增加 + Excel 上传，模板自带基地；一览表导出列与模板相同；挂**已启用**基地、生效/失效、**当前供货台数**）；代号一律大写；同一代号可跨基地（P15）；§4.1～4.6；一览表 HUD 按基地分卡（一份 `VehicleModelListVO`）；写门禁分层（§6.0：档案 / 按年 / 当期引入）；布点/BOM `assert_matches_selected`；引擎名单问本文；工艺上传只选文件、解析后 `require_introducible_by_code` 带出基地、仍不要求布点；未生效月不准传工艺/布点/BOM；界面「项目」；直接下一跳复合外键（改主键/删除 `RESTRICT`，宪法 §4.3）。新写入必须正确；历史行允许不正确。
 
-**不做：** 上传时选手选基地；禁用基地立项；启动或脚本从下游表灌入种子；基地表/别名；项目别名 / 第二套大小写查询；政策表；下游代建立项；改代号；改所属基地；暂停；基地禁用时改项目生效/失效；未生效月传工艺/布点/BOM；把模具单价/检具费也卡生效月；工艺绑定必须先有布点；全库整型外键；给间接列加项目 FK；改写历史业务列迁就外键；项目切片 `count` 下游；逻辑删除；手改排序；分页；生效到日；异步任务壳（百行同步即可）；一览表再打基地 HTTP；0 项目基地在表里出空段；按销量自动累加供货台数；在本文里写模具费停摊。
+**不做：** 上传时选手选基地；禁用基地立项；启动或脚本从下游表灌入种子；基地表/别名；项目别名 / 第二套大小写查询；政策表；下游代建立项；改代号；改所属基地；暂停；基地禁用时改项目生效/失效；未生效月传工艺/布点/BOM；把模具单价/检具费也卡生效月；工艺绑定必须先有布点；全库整型外键；给间接列加项目 FK；改写历史业务列迁就外键；项目切片 `count` 下游；逻辑删除；手改排序；分页；生效到日；一览表再打基地 HTTP；0 项目基地在表里出空段；按销量自动累加供货台数；在本文里写模具费停摊。
 
 侧栏「项目」与「基地」分开展示、不是同一张表。  
 对基地：本表声明 `RESTRICT`，不在基地切片点名项目。  

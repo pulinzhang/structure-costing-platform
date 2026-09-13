@@ -282,7 +282,7 @@ Service 先解析，再 `require_introducible_by_code`（墙钟月）与 `requir
 | `StampingDieUploadService` 要求工艺库存在 | 删除 |
 | `die_number_resolver.py` | **已删**；有外形缺号走 `die_number_assigner` |
 | `map_die_parts_to_process` | **已删**；`process_identity.py` 只留模具费筛 `matches_die_identity` |
-| `parsers/stamping_die` 无 `die_number` | 增列映射；**无表头不失败** |
+| `parsers/stamping/die` 无 `die_number` | 增列映射；**无表头不失败** |
 | 新：布点上传 Service 补号 | `DP-40-{vehicle_model}-{001–999}`，按 §4.4；禁止写在 Parser |
 | `stamping_parser.py` 无 `die_number` 列则 raise | 改为可缺列 |
 | 工艺上传 Router / `start_upload` | Form 只收 `file`；worker 解析后 `require_introducible_by_code` + `require_enabled` |

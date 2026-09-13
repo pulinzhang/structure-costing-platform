@@ -8,7 +8,7 @@ from pathlib import Path
 from openpyxl import load_workbook
 from openpyxl.utils import get_column_letter
 
-from app.parsers.stamping_die.parser import parse_die_layout_excel
+from app.parsers.stamping.die.parser import parse_die_layout_excel
 from app.services.stamping.die.template_builder import build_die_layout_template
 
 

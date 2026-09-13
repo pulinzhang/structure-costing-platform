@@ -48,9 +48,9 @@
 LlmAnalysisReportService.create_report
         │  QueryParser.parse（规则定 mode / subject / analyses[]）
         │  并发 ≤2 / 人；幂等命中则直接返回
-        │  落库 pending + 提交 AsyncTask
+        │  落库 pending + submit_session_worker
         ▼
-_process_in_background
+_run_report_work（runner 提供任务 Session / 进度 / catch）
         │
         ├─ query_mode = usage_help        → UsageHelpRunner（helper 语料）
         ├─ query_mode = engine_readiness  → EngineReadinessRunner（CostingEngineService.get_ready）

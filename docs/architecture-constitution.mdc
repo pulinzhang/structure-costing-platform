@@ -7,4 +7,4 @@
 - `main.py` 装配：[`.cursor/rules/main-structure.mdc`](../.cursor/rules/main-structure.mdc)
 - API 形态 / Decimal / `Perm.*`：[`.cursor/rules/api-type-safety.mdc`](../.cursor/rules/api-type-safety.mdc)
 
-规则内章节：分层 §一 · 目录 §二 · 切片依赖与外键 §三 · 事务与异常通道 §四 · 异步 worker §五。
+规则内章节：分层 §一 · 目录 §二 · 切片依赖与外键 §三 · 事务与异常通道 §四 · 长任务 / 同步 Excel / 旁路 Session §五。

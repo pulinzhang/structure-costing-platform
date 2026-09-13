@@ -8,7 +8,7 @@ from decimal import Decimal
 
 from app.common.vehicle_model import normalize_vehicle_model
 from app.exceptions.base import BusinessException
-from app.parsers.stamping_die.parser import ParsedDiePart, ParsedDieProcess
+from app.parsers.stamping.die.parser import ParsedDiePart, ParsedDieProcess
 
 _PREFIX = "DP"
 _CATEGORY = "40"
