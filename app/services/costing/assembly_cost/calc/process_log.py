@@ -8,6 +8,7 @@ from decimal import Decimal
 from typing import TypedDict
 
 from app.common.money import Q4, optional_format_money
+from app.services.costing.assembly_cost.codes import PURCHASED_ASSEMBLY_NOTE
 
 MISSING_PART_LIMIT = 12
 CONFLICT_LIMIT = 30
@@ -53,15 +54,19 @@ def compose_card_message(
     missing_leaf_count: int = 0,
     missing_parts: list[str] | None = None,
     weld_incomplete: bool = False,
+    is_purchased_assembly: bool = False,
     extra: str | None = None,
 ) -> str | None:
-    """卡片说明：短句。缺价件号放 missing_parts。"""
+    """卡片说明：短句。缺价件号放 missing_parts。
+
+    外购件总成（P4）价齐时写 PURCHASED_ASSEMBLY_NOTE，核算报告「说明」列用同一句。
+    """
     if extra:
         return extra
     if status == "skipped":
         return "已审核，跳过"
     if status == "ok":
-        return None
+        return PURCHASED_ASSEMBLY_NOTE if is_purchased_assembly else None
     chunks: list[str] = []
     if missing_leaf_count > 0:
         chunks.append(f"缺价 {missing_leaf_count}，补冲压价/年度价后重算")

@@ -25,6 +25,7 @@ from app.services.costing.assembly_cost.calc.process_log import (
     operator_write_error,
 )
 from app.services.costing.assembly_cost.calc.rollup import FORMULA_VERSION, rollup_assembly
+from app.services.costing.assembly_cost.codes import is_purchased_assembly_root
 
 logger = logging.getLogger("service.costing.assembly_cost.calc")
 
@@ -100,9 +101,14 @@ class BatchCalculationEngine:
                     )
                     calc_status: str = result.status
                     welding = ctx.welding_by_bom_node.get(root.id)
-                    weld_incomplete = welding is not None and (
-                        welding.missing_price_count > 0
-                        or (welding.calc_status is not None and welding.calc_status != "ok")
+                    purchased_assembly = is_purchased_assembly_root(root.id, result.lines)
+                    weld_incomplete = (
+                        result.welding_fee_id is not None
+                        and welding is not None
+                        and (
+                            welding.missing_price_count > 0
+                            or (welding.calc_status is not None and welding.calc_status != "ok")
+                        )
                     )
                     missing_parts = [
                         format_missing_part_label(line.part_number, line.match_hint)
@@ -119,6 +125,7 @@ class BatchCalculationEngine:
                             missing_leaf_count=result.missing_leaf_count,
                             missing_parts=missing_parts,
                             weld_incomplete=weld_incomplete,
+                            is_purchased_assembly=purchased_assembly,
                         )
                     meta = ctx.subject_meta.get(root.id)
                     payload = AssemblyCostUpsertPayload(

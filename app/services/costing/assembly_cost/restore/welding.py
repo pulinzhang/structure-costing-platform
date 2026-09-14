@@ -18,11 +18,16 @@ from app.schemas.vo.assembly_cost_restore_vo import (
     RestoreWeldingLineVO,
     RestoreWeldingVO,
 )
-from app.services.costing.assembly_cost.codes import card_short_code
+from app.services.costing.assembly_cost.codes import (
+    PURCHASED_ASSEMBLY_NOTE,
+    card_short_code,
+    is_purchased_assembly_root,
+)
 from app.services.costing.assembly_cost.restore.labels import (
     INDIRECT_KIND_LABELS,
     INDIRECT_UNIT_TRANSPORT,
     INDIRECT_WAREHOUSE_BUNDLING,
+    WELDING_NONE_MESSAGE,
     indirect_kind,
 )
 from app.services.costing.assembly_cost.restore.money import _money, _opt_money
@@ -39,9 +44,10 @@ class RestoreWelding:
         exceptions: list[RestoreExceptionVO],
     ) -> RestoreWeldingVO:
         if card.welding_fee_id is None:
+            included = is_purchased_assembly_root(card.source_node_id, card.items)
             return RestoreWeldingVO(
                 has_record=False,
-                message="没有焊接",
+                message=(PURCHASED_ASSEMBLY_NOTE if included else WELDING_NONE_MESSAGE),
                 card_level=card.level,
             )
         fee = self.welding_repo.get_by_id(db, card.welding_fee_id)

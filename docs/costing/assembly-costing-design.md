@@ -30,7 +30,7 @@ costing_assembly_costs.level     = 核价卡根 bom_nodes.level
 | P1 | 一个切片 `assembly_cost`，**本切片**去尽 `l0` 前缀 | 再开 `l0`/`l1`/`outsourced` 三套表。清单 `object_kind`（`l0_degenerate` 等）是上游枚举，**照抄不改名** |
 | P2 | 一行 = 一个 `source_node_id` × 年 × 月 × 范围 | 仍用零件号当唯一键 |
 | P3 | 核价主体 = A∪B∪C（§4），去重按节点 | 按 level 枚举认人；再扫树发明第四套分类 |
-| P4 | **永不对本卡根剪枝**；一口价只砍 **子孙** | 「根自己有年度价就不 walk」 |
+| P4 | 卡根**有子件且命中年度价** → 本卡按外购件落账（年度价已含工费），子孙 `skipped_by_bundle`，**不报缺价、不抄本卡焊接**；一口价同样砍 walk 中的子孙。判定函数 `codes.is_purchased_assembly_root`；对外说明句 `codes.PURCHASED_ASSEMBLY_NOTE`（核算报告 / 计算过程共用） | 外购件总成仍拆子件 / 再加焊，把已含件报缺价；文案各写各的 |
 | P5 | 无子件的卡根 **当叶子** 取冲压/年度价 | 继续「树根不当叶子 → 材料 0」 |
 | P6 | 焊接费按 **拆解节点 `source_node_id` = 卡根** 对齐，不按 `level=0`、不按零件号字典 | `welding_by_part[part_number]` |
 | P7 | 无焊接费行 → 工费 0，**不**因此 partial | 无焊就整卡失败（冲压叶子会全挂） |
@@ -113,7 +113,7 @@ costing_assembly_costs.level     = 核价卡根 bom_nodes.level
 | 月总账 | `total_amount` | 材料 + **R 自己的** 焊接 + 焊接其它；不含间接 |
 | 应成本 | `should_cost` | = `total_amount` |
 | 总费用 | `grand_total` | 月总账 + 间接 |
-| 一口价 | bundle | walk 中 **子孙** 有子件且命中年度价 → 剪枝 |
+| 一口价 | bundle | **本卡根**或 walk 中 **子孙** 有子件且命中年度价 → 剪枝 |
 | 二级报价 | `vendor_quote` | R 的零件号命中年度价则该 `unit_price`（一张卡 = 一个 R 实例）；可空 |
 | 价差 | `gap_amount` | 有报价：`vendor_quote - should_cost`；无报价：NULL |
 | 所属供货件 | `root_part_number` | 从 R 上溯到树根的零件号（退化件 = 自己） |
@@ -239,7 +239,7 @@ subjects = A ∪ B ∪ C                       // 按 id 去重
 
 ### 5.2 递归（替换两层 for）
 
-**P4：不对 R 自己做一口价判断。** 即使 R 有年度价，仍 walk 子件（采购应成本）；R 的年度价只进 `vendor_quote`。
+**P4：卡根自己有子件且命中年度价，按外购件/一口价落账。** 子孙已含在该年度价里，写 `skipped_by_bundle`，不走叶子取价、不计入 `missing_leaf_count`。年度价已是结算价，**本卡 ④⑤ 记 0、不挂焊接费行、不因上游焊费 partial**。`vendor_quote` 仍是该年度价（与一口价相同，价差 0）。无子件的卡根仍按 P5 当叶子，焊接仍按 P6 抄。
 
 ```text
 function walk(node, path_qty):
@@ -247,21 +247,15 @@ function walk(node, path_qty):
   if kids 为空:
       emit 叶子取价(node, path_qty)          // §5.3
       return
+  if node.part_number in annual_prices:      // 含本卡根：外购件总成
+      emit bundle(node, path_qty)
+      for 每个 node 的后代 G:
+          emit skipped_by_bundle(G, path_qty_from_R_to_G, hint=node.part_number)
+      return
   for D in kids:
-      q = path_qty * D.qty
-      if D 有子件 and D.part_number in annual_prices:
-          emit bundle(D, q)
-          for 每个 D 的后代 G:
-              emit skipped_by_bundle(G, path_qty_from_R_to_G, hint=D.part_number)
-              // path_qty_from_R_to_G = 从 R 的直接子走到 G 的 qty 连乘（规则同 §5.1）
-      elif D 有子件:
-          walk(D, q)
-      else:
-          emit 叶子取价(D, q)
+      walk(D, path_qty * D.qty)
 
-入口:
-  if R 无子件: walk 等价于 叶子取价(R, 1)
-  else:        对每个直接子 D: 按上式（path_qty 从 1 起，第一层乘 D.qty）
+入口: walk(R, 1)
 ```
 
 `skipped_by_bundle`：单价/金额 0，保留 `effective_qty`；不进 ①②。
@@ -296,7 +290,7 @@ function walk(node, path_qty):
 
 ### 6.2 每卡仍只抄自己那一行
 
-本卡 ④⑤ **只抄** `bom_welding_fees` 里 **R 自己** 的已落库行（P19）。没有行就 0，**不要**用拆解明细临算，**不要** `Σ children.welding_amount`。
+本卡 ④⑤ **只抄** `bom_welding_fees` 里 **R 自己** 的已落库行（P19）。没有行就 0，**不要**用拆解明细临算，**不要** `Σ children.welding_amount`。**例外（P4）：** 卡根有子件且命中年度价 → 外购件一口价已含工费，④⑤ = 0，不挂 `welding_fee_id`。
 
 现网 prep：`list_by_calc_scope(..., level=0)` 再 `welding_by_part[part_number]`。同号两支会撞。对齐方式要改成按节点，树根仍只取 **该树根节点** 那一行（通常就是现网的 L0 行）。
 
@@ -649,3 +643,4 @@ D5  退化树根财务专项签字
 | 2026-09-05 | 成品核价一览同样：表头本表合计 + 表外 SUM；不进筛选。 |
 | 2026-09-09 | P20：无冲压工艺不判零件价完成；无 BOM 不判焊接、总成不开始。 |
 | 2026-09-11 | 计算过程报告：分总成节点不得把兄弟卡焊装画进成品账材料行；协议页不改。见 restore-ledger-display。 |
+| 2026-09-14 | **P4：** 外购件总成（卡根有子件且命中年度价）本卡用年度价，子孙已含不报缺价，本卡不抄焊接。 |

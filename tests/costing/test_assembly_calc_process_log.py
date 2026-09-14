@@ -101,3 +101,10 @@ def test_compose_card_message_welding_only() -> None:
         weld_incomplete=True,
     )
     assert message == "焊接费不完整"
+
+
+def test_compose_card_message_purchased_assembly() -> None:
+    from app.services.costing.assembly_cost.codes import PURCHASED_ASSEMBLY_NOTE
+
+    assert compose_card_message(status="ok", is_purchased_assembly=True) == PURCHASED_ASSEMBLY_NOTE
+    assert compose_card_message(status="ok", is_purchased_assembly=False) is None
