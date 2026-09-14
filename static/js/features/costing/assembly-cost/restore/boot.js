@@ -289,7 +289,7 @@ function processOpHtml(op) {
             </div>
             ${equation ? `<p class="calc-eq">${equation}</p>` : ''}
             ${inherit ? `<p class="calc-note">${inherit}</p>` : ''}
-            ${op.basis_text ? `<p class="calc-proof">${display(op.basis_text)}</p>` : ''}
+            ${!equation && op.basis_text ? `<p class="calc-proof">${display(op.basis_text)}</p>` : ''}
         </div>
     `;
 }
