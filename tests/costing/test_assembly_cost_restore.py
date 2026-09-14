@@ -448,7 +448,7 @@ def test_process_and_die_ops_show_ratio_and_alloc() -> None:
                 cost_ratio=Decimal("0.50"),
                 price_per_stroke=Decimal("0.452"),
                 line_fee=Decimal("0.226"),
-                basis_text="OP10: 继承上一件502007775AA/OP10 800T × 比例0.50 × 单价0.452 = 0.226",
+                basis_text="OP10: 继承上一件502007775AA/OP10 800T 比例0.50 × 单价0.452 = 0.226",
             )
         ],
     )

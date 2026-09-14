@@ -48,10 +48,9 @@ def build_process_basis_text(
         from_part = inherited_from_part_number or "?"
         return (
             f"{process_label}: 继承上一件{from_part}/{from_label} "
-            f"{tonnage_text} × 比例{ratio_text} × 单价{price_text} = {fee_text}"
+            f"{tonnage_text} 比例{ratio_text} × 单价{price_text} = {fee_text}"
         )
 
     return (
-        f"{process_label}: 自有 {tonnage_text} × 比例{ratio_text} "
-        f"× 单价{price_text} = {fee_text}"
+        f"{process_label}: 自有 {tonnage_text} 比例{ratio_text} " f"× 单价{price_text} = {fee_text}"
     )

@@ -271,13 +271,15 @@ function processOpHtml(op) {
     const inherit = op.tonnage_source === 'inherited' && op.inherited_from_part_number
         ? `吨位同 ${display(op.inherited_from_part_number)}${op.inherited_from_process_seq ? ` ${display(op.inherited_from_process_seq)}` : ''}`
         : (op.tonnage_source === 'swing_shear' ? '摆剪不计费' : '');
-    const parts = [];
-    if (hasValue(op.resolved_tonnage)) parts.push(`${display(op.resolved_tonnage)}T`);
-    if (hasValue(op.cost_ratio)) parts.push(`系数 ${ratioText(op.cost_ratio)}`);
-    if (hasValue(op.price_per_stroke)) parts.push(`冲次单价 ${money(op.price_per_stroke)}`);
-    const equation = parts.length
-        ? `${parts.join(' × ')} = ${money(op.line_fee)}`
+    // 吨位与系数空格相连，仅与冲次单价用 ×（避免读成三元相乘）
+    const head = hasValue(op.resolved_tonnage) ? `${display(op.resolved_tonnage)}T` : '';
+    const ratioPart = hasValue(op.cost_ratio) ? `系数 ${ratioText(op.cost_ratio)}` : '';
+    const pricePart = hasValue(op.price_per_stroke)
+        ? `冲次单价 ${money(op.price_per_stroke)}`
         : '';
+    const left = [head, ratioPart].filter(Boolean).join(' ');
+    const body = [left, pricePart].filter(Boolean).join(' × ');
+    const equation = body ? `${body} = ${money(op.line_fee)}` : '';
     return `
         <div class="calc-op">
             <div class="calc-head">
