@@ -52,7 +52,7 @@ from app.schemas.vo.assembly_cost_restore_vo import (
     RestoreStampingVO,
     RestoreSteelVO,
 )
-from app.services.costing.assembly_cost.codes import card_short_code
+from app.services.costing.assembly_cost.codes import card_short_code, is_purchased_assembly_root
 from app.services.costing.assembly_cost.restore.documents import RestoreDocuments
 from app.services.costing.assembly_cost.restore.identity import RestoreIdentity
 from app.services.costing.assembly_cost.restore.labels import (
@@ -254,6 +254,7 @@ class AssemblyCostRestoreService:
         highlight_label = (
             HIGHLIGHT_SETTLEMENT_PRICE if report_view == "procurement" else HIGHLIGHT_ASSEMBLY_PRICE
         )
+        purchased_assembly = is_purchased_assembly_root(card.source_node_id, items)
 
         return AssemblyCostRestoreVO(
             view=report_view,
@@ -291,6 +292,7 @@ class AssemblyCostRestoreService:
                     getattr(card, "updated_by", None) or getattr(card, "created_by", None) or ""
                 ).strip()
             ),
+            is_purchased_assembly=purchased_assembly,
         )
 
     def _build_steel(

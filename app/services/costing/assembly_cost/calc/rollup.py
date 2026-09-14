@@ -41,6 +41,7 @@ from app.services.costing.assembly_cost.calc.tree import (
     sorted_children,
     supply_type_of,
 )
+from app.services.costing.assembly_cost.codes import is_purchased_assembly_root
 
 __all__ = [
     "FORMULA_VERSION",
@@ -84,7 +85,11 @@ def rollup_assembly(
     conflicted_part_numbers: frozenset[str] | None = None,
     nodes_by_id: dict[int, RollupBomNode] | None = None,
 ) -> RollupResult:
-    """单个核价卡：材料 walk + 本卡焊接 + 间接。公式与 level 无关。"""
+    """单个核价卡：材料 walk + 本卡焊接 + 间接。公式与 level 无关。
+
+    外购件总成（本卡根有子件且命中年度价）：材料用年度价，子孙已含不报缺价，
+    焊接也不再抄——年度价已是结算价。自制分总成仍拆子件并抄本卡焊费。
+    """
     stamp = Decimal("0")
     purchased = Decimal("0")
     bundle = Decimal("0")
@@ -167,47 +172,46 @@ def rollup_assembly(
             )
         )
 
-    def walk(node: RollupBomNode, path_qty: Decimal) -> None:
+    def emit_bundle(node: RollupBomNode, path_qty: Decimal) -> None:
         nonlocal bundle
+        bundle_unit = annual_prices[node.part_number]
+        line_amount = quantize_money(bundle_unit * path_qty)
+        bundle += line_amount
+        lines.append(
+            RollupLine(
+                node_level=node.level,
+                bom_node_id=node.id,
+                part_number=node.part_number,
+                part_name=node.part_name,
+                node_role=node.node_role,
+                supply_type=supply_type_of(node),
+                cost_source="bundle",
+                unit_price=bundle_unit,
+                effective_qty=path_qty,
+                line_amount=line_amount,
+                sort_no=next_sort(),
+            )
+        )
+        for descendant in collect_descendants(children_by_parent, node.id):
+            desc_qty = path_qty_from_root_child(children_by_parent, by_id, root.id, descendant.id)
+            emit_skipped(descendant, desc_qty, node.part_number)
+
+    def walk(node: RollupBomNode, path_qty: Decimal) -> None:
         kids = sorted_children(children_by_parent, node.id)
         if not kids:
             emit_leaf(node, path_qty)
             return
+        if node.part_number in annual_prices:
+            emit_bundle(node, path_qty)
+            return
         for child in kids:
-            child_qty = path_qty * node_qty(child)
-            grandchildren = sorted_children(children_by_parent, child.id)
-            if grandchildren and child.part_number in annual_prices:
-                bundle_unit = annual_prices[child.part_number]
-                line_amount = quantize_money(bundle_unit * child_qty)
-                bundle += line_amount
-                lines.append(
-                    RollupLine(
-                        node_level=child.level,
-                        bom_node_id=child.id,
-                        part_number=child.part_number,
-                        part_name=child.part_name,
-                        node_role=child.node_role,
-                        supply_type=supply_type_of(child),
-                        cost_source="bundle",
-                        unit_price=bundle_unit,
-                        effective_qty=child_qty,
-                        line_amount=line_amount,
-                        sort_no=next_sort(),
-                    )
-                )
-                for descendant in collect_descendants(children_by_parent, child.id):
-                    desc_qty = path_qty_from_root_child(
-                        children_by_parent, by_id, root.id, descendant.id
-                    )
-                    emit_skipped(descendant, desc_qty, child.part_number)
-            elif grandchildren:
-                walk(child, child_qty)
-            else:
-                emit_leaf(child, child_qty)
+            walk(child, path_qty * node_qty(child))
 
     walk(root, Decimal("1"))
 
-    if welding is None:
+    # P4：外购件总成年度价已含工费，本卡不抄焊接、不因上游焊费 partial 报缺价。
+    is_purchased_root = is_purchased_assembly_root(root.id, lines)
+    if is_purchased_root or welding is None:
         weld_amount = Decimal("0")
         weld_other = Decimal("0")
         weld_incomplete = False

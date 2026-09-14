@@ -339,6 +339,7 @@ class AssemblyCostRestoreVO(BaseModel):
     documents: list[RestoreDocumentRefVO]
     company_name: str = ""
     calculated_by: str = ""
+    is_purchased_assembly: bool = False
 
     @field_serializer("calculated_at")
     def _ser_dt(self, value: datetime | None) -> str | None:

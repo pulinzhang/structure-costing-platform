@@ -13,6 +13,8 @@ HIGHLIGHT_SETTLEMENT_PRICE = "结算价"
 HIGHLIGHT_ASSEMBLY_PRICE = "总成价"
 HIGHLIGHT_TOTAL_COST = "未摊入前"
 
+WELDING_NONE_MESSAGE = "没有焊接"
+
 COST_SOURCE_LABELS = {
     "stamping": "冲压件",
     "annual": "分总成",

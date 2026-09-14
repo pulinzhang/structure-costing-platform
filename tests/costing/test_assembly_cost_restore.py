@@ -7,6 +7,7 @@ from unittest.mock import MagicMock
 
 from app.routers.costing.assembly_cost import crud
 from app.schemas.vo.assembly_cost_restore_vo import RestoreDocumentRefVO
+from app.services.costing.assembly_cost.codes import PURCHASED_ASSEMBLY_NOTE
 from app.services.costing.assembly_cost.restore.labels import indirect_kind
 from app.services.costing.assembly_cost.restore.restore_service import (
     AssemblyCostRestoreService,
@@ -187,6 +188,57 @@ def test_restore_identity_short_codes_and_skipped() -> None:
     assert not any(
         "工艺费" in (row.message or "") and "断链" in row.message for row in vo.exceptions
     )
+
+
+def test_restore_purchased_assembly_says_annual_includes_welding() -> None:
+    service = AssemblyCostRestoreService()
+    _bind(service)
+    items = [
+        _item(
+            id=1,
+            sort_no=1,
+            bom_node_id=10,
+            part_number="502003968AA",
+            part_name="左前安全带滑轨上固定板总成",
+            cost_source="bundle",
+            unit_price=Decimal("6.8800"),
+            line_amount=Decimal("6.8800"),
+        ),
+        _item(
+            id=2,
+            sort_no=2,
+            bom_node_id=11,
+            node_level=2,
+            part_number="502003966AA",
+            part_name="左前安全带滑轨固定板",
+            cost_source="skipped_by_bundle",
+            match_hint="bundle_parent:502003968AA",
+            unit_price=Decimal("0"),
+            line_amount=Decimal("0"),
+        ),
+    ]
+    card = _card(
+        source_node_id=10,
+        part_number="502003968AA",
+        part_name="左前安全带滑轨上固定板总成",
+        stamping_amount=Decimal("0"),
+        purchased_amount=Decimal("0"),
+        bundle_amount=Decimal("6.8800"),
+        material_amount=Decimal("6.8800"),
+        total_amount=Decimal("6.8800"),
+        should_cost=Decimal("6.8800"),
+        indirect_amount=Decimal("0"),
+        grand_total=Decimal("6.8800"),
+        items=items,
+        indirects=[],
+    )
+    service.cost_repo.get_by_id = MagicMock(return_value=card)
+    vo = service.get_restore(MagicMock(), 8, view="procurement")
+    assert vo.is_purchased_assembly is True
+    assert vo.welding.has_record is False
+    assert vo.welding.message == PURCHASED_ASSEMBLY_NOTE
+    skipped = next(node for node in vo.material_nodes if node.cost_source == "skipped_by_bundle")
+    assert skipped.cost_source_label == "已含在外购件"
 
 
 def test_restore_procurement_highlight_and_title_fields() -> None:

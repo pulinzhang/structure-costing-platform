@@ -476,15 +476,22 @@ function nodesHtml(row) {
     const hasSubAssembly = (row.material_nodes || []).some(
         (node) => node.cost_source === 'sub_assembly',
     );
-    const reason = row.view !== 'procurement' && hasSubAssembly
-        ? `<details class="why-fold">
+    const reasons = [];
+    // is_purchased_assembly / welding.message 都由后端 P4 写出，前端不另造文案。
+    if (row.is_purchased_assembly && row.welding && row.welding.message) {
+        reasons.push(`<details class="why-fold">
+            <summary>为什么子件是 0、不计焊装</summary>
+            <p>${display(row.welding.message)}</p>
+        </details>`);
+    } else if (row.view !== 'procurement' && hasSubAssembly) {
+        reasons.push(`<details class="why-fold">
             <summary>为什么分总成只计材料</summary>
             <p>总成的焊信上已经包含所有分总成焊信。采购对象结算价另含焊装，两页不能加在一起。</p>
-        </details>`
-        : '';
+        </details>`);
+    }
     const inner = `
         <p class="compose-lead">${display(row.short_code)}　点行展开下级与算价</p>
-        ${reason}
+        ${reasons.join('')}
         ${treeList(nested, row)}
     `;
     return { title: '零件构成', inner };
