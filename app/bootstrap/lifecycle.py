@@ -15,6 +15,7 @@ def on_startup() -> None:
 
     DatabaseConfig.create_tables()
     AuxiliaryDatabaseConfig.create_tables()
+    _ensure_bom_node_part_number_index()
     _seed_if_empty()
     _log_startup()
 
@@ -23,6 +24,24 @@ def on_shutdown() -> None:
     DatabaseConfig.dispose()
     AuxiliaryDatabaseConfig.dispose()
     logger.info("应用正在关闭...")
+
+
+def _ensure_bom_node_part_number_index() -> None:
+    """现网 create_all 不补已有表索引。"""
+    from sqlalchemy import text
+    from sqlalchemy.exc import OperationalError
+
+    engine = DatabaseConfig.get_engine()
+    try:
+        with engine.begin() as connection:
+            connection.execute(
+                text(
+                    "CREATE INDEX IF NOT EXISTS ix_bom_node_part_number ON bom_nodes (part_number)"
+                )
+            )
+        logger.info("已确保索引 ix_bom_node_part_number")
+    except OperationalError:
+        logger.exception("无法创建索引 ix_bom_node_part_number")
 
 
 def _seed_if_empty() -> None:

@@ -13,7 +13,7 @@
  * 入口 URL 的 query 串驱动整体刷新；每次脚本更新后需要同步递增 ?v= 版本号。
  */
 
-import { pageMeta } from './features/index.js?v=43';
+import { pageMeta } from './features/index.js?v=44';
 
 // 页面导入（路径与 index.html 菜单树 / features 目录对齐）
 import { getUserSession, initUserMenu, startTokenHeartbeat, updateUserSession } from './features/login/index.js?v=15';
@@ -52,6 +52,7 @@ import { pageConfig as winningThicknessDownloadPage } from './features/yishiyiyi
 import { pageConfig as steelGradeCategoryPage } from './features/masterdata/steel-grade-category/index.js?v=7';
 import { pageConfig as scrapPricePage } from './features/yishiyiyi/scrap-price/index.js?v=22';
 import { pageConfig as bomStructurePage }  from './features/bom/material/structure/index.js?v=9';
+import { pageConfig as bomWhereUsedPage } from './features/bom/material/where-used/index.js?v=14';
 import { pageConfig as bomVizPage }        from './features/bom/material/viz/index.js?v=29';
 import { pageConfig as bomUploadPage }     from './features/bom/material/upload/index.js?v=13';
 import { pageConfig as bomMaterialListPage } from './features/bom/material/list/index.js?v=7';
@@ -62,7 +63,7 @@ import { pageConfig as bomAnnualPartPricePage } from './features/bom/annual-part
 import { pageConfig as bomPackagingTransportFeeUploadPage } from './features/bom/packaging-transport-fee/upload/index.js?v=9';
 import { pageConfig as bomPackagingTransportFeePage } from './features/bom/packaging-transport-fee/list/index.js?v=13';
 import { pageConfig as bomProcurementObjectGeneratePage } from './features/bom/procurement-object/generate/index.js?v=9';
-import { pageConfig as bomProcurementObjectListPage } from './features/bom/procurement-object/list/index.js?v=24';
+import { pageConfig as bomProcurementObjectListPage } from './features/bom/procurement-object/list/index.js?v=25';
 import { pageConfig as bomProcurementObjectSupplierUploadPage } from './features/bom/procurement-object/supplier-upload/index.js?v=8';
 import { pageConfig as bomWeldingProcessBreakdownGeneratePage } from './features/bom/welding-process-breakdown/generate/index.js?v=10';
 import { pageConfig as bomWeldingProcessBreakdownListPage } from './features/bom/welding-process-breakdown/list/index.js?v=46';
@@ -117,6 +118,7 @@ const pages = {
     'winning-thickness-download': winningThicknessDownloadPage,
     'scrap-price': scrapPricePage,
     'bom-structure':  bomStructurePage,
+    'bom-where-used': bomWhereUsedPage,
     'bom-viz':        bomVizPage,
     'bom-upload':     bomUploadPage,
     'bom-material':   bomMaterialListPage,

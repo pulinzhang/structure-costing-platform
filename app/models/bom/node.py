@@ -383,5 +383,6 @@ class BomNode(AuditUserMixin, Base):
         Index("ix_bom_node_snapshot_parent", "snapshot_id", "parent_id"),
         Index("ix_bom_node_snapshot_level", "snapshot_id", "level"),
         Index("ix_bom_node_snapshot_part_number", "snapshot_id", "part_number"),
+        Index("ix_bom_node_part_number", "part_number"),
         Index("ix_bom_node_snapshot_supply", "snapshot_id", "is_supply_unit"),
     )

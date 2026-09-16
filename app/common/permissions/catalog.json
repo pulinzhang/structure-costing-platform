@@ -469,6 +469,23 @@
                   "type": "op"
                 }
               ]
+            },
+            {
+              "code": "menu:bom-where-used",
+              "label": "零件用在哪",
+              "type": "menu",
+              "children": [
+                {
+                  "code": "op:bom-where-used:view",
+                  "label": "查看",
+                  "type": "op"
+                },
+                {
+                  "code": "op:bom-where-used:export",
+                  "label": "导出",
+                  "type": "op"
+                }
+              ]
             }
           ]
         },

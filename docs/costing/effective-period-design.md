@@ -2,7 +2,8 @@
 
 > 状态：**设计稿（未落地）**  
 > 关联：`docs/bom/bom-annual-part-prices-design.md`、[总成月核价](assembly-costing-design.md)、`docs/costing/costing-engine-design.md`、`docs/architecture.md`。冻结史料：[l0-assembly-costing-design.md](l0-assembly-costing-design.md)。  
-> 原则：账在库里对得上。客户、核价引擎、分析读同一套行。不要用审核 Excel 快照当历史账。
+> 原则：账在库里对得上。客户、核价引擎、分析读同一套行。不要用审核 Excel 快照当历史账。  
+> BOM / 冲压工艺 / 模具行上的生失效不在本文，见 [bom-process-die-effective-period-design.md](../engineering-change/bom-process-die-effective-period-design.md)。
 
 ---
 

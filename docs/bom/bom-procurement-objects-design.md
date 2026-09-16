@@ -6,6 +6,7 @@
 > 界面：**项目**。库字段：`vehicle_model`。  
 > 基地：[location-design.md](../masterdata/location-design.md)。项目：[vehicle-model-design.md](../masterdata/vehicle-model-design.md)。  
 > 样本：`excel_sample/T13J项目车身件材料清单 (1).xlsx`（T13J · D/09）。  
+> 树根有效期现网改造见 [bom-process-die-effective-period-design.md](../engineering-change/bom-process-die-effective-period-design.md)。生成仍可读整份 snapshot；**当月列表与核价**只认该月命中的 L0。  
 > 硬约束：分层与切片见 [architecture.md](../architecture.md)；引用保护见宪法 **§4.3**。
 
 **对人展示 vs 内部码。** 页面、生成摘要、Excel 单元格用中文（退化供货件、分总成、冲压件、标准件/胶等）。库字段、API、分类函数仍用 `l0_degenerate` / `other_leaf` 等码。Excel **工作表名**不能含 `/`，标准件分区表名用「标准件及胶等」。
@@ -302,17 +303,17 @@ bom_procurement_object_generate_logs  一次「开始生成」一条终态日志
 
 | 项 | 口径 |
 |----|------|
-| 范围 | 一份清单 = 基地 + 项目 + BOM 版本（对应一个 snapshot）。只处理该清单下 `section=object` |
+| 范围 | 一份清单 = 基地 + 项目 + BOM 版本（对应一个 snapshot） |
 | 入口 | 列表工具栏按钮 + 抽屉；**审核意见 / 反审核原因必填**（`min_length=1`） |
-| 删除 | 只删 `pending`；`approved` **跳过**，返回 `skipped_approved_count` |
-| 审核 | 把范围内 `pending` 改为 `approved`；已审跳过；意见写入 `audit_remark` |
-| 反审核 | 把范围内 `approved` 改回 `pending`；非已审跳过；原因写入 `reverse_audit_remark` |
+| 删除 | 该清单全部 `audit_status=pending` 行（含标准件/胶等、异常）；`approved` **跳过**，返回 `skipped_approved_count` |
+| 审核 | 把范围内 `section=object` 且 `pending` 改为 `approved`；已审跳过；意见写入 `audit_remark` |
+| 反审核 | 把范围内 `section=object` 且 `approved` 改回 `pending`；非已审跳过；原因写入 `reverse_audit_remark` |
 | 锁定 | `approved` 禁止改确认、禁止再生成覆盖 |
 | 检测 | `qa_passed=false` 时拒绝审核（可导出、可删 pending 以便重生成） |
 
 不要求先确认外发才能审。列表要能筛未确认已审。
 
-删行后重算清单头计数；完备性被破坏则 `qa_passed=false`。核对区不参与这三套批量（不是采购对象）。
+删行后重算清单头计数；完备性被破坏则 `qa_passed=false`。核对区不审核、不反审核。
 
 **CRUD**
 
@@ -379,7 +380,7 @@ API 前缀：`/api/bom/procurement-objects`。生成与批量范围键均为 **�
 | PATCH | `/items/{id}/confirm` | 单条确认三态（待审） |
 | POST | `/batch-approve` | **按范围** 批量审核；`audit_remark` 必填；禁止 ids |
 | POST | `/batch-reverse-audit` | **按范围** 批量反审核；`reverse_audit_remark` 必填；禁止 ids |
-| POST | `/batch-delete` | **按范围** 批量删除 pending；跳过已审；禁止 ids |
+| POST | `/batch-delete` | **按范围** 批量删除 pending（含标准件/胶等、异常）；跳过已审采购对象；禁止 ids |
 | GET | `/export` | 与列表相同筛选，不分页，Excel |
 
 禁止：`POST /items/{id}/approve`、`POST /items/{id}/reverse-audit`、`DELETE /items/{id}`、按勾选 id 的 batch。
@@ -409,7 +410,7 @@ HUD：**采购对象**是霓虹强调格；标准件/胶等、待审、已审为
 
 列表页签：**全部**（默认，不传 `section`）| 采购对象 | 标准件/胶等 | 异常。HUD 展示采购对象条数、标准件/胶等、待审、已审。`qa_passed=false` 用错误文案，不要静默当成功。
 
-工具栏：**批量审核 / 批量反审核 / 批量删除** + 导出 Excel。抽屉展示当前清单范围（基地 · 项目 · 版本），意见必填。删除跳过已审。禁止勾选行再批量。
+工具栏：**批量审核 / 批量反审核 / 批量删除** + 导出 Excel。抽屉展示当前清单范围（基地 · 项目 · 版本），意见必填。删除口径见 §8.5。禁止勾选行再批量。
 
 **核对列：** 列表与导出须能直接对回原件：
 
@@ -568,3 +569,4 @@ prep-stats 是读：不强制 `require_enabled`（禁用基地仍可看「将列
 | 2026-09-08 | 清单行抄节点 `internal_number`；列表弱化展示，供找不到供应商时 ERP 联查。 |
 | 2026-09-08 | 导出零件号后加短码（数字末四位，核对焦点）与内部号（灰色弱化）；冻结 `I6`，合并供货总成 G/H。 |
 | 2026-09-09 | 一物一码在材料清单上传拦（有内部号的零件号↔内部号一一对应）；本切片生成不再复检。 |
+| 2026-09-16 | 批量删除覆盖核对区（标准件/胶等、异常）；审核 / 反审核仍只针对采购对象。 |

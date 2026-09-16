@@ -242,7 +242,7 @@ function auditDrawerHtml() {
             </div>
             <div class="flex-1 p-6 space-y-4">
                 <div class="bg-[#0c0c0c] border border-[#1a1a1a] rounded p-3 text-[11px] text-[#9e9e9e]" id="poBatchDeleteSummary"></div>
-                <p class="text-[11px] text-[#616161]">仅删除待审采购对象；已审跳过。核对区不删。</p>
+                <p class="text-[11px] text-[#616161]">删除本清单待审采购对象、标准件/胶等、异常；已审采购对象跳过。</p>
             </div>
             <div class="px-6 py-4 border-t border-[#262626] flex items-center justify-end gap-2">
                 <button type="button" id="poBatchDeleteCancelBtn" class="inline-flex items-center gap-1.5 bg-transparent text-[#9e9e9e] border border-[#2c2c2c] px-4 py-2 text-[11px] font-medium rounded">取消</button>
