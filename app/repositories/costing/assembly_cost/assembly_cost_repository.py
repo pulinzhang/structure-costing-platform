@@ -241,7 +241,6 @@ class AssemblyCostRepository:
         month: int,
         location: str,
         vehicle_model: str,
-        bom_version: str,
         source_node_id: int,
     ) -> AssemblyCost | None:
         return self._queries.get_by_business_key(
@@ -250,7 +249,6 @@ class AssemblyCostRepository:
             month=month,
             location=location,
             vehicle_model=vehicle_model,
-            bom_version=bom_version,
             source_node_id=source_node_id,
         )
 

@@ -23,11 +23,14 @@ def _plan_item(items: list[CostingEngineAnnualItemVO], code: str) -> CostingEngi
 def test_thickness_policy_is_hard_gate() -> None:
     assert "thickness_policy" not in SOFT_UPLOAD_GATE_CODES
     assert "packaging_transport" in SOFT_UPLOAD_GATE_CODES
+    assert "vehicle_model" in SOFT_UPLOAD_GATE_CODES
+    assert "vehicle_model_period" in SOFT_UPLOAD_GATE_CODES
 
 
 def test_gate_navigate_hard_stop_codes_have_page() -> None:
     codes = [
         "vehicle_model",
+        "vehicle_model_period",
         "stamping_process",
         "tonnage_price",
         "welding_unit_price",
@@ -45,8 +48,15 @@ def test_gate_navigate_hard_stop_codes_have_page() -> None:
         assert nav.page
         assert nav.label
         if code == "vehicle_model":
+            assert nav.page == "stamping-parts"
+            assert nav.query.get("location") == "青岛"
+            assert nav.query.get("year") == 2025
+            assert nav.query.get("month") == 1
+            assert nav.secondary_page == "bom-structure"
+        if code == "vehicle_model_period":
             assert nav.page == "vehicle-model-list"
             assert nav.query.get("location") == "青岛"
+            assert nav.label == "去项目一览表"
         if code == "base_price":
             assert nav.query.get("year") == 2025
             assert nav.query.get("month") == 1
@@ -63,7 +73,91 @@ def test_progress_bands_monotonic() -> None:
 
 
 def test_scope_discovery_multi_bom_dedupe() -> None:
-    """本期项目来自主数据；同项目多 BOM 版本均进入 L0Scope，别名重复去重。"""
+    """该月命中零件 ∪ 命中 L0；同项目多 BOM 版本均进入 L0Scope，别名重复去重。"""
+    discovery = ScopeDiscovery()
+    db = MagicMock()
+
+    with (
+        patch("app.services.costing.engine.scope_discovery.LocationService") as location_cls,
+        patch.object(
+            discovery.vehicle_model_service,
+            "list_introducible",
+        ) as list_introducible,
+        patch.object(
+            discovery.vehicle_model_service,
+            "normalize",
+            side_effect=lambda value: (value or "").strip() or None,
+        ),
+        patch.object(
+            discovery.bom_snapshot_repo,
+            "discover_l0_scopes",
+            return_value=[
+                {"location": "青岛", "vehicle_model": "T28", "bom_version": "D-00"},
+                {"location": "青岛", "vehicle_model": "T28", "bom_version": "D-01"},
+                {"location": "青岛基地", "vehicle_model": "T28", "bom_version": "D-00"},
+            ],
+        ) as discover_l0,
+    ):
+        location_cls.return_value.expand_for_query.return_value = ["青岛", "青岛基地"]
+        list_introducible.return_value = ["T28"]
+        discovery.part_repo.get_cascade_filter_options = MagicMock(
+            return_value={"vehicle_models": ["T28"]}
+        )
+        result = discovery.discover(db, location="青岛", year=2025, month=1)
+
+    list_introducible.assert_called_once_with(db, "青岛", 2025, 1)
+    discover_l0.assert_called_once()
+    assert discover_l0.call_args.kwargs["as_of_year"] == 2025
+    assert discover_l0.call_args.kwargs["as_of_month"] == 1
+    discovery.part_repo.get_cascade_filter_options.assert_called_once()
+    cascade_kwargs = discovery.part_repo.get_cascade_filter_options.call_args.kwargs
+    assert cascade_kwargs["as_of_year"] == 2025
+    assert cascade_kwargs["as_of_month"] == 1
+    assert result.vehicle_models == ["T28"]
+    assert result.stamping_vehicle_models == ["T28"]
+    assert result.as_of_vehicle_models == ["T28"]
+    assert len(result.l0_scopes) == 2
+    keys = {(s.vehicle_model, s.bom_version) for s in result.l0_scopes}
+    assert keys == {("T28", "D-00"), ("T28", "D-01")}
+
+
+def test_scope_discovery_empty_as_of_still_queries_l0() -> None:
+    discovery = ScopeDiscovery()
+    db = MagicMock()
+
+    with (
+        patch("app.services.costing.engine.scope_discovery.LocationService") as location_cls,
+        patch.object(
+            discovery.vehicle_model_service,
+            "list_introducible",
+        ) as list_introducible,
+        patch.object(
+            discovery.vehicle_model_service,
+            "normalize",
+            side_effect=lambda value: (value or "").strip() or None,
+        ),
+        patch.object(
+            discovery.bom_snapshot_repo,
+            "discover_l0_scopes",
+            return_value=[],
+        ) as discover_l0,
+    ):
+        location_cls.return_value.expand_for_query.return_value = ["青岛"]
+        list_introducible.return_value = ["T28"]
+        discovery.part_repo.get_cascade_filter_options = MagicMock(
+            return_value={"vehicle_models": []}
+        )
+        result = discovery.discover(db, location="青岛", year=2025, month=1)
+
+    list_introducible.assert_called_once_with(db, "青岛", 2025, 1)
+    discover_l0.assert_called_once()
+    assert result.vehicle_models == []
+    assert result.stamping_vehicle_models == []
+    assert result.as_of_vehicle_models == []
+    assert result.l0_scopes == []
+
+
+def test_scope_discovery_includes_l0_only_vehicle() -> None:
     discovery = ScopeDiscovery()
     db = MagicMock()
 
@@ -84,25 +178,23 @@ def test_scope_discovery_multi_bom_dedupe() -> None:
             "discover_l0_scopes",
             return_value=[
                 {"location": "青岛", "vehicle_model": "T28", "bom_version": "D-00"},
-                {"location": "青岛", "vehicle_model": "T28", "bom_version": "D-01"},
-                {"location": "青岛基地", "vehicle_model": "T28", "bom_version": "D-00"},
             ],
         ),
     ):
-        location_cls.return_value.expand_for_query.return_value = ["青岛", "青岛基地"]
+        location_cls.return_value.expand_for_query.return_value = ["青岛"]
         discovery.part_repo.get_cascade_filter_options = MagicMock(
-            return_value={"vehicle_models": ["T28"]}
+            return_value={"vehicle_models": []}
         )
-        result = discovery.discover(db, location="青岛", year=2025, month=1)
+        result = discovery.discover(db, location="青岛", year=2026, month=7)
 
     assert result.vehicle_models == ["T28"]
-    assert result.stamping_vehicle_models == ["T28"]
-    assert len(result.l0_scopes) == 2
-    keys = {(s.vehicle_model, s.bom_version) for s in result.l0_scopes}
-    assert keys == {("T28", "D-00"), ("T28", "D-01")}
+    assert result.stamping_vehicle_models == []
+    assert result.as_of_vehicle_models == ["T28"]
+    assert len(result.l0_scopes) == 1
 
 
-def test_scope_discovery_empty_introducible_skips_l0() -> None:
+def test_scope_discovery_filters_stopped_project() -> None:
+    """活件仍命中 as_of，项目该月已停 → 不进计划。"""
     discovery = ScopeDiscovery()
     db = MagicMock()
 
@@ -112,18 +204,125 @@ def test_scope_discovery_empty_introducible_skips_l0() -> None:
             discovery.vehicle_model_service,
             "list_introducible",
             return_value=[],
+        ) as list_introducible,
+        patch.object(
+            discovery.vehicle_model_service,
+            "normalize",
+            side_effect=lambda value: (value or "").strip() or None,
         ),
         patch.object(
             discovery.bom_snapshot_repo,
             "discover_l0_scopes",
-        ) as discover_l0,
+            return_value=[
+                {"location": "青岛", "vehicle_model": "T28", "bom_version": "D-00"},
+            ],
+        ),
     ):
         location_cls.return_value.expand_for_query.return_value = ["青岛"]
-        result = discovery.discover(db, location="青岛", year=2025, month=1)
+        discovery.part_repo.get_cascade_filter_options = MagicMock(
+            return_value={"vehicle_models": ["T28"]}
+        )
+        result = discovery.discover(db, location="青岛", year=2026, month=7)
 
-    discover_l0.assert_not_called()
+    list_introducible.assert_called_once_with(db, "青岛", 2026, 7)
+    assert result.as_of_vehicle_models == ["T28"]
     assert result.vehicle_models == []
+    assert result.stamping_vehicle_models == []
     assert result.l0_scopes == []
+
+
+def test_check_period_projects_empty_does_not_send_to_archive() -> None:
+    from app.services.costing.engine.gate.stamping import check_period_projects
+
+    discovery = DiscoveryResult(
+        location="青岛",
+        year=2026,
+        month=7,
+        location_aliases=["青岛"],
+        vehicle_models=[],
+        stamping_vehicle_models=[],
+        l0_scopes=[],
+    )
+    item = check_period_projects(discovery, "青岛", 2026, 7)
+    assert item.ok is False
+    assert item.code == "vehicle_model"
+    assert "可引入" not in item.message
+    assert "项目一览" not in item.message
+    assert item.navigate is not None
+    assert item.navigate.page == "stamping-parts"
+
+
+def test_check_period_projects_filtered_empty_goes_to_archive() -> None:
+    from app.services.costing.engine.gate.stamping import check_period_projects
+
+    discovery = DiscoveryResult(
+        location="青岛",
+        year=2026,
+        month=7,
+        location_aliases=["青岛"],
+        vehicle_models=[],
+        stamping_vehicle_models=[],
+        l0_scopes=[],
+        as_of_vehicle_models=["T28"],
+    )
+    item = check_period_projects(discovery, "青岛", 2026, 7)
+    assert item.ok is False
+    assert item.code == "vehicle_model_period"
+    assert "项目一览" in item.message
+    assert item.navigate is not None
+    assert item.navigate.page == "vehicle-model-list"
+
+
+def test_sibling_gates_skip_when_period_filtered() -> None:
+    from app.services.costing.engine.gate.bom import (
+        check_annual_part_price,
+        check_bom_snapshot,
+        check_packaging_transport,
+    )
+    from app.services.costing.engine.gate.item import PERIOD_FILTERED_SKIP
+    from app.services.costing.engine.gate.scrap import check_scrap_price
+    from app.services.costing.engine.gate.stamping import (
+        check_stamping_process,
+        check_tonnage_price,
+    )
+    from app.services.costing.engine.gate.welding import check_welding_unit_price
+
+    filtered = DiscoveryResult(
+        location="青岛",
+        year=2026,
+        month=7,
+        location_aliases=["青岛"],
+        vehicle_models=[],
+        stamping_vehicle_models=[],
+        l0_scopes=[],
+        as_of_vehicle_models=["T28"],
+    )
+    repo = MagicMock()
+    db = MagicMock()
+    items = [
+        check_stamping_process(filtered, "青岛", 2026, 7),
+        check_tonnage_price(repo, db, filtered, "青岛", 2026, 7),
+        check_bom_snapshot(filtered, "青岛", 2026, 7),
+        check_annual_part_price(repo, db, filtered, "青岛", 2026, 7),
+        check_packaging_transport(repo, db, filtered, "青岛", 2026, 7),
+        check_welding_unit_price(repo, db, filtered, "青岛", 2026, 7),
+        check_scrap_price(repo, db, filtered, "青岛", 2026, 7),
+    ]
+    assert all(item.ok and item.message == PERIOD_FILTERED_SKIP for item in items)
+    assert repo.mock_calls == []
+
+    empty = DiscoveryResult(
+        location="青岛",
+        year=2026,
+        month=7,
+        location_aliases=["青岛"],
+        vehicle_models=[],
+        stamping_vehicle_models=[],
+        l0_scopes=[],
+    )
+    snapshot = check_bom_snapshot(empty, "青岛", 2026, 7)
+    assert snapshot.ok is False
+    assert "L0" in snapshot.message
 
 
 def test_run_orchestrator_does_not_submit_nested_async_task() -> None:
@@ -599,6 +798,10 @@ def test_stamping_complete_skips_without_process() -> None:
             db, year=2026, month=1, location="青岛", vehicle_model="T28"
         )
 
+    kwargs = repo_cls.return_value.list_by_location_and_vehicle.call_args.kwargs
+    assert kwargs["as_of_year"] == 2026
+    assert kwargs["as_of_month"] == 1
+
     assert ok is True
     assert suppliers == []
     assert "无冲压工艺" in message
@@ -653,6 +856,51 @@ def test_execute_assembly_runs_without_stamping_process() -> None:
 
     assert run_asm.called
     assert any(s["status"] == "succeeded" for s in carry.step_summaries)
+
+
+def test_execute_assembly_runs_once_per_vehicle_not_per_version() -> None:
+    from app.services.costing.engine.orchestrator.phases import PhaseCarry, execute_assembly
+    from app.services.costing.engine.orchestrator.run_orchestrator import RunOrchestrator
+
+    orch = RunOrchestrator()
+    db = MagicMock()
+    orch.run_repo.get_by_id = MagicMock(return_value=SimpleNamespace(id=1, status="running"))
+    orch.run_repo.create_step = MagicMock(
+        side_effect=lambda *a, **k: SimpleNamespace(
+            id=1,
+            stage=k.get("stage"),
+            scope_key=k.get("scope_key"),
+            status=k.get("status"),
+            message=k.get("message"),
+        )
+    )
+    orch.run_repo.update_step_fields = MagicMock(side_effect=lambda db, step, **kw: step)
+    discovery = DiscoveryResult(
+        location="青岛",
+        year=2026,
+        month=1,
+        location_aliases=["青岛"],
+        vehicle_models=["T28"],
+        stamping_vehicle_models=[],
+        l0_scopes=[
+            L0Scope(location="青岛", vehicle_model="T28", bom_version="D-00"),
+            L0Scope(location="青岛", vehicle_model="T28", bom_version="D-01"),
+        ],
+    )
+    with patch(
+        "app.services.costing.engine.orchestrator.phases.run_assembly",
+        return_value=(True, "总成核价已完成", {"status": "success"}),
+    ) as run_asm:
+        execute_assembly(
+            orch,
+            db,
+            run_id=1,
+            discovery=discovery,
+            current_user=SimpleNamespace(id=1, username="tester"),  # type: ignore[arg-type]
+            progress=MagicMock(),
+            carry=PhaseCarry(),
+        )
+    assert run_asm.call_count == 1
 
 
 def test_calc_step_message_uses_plain_chinese() -> None:

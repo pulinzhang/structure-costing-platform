@@ -78,6 +78,13 @@ class BomNodeVO(BaseModel):
     excel_sheet_name: str | None = None
     excel_row: int | None = None
     excel_part_col: int | None = None
+    location: str
+    vehicle_model: str
+    bom_version: str
+    effective_year: int
+    effective_month: int
+    expiry_year: int | None = None
+    expiry_month: int | None = None
     created_by: str | None = None
     updated_by: str | None = None
     created_at: datetime | None = None

@@ -3,11 +3,12 @@
  * 冲压工艺上传 — 异步 task_id + 进度轮询
  */
 
-import { uploadTemplate } from './template.js?v=18';
+import { uploadTemplate } from './template.js?v=19';
 import {
     setDropzoneDragActive,
     setDropzoneFileSelected,
 } from '../../../../upload-dropzone.js?v=1';
+import { SOP_INTRO, sopBannerHtml } from '../../../common/period-ui.js?v=2';
 
 const MAX_RECENT_UPLOADS = 8;
 const POLL_INTERVAL_MS = 2000;
@@ -25,6 +26,16 @@ export const UploadPage = {
         this.applyPermissionUi();
         this.bindEvents();
         this.renderRecentUploads();
+        const slot = document.getElementById('sopBannerSlot');
+        if (slot && !document.getElementById('sopBanner')) {
+            slot.innerHTML = sopBannerHtml();
+            const detail = document.getElementById('sopBannerDetail');
+            if (detail) {
+                detail.textContent = '工艺页只选文件。已有 SOP 时文件含新号将整单拒绝，换号请走工程变更。';
+            }
+            const intro = document.querySelector('#sopBanner p');
+            if (intro) intro.textContent = SOP_INTRO;
+        }
 
         if (this.isUploading && this.activeTaskId) {
             this.setUploading(true);

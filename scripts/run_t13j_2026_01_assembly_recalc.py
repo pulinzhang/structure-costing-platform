@@ -204,7 +204,6 @@ def main() -> int:
             month=MONTH,
             location=LOCATION,
             vehicle_model=VEHICLE,
-            bom_version=BOM_VERSION,
         )
         print(
             f"ready={ready.ready} message={ready.message}\n"

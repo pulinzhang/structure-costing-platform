@@ -43,7 +43,7 @@ export function dieFeeCalcTemplate() {
                     </div>
                 </div>
                 <div class="flex items-center gap-3">
-                    <span class="text-[9px] text-[#666]">共模按项目全部布点顺序继承；按项目整车重算。已审核禁止计算</span>
+                    <span class="text-[9px] text-[#666]">只算该年有效期内布点；共模按这些件的顺序继承。已审核禁止计算</span>
                     <button id="startCalcBtn"
                             class="h-7 px-4 text-[10px] bg-[#b71c1c] hover:bg-[#c62828] text-white font-medium rounded-sm transition-colors disabled:opacity-30 disabled:cursor-not-allowed">
                         开始计算
@@ -64,7 +64,7 @@ export function dieFeeCalcTemplate() {
                 <p id="calcProgressMsg" class="text-[11px] text-[#9e9e9e] leading-relaxed mb-0">已提交计算队列</p>
             </div>
             <div id="dataReadyErrorBanner" class="hidden text-[10px] text-[#d69e2e] bg-[#1a1710] px-2.5 py-1.5 border-l-2 border-[#d69e2e]">
-                须选定年度、基地、项目，并确保有布点与生效模具单价。版本可选；计算覆盖该项目各供应商。
+                须选定年度、基地、项目。零件按布点有效期与该年有交集的才算，不是按项目档案期。并确保有生效模具单价。版本可选；计算覆盖该项目各供应商。
             </div>
             <div class="pt-2">
                 <div class="flex items-center justify-between mb-1.5">

@@ -19,7 +19,6 @@ export function partCostCalcTemplate() {
                     ${filterSelect('calcMonth', '月份', true)}
                     ${filterSelect('calcLocation', '基地', true)}
                     ${filterSelect('calcVehicleModel', '项目', true)}
-                    ${filterSelect('calcVersion', '版本')}
 
                     <button id="calcResetBtn"
                             class="inline-flex items-center gap-1 h-7 px-3 text-[11px] font-medium text-[#616161] hover:text-[#9e9e9e] transition-all duration-150">
@@ -89,7 +88,7 @@ export function partCostCalcTemplate() {
             </div>
 
             <div id="dataReadyErrorBanner" class="hidden text-[10px] text-[#d69e2e] bg-[#1a1710] px-2.5 py-1.5 border-l-2 border-[#d69e2e]">
-                提示：须选定年度、月份、基地、项目；版本可选。计算覆盖该车各冲压工厂。并确保钢材联动价、废料月度价、加工费与匹配零件均已就绪。模具费、检具费缺档按 0 计入。
+                提示：须选定年度、月份、基地、项目。计算覆盖该车各冲压工厂。并确保钢材联动价、废料月度价、加工费与匹配零件均已就绪。模具费、检具费缺档按 0 计入。
             </div>
 
             <div class="pt-2">

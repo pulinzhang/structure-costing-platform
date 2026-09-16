@@ -54,6 +54,7 @@ def list_filters(
     year: int | None = Query(None, ge=2000, le=2100),
     vehicle_model: str | None = Query(None),
     stamping_supplier: str | None = Query(None),
+    for_calc: bool = Query(False),
     db: Session = Depends(get_db),
     current_user: UserVO = Depends(
         require_any_perm(Perm.STAMPING_DIE_FEE_VIEW, Perm.STAMPING_DIE_FEE_CALC_VIEW)
@@ -71,6 +72,7 @@ def list_filters(
             year=year,
             vehicle_model=vehicle_value,
             stamping_supplier=supplier_value,
+            for_calc=for_calc,
         )
     )
 

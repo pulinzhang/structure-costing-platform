@@ -244,6 +244,7 @@ class StampingPartCostCalcReadyVO(BaseModel):
     die_fee_count: int = 0
     gauge_fee_count: int = 0
     can_calculate: bool = False
+    message: str | None = None
 
 
 class StampingPartCostBatchDeleteResultVO(BatchDeleteCountsVO):

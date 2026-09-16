@@ -34,6 +34,9 @@ class StampingPartExportService:
         vehicle_model: str | None = None,
         version: str | None = None,
         part_number: str | None = None,
+        year: int | None = None,
+        month: int | None = None,
+        include_expired: bool = False,
         current_user: UserVO,
     ) -> tuple[bytes, str]:
         return self._process_confirm.export(
@@ -43,6 +46,9 @@ class StampingPartExportService:
             vehicle_model=vehicle_model,
             version=version,
             part_number=part_number,
+            year=year,
+            month=month,
+            include_expired=include_expired,
             current_user=current_user,
         )
 

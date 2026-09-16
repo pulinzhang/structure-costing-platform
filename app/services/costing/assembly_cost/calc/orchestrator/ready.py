@@ -7,6 +7,7 @@ from typing import NamedTuple
 
 from sqlalchemy.orm import Session
 
+from app.common.period import overlaps_year
 from app.exceptions.base import BusinessException
 from app.repositories.bom.bom_repository import BomNodeRepository, BomSnapshotRepository
 from app.repositories.bom.procurement_object_repository import BomProcurementObjectRepository
@@ -23,6 +24,7 @@ from app.schemas.vo.assembly_cost_vo import AssemblyCostCalcReadyVO
 from app.services.bom.procurement_object.classify import SECTION_OBJECT
 from app.services.costing.assembly_cost.calc.orchestrator.deps import AssemblyCalcDeps
 from app.services.costing.stamping_part_cost.calc.constants import ALL_SUPPLIERS_LOCK
+from app.services.masterdata.vehicle_model import VehicleModelService
 
 
 class WeldingCoverage(NamedTuple):
@@ -42,13 +44,25 @@ def evaluate_welding_coverage(
     bom_version: str,
     welding_fee_repo: BomWeldingFeeRepository | None = None,
 ) -> WeldingCoverage:
-    """当前 BOM 树上拆解是否齐、拆解节点是否都有焊接费行。"""
+    """该年有效期内树上拆解是否齐、拆解节点是否都有焊接费行。不问项目档案起止。"""
     snap = BomSnapshotRepository().get_by_unique_key(db, location, vehicle_model, bom_version)
     if snap is None:
         return WeldingCoverage(False, "未找到对应 BOM 快照", 0, {}, False)
     orm_nodes = BomNodeRepository().list_by_snapshot(db, snap.id)
-    current_ids = {int(n.id) for n in orm_nodes}
-    weld_info_count = sum(1 for n in orm_nodes if (n.weld_info or "").strip())
+    snapshot_ids = {int(n.id) for n in orm_nodes}
+    period_nodes = [
+        node
+        for node in orm_nodes
+        if overlaps_year(
+            effective_year=node.effective_year,
+            effective_month=node.effective_month,
+            expiry_year=node.expiry_year,
+            expiry_month=node.expiry_month,
+            year=year,
+        )
+    ]
+    current_ids = {int(n.id) for n in period_nodes}
+    weld_info_count = sum(1 for n in period_nodes if (n.weld_info or "").strip())
     return _welding_coverage(
         db,
         year=year,
@@ -56,6 +70,7 @@ def evaluate_welding_coverage(
         vehicle_model=vehicle_model,
         bom_version=bom_version,
         current_ids=current_ids,
+        snapshot_ids=snapshot_ids,
         weld_info_count=weld_info_count,
         welding_fee_repo=welding_fee_repo,
     )
@@ -69,39 +84,50 @@ def collect_calc_ready(
     month: int,
     location: str,
     vehicle_model: str,
-    bom_version: str,
 ) -> AssemblyCostCalcReadyVO:
     location = location.strip()
     vehicle_model = vehicle_model.strip()
-    bom_version = bom_version.strip()
-    snap = deps.bom_snapshot_repo.get_by_unique_key(db, location, vehicle_model, bom_version)
-
-    tree_root_count = 0
-    subject_count = 0
-    weld_info_count = 0
-    orm_nodes = []
-    if snap is not None:
-        orm_nodes = deps.bom_node_repo.list_by_snapshot(db, snap.id)
-        parent_ids = {n.parent_id for n in orm_nodes if n.parent_id is not None}
-        set_a = {n.id for n in orm_nodes if n.id in parent_ids}
-        set_b = {n.id for n in orm_nodes if n.parent_id is None}
-        tree_root_count = len(set_b)
-        weld_info_count = sum(1 for n in orm_nodes if (n.weld_info or "").strip())
-        header = BomProcurementObjectRepository().get_list_by_scope(
-            db, location=location, vehicle_model=vehicle_model, bom_version=bom_version
+    try:
+        location, vehicle_model = VehicleModelService().require_introducible(
+            db, location, vehicle_model, year, month
         )
-        set_c: set[int] = set()
-        procurement_object_count = 0
-        if header is not None:
-            objects = BomProcurementObjectRepository().list_objects_by_list_id(db, header.id)
-            for obj in objects:
-                if obj.section == SECTION_OBJECT and obj.source_node_id is not None:
-                    set_c.add(int(obj.source_node_id))
-            procurement_object_count = len(set_c)
-        subject_count = len(set_a | set_b | set_c)
-    else:
-        procurement_object_count = 0
+    except BusinessException as exc:
+        return AssemblyCostCalcReadyVO(
+            tree_root_count=0,
+            subject_count=0,
+            procurement_object_count=0,
+            stamping_price_count=0,
+            annual_price_count=0,
+            welding_fee_count=0,
+            packaging_fee_count=0,
+            ready=False,
+            message=str(exc),
+        )
+    orm_nodes = deps.bom_node_repo.list_as_of_trees(
+        db,
+        location=location,
+        vehicle_model=vehicle_model,
+        as_of_year=year,
+        as_of_month=month,
+    )
+    parent_ids = {n.parent_id for n in orm_nodes if n.parent_id is not None}
+    set_a = {n.id for n in orm_nodes if n.id in parent_ids}
+    set_b = {n.id for n in orm_nodes if n.parent_id is None}
+    tree_root_count = len(set_b)
+    weld_info_count = sum(1 for n in orm_nodes if (n.weld_info or "").strip())
     current_ids = {int(n.id) for n in orm_nodes}
+
+    objects = BomProcurementObjectRepository().list_objects_by_location_vehicle(
+        db, location=location, vehicle_model=vehicle_model
+    )
+    set_c: set[int] = set()
+    for obj in objects:
+        if obj.section == SECTION_OBJECT and obj.source_node_id is not None:
+            node_id = int(obj.source_node_id)
+            if node_id in current_ids:
+                set_c.add(node_id)
+    procurement_object_count = len(set_c)
+    subject_count = len(set_a | set_b | set_c)
 
     stamping_n = deps.stamping_cost_repo.count_calc_success_with_unit_cost(
         db,
@@ -121,7 +147,6 @@ def collect_calc_ready(
         year=year,
         location=location,
         vehicle_model=vehicle_model,
-        bom_version=bom_version,
         current_ids=current_ids,
         weld_info_count=weld_info_count,
         welding_fee_repo=deps.welding_fee_repo,
@@ -129,9 +154,9 @@ def collect_calc_ready(
 
     ready = True
     message = None
-    if snap is None:
+    if not orm_nodes:
         ready = False
-        message = "未找到对应 BOM 快照"
+        message = f"{location}/{vehicle_model} 在 {year} 年 {month:02d} 月没有有效期内的 BOM 树"
     elif subject_count == 0:
         ready = False
         message = "无核价主体（装配∪树根）"
@@ -156,7 +181,7 @@ def collect_calc_ready(
         stamping_complete=stamping_ok,
         stamping_incomplete_suppliers=incomplete_suppliers,
         welding_calc_complete=welding.complete,
-        bom_version=bom_version,
+        bom_version=None,
         ready=ready,
         message=message,
     )
@@ -170,7 +195,6 @@ def assert_calc_ready(
     month: int,
     location: str,
     vehicle_model: str,
-    bom_version: str,
 ) -> AssemblyCostCalcReadyVO:
     vo = collect_calc_ready(
         db,
@@ -179,7 +203,6 @@ def assert_calc_ready(
         month=month,
         location=location,
         vehicle_model=vehicle_model,
-        bom_version=bom_version,
     )
     if not vo.ready:
         raise BusinessException(vo.message or "上游计算未完成，不能开始总成核价")
@@ -195,7 +218,11 @@ def _stamping_complete(
     vehicle_model: str,
 ) -> tuple[bool, list[str], str]:
     parts = StampingPartRepository().list_by_location_and_vehicle(
-        db, location=location, vehicle_model=vehicle_model
+        db,
+        location=location,
+        vehicle_model=vehicle_model,
+        as_of_year=year,
+        as_of_month=month,
     )
     by_supplier: dict[str, set[str]] = defaultdict(set)
     for part in parts:
@@ -260,12 +287,14 @@ def _welding_coverage(
     year: int,
     location: str,
     vehicle_model: str,
-    bom_version: str,
     current_ids: set[int],
     weld_info_count: int,
     welding_fee_repo: BomWeldingFeeRepository | None = None,
+    bom_version: str | None = None,
+    snapshot_ids: set[int] | None = None,
 ) -> WeldingCoverage:
     fee_repo = welding_fee_repo or BomWeldingFeeRepository()
+    tree_ids = snapshot_ids if snapshot_ids is not None else current_ids
     breakdowns = BomWeldingProcessBreakdownRepository().list_by_scope(
         db, location=location, vehicle_model=vehicle_model, bom_version=bom_version
     )
@@ -299,16 +328,18 @@ def _welding_coverage(
         for fee in aligned_fees
         if (breakdown_id := fee.source_breakdown_node_id) is not None
     }
-    missing_weld_info = weld_info_count > 0 and len(breakdowns) < weld_info_count
-    stale_tree = len(live_breakdowns) != len(breakdowns)
-    breakdown_complete = bool(breakdowns) and not missing_weld_info and not stale_tree
+    missing_weld_info = weld_info_count > 0 and len(live_breakdowns) < weld_info_count
+    stale_tree = bool(bom_version) and any(
+        bd.source_node_id is not None and int(bd.source_node_id) not in tree_ids
+        for bd in breakdowns
+    )
+    breakdown_complete = bool(live_breakdowns) and not missing_weld_info and not stale_tree
 
     latest = BomWeldingFeeCalcLogRepository().get_latest(
         db,
         year=year,
         location=location,
         vehicle_model=vehicle_model,
-        bom_version=bom_version,
     )
     if latest is None:
         return WeldingCoverage(

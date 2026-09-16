@@ -54,7 +54,9 @@ export function bomStructureTemplate() {
                             <span id="bomStructureAssemblyCount" class="text-[10px] font-mono text-[#484848] tracking-wider"></span>
                         </div>
                     </div>
-                    <div class="relative w-full sm:w-64 shrink-0">
+                    <div class="flex items-end gap-2 shrink-0 flex-wrap justify-end">
+                        <div id="bomStructureAsOfFilters" class="flex items-end gap-2"></div>
+                        <div class="relative w-full sm:w-64 shrink-0">
                         <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
                             <svg class="w-3.5 h-3.5 text-[#616161]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path>
@@ -66,6 +68,7 @@ export function bomStructureTemplate() {
                                spellcheck="false"
                                placeholder="搜索零件号 / 名称…"
                                class="w-full h-8 pl-9 pr-3 text-xs bg-[#0a0a0a] border border-[#2c2c2c] text-[#ffffff] placeholder:text-[#616161] focus:outline-none focus:border-[#ff5252] transition-all">
+                    </div>
                     </div>
                 </div>
                 <div id="bomStructureAssemblyGrid"

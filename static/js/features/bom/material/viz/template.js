@@ -21,6 +21,8 @@ export function bomVizTemplate() {
                         <p id="bomVizPath" class="text-[10px] text-[#555555] tracking-wide truncate"></p>
                     </div>
                 </div>
+                <div class="flex items-end gap-2 shrink-0">
+                    <div id="bomVizAsOfFilters" class="flex items-end gap-2"></div>
                 <div id="bomVizCategoryLegend"
                      class="shrink-0 flex flex-wrap justify-end gap-x-3 gap-y-1 text-[10px] tracking-wide text-[#6b6b6b] max-w-md">
                 </div>

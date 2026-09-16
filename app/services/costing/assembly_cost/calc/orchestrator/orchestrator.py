@@ -54,7 +54,6 @@ class AssemblyCostCalcOrchestrator:
         month: int,
         location: str,
         vehicle_model: str,
-        bom_version: str,
     ) -> AssemblyCostCalcReadyVO:
         return collect_calc_ready(
             db,
@@ -63,7 +62,6 @@ class AssemblyCostCalcOrchestrator:
             month=month,
             location=location,
             vehicle_model=vehicle_model,
-            bom_version=bom_version,
         )
 
     def calculate(

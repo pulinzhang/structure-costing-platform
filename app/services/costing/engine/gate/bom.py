@@ -9,7 +9,12 @@ from app.repositories.bom.packaging_transport_fee_repository import (
     BomPackagingTransportFeeRepository,
 )
 from app.schemas.vo.costing_engine_vo import CostingEngineGateItemVO
-from app.services.costing.engine.gate.item import USABLE_STATUSES, make_item, make_skipped
+from app.services.costing.engine.gate.item import (
+    USABLE_STATUSES,
+    make_item,
+    make_skipped,
+    skip_if_period_filtered,
+)
 from app.services.costing.engine.scope_discovery import DiscoveryResult
 
 
@@ -19,12 +24,17 @@ def check_bom_snapshot(
     year: int,
     month: int,
 ) -> CostingEngineGateItemVO:
+    skipped = skip_if_period_filtered(
+        discovery, code="bom_snapshot", location=location, year=year, month=month
+    )
+    if skipped is not None:
+        return skipped
     if not discovery.l0_scopes:
         return make_item(
             code="bom_snapshot",
             ok=False,
-            missing=["未发现含 L0 的 BOM 快照"],
-            message="缺少含 L0 的材料清单，已跳过焊接费与总成核价",
+            missing=["该月没有有效期内的 L0 树"],
+            message="该月没有有效期内的 L0 树，已跳过焊接费与总成核价",
             location=location,
             year=year,
             month=month,
@@ -49,6 +59,11 @@ def check_annual_part_price(
     year: int,
     month: int,
 ) -> CostingEngineGateItemVO:
+    skipped = skip_if_period_filtered(
+        discovery, code="annual_part_price", location=location, year=year, month=month
+    )
+    if skipped is not None:
+        return skipped
     if not discovery.l0_scopes:
         return make_skipped(
             code="annual_part_price",
@@ -92,6 +107,11 @@ def check_packaging_transport(
     year: int,
     month: int,
 ) -> CostingEngineGateItemVO:
+    skipped = skip_if_period_filtered(
+        discovery, code="packaging_transport", location=location, year=year, month=month
+    )
+    if skipped is not None:
+        return skipped
     if not discovery.l0_scopes:
         return make_skipped(
             code="packaging_transport",

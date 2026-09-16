@@ -475,7 +475,6 @@ class AssemblyCostQueries:
         month: int,
         location: str,
         vehicle_model: str,
-        bom_version: str,
         source_node_id: int,
     ) -> AssemblyCost | None:
         return (
@@ -485,7 +484,6 @@ class AssemblyCostQueries:
                 AssemblyCost.month == month,
                 AssemblyCost.location == location,
                 AssemblyCost.vehicle_model == vehicle_model,
-                AssemblyCost.bom_version == bom_version,
                 AssemblyCost.source_node_id == source_node_id,
             )
             .first()

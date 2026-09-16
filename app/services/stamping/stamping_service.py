@@ -13,6 +13,7 @@ from app.repositories.stamping.stamping_repository import (
     StampingPartRepository,
     StampingProcessRepository,
 )
+from app.schemas.dto.period_dto import EffectivePeriodUpdateDTO
 from app.schemas.dto.stamping_part_dto import (
     StampingCascadeFilterQuery,
     StampingMaterialQuery,
@@ -75,6 +76,7 @@ from app.services.stamping.part.mutations import (
     bulk_create_parts,
     create_part,
     delete_part,
+    patch_part_period,
     update_part,
 )
 from app.services.stamping.part.mutations import (
@@ -206,6 +208,15 @@ class StampingPartService:
         current_user: UserVO,
     ) -> StampingPartResponse:
         return update_offal_fn(self.repository, db, part_id, dto, current_user)
+
+    def patch_period(
+        self,
+        db: Session,
+        part_id: int,
+        dto: EffectivePeriodUpdateDTO,
+        current_user: UserVO,
+    ) -> StampingPartResponse:
+        return patch_part_period(self.repository, db, part_id, dto, current_user)
 
     def batch_delete(
         self,

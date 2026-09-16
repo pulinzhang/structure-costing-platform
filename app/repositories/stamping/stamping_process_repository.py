@@ -64,11 +64,11 @@ class StampingProcessRepository:
         *,
         location: str,
         vehicle_model: str,
-        version: str,
+        version: str | None = None,
         stamping_supplier: str | None = None,
         stamping_suppliers: Sequence[str] | None = None,
     ) -> list[StampingProcess]:
-        """按基地 + 冲压工厂 + 车型 + 版本查询工序（含所属零件）。"""
+        """按基地 + 冲压工厂 + 车型查询工序（含所属零件）；版本可选。"""
         q = (
             db.query(StampingProcess)
             .join(StampingPart, StampingProcess.part_id == StampingPart.id)
@@ -76,9 +76,10 @@ class StampingProcessRepository:
             .filter(
                 StampingPart.location == location,
                 StampingPart.vehicle_model == vehicle_model,
-                StampingPart.version == version,
             )
         )
+        if version is not None:
+            q = q.filter(StampingPart.version == version)
         if stamping_suppliers is not None:
             if not stamping_suppliers:
                 q = q.filter(false())

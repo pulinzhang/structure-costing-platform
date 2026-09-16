@@ -36,6 +36,13 @@ def db_session(db_file_path: Path) -> Generator[Session, None, None]:
     if missing_tables:
         pytest.skip(f"缺表，跳过集成模拟: {missing_tables}")
 
+    node_columns = {column["name"] for column in inspector.get_columns("bom_nodes")}
+    part_columns = {column["name"] for column in inspector.get_columns("stamping_parts")}
+    if "location" not in node_columns or "effective_year" not in node_columns:
+        pytest.skip("主库尚未补 BOM 生失效列，请先启动应用完成迁移")
+    if "effective_year" not in part_columns:
+        pytest.skip("主库尚未补冲压生失效列，请先启动应用完成迁移")
+
     session_factory = sessionmaker(bind=engine)
     session = session_factory()
     try:

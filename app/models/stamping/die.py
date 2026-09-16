@@ -34,6 +34,14 @@ class StampingDiePart(AuditUserMixin, Base):
     version: Mapped[str | None] = mapped_column(
         String(20), nullable=True, comment="版本（布点阶段不填）"
     )
+    effective_year: Mapped[int] = mapped_column(
+        Integer, nullable=False, default=2020, comment="生效年"
+    )
+    effective_month: Mapped[int] = mapped_column(
+        Integer, nullable=False, default=1, comment="生效月"
+    )
+    expiry_year: Mapped[int | None] = mapped_column(Integer, nullable=True, comment="失效年")
+    expiry_month: Mapped[int | None] = mapped_column(Integer, nullable=True, comment="失效月")
     seq_no: Mapped[int | None] = mapped_column(Integer, nullable=True, comment="序号")
     part_number: Mapped[str] = mapped_column(String(50), nullable=False, comment="零件号")
     part_name: Mapped[str | None] = mapped_column(String(200), nullable=True, comment="零件名称")

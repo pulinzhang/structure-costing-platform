@@ -31,6 +31,7 @@ from app.services.costing.assembly_cost.calc.rollup import (
     RollupWeldingFee,
 )
 from app.services.costing.assembly_cost.calc.seq_label import calc_card_seq_labels
+from app.services.masterdata.vehicle_model import VehicleModelService
 
 
 @dataclass(frozen=True, slots=True)
@@ -45,8 +46,6 @@ class CalcPrepContext:
     month: int
     location: str
     vehicle_model: str
-    bom_version: str
-    snapshot_id: int
     children: dict[int | None, list[RollupBomNode]]
     nodes_by_id: dict[int, RollupBomNode]
     subjects: list[RollupBomNode]
@@ -94,9 +93,11 @@ def prepare_calc_run(
     month = dto.month
     location = dto.location.strip()
     vehicle_model = dto.vehicle_model.strip()
-    bom_version = dto.bom_version.strip()
-    if not location or not vehicle_model or not bom_version:
+    if not location or not vehicle_model:
         raise BusinessException(SCOPE_REQUIRED_MESSAGE)
+    location, vehicle_model = VehicleModelService().require_introducible(
+        db, location, vehicle_model, year, month
+    )
 
     assert_calc_ready(
         db,
@@ -105,15 +106,21 @@ def prepare_calc_run(
         month=month,
         location=location,
         vehicle_model=vehicle_model,
-        bom_version=bom_version,
     )
 
     progress.report(5, "加载 BOM…")
-    snap = deps.bom_snapshot_repo.get_by_unique_key(db, location, vehicle_model, bom_version)
-    if snap is None:
-        raise BusinessException(f"无 BOM 快照: {location}/{vehicle_model}/{bom_version}")
+    orm_nodes = deps.bom_node_repo.list_as_of_trees(
+        db,
+        location=location,
+        vehicle_model=vehicle_model,
+        as_of_year=year,
+        as_of_month=month,
+    )
+    if not orm_nodes:
+        raise BusinessException(
+            f"{location}/{vehicle_model} 在 {year} 年 {month:02d} 月没有有效期内的 BOM 树"
+        )
 
-    orm_nodes = deps.bom_node_repo.list_by_snapshot(db, snap.id)
     nodes = [
         RollupBomNode(
             id=n.id,
@@ -126,6 +133,8 @@ def prepare_calc_run(
             sort_no=n.sort_no or 0,
             supply_type=getattr(n, "supply_type", None),
             sketch_url=getattr(n, "sketch_url", None),
+            snapshot_id=n.snapshot_id,
+            bom_version=(n.bom_version or "").strip(),
         )
         for n in orm_nodes
     ]
@@ -139,23 +148,26 @@ def prepare_calc_run(
     set_b = {n.id for n in nodes if n.parent_id is None}
 
     procurement_repo = BomProcurementObjectRepository()
-    header = procurement_repo.get_list_by_scope(
-        db, location=location, vehicle_model=vehicle_model, bom_version=bom_version
+    headers = procurement_repo.list_lists_by_location_vehicle(
+        db, location=location, vehicle_model=vehicle_model
     )
+    procurement_objects = [
+        obj
+        for header in headers
+        for obj in procurement_repo.list_objects_by_list_id(db, header.id)
+        if obj.source_node_id is not None and int(obj.source_node_id) in nodes_by_id
+    ]
     subject_meta: dict[int, SubjectMeta] = {}
     set_c: set[int] = set()
-    procurement_missing = header is None
-    procurement_objects = []
-    if header is not None:
-        procurement_objects = procurement_repo.list_objects_by_list_id(db, header.id)
-        for obj in procurement_objects:
-            if obj.section != SECTION_OBJECT:
-                continue
-            set_c.add(obj.source_node_id)
-            subject_meta[obj.source_node_id] = SubjectMeta(
-                procurement_object_id=obj.id,
-                object_kind=obj.object_kind,
-            )
+    for obj in procurement_objects:
+        if obj.section != SECTION_OBJECT:
+            continue
+        set_c.add(obj.source_node_id)
+        subject_meta[obj.source_node_id] = SubjectMeta(
+            procurement_object_id=obj.id,
+            object_kind=obj.object_kind,
+        )
+    procurement_missing = not headers
 
     subject_ids = set_a | set_b | set_c
     if dto.levels:
@@ -194,16 +206,14 @@ def prepare_calc_run(
             annual_suppliers[row.part_number] = str(name)
 
     breakdown_repo = BomWeldingProcessBreakdownRepository()
-    breakdowns = breakdown_repo.list_by_scope(
-        db, location=location, vehicle_model=vehicle_model, bom_version=bom_version
-    )
+    breakdowns = breakdown_repo.list_by_scope(db, location=location, vehicle_model=vehicle_model)
     fee_by_breakdown_id: dict[int, RollupWeldingFee] = {}
     for weld_row in deps.welding_fee_repo.list_by_calc_scope(
         db,
         year=year,
         location=location,
         vehicle_model=vehicle_model,
-        bom_version=bom_version,
+        bom_version=None,
         level=None,
     ):
         breakdown_id = weld_row.source_breakdown_node_id
@@ -223,6 +233,8 @@ def prepare_calc_run(
     welding_by_bom_node: dict[int, RollupWeldingFee] = {}
     for bd in breakdowns:
         if bd.source_node_id is None:
+            continue
+        if int(bd.source_node_id) not in nodes_by_id:
             continue
         fee = fee_by_breakdown_id.get(bd.id)
         if fee is not None:
@@ -248,7 +260,6 @@ def prepare_calc_run(
         month=month,
         location=location,
         vehicle_model=vehicle_model,
-        bom_version=bom_version,
         node_count=len(nodes),
         subjects=subjects,
         procurement_missing=procurement_missing,
@@ -263,8 +274,6 @@ def prepare_calc_run(
         month=month,
         location=location,
         vehicle_model=vehicle_model,
-        bom_version=bom_version,
-        snapshot_id=snap.id,
         children=children,
         nodes_by_id=nodes_by_id,
         subjects=subjects,
@@ -289,7 +298,6 @@ def _record_prep(
     month: int,
     location: str,
     vehicle_model: str,
-    bom_version: str,
     node_count: int,
     subjects: list[RollupBomNode],
     procurement_missing: bool,
@@ -302,7 +310,7 @@ def _record_prep(
     by_level = Counter(node.level for node in subjects)
     level_text = "、".join(f"L{level} {count}" for level, count in sorted(by_level.items()))
     log_builder.line(
-        f"{year}-{month:02d}  {location}/{vehicle_model}/{bom_version}  "
+        f"{year}-{month:02d}  {location}/{vehicle_model}  "
         f"BOM {node_count}  卡 {len(subjects)}（{level_text or '无'}）"
     )
     log_builder.line(

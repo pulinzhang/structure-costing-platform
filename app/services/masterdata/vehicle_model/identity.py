@@ -4,6 +4,9 @@ from __future__ import annotations
 
 from sqlalchemy.orm import Session
 
+from app.common.period import is_in_period as columns_in_period
+from app.common.period import overlaps_year as period_overlaps_year
+from app.common.period import period, validate_period
 from app.common.vehicle_model import normalize_vehicle_model
 from app.exceptions.base import BusinessException, NotFoundException
 from app.models.masterdata.vehicle_model import VehicleModel
@@ -20,9 +23,29 @@ PLACEHOLDER_CODES = frozenset({"UNKNOWN"})
 PAGE_HINT = "请到项目一览表手工增加或上传（#/vehicle-model-list）"
 FILE_MISMATCH = "文件项目为 {parsed}，与填写的项目 {selected} 不一致"
 
-
-def period(year: int, month: int) -> tuple[int, int]:
-    return (year, month)
+__all__ = [
+    "FILE_MISMATCH",
+    "PAGE_HINT",
+    "PLACEHOLDER_CODES",
+    "assert_matches_selected",
+    "is_in_period",
+    "is_not_expired",
+    "list_filter_codes",
+    "list_introducible",
+    "list_overlaps_year",
+    "list_registered",
+    "normalize",
+    "overlaps_year",
+    "period",
+    "period_status",
+    "require_introducible",
+    "require_introducible_by_code",
+    "require_overlaps_year",
+    "require_registered",
+    "require_row",
+    "to_vo",
+    "validate_period",
+]
 
 
 def normalize(value: str | None) -> str | None:
@@ -61,30 +84,6 @@ def require_row(
     return record
 
 
-def validate_period(
-    effective_year: int,
-    effective_month: int,
-    expiry_year: int | None,
-    expiry_month: int | None,
-) -> None:
-    if effective_month < 1 or effective_month > 12:
-        raise BusinessException("生效月必须为 1–12")
-    has_year = expiry_year is not None
-    has_month = expiry_month is not None
-    if has_year != has_month:
-        raise BusinessException("失效年与失效月必须同空或同有")
-    if has_month and (expiry_month is None or expiry_month < 1 or expiry_month > 12):
-        raise BusinessException("失效月必须为 1–12")
-    if (
-        has_year
-        and has_month
-        and expiry_year is not None
-        and expiry_month is not None
-        and period(expiry_year, expiry_month) < period(effective_year, effective_month)
-    ):
-        raise BusinessException("失效不得早于生效")
-
-
 def is_not_expired(record: VehicleModel, year: int, month: int) -> bool:
     if record.expiry_year is None or record.expiry_month is None:
         return True
@@ -92,18 +91,24 @@ def is_not_expired(record: VehicleModel, year: int, month: int) -> bool:
 
 
 def is_in_period(record: VehicleModel, year: int, month: int) -> bool:
-    as_of = period(year, month)
-    if as_of < period(record.effective_year, record.effective_month):
-        return False
-    return is_not_expired(record, year, month)
+    return columns_in_period(
+        effective_year=record.effective_year,
+        effective_month=record.effective_month,
+        expiry_year=record.expiry_year,
+        expiry_month=record.expiry_month,
+        as_of_year=year,
+        as_of_month=month,
+    )
 
 
 def overlaps_year(record: VehicleModel, year: int) -> bool:
-    if period(record.effective_year, record.effective_month) > period(year, 12):
-        return False
-    if record.expiry_year is None or record.expiry_month is None:
-        return True
-    return period(record.expiry_year, record.expiry_month) >= period(year, 1)
+    return period_overlaps_year(
+        effective_year=record.effective_year,
+        effective_month=record.effective_month,
+        expiry_year=record.expiry_year,
+        expiry_month=record.expiry_month,
+        year=year,
+    )
 
 
 def period_status(record: VehicleModel, year: int, month: int) -> str:

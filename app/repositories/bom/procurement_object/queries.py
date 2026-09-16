@@ -60,6 +60,37 @@ class BomProcurementObjectQueries:
             .first()
         )
 
+    def list_lists_by_location_vehicle(
+        self,
+        db: Session,
+        *,
+        location: str,
+        vehicle_model: str,
+    ) -> list[BomProcurementObjectList]:
+        return (
+            db.query(BomProcurementObjectList)
+            .filter(
+                BomProcurementObjectList.location == location,
+                BomProcurementObjectList.vehicle_model == vehicle_model,
+            )
+            .order_by(BomProcurementObjectList.id.asc())
+            .all()
+        )
+
+    def list_objects_by_location_vehicle(
+        self,
+        db: Session,
+        *,
+        location: str,
+        vehicle_model: str,
+    ) -> list[BomProcurementObject]:
+        objects: list[BomProcurementObject] = []
+        for header in self.list_lists_by_location_vehicle(
+            db, location=location, vehicle_model=vehicle_model
+        ):
+            objects.extend(self.list_objects_by_list_id(db, header.id))
+        return objects
+
     def get_latest_list(self, db: Session) -> BomProcurementObjectList | None:
         return (
             db.query(BomProcurementObjectList)

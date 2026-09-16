@@ -56,6 +56,10 @@ class StampingPartResponse(BaseModel):
     excel_sheet_name: str | None = Field(default=None, description="来源 Excel 工作表名")
     excel_row: int | None = Field(default=None, description="来源 Excel 行号（1-based）")
     excel_part_col: int | None = Field(default=None, description="零件号所在列号（1-based）")
+    effective_year: int | None = None
+    effective_month: int | None = None
+    expiry_year: int | None = None
+    expiry_month: int | None = None
     created_by: str | None = None
     updated_by: str | None = None
     created_at: datetime | None = None
@@ -101,6 +105,10 @@ class StampingPartListResponse(BaseModel):
     excel_part_col: int | None = None
     sketch_url: str | None = None
     process_count: int = Field(default=0, description="工序数量")
+    effective_year: int | None = None
+    effective_month: int | None = None
+    expiry_year: int | None = None
+    expiry_month: int | None = None
 
     @field_serializer("thickness", "part_weight")
     def serialize_physical(self, value: Decimal | None) -> str | None:
@@ -172,6 +180,10 @@ class StampingPartWithProcessesResponse(BaseModel):
     excel_sheet_name: str | None = Field(default=None, description="来源 Excel 工作表名")
     excel_row: int | None = Field(default=None, description="来源 Excel 行号（1-based）")
     excel_part_col: int | None = Field(default=None, description="零件号所在列号（1-based）")
+    effective_year: int | None = None
+    effective_month: int | None = None
+    expiry_year: int | None = None
+    expiry_month: int | None = None
     created_by: str | None = None
     updated_by: str | None = None
     created_at: datetime | None = None

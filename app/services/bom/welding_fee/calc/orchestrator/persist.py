@@ -66,7 +66,6 @@ def persist_calc_result(
         year=ctx.year,
         location=ctx.location,
         vehicle_model=ctx.vehicle_model,
-        bom_version=ctx.bom_version,
         calc_batch_id=calc_batch_id,
         log_id=log_id,
         status=status,
@@ -108,12 +107,11 @@ def persist_calc_result(
 
     progress.report(100, "计算完成")
     logger.info(
-        "焊接费计算完成: year=%s location=%s vehicle=%s version=%s "
+        "焊接费计算完成: year=%s location=%s vehicle=%s "
         "created=%s updated=%s failed=%s skipped=%s missing_price=%s",
         ctx.year,
         ctx.location,
         ctx.vehicle_model,
-        ctx.bom_version,
         result.created_count,
         result.updated_count,
         result.failed_count,

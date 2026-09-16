@@ -30,7 +30,7 @@ def format_rate_loaded(rate_count: int) -> str:
 
 
 def format_parts_matched(part_count: int) -> str:
-    return f"本范围共 {part_count} 个冲压零件"
+    return f"本范围共 {part_count} 个有效期内冲压零件"
 
 
 def _join_part_numbers(items: list[StampingProcessFeeFailedItemVO], limit: int = 8) -> str:

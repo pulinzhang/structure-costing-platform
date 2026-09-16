@@ -12,6 +12,7 @@ from app.common.timezone import now
 from app.exceptions.base import BusinessException
 from app.models.stamping import StampingPart
 from app.schemas.dto.stamping_process_fee_dto import StampingProcessFeeCalcDTO
+from app.services.masterdata.vehicle_model import VehicleModelService
 from app.services.stamping.process_fee.calc.models import TonnageRateInfo
 from app.services.stamping.process_fee.calc.orchestrator.deps import ProcessFeeCalcDeps
 from app.services.stamping.process_fee.calc.orchestrator.messages import (
@@ -39,7 +40,9 @@ def prepare_calc_run(
     progress: ProgressNotifier,
 ) -> CalcPrepContext:
     scope = require_calc_scope(dto)
-    location = scope.location
+    location, vehicle_model = VehicleModelService().require_overlaps_year(
+        db, scope.location, scope.vehicle_model, dto.year
+    )
     started_at = now()
     detail_lines = [format_prep_opening(dto.year, location, ALL_SUPPLIERS_LOCK)]
 
@@ -63,11 +66,14 @@ def prepare_calc_run(
     parts = deps.part_repo.list_with_processes(
         db,
         location=location,
-        vehicle_model=scope.vehicle_model,
+        vehicle_model=vehicle_model,
         version=scope.version,
+        overlap_year=dto.year,
     )
     if not parts:
-        raise BusinessException(f"基地「{location}」下未找到匹配的冲压零件")
+        raise BusinessException(
+            f"基地「{location}」项目「{vehicle_model}」在 {dto.year} 年没有有效期内的冲压零件"
+        )
     detail_lines.append(format_parts_matched(len(parts)))
 
     return CalcPrepContext(

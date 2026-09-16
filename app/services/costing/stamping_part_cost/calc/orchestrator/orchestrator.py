@@ -49,7 +49,6 @@ class StampingPartCostCalcOrchestrator:
         month: int | None = None,
         location: str | None = None,
         vehicle_model: str | None = None,
-        version: str | None = None,
     ) -> StampingPartCostCalcReadyVO:
         return collect_calc_ready(
             db,
@@ -58,7 +57,6 @@ class StampingPartCostCalcOrchestrator:
             month=month,
             location=location,
             vehicle_model=vehicle_model,
-            version=version,
         )
 
     def begin_processing(

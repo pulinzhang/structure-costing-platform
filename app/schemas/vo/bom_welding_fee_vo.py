@@ -104,9 +104,9 @@ class BomWeldingFeeCalcReadyVO(BaseModel):
     year: int
     location: str
     vehicle_model: str
-    bom_version: str
     unit_price_count: int = 0
     levels: list[WeldingFeeLevelReadyVO] = Field(default_factory=list)
+    message: str | None = None
 
 
 class BomWeldingFeeCalcResultVO(BaseModel):
@@ -115,7 +115,7 @@ class BomWeldingFeeCalcResultVO(BaseModel):
     year: int
     location: str
     vehicle_model: str
-    bom_version: str
+    bom_version: str = ""
     calc_batch_id: str | None = None
     log_id: int | None = None
     status: str = "success"
@@ -198,7 +198,7 @@ class BomWeldingFeeBatchAuditResultVO(BatchAuditCountsVO):
     year: int
     location: str
     vehicle_model: str
-    bom_version: str
+    bom_version: str | None = None
 
 
 class BomWeldingFeeBatchDeleteResultVO(BatchDeleteCountsVO):
@@ -207,4 +207,4 @@ class BomWeldingFeeBatchDeleteResultVO(BatchDeleteCountsVO):
     year: int
     location: str
     vehicle_model: str
-    bom_version: str
+    bom_version: str | None = None

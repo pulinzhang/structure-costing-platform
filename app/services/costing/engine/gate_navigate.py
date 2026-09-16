@@ -17,6 +17,7 @@ def build_navigate(
     """按门禁 code 生成 navigate；未知 code 返回 None。"""
     builders = {
         "vehicle_model": _nav_vehicle_model,
+        "vehicle_model_period": _nav_vehicle_model_period,
         "stamping_process": _nav_stamping_process,
         "tonnage_price": _nav_tonnage_price,
         "welding_unit_price": _nav_welding_unit_price,
@@ -58,9 +59,31 @@ def _nav_vehicle_model(
     *, year: int | None, month: int | None, location: str | None
 ) -> CostingEngineNavigateVO:
     return CostingEngineNavigateVO(
+        page="stamping-parts",
+        label="去查看零件列表",
+        query=_query(
+            year=year,
+            month=month,
+            location=location,
+            include_year=True,
+            include_month=True,
+            include_location=True,
+        ),
+        secondary_page="bom-structure",
+        secondary_label="查看产品结构",
+    )
+
+
+def _nav_vehicle_model_period(
+    *, year: int | None, month: int | None, location: str | None
+) -> CostingEngineNavigateVO:
+    return CostingEngineNavigateVO(
         page="vehicle-model-list",
         label="去项目一览表",
-        query=_query(location=location, include_location=True),
+        query=_query(
+            location=location,
+            include_location=True,
+        ),
     )
 
 

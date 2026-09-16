@@ -60,6 +60,28 @@ class BomProcurementObjectRepository:
             db, location=location, vehicle_model=vehicle_model, bom_version=bom_version
         )
 
+    def list_lists_by_location_vehicle(
+        self,
+        db: Session,
+        *,
+        location: str,
+        vehicle_model: str,
+    ) -> list[BomProcurementObjectList]:
+        return self._queries.list_lists_by_location_vehicle(
+            db, location=location, vehicle_model=vehicle_model
+        )
+
+    def list_objects_by_location_vehicle(
+        self,
+        db: Session,
+        *,
+        location: str,
+        vehicle_model: str,
+    ) -> list[BomProcurementObject]:
+        return self._queries.list_objects_by_location_vehicle(
+            db, location=location, vehicle_model=vehicle_model
+        )
+
     def get_latest_list(self, db: Session) -> BomProcurementObjectList | None:
         return self._queries.get_latest_list(db)
 

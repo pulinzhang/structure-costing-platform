@@ -136,7 +136,6 @@ def get_calc_ready(
     year: int = Query(..., ge=2000, le=2100),
     location: str = Query(..., min_length=1),
     vehicle_model: str = Query(..., min_length=1),
-    bom_version: str = Query(..., min_length=1),
     db: Session = Depends(get_db),
     current_user: UserVO = Depends(require_perm(Perm.BOM_WELDING_FEE_CALC_VIEW)),
 ) -> ApiResponse[BomWeldingFeeCalcReadyVO]:
@@ -145,7 +144,6 @@ def get_calc_ready(
         year=year,
         location=location,
         vehicle_model=vehicle_model,
-        bom_version=bom_version,
     )
     return ApiResponse.ok(data=data)
 

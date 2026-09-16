@@ -13,6 +13,7 @@ from app.common.audit import SYSTEM_USER
 from app.database import Base
 from app.exceptions.base import BusinessException
 from app.models.masterdata.location import Location, LocationAlias
+from app.models.masterdata.steel_grade_category import SteelGradeCategory
 from app.models.masterdata.supplier import Supplier, SupplierAlias
 from app.models.masterdata.vehicle_model import VehicleModel
 from app.models.stamping.part import StampingPart, StampingProcess
@@ -55,6 +56,7 @@ def memory_db() -> Generator[Session, None, None]:
             VehicleModel.__table__,
             Supplier.__table__,
             SupplierAlias.__table__,
+            SteelGradeCategory.__table__,
             StampingPart.__table__,
             StampingProcess.__table__,
             StampingTailorWeldBlank.__table__,

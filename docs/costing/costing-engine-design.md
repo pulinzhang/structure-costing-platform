@@ -10,7 +10,7 @@
 
 ## 1. 一句话说明
 
-用户选定 **生产基地、年度、月份** 后一键启动；引擎校验上传/配置类主数据（缺则整次停止，并给出 **对应功能页快速跳转**），对缺失的 **年度计算结果** 自动补算，再按依赖跑完当月钢材 → 零件价 → 全部 BOM 版本的成品核价；前端只轮询 **一个异步任务**。
+用户选定 **生产基地、年度、月份** 后一键启动；引擎校验上传/配置类主数据（缺则整次停止，并给出 **对应功能页快速跳转**），对缺失的 **年度计算结果** 自动补算，再按依赖跑完当月钢材 → 零件价 → 各项目该月有效期内 BOM 树的成品核价；前端只轮询 **一个异步任务**。
 
 ---
 
@@ -21,11 +21,12 @@
 | R1 | 入口三参数 | 仅 `location`（基地）、`year`、`month` |
 | R2 | 上传/配置缺失 → 硬停 | 见 §5.1；含 **基准价**；覆盖不全视为缺失。缺工艺 / 缺 BOM 为黄灯，不挡另一条路径 |
 | R3 | 年度计算所得缺失 → 自动补算 | 加工费、焊接工艺拆解、L0 焊接费（`levels=[0]`） |
-| R4 | 多 BOM 版本 → 逐个全算 | 同项目多版本全部进入计划，不「只算最新」 |
+| R4 | 同项目多 BOM 版本的树，只要该月有效就进总成核价 | 总成按项目算一次，不要按版本拆多趟；焊接年度补算仍可按 L0Scope |
 | R5 | 不改公式 | 复用现有 Orchestrator；合册只导出不算价 |
 | R6 | 前端单通道异步 | 一次 `task_id` + 与现网同形的进度 VO |
 | R7 | 硬停可跳转 | 每条硬停缺口须带 **功能页深链**，一点即达上传/维护处（见 §5.3） |
 | R8 | running 也可删 | `costing_engine_run` **任意状态均可删除**（含 `running`），避免本机关机后任务永久卡住（见 §8.4） |
+| R9 | 引擎发现：对象 as_of 后再滤项目月 | 发现源仍是该月命中的冲压零件 ∪ L0。随后只留 `list_introducible(账期年, 月)` 里的代号。取件仍问零件/树，**不要**用项目期当取件 WHERE。空名单分「无件」（零件列表 / 产品结构）和「项目停」（项目一览，code `vehicle_model_period`）。子计算身份：月度 `require_introducible`，年度 `require_overlaps_year` |
 
 ---
 
@@ -106,12 +107,12 @@ CostingEngineService                 ← 编排唯一入口
 ### 5.1 上传 / 配置类
 
 必须对本 Run 将覆盖范围 **键可匹配、覆盖完整**；表非空但缺关键钢种/厚度档 = 缺失。  
-缺冲压工艺或 BOM 为 **黄灯**（不阻断另一条路径）；冲次单价 / 焊接单价 / 年度零件价 / 废料价仅在对应路径存在时检查。其余上传项缺失仍 **硬停**。
+缺冲压工艺或 BOM 为 **黄灯**（不阻断另一条路径）；该月无有效零件且无有效 L0 为软提示且 `has_path=false`（不能启动），**不要**当成「没有可引入项目」硬停。冲次单价 / 焊接单价 / 年度零件价 / 废料价仅在对应路径存在时检查。其余上传项缺失仍 **硬停**。
 
 | 数据 | 粒度 | 备注 |
 |---|---|---|
-| 本期可引入项目 | 基地 + 年 + 月 | 问项目主数据 `list_introducible`；名单空硬停，去一览表 |
-| 冲压工艺零件 / 工序 | 本期项目名单 | 对照零件表；缺的项目不判冲压加工费/零件价。**黄灯不硬停**，有 BOM 的仍可总成核价 |
+| 该月有效期内项目 | 基地 + 年 + 月 | 先冲压零件月命中 ∪ L0 节点月命中，再留下 `list_introducible` 里的。as_of 两边都空 → 软提示去零件列表 / 产品结构。as_of 有件但项目期裁空 → 去项目一览（`vehicle_model_period`） |
+| 冲压工艺零件 / 工序 | 该月有效期内项目 | 对照该月命中的零件表；只有 BOM、没有冲压件的项目不判冲压加工费/零件价。**黄灯不硬停**，有 BOM 的仍可总成核价 |
 | 冲次单价 | 基地相关 | 加工费输入；**仅当本期有冲压工艺时检查**，无工艺则跳过，不去判冲压加工费 |
 | 焊接单价 | 年 + 基地 | 上传；**仅当存在含 L0 的 BOM 时检查**，无 BOM 则跳过，不去判焊接加工费 |
 | BOM 材料清单快照 | 基地 + 项目 + BOM 版本 | 须含 L0 才跑焊接与总成；**无 BOM 黄灯不硬停**，有工艺的仍可跑冲压路径 |
@@ -130,8 +131,8 @@ CostingEngineService                 ← 编排唯一入口
 | 结果 | 触发粒度 | 依赖（须已过 5.1） |
 |---|---|---|
 | 冲压加工费 | 每个 **已有冲压工艺** 的 `vehicle_model`（工厂空则覆盖该车各厂） | 工艺 + 冲次单价；无工艺的项目不列入、不补算 |
-| 焊接工艺拆解 | 每个 L0Scope | BOM + 焊接单价等；无 BOM 则无 L0Scope，不判焊接费 |
-| 成品 L0 焊接费 | 每个 L0Scope | 拆解结果 |
+| 焊接工艺拆解 | 每个 L0Scope（该年与节点有效期有交集） | BOM + 焊接单价等；无该月命中 L0 则无 L0Scope，不判焊接费 |
+| 成品 L0 焊接费 | 每个 L0Scope | 拆解结果；覆盖检查只问该年有效期内节点 |
 
 规则：
 
@@ -159,8 +160,8 @@ CostingEngineService                 ← 编排唯一入口
 
 | gate `code` | 说明 | 主跳转（上传/维护） | 辅跳转（列表核对，可选） | 建议 query |
 |---|---|---|---|---|
-| `vehicle_model` | 本期可引入项目 | `#/vehicle-model-list` | — | `location`；名单空不要说「没有冲压零件」 |
-| `stamping_process` | 冲压工艺 | `#/stamping-upload` | `#/stamping-parts` | `location`；对照本期项目名单，缺工艺才去上传页 |
+| `vehicle_model` | 该月有效期内零件 / L0 树 | `#/stamping-parts` | `#/bom-structure` | `year`, `month`, `location`；空名单不要说「没有可引入项目」，不要跳项目一览表 |
+| `stamping_process` | 冲压工艺 | `#/stamping-upload` | `#/stamping-parts` | `location`；对照该月命中项目，缺工艺才去上传页 |
 | `tonnage_price` | 冲次单价 | `#/stamping-tonnage-upload` | `#/stamping-tonnage` | `location` |
 | `welding_unit_price` | 焊接单价 | `#/bom-welding-unit-price-upload` | `#/bom-welding-unit-price` | `year`, `location` |
 | `bom_snapshot` | BOM 材料清单 | `#/bom-upload` | `#/bom-material` / `#/bom-structure` | `location`；缺版本时文案点名项目 |
@@ -196,8 +197,8 @@ navigate: {
 | 结果 | Scope |
 |---|---|
 | 钢材联动价 | `(location, year, month)` 整基地一次 |
-| 冲压零件价 | 每个项目一次（覆盖该车各厂、各版本） |
-| 成品 L0 核价 | **每个** `(vehicle_model, bom_version)` 一次 |
+| 冲压零件价 | 每个项目一次（覆盖该车各厂、该月有效零件；不靠版本） |
+| 成品 L0 核价 | 每个项目一次（该月有效期内全部树） |
 | 月度合册（可选） | 每个成功的 L0Scope 各出一册 |
 
 ---
@@ -215,8 +216,8 @@ L0Scope      = (location, year, month, vehicle_model, bom_version)
 
 ### 6.2 发现规则
 
-1. **项目**：该基地该月 `VehicleModelService.list_introducible`。**仅有冲压工艺的项目**进入加工费补算与 PartCost 计划（一车多厂一次算完）。名单空则硬停，去项目一览表，不要说「该基地没有冲压零件」。  
-2. **L0Scope**：该基地下所有 **含 L0 节点** 的 BOM 快照 `(vehicle_model, bom_version)`，且 `vehicle_model` 必须落在本期名单 → **全部进入计划（多版本逐个算）**。名单外的 BOM **不进入计划**。无 BOM 则不进入焊接拆解 / 焊接费。  
+1. **项目**：先该基地该月 **冲压零件月命中** 的 `vehicle_model` ∪ **L0 节点月命中** 的 `vehicle_model`（`as_of_vehicle_models`），再留下 `list_introducible(账期年, 月)` 里的。项目该月已失效 → **不进计划**（即使对象失效为空）。**仅有冲压工艺且项目期覆盖该月的项目**进入加工费补算与 PartCost 计划（一车多厂一次算完）。as_of 两边都空则 `has_path=false`，去零件列表 / 产品结构。as_of 有件但项目期裁空：门禁 code `vehicle_model_period`，去 `#/vehicle-model-list`。  
+2. **L0Scope**：该基地下含 **该月命中 L0** 的 BOM 快照 `(vehicle_model, bom_version)` 全部进入焊接年度计划（多版本可逐个补算）。总成核价仍按项目一次跑完该月有效树。无该月命中 L0 则不进入焊接拆解 / 焊接费 / 总成。  
 3. **地点规范化**：由 `LocationService.expand_for_query` 展开规范名与别名（如「青岛」/「青岛基地」），门禁与发现用同一套，避免假缺失。引擎 `get_ready` / `start_run` 先 `require_enabled`，只写入规范名。
 
 ### 6.3 与合册参数对齐
@@ -236,7 +237,7 @@ flowchart TB
     P3[Phase 3 年度补算]
     P4a[Phase 4.1 钢材联动]
     P4b[Phase 4.2 零件价 × 项目]
-    P4c[Phase 4.3 L0 × 全部 BOM]
+    P4c[Phase 4.3 总成核价 × 项目]
     P5[Phase 5 可选合册]
     P6[Phase 6 汇总]
 
@@ -249,13 +250,13 @@ flowchart TB
 
 | 阶段 | 行为 |
 |---|---|
-| 0 | ScopeDiscovery：本期项目名单、L0Scope 列表 |
+| 0 | ScopeDiscovery：该月命中的冲压项目 ∪ L0 树、L0Scope 列表 |
 | 1 | GateChecker：§5.1；失败则 `can_start=false`，不建计算 Run（或仅检查记录） |
 | 2 | 体检 §5.2，生成 `annual_plan` |
 | 3 | 按项目补加工费（覆盖该车各厂）；按 L0Scope 补拆解 → L0 焊接费 |
 | 4.1 | 整基地钢材联动 |
 | 4.2 | 逐 **有工艺** 的项目零件价（依赖 4.1 + 废料 + 加工费；工厂空） |
-| 4.3 | 逐 L0Scope 总成核价；无工艺不因加工费/零件价未做而跳过；无 BOM 不进入 |
+| 4.3 | 逐项目总成核价（该月有效期内全部树）；无工艺不因加工费/零件价未做而跳过；无 BOM 不进入 |
 | 5 | 可选：成功 L0Scope 导出合册 |
 | 6 | 聚合 Run 状态，写父任务 `result` |
 
@@ -477,10 +478,10 @@ plan:
   part_cost_scopes: [ { vehicle_model, ... } ]
   l0_scopes: [ { vehicle_model, bom_version, ... } ]  # 全部版本
 
-can_start: bool   # = not hard_stop 且存在可执行路径
+can_start: bool   # = not hard_stop 且存在可执行路径（该月命中冲压件或 L0）
 ```
 
-**`can_start`：** 上传/配置全过即可点运行；年度结果缺失不禁用（将自动补算）。
+**`can_start`：** 上传/配置硬门全过，且该月至少有一条冲压路径或总成路径，才可点运行；年度结果缺失不禁用（将自动补算）。该月无命中零件且无命中 L0 时不能启动，即使没有硬门红灯。
 
 门禁失败时 `POST /runs` 返回业务错误（如 400），不创建父任务；`data` 宜带回含 `navigate` 的 `upload_or_config`，与 `ready` 同形。
 
@@ -609,3 +610,6 @@ can_start: bool   # = not hard_stop 且存在可执行路径
 | 2026-09-08 | 本期项目名单改问 `list_introducible`；空名单硬停去项目一览表；文案「配套车型」→「项目」 |
 | 2026-09-09 | 无冲压工艺不检查冲次单价、不计划冲压加工费；无 BOM 不检查焊接单价、不计划焊接费；总成核价同一套：无工艺不判零件价完成、无 BOM 不跑总成 |
 | 2026-09-11 | 厚度加减价改回硬门：适用却未命中则 `hard_stop`，禁止按 0 调差启动 |
+| 2026-09-16 | 总成核价阶段按项目一次跑完该月有效期内各版本树，不再逐 BOM 版本拆趟 |
+| 2026-09-16 | 引擎发现 as_of 之后再按 `list_introducible` 裁项目月；空名单分无件 vs 项目停（`vehicle_model_period`） |
+| 2026-09-16 | 检查就绪焊接年度覆盖只问该年有效期内节点，快照里已过期树不挡补算判断 |

@@ -28,7 +28,6 @@ _DTO = AssemblyCostCalcDTO(
     month=8,
     location="青岛",
     vehicle_model="T28",
-    bom_version="V1",
 )
 
 
@@ -44,7 +43,7 @@ def _seed_processing(db: Session, *, calc_batch_id: str) -> AssemblyCostCalcLog:
         month=_DTO.month,
         location=_DTO.location,
         vehicle_model=_DTO.vehicle_model,
-        bom_version=_DTO.bom_version,
+        bom_version="",
         calc_batch_id=calc_batch_id,
         status=STATUS_PROCESSING,
         message="计算中…",
@@ -85,6 +84,14 @@ def test_second_begin_processing_same_scope_is_409(lock_db: Session) -> None:
     assert "uq_assembly_calc_processing" in names
 
 
+def test_begin_processing_ignores_bom_version_for_lock(lock_db: Session) -> None:
+    service = AssemblyCostCalcLogService()
+    service.begin_processing(lock_db, _DTO, operator_id=1, operator_name="tester")
+    other = _DTO.model_copy(update={"bom_version": "D/09"})
+    with pytest.raises(DuplicateScopeCalcError):
+        service.begin_processing(lock_db, other, operator_id=1, operator_name="tester")
+
+
 def test_duplicate_processing_rows_are_collapsed_before_index(lock_db: Session) -> None:
     older = _seed_processing(lock_db, calc_batch_id="old-batch")
     newer = _seed_processing(lock_db, calc_batch_id="new-batch")
@@ -114,7 +121,6 @@ def test_persist_writes_completed_history_without_processing_lock(lock_db: Sessi
         month=_DTO.month,
         location=_DTO.location,
         vehicle_model=_DTO.vehicle_model,
-        bom_version=_DTO.bom_version,
         status=STATUS_PARTIAL,
         message="成功 1，部分成功 2，失败 0，跳过 0",
         subject_total=3,

@@ -32,6 +32,7 @@ from sqlalchemy import (
     String,
     Text,
     UniqueConstraint,
+    text,
 )
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
@@ -231,6 +232,26 @@ class BomNode(AuditUserMixin, Base):
         comment="Excel「序号」列。通常仅 L0 有值，例：1、2、3",
     )
 
+    location: Mapped[str] = mapped_column(
+        String(50),
+        nullable=False,
+        comment="采购基地（与所属 snapshot 同一基地）",
+    )
+    vehicle_model: Mapped[str] = mapped_column(
+        String(50),
+        nullable=False,
+        comment="项目（与所属 snapshot 同一项目）",
+    )
+    bom_version: Mapped[str] = mapped_column(
+        String(20),
+        nullable=False,
+        comment="清单版本字（SOP 抄头；合册新树可写变更字）",
+    )
+    effective_year: Mapped[int] = mapped_column(Integer, nullable=False, comment="生效年")
+    effective_month: Mapped[int] = mapped_column(Integer, nullable=False, comment="生效月")
+    expiry_year: Mapped[int | None] = mapped_column(Integer, nullable=True, comment="失效年")
+    expiry_month: Mapped[int | None] = mapped_column(Integer, nullable=True, comment="失效月")
+
     # ---------- 零件标识（来自 Excel 对应层级列） ----------
     internal_number: Mapped[str | None] = mapped_column(
         String(50),
@@ -385,4 +406,18 @@ class BomNode(AuditUserMixin, Base):
         Index("ix_bom_node_snapshot_part_number", "snapshot_id", "part_number"),
         Index("ix_bom_node_part_number", "part_number"),
         Index("ix_bom_node_snapshot_supply", "snapshot_id", "is_supply_unit"),
+        Index(
+            "uix_bom_node_l0_part_number",
+            "snapshot_id",
+            "part_number",
+            unique=True,
+            sqlite_where=text("level = 0"),
+        ),
+        ForeignKeyConstraint(
+            ["location", "vehicle_model"],
+            ["vehicle_models.location", "vehicle_models.vehicle_model"],
+            ondelete="RESTRICT",
+            onupdate="RESTRICT",
+            name="fk_bom_nodes_vehicle_models",
+        ),
     )

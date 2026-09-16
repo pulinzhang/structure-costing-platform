@@ -368,7 +368,7 @@ op:settings-profile:password
 | base-price-download | `view` / `export` / `delete` | 预览；导出；批量删除 |
 | steel-grade-category | `view` / `create` / `update` / `delete` / `export` | 查询；新增；编辑大类/备注；删除档案行；导出 Excel |
 | winning-thickness-download | `view` / `export` | 预览；导出 Excel |
-| bom-structure | `view` | 产品结构：基地/项目卡片浏览 |
+| bom-structure | `view` / `update` | 产品结构：基地/项目卡片浏览；总成卡改生失效 |
 | bom-viz（权限码同 `menu:bom-structure`） | `view` | Assembly Workspace |
 | bom-upload | `view` / `upload` | 进入页；导入材料清单 |
 | bom-material | `view` / `delete` | 材料清单列表；单行删除清单（含树节点） |

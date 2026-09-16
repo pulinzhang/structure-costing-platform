@@ -50,7 +50,6 @@ class BatchCalculationEngine:
                 year=ctx.year,
                 location=ctx.location,
                 vehicle_model=ctx.vehicle_model,
-                bom_version=ctx.bom_version,
                 source_breakdown_node_id=node.id,
             )
             if existing is not None and existing.audit_status == AUDIT_APPROVED:
@@ -88,7 +87,7 @@ class BatchCalculationEngine:
                     year=ctx.year,
                     location=ctx.location,
                     vehicle_model=ctx.vehicle_model,
-                    bom_version=ctx.bom_version,
+                    bom_version=(getattr(node, "bom_version", None) or "").strip(),
                     level=int(node.level),
                     source_breakdown_node_id=node.id,
                     part_number=node.part_number,

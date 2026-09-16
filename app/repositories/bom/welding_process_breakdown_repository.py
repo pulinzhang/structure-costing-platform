@@ -108,10 +108,33 @@ class BomWeldingProcessBreakdownRepository:
         *,
         location: str,
         vehicle_model: str,
-        bom_version: str,
+        bom_version: str | None = None,
     ) -> list[BomWeldingProcessBreakdownNode]:
         return self._queries.list_by_scope(
             db, location=location, vehicle_model=vehicle_model, bom_version=bom_version
+        )
+
+    def exists_by_location_vehicle(
+        self,
+        db: Session,
+        *,
+        location: str,
+        vehicle_model: str,
+    ) -> bool:
+        return self._queries.exists_by_location_vehicle(
+            db, location=location, vehicle_model=vehicle_model
+        )
+
+    def list_overlapping_year(
+        self,
+        db: Session,
+        *,
+        location: str,
+        vehicle_model: str,
+        year: int,
+    ) -> list[BomWeldingProcessBreakdownNode]:
+        return self._queries.list_overlapping_year(
+            db, location=location, vehicle_model=vehicle_model, year=year
         )
 
     def exists_by_bom_scope(

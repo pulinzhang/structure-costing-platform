@@ -5,7 +5,17 @@
  */
 
 import { can } from '../../../../permissions.js?v=8';
-import { bomStructureTemplate } from './template.js?v=3';
+import { bomStructureTemplate } from './template.js?v=4';
+import {
+    asOfFilterHtml,
+    fillAsOfSelects,
+    fillYearMonthSelects,
+    fmtPeriodRange,
+    periodEditorHtml,
+    readAsOf,
+    readPeriod,
+    wallClockYearMonth,
+} from '../../../common/period-ui.js?v=2';
 
 const bomStructureState = {
     view: 'projects', // projects | assemblies
@@ -16,6 +26,9 @@ const bomStructureState = {
     snapshotId: null,
     assemblies: [],
     assemblySearch: '',
+    asOf: wallClockYearMonth(),
+    includeExpired: false,
+    canUpdatePeriod: false,
     isLoading: false,
 };
 
@@ -178,6 +191,16 @@ const BomStructurePage = {
             });
         }
 
+        bomStructureState.canUpdatePeriod = can('op:bom-structure:update');
+        const asOfHost = document.getElementById('bomStructureAsOfFilters');
+        if (asOfHost && !document.getElementById('bomStructureYear')) {
+            asOfHost.innerHTML = asOfFilterHtml('bomStructure', { includeExpired: true });
+            fillAsOfSelects('bomStructure', bomStructureState.asOf.year, bomStructureState.asOf.month);
+            document.getElementById('bomStructureYear')?.addEventListener('change', () => this.reloadAssembliesAsOf());
+            document.getElementById('bomStructureMonth')?.addEventListener('change', () => this.reloadAssembliesAsOf());
+            document.getElementById('bomStructureIncludeExpired')?.addEventListener('change', () => this.reloadAssembliesAsOf());
+        }
+
         const snapshotId = readHashSnapshotId();
         if (snapshotId) {
             this.loadAssemblies(snapshotId);
@@ -240,7 +263,9 @@ const BomStructurePage = {
         try {
             const [snapResp, treeResp] = await Promise.all([
                 HttpClient.get(`/api/bom/snapshots/${snapshotId}`),
-                HttpClient.get(`/api/bom/snapshots/${snapshotId}/tree`),
+                HttpClient.get(`/api/bom/snapshots/${snapshotId}/tree`, {
+                    params: this.treeQueryParams(),
+                }),
             ]);
 
             const snapshot = snapResp.data || null;
@@ -271,6 +296,26 @@ const BomStructurePage = {
         }
     },
 
+    treeQueryParams() {
+        const asOf = readAsOf('bomStructure') || {
+            year: bomStructureState.asOf.year,
+            month: bomStructureState.asOf.month,
+            include_expired: bomStructureState.includeExpired,
+        };
+        bomStructureState.asOf = { year: asOf.year, month: asOf.month };
+        bomStructureState.includeExpired = asOf.include_expired;
+        return {
+            year: asOf.year,
+            month: asOf.month,
+            include_expired: asOf.include_expired,
+        };
+    },
+
+    reloadAssembliesAsOf() {
+        if (!bomStructureState.snapshotId) return;
+        this.loadAssemblies(bomStructureState.snapshotId);
+    },
+
     applyAssemblyFilter() {
         const snapshotId = bomStructureState.snapshotId;
         const all = bomStructureState.assemblies;
@@ -290,6 +335,7 @@ const BomStructurePage = {
         }
 
         this.renderAssemblyCards(filtered, snapshotId, { isFiltered: filtered.length !== all.length });
+        this.hydratePeriodEditors(filtered);
     },
 
     renderProjectsLoading() {
@@ -602,9 +648,21 @@ const BomStructurePage = {
                 card.click();
             });
         });
+        grid.querySelectorAll('[data-period-save]').forEach((btn) => {
+            btn.addEventListener('click', (event) => {
+                event.stopPropagation();
+                const nodeId = Number(btn.getAttribute('data-period-save'));
+                this.saveAssemblyPeriod(nodeId);
+            });
+        });
+        grid.querySelectorAll('[data-stop-nav]').forEach((el) => {
+            el.addEventListener('click', (event) => event.stopPropagation());
+            el.addEventListener('keydown', (event) => event.stopPropagation());
+        });
     },
 
     buildAssemblyCard(node, snapshotId) {
+        const snapshot = bomStructureState.snapshot || {};
         const name = node.part_name || null;
         const partNumber = node.part_number || null;
         const shortNo = shortPartNumber(partNumber);
@@ -669,12 +727,21 @@ const BomStructurePage = {
                     ${partNumberBlock}
                     <div class="mt-auto space-y-1">
                         <p class="text-[10px] tracking-wide text-[#616161]">
+                            ${esc(node.location || snapshot?.location || '')}
+                            · ${esc(node.vehicle_model || snapshot?.vehicle_model || '')}
+                            · ${esc(node.bom_version || snapshot?.bom_version || '')}
+                        </p>
+                        <p class="text-[10px] tracking-wide text-[#9e9e9e]">
+                            ${esc(fmtPeriodRange(node.effective_year, node.effective_month, node.expiry_year, node.expiry_month))}
+                        </p>
+                        <p class="text-[10px] tracking-wide text-[#616161]">
                             <span class="font-mono tabular-nums text-[#9e9e9e]">${esc(String(componentCount))}</span> 个子件
                         </p>
                         <p class="text-[10px] tracking-wide text-[#616161]">
                             <span class="font-mono tabular-nums text-[#9e9e9e]">${esc(String(levelCount))}</span> 层结构
                         </p>
                     </div>
+                    ${this.periodEditorBlock(node)}
                     <div class="flex items-center justify-end mt-4">
                         <span class="text-[11px] font-semibold tracking-wide text-[#616161] group-hover:text-[#d32f2f] transition-colors">
                             打开 <span class="inline-block transition-transform duration-300 group-hover:translate-x-0.5">→</span>
@@ -683,6 +750,45 @@ const BomStructurePage = {
                 </div>
             </article>
         `;
+    },
+
+    periodEditorBlock(node) {
+        if (!bomStructureState.canUpdatePeriod) return '';
+        const prefix = `bomL0_${node.id}`;
+        return `
+            <div class="mt-3 pt-3 border-t border-[#2c2c2c]" data-stop-nav>
+                ${periodEditorHtml(prefix)}
+                <button type="button"
+                        data-period-save="${esc(String(node.id))}"
+                        class="mt-2 inline-flex items-center h-7 px-3 text-[10px] text-[#c8c8c8] border border-[#8a2020] hover:text-white">
+                    保存生失效
+                </button>
+            </div>
+        `;
+    },
+
+    hydratePeriodEditors(assemblies) {
+        assemblies.forEach((node) => {
+            fillYearMonthSelects(
+                `bomL0_${node.id}`,
+                node.effective_year,
+                node.effective_month,
+                node.expiry_year,
+                node.expiry_month,
+            );
+        });
+    },
+
+    async saveAssemblyPeriod(nodeId) {
+        const period = readPeriod(`bomL0_${nodeId}`);
+        if (!period) return;
+        try {
+            await HttpClient.patch(`/api/bom/nodes/${nodeId}`, period);
+            showToast('已保存生失效', 'success');
+            this.reloadAssembliesAsOf();
+        } catch (error) {
+            showToast(error.message || '保存失败', 'error');
+        }
     },
 };
 

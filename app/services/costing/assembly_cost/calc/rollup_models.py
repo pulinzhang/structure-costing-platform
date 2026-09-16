@@ -44,6 +44,8 @@ class RollupBomNode:
     sort_no: int = 0
     supply_type: str | None = None
     sketch_url: str | None = None
+    snapshot_id: int | None = None
+    bom_version: str = ""
 
 
 @dataclass(frozen=True)

@@ -20,6 +20,7 @@ const SOFT_GATE_CODES = new Set([
     'packaging_transport',
     'stamping_process',
     'bom_snapshot',
+    'vehicle_model',
 ]);
 
 /** 核算数据管道阶梯 */
@@ -28,6 +29,7 @@ const PIPELINE_STAGES = [
         id: 'ingest',
         zh: '数据摄入',
         gateCodes: [
+            'vehicle_model',
             'stamping_process',
             'tonnage_price',
             'welding_unit_price',
@@ -62,6 +64,7 @@ const PIPELINE_STAGES = [
 ];
 
 const GATE_LABELS = {
+    vehicle_model: '本期有效范围',
     stamping_process: '冲压工艺',
     tonnage_price: '冲次单价',
     welding_unit_price: '焊接单价',
@@ -584,8 +587,8 @@ function summarizeGateMessage(item) {
     const msg = (item.message || '').trim();
     if (!msg) return '—';
     return msg
-        .replace(/已发现\s*(\d+)\s*个项目/, '$1 项目发现')
-        .replace(/已发现\s*(\d+)\s*个配套车型/, '$1 项目发现')
+        .replace(/该月有效期内项目\s*(\d+)\s*个/, '有效 $1')
+        .replace(/该月有效冲压工艺\s*(\d+)\s*个项目/, '工艺 $1')
         .replace(/已发现\s*(\d+)\s*个项目/, '$1 项目发现')
         .replace(/已发现\s*(\d+)\s*个冲压工厂/, '$1 工厂发现')
         .replace(/冲次单价\s*(\d+)\s*条/, '冲次 $1')

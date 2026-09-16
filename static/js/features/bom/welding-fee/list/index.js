@@ -8,7 +8,7 @@ import {
     updateL0WeldingFeeHud,
     updateL0WeldingFeeFilterCapsules,
     renderFeeDetailItems,
-} from './template.js?v=24';
+} from './template.js?v=26';
 import {
     DEFAULT_PAGE_SIZE,
     bindPagination,
@@ -19,7 +19,7 @@ import { shortPartNumber } from '../../../../part-identity.js?v=3';
 
 const API_BASE = '/api/bom/welding-fees';
 const DRAWER_ANIMATION_MS = 300;
-const SCOPE_REQUIRED_MESSAGE = '须选定年度、基地、项目、版本';
+const SCOPE_REQUIRED_MESSAGE = '须选定年度、基地、项目';
 const FEE_DIGITS = 4;
 
 const feeState = {
@@ -402,9 +402,15 @@ function resetFilters() {
     });
 }
 
+function formatBatchScope(scope) {
+    const parts = [fmtYear(scope.year), scope.location, scope.vehicle_model];
+    if (scope.bom_version) parts.push(scope.bom_version);
+    return parts.join(' · ');
+}
+
 function requireScope() {
     const f = getFilters();
-    if (!f.year || !f.location || !f.vehicle_model || !f.bom_version) {
+    if (!f.year || !f.location || !f.vehicle_model) {
         showToast(SCOPE_REQUIRED_MESSAGE, 'warning');
         setAdvancedOpen(true);
         return null;
@@ -413,8 +419,8 @@ function requireScope() {
         year: f.year,
         location: f.location,
         vehicle_model: f.vehicle_model,
-        bom_version: f.bom_version,
     };
+    if (f.bom_version) body.bom_version = f.bom_version;
     applyLevelBody(body, f);
     return body;
 }
@@ -723,7 +729,7 @@ function openBatchAudit(mode) {
         remark.placeholder = isReverse ? '请填写反审核原因' : '请填写审核意见';
     }
     if (scopeEl) {
-        scopeEl.textContent = `${fmtYear(scope.year)} · ${scope.location} · ${scope.vehicle_model} · ${scope.bom_version}`;
+        scopeEl.textContent = formatBatchScope(scope);
     }
     openDrawer('l0wfBatchAuditDrawer', 'l0wfBatchAuditBackdrop');
 }
@@ -764,7 +770,7 @@ async function submitBatchAudit() {
 async function batchDelete() {
     const scope = requireScope();
     if (!scope) return;
-    if (!window.confirm(`确定删除未审核的焊接费？\n${fmtYear(scope.year)} · ${scope.location} · ${scope.vehicle_model} · ${scope.bom_version}\n已审核记录将跳过。`)) {
+    if (!window.confirm(`确定删除未审核的焊接费？\n${formatBatchScope(scope)}\n已审核记录将跳过。`)) {
         return;
     }
     try {

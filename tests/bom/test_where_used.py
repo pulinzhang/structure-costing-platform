@@ -78,6 +78,11 @@ def _node(
         qty_unit=qty_unit,
         node_role="supply" if level == 0 else node_role,
         is_supply_unit=is_supply_unit or level == 0,
+        location=LOCATION,
+        vehicle_model=VEHICLE_MODEL,
+        bom_version=BOM_VERSION,
+        effective_year=2020,
+        effective_month=1,
         created_by="system",
         updated_by="system",
     )
@@ -212,15 +217,40 @@ def test_mixed_qty_unit(memory_db: Session) -> None:
 
 def test_hit_limit_409(memory_db: Session) -> None:
     snapshot = _snapshot(memory_db)
+    roots: list[BomNode] = []
     for index in range(2001):
+        root = BomNode(
+            snapshot_id=snapshot.id,
+            level=0,
+            part_number=f"ROOT{index:04d}AA",
+            part_name=f"总成{index}",
+            node_role="supply",
+            is_supply_unit=True,
+            location=LOCATION,
+            vehicle_model=VEHICLE_MODEL,
+            bom_version=BOM_VERSION,
+            effective_year=2020,
+            effective_month=1,
+            created_by="system",
+            updated_by="system",
+        )
+        memory_db.add(root)
+        roots.append(root)
+    memory_db.flush()
+    for index, root in enumerate(roots):
         memory_db.add(
             BomNode(
                 snapshot_id=snapshot.id,
-                level=0,
+                parent_id=root.id,
+                level=1,
                 part_number="OVERFLOW0001AA",
-                part_name=f"总成{index}",
-                node_role="supply",
-                is_supply_unit=True,
+                part_name=f"共用件{index}",
+                node_role="make",
+                location=LOCATION,
+                vehicle_model=VEHICLE_MODEL,
+                bom_version=BOM_VERSION,
+                effective_year=2020,
+                effective_month=1,
                 created_by="system",
                 updated_by="system",
             )

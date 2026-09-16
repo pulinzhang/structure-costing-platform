@@ -63,7 +63,6 @@ def get_calc_ready(
     month: int | None = Query(None, ge=1, le=12),
     location: str | None = Query(None),
     vehicle_model: str | None = Query(None),
-    version: str | None = Query(None),
     db: Session = Depends(get_db),
     current_user: UserVO = Depends(require_perm(Perm.STAMPING_PART_COST_CALC_VIEW)),
 ) -> ApiResponse[StampingPartCostCalcReadyVO]:
@@ -73,7 +72,6 @@ def get_calc_ready(
         month=month,
         location=location or None,
         vehicle_model=vehicle_model or None,
-        version=version or None,
     )
     return ApiResponse.ok(data=data)
 

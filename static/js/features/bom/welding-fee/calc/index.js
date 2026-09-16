@@ -5,7 +5,7 @@
 
 import {
     l0WeldingFeeCalcTemplate,
-} from './template.js?v=10';
+} from './template.js?v=13';
 import {
     DEFAULT_PAGE_SIZE,
     bindPagination,
@@ -21,7 +21,9 @@ const CALC_TASK_API = `${API_BASE}/calc/tasks`;
 const CALC_LOGS_API = `${API_BASE}/calc/logs`;
 const POLL_INTERVAL_MS = 1500;
 const DUPLICATE_SCOPE_CALC_MESSAGE = '当前范围正在计算中，请勿重复提交。';
-const SCOPE_REQUIRED_MESSAGE = '须选定年度、基地、项目、版本。';
+const SCOPE_REQUIRED_MESSAGE = '须选定年度、基地、项目。';
+const READY_FALLBACK =
+    '提示：须选定年度、基地、项目；并确保存在有效期内的焊接工艺拆解与该年焊接单价。';
 
 const STATUS_META = {
     processing: { label: '计算中', className: 'text-[#64b5f6]' },
@@ -41,6 +43,7 @@ const calcState = {
     ready: {
         unit_price_count: 0,
         levels: [],
+        message: null,
     },
     history: {
         page: 1,
@@ -94,14 +97,12 @@ function bindEvents() {
         loadCascadeFilters().then(() => loadCalcReady());
     });
     document.getElementById('l0wfCalcLocation')?.addEventListener('change', () => {
-        resetDependentFilters(['l0wfCalcVehicleModel', 'l0wfCalcBomVersion']);
+        resetDependentFilters(['l0wfCalcVehicleModel']);
         loadCascadeFilters().then(() => loadCalcReady());
     });
     document.getElementById('l0wfCalcVehicleModel')?.addEventListener('change', () => {
-        resetDependentFilters(['l0wfCalcBomVersion']);
         loadCascadeFilters().then(() => loadCalcReady());
     });
-    document.getElementById('l0wfCalcBomVersion')?.addEventListener('change', () => loadCalcReady());
     document.getElementById('l0wfStartCalcBtn')?.addEventListener('click', startCalculation);
     document.getElementById('l0wfCalcHistoryRefreshBtn')?.addEventListener('click', () => loadCalcHistory(1));
     document.getElementById('l0wfCalcHistoryDeleteAllBtn')?.addEventListener('click', () => deleteAllCalcLogs());
@@ -156,7 +157,6 @@ async function loadCascadeFilters() {
         const filters = res.data || {};
         fillSelect('l0wfCalcLocation', filters.locations || []);
         fillSelect('l0wfCalcVehicleModel', filters.vehicle_models || []);
-        fillSelect('l0wfCalcBomVersion', filters.bom_versions || []);
     } catch (error) {
         console.error('加载 BOM 级联筛选失败:', error);
     }
@@ -167,7 +167,7 @@ function resetFilters() {
         showToast('计算进行中，请稍候再重置', 'warning');
         return;
     }
-    ['l0wfCalcLocation', 'l0wfCalcVehicleModel', 'l0wfCalcBomVersion'].forEach((id) => {
+    ['l0wfCalcLocation', 'l0wfCalcVehicleModel'].forEach((id) => {
         const el = document.getElementById(id);
         if (el) el.value = '';
     });
@@ -186,15 +186,13 @@ function getScope() {
         year: Number.isFinite(year) ? year : null,
         location: val('l0wfCalcLocation'),
         vehicle_model: val('l0wfCalcVehicleModel'),
-        bom_version: val('l0wfCalcBomVersion'),
     };
 }
 
 async function loadCalcReady() {
     const scope = getScope();
-    if (!scope.year || !scope.location || !scope.vehicle_model || !scope.bom_version) {
-        calcState.ready = { unit_price_count: 0, levels: [] };
-        renderLevelChecks([]);
+    if (!scope.year || !scope.location || !scope.vehicle_model) {
+        calcState.ready = { unit_price_count: 0, levels: [], message: null };
         setReadyCounts(0, 0, 0, 0);
         validateDataPreparation();
         return;
@@ -205,63 +203,29 @@ async function loadCalcReady() {
         calcState.ready = {
             unit_price_count: Number(data.unit_price_count) || 0,
             levels: Array.isArray(data.levels) ? data.levels : [],
+            message: data.message || null,
         };
-        renderLevelChecks(calcState.ready.levels);
-        applyReadyCountsFromSelection();
+        applyReadyCounts();
         validateDataPreparation();
     } catch (error) {
         console.error('加载计算就绪统计失败:', error);
-        calcState.ready = { unit_price_count: 0, levels: [] };
-        renderLevelChecks([]);
+        calcState.ready = { unit_price_count: 0, levels: [], message: null };
         setReadyCounts(0, 0, 0, 0);
         validateDataPreparation();
     }
 }
 
-function renderLevelChecks(levels) {
-    const host = document.getElementById('l0wfLevelChecks');
-    if (!host) return;
-    if (!levels.length) {
-        host.textContent = '—';
-        return;
-    }
-    host.innerHTML = levels.map((row) => `
-        <label class="inline-flex items-center gap-1 cursor-pointer text-[#c8c8c8]">
-            <input type="checkbox" class="l0wf-level-check accent-[#d32f2f]" data-level="${esc(row.level)}">
-            <span class="font-mono">L${esc(row.level)}</span>
-            <span class="text-[#555]">${esc(row.node_count)}</span>
-        </label>
-    `).join('');
-    host.querySelectorAll('.l0wf-level-check').forEach((el) => {
-        el.addEventListener('change', () => {
-            applyReadyCountsFromSelection();
-            validateDataPreparation();
-        });
-    });
-}
-
-function selectedLevels() {
-    const checked = [...document.querySelectorAll('.l0wf-level-check:checked')]
-        .map((el) => Number(el.getAttribute('data-level')))
-        .filter((n) => Number.isFinite(n));
-    return checked;
-}
-
-function selectedLevelStats() {
+function readyStats() {
     const levels = calcState.ready.levels || [];
-    const picked = selectedLevels();
-    const rows = picked.length
-        ? levels.filter((row) => picked.includes(Number(row.level)))
-        : levels;
     return {
-        node_count: rows.reduce((sum, row) => sum + (Number(row.node_count) || 0), 0),
-        process_line_total: rows.reduce((sum, row) => sum + (Number(row.process_line_total) || 0), 0),
-        zero_process_count: rows.reduce((sum, row) => sum + (Number(row.zero_process_count) || 0), 0),
+        node_count: levels.reduce((sum, row) => sum + (Number(row.node_count) || 0), 0),
+        process_line_total: levels.reduce((sum, row) => sum + (Number(row.process_line_total) || 0), 0),
+        zero_process_count: levels.reduce((sum, row) => sum + (Number(row.zero_process_count) || 0), 0),
     };
 }
 
-function applyReadyCountsFromSelection() {
-    const stats = selectedLevelStats();
+function applyReadyCounts() {
+    const stats = readyStats();
     setReadyCounts(
         stats.node_count,
         calcState.ready.unit_price_count,
@@ -277,16 +241,22 @@ function validateDataPreparation() {
 
     const scope = getScope();
     const isScopeSelected = Boolean(
-        scope.year && scope.location && scope.vehicle_model && scope.bom_version,
+        scope.year && scope.location && scope.vehicle_model,
     );
-    const stats = selectedLevelStats();
+    const stats = readyStats();
     const isDataValid =
         stats.node_count > 0 && calcState.ready.unit_price_count > 0;
     const isReady = isScopeSelected && isDataValid;
 
     startBtn.disabled = !isReady;
-    if (isReady) errorBanner?.classList.add('hidden');
-    else errorBanner?.classList.remove('hidden');
+    if (isReady) {
+        errorBanner?.classList.add('hidden');
+    } else if (errorBanner) {
+        errorBanner.textContent = calcState.ready.message
+            ? `提示：${calcState.ready.message}`
+            : READY_FALLBACK;
+        errorBanner.classList.remove('hidden');
+    }
 }
 
 function setReadyCounts(l0, prices, processLines, zeroProcess) {
@@ -517,11 +487,11 @@ async function startCalculation() {
     if (calcState.isCalculating) return;
 
     const scope = getScope();
-    if (!scope.year || !scope.location || !scope.vehicle_model || !scope.bom_version) {
+    if (!scope.year || !scope.location || !scope.vehicle_model) {
         showToast(SCOPE_REQUIRED_MESSAGE, 'warning');
         return;
     }
-    if (selectedLevelStats().node_count <= 0 || calcState.ready.unit_price_count <= 0) {
+    if (readyStats().node_count <= 0 || calcState.ready.unit_price_count <= 0) {
         showToast('当前所选条件数据未就绪，无法计算', 'warning');
         document.getElementById('l0wfDataReadyErrorBanner')?.classList.remove('hidden');
         return;
@@ -532,8 +502,6 @@ async function startCalculation() {
 
     try {
         const payload = { ...scope };
-        const levels = selectedLevels();
-        if (levels.length) payload.levels = levels;
         const response = await HttpClient.post(CALC_API, payload);
         const taskId = response.data?.task_id;
         if (!taskId) throw new Error('未返回任务 ID');
@@ -677,7 +645,6 @@ function setCalculating(isCalculating) {
         'l0wfCalcYear',
         'l0wfCalcLocation',
         'l0wfCalcVehicleModel',
-        'l0wfCalcBomVersion',
         'l0wfCalcResetBtn',
     ].forEach((id) => {
         const el = document.getElementById(id);

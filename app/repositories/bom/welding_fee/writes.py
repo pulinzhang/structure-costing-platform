@@ -52,7 +52,6 @@ class BomWeldingFeeWrites:
             year=data.year,
             location=data.location,
             vehicle_model=data.vehicle_model,
-            bom_version=data.bom_version,
             source_breakdown_node_id=data.source_breakdown_node_id,
         )
         if existing:
@@ -112,7 +111,7 @@ class BomWeldingFeeWrites:
         year: int,
         location: str,
         vehicle_model: str,
-        bom_version: str,
+        bom_version: str | None = None,
         level: int | None = None,
         levels: list[int] | None = None,
     ) -> int:
@@ -170,7 +169,7 @@ class BomWeldingFeeWrites:
         year: int,
         location: str,
         vehicle_model: str,
-        bom_version: str,
+        bom_version: str | None = None,
         audited_by: str,
         audited_at: datetime,
         audit_remark: str | None,
@@ -208,7 +207,7 @@ class BomWeldingFeeWrites:
         year: int,
         location: str,
         vehicle_model: str,
-        bom_version: str,
+        bom_version: str | None = None,
         reverse_audited_by: str,
         reverse_audited_at: datetime,
         reverse_audit_remark: str,

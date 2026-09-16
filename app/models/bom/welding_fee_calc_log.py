@@ -14,7 +14,7 @@ class BomWeldingFeeCalcLog(AuditUserMixin, Base):
     焊接费计算批次日志
 
     一次「开始计算」先写入 processing 行作为范围锁，结束后更新为终态。
-    锁范围：year + location + vehicle_model + bom_version。
+    锁范围：year + location + vehicle_model。
     """
 
     __tablename__ = "bom_welding_fee_calc_logs"
@@ -86,7 +86,6 @@ class BomWeldingFeeCalcLog(AuditUserMixin, Base):
             "year",
             "location",
             "vehicle_model",
-            "bom_version",
             unique=True,
             sqlite_where=text("status = 'processing'"),
         ),

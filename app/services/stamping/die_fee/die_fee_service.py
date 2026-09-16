@@ -49,6 +49,7 @@ class StampingDieFeeService:
         year: int | None = None,
         vehicle_model: str | None = None,
         stamping_supplier: str | None = None,
+        for_calc: bool = False,
     ) -> StampingDieFeeFilterVO:
         supplier_value = (stamping_supplier or "").strip() or None
         location_service = LocationService()
@@ -67,10 +68,12 @@ class StampingDieFeeService:
         return StampingDieFeeFilterVO(
             years=self.fee_repo.get_distinct_years(db),
             locations=location_service.list_registered(db),
-            vehicle_models=(
-                VehicleModelService().list_overlaps_year(db, location_raw, year)
-                if location_raw and year is not None
-                else VehicleModelService().list_filter_codes(db, location_raw)
+            vehicle_models=self._list_filter_vehicle_models(
+                db,
+                location_raw=location_raw,
+                locations=locations,
+                year=year,
+                for_calc=for_calc,
             ),
             stamping_suppliers=self.fee_repo.list_distinct_suppliers(
                 db,
@@ -86,6 +89,24 @@ class StampingDieFeeService:
                 stamping_supplier=supplier_value,
             ),
         )
+
+    def _list_filter_vehicle_models(
+        self,
+        db: Session,
+        *,
+        location_raw: str | None,
+        locations: list[str] | None,
+        year: int | None,
+        for_calc: bool,
+    ) -> list[str]:
+        vehicle_svc = VehicleModelService()
+        if not (location_raw and year is not None):
+            return vehicle_svc.list_filter_codes(db, location_raw)
+        codes = self.die_repo.list_vehicle_models(db, locations=locations, overlap_year=year)
+        if not for_calc:
+            return codes
+        allowed = set(vehicle_svc.list_overlaps_year(db, location_raw, year))
+        return [code for code in codes if code in allowed]
 
     def get_by_id(self, db: Session, fee_id: int) -> StampingDieFeeVO:
         record = self.fee_repo.get_by_id(db, fee_id)

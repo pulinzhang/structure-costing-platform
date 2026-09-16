@@ -22,7 +22,9 @@ class AssemblyCostCalcLog(AuditUserMixin, Base):
     month: Mapped[int] = mapped_column(Integer, nullable=False)
     location: Mapped[str] = mapped_column(String(50), nullable=False)
     vehicle_model: Mapped[str] = mapped_column(String(50), nullable=False)
-    bom_version: Mapped[str] = mapped_column(String(20), nullable=False)
+    bom_version: Mapped[str] = mapped_column(
+        String(20), nullable=False, default="", comment="展示用；计算锁不含版本"
+    )
 
     calc_batch_id: Mapped[str] = mapped_column(String(64), nullable=False, unique=True)
     status: Mapped[str] = mapped_column(
@@ -51,7 +53,6 @@ class AssemblyCostCalcLog(AuditUserMixin, Base):
             "month",
             "location",
             "vehicle_model",
-            "bom_version",
         ),
         Index("ix_assembly_calc_log_status", "status"),
     )

@@ -96,6 +96,40 @@ class StampingPartRepository:
     def get_by_id(self, db: Session, part_id: int) -> StampingPart | None:
         return self._queries.get_by_id(db, part_id)
 
+    def get_by_unique_key(
+        self,
+        db: Session,
+        *,
+        location: str,
+        stamping_supplier: str,
+        vehicle_model: str,
+        part_number: str,
+    ) -> StampingPart | None:
+        return self._queries.get_by_unique_key(
+            db,
+            location=location,
+            stamping_supplier=stamping_supplier,
+            vehicle_model=vehicle_model,
+            part_number=part_number,
+        )
+
+    def list_identity_scope(
+        self,
+        db: Session,
+        *,
+        location: str,
+        vehicle_model: str,
+        stamping_supplier: str | None = None,
+        stamping_suppliers: Sequence[str] | None = None,
+    ) -> list[StampingPart]:
+        return self._queries.list_identity_scope(
+            db,
+            location=location,
+            vehicle_model=vehicle_model,
+            stamping_supplier=stamping_supplier,
+            stamping_suppliers=stamping_suppliers,
+        )
+
     def get_by_part_number(self, db: Session, part_number: str) -> StampingPart | None:
         return self._queries.get_by_part_number(db, part_number)
 
@@ -125,6 +159,9 @@ class StampingPartRepository:
         stamping_suppliers: Sequence[str] | None = None,
         skip: int = 0,
         limit: int = 100,
+        as_of_year: int | None = None,
+        as_of_month: int | None = None,
+        include_expired: bool = False,
     ) -> tuple[list[StampingPart], int]:
         return self._queries.paginate(
             db,
@@ -138,6 +175,9 @@ class StampingPartRepository:
             stamping_suppliers,
             skip,
             limit,
+            as_of_year,
+            as_of_month,
+            include_expired,
         )
 
     def summarize_by_filters(
@@ -172,9 +212,19 @@ class StampingPartRepository:
         stamping_supplier: str | None = None,
         vehicle_model: str | None = None,
         version: str | None = None,
+        overlap_year: int | None = None,
+        as_of_year: int | None = None,
+        as_of_month: int | None = None,
     ) -> list[StampingPart]:
         return self._queries.list_with_processes(
-            db, location, stamping_supplier, vehicle_model, version
+            db,
+            location,
+            stamping_supplier,
+            vehicle_model,
+            version,
+            overlap_year,
+            as_of_year,
+            as_of_month,
         )
 
     def list_for_export(
@@ -187,6 +237,9 @@ class StampingPartRepository:
         version: str | None = None,
         part_number: str | None = None,
         part_name: str | None = None,
+        as_of_year: int | None = None,
+        as_of_month: int | None = None,
+        include_expired: bool = False,
     ) -> list[StampingPart]:
         return self._queries.list_for_export(
             db,
@@ -196,6 +249,9 @@ class StampingPartRepository:
             version=version,
             part_number=part_number,
             part_name=part_name,
+            as_of_year=as_of_year,
+            as_of_month=as_of_month,
+            include_expired=include_expired,
         )
 
     def list_all(self, db: Session, skip: int = 0, limit: int = 100) -> list[StampingPart]:
@@ -226,9 +282,17 @@ class StampingPartRepository:
         *,
         location: str,
         vehicle_model: str,
+        overlap_year: int | None = None,
+        as_of_year: int | None = None,
+        as_of_month: int | None = None,
     ) -> list[StampingPart]:
         return self._queries.list_by_location_and_vehicle(
-            db, location=location, vehicle_model=vehicle_model
+            db,
+            location=location,
+            vehicle_model=vehicle_model,
+            overlap_year=overlap_year,
+            as_of_year=as_of_year,
+            as_of_month=as_of_month,
         )
 
     def count_processes_by_part_ids(self, db: Session, part_ids: list[int]) -> dict[int, int]:
@@ -246,6 +310,9 @@ class StampingPartRepository:
         stamping_supplier: str | None = None,
         vehicle_model: str | None = None,
         version: str | None = None,
+        overlap_year: int | None = None,
+        as_of_year: int | None = None,
+        as_of_month: int | None = None,
     ) -> StampingPartCascadeFilterOptions:
         return self._filter_options.get_cascade_filter_options(
             db,
@@ -254,6 +321,9 @@ class StampingPartRepository:
             stamping_supplier=stamping_supplier,
             vehicle_model=vehicle_model,
             version=version,
+            overlap_year=overlap_year,
+            as_of_year=as_of_year,
+            as_of_month=as_of_month,
         )
 
     def create(self, db: Session, part_data: PartData) -> StampingPart:

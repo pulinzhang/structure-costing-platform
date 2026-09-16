@@ -34,7 +34,6 @@ class AssemblyCostWrites:
             month=payload.month,
             location=payload.location,
             vehicle_model=payload.vehicle_model,
-            bom_version=payload.bom_version,
             source_node_id=payload.source_node_id,
         )
         if existing is None:

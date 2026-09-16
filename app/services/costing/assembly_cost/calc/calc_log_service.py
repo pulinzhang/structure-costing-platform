@@ -33,8 +33,8 @@ STATUS_PARTIAL = "partial"
 STATUS_FAILED = "failed"
 
 STALE_PROCESSING_SECONDS = 2 * 60 * 60
-DUPLICATE_SCOPE_CALC_MESSAGE = "当前年度/月份/基地/项目/版本正在计算中，请勿重复提交。"
-SCOPE_REQUIRED_MESSAGE = "须选定年度、月份、基地、项目、BOM 版本。"
+DUPLICATE_SCOPE_CALC_MESSAGE = "当前年度/月份/基地/项目正在计算中，请勿重复提交。"
+SCOPE_REQUIRED_MESSAGE = "须选定年度、月份、基地、项目。"
 _DUPLICATE_LOCK_RELEASE_MESSAGE = "重复 processing 锁已释放，以便建立并发唯一索引"
 
 logger = logging.getLogger("service.costing.assembly_cost.calc.log")
@@ -67,10 +67,10 @@ class AssemblyCostCalcLogService:
     def _fail_older_duplicate_processing(self, db: Session) -> int:
         """同一 scope 只保留 id 最大的 processing，其余标 failed。"""
         rows = self.calc_log_repo.list_processing(db)
-        latest_by_scope: dict[tuple[int, int, str, str, str], AssemblyCostCalcLog] = {}
+        latest_by_scope: dict[tuple[int, int, str, str], AssemblyCostCalcLog] = {}
         extras: list[AssemblyCostCalcLog] = []
         for row in rows:
-            key = (row.year, row.month, row.location, row.vehicle_model, row.bom_version)
+            key = (row.year, row.month, row.location, row.vehicle_model)
             keep = latest_by_scope.get(key)
             if keep is None:
                 latest_by_scope[key] = row
@@ -109,7 +109,6 @@ class AssemblyCostCalcLogService:
     ) -> AssemblyCostCalcLog:
         location = dto.location.strip()
         vehicle_model = dto.vehicle_model.strip()
-        bom_version = dto.bom_version.strip()
         self.expire_stale_processing(db)
         if not self.calc_log_repo.is_processing_lock_index_ensured():
             self._fail_older_duplicate_processing(db)
@@ -121,7 +120,6 @@ class AssemblyCostCalcLogService:
             month=dto.month,
             location=location,
             vehicle_model=vehicle_model,
-            bom_version=bom_version,
         )
         if existing is not None:
             raise DuplicateScopeCalcError(DUPLICATE_SCOPE_CALC_MESSAGE)
@@ -131,7 +129,7 @@ class AssemblyCostCalcLogService:
             month=dto.month,
             location=location,
             vehicle_model=vehicle_model,
-            bom_version=bom_version,
+            bom_version="",
             calc_batch_id=uuid.uuid4().hex,
             status=STATUS_PROCESSING,
             message="计算中…",
@@ -204,7 +202,7 @@ class AssemblyCostCalcLogService:
         month: int,
         location: str,
         vehicle_model: str,
-        bom_version: str,
+        bom_version: str | None = None,
         status: str,
         message: str | None,
         subject_total: int,
@@ -226,7 +224,7 @@ class AssemblyCostCalcLogService:
             month=month,
             location=location.strip(),
             vehicle_model=vehicle_model.strip(),
-            bom_version=bom_version.strip(),
+            bom_version=(bom_version or "").strip(),
             calc_batch_id=calc_batch_id or uuid.uuid4().hex,
             status=status,
             message=message,

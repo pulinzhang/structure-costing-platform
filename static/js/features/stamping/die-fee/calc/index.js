@@ -1,7 +1,7 @@
 import {
     dieFeeCalcTemplate,
     CALC_HISTORY_COLSPAN,
-} from './template.js?v=10';
+} from './template.js?v=11';
 import {
     DEFAULT_PAGE_SIZE,
     bindPagination,
@@ -16,6 +16,8 @@ const CALC_TASK_API = `${API_BASE}/calc/progress`;
 const CALC_LOGS_API = `${API_BASE}/calc/logs`;
 const POLL_INTERVAL_MS = 1500;
 const SCOPE_REQUIRED_MESSAGE = '须选定年度、基地、项目。';
+const READY_FALLBACK =
+    '须选定年度、基地、项目。零件按布点有效期与该年有交集的才算，不是按项目档案期。并确保有生效模具单价。版本可选；计算覆盖该项目各供应商。';
 
 const STATUS_META = {
     processing: { label: '计算中', className: 'text-[#64b5f6]' },
@@ -30,7 +32,7 @@ const calcState = {
     pollInFlight: false,
     canRun: true,
     canDelete: true,
-    ready: { part_count: 0, calculable_count: 0, has_unit_price: false },
+    ready: { part_count: 0, calculable_count: 0, has_unit_price: false, message: null },
     history: { page: 1, size: DEFAULT_PAGE_SIZE, total: 0, totalPages: 1, items: [] },
 };
 
@@ -121,6 +123,7 @@ async function loadFilters(keepVehicle) {
                 ...(Number.isFinite(Number(document.getElementById('calcYear')?.value))
                     ? { year: Number(document.getElementById('calcYear')?.value) }
                     : {}),
+                for_calc: 1,
             },
         });
         const filters = res.data || {};
@@ -177,7 +180,7 @@ async function loadCalcReady() {
     const location = document.getElementById('calcLocation')?.value || '';
     const vehicleModel = document.getElementById('calcVehicleModel')?.value || '';
     if (!year || year < 2000) {
-        setReady(0, 0, false);
+        setReady(0, 0, false, null);
         return;
     }
     try {
@@ -192,18 +195,20 @@ async function loadCalcReady() {
             Number(data.part_count) || 0,
             Number(data.calculable_count) || 0,
             Boolean(data.has_unit_price),
+            data.message || null,
         );
     } catch (error) {
-        setReady(0, 0, false);
+        setReady(0, 0, false, null);
         showToast(error.message || '加载就绪失败', 'error');
     }
 }
 
-function setReady(parts, calculable, hasUnitPrice) {
+function setReady(parts, calculable, hasUnitPrice, message) {
     calcState.ready = {
         part_count: parts,
         calculable_count: calculable,
         has_unit_price: hasUnitPrice,
+        message: message || null,
     };
     setCountHtml('cntParts', parts, '件');
     setCountHtml('cntCalculable', calculable, '件');
@@ -235,7 +240,14 @@ function validateReady() {
         calcState.ready.part_count > 0 &&
         calcState.ready.has_unit_price;
     startBtn.disabled = !ready;
-    banner?.classList.toggle('hidden', ready);
+    if (ready) {
+        banner?.classList.add('hidden');
+    } else if (banner) {
+        banner.textContent = calcState.ready.message
+            ? `提示：${calcState.ready.message}`
+            : READY_FALLBACK;
+        banner.classList.remove('hidden');
+    }
 }
 
 async function loadCalcHistory(page = calcState.history.page) {

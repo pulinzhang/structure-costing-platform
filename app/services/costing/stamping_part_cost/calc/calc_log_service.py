@@ -102,7 +102,7 @@ class PartCostCalcLogService:
                     location=location,
                     stamping_supplier=lock_supplier,
                     vehicle_model=scope.vehicle_model,
-                    version=dto.version,
+                    version=None,
                     status=STATUS_PROCESSING,
                     detail_text="计算进行中...",
                     started_at=started_at,

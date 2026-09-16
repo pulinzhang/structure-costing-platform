@@ -11,7 +11,7 @@ from app.common.money import Q6, quantize_money
 
 
 class StampingPartCostScopeDTO(BaseModel):
-    """范围：年度 + 月份 + 基地 + 车型必填；版本与工厂可选（工厂仅列表/批量收窄，计算忽略）。"""
+    """范围：年度 + 月份 + 基地 + 车型必填；版本与工厂可选（列表/批量可收窄，计算忽略版本）。"""
 
     year: int = Field(..., ge=2000, le=2100, description="年度")
     month: int = Field(..., ge=1, le=12, description="月份")
@@ -30,7 +30,7 @@ class StampingPartCostScopeDTO(BaseModel):
 
 
 class StampingPartCostCalcDTO(StampingPartCostScopeDTO):
-    """计算请求：按车型覆盖各厂；版本空则覆盖该车各版本。工厂字段忽略。"""
+    """计算请求：年+月+基地+项目。版本忽略。取该月有效期内零件，覆盖各厂。"""
 
 
 class StampingPartCostQuery(BaseModel):

@@ -35,7 +35,7 @@ STATUS_PARTIAL = "partial"
 STATUS_FAILED = "failed"
 
 STALE_PROCESSING_SECONDS = 2 * 60 * 60
-DUPLICATE_SCOPE_CALC_MESSAGE = "当前年度/基地/项目/版本正在计算中，请勿重复提交。"
+DUPLICATE_SCOPE_CALC_MESSAGE = "当前年度/基地/项目正在计算中，请勿重复提交。"
 
 logger = logging.getLogger("service.bom.welding_fee.calc.log")
 
@@ -76,21 +76,18 @@ class BomWeldingFeeCalcLogService:
     ) -> BomWeldingFeeCalcLog:
         location = dto.location.strip()
         vehicle_model = dto.vehicle_model.strip()
-        bom_version = dto.bom_version.strip()
         self._ensure_processing_lock_index(db)
         self.expire_stale_processing(
             db,
             year=dto.year,
             location=location,
             vehicle_model=vehicle_model,
-            bom_version=bom_version,
         )
         existing = self.calc_log_repo.find_processing(
             db,
             year=dto.year,
             location=location,
             vehicle_model=vehicle_model,
-            bom_version=bom_version,
         )
         if existing is not None:
             raise DuplicateScopeCalcError(DUPLICATE_SCOPE_CALC_MESSAGE)
@@ -105,7 +102,7 @@ class BomWeldingFeeCalcLogService:
                     year=dto.year,
                     location=location,
                     vehicle_model=vehicle_model,
-                    bom_version=bom_version,
+                    bom_version="",
                     status=STATUS_PROCESSING,
                     detail_text="计算进行中...",
                     started_at=started_at,
@@ -160,14 +157,12 @@ class BomWeldingFeeCalcLogService:
         year: int,
         location: str,
         vehicle_model: str,
-        bom_version: str,
     ) -> None:
         record = self.calc_log_repo.find_processing(
             db,
             year=year,
             location=location,
             vehicle_model=vehicle_model,
-            bom_version=bom_version,
         )
         if record is None or record.started_at is None:
             return
@@ -248,7 +243,7 @@ class BomWeldingFeeCalcLogService:
                     year=result.year,
                     location=result.location,
                     vehicle_model=result.vehicle_model,
-                    bom_version=result.bom_version,
+                    bom_version=result.bom_version or "",
                     status=result.status,
                     detail_text=result.detail_text or "",
                     started_at=started_at,

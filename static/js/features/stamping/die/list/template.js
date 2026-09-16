@@ -52,6 +52,7 @@ export function dieListTemplate() {
                             <input id="dieListPartNumber" type="text" placeholder="可选"
                                    class="h-9 min-w-[140px] px-3 text-xs bg-[#0a0a0a] border border-[#2c2c2c] text-[#ffffff] placeholder:text-[#616161] focus:outline-none focus:border-[#ff5252]">
                         </label>
+                        <div id="dieListAsOfFilters" class="flex items-end gap-2"></div>
                         <button id="dieListSearchBtn" type="button"
                                 class="inline-flex items-center gap-1.5 h-9 px-3 text-[11px] font-semibold rounded-sm text-[#c8c8c8] border border-[#8a2020] hover:text-white"
                                 style="background: linear-gradient(180deg, #3d1515 0%, #2d0f0f 100%);">
@@ -71,6 +72,7 @@ export function dieListTemplate() {
                             <col style="width: 90px">
                             <col style="width: 90px">
                             <col style="width: 90px">
+                            <col style="width: 140px">
                             <col style="width: 72px">
                             <col style="width: 56px">
                         </colgroup>
@@ -83,6 +85,7 @@ export function dieListTemplate() {
                                 <th class="px-2 py-2 text-left text-[9px] font-medium tracking-[0.08em] text-[#555555]">模具类型</th>
                                 <th class="px-2 py-2 text-left text-[9px] font-medium tracking-[0.08em] text-[#555555]">模具方式</th>
                                 <th class="px-2 py-2 text-left text-[9px] font-medium tracking-[0.08em] text-[#555555]">生产方式</th>
+                                <th class="px-2 py-2 text-left text-[9px] font-medium tracking-[0.08em] text-[#555555]">生失效</th>
                                 <th class="px-2 py-2 text-right text-[9px] font-medium tracking-[0.06em] text-[#555555]">工序</th>
                                 <th class="px-1 py-2 text-center text-[9px] font-medium tracking-[0.06em] text-[#555555]">操作</th>
                             </tr>

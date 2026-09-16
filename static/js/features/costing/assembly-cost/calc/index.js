@@ -4,7 +4,7 @@
 
 import {
     assemblyCostCalcTemplate,
-} from './template.js?v=8';
+} from './template.js?v=9';
 import {
     DEFAULT_PAGE_SIZE,
     bindPagination,
@@ -105,14 +105,12 @@ function bindEvents() {
         loadCascadeFilters().then(() => loadCalcReady());
     });
     document.getElementById('lacCalcLocation')?.addEventListener('change', () => {
-        resetDependentFilters(['lacCalcVehicleModel', 'lacCalcBomVersion']);
+        resetDependentFilters(['lacCalcVehicleModel']);
         loadCascadeFilters().then(() => loadCalcReady());
     });
     document.getElementById('lacCalcVehicleModel')?.addEventListener('change', () => {
-        resetDependentFilters(['lacCalcBomVersion']);
         loadCascadeFilters().then(() => loadCalcReady());
     });
-    document.getElementById('lacCalcBomVersion')?.addEventListener('change', () => loadCalcReady());
     document.getElementById('lacStartCalcBtn')?.addEventListener('click', startCalculation);
     document.getElementById('lacCalcHistoryRefreshBtn')?.addEventListener('click', () => loadCalcHistory(1));
     document.getElementById('lacCalcHistoryDeleteAllBtn')?.addEventListener('click', () => deleteAllCalcLogs());
@@ -203,7 +201,6 @@ async function loadCascadeFilters() {
         const filters = res.data || {};
         fillSelect('lacCalcLocation', filters.locations || []);
         fillSelect('lacCalcVehicleModel', filters.vehicle_models || []);
-        fillSelect('lacCalcBomVersion', filters.bom_versions || []);
     } catch (error) {
         console.error('加载 BOM 级联筛选失败:', error);
     }
@@ -214,7 +211,7 @@ function resetFilters() {
         showToast('计算进行中，请稍候再重置', 'warning');
         return;
     }
-    ['lacCalcLocation', 'lacCalcVehicleModel', 'lacCalcBomVersion'].forEach((id) => {
+    ['lacCalcLocation', 'lacCalcVehicleModel'].forEach((id) => {
         const el = document.getElementById(id);
         if (el) el.value = '';
     });
@@ -235,13 +232,12 @@ function getScope() {
         month: Number.isFinite(month) ? month : null,
         location: val('lacCalcLocation'),
         vehicle_model: val('lacCalcVehicleModel'),
-        bom_version: val('lacCalcBomVersion'),
     };
 }
 
 async function loadCalcReady() {
     const scope = getScope();
-    if (!scope.year || !scope.month || !scope.location || !scope.vehicle_model || !scope.bom_version) {
+    if (!scope.year || !scope.month || !scope.location || !scope.vehicle_model) {
         calcState.ready = emptyReady();
         setReadyCounts(calcState.ready);
         validateDataPreparation();
@@ -279,13 +275,13 @@ function validateDataPreparation() {
     if (!startBtn || calcState.isCalculating) return;
     const scope = getScope();
     const isScopeSelected = Boolean(
-        scope.year && scope.month && scope.location && scope.vehicle_model && scope.bom_version,
+        scope.year && scope.month && scope.location && scope.vehicle_model,
     );
     const isReady = isScopeSelected && calcState.ready.ready;
     startBtn.disabled = !isReady;
     let hint = null;
     if (!isScopeSelected) {
-        hint = '须选定年度、月份、基地、项目、BOM 版本。';
+        hint = '须选定年度、月份、基地、项目。';
     } else if (calcState.ready.message) {
         hint = calcState.ready.message;
     }
@@ -352,7 +348,8 @@ function renderHistoryRows(items) {
     body.innerHTML = items.map((row) => {
         const meta = STATUS_META[row.status] || { label: row.status, className: 'text-[#9e9e9e]' };
         const started = row.started_at ? String(row.started_at).replace('T', ' ').slice(0, 19) : '-';
-        const query = `?year=${encodeURIComponent(row.year)}&month=${encodeURIComponent(row.month)}&location=${encodeURIComponent(row.location)}&vehicle_model=${encodeURIComponent(row.vehicle_model)}&bom_version=${encodeURIComponent(row.bom_version)}`;
+        const query = `?year=${encodeURIComponent(row.year)}&month=${encodeURIComponent(row.month)}&location=${encodeURIComponent(row.location)}&vehicle_model=${encodeURIComponent(row.vehicle_model)}`;
+        const versionLabel = row.bom_version ? String(row.bom_version) : '—';
         return `
             <tr class="hover:bg-[#1a1a1a]">
                 <td class="py-2 px-2 font-mono text-[#8E8E93] whitespace-nowrap">${esc(started)}</td>
@@ -360,7 +357,7 @@ function renderHistoryRows(items) {
                 <td class="py-2 px-2 font-mono">${esc(fmtPeriod(row.year, row.month))}</td>
                 <td class="py-2 px-2">${esc(row.location)}</td>
                 <td class="py-2 px-2">${esc(row.vehicle_model)}</td>
-                <td class="py-2 px-2 font-mono">${esc(row.bom_version)}</td>
+                <td class="py-2 px-2 font-mono">${esc(versionLabel)}</td>
                 <td class="py-2 px-2 text-center ${meta.className}">${esc(meta.label)}</td>
                 <td class="py-2 px-2 text-right font-mono">${esc(row.subject_total)}</td>
                 <td class="py-2 px-2 text-right font-mono text-[#66bb6a]">${esc(row.ok_count)}</td>
@@ -409,8 +406,8 @@ async function deleteCalcLog(logId) {
 async function startCalculation() {
     if (!calcState.canRun || calcState.isCalculating) return;
     const scope = getScope();
-    if (!scope.year || !scope.month || !scope.location || !scope.vehicle_model || !scope.bom_version) {
-        showToast('须选定年度、月份、基地、项目、BOM 版本', 'warning');
+    if (!scope.year || !scope.month || !scope.location || !scope.vehicle_model) {
+        showToast('须选定年度、月份、基地、项目', 'warning');
         return;
     }
     calcState.isCalculating = true;

@@ -12,11 +12,18 @@ from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
 
 from app.common.audit import audit_create, display_name
+from app.common.period import SOP_NEW_NUMBER_REJECT
 from app.common.timezone import now
 from app.common.vehicle_model import normalize_vehicle_model
 from app.config import settings
 from app.exceptions.base import BusinessException
-from app.parsers.stamping.die.parser import layout_has_die_mass, parse_die_layout_excel
+from app.models.stamping.die import StampingDiePart
+from app.parsers.stamping.die.parser import (
+    ParsedDiePart,
+    layout_has_die_mass,
+    parse_die_layout_excel,
+)
+from app.repositories.persist import apply_payload_fields
 from app.repositories.stamping.stamping_die_repository import (
     StampingDiePartRepository,
     StampingDieProcessRepository,
@@ -160,6 +167,27 @@ class StampingDieUploadService:
         existing = self.die_part_repo.list_existing_in_scope(
             self.db, location=location, vehicle_model=vehicle_model
         )
+        existing_map = {(part.part_number or "").strip(): part for part in existing}
+        file_numbers = [(part.part_number or "").strip() for part in parsed.parts]
+        if existing_map:
+            unknown = [number for number in file_numbers if number and number not in existing_map]
+            if unknown:
+                raise BusinessException(SOP_NEW_NUMBER_REJECT)
+        for parsed_part in parsed.parts:
+            current = existing_map.get((parsed_part.part_number or "").strip())
+            if current is None:
+                continue
+            by_seq = {
+                (process.process_seq or "").strip(): (process.die_number or "").strip()
+                for process in current.processes
+                if (process.process_seq or "").strip() and (process.die_number or "").strip()
+            }
+            for process in parsed_part.processes:
+                if (process.die_number or "").strip():
+                    continue
+                inherited = by_seq.get((process.process_seq or "").strip())
+                if inherited:
+                    process.die_number = inherited
         assigned = assign_die_numbers(
             vehicle_model=vehicle_model,
             parts=parsed.parts,
@@ -171,58 +199,88 @@ class StampingDieUploadService:
         report(40, "正在保存文件...")
         stored_path = self._save_file(file_content, filename, location, vehicle_model)
         preserved = preserve_die_alloc(existing)
+        effective_year, effective_month, expiry_year, expiry_month = (
+            VehicleModelService().project_sop_period(self.db, location, vehicle_model)
+        )
 
-        report(55, "正在覆盖写入...")
+        report(55, "正在按号对齐写入...")
         try:
-            self.die_part_repo.delete_scope(self.db, location=location, vehicle_model=vehicle_model)
-            self.db.expire_all()
             audit = audit_create(current_user)
-            part_rows: list[StampingDiePartInsert] = []
+            skip_on_update = frozenset(
+                {
+                    "id",
+                    "seq_no",
+                    "version",
+                    "effective_year",
+                    "effective_month",
+                    "expiry_year",
+                    "expiry_month",
+                    "created_by",
+                    "created_at",
+                }
+            )
+            created_parts: list[StampingDiePart] = []
+            targets: list[tuple[ParsedDiePart, StampingDiePart]] = []
+            to_create: list[StampingDiePartInsert] = []
+            create_parsed: list[ParsedDiePart] = []
             for parsed_part in parsed.parts:
-                part_rows.append(
-                    StampingDiePartInsert(
-                        location=location,
-                        vehicle_model=vehicle_model,
-                        stamping_supplier=None,
-                        version=None,
-                        seq_no=parsed_part.seq_no,
-                        part_number=parsed_part.part_number,
-                        part_name=parsed_part.part_name,
-                        material=parsed_part.material,
-                        thickness=parsed_part.thickness,
-                        part_weight=parsed_part.part_weight,
-                        sheet_length=parsed_part.sheet_length,
-                        sheet_width=parsed_part.sheet_width,
-                        sheet_shape=parsed_part.sheet_shape,
-                        parts_per_sheet=parsed_part.parts_per_sheet,
-                        material_consumption=parsed_part.material_consumption,
-                        material_utilization=parsed_part.material_utilization,
-                        estimated_weight_subtotal_t=parsed_part.estimated_weight_subtotal_t,
-                        die_type=parsed_part.die_type,
-                        die_method=parsed_part.die_method,
-                        production_mode=parsed_part.production_mode,
-                        needs_end_effector=parsed_part.needs_end_effector,
-                        part_grade=parsed_part.part_grade,
-                        remark=parsed_part.remark,
-                        excel_filename=filename,
-                        excel_sheet_name=parsed_part.excel_sheet_name,
-                        excel_row=parsed_part.excel_row,
-                        excel_part_col=parsed_part.excel_part_col,
-                        created_by=audit["created_by"],
-                        updated_by=audit["updated_by"],
-                    )
+                payload = StampingDiePartInsert(
+                    location=location,
+                    vehicle_model=vehicle_model,
+                    stamping_supplier=None,
+                    version=None,
+                    seq_no=parsed_part.seq_no,
+                    part_number=parsed_part.part_number,
+                    part_name=parsed_part.part_name,
+                    material=parsed_part.material,
+                    thickness=parsed_part.thickness,
+                    part_weight=parsed_part.part_weight,
+                    sheet_length=parsed_part.sheet_length,
+                    sheet_width=parsed_part.sheet_width,
+                    sheet_shape=parsed_part.sheet_shape,
+                    parts_per_sheet=parsed_part.parts_per_sheet,
+                    material_consumption=parsed_part.material_consumption,
+                    material_utilization=parsed_part.material_utilization,
+                    estimated_weight_subtotal_t=parsed_part.estimated_weight_subtotal_t,
+                    die_type=parsed_part.die_type,
+                    die_method=parsed_part.die_method,
+                    production_mode=parsed_part.production_mode,
+                    needs_end_effector=parsed_part.needs_end_effector,
+                    part_grade=parsed_part.part_grade,
+                    remark=parsed_part.remark,
+                    excel_filename=filename,
+                    excel_sheet_name=parsed_part.excel_sheet_name,
+                    excel_row=parsed_part.excel_row,
+                    excel_part_col=parsed_part.excel_part_col,
+                    created_by=audit["created_by"],
+                    updated_by=audit["updated_by"],
+                    effective_year=effective_year,
+                    effective_month=effective_month,
+                    expiry_year=expiry_year,
+                    expiry_month=expiry_month,
                 )
-
-            created_parts = self.die_part_repo.bulk_create_parts(self.db, part_rows)
+                current = existing_map.get((parsed_part.part_number or "").strip())
+                if current is None:
+                    to_create.append(payload)
+                    create_parsed.append(parsed_part)
+                    continue
+                apply_payload_fields(current, payload, skip=skip_on_update)
+                targets.append((parsed_part, current))
+            if to_create:
+                created_parts = self.die_part_repo.bulk_create_parts(self.db, to_create)
+                for parsed_part, created in zip(create_parsed, created_parts, strict=True):
+                    targets.append((parsed_part, created))
+            mapped_ids = [part.id for _parsed, part in targets]
+            self.die_part_repo.delete_processes_by_part_ids(self.db, mapped_ids)
             process_rows: list[StampingDieProcessInsert] = []
-            for parsed_part, created in zip(parsed.parts, created_parts, strict=True):
+            for parsed_part, part_row in targets:
                 ratios = resolve_part_ratios(parsed_part, preserved)
                 for order, (process, ratio) in enumerate(
                     zip(parsed_part.processes, ratios, strict=True), start=1
                 ):
                     process_rows.append(
                         StampingDieProcessInsert(
-                            die_part_id=created.id,
+                            die_part_id=part_row.id,
                             process_seq=process.process_seq,
                             process_order=order,
                             process_code=process.process_code,
@@ -263,7 +321,7 @@ class StampingDieUploadService:
 
         report(100, "解析完成")
         return DieUploadResult(
-            parts_count=len(created_parts),
+            parts_count=len(targets),
             processes_count=len(process_rows),
             assigned_die_number_count=assigned.assigned_count,
             location=location,

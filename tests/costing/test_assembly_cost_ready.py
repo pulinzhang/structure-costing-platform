@@ -9,7 +9,14 @@ from app.services.costing.assembly_cost.calc.orchestrator.ready import _welding_
 
 
 def _coverage(
-    *, current_ids=None, weld_info_count=1, log_status="success", breakdowns=None, fees=None
+    *,
+    current_ids=None,
+    weld_info_count=1,
+    log_status="success",
+    breakdowns=None,
+    fees=None,
+    bom_version="D/00",
+    snapshot_ids=None,
 ):
     db = MagicMock()
     deps = MagicMock()
@@ -30,8 +37,9 @@ def _coverage(
             year=2025,
             location="青岛",
             vehicle_model="T28",
-            bom_version="D/00",
+            bom_version=bom_version,
             current_ids=current_ids if current_ids is not None else {10},
+            snapshot_ids=snapshot_ids,
             weld_info_count=weld_info_count,
             welding_fee_repo=deps.welding_fee_repo,
         )
@@ -88,3 +96,90 @@ def test_welding_coverage_failed_log_still_reports_aligned_count() -> None:
     assert cov.complete is False
     assert cov.fee_count == 1
     assert "failed" in cov.message
+
+
+def test_welding_coverage_without_version_ignores_other_trees() -> None:
+    live = SimpleNamespace(id=1, source_node_id=10)
+    other = SimpleNamespace(id=2, source_node_id=999)
+    fees = [
+        SimpleNamespace(source_breakdown_node_id=1, level=0),
+        SimpleNamespace(source_breakdown_node_id=2, level=1),
+    ]
+    cov = _coverage(breakdowns=[live, other], fees=fees, bom_version=None)
+
+    assert cov.complete is True
+    assert cov.fee_count == 1
+    assert cov.breakdown_complete is True
+
+
+def test_welding_coverage_expired_node_in_snapshot_is_not_stale() -> None:
+    live = SimpleNamespace(id=1, source_node_id=10)
+    expired = SimpleNamespace(id=2, source_node_id=20)
+    fees = [SimpleNamespace(source_breakdown_node_id=1, level=0)]
+    cov = _coverage(
+        current_ids={10},
+        snapshot_ids={10, 20},
+        breakdowns=[live, expired],
+        fees=fees,
+    )
+    assert cov.complete is True
+    assert cov.breakdown_complete is True
+
+
+def test_evaluate_welding_coverage_only_year_overlapping_nodes() -> None:
+    from app.services.costing.assembly_cost.calc.orchestrator.ready import (
+        evaluate_welding_coverage,
+    )
+
+    expired = SimpleNamespace(
+        id=1,
+        weld_info="焊",
+        effective_year=2020,
+        effective_month=1,
+        expiry_year=2024,
+        expiry_month=12,
+    )
+    live = SimpleNamespace(
+        id=2,
+        weld_info="焊",
+        effective_year=2025,
+        effective_month=1,
+        expiry_year=None,
+        expiry_month=None,
+    )
+    live_bd = SimpleNamespace(id=10, source_node_id=2)
+    expired_bd = SimpleNamespace(id=11, source_node_id=1)
+    fees = [
+        SimpleNamespace(source_breakdown_node_id=10, level=0),
+        SimpleNamespace(source_breakdown_node_id=11, level=0),
+    ]
+    db = MagicMock()
+    with (
+        patch(
+            "app.services.costing.assembly_cost.calc.orchestrator.ready.BomSnapshotRepository"
+        ) as snap_cls,
+        patch(
+            "app.services.costing.assembly_cost.calc.orchestrator.ready.BomNodeRepository"
+        ) as node_cls,
+        patch(
+            "app.services.costing.assembly_cost.calc.orchestrator.ready.BomWeldingFeeCalcLogRepository"
+        ) as log_cls,
+        patch(
+            "app.services.costing.assembly_cost.calc.orchestrator.ready.BomWeldingProcessBreakdownRepository"
+        ) as bd_cls,
+        patch(
+            "app.services.costing.assembly_cost.calc.orchestrator.ready.BomWeldingFeeRepository"
+        ) as fee_cls,
+    ):
+        snap_cls.return_value.get_by_unique_key.return_value = SimpleNamespace(id=1)
+        node_cls.return_value.list_by_snapshot.return_value = [expired, live]
+        log_cls.return_value.get_latest.return_value = SimpleNamespace(status="success")
+        bd_cls.return_value.list_by_scope.return_value = [live_bd, expired_bd]
+        fee_cls.return_value.list_by_calc_scope.return_value = fees
+        cov = evaluate_welding_coverage(
+            db, year=2025, location="青岛", vehicle_model="T28", bom_version="D/00"
+        )
+
+    assert cov.complete is True
+    assert cov.fee_count == 1
+    assert cov.breakdown_complete is True

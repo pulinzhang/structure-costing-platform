@@ -12,6 +12,7 @@ from sqlalchemy.orm import Session
 
 from app.common.export_watermark import workbook_to_xlsx_bytes
 from app.common.money import Q2, Q4, excel_money_cell
+from app.common.period import format_period, require_export_as_of
 from app.common.timezone import now
 from app.common.vehicle_model import normalize_vehicle_model
 from app.exceptions.base import BusinessException
@@ -97,18 +98,24 @@ class StampingDieExportService:
         location: str,
         vehicle_model: str,
         part_number: str | None = None,
+        year: int | None = None,
+        month: int | None = None,
         current_user: UserVO,
     ) -> tuple[bytes, str]:
         loc = (location or "").strip()
         vehicle = normalize_vehicle_model(vehicle_model) or ""
         if not loc or not vehicle:
             raise BusinessException("导出须选择基地和项目")
+        as_of_year, as_of_month = require_export_as_of(year, month)
+        period_label = format_period(as_of_year, as_of_month)
         part_filter = (part_number or "").strip() or None
         parts = self.repository.list_for_export(
             db,
             location=loc,
             vehicle_model=vehicle,
             part_number=part_filter,
+            as_of_year=as_of_year,
+            as_of_month=as_of_month,
         )
 
         workbook = Workbook()
@@ -122,6 +129,7 @@ class StampingDieExportService:
             sheet,
             location=loc,
             vehicle_model=vehicle,
+            period_label=period_label,
             part_count=len(parts),
             process_count=process_count,
         )
@@ -157,7 +165,7 @@ class StampingDieExportService:
 
         content = workbook_to_xlsx_bytes(workbook, current_user)
         stamp = now().strftime("%Y%m%d_%H%M%S")
-        filename = f"冲压模具布点工艺清单_{loc}_{vehicle}_{stamp}.xlsx"
+        filename = f"冲压模具布点工艺清单_{loc}_{vehicle}_{period_label}_{stamp}.xlsx"
         return content, filename
 
     def _write_banner(
@@ -166,6 +174,7 @@ class StampingDieExportService:
         *,
         location: str,
         vehicle_model: str,
+        period_label: str,
         part_count: int,
         process_count: int,
     ) -> None:
@@ -177,7 +186,7 @@ class StampingDieExportService:
         title_cell.alignment = Alignment(horizontal="left", vertical="center", indent=1)
         sheet.row_dimensions[1].height = 28
 
-        scope_bits = [f"基地：{location}", f"项目：{vehicle_model}"]
+        scope_bits = [f"基地：{location}", f"项目：{vehicle_model}", f"命中月：{period_label}"]
         count_start = 26
         sheet.merge_cells(start_row=2, start_column=1, end_row=2, end_column=count_start - 1)
         scope_cell = sheet.cell(

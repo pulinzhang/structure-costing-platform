@@ -26,6 +26,7 @@ from app.services.costing.stamping_part_cost.calc.orchestrator.rates import (
 )
 from app.services.costing.stamping_part_cost.calc.orchestrator.ready import collect_calc_ready
 from app.services.costing.stamping_part_cost.calc.scope import require_calc_scope
+from app.services.masterdata.vehicle_model import VehicleModelService
 
 
 @dataclass(frozen=True, slots=True)
@@ -47,8 +48,9 @@ def prepare_calc_run(
     progress: ProgressNotifier,
 ) -> CalcPrepContext:
     scope = require_calc_scope(dto)
-    location = scope.location
-    vehicle_model = scope.vehicle_model
+    location, vehicle_model = VehicleModelService().require_introducible(
+        db, scope.location, scope.vehicle_model, dto.year, dto.month
+    )
     rates = load_part_cost_calc_rates(deps.settings_service, db)
     started_at = now()
     detail_lines = [
@@ -69,7 +71,6 @@ def prepare_calc_run(
         month=dto.month,
         location=location,
         vehicle_model=vehicle_model,
-        version=dto.version,
     )
     if not ready.can_calculate:
         raise BusinessException(
@@ -96,10 +97,14 @@ def prepare_calc_run(
         db,
         location=location,
         vehicle_model=vehicle_model,
-        version=dto.version,
+        as_of_year=dto.year,
+        as_of_month=dto.month,
     )
     if not parts:
-        raise BusinessException(f"基地「{location}」项目「{vehicle_model}」下未找到匹配的冲压零件")
+        raise BusinessException(
+            f"基地「{location}」项目「{vehicle_model}」在 {dto.year} 年 {dto.month:02d} 月"
+            "没有有效期内的冲压零件"
+        )
     detail_lines.append(f"匹配零件 {len(parts)} 件")
 
     return CalcPrepContext(
