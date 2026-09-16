@@ -276,6 +276,12 @@ def test_batch_delete_includes_other_leaf_and_anomaly(db: Session) -> None:
     )
     assert remaining_total == 0
     assert remaining == []
+    assert (
+        service.repository.get_list_by_scope(
+            db, location="芜湖", vehicle_model="T13J", bom_version="V3"
+        )
+        is None
+    )
 
 
 def test_batch_delete_clears_review_rows_while_skipping_approved(db: Session) -> None:
@@ -310,6 +316,18 @@ def test_batch_delete_clears_review_rows_while_skipping_approved(db: Session) ->
     assert remaining_total == 2
     assert {item.section for item in remaining} == {"object"}
     assert all(item.audit_status == "approved" for item in remaining)
+    header = service.repository.get_list_by_scope(
+        db, location="芜湖", vehicle_model="T13J", bom_version="V3"
+    )
+    assert header is not None
+    assert (
+        header.object_l0_degenerate_count
+        + header.object_l1_subassembly_count
+        + header.object_l1_stamping_count
+        == 2
+    )
+    assert header.other_leaf_count == 0
+    assert header.anomaly_count == 0
 
 
 def test_confirm_rejected_when_approved(db: Session) -> None:

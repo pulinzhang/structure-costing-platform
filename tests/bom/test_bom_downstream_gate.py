@@ -7,7 +7,7 @@ from datetime import datetime
 from decimal import Decimal
 
 import pytest
-from sqlalchemy import create_engine
+from sqlalchemy import create_engine, event
 from sqlalchemy.orm import Session, sessionmaker
 from sqlalchemy.pool import StaticPool
 
@@ -21,6 +21,9 @@ from app.models.bom.procurement_object import (
 from app.models.bom.welding_fee import BomWeldingFee
 from app.models.bom.welding_process_breakdown import BomWeldingProcessBreakdownNode
 from app.models.costing.assembly_cost import AssemblyCost
+from app.models.masterdata.location import Location
+from app.models.masterdata.supplier import Supplier
+from app.models.masterdata.vehicle_model import VehicleModel
 from app.services.bom.bom_service import BomService
 
 LOCATION = "青岛"
@@ -35,9 +38,19 @@ def memory_db() -> Generator[Session, None, None]:
         connect_args={"check_same_thread": False},
         poolclass=StaticPool,
     )
+
+    @event.listens_for(engine, "connect")
+    def _enable_fk(dbapi_connection: object, _connection_record: object) -> None:
+        cursor = dbapi_connection.cursor()  # type: ignore[attr-defined]
+        cursor.execute("PRAGMA foreign_keys=ON")
+        cursor.close()
+
     Base.metadata.create_all(
         bind=engine,
         tables=[
+            Location.__table__,
+            VehicleModel.__table__,
+            Supplier.__table__,
             BomSnapshot.__table__,
             BomNode.__table__,
             BomProcurementObjectList.__table__,
@@ -49,6 +62,26 @@ def memory_db() -> Generator[Session, None, None]:
     )
     session_factory = sessionmaker(bind=engine)
     session = session_factory()
+    session.add(
+        Location(
+            location=LOCATION,
+            is_enabled=True,
+            sort_order=1,
+            created_by="system",
+            updated_by="system",
+        )
+    )
+    session.add(
+        VehicleModel(
+            location=LOCATION,
+            vehicle_model=VEHICLE_MODEL,
+            effective_year=2020,
+            effective_month=1,
+            created_by="system",
+            updated_by="system",
+        )
+    )
+    session.commit()
     try:
         yield session
     finally:

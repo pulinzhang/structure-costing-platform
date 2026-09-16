@@ -20,7 +20,7 @@ class BomProcurementObjectGenerateDTO(BomProcurementObjectScopeDTO):
 
 
 class BomProcurementObjectBatchDeleteDTO(BomProcurementObjectScopeDTO):
-    """按范围批量删除待审行（采购对象 + 标准件/胶等 + 异常）；已审采购对象跳过。"""
+    """按范围整单删除：无已审时清清单头；有已审时只删 pending（含核对区）并跳过已审。"""
 
 
 class BomProcurementObjectBatchApproveDTO(BomProcurementObjectScopeDTO):

@@ -319,7 +319,10 @@ def batch_delete(
     current_user: UserVO = Depends(require_perm(Perm.BOM_PROCUREMENT_OBJECT_LIST_DELETE)),
 ) -> ApiResponse[BomProcurementObjectBatchDeleteResultVO]:
     result = _service.batch_delete(db, body, current_user=current_user)
-    message = f"已删除 {result.deleted_count} 条"
     if result.skipped_approved_count:
-        message += f"，跳过已审 {result.skipped_approved_count} 条"
+        message = (
+            f"已删除 {result.deleted_count} 条，" f"跳过已审 {result.skipped_approved_count} 条"
+        )
+    else:
+        message = f"已删除采购对象清单（{result.deleted_count} 条）"
     return ApiResponse.ok(data=result, message=message)
