@@ -2,8 +2,9 @@
 
 from typing import TypedDict
 
-from sqlalchemy import func
-from sqlalchemy.orm import Query, Session
+from sqlalchemy import func, or_
+from sqlalchemy.orm import Query, Session, joinedload
+from sqlalchemy.sql.elements import ColumnElement
 
 from app.common.types.repository_types import BomCascadeFilterOptions
 from app.models.bom import BomNode, BomSnapshot
@@ -381,3 +382,64 @@ class BomNodeRepository:
         )
         db.flush()
         return count
+
+    def list_where_used_hits(
+        self,
+        db: Session,
+        *,
+        locations: list[str] | None,
+        vehicle_model: str | None,
+        bom_version: str | None,
+        statuses: list[str] | None,
+        part_number_like: str | None,
+        part_name_like: str | None,
+        internal_number: str | None,
+        fetch_limit: int,
+    ) -> list[BomNode]:
+        q = (
+            db.query(BomNode)
+            .join(BomSnapshot, BomSnapshot.id == BomNode.snapshot_id)
+            .options(joinedload(BomNode.snapshot))
+        )
+        if locations:
+            q = q.filter(BomSnapshot.location.in_(locations))
+        if vehicle_model:
+            q = q.filter(BomSnapshot.vehicle_model == vehicle_model)
+        if bom_version:
+            q = q.filter(BomSnapshot.bom_version == bom_version)
+        if statuses:
+            q = q.filter(BomSnapshot.status.in_(statuses))
+        identity_filters: list[ColumnElement[bool]] = []
+        if part_number_like:
+            identity_filters.append(
+                func.upper(BomNode.part_number).like(part_number_like, escape="\\")
+            )
+        if part_name_like:
+            identity_filters.append(BomNode.part_name.like(part_name_like, escape="\\"))
+        if internal_number is not None:
+            identity_filters.append(func.trim(BomNode.internal_number) == internal_number)
+        if not identity_filters:
+            return []
+        q = q.filter(or_(*identity_filters))
+        return (
+            q.order_by(BomNode.snapshot_id.asc(), BomNode.sort_no.asc(), BomNode.id.asc())
+            .limit(fetch_limit)
+            .all()
+        )
+
+    def list_by_ids(self, db: Session, node_ids: list[int]) -> list[BomNode]:
+        if not node_ids:
+            return []
+        unique_ids = list(dict.fromkeys(node_ids))
+        rows: list[BomNode] = []
+        chunk_size = 500
+        for offset in range(0, len(unique_ids), chunk_size):
+            chunk = unique_ids[offset : offset + chunk_size]
+            rows.extend(
+                db.query(BomNode)
+                .options(joinedload(BomNode.snapshot))
+                .filter(BomNode.id.in_(chunk))
+                .all()
+            )
+        by_id = {row.id: row for row in rows}
+        return [by_id[node_id] for node_id in unique_ids if node_id in by_id]

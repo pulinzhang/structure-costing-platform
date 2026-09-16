@@ -1,6 +1,6 @@
 # 文档目录
 
-平台规范放在本目录根下。领域设计按垂直切片分文件夹，与 `app/` / `static/js/features/` 对齐。
+平台规范放在本目录根下。领域设计按垂直切片分文件夹，与 `app/` / `static/js/features/` 对齐。工程变更跨切片，单独放 [engineering-change/](engineering-change/README.md)。
 
 ## 平台（根）
 
@@ -50,6 +50,7 @@
 | [bom-procurement-objects-design.md](bom/bom-procurement-objects-design.md) | 采购对象清单（已落地）：退化供货件 / 分总成 / 冲压件；生成落库、检测、确认。基地/项目写读见该文 §13 |
 | [bom-procurement-object-supplier-design.md](bom/bom-procurement-object-supplier-design.md) | 采购对象指定供应商（已落地）：行上点选规范全称 |
 | [bom-procurement-object-supplier-upload-design.md](bom/bom-procurement-object-supplier-upload-design.md) | 采购对象批量上传供应商（已落地）：范围三项 + 窄表导回 |
+| [bom-where-used-design.md](bom/bom-where-used-design.md) | 零件用在哪（已落地）：现网 BOM 按零件号/短码/名称向上追到 L0；路径简图 + 供货总成汇总 |
 
 ## 一事一议 `yishiyiyi/`
 
@@ -68,11 +69,19 @@
 | [procurement-contract-report-design.md](costing/procurement-contract-report-design.md) | 采购价格协议（已落地）：按供应商出《批量零部件价格协议》 |
 | [l0-assembly-costing-design.md](costing/l0-assembly-costing-design.md) | 冻结史料：原 L0 成品核价口径（现网见总成月核价） |
 | [l1-assembly-costing-design.md](costing/l1-assembly-costing-design.md) | 历史：委外应成本口径（结果表方案已作废） |
-| [effective-period-design.md](costing/effective-period-design.md) | 协议价生效期（设计） |
+| [effective-period-design.md](costing/effective-period-design.md) | 协议价生效期（设计）：一口价/年度价年内分段 |
 | [provisional-final-settlement-design.md](costing/provisional-final-settlement-design.md) | 暂估 / 正式（设计） |
 | [anchor-true-up-design.md](costing/anchor-true-up-design.md) | 锚点送货与价差（设计） |
 | [t13j-offal-nesting-simulation.md](costing/t13j-offal-nesting-simulation.md) | T13J 利废件材料核算模拟（不改代码） |
 | [offal-nested-material-design.md](costing/offal-nested-material-design.md) | 利废件材料价（已落地）：`R = 成品净重×废料单价` |
+
+## 工程变更 `engineering-change/`
+
+| 文档 | 状态 |
+|------|------|
+| [README.md](engineering-change/README.md) | 目录 |
+| [bom-process-die-effective-period-design.md](engineering-change/bom-process-die-effective-period-design.md) | BOM / 冲压工艺 / 模具有效期（设计）：现网改造 |
+| [part-number-revision-design.md](engineering-change/part-number-revision-design.md) | 合册 Excel、切点作业；样表 `engineering-change/samples/` |
 
 ## 文件溯源 `file-trace/`
 

@@ -242,6 +242,11 @@ export const pageMeta = {
         en: '产品结构',
         breadcrumb: ['焊接工程', '材料清单', '产品结构'],
     },
+    'bom-where-used': {
+        title: '零件用在哪',
+        en: '零件用在哪',
+        breadcrumb: ['焊接工程', '材料清单', '零件用在哪'],
+    },
     'bom-viz': {
         title: '产品结构图',
         en: '产品结构图',

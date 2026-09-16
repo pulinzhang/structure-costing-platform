@@ -48,6 +48,7 @@ _bom_cascade_read = require_any_perm(
     Perm.BOM_ANNUAL_PART_PRICE_UPLOAD_VIEW,
     Perm.BOM_ANNUAL_PART_PRICE_VIEW,
     Perm.PROCUREMENT_CONTRACT_REPORT_VIEW,
+    Perm.BOM_WHERE_USED_VIEW,
 )
 
 

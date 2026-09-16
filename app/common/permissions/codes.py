@@ -119,6 +119,10 @@ class Perm:
     MENU_BOM_STRUCTURE = "menu:bom-structure"  # 产品结构
     BOM_STRUCTURE_VIEW = "op:bom-structure:view"  # 查看
 
+    MENU_BOM_WHERE_USED = "menu:bom-where-used"  # 零件用在哪
+    BOM_WHERE_USED_VIEW = "op:bom-where-used:view"  # 查看
+    BOM_WHERE_USED_EXPORT = "op:bom-where-used:export"  # 导出
+
     MENU_BOM_WELDING_UNIT_PRICE_GROUP = "menu:bom-welding-unit-price-group"  # 焊接单价
 
     MENU_BOM_WELDING_UNIT_PRICE_UPLOAD = "menu:bom-welding-unit-price-upload"  # 上传

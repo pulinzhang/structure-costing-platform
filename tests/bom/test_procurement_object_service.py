@@ -73,7 +73,7 @@ def db() -> Generator[Session, None, None]:
         engine.dispose()
 
 
-def _seed_tree(db: Session) -> None:
+def _seed_tree(db: Session, *, with_review_rows: bool = False) -> None:
     snapshot = BomSnapshotRepository().create(
         db,
         BomSnapshotWrite(
@@ -119,6 +119,55 @@ def _seed_tree(db: Session) -> None:
             excel_row=9,
         ),
     )
+    if with_review_rows:
+        node_repo.create(
+            db,
+            BomNodeWrite(
+                snapshot_id=snapshot.id,
+                parent_id=l0.id,
+                level=1,
+                part_number="B11-4102613",
+                node_role="buy",
+                created_by="tester",
+                updated_by="tester",
+                part_name="点焊胶",
+                excel_filename="t13j.xlsx",
+                excel_row=10,
+            ),
+        )
+        l0_out = node_repo.create(
+            db,
+            BomNodeWrite(
+                snapshot_id=snapshot.id,
+                level=0,
+                part_number="L0-OUT",
+                node_role="supply",
+                created_by="tester",
+                updated_by="tester",
+                is_supply_unit=True,
+                remark="凸焊总成供货",
+                excel_filename="t13j.xlsx",
+                excel_row=20,
+            ),
+        )
+        node_repo.create(
+            db,
+            BomNodeWrite(
+                snapshot_id=snapshot.id,
+                parent_id=l0_out.id,
+                level=1,
+                part_number="L1-OUT-CHILD",
+                node_role="make",
+                created_by="tester",
+                updated_by="tester",
+                part_name="加强板",
+                internal_number="ACA674099",
+                thickness_mm=Decimal("0.8000"),
+                thickness_text="T=0.8",
+                excel_filename="t13j.xlsx",
+                excel_row=21,
+            ),
+        )
     db.commit()
 
 
@@ -197,8 +246,40 @@ def test_batch_approve_empty_remark_rejected_by_dto() -> None:
         )
 
 
-def test_delete_skips_approved(db: Session) -> None:
-    _seed_tree(db)
+def test_batch_delete_includes_other_leaf_and_anomaly(db: Session) -> None:
+    _seed_tree(db, with_review_rows=True)
+    service = BomProcurementObjectService()
+    generated = service.generate(db, _scope(), current_user=SYSTEM_USER)
+    assert generated.object_count == 2
+    items, total, _filters = service.paginate(
+        db,
+        BomProcurementObjectQuery(location="芜湖", vehicle_model="T13J", bom_version="V3", size=50),
+    )
+    assert total == 4
+    sections = {item.section for item in items}
+    assert "other_leaf" in sections
+    assert "anomaly" in sections
+    result = service.batch_delete(
+        db,
+        BomProcurementObjectBatchDeleteDTO(
+            location="芜湖",
+            vehicle_model="T13J",
+            bom_version="V3",
+        ),
+        current_user=SYSTEM_USER,
+    )
+    assert result.deleted_count == 4
+    assert result.skipped_approved_count == 0
+    remaining, remaining_total, _ = service.paginate(
+        db,
+        BomProcurementObjectQuery(location="芜湖", vehicle_model="T13J", bom_version="V3", size=50),
+    )
+    assert remaining_total == 0
+    assert remaining == []
+
+
+def test_batch_delete_clears_review_rows_while_skipping_approved(db: Session) -> None:
+    _seed_tree(db, with_review_rows=True)
     service = BomProcurementObjectService()
     service.generate(db, _scope(), current_user=SYSTEM_USER)
     service.batch_approve(
@@ -220,8 +301,15 @@ def test_delete_skips_approved(db: Session) -> None:
         ),
         current_user=SYSTEM_USER,
     )
-    assert result.deleted_count == 0
-    assert result.skipped_approved_count == 1
+    assert result.deleted_count == 2
+    assert result.skipped_approved_count == 2
+    remaining, remaining_total, _ = service.paginate(
+        db,
+        BomProcurementObjectQuery(location="芜湖", vehicle_model="T13J", bom_version="V3", size=50),
+    )
+    assert remaining_total == 2
+    assert {item.section for item in remaining} == {"object"}
+    assert all(item.audit_status == "approved" for item in remaining)
 
 
 def test_confirm_rejected_when_approved(db: Session) -> None:

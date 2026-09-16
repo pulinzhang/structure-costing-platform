@@ -5,6 +5,7 @@
 > 利废计价见 [offal-nested-material-design.md](../costing/offal-nested-material-design.md)。  
 > 四异号家模、料片四列全空见 [stamping-family-die-byproduct-design.md](stamping-family-die-byproduct-design.md)（工艺上传与布点分摊已落地；零件价月快照 / 详情 PATCH 见该文）。  
 > 按主机厂数量测算采购钢材吨数（另导出，不替代本表 Excel）见 [stamping-steel-purchase-export-design.md](stamping-steel-purchase-export-design.md)。  
+> 有效期现网改造（零件行生失效、停整包覆盖）见 [bom-process-die-effective-period-design.md](../engineering-change/bom-process-die-effective-period-design.md)。  
 > 模具布点是另一套表，见 [stamping-die-management-design.md](stamping-die-management-design.md)。  
 > **供应商主数据**见 [supplier-design.md](../masterdata/supplier-design.md)（S11 写门禁）。本表 `stamping_parts.stamping_supplier` 是供应商 **直接下一跳**：`ForeignKey(..., ondelete="RESTRICT", onupdate="RESTRICT")`。上传后非空规范全称。供应商改全称 / 删除时若仍有本表行，引擎拒绝（文案不点名本表）。模具布点 **不是** 下一跳。  
 > **冲压加工费**是本表直接下一跳：`stamping_process_fees.source_part_id` → `stamping_parts.id`（`RESTRICT`）。有加工费则不能删/覆盖工艺，文案「仍被引用，不能删除」。  

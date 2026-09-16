@@ -698,3 +698,23 @@ textarea:-webkit-autofill:active {
     background-position: center;
     background-repeat: no-repeat;
 }
+
+/* 零件用在哪：盖过 Tailwind 的 img{max-width:100%;height:auto}，否则简图按原图像素撑开 */
+.wu-sketch-thumb,
+.wu-sketch-thumb img {
+    display: block;
+    width: 40px !important;
+    height: 32px !important;
+    max-width: 40px !important;
+    max-height: 32px !important;
+    object-fit: contain;
+}
+
+.wu-sketch-preview {
+    display: block;
+    width: 240px !important;
+    height: 160px !important;
+    max-width: 240px !important;
+    max-height: 160px !important;
+    object-fit: contain;
+}

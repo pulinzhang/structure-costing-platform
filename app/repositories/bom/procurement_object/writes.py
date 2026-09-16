@@ -101,7 +101,6 @@ class BomProcurementObjectWrites:
             db.query(BomProcurementObject)
             .filter(
                 BomProcurementObject.list_id == list_id,
-                BomProcurementObject.section == SECTION_OBJECT,
                 BomProcurementObject.audit_status == AUDIT_PENDING,
             )
             .delete(synchronize_session=False)
