@@ -206,12 +206,20 @@ class BomProcurementObjectAuditService:
         dto: BomProcurementObjectBatchDeleteDTO,
         current_user: UserVO,
     ) -> BomProcurementObjectBatchDeleteResultVO:
+        """按范围整单删除；无已审时连清单头一起删（与生成覆盖 delete_list 一致）。"""
         header = self._require_header(db, dto.location, dto.vehicle_model, dto.bom_version)
+        location = header.location
+        vehicle_model = header.vehicle_model
+        bom_version = header.bom_version
         _ = current_user
         try:
             skipped = self.repository.count_approved_objects(db, header.id)
-            deleted = self.repository.delete_pending_objects_by_list_id(db, header.id)
-            self.repository.recount_header_from_rows(db, header)
+            if skipped:
+                deleted = self.repository.delete_pending_objects_by_list_id(db, header.id)
+                self.repository.recount_header_from_rows(db, header)
+            else:
+                deleted = len(self.repository.list_objects_by_list_id(db, header.id))
+                self.repository.delete_list(db, header)
             db.commit()
         except Exception:
             db.rollback()
@@ -220,9 +228,9 @@ class BomProcurementObjectAuditService:
         return BomProcurementObjectBatchDeleteResultVO(
             deleted_count=deleted,
             skipped_approved_count=skipped,
-            location=header.location,
-            vehicle_model=header.vehicle_model,
-            bom_version=header.bom_version,
+            location=location,
+            vehicle_model=vehicle_model,
+            bom_version=bom_version,
         )
 
     def _require_header(
