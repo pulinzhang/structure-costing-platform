@@ -17,6 +17,9 @@ AnalysisKind = Literal[
 
 QueryMode = Literal["analysis", "usage_help", "engine_readiness"]
 
+# 表字段 NOT NULL 占位。filters 里碰到这个字就当没抽到，禁止当真实基地/项目/版本沿用。
+SCOPE_UNSET = "未指定"
+
 
 class TimeRange(BaseModel):
     """YYYY-MM 闭区间。"""

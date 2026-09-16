@@ -656,13 +656,11 @@ def test_idempotency_fingerprint_stable() -> None:
     key = build_idempotency_key(
         report_type="auto",
         audience="buyer",
-        location="青岛",
-        year=2026,
-        month=1,
-        vehicle_model="T28",
-        bom_version="V1",
         user_question="测试",
         user_id=1,
+        time_range_start="2026-01",
+        time_range_end="2026-01",
+        filters={"location": "青岛", "vehicle_model": "T28", "bom_version": "V1"},
     )
     assert "q:" in key
 

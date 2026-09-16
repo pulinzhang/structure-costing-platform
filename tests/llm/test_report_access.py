@@ -55,8 +55,20 @@ def test_get_report_owner_succeeds(monkeypatch: pytest.MonkeyPatch) -> None:
     db = MagicMock()
     row = MagicMock()
     row.user_id = 3
+    row.query_json = None
+    row.location = "青岛"
+    row.year = 2026
+    row.month = 8
+    row.vehicle_model = "T28"
+    row.bom_version = "V1"
+    row.part_number = None
+    row.resolved_report_type = "summary"
+    row.user_question = "青岛成本怎么样？"
     service.repository.get_by_id = MagicMock(return_value=row)
     expected = MagicMock()
+    expected.markdown_content = None
+    copied = MagicMock()
+    expected.model_copy = MagicMock(return_value=copied)
     monkeypatch.setattr(
         "app.services.llm.report_service.LlmAnalysisReportVO.from_orm_row",
         MagicMock(return_value=expected),
@@ -64,7 +76,9 @@ def test_get_report_owner_succeeds(monkeypatch: pytest.MonkeyPatch) -> None:
 
     report = service.get_report(db, 101, current_user=_user(3))
 
-    assert report is expected
+    assert report is copied
+    expected.model_copy.assert_called_once()
+    assert "carry" in expected.model_copy.call_args.kwargs["update"]
 
 
 def test_get_report_other_user_forbidden_even_admin() -> None:

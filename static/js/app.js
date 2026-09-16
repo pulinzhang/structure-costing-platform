@@ -22,7 +22,7 @@ import {
     canAccessPage,
     fallbackPageName,
 } from './permissions.js?v=12';
-import { bootLlmAssistant } from './llm-assistant/boot.js?v=34';
+import { bootLlmAssistant } from './llm-assistant/boot.js?v=36';
 import { pageConfig as dashboardPage }      from './features/dashboard/index.js?v=12';
 import { pageConfig as stampingUploadPage } from './features/stamping/process/upload/index.js?v=63';
 import { pageConfig as stampingPartsPage }  from './features/stamping/process/parts/index.js?v=56';

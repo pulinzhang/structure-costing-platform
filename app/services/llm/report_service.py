@@ -21,13 +21,15 @@ from app.schemas.dto.llm_analysis_dto import (
     LlmAnalysisReportCreateDTO,
     LlmAnalysisReportQuery,
 )
-from app.schemas.llm.analysis_query import AnalysisQuery
+from app.schemas.llm.analysis_query import SCOPE_UNSET, AnalysisQuery, QueryMode, TimeRange
 from app.schemas.vo.async_task_vo import AsyncTaskProgressVO
 from app.schemas.vo.llm_analysis_vo import (
+    LlmAnalysisCarryVO,
     LlmAnalysisReportListItemVO,
     LlmAnalysisReportTaskVO,
     LlmAnalysisReportVO,
     LlmAnalysisScopeVO,
+    LlmAnalysisTimeRangeVO,
 )
 from app.schemas.vo.user_vo import UserVO
 from app.services.async_task import (
@@ -39,6 +41,7 @@ from app.services.async_task import (
 from app.services.llm.analysis.runner import AnalysisRunner
 from app.services.llm.analysis.shared.idempotency import build_idempotency_key
 from app.services.llm.client import LlmClientError
+from app.services.llm.comparison_basis import default_comparison_basis
 from app.services.llm.context.snapshot_builder import SnapshotBuilder
 from app.services.llm.engine_readiness import EngineReadinessRunner
 from app.services.llm.generator import LlmReportGenerator
@@ -68,6 +71,65 @@ def _mode_progress_copy(query_mode: str) -> tuple[str, str, str]:
     return ("正在查询并聚合核价事实…", "AI正在思考中…", "分析完成")
 
 
+def analysis_query_from_report_fields(
+    *,
+    query_json: str | None,
+    location: str,
+    year: int,
+    month: int,
+    vehicle_model: str,
+    bom_version: str,
+    part_number: str | None,
+    resolved_report_type: str,
+    user_question: str = "",
+) -> AnalysisQuery | None:
+    """沿用上一问：优先 query_json。扁字段只还原加列前的旧行，不要当主路径改。"""
+    if query_json:
+        try:
+            parsed: Any = json.loads(query_json)
+        except (TypeError, ValueError, json.JSONDecodeError):
+            parsed = None
+        if isinstance(parsed, dict):
+            try:
+                return AnalysisQuery.model_validate(parsed)
+            except (TypeError, ValueError):
+                pass
+
+    try:
+        month_key = f"{int(year):04d}-{int(month):02d}"
+    except (TypeError, ValueError):
+        return None
+    filters: dict[str, str] = {}
+    if location and location != SCOPE_UNSET:
+        filters["location"] = location
+    if vehicle_model and vehicle_model != SCOPE_UNSET:
+        filters["vehicle_model"] = vehicle_model
+    if bom_version and bom_version != SCOPE_UNSET:
+        filters["bom_version"] = bom_version
+    if part_number:
+        filters["part_number"] = part_number
+
+    report_type = (resolved_report_type or "").strip()
+    query_mode: QueryMode = "analysis"
+    subject = "cost_total"
+    if report_type == "usage_help":
+        query_mode = "usage_help"
+        subject = "usage_help"
+    elif report_type == "engine_readiness":
+        query_mode = "engine_readiness"
+        subject = "engine_readiness"
+
+    return AnalysisQuery(
+        time_range=TimeRange(start=month_key, end=month_key),
+        filters=filters,
+        subject=subject,
+        comparison_basis=default_comparison_basis(same_bom_version=True),
+        analyses=["summary"],
+        user_question=user_question,
+        query_mode=query_mode,
+    )
+
+
 class LlmAnalysisReportService:
     def __init__(self) -> None:
         self.repository = LlmAnalysisReportRepository()
@@ -85,9 +147,15 @@ class LlmAnalysisReportService:
         *,
         current_user: UserVO,
     ) -> LlmAnalysisReportTaskVO:
+        previous_query = self._load_previous_query(
+            db,
+            previous_report_id=dto.previous_report_id,
+            current_user=current_user,
+        )
         analysis_query = self.query_parser.parse(
             db,
             user_question=dto.user_question,
+            previous_query=previous_query,
         )
         active_count = self.repository.count_active_by_user(db, user_id=int(current_user.id))
         if active_count >= int(settings.LLM_MAX_CONCURRENT_TASKS_PER_USER):
@@ -98,21 +166,18 @@ class LlmAnalysisReportService:
         audience = detect_audience(dto.user_question, dto.audience)
         part_number = analysis_query.part_number()
         analyses_key = analysis_query.analyses_key()
-        # 表字段 NOT NULL：未抽到时用占位，真实过滤仍以 AnalysisQuery.filters 为准
-        location = analysis_query.location() or "未指定"
-        vehicle_model = analysis_query.vehicle_model() or "未指定"
-        bom_version = analysis_query.bom_version() or "未指定"
+        # 表字段 NOT NULL：未抽到时用 SCOPE_UNSET，真实过滤仍以 AnalysisQuery.filters 为准
+        location = analysis_query.location() or SCOPE_UNSET
+        vehicle_model = analysis_query.vehicle_model() or SCOPE_UNSET
+        bom_version = analysis_query.bom_version() or SCOPE_UNSET
         idem_key = dto.idempotency_key or build_idempotency_key(
             report_type="auto",
             audience=audience,
-            location=location,
-            year=analysis_query.time_range.end_year,
-            month=analysis_query.time_range.end_month,
-            vehicle_model=vehicle_model,
-            bom_version=bom_version,
             user_question=dto.user_question,
             user_id=int(current_user.id),
-            part_number=part_number,
+            time_range_start=analysis_query.time_range.start,
+            time_range_end=analysis_query.time_range.end,
+            filters=dict(analysis_query.filters),
         )
 
         if not dto.force_refresh:
@@ -132,7 +197,7 @@ class LlmAnalysisReportService:
             operator_id=int(current_user.id),
             operator_name=display_name(current_user),
         )
-        # 落库：year/month 取区间终点（兼容现表结构）；完整 Query JSON 交给 worker
+        query_json = json.dumps(analysis_query.model_dump(mode="json"), ensure_ascii=False)
         row = self.repository.create(
             db,
             LlmAnalysisReportInsert(
@@ -155,6 +220,7 @@ class LlmAnalysisReportService:
                 status=REPORT_STATUS_PENDING,
                 idempotency_key=idem_key,
                 trace_id=trace_id,
+                query_json=query_json,
                 created_by=audit["created_by"],
                 updated_by=audit["updated_by"],
             ),
@@ -163,7 +229,6 @@ class LlmAnalysisReportService:
 
         report_id = int(row.id)
         updated_by = str(audit["updated_by"])
-        query_json = json.dumps(analysis_query.model_dump(mode="json"), ensure_ascii=False)
 
         def work(worker_db: Session, on_progress: ProgressCallback) -> WorkerTaskOutcome:
             return self._run_report_work(
@@ -221,14 +286,6 @@ class LlmAnalysisReportService:
         if int(row.user_id) != int(current_user.id):
             raise PermissionException("只能查看本人的分析报告")
         return self._report_vo(row)
-
-    @staticmethod
-    def _report_vo(row: Any) -> LlmAnalysisReportVO:
-        vo = LlmAnalysisReportVO.from_orm_row(row)
-        markdown = vo.markdown_content
-        if not isinstance(markdown, str) or not markdown:
-            return vo
-        return vo.model_copy(update={"markdown_content": sanitize_report_markdown(markdown)})
 
     def list_reports(
         self,
@@ -425,4 +482,59 @@ class LlmAnalysisReportService:
             from_cache=from_cache,
             progress_percent=progress,
             message=message,
+            carry=self._carry_from_row(row),
         )
+
+    def _load_previous_query(
+        self,
+        db: Session,
+        *,
+        previous_report_id: int | None,
+        current_user: UserVO,
+    ) -> AnalysisQuery | None:
+        if previous_report_id is None:
+            return None
+        row = self.repository.get_by_id(db, previous_report_id)
+        if row is None or int(row.user_id) != int(current_user.id):
+            return None
+        return self._query_from_row(row)
+
+    @staticmethod
+    def _query_from_row(row: Any) -> AnalysisQuery | None:
+        return analysis_query_from_report_fields(
+            query_json=getattr(row, "query_json", None),
+            location=str(getattr(row, "location", "") or ""),
+            year=int(getattr(row, "year", 0) or 0),
+            month=int(getattr(row, "month", 0) or 0),
+            vehicle_model=str(getattr(row, "vehicle_model", "") or ""),
+            bom_version=str(getattr(row, "bom_version", "") or ""),
+            part_number=getattr(row, "part_number", None),
+            resolved_report_type=str(getattr(row, "resolved_report_type", "") or ""),
+            user_question=str(getattr(row, "user_question", "") or ""),
+        )
+
+    @classmethod
+    def _carry_from_row(cls, row: Any) -> LlmAnalysisCarryVO | None:
+        query = cls._query_from_row(row)
+        if query is None:
+            return None
+        return LlmAnalysisCarryVO(
+            time_range=LlmAnalysisTimeRangeVO(
+                start=query.time_range.start,
+                end=query.time_range.end,
+            ),
+            filters=dict(query.filters),
+            subject=query.subject,
+            query_mode=query.query_mode,
+        )
+
+    @classmethod
+    def _report_vo(cls, row: Any) -> LlmAnalysisReportVO:
+        # carry 要从 query_json 还原，不塞进 from_orm_row（VO 不解析 Query）。
+        vo = LlmAnalysisReportVO.from_orm_row(row)
+        carry = cls._carry_from_row(row)
+        markdown = vo.markdown_content
+        updates: dict[str, Any] = {"carry": carry}
+        if isinstance(markdown, str) and markdown:
+            updates["markdown_content"] = sanitize_report_markdown(markdown)
+        return vo.model_copy(update=updates)

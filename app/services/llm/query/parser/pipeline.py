@@ -1,4 +1,4 @@
-"""QueryParser 流水线：抽条件 → 对齐 → 规则定 analyses/subject。"""
+"""QueryParser 流水线：抽条件 → 对齐 → 沿用上一问 → 钉月或沿用时间 → analyses/subject。"""
 
 from __future__ import annotations
 
@@ -21,6 +21,12 @@ from app.services.llm.query.intent_router import (
     detect_query_mode,
 )
 from app.services.llm.query.parser.analyses import resolve_analyses
+from app.services.llm.query.parser.carry import (
+    apply_carried_filters,
+    resolve_carried_subject,
+    resolve_carried_time,
+    should_carry_previous,
+)
 from app.services.llm.query.parser.draft import parse_time_range_from_draft, rule_fallback_draft
 from app.services.llm.query.parser.part_price import question_asks_part_price
 from app.services.llm.query.parser.pin_latest import pin_table_latest_month, should_pin_table_latest
@@ -48,11 +54,21 @@ class QueryParser:
         self._aligner = aligner or EntityAligner()
         self._cost_repo = cost_repo or L0CostAnalysisRepository()
 
-    def parse(self, db: Session, *, user_question: str) -> AnalysisQuery:
+    def parse(
+        self,
+        db: Session,
+        *,
+        user_question: str,
+        previous_query: AnalysisQuery | None = None,
+    ) -> AnalysisQuery:
         """LLM 只产出条件草稿；对齐与 analyses/subject 由 Python 决定。"""
         question = (user_question or "").strip()
         if detect_engine_readiness_question(question):
-            return self._parse_engine_readiness(db, question=question)
+            return self._parse_engine_readiness(
+                db,
+                question=question,
+                previous_query=previous_query,
+            )
         if detect_query_mode(question) == "usage_help":
             return self._parse_usage_help(question)
 
@@ -74,7 +90,17 @@ class QueryParser:
                 question=question,
                 draft=draft,
                 default=default,
+                previous_query=previous_query,
             )
+            # 有上一问时禁止走下面「清空 filters」：否则缺槽沿用会丢光。
+            if should_carry_previous(previous_query):
+                return query.model_copy(
+                    update={
+                        "parser_fallback_level": 4,
+                        "parser_data_message": query.parser_data_message
+                        or "条件抽取失败，沿用上一问范围",
+                    }
+                )
             has_scope_hint = bool(question_has_explicit_time(question) or draft.get("filters"))
             if has_scope_hint:
                 return query.model_copy(
@@ -97,9 +123,16 @@ class QueryParser:
             question=question,
             draft=draft,
             default=default,
+            previous_query=previous_query,
         )
 
-    def _parse_engine_readiness(self, db: Session, *, question: str) -> AnalysisQuery:
+    def _parse_engine_readiness(
+        self,
+        db: Session,
+        *,
+        question: str,
+        previous_query: AnalysisQuery | None = None,
+    ) -> AnalysisQuery:
         clock = now()
         default = DefaultScopeMonth(year=clock.year, month=clock.month)
         draft: dict[str, Any] = {}
@@ -121,8 +154,6 @@ class QueryParser:
             question=question,
             default=default,
         )
-        if not draft_has_time_range(draft) and not question_has_explicit_time(question):
-            parser_message = "未识别到时间范围，默认检查当月"
 
         filter_mentions: list[tuple[str, str]] = []
         filters_raw = draft.get("filters")
@@ -135,6 +166,24 @@ class QueryParser:
         aligned = self._aligner.align(db, mentions=filter_mentions, seed_filters={})
         filters = aligned.filters
         unresolved = list(aligned.unresolved_mentions)
+        if should_carry_previous(previous_query):
+            assert previous_query is not None
+            _evidenced, filters = apply_carried_filters(
+                question=question,
+                current=filters,
+                previous=previous_query,
+            )
+            filters = {
+                key: value for key, value in filters.items() if key in {"location", "vehicle_model"}
+            }
+            time_range, carried_message = resolve_carried_time(
+                question=question,
+                draft_time=time_range,
+                previous=previous_query,
+            )
+            parser_message = carried_message
+        elif not draft_has_time_range(draft) and not question_has_explicit_time(question):
+            parser_message = "未识别到时间范围，默认检查当月"
 
         return AnalysisQuery(
             time_range=time_range,
@@ -172,6 +221,7 @@ class QueryParser:
         question: str,
         draft: dict[str, Any],
         default: DefaultScopeMonth,
+        previous_query: AnalysisQuery | None = None,
     ) -> AnalysisQuery:
         filter_mentions: list[tuple[str, str]] = []
         filters_raw = draft.get("filters")
@@ -224,10 +274,21 @@ class QueryParser:
             if "location" not in filters:
                 filters["location"] = compare_aligned[0]
 
+        evidenced = dict(filters)
+        if should_carry_previous(previous_query):
+            assert previous_query is not None
+            evidenced, filters = apply_carried_filters(
+                question=question,
+                current=filters,
+                previous=previous_query,
+            )
+
         time_range = parse_time_range_from_draft(draft, question=question, default=default)
         parser_fallback_level = 1
         parser_data_message: str | None = None
-        if should_pin_table_latest(question, filters.get("part_number")):
+        # 「这个多少钱」先粘零件号，再钉表上最新月；不要先沿用上一问时间。
+        will_pin = should_pin_table_latest(question, filters.get("part_number"))
+        if will_pin:
             pinned = pin_table_latest_month(
                 db,
                 cost_repo=self._cost_repo,
@@ -237,9 +298,17 @@ class QueryParser:
             time_range = pinned[0]
             filters = pinned[1]
             parser_data_message = pinned[2]
-        elif not draft_has_time_range(draft) and not question_has_explicit_time(question):
-            parser_fallback_level = 3
-            parser_data_message = "未识别到时间范围，默认分析当月"
+        else:
+            time_range, carried_message = resolve_carried_time(
+                question=question,
+                draft_time=time_range,
+                previous=previous_query,
+            )
+            if carried_message:
+                parser_data_message = carried_message
+            elif not draft_has_time_range(draft) and not question_has_explicit_time(question):
+                parser_fallback_level = 3
+                parser_data_message = "未识别到时间范围，默认分析当月"
 
         analyses = resolve_analyses(
             question=question,
@@ -252,6 +321,12 @@ class QueryParser:
             question=question,
             analyses=analyses,
             filters=filters,
+        )
+        subject = resolve_carried_subject(
+            question=question,
+            resolved_subject=subject,
+            previous=previous_query,
+            evidenced=evidenced,
         )
         if subject == "stamping_process":
             analyses = [kind for kind in analyses if kind not in ("trend", "comparison", "risk")]

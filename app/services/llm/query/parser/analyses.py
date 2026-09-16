@@ -11,6 +11,12 @@ from app.services.llm.query.parser.subjects import (
 )
 from app.services.llm.query.time_range import asks_latest_costing
 
+COMPARE_QUESTION_WORDS: tuple[str, ...] = ("对比", "比较", "哪个基地", "谁更")
+
+
+def question_has_compare_signal(question: str) -> bool:
+    return any(word in (question or "") for word in COMPARE_QUESTION_WORDS)
+
 
 def resolve_analyses(
     *,
@@ -25,7 +31,7 @@ def resolve_analyses(
         wants_trend = any(word in question for word in ("趋势", "变化", "涨", "跌", "环比", "同比"))
         if wants_trend or (time_span > 1 and not asks_latest_costing(question)):
             result.append("trend")
-        if has_compare or any(word in question for word in ("对比", "比较", "哪个基地", "谁更")):
+        if has_compare or question_has_compare_signal(question):
             result.append("comparison")
         if any(word in question for word in ("缺价", "partial", "算不全", "跑不起来")):
             result.append("risk")
@@ -46,7 +52,7 @@ def resolve_analyses(
                 result.append("drivers")
         if any(word in question for word in ("概览", "总体", "汇总")):
             result.insert(0, "summary")
-        if any(word in question for word in ("谁贵", "驱动", "贡献", "构成")):
+        if any(word in question for word in ("谁贵", "贵在哪", "驱动", "贡献", "构成")):
             result.append("drivers")
         seen_focus: list[AnalysisKind] = []
         for kind in result:
@@ -59,9 +65,9 @@ def resolve_analyses(
         word in question for word in ("趋势", "变化", "涨", "跌", "环比", "同比")
     ):
         result.append("trend")
-    if any(word in question for word in ("谁贵", "驱动", "贡献", "构成", "拆")):
+    if any(word in question for word in ("谁贵", "贵在哪", "驱动", "贡献", "构成", "拆")):
         result.append("drivers")
-    if has_compare or any(word in question for word in ("对比", "比较", "哪个基地", "谁更")):
+    if has_compare or question_has_compare_signal(question):
         result.append("comparison")
     if any(word in question for word in ("缺价", "partial", "算不全", "跑不起来")):
         result.append("risk")

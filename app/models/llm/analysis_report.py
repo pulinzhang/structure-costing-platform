@@ -80,6 +80,9 @@ class LlmAnalysisReport(AuditUserMixin, Base):
     llm_response_preview: Mapped[str | None] = mapped_column(
         Text, nullable=True, comment="LLM 响应前 500 字符（审计）"
     )
+    query_json: Mapped[str | None] = mapped_column(
+        Text, nullable=True, comment="解析后的 AnalysisQuery JSON，供下一问沿用"
+    )
 
     __table_args__ = (
         Index(
