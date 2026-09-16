@@ -22,6 +22,7 @@ export function dieUploadTemplate() {
                         下载模板
                     </button>
                 </div>
+                <div id="sopBannerSlot"></div>
                 <div class="p-5">
                     <form id="dieUploadForm" enctype="multipart/form-data">
                         <div class="bg-[#161616] border border-[#252525] p-4">
@@ -139,7 +140,7 @@ export function dieUploadTemplate() {
                         <p class="font-mono text-[10px] text-[#6E6E73] leading-relaxed">
                             示意：<span class="text-[#C8C8D0]">T13J项目冲压模具布点工艺清单.xlsx</span>
                         </p>
-                        <p>本表是模具费用计算依据，本期只入库、不算金额。覆盖同一基地+项目；已改的分摊比例会按零件号保留（废料副产品除外，一律 0）。</p>
+                        <p>本表是模具费用计算依据，本期只入库、不算金额。第一次 SOP 抄项目起止；已有 SOP 后再导只更新文件里已有零件，不删未出现的号。文件含新号将整单拒绝。已改的分摊比例会按零件号保留（废料副产品除外，一律 0）。</p>
                         <p>同一零件的工序号不能重复。不导入简图与费用列。</p>
                     </div>
                 </div>

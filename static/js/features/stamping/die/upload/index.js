@@ -1,8 +1,14 @@
-import { dieUploadTemplate } from './template.js?v=11';
+import { dieUploadTemplate } from './template.js?v=12';
 import {
     setDropzoneDragActive,
     setDropzoneFileSelected,
 } from '../../../../upload-dropzone.js?v=1';
+import {
+    SOP_INTRO,
+    loadProjectPeriod,
+    renderSopBanner,
+    sopBannerHtml,
+} from '../../../common/period-ui.js?v=2';
 
 const MAX_RECENT_UPLOADS = 8;
 const POLL_INTERVAL_MS = 2000;
@@ -22,6 +28,12 @@ export const DieUploadPage = {
         this.applyPermissionUi();
         this.bindEvents();
         this.renderRecentUploads();
+        const slot = document.getElementById('sopBannerSlot');
+        if (slot && !document.getElementById('sopBanner')) {
+            slot.innerHTML = sopBannerHtml();
+            const intro = document.querySelector('#sopBanner p');
+            if (intro) intro.textContent = SOP_INTRO;
+        }
         this.loadFilters();
         if (this.isUploading && this.activeTaskId) {
             this.setUploading(true);
@@ -63,6 +75,7 @@ export const DieUploadPage = {
         document.getElementById('dieUploadTemplateBtn')?.addEventListener('click', () => this.downloadTemplate());
         document.getElementById('dieResetButton')?.addEventListener('click', () => this.resetForm());
         document.getElementById('dieLocation')?.addEventListener('change', () => this.loadFilters(true));
+        document.getElementById('dieVehicleModel')?.addEventListener('change', () => this.refreshSopBanner());
         document.getElementById('dieSelectFileBtn')?.addEventListener('click', (e) => {
             e.stopPropagation();
             if (!this.canUpload || this.isUploading) return;
@@ -132,9 +145,44 @@ export const DieUploadPage = {
                 ? (vehicles.length ? '请选择项目' : '该基地本月无可引入项目')
                 : '请先选择采购基地';
             this.fillSelect('dieVehicleModel', vehicles, vehiclePlaceholder);
+            await this.refreshSopBanner();
         } catch (error) {
             this.failOnPanel(error.message || '加载筛选项失败');
         }
+    },
+
+    async refreshSopBanner() {
+        const location = document.getElementById('dieLocation')?.value || '';
+        const vehicleModel = document.getElementById('dieVehicleModel')?.value || '';
+        if (!location || !vehicleModel) {
+            renderSopBanner({ hasSop: false });
+            return;
+        }
+        let hasSop = false;
+        try {
+            const res = await HttpClient.get('/api/stamping/die/parts', {
+                params: {
+                    location,
+                    vehicle_model: vehicleModel,
+                    page: 1,
+                    size: 1,
+                    include_expired: true,
+                },
+            });
+            hasSop = Number(res.data?.total || 0) > 0;
+        } catch (_) {
+            hasSop = false;
+        }
+        if (hasSop) {
+            renderSopBanner({ hasSop: true });
+            return;
+        }
+        const period = await loadProjectPeriod(location, vehicleModel);
+        renderSopBanner({
+            hasSop: false,
+            startLabel: period?.startLabel,
+            endLabel: period?.endLabel,
+        });
     },
 
     failOnPanel(message) {

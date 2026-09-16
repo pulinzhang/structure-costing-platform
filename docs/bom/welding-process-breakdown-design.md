@@ -4,6 +4,7 @@
 > **产品入口：** `#/bom-welding-process-breakdown`（生成）、`#/bom-welding-process-breakdown-list`（列表）。  
 > **API：** `/api/bom/welding-process-breakdown`。  
 > 切片：**`bom`**。从材料清单 `weld_info` 生成过程量；**不算钱**。  
+> **生失效不落拆解表**：取期 join source `bom_nodes`（`source_node_id`）。现网主表已有基地/项目/版本。  
 > 硬约束：分层见 [architecture.md](../architecture.md)。Parser 只能被 Service 调用。
 
 ---
@@ -30,8 +31,8 @@
 材料清单 weld_info
         │  Parser（纯函数）
         ▼
-焊接工艺拆解（有原文即拆，年无关）
-        │
+焊接工艺拆解（有原文即拆；不算年账）
+        │  范围三列从节点抄；生失效 join source_node_id → bom_nodes
         └─ 按 node.level 计费 ──►  bom_welding_fees
               ├─ level=0 ──► 财务成品账
               └─ level=1 ──► 采购应成本
@@ -39,10 +40,10 @@
 
 | 模块 | 做什么 | 不做什么 |
 |------|--------|----------|
-| 本文 | 扫树上 **有焊接原文** 的节点，落过程量、映射标准工艺、打 rollup | 不乘单价、不按年存结果 |
-| 焊接费 | 对该节点拆解行 × 年单价（`level` 抄自拆解） | 不编工艺、不再扫树认人 |
+| 本文 | 扫树上 **有焊接原文** 的节点，落过程量、映射标准工艺、打 rollup | 不乘单价、不按年存结果、不落生失效、不独立改期 |
+| 焊接费 | 对该节点拆解行 × 年单价（`level` 抄自拆解）；入参年+基地+项目，join 节点取期 | 不编工艺、不靠版本/snapshot、不再扫树认人 |
 
-拆解 **没有 `year` / `month`**。同一版材料清单共用一份拆解；换年只换单价表再算焊接费。
+拆解 **没有计算年字段**（不是年账）。同一 `(location, vehicle_model, bom_version)` 共用一份拆解。换年只换单价表，不必为每一年再拆一份。**生失效只在 `bom_nodes` 上**，拆解用 `source_node_id` 取，见 [有效期 §6](../engineering-change/bom-process-die-effective-period-design.md)。
 
 ---
 
@@ -126,12 +127,14 @@ bom_welding_process_breakdown_generate_logs  一次「开始拆解」一条（�
 ### 5.1 主表
 
 **唯一键：** `(location, vehicle_model, bom_version, source_node_id)`  
-`source_node_id` = 生成时 `bom_nodes.id`（重导材料清单后会变，须再生成）。
+`source_node_id` = 生成时 `bom_nodes.id`（重导材料清单后会变，须再生成）。  
+**不要**在拆解表加生失效四列。UNIQUE 本来就不含它们。
 
 | 分组 | 字段 | 说明 |
 |------|------|------|
-| 范围 | `location`, `vehicle_model`, `bom_version` | 无年 |
-| 溯源 | `snapshot_id`, `source_node_id`, `excel_row` | 辅助 |
+| 范围 | `location`, `vehicle_model`, `bom_version` | 从 source `bom_nodes` 抄，不要只抄 snapshot 头 |
+| 时段 | （不落表） | `source_node_id` INNER JOIN `bom_nodes` 读四列 |
+| 溯源 | `snapshot_id`, `source_node_id`, `excel_row` | `source_node_id` 是取期钥匙；`snapshot_id` 不是身份 |
 | 零件 | `part_number`, `level`, `parent_*`, `supply_*` | L0 的 `supply_*` 为自身 |
 | 量 | `assembly_qty` | 不是焊点个数 |
 | 原文 | `weld_info_raw` | |
@@ -139,6 +142,8 @@ bom_welding_process_breakdown_generate_logs  一次「开始拆解」一条（�
 | 审核 | `audit_status` 等 | 已审禁止改、删、再生成覆盖 |
 
 `parse_status`：`ok` / `partial` / `unparsed` / `anomaly`。
+
+明细表也不落四列。拆解列表 **不提供** 改期。BOM L0 改期级联子树后，join 立刻看见新期，不必为改期再生成。`source_node_id` 空或节点已删：该行不参加年交集，须再生成。
 
 ### 5.2 明细
 
@@ -159,7 +164,7 @@ start_generate
   → processing 日志当范围锁
   → 已审行存在则拒绝（须先批量反审核）
   → 删该范围未审核旧拆解
-  → 对每个有 weld_info 的节点：Parser → 落主表+明细 → 紧固件校验
+  → 对每个有 weld_info 的节点：从该 `bom_nodes` 抄范围三列（不抄生失效）→ Parser → 落主表+明细 → 紧固件校验
   → apply_rollup_flags
   → 日志终态
 ```
@@ -229,7 +234,8 @@ Parser  仅 generate / 改量映射 经 Service 调用
 
 | 文档 | 关系 |
 |------|------|
-| [welding-fee-design.md](welding-fee-design.md) | 按拆解 `level` 计费；一表 `bom_welding_fees` |
+| [welding-fee-design.md](welding-fee-design.md) | 按拆解 `level` 计费；一表 `bom_welding_fees`；将来 join 节点年交集取件 |
+| [bom-process-die-effective-period-design.md](../engineering-change/bom-process-die-effective-period-design.md) | 生失效只在 `bom_nodes`；拆解用 `source_node_id` 取 |
 | [assembly-costing-design.md](../costing/assembly-costing-design.md) | 成品账读焊接费 **level=0** |
 | [l1-assembly-costing-design.md](../costing/l1-assembly-costing-design.md) | 应成本工艺量来自 L1 拆解行 |
 | [costing-engine-design.md](../costing/costing-engine-design.md) | 年度步骤可补算拆解 |
@@ -243,3 +249,4 @@ Parser  仅 generate / 改量映射 经 Service 调用
 |------|------|
 | 2026-08-31 | 按现网补文档：有原文即拆（含分总成）、过程量与装配用量、rollup、生成/审核/导出。 |
 | 2026-08-31 | 计费侧改为 `bom_welding_fees` + `level`。 |
+| 2026-09-16 | 生失效不落拆解表；用 `source_node_id` join `bom_nodes` 取期。范围三列现网已有。 |

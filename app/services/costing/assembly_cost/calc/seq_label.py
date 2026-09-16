@@ -68,22 +68,30 @@ def attach_calc_card_seq_labels(db: Session, vo: AssemblyCostCalcLogVO) -> None:
     """旧日志没有序号时，按当前 BOM / 采购对象补上。"""
     if not vo.cards:
         return
-    snap = BomSnapshotRepository().get_by_unique_key(
-        db, vo.location, vo.vehicle_model, vo.bom_version
-    )
-    if snap is None:
+    if vo.bom_version:
+        snap = BomSnapshotRepository().get_by_unique_key(
+            db, vo.location, vo.vehicle_model, vo.bom_version
+        )
+        nodes = BomNodeRepository().list_by_snapshot(db, snap.id) if snap is not None else []
+        header = BomProcurementObjectRepository().get_list_by_scope(
+            db,
+            location=vo.location,
+            vehicle_model=vo.vehicle_model,
+            bom_version=vo.bom_version,
+        )
+        objects: list[BomProcurementObject] = []
+        if header is not None:
+            objects = BomProcurementObjectRepository().list_objects_by_list_id(db, header.id)
+    else:
+        nodes = BomNodeRepository().list_by_location_vehicle(
+            db, location=vo.location, vehicle_model=vo.vehicle_model
+        )
+        objects = BomProcurementObjectRepository().list_objects_by_location_vehicle(
+            db, location=vo.location, vehicle_model=vo.vehicle_model
+        )
+    if not nodes:
         _sort_cards(vo.cards)
         return
-    nodes = BomNodeRepository().list_by_snapshot(db, snap.id)
-    header = BomProcurementObjectRepository().get_list_by_scope(
-        db,
-        location=vo.location,
-        vehicle_model=vo.vehicle_model,
-        bom_version=vo.bom_version,
-    )
-    objects: list[BomProcurementObject] = []
-    if header is not None:
-        objects = BomProcurementObjectRepository().list_objects_by_list_id(db, header.id)
     labels = calc_card_seq_labels(nodes, objects, {node.id for node in nodes})
     by_root_part: dict[str, str] = {}
     by_part_kind: dict[tuple[str, str | None], str] = {}

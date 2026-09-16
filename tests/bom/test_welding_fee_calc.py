@@ -17,6 +17,15 @@ from app.services.bom.welding_fee.calc.orchestrator.prep import prepare_calc_run
 from app.services.bom.welding_fee.calc.orchestrator.progress import ProgressNotifier
 
 
+@pytest.fixture(autouse=True)
+def _identity_overlaps_year() -> None:
+    with patch(
+        "app.services.bom.welding_fee.calc.orchestrator.prep.VehicleModelService"
+    ) as vehicle_cls:
+        vehicle_cls.return_value.require_overlaps_year.return_value = ("青岛", "T28")
+        yield
+
+
 def _node(*, node_id: int, level: int, part_number: str) -> SimpleNamespace:
     return SimpleNamespace(
         id=node_id,
@@ -27,15 +36,17 @@ def _node(*, node_id: int, level: int, part_number: str) -> SimpleNamespace:
         weld_info_raw="点焊：1",
         lines=[],
         process_line_count=1,
+        bom_version="D/09",
     )
 
 
-def _deps(nodes: list[SimpleNamespace]) -> MagicMock:
+def _deps(nodes: list[SimpleNamespace], *, exists: bool = True) -> MagicMock:
     deps = MagicMock()
     deps.unit_price_repo.list_by_location_year.return_value = [
         SimpleNamespace(item_name="点焊", unit_price=Decimal("1"), unit="点")
     ]
-    deps.breakdown_repo.list_by_scope.return_value = nodes
+    deps.breakdown_repo.exists_by_location_vehicle.return_value = exists
+    deps.breakdown_repo.list_overlapping_year.return_value = nodes
     return deps
 
 
@@ -48,7 +59,6 @@ def test_prep_all_levels_when_levels_omitted() -> None:
             year=2026,
             location="青岛",
             vehicle_model="T28",
-            bom_version="D-00",
         ),
         ProgressNotifier(),
     )
@@ -64,7 +74,6 @@ def test_prep_levels_zero_skips_l1() -> None:
             year=2026,
             location="青岛",
             vehicle_model="T28",
-            bom_version="D-00",
             levels=[0],
         ),
         ProgressNotifier(),
@@ -82,9 +91,28 @@ def test_prep_empty_after_filter_raises() -> None:
                 year=2026,
                 location="青岛",
                 vehicle_model="T28",
-                bom_version="D-00",
                 levels=[0],
             ),
+            ProgressNotifier(),
+        )
+
+
+def test_prep_missing_breakdown_raises() -> None:
+    with pytest.raises(BusinessException, match="尚未生成焊接工艺拆解"):
+        prepare_calc_run(
+            MagicMock(),
+            _deps([], exists=False),
+            BomWeldingFeeCalcDTO(year=2026, location="青岛", vehicle_model="T28"),
+            ProgressNotifier(),
+        )
+
+
+def test_prep_no_year_overlap_raises() -> None:
+    with pytest.raises(BusinessException, match="没有有效期内的焊接拆解"):
+        prepare_calc_run(
+            MagicMock(),
+            _deps([]),
+            BomWeldingFeeCalcDTO(year=2026, location="青岛", vehicle_model="T28"),
             ProgressNotifier(),
         )
 
@@ -141,6 +169,7 @@ def test_batch_writes_level_and_skips_approved_l0_only() -> None:
     assert row.part_number == "L1P"
     assert row.total_welding_fee == Decimal("1.5000")
     assert row.source_breakdown_node_id == 11
+    assert row.bom_version == "D/09"
 
 
 def test_staff_report_speaks_plain_language() -> None:

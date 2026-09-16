@@ -5,6 +5,7 @@ from typing import TypedDict
 from sqlalchemy.orm import Query, Session, selectinload
 
 from app.models.stamping.die import StampingDiePart, StampingDieProcess
+from app.repositories.period_query import period_hit_clause, period_overlaps_year_clause
 from app.repositories.persist import model_from_payload
 from app.schemas.dto.stamping_die_dto import StampingDiePartInsert, StampingDieProcessInsert
 
@@ -64,6 +65,9 @@ class StampingDiePartRepository:
         stamping_supplier: str | None = None,
         version: str | None = None,
         part_number: str | None = None,
+        as_of_year: int | None = None,
+        as_of_month: int | None = None,
+        include_expired: bool = False,
     ) -> Query[StampingDiePart]:
         query = db.query(StampingDiePart).filter(StampingDiePart.vehicle_model == vehicle_model)
         if locations is not None:
@@ -76,6 +80,17 @@ class StampingDiePartRepository:
             query = query.filter(StampingDiePart.version == version)
         if part_number:
             query = query.filter(StampingDiePart.part_number.like(f"%{part_number.strip()}%"))
+        if as_of_year is not None and as_of_month is not None and not include_expired:
+            query = query.filter(
+                period_hit_clause(
+                    StampingDiePart.effective_year,
+                    StampingDiePart.effective_month,
+                    StampingDiePart.expiry_year,
+                    StampingDiePart.expiry_month,
+                    as_of_year,
+                    as_of_month,
+                )
+            )
         return query
 
     def paginate(
@@ -90,6 +105,9 @@ class StampingDiePartRepository:
         locations: list[str] | None = None,
         stamping_supplier: str | None = None,
         version: str | None = None,
+        as_of_year: int | None = None,
+        as_of_month: int | None = None,
+        include_expired: bool = False,
     ) -> tuple[list[StampingDiePart], int]:
         query = self._scope_query(
             db,
@@ -99,6 +117,9 @@ class StampingDiePartRepository:
             stamping_supplier=stamping_supplier,
             version=version,
             part_number=part_number,
+            as_of_year=as_of_year,
+            as_of_month=as_of_month,
+            include_expired=include_expired,
         )
         total = query.count()
         rows = (
@@ -126,6 +147,9 @@ class StampingDiePartRepository:
         stamping_supplier: str | None = None,
         version: str | None = None,
         part_number: str | None = None,
+        as_of_year: int | None = None,
+        as_of_month: int | None = None,
+        include_expired: bool = False,
     ) -> list[StampingDiePart]:
         rows: list[StampingDiePart] = (
             self._scope_query(
@@ -135,6 +159,9 @@ class StampingDiePartRepository:
                 stamping_supplier=stamping_supplier,
                 version=version,
                 part_number=part_number,
+                as_of_year=as_of_year,
+                as_of_month=as_of_month,
+                include_expired=include_expired,
             )
             .options(selectinload(StampingDiePart.processes))
             .order_by(StampingDiePart.seq_no.asc(), StampingDiePart.id.asc())
@@ -183,6 +210,17 @@ class StampingDiePartRepository:
         db.flush()
         return created
 
+    def delete_processes_by_part_ids(self, db: Session, part_ids: list[int]) -> int:
+        if not part_ids:
+            return 0
+        deleted = (
+            db.query(StampingDieProcess)
+            .filter(StampingDieProcess.die_part_id.in_(part_ids))
+            .delete(synchronize_session=False)
+        )
+        db.flush()
+        return int(deleted)
+
     def delete_scope(
         self,
         db: Session,
@@ -216,17 +254,25 @@ class StampingDiePartRepository:
         *,
         location: str,
         vehicle_model: str,
+        overlap_year: int | None = None,
     ) -> list[StampingDiePart]:
-        return (
+        query = (
             db.query(StampingDiePart)
             .options(selectinload(StampingDiePart.processes))
             .filter(
                 StampingDiePart.location == location,
                 StampingDiePart.vehicle_model == vehicle_model,
             )
-            .order_by(StampingDiePart.id.asc())
-            .all()
         )
+        if overlap_year is not None:
+            query = query.filter(
+                period_overlaps_year_clause(
+                    StampingDiePart.effective_year,
+                    StampingDiePart.expiry_year,
+                    overlap_year,
+                )
+            )
+        return query.order_by(StampingDiePart.id.asc()).all()
 
     def list_locations(self, db: Session) -> list[str]:
         rows = (
@@ -243,12 +289,21 @@ class StampingDiePartRepository:
         *,
         location: str | None = None,
         locations: list[str] | None = None,
+        overlap_year: int | None = None,
     ) -> list[str]:
         query = db.query(StampingDiePart.vehicle_model).distinct()
         if locations is not None:
             query = query.filter(StampingDiePart.location.in_(locations))
         elif location:
             query = query.filter(StampingDiePart.location == location)
+        if overlap_year is not None:
+            query = query.filter(
+                period_overlaps_year_clause(
+                    StampingDiePart.effective_year,
+                    StampingDiePart.expiry_year,
+                    overlap_year,
+                )
+            )
         rows = query.order_by(StampingDiePart.vehicle_model.asc()).all()
         return [row[0] for row in rows if row[0]]
 

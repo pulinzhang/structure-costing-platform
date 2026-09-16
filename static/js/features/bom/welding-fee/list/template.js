@@ -145,7 +145,7 @@ export function l0WeldingFeeListTemplate() {
                                 重置
                             </button>
                         </div>
-                        <p class="mt-2 text-[10px] text-[#555555]">批量审核 / 反审核 / 删除须选定年度 + 基地 + 项目 + 版本。</p>
+                        <p class="mt-2 text-[10px] text-[#555555]">批量审核 / 反审核 / 删除须选定年度 + 基地 + 项目。版本可选，选了只处理该版本。</p>
                     </div>
                 </div>
 
@@ -200,7 +200,7 @@ export function l0WeldingFeeListTemplate() {
                         ${window.svgIcon('clipboard-list', 'w-4 h-4 text-[#555555]')}
                     </div>
                     <h5 class="text-[11px] font-medium text-[#8E8E93] mb-1">暂无焊接费数据</h5>
-                    <p class="text-[10px] text-[#555555]">请先在计算页按年 / 基地 / 项目 / 版本生成；仅含成品，不含下级工艺</p>
+                    <p class="text-[10px] text-[#555555]">请先在计算页按年 / 基地 / 项目生成</p>
                 </div>
             </div>
 

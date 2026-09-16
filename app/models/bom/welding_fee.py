@@ -144,7 +144,6 @@ class BomWeldingFee(AuditUserMixin, Base):
             "year",
             "location",
             "vehicle_model",
-            "bom_version",
             "source_breakdown_node_id",
             name="uix_bom_welding_fee_scope_node",
         ),

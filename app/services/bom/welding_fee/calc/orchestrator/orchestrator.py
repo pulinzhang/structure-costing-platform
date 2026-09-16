@@ -62,7 +62,6 @@ class BomWeldingFeeCalcOrchestrator:
         year: int,
         location: str,
         vehicle_model: str,
-        bom_version: str,
     ) -> BomWeldingFeeCalcReadyVO:
         return collect_calc_ready(
             db,
@@ -70,7 +69,6 @@ class BomWeldingFeeCalcOrchestrator:
             year=year,
             location=location,
             vehicle_model=vehicle_model,
-            bom_version=bom_version,
         )
 
     def begin_processing(
@@ -170,7 +168,6 @@ class BomWeldingFeeCalcOrchestrator:
             year=dto.year,
             location=canonical,
             vehicle_model=vehicle_model,
-            bom_version=dto.bom_version.strip(),
             levels=dto.levels,
         )
         lock_log = self.begin_processing(

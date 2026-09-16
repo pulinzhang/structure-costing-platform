@@ -6,7 +6,12 @@ from sqlalchemy.orm import Session
 
 from app.repositories.stamping.tonnage_price_repository import StampingTonnagePriceRepository
 from app.schemas.vo.costing_engine_vo import CostingEngineGateItemVO
-from app.services.costing.engine.gate.item import USABLE_STATUSES, make_item, make_skipped
+from app.services.costing.engine.gate.item import (
+    USABLE_STATUSES,
+    make_item,
+    make_skipped,
+    skip_if_period_filtered,
+)
 from app.services.costing.engine.scope_discovery import DiscoveryResult
 
 
@@ -16,12 +21,24 @@ def check_period_projects(
     year: int,
     month: int,
 ) -> CostingEngineGateItemVO:
+    if discovery.is_period_filtered():
+        return make_item(
+            code="vehicle_model_period",
+            ok=False,
+            missing=["该月项目未生效或已失效"],
+            message=(
+                "该月命中的零件或 BOM 树所属项目未生效或已失效，" "请到项目一览表核对生效/失效"
+            ),
+            location=location,
+            year=year,
+            month=month,
+        )
     if not discovery.vehicle_models:
         return make_item(
             code="vehicle_model",
             ok=False,
-            missing=["本期没有可引入项目"],
-            message="没有本期可引入项目，请到项目一览表手工增加或调整生效失效（#/vehicle-model-list）",
+            missing=["该月没有有效期内的冲压零件或 BOM 树"],
+            message=("该月没有有效期内的冲压零件或 BOM 树，" "请到零件列表或产品结构核对有效期"),
             location=location,
             year=year,
             month=month,
@@ -30,7 +47,7 @@ def check_period_projects(
         code="vehicle_model",
         ok=True,
         missing=[],
-        message=f"本期项目 {len(discovery.vehicle_models)} 个",
+        message=f"该月有效期内项目 {len(discovery.vehicle_models)} 个",
         location=location,
         year=year,
         month=month,
@@ -43,12 +60,17 @@ def check_stamping_process(
     year: int,
     month: int,
 ) -> CostingEngineGateItemVO:
+    skipped = skip_if_period_filtered(
+        discovery, code="stamping_process", location=location, year=year, month=month
+    )
+    if skipped is not None:
+        return skipped
     if not discovery.vehicle_models:
         return make_item(
             code="stamping_process",
             ok=True,
             missing=[],
-            message="无本期项目，未展开工艺检查",
+            message="该月没有有效期内的冲压零件或 BOM 树，未展开工艺检查",
             location=location,
             year=year,
             month=month,
@@ -74,7 +96,7 @@ def check_stamping_process(
         code="stamping_process",
         ok=True,
         missing=[],
-        message=f"已发现 {len(discovery.vehicle_models)} 个项目",
+        message=f"该月有效冲压工艺 {len(discovery.stamping_vehicle_models)} 个项目",
         location=location,
         year=year,
         month=month,
@@ -89,6 +111,11 @@ def check_tonnage_price(
     year: int,
     month: int,
 ) -> CostingEngineGateItemVO:
+    skipped = skip_if_period_filtered(
+        discovery, code="tonnage_price", location=location, year=year, month=month
+    )
+    if skipped is not None:
+        return skipped
     if not discovery.stamping_vehicle_models:
         return make_skipped(
             code="tonnage_price",

@@ -56,6 +56,14 @@ class BomCascadeFilterQuery(BaseModel):
     )
 
 
+class BomNodeTreeQuery(BaseModel):
+    """产品结构树 / 扁平节点：按月命中。"""
+
+    year: int | None = Field(None, ge=2000, le=2100, description="查看年；空则墙钟")
+    month: int | None = Field(None, ge=1, le=12, description="查看月；与年同空或同有")
+    include_expired: bool = Field(False, description="含已失效")
+
+
 class BomNodeCreate(BaseModel):
     """创建 BOM 树节点（最小手工录入）"""
 
@@ -147,3 +155,10 @@ class BomNodeWrite:
     excel_sheet_name: str | None = None
     excel_row: int | None = None
     excel_part_col: int | None = None
+    location: str = ""
+    vehicle_model: str = ""
+    bom_version: str = ""
+    effective_year: int = 2020
+    effective_month: int = 1
+    expiry_year: int | None = None
+    expiry_month: int | None = None

@@ -42,7 +42,7 @@
 ## 3. 端到端流水线
 
 ```text
-顶栏助理  POST /api/llm/reports  { user_question }
+顶栏助理  POST /api/llm/reports  { user_question, previous_report_id? }
         │
         ▼
 LlmAnalysisReportService.create_report
@@ -113,9 +113,10 @@ _run_report_work（runner 提供任务 Session / 进度 / catch）
 流水线（产品契约 C.4）：
 
 ```text
-user_question
+user_question (+ 可选上一份报告的 AnalysisQuery)
     → ConditionExtractor（可选 LLM，只抽 time_range / filters）
     → EntityAligner（主数据词典对齐基地/项目）
+    → 问句证据覆盖 + 缺槽沿用上一问范围
     → 规则：query_mode / subject / analyses[] / comparison_basis
     → AnalysisQuery
 ```
@@ -128,6 +129,7 @@ user_question
 | analyses[] | `query/parser/analyses.py` |
 | 问价 / 下钻 | `query/parser/part_price.py` |
 | 草稿 / 钉月 | `query/parser/draft.py`、`pin_latest.py` |
+| 上一问沿用 | `query/parser/carry.py` |
 | 模式分流 | `query/intent_router.py` |
 | 条件抽取 | `query/condition_extractor.py` |
 | 词典对齐 | `query/entity_aligner.py` |
@@ -253,11 +255,11 @@ LLM 调用失败：`render_fallback_markdown`，任务仍 **succeeded**（采购
 | `GET` | `/reports/{id}` | 本人详情 |
 | `DELETE` | `/reports/{id}` | 只能删本人（管理员也不能删他人） |
 
-Body 只有 `user_question`（可选 `audience` / `force_refresh` / `idempotency_key`）。不传 `analyses[]`。
+Body：`user_question`（可选 `audience` / `force_refresh` / `idempotency_key` / `previous_report_id`）。不传 `analyses[]`。`previous_report_id` 无效则当无上一问。
 
 ### 10.2 表
 
-`llm_analysis_reports`：问句、scope 占位字段、Markdown、状态、`trace_id`、prompt 预览。**不落 Snapshot 整包。** 通过 `task_id` 挂公共异步任务。
+`llm_analysis_reports`：问句、scope 占位字段、`query_json`（解析结果，供下一问沿用）、Markdown、状态、`trace_id`、prompt 预览。**不落 Snapshot 整包。** 通过 `task_id` 挂公共异步任务。
 
 ### 10.3 前端
 

@@ -73,7 +73,6 @@ def get_calc_ready(
     month: int = Query(..., ge=1, le=12),
     location: str = Query(...),
     vehicle_model: str = Query(...),
-    bom_version: str = Query(...),
     db: Session = Depends(get_db),
     current_user: UserVO = Depends(require_perm(Perm.ASSEMBLY_COST_CALC_VIEW)),
 ) -> ApiResponse[AssemblyCostCalcReadyVO]:
@@ -83,7 +82,6 @@ def get_calc_ready(
         month=month,
         location=location,
         vehicle_model=vehicle_model,
-        bom_version=bom_version,
     )
     return ApiResponse.ok(data=data)
 

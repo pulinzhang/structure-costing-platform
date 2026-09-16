@@ -19,9 +19,10 @@ logger = logging.getLogger("repository.bom.welding_fee_calc_log")
 
 _STATUS_PROCESSING = "processing"
 
+_DROP_PROCESSING_LOCK_INDEX_SQL = "DROP INDEX IF EXISTS uq_bwf_calc_processing"
 _PROCESSING_LOCK_INDEX_SQL = """
 CREATE UNIQUE INDEX IF NOT EXISTS uq_bwf_calc_processing
-ON bom_welding_fee_calc_logs(year, location, vehicle_model, bom_version)
+ON bom_welding_fee_calc_logs(year, location, vehicle_model)
 WHERE status = 'processing'
 """
 
@@ -33,6 +34,7 @@ class BomWeldingFeeCalcLogRepository:
 
     def apply_processing_lock_index(self, conn: Connection) -> None:
         """在调用方连接上执行 DDL；不 commit（由 Service 提交）。"""
+        conn.execute(text(_DROP_PROCESSING_LOCK_INDEX_SQL))
         conn.execute(text(_PROCESSING_LOCK_INDEX_SQL))
 
     def mark_processing_lock_index_ensured(self) -> None:
@@ -51,7 +53,6 @@ class BomWeldingFeeCalcLogRepository:
         year: int,
         location: str,
         vehicle_model: str,
-        bom_version: str,
     ) -> BomWeldingFeeCalcLog | None:
         return (
             db.query(BomWeldingFeeCalcLog)
@@ -59,7 +60,6 @@ class BomWeldingFeeCalcLogRepository:
                 BomWeldingFeeCalcLog.year == year,
                 BomWeldingFeeCalcLog.location == location,
                 BomWeldingFeeCalcLog.vehicle_model == vehicle_model,
-                BomWeldingFeeCalcLog.bom_version == bom_version,
                 BomWeldingFeeCalcLog.status == _STATUS_PROCESSING,
             )
             .order_by(BomWeldingFeeCalcLog.id.desc())
@@ -97,19 +97,16 @@ class BomWeldingFeeCalcLogRepository:
         year: int,
         location: str,
         vehicle_model: str,
-        bom_version: str,
+        bom_version: str | None = None,
     ) -> BomWeldingFeeCalcLog | None:
-        return (
-            db.query(BomWeldingFeeCalcLog)
-            .filter(
-                BomWeldingFeeCalcLog.year == year,
-                BomWeldingFeeCalcLog.location == location,
-                BomWeldingFeeCalcLog.vehicle_model == vehicle_model,
-                BomWeldingFeeCalcLog.bom_version == bom_version,
-            )
-            .order_by(BomWeldingFeeCalcLog.id.desc())
-            .first()
+        query = db.query(BomWeldingFeeCalcLog).filter(
+            BomWeldingFeeCalcLog.year == year,
+            BomWeldingFeeCalcLog.location == location,
+            BomWeldingFeeCalcLog.vehicle_model == vehicle_model,
         )
+        if bom_version:
+            query = query.filter(BomWeldingFeeCalcLog.bom_version == bom_version)
+        return query.order_by(BomWeldingFeeCalcLog.id.desc()).first()
 
     def create(self, db: Session, data: BomWeldingFeeCalcLogCreate) -> BomWeldingFeeCalcLog:
         record = model_from_payload(BomWeldingFeeCalcLog, data)

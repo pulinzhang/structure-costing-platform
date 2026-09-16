@@ -4,9 +4,11 @@ from __future__ import annotations
 
 from sqlalchemy.orm import Session
 
+from app.exceptions.base import BusinessException
 from app.schemas.vo.stamping_part_cost_vo import StampingPartCostCalcReadyVO
 from app.services.costing.stamping_part_cost.calc.orchestrator.deps import PartCostCalcDeps
 from app.services.masterdata.location.location_service import LocationService
+from app.services.masterdata.vehicle_model import VehicleModelService
 from app.services.stamping.process_fee.calc.orchestrator.ready import (
     evaluate_process_fee_coverage,
 )
@@ -20,20 +22,33 @@ def collect_calc_ready(
     month: int | None = None,
     location: str | None = None,
     vehicle_model: str | None = None,
-    version: str | None = None,
 ) -> StampingPartCostCalcReadyVO:
     location_value = (location or "").strip() or None
     vehicle_value = (vehicle_model or "").strip() or None
-    version_value = (version or "").strip() or None
+    if location_value and vehicle_value and year and month:
+        try:
+            VehicleModelService().require_introducible(
+                db, location_value, vehicle_value, year, month
+            )
+        except BusinessException as exc:
+            return StampingPartCostCalcReadyVO(
+                year=year,
+                month=month,
+                location=location_value,
+                vehicle_model=vehicle_value,
+                can_calculate=False,
+                message=str(exc),
+            )
     aliases = LocationService().expand_for_query(db, location_value) if location_value else []
 
     part_count = 0
-    if location_value and vehicle_value:
+    if location_value and vehicle_value and year and month:
         parts = deps.part_repo.list_with_processes(
             db,
             location=location_value,
             vehicle_model=vehicle_value,
-            version=version_value,
+            as_of_year=year,
+            as_of_month=month,
         )
         part_count = len(parts)
 
@@ -57,13 +72,14 @@ def collect_calc_ready(
         )
         scrap_price_count = 1 if scrap is not None else 0
 
-    if year and location_value and vehicle_value:
+    if year and month and location_value and vehicle_value:
         coverage = evaluate_process_fee_coverage(
             db,
             year=year,
             aliases=aliases or [location_value],
             vehicle_model=vehicle_value,
-            version=version_value,
+            as_of_year=year,
+            as_of_month=month,
             part_repo=deps.part_repo,
             fee_repo=deps.process_fee_repo,
         )
@@ -100,7 +116,7 @@ def collect_calc_ready(
         location=location_value,
         stamping_supplier=None,
         vehicle_model=vehicle_value,
-        version=version_value,
+        version=None,
         part_count=part_count,
         steel_price_count=steel_price_count,
         scrap_price_count=scrap_price_count,

@@ -46,9 +46,10 @@ def _normalize_scope(
     *,
     location: str,
     vehicle_model: str,
-    bom_version: str,
-) -> tuple[str, str, str]:
-    return location.strip(), vehicle_model.strip(), bom_version.strip()
+    bom_version: str | None = None,
+) -> tuple[str, str, str | None]:
+    version = (bom_version or "").strip() or None
+    return location.strip(), vehicle_model.strip(), version
 
 
 class BomWeldingFeeService:

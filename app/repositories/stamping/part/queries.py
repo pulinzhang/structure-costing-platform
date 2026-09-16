@@ -9,6 +9,7 @@ from sqlalchemy.orm import Query, Session
 
 from app.common.types.repository_types import StampingPartFilterSummary
 from app.models.stamping import StampingPart, StampingProcess
+from app.repositories.period_query import period_hit_clause, period_overlaps_year_clause
 from app.repositories.stamping.part.filters import _PART_LIST_ORDER, _filter_supplier
 from app.repositories.stamping.part.types import (
     StampingPartDieMatchIdentity,
@@ -180,6 +181,9 @@ class StampingPartQueries:
         part_name: str | None = None,
         stamping_supplier: str | None = None,
         stamping_suppliers: Sequence[str] | None = None,
+        as_of_year: int | None = None,
+        as_of_month: int | None = None,
+        include_expired: bool = False,
     ) -> Query[StampingPart]:
         """构建与列表相同的筛选查询（不含排序/分页）。"""
         q = db.query(StampingPart)
@@ -201,6 +205,17 @@ class StampingPartQueries:
             q = q.filter(StampingPart.part_number.like(f"%{part_number}%"))
         if part_name:
             q = q.filter(StampingPart.part_name.like(f"%{part_name}%"))
+        if as_of_year is not None and as_of_month is not None and not include_expired:
+            q = q.filter(
+                period_hit_clause(
+                    StampingPart.effective_year,
+                    StampingPart.effective_month,
+                    StampingPart.expiry_year,
+                    StampingPart.expiry_month,
+                    as_of_year,
+                    as_of_month,
+                )
+            )
         return q
 
     def paginate(
@@ -216,6 +231,9 @@ class StampingPartQueries:
         stamping_suppliers: Sequence[str] | None = None,
         skip: int = 0,
         limit: int = 100,
+        as_of_year: int | None = None,
+        as_of_month: int | None = None,
+        include_expired: bool = False,
     ) -> tuple[list[StampingPart], int]:
         """分页查询零件。排序与导出相同：基地 → 车型 → 版本 → 工厂 → id。"""
         q = self._build_list_query(
@@ -228,6 +246,9 @@ class StampingPartQueries:
             part_name=part_name,
             stamping_supplier=stamping_supplier,
             stamping_suppliers=stamping_suppliers,
+            as_of_year=as_of_year,
+            as_of_month=as_of_month,
+            include_expired=include_expired,
         )
         total = q.count()
         parts = q.order_by(*_PART_LIST_ORDER).offset(skip).limit(limit).all()
@@ -282,6 +303,9 @@ class StampingPartQueries:
         stamping_supplier: str | None = None,
         vehicle_model: str | None = None,
         version: str | None = None,
+        overlap_year: int | None = None,
+        as_of_year: int | None = None,
+        as_of_month: int | None = None,
     ) -> list[StampingPart]:
         """按基地等条件加载零件、工序与拼焊子片（加工费/零件核价用，不分页）"""
         from sqlalchemy.orm import selectinload
@@ -293,6 +317,25 @@ class StampingPartQueries:
             q = q.filter(StampingPart.vehicle_model == vehicle_model)
         if version is not None:
             q = q.filter(StampingPart.version == version)
+        if as_of_year is not None and as_of_month is not None:
+            q = q.filter(
+                period_hit_clause(
+                    StampingPart.effective_year,
+                    StampingPart.effective_month,
+                    StampingPart.expiry_year,
+                    StampingPart.expiry_month,
+                    as_of_year,
+                    as_of_month,
+                )
+            )
+        elif overlap_year is not None:
+            q = q.filter(
+                period_overlaps_year_clause(
+                    StampingPart.effective_year,
+                    StampingPart.expiry_year,
+                    overlap_year,
+                )
+            )
 
         return (
             q.options(
@@ -313,6 +356,9 @@ class StampingPartQueries:
         version: str | None = None,
         part_number: str | None = None,
         part_name: str | None = None,
+        as_of_year: int | None = None,
+        as_of_month: int | None = None,
+        include_expired: bool = False,
     ) -> list[StampingPart]:
         """按列表筛选加载零件 + 工序 + 拼焊子片（导出用，不分页）。
 
@@ -328,6 +374,9 @@ class StampingPartQueries:
             version=version,
             part_number=part_number,
             part_name=part_name,
+            as_of_year=as_of_year,
+            as_of_month=as_of_month,
+            include_expired=include_expired,
         )
         return (
             q.options(
@@ -365,21 +414,81 @@ class StampingPartQueries:
         )
         return q.all()
 
+    def list_identity_scope(
+        self,
+        db: Session,
+        *,
+        location: str,
+        vehicle_model: str,
+        stamping_supplier: str | None = None,
+        stamping_suppliers: Sequence[str] | None = None,
+    ) -> list[StampingPart]:
+        q = db.query(StampingPart).filter(
+            StampingPart.location == location,
+            StampingPart.vehicle_model == vehicle_model,
+        )
+        q = _filter_supplier(
+            q,
+            StampingPart.stamping_supplier,
+            stamping_supplier,
+            stamping_suppliers,
+        )
+        return q.all()
+
+    def get_by_unique_key(
+        self,
+        db: Session,
+        *,
+        location: str,
+        stamping_supplier: str,
+        vehicle_model: str,
+        part_number: str,
+    ) -> StampingPart | None:
+        return (
+            db.query(StampingPart)
+            .filter(
+                StampingPart.location == location,
+                StampingPart.stamping_supplier == stamping_supplier,
+                StampingPart.vehicle_model == vehicle_model,
+                StampingPart.part_number == part_number,
+            )
+            .first()
+        )
+
     def list_by_location_and_vehicle(
         self,
         db: Session,
         *,
         location: str,
         vehicle_model: str,
+        overlap_year: int | None = None,
+        as_of_year: int | None = None,
+        as_of_month: int | None = None,
     ) -> list[StampingPart]:
-        return (
-            db.query(StampingPart)
-            .filter(
-                StampingPart.location == location,
-                StampingPart.vehicle_model == vehicle_model,
-            )
-            .all()
+        q = db.query(StampingPart).filter(
+            StampingPart.location == location,
+            StampingPart.vehicle_model == vehicle_model,
         )
+        if as_of_year is not None and as_of_month is not None:
+            q = q.filter(
+                period_hit_clause(
+                    StampingPart.effective_year,
+                    StampingPart.effective_month,
+                    StampingPart.expiry_year,
+                    StampingPart.expiry_month,
+                    as_of_year,
+                    as_of_month,
+                )
+            )
+        elif overlap_year is not None:
+            q = q.filter(
+                period_overlaps_year_clause(
+                    StampingPart.effective_year,
+                    StampingPart.expiry_year,
+                    overlap_year,
+                )
+            )
+        return q.all()
 
     def count_processes_by_part_ids(self, db: Session, part_ids: list[int]) -> dict[int, int]:
         """

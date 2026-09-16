@@ -12,6 +12,7 @@ from openpyxl.utils import get_column_letter
 from sqlalchemy.orm import Session
 
 from app.common.export_watermark import workbook_to_xlsx_bytes
+from app.common.period import format_period, require_export_as_of
 from app.common.timezone import now
 from app.exceptions import BusinessException
 from app.models.stamping import StampingPart, StampingProcess, StampingTailorWeldBlank
@@ -60,8 +61,13 @@ class ProcessConfirmExport:
         vehicle_model: str | None = None,
         version: str | None = None,
         part_number: str | None = None,
+        year: int | None = None,
+        month: int | None = None,
+        include_expired: bool = False,
         current_user: UserVO,
     ) -> tuple[bytes, str]:
+        as_of_year, as_of_month = require_export_as_of(year, month)
+        period_label = format_period(as_of_year, as_of_month)
         location, stamping_supplier, vehicle_model, version, part_number, parts = (
             self._parts_for_export(
                 db,
@@ -70,6 +76,9 @@ class ProcessConfirmExport:
                 vehicle_model=vehicle_model,
                 version=version,
                 part_number=part_number,
+                as_of_year=as_of_year,
+                as_of_month=as_of_month,
+                include_expired=include_expired,
             )
         )
 
@@ -87,6 +96,7 @@ class ProcessConfirmExport:
             stamping_supplier=stamping_supplier,
             vehicle_model=vehicle_model,
             version=version,
+            period_label=period_label,
             part_count=len(parts),
         )
         self._write_headers(ws)
@@ -131,6 +141,7 @@ class ProcessConfirmExport:
             stamping_supplier,
             vehicle_model,
             version,
+            period_label,
         )
         logger.info(
             "导出冲压工艺 %s 件 / %s 道工序 / %s 片子片 / %s 张简图 / 文件 %s",
@@ -151,6 +162,7 @@ class ProcessConfirmExport:
         stamping_supplier: str | None,
         vehicle_model: str | None,
         version: str | None,
+        period_label: str,
         part_count: int,
     ) -> None:
         ws.merge_cells(start_row=1, start_column=1, end_row=1, end_column=COL_COUNT)
@@ -167,6 +179,7 @@ class ProcessConfirmExport:
             scope_parts.append(f"项目：{vehicle_model}")
         if version:
             scope_parts.append(f"版本：{version}")
+        scope_parts.append(f"命中月：{period_label}")
         scope_text = "    ".join(scope_parts)
 
         count_start = 22
@@ -294,6 +307,9 @@ class ProcessConfirmExport:
         vehicle_model: str | None,
         version: str | None,
         part_number: str | None,
+        as_of_year: int | None = None,
+        as_of_month: int | None = None,
+        include_expired: bool = False,
     ) -> tuple[str, str | None, str | None, str | None, str | None, list[StampingPart]]:
         location, stamping_supplier, vehicle_model, version, part_number = (
             self._normalize_export_scope(
@@ -311,7 +327,12 @@ class ProcessConfirmExport:
             vehicle_model=vehicle_model,
             version=version,
             part_number=part_number,
+            as_of_year=as_of_year,
+            as_of_month=as_of_month,
+            include_expired=include_expired,
         )
+        if not parts:
+            raise BusinessException("当前筛选下没有零件，无法导出")
         return location, stamping_supplier, vehicle_model, version, part_number, parts
 
     def _sorted_processes(self, part: StampingPart) -> list[StampingProcess]:
@@ -341,9 +362,12 @@ class ProcessConfirmExport:
         stamping_supplier: str | None,
         vehicle_model: str | None,
         version: str | None,
+        period_label: str | None = None,
     ) -> str:
         scope = "_".join(
-            part for part in (location, stamping_supplier, vehicle_model, version) if part
+            part
+            for part in (location, stamping_supplier, vehicle_model, version, period_label)
+            if part
         )
         stamp = now().strftime("%Y%m%d_%H%M%S")
         return f"{prefix}_{scope}_{stamp}.xlsx"

@@ -8,10 +8,12 @@ from sqlalchemy.sql.elements import ColumnElement
 
 from app.common.audit import AUDIT_APPROVED, AUDIT_PENDING
 from app.models.bom import (
+    BomNode,
     BomWeldingProcessBreakdownLine,
     BomWeldingProcessBreakdownNode,
 )
 from app.repositories.bom.welding_process_breakdown.types import WeldingBreakdownFilterSummary
+from app.repositories.period_query import period_overlaps_year_clause
 
 
 class WeldingBreakdownQueries:
@@ -54,13 +56,15 @@ class WeldingBreakdownQueries:
         *,
         location: str,
         vehicle_model: str,
-        bom_version: str,
+        bom_version: str | None = None,
     ) -> list[ColumnElement[bool]]:
-        return [
+        clauses: list[ColumnElement[bool]] = [
             BomWeldingProcessBreakdownNode.location == location,
             BomWeldingProcessBreakdownNode.vehicle_model == vehicle_model,
-            BomWeldingProcessBreakdownNode.bom_version == bom_version,
         ]
+        if bom_version:
+            clauses.append(BomWeldingProcessBreakdownNode.bom_version == bom_version)
+        return clauses
 
     def _apply_list_filters(
         self,
@@ -221,7 +225,7 @@ class WeldingBreakdownQueries:
         *,
         location: str,
         vehicle_model: str,
-        bom_version: str,
+        bom_version: str | None = None,
     ) -> list[BomWeldingProcessBreakdownNode]:
         return (
             db.query(BomWeldingProcessBreakdownNode)
@@ -234,6 +238,56 @@ class WeldingBreakdownQueries:
                         bom_version=bom_version,
                     )
                 )
+            )
+            .order_by(
+                BomWeldingProcessBreakdownNode.level,
+                BomWeldingProcessBreakdownNode.part_number,
+                BomWeldingProcessBreakdownNode.id,
+            )
+            .all()
+        )
+
+    def exists_by_location_vehicle(
+        self,
+        db: Session,
+        *,
+        location: str,
+        vehicle_model: str,
+    ) -> bool:
+        return (
+            db.query(BomWeldingProcessBreakdownNode.id)
+            .filter(
+                BomWeldingProcessBreakdownNode.location == location,
+                BomWeldingProcessBreakdownNode.vehicle_model == vehicle_model,
+            )
+            .first()
+            is not None
+        )
+
+    def list_overlapping_year(
+        self,
+        db: Session,
+        *,
+        location: str,
+        vehicle_model: str,
+        year: int,
+    ) -> list[BomWeldingProcessBreakdownNode]:
+        """该基地+项目全部拆解行，INNER JOIN 节点后按年交集取件。"""
+        return (
+            db.query(BomWeldingProcessBreakdownNode)
+            .options(joinedload(BomWeldingProcessBreakdownNode.lines))
+            .join(
+                BomNode,
+                BomWeldingProcessBreakdownNode.source_node_id == BomNode.id,
+            )
+            .filter(
+                BomWeldingProcessBreakdownNode.location == location,
+                BomWeldingProcessBreakdownNode.vehicle_model == vehicle_model,
+                period_overlaps_year_clause(
+                    BomNode.effective_year,
+                    BomNode.expiry_year,
+                    year,
+                ),
             )
             .order_by(
                 BomWeldingProcessBreakdownNode.level,

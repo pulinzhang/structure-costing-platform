@@ -32,8 +32,9 @@ class StampingPart(AuditUserMixin, Base):
     """
     冲压件主表 - 存储零件基本信息。
 
-    唯一键：location + stamping_supplier + vehicle_model + version + part_number。
-    (location, vehicle_model) 复合外键指向 vehicle_models；版本仍存本表。
+    唯一键：location + stamping_supplier + vehicle_model + part_number。
+    version 列仍在（SOP 抄确认表头），不当身份、不进 UNIQUE。
+    (location, vehicle_model) 复合外键指向 vehicle_models。
 
     拼焊总成：is_tailor_welded=True，各片子片见 StampingTailorWeldBlank；
     工序仍挂本表（StampingProcess），核价时按子片算后汇总到父。
@@ -55,6 +56,15 @@ class StampingPart(AuditUserMixin, Base):
     )
     vehicle_model: Mapped[str] = mapped_column(String(50), nullable=False, comment="项目代号")
     version: Mapped[str] = mapped_column(String(20), nullable=False, comment="版本")
+
+    effective_year: Mapped[int] = mapped_column(
+        Integer, nullable=False, default=2020, comment="生效年"
+    )
+    effective_month: Mapped[int] = mapped_column(
+        Integer, nullable=False, default=1, comment="生效月"
+    )
+    expiry_year: Mapped[int | None] = mapped_column(Integer, nullable=True, comment="失效年")
+    expiry_month: Mapped[int | None] = mapped_column(Integer, nullable=True, comment="失效月")
 
     # 序号和基本信息
     seq_no: Mapped[int | None] = mapped_column(Integer, nullable=True, comment="序号")
@@ -203,7 +213,6 @@ class StampingPart(AuditUserMixin, Base):
             "location",
             "stamping_supplier",
             "vehicle_model",
-            "version",
             "part_number",
             name="uix_part_unique_key",
         ),

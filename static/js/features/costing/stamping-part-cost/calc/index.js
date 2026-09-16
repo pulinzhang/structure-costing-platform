@@ -4,7 +4,7 @@
 
 import {
     partCostCalcTemplate,
-} from './template.js?v=12';
+} from './template.js?v=13';
 import {
     DEFAULT_PAGE_SIZE,
     bindPagination,
@@ -20,6 +20,8 @@ const CALC_LOGS_API = `${API_BASE}/calc/logs`;
 const POLL_INTERVAL_MS = 1500;
 const DUPLICATE_SCOPE_CALC_MESSAGE = '当前年度/月份/基地/项目正在计算中，请勿重复提交。';
 const SCOPE_REQUIRED_MESSAGE = '须选定年度、月份、基地、项目。';
+const READY_FALLBACK =
+    '提示：须选定年度、月份、基地、项目。计算覆盖该车各冲压工厂。并确保钢材联动价、废料月度价、加工费与匹配零件均已就绪。模具费、检具费缺档按 0 计入。';
 
 const STATUS_META = {
     processing: { label: '计算中', className: 'text-[#64b5f6]' },
@@ -44,6 +46,7 @@ const calcState = {
         die_fee_count: 0,
         gauge_fee_count: 0,
         can_calculate: false,
+        message: null,
     },
     history: {
         page: 1,
@@ -119,16 +122,11 @@ function bindEvents() {
     });
 
     document.getElementById('calcLocation')?.addEventListener('change', () => {
-        resetDependentFilters(['calcVehicleModel', 'calcVersion']);
+        resetDependentFilters(['calcVehicleModel']);
         loadCascadeFilters();
         loadCalcReady();
     });
     document.getElementById('calcVehicleModel')?.addEventListener('change', () => {
-        resetDependentFilters(['calcVersion']);
-        loadCascadeFilters();
-        loadCalcReady();
-    });
-    document.getElementById('calcVersion')?.addEventListener('change', () => {
         loadCascadeFilters();
         loadCalcReady();
     });
@@ -176,17 +174,15 @@ async function loadCascadeFilters() {
         const params = {
             location: document.getElementById('calcLocation')?.value || '',
             vehicle_model: document.getElementById('calcVehicleModel')?.value || '',
-            version: document.getElementById('calcVersion')?.value || '',
         };
         const year = parseInt(document.getElementById('calcYear')?.value, 10);
-        const month = parseInt(document.getElementById('calcMonth')?.value, 10);
         if (Number.isFinite(year)) params.year = year;
+        const month = parseInt(document.getElementById('calcMonth')?.value, 10);
         if (Number.isFinite(month)) params.month = month;
         const res = await HttpClient.get(CASCADE_API, { params });
         const filters = res.data || {};
         fillSelect('calcLocation', filters.locations || []);
         fillSelect('calcVehicleModel', filters.vehicle_models || []);
-        fillSelect('calcVersion', filters.versions || []);
     } catch (error) {
         console.error('加载冲压筛选选项失败:', error);
     }
@@ -197,7 +193,7 @@ function resetFilters() {
         showToast('计算进行中，请稍候再重置', 'warning');
         return;
     }
-    ['calcLocation', 'calcVehicleModel', 'calcVersion'].forEach((id) => {
+    ['calcLocation', 'calcVehicleModel'].forEach((id) => {
         const el = document.getElementById(id);
         if (el) el.value = '';
     });
@@ -220,7 +216,6 @@ async function loadCalcReady() {
     const month = parseInt(document.getElementById('calcMonth')?.value, 10);
     const location = document.getElementById('calcLocation')?.value || '';
     const vehicleModel = document.getElementById('calcVehicleModel')?.value || '';
-    const version = document.getElementById('calcVersion')?.value || '';
 
     if (!year || Number.isNaN(year)) {
         calcState.ready = {
@@ -231,6 +226,7 @@ async function loadCalcReady() {
             die_fee_count: 0,
             gauge_fee_count: 0,
             can_calculate: false,
+            message: null,
         };
         setReadyCounts(calcState.ready);
         validateDataPreparation();
@@ -242,7 +238,6 @@ async function loadCalcReady() {
         if (month) params.month = month;
         if (location) params.location = location;
         if (vehicleModel) params.vehicle_model = vehicleModel;
-        if (version) params.version = version;
 
         const res = await HttpClient.get(CALC_READY_API, { params });
         const data = res.data || {};
@@ -254,6 +249,7 @@ async function loadCalcReady() {
             die_fee_count: Number(data.die_fee_count) || 0,
             gauge_fee_count: Number(data.gauge_fee_count) || 0,
             can_calculate: Boolean(data.can_calculate),
+            message: data.message || null,
         };
         setReadyCounts(calcState.ready);
         validateDataPreparation();
@@ -267,6 +263,7 @@ async function loadCalcReady() {
             die_fee_count: 0,
             gauge_fee_count: 0,
             can_calculate: false,
+            message: null,
         };
         setReadyCounts(calcState.ready);
         validateDataPreparation();
@@ -289,8 +286,11 @@ function validateDataPreparation() {
     startBtn.disabled = !isReady;
     if (isReady) {
         errorBanner?.classList.add('hidden');
-    } else {
-        errorBanner?.classList.remove('hidden');
+    } else if (errorBanner) {
+        errorBanner.textContent = calcState.ready.message
+            ? `提示：${calcState.ready.message}`
+            : READY_FALLBACK;
+        errorBanner.classList.remove('hidden');
     }
 }
 
@@ -520,7 +520,6 @@ async function startCalculation() {
     const month = parseInt(document.getElementById('calcMonth')?.value, 10);
     const location = document.getElementById('calcLocation')?.value || '';
     const vehicleModel = document.getElementById('calcVehicleModel')?.value || '';
-    const version = document.getElementById('calcVersion')?.value || '';
 
     if (Number.isNaN(year) || Number.isNaN(month) || !location || !vehicleModel) {
         showToast(SCOPE_REQUIRED_MESSAGE, 'warning');
@@ -538,7 +537,6 @@ async function startCalculation() {
         location,
         vehicle_model: vehicleModel,
     };
-    if (version) payload.version = version;
 
     setCalculating(true);
     showProgress(0, '已提交计算队列');
@@ -667,7 +665,6 @@ function setCalculating(isCalculating) {
         'calcMonth',
         'calcLocation',
         'calcVehicleModel',
-        'calcVersion',
         'calcResetBtn',
     ].forEach((id) => {
         const el = document.getElementById(id);

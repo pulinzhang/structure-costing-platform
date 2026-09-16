@@ -29,7 +29,6 @@ class BomWeldingFeeQueries:
         year: int,
         location: str,
         vehicle_model: str,
-        bom_version: str,
         source_breakdown_node_id: int | None,
     ) -> BomWeldingFee | None:
         return (
@@ -38,7 +37,6 @@ class BomWeldingFeeQueries:
                 BomWeldingFee.year == year,
                 BomWeldingFee.location == location,
                 BomWeldingFee.vehicle_model == vehicle_model,
-                BomWeldingFee.bom_version == bom_version,
                 BomWeldingFee.source_breakdown_node_id == source_breakdown_node_id,
             )
             .first()
@@ -51,7 +49,7 @@ class BomWeldingFeeQueries:
         year: int,
         location: str,
         vehicle_model: str,
-        bom_version: str,
+        bom_version: str | None = None,
         level: int | None = None,
         levels: list[int] | None = None,
     ) -> Query[BomWeldingFee]:
@@ -59,8 +57,9 @@ class BomWeldingFeeQueries:
             BomWeldingFee.year == year,
             BomWeldingFee.location == location,
             BomWeldingFee.vehicle_model == vehicle_model,
-            BomWeldingFee.bom_version == bom_version,
         )
+        if bom_version:
+            q = q.filter(BomWeldingFee.bom_version == bom_version)
         return self._filter_levels(q, level=level, levels=levels)
 
     def count_by_calc_scope(
@@ -70,7 +69,7 @@ class BomWeldingFeeQueries:
         year: int,
         location: str,
         vehicle_model: str,
-        bom_version: str,
+        bom_version: str | None = None,
         level: int | None = None,
     ) -> int:
         return int(
@@ -91,7 +90,7 @@ class BomWeldingFeeQueries:
         year: int,
         location: str,
         vehicle_model: str,
-        bom_version: str,
+        bom_version: str | None = None,
         level: int | None = None,
     ) -> list[BomWeldingFee]:
         return (
@@ -328,7 +327,7 @@ class BomWeldingFeeQueries:
         year: int,
         location: str,
         vehicle_model: str,
-        bom_version: str,
+        bom_version: str | None = None,
         statuses: list[str],
         level: int | None = None,
         levels: list[int] | None = None,

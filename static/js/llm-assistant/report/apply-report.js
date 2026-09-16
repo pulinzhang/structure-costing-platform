@@ -17,6 +17,9 @@ export function applyReportToMessage(msg, report) {
     msg.prompt_version = report?.metadata?.prompt_version || null;
     msg.resolved_report_type = report?.resolved_report_type || null;
     msg.scope = report?.scope || null;
+    if (report?.carry) {
+        msg.carry = report.carry;
+    }
     msg.user_question = report?.user_question || null;
     return msg;
 }

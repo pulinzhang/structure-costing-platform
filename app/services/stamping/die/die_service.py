@@ -3,12 +3,14 @@
 from sqlalchemy.orm import Session
 
 from app.common.audit import audit_update
+from app.common.period import resolve_as_of_month, validate_period
 from app.common.vehicle_model import normalize_vehicle_model
 from app.exceptions.base import BusinessException, NotFoundException
 from app.repositories.stamping.stamping_die_repository import (
     StampingDiePartRepository,
     StampingDieProcessRepository,
 )
+from app.schemas.dto.period_dto import EffectivePeriodUpdateDTO
 from app.schemas.dto.stamping_die_dto import (
     StampingDieAllocRatioUpdate,
     StampingDiePartQuery,
@@ -72,6 +74,7 @@ class StampingDieService:
         if not locations:
             return [], 0
         skip = (query.page - 1) * query.size
+        as_of_year, as_of_month = resolve_as_of_month(query.year, query.month)
         parts, total = self.die_part_repo.paginate(
             db,
             locations=locations,
@@ -79,6 +82,9 @@ class StampingDieService:
             part_number=query.part_number,
             skip=skip,
             limit=query.size,
+            as_of_year=as_of_year,
+            as_of_month=as_of_month,
+            include_expired=query.include_expired,
         )
         counts = self.die_part_repo.count_processes_by_part_ids(db, [part.id for part in parts])
         rows: list[StampingDiePartListVO] = []
@@ -92,6 +98,35 @@ class StampingDieService:
         if not part:
             raise NotFoundException(f"模具零件不存在: id={part_id}")
         return StampingDiePartDetailVO.model_validate(part)
+
+    def patch_period(
+        self,
+        db: Session,
+        part_id: int,
+        dto: EffectivePeriodUpdateDTO,
+        current_user: UserVO,
+    ) -> StampingDiePartDetailVO:
+        part = self.die_part_repo.get_by_id(db, part_id)
+        if not part:
+            raise NotFoundException(f"模具零件不存在: id={part_id}")
+        validate_period(
+            dto.effective_year,
+            dto.effective_month,
+            dto.expiry_year,
+            dto.expiry_month,
+        )
+        part.effective_year = dto.effective_year
+        part.effective_month = dto.effective_month
+        part.expiry_year = dto.expiry_year
+        part.expiry_month = dto.expiry_month
+        part.updated_by = audit_update(current_user)["updated_by"]
+        try:
+            db.commit()
+            db.refresh(part)
+            return StampingDiePartDetailVO.model_validate(part)
+        except Exception:
+            db.rollback()
+            raise
 
     def update_alloc_ratio(
         self,

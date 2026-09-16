@@ -4,7 +4,9 @@ from __future__ import annotations
 
 from sqlalchemy.orm import Session
 
+from app.exceptions.base import BusinessException
 from app.schemas.vo.stamping_die_fee_vo import StampingDieFeeCalcReadyVO
+from app.services.masterdata.vehicle_model import VehicleModelService
 from app.services.stamping.die_fee.calc.orchestrator.deps import DieFeeCalcDeps
 from app.services.stamping.die_fee.calc.orchestrator.identity import (
     matches_part,
@@ -29,8 +31,24 @@ def collect_calc_ready(
     calculable_count = 0
     part_count = 0
     if location and vehicle_model:
+        try:
+            VehicleModelService().require_overlaps_year(db, location, vehicle_model, year)
+        except BusinessException as exc:
+            return StampingDieFeeCalcReadyVO(
+                year=year,
+                location=location,
+                vehicle_model=vehicle_model,
+                version=version_filter,
+                part_count=0,
+                calculable_count=0,
+                has_unit_price=False,
+                message=str(exc),
+            )
         all_parts = deps.die_repo.list_with_processes(
-            db, location=location, vehicle_model=vehicle_model
+            db,
+            location=location,
+            vehicle_model=vehicle_model,
+            overlap_year=year,
         )
         persist_parts = parts_for_identity(
             all_parts,

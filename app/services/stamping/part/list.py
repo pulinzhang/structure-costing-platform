@@ -4,6 +4,7 @@ from __future__ import annotations
 
 from sqlalchemy.orm import Session
 
+from app.common.period import resolve_as_of_month
 from app.exceptions import NotFoundException
 from app.repositories.stamping.stamping_repository import (
     StampingPartRepository,
@@ -109,6 +110,7 @@ def list_parts(
     version = query.version
     part_number = query.part_number
     part_name = query.part_name
+    as_of_year, as_of_month = resolve_as_of_month(query.year, query.month)
     parts, total = repository.paginate(
         db,
         locations=locations,
@@ -119,6 +121,9 @@ def list_parts(
         stamping_suppliers=supplier_names,
         skip=skip,
         limit=query.size,
+        as_of_year=as_of_year,
+        as_of_month=as_of_month,
+        include_expired=query.include_expired,
     )
     # 一次聚合查询补齐每行工序数（避免 ORM lazy load 触发 N+1）
     part_ids = [p.id for p in parts]
@@ -190,15 +195,18 @@ def get_cascade_filter_options(
         stamping_supplier=query.stamping_supplier.strip() if query.stamping_supplier else None,
         vehicle_model=query.vehicle_model.strip() if query.vehicle_model else None,
         version=query.version.strip() if query.version else None,
+        overlap_year=(query.year if query.year is not None and query.month is None else None),
     )
     vehicle_svc = VehicleModelService()
-    if location_raw and query.year is not None:
-        if query.month is not None:
-            vehicle_models = vehicle_svc.list_introducible(
-                db, location_raw, query.year, query.month
-            )
-        else:
-            vehicle_models = vehicle_svc.list_overlaps_year(db, location_raw, query.year)
+    if location_raw and query.year is not None and query.month is not None:
+        vehicle_models = vehicle_svc.list_introducible(db, location_raw, query.year, query.month)
+    elif query.year is not None and query.month is None:
+        overlapping = (
+            set(vehicle_svc.list_overlaps_year(db, location_raw, query.year))
+            if location_raw
+            else set()
+        )
+        vehicle_models = [code for code in raw["vehicle_models"] if code in overlapping]
     else:
         vehicle_models = vehicle_svc.list_filter_codes(db, location_raw)
     return StampingCascadeFilterOptionsVO(

@@ -186,7 +186,7 @@ class AssemblyCostCalcReadyVO(BaseModel):
     stamping_complete: bool = False
     stamping_incomplete_suppliers: list[str] = Field(default_factory=list)
     welding_calc_complete: bool = False
-    bom_version: str
+    bom_version: str | None = None
     ready: bool
     message: str | None = None
 

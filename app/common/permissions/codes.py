@@ -118,6 +118,7 @@ class Perm:
 
     MENU_BOM_STRUCTURE = "menu:bom-structure"  # 产品结构
     BOM_STRUCTURE_VIEW = "op:bom-structure:view"  # 查看
+    BOM_STRUCTURE_UPDATE = "op:bom-structure:update"  # 改树根生失效
 
     MENU_BOM_WHERE_USED = "menu:bom-where-used"  # 零件用在哪
     BOM_WHERE_USED_VIEW = "op:bom-where-used:view"  # 查看

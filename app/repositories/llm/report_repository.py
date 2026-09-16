@@ -32,6 +32,7 @@ class LlmAnalysisReportInsert:
     status: str
     idempotency_key: str
     trace_id: str | None
+    query_json: str | None
     created_by: str
     updated_by: str
 
@@ -122,6 +123,7 @@ class LlmAnalysisReportRepository:
             status=payload.status,
             idempotency_key=payload.idempotency_key,
             trace_id=payload.trace_id,
+            query_json=payload.query_json,
             created_by=payload.created_by,
             updated_by=payload.updated_by,
         )

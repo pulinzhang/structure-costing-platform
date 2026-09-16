@@ -3,8 +3,14 @@
  * 仅负责 Excel 导入，不含列表 / 删除 / 树
  */
 
-import { bomUploadTemplate } from './template.js?v=5';
+import { bomUploadTemplate } from './template.js?v=6';
 import { can } from '../../../../permissions.js?v=6';
+import {
+    SOP_INTRO,
+    loadProjectPeriod,
+    renderSopBanner,
+    sopBannerHtml,
+} from '../../../common/period-ui.js?v=2';
 
 const MAX_FILE_SIZE = 50 * 1024 * 1024;
 
@@ -21,6 +27,10 @@ const BomUploadPage = {
         this.hideProgress();
         this.hideError();
         this.clearSelectedFile(false);
+        const slot = document.getElementById('sopBannerSlot');
+        if (slot && !document.getElementById('sopBanner')) {
+            slot.innerHTML = sopBannerHtml();
+        }
         this.loadScopeOptions();
     },
 
@@ -89,9 +99,40 @@ const BomUploadPage = {
                     vehicleEl.value = currentVehicle;
                 }
             }
+            await this.refreshSopBanner();
         } catch (error) {
             console.error('加载采购基地/项目失败', error);
         }
+    },
+
+    async refreshSopBanner() {
+        const intro = document.querySelector('#sopBanner p');
+        if (intro) intro.textContent = SOP_INTRO;
+        const location = document.getElementById('bomUploadLocation')?.value || '';
+        const vehicleModel = document.getElementById('bomUploadVehicleModel')?.value || '';
+        if (!location || !vehicleModel) {
+            renderSopBanner({ hasSop: false });
+            return;
+        }
+        let hasSop = false;
+        try {
+            const res = await HttpClient.get('/api/bom/snapshots', {
+                params: { location, vehicle_model: vehicleModel, page: 1, size: 1 },
+            });
+            hasSop = Number(res.data?.total || 0) > 0;
+        } catch (_) {
+            hasSop = false;
+        }
+        if (hasSop) {
+            renderSopBanner({ hasSop: true });
+            return;
+        }
+        const period = await loadProjectPeriod(location, vehicleModel);
+        renderSopBanner({
+            hasSop: false,
+            startLabel: period?.startLabel,
+            endLabel: period?.endLabel,
+        });
     },
 
     bindEvents() {
@@ -107,6 +148,9 @@ const BomUploadPage = {
         templateBtn?.addEventListener('click', () => this.downloadTemplate());
         document.getElementById('bomUploadLocation')?.addEventListener('change', () => {
             this.loadScopeOptions(true);
+        });
+        document.getElementById('bomUploadVehicleModel')?.addEventListener('change', () => {
+            this.refreshSopBanner();
         });
         errorCopyBtn?.addEventListener('click', () => this.copyErrorText());
         errorCloseBtn?.addEventListener('click', () => this.hideError());

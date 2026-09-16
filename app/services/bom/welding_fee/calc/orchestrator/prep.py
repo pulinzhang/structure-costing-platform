@@ -1,4 +1,4 @@
-"""计算开场：焊接单价与拆解节点（按 levels 过滤）。"""
+"""计算开场：焊接单价与拆解节点（按年交集 + levels 过滤）。"""
 
 from __future__ import annotations
 
@@ -15,6 +15,7 @@ from app.repositories.bom.bom_repository import BomSnapshotRepository
 from app.schemas.dto.bom_welding_fee_dto import BomWeldingFeeCalcDTO
 from app.services.bom.welding_fee.calc.orchestrator.deps import WeldingFeeCalcDeps
 from app.services.bom.welding_fee.calc.orchestrator.progress import ProgressNotifier
+from app.services.masterdata.vehicle_model import VehicleModelService
 
 
 @dataclass(slots=True)
@@ -22,7 +23,6 @@ class CalcPrepContext:
     year: int
     location: str
     vehicle_model: str
-    bom_version: str
     price_map: dict[str, BomWeldingUnitPrice]
     nodes: list[BomWeldingProcessBreakdownNode]
     started_at: datetime
@@ -38,14 +38,11 @@ def prepare_calc_run(
     progress: ProgressNotifier,
 ) -> CalcPrepContext:
     year = dto.year
-    location = dto.location.strip()
-    vehicle_model = dto.vehicle_model.strip()
-    bom_version = dto.bom_version.strip()
+    location, vehicle_model = VehicleModelService().require_overlaps_year(
+        db, dto.location, dto.vehicle_model, year
+    )
     started_at = now()
-    detail_lines = [
-        f"开始计算 year={year} location={location} "
-        f"vehicle={vehicle_model} bom_version={bom_version}"
-    ]
+    detail_lines = [f"开始计算 year={year} location={location} vehicle={vehicle_model}"]
 
     progress.report(5, "加载焊接单价...")
     prices = deps.unit_price_repo.list_by_location_year(db, location, year)
@@ -55,12 +52,23 @@ def prepare_calc_run(
     detail_lines.append(f"焊接单价 {len(prices)} 条")
 
     progress.report(10, "加载焊接工艺拆解...")
-    all_nodes = deps.breakdown_repo.list_by_scope(
+    if not deps.breakdown_repo.exists_by_location_vehicle(
+        db, location=location, vehicle_model=vehicle_model
+    ):
+        raise BusinessException(
+            f"基地「{location}」项目「{vehicle_model}」尚未生成焊接工艺拆解，"
+            "请先到焊接工艺拆解页生成"
+        )
+    all_nodes = deps.breakdown_repo.list_overlapping_year(
         db,
         location=location,
         vehicle_model=vehicle_model,
-        bom_version=bom_version,
+        year=year,
     )
+    if not all_nodes:
+        raise BusinessException(
+            f"基地「{location}」项目「{vehicle_model}」在 {year} 年没有有效期内的焊接拆解"
+        )
     selected_levels = [int(level) for level in (dto.levels or []) if level is not None]
     if selected_levels:
         wanted = set(selected_levels)
@@ -73,8 +81,7 @@ def prepare_calc_run(
 
     if not nodes:
         raise BusinessException(
-            f"基地「{location}」项目「{vehicle_model}」版本「{bom_version}」"
-            f"下未找到焊接工艺拆解节点"
+            f"基地「{location}」项目「{vehicle_model}」" f"下未找到焊接工艺拆解节点"
         )
 
     source_excel_filename = None
@@ -95,7 +102,6 @@ def prepare_calc_run(
         year=year,
         location=location,
         vehicle_model=vehicle_model,
-        bom_version=bom_version,
         price_map=price_map,
         nodes=nodes,
         started_at=started_at,

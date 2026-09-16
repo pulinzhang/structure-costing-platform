@@ -20,7 +20,6 @@ export function l0WeldingFeeCalcTemplate() {
                     ${filterSelect('l0wfCalcYear', '年度', true)}
                     ${filterSelect('l0wfCalcLocation', '基地', true)}
                     ${filterSelect('l0wfCalcVehicleModel', '项目', true)}
-                    ${filterSelect('l0wfCalcBomVersion', '版本', true)}
 
                     <button id="l0wfCalcResetBtn"
                             class="inline-flex items-center gap-1 h-7 px-3 text-[11px] font-medium text-[#616161] hover:text-[#9e9e9e] transition-all duration-150">
@@ -50,16 +49,11 @@ export function l0WeldingFeeCalcTemplate() {
                         <span class="text-[9px] text-[#666] block">无工艺节点（异常）</span>
                         <span id="l0wfCntZeroProcess" class="text-xs font-mono font-bold text-[#dddddd]">- <span class="text-[9px] font-normal text-[#555]">条</span></span>
                     </div>
-                    <div class="w-px h-5 bg-[#222]"></div>
-                    <div>
-                        <span class="text-[9px] text-[#666] block">计算层级</span>
-                        <div id="l0wfLevelChecks" class="flex items-center gap-2 mt-0.5 min-h-[18px] text-[10px] text-[#9e9e9e]">全部</div>
-                    </div>
                 </div>
 
                 <div class="flex items-center gap-3">
                     <span id="l0wfReCalcNotice" class="text-[9px] text-[#666]">
-                        不选层级则按拆解全部层计算；再次计算覆盖未审核，已审核按行跳过
+                        再次计算覆盖未审核，已审核按行跳过
                     </span>
                     <button id="l0wfStartCalcBtn"
                             class="h-7 px-4 text-[10px] bg-[#b71c1c] hover:bg-[#c62828] text-white font-medium rounded-sm transition-colors disabled:opacity-30 disabled:cursor-not-allowed">
@@ -85,7 +79,7 @@ export function l0WeldingFeeCalcTemplate() {
             </div>
 
             <div id="l0wfDataReadyErrorBanner" class="hidden text-[10px] text-[#d69e2e] bg-[#1a1710] px-2.5 py-1.5 border-l-2 border-[#d69e2e]">
-                提示：须选定年度、基地、项目、版本；并确保存在成品拆解与该年焊接单价。
+                提示：须选定年度、基地、项目；并确保存在有效期内的焊接工艺拆解与该年焊接单价。
             </div>
 
             <div class="pt-2">

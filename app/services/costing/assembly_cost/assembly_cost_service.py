@@ -88,7 +88,6 @@ class AssemblyCostService:
         month: int,
         location: str,
         vehicle_model: str,
-        bom_version: str,
     ) -> AssemblyCostCalcReadyVO:
         return self.orchestrator.get_calc_ready(
             db,
@@ -96,7 +95,6 @@ class AssemblyCostService:
             month=month,
             location=location,
             vehicle_model=vehicle_model,
-            bom_version=bom_version,
         )
 
     def begin_processing(
@@ -151,8 +149,7 @@ class AssemblyCostService:
         canonical, vehicle_model = VehicleModelService().require_introducible(
             db, dto.location, dto.vehicle_model, dto.year, dto.month
         )
-        if canonical != dto.location or vehicle_model != dto.vehicle_model:
-            dto = dto.model_copy(update={"location": canonical, "vehicle_model": vehicle_model})
+        dto = dto.model_copy(update={"location": canonical, "vehicle_model": vehicle_model})
         lock_log = self.begin_processing(
             db,
             dto,

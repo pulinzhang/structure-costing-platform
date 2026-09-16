@@ -10,9 +10,11 @@ from app.schemas.common.page_result import PageResult
 from app.schemas.dto.bom_dto import (
     BomCascadeFilterQuery,
     BomNodeCreate,
+    BomNodeTreeQuery,
     BomSnapshotCreate,
     BomSnapshotQuery,
 )
+from app.schemas.dto.period_dto import EffectivePeriodUpdateDTO
 from app.schemas.vo.bom_vo import (
     BomCascadeFilterOptionsVO,
     BomNodeTreeVO,
@@ -132,10 +134,17 @@ def delete_snapshot(
 )
 def list_nodes(
     snapshot_id: int,
+    query: BomNodeTreeQuery = Depends(),
     db: Session = Depends(get_db),
     current_user: UserVO = Depends(_bom_read),
 ) -> ApiResponse[list[BomNodeVO]]:
-    rows = _bom_service.list_nodes_flat(db, snapshot_id)
+    rows = _bom_service.list_nodes_flat(
+        db,
+        snapshot_id,
+        year=query.year,
+        month=query.month,
+        include_expired=query.include_expired,
+    )
     return ApiResponse.ok(data=rows, message=f"查询到 {len(rows)} 个节点")
 
 
@@ -145,10 +154,17 @@ def list_nodes(
 )
 def get_tree(
     snapshot_id: int,
+    query: BomNodeTreeQuery = Depends(),
     db: Session = Depends(get_db),
     current_user: UserVO = Depends(_bom_read),
 ) -> ApiResponse[list[BomNodeTreeVO]]:
-    tree = _bom_service.list_nodes_tree(db, snapshot_id)
+    tree = _bom_service.list_nodes_tree(
+        db,
+        snapshot_id,
+        year=query.year,
+        month=query.month,
+        include_expired=query.include_expired,
+    )
     return ApiResponse.ok(data=tree, message="获取树成功")
 
 
@@ -165,6 +181,20 @@ def create_node(
 ) -> ApiResponse[BomNodeVO]:
     row = _bom_service.create_node(db, snapshot_id, body, current_user=current_user)
     return ApiResponse.created(data=row, message="节点创建成功")
+
+
+@router.patch(
+    "/nodes/{node_id}",
+    response_model=ApiResponse[BomNodeVO],
+)
+def patch_node_period(
+    node_id: int,
+    body: EffectivePeriodUpdateDTO,
+    db: Session = Depends(get_db),
+    current_user: UserVO = Depends(require_perm(Perm.BOM_STRUCTURE_UPDATE)),
+) -> ApiResponse[BomNodeVO]:
+    row = _bom_service.patch_node_period(db, node_id, body, current_user=current_user)
+    return ApiResponse.updated(data=row, message="已保存生失效")
 
 
 @router.delete(

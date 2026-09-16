@@ -37,6 +37,8 @@ class PartData:
     stamping_supplier: str = field(metadata={"description": "冲压供应商"})
     part_number: str = field(metadata={"description": "零件号"})
     excel_filename: str = field(metadata={"description": "Excel文件名"})
+    effective_year: int = field(metadata={"description": "生效年"})
+    effective_month: int = field(metadata={"description": "生效月"})
     seq_no: int | None = field(default=None, metadata={"description": "顺序号"})
     part_name: str | None = field(default=None, metadata={"description": "零件名称"})
     material: str | None = field(default=None, metadata={"description": "材质"})
@@ -80,6 +82,8 @@ class PartData:
     )
     created_by: str | None = field(default=None, metadata={"description": "创建人"})
     updated_by: str | None = field(default=None, metadata={"description": "修改人"})
+    expiry_year: int | None = field(default=None, metadata={"description": "失效年"})
+    expiry_month: int | None = field(default=None, metadata={"description": "失效月"})
 
 
 @dataclass(slots=True)

@@ -6,8 +6,10 @@ from collections import defaultdict
 
 from sqlalchemy.orm import Session
 
+from app.exceptions.base import BusinessException
 from app.schemas.vo.bom_welding_fee_vo import BomWeldingFeeCalcReadyVO, WeldingFeeLevelReadyVO
 from app.services.bom.welding_fee.calc.orchestrator.deps import WeldingFeeCalcDeps
+from app.services.masterdata.vehicle_model import VehicleModelService
 
 
 def collect_calc_ready(
@@ -17,17 +19,28 @@ def collect_calc_ready(
     year: int,
     location: str,
     vehicle_model: str,
-    bom_version: str,
 ) -> BomWeldingFeeCalcReadyVO:
     location = location.strip()
     vehicle_model = vehicle_model.strip()
-    bom_version = bom_version.strip()
+    try:
+        location, vehicle_model = VehicleModelService().require_overlaps_year(
+            db, location, vehicle_model, year
+        )
+    except BusinessException as exc:
+        return BomWeldingFeeCalcReadyVO(
+            year=year,
+            location=location,
+            vehicle_model=vehicle_model,
+            unit_price_count=0,
+            levels=[],
+            message=str(exc),
+        )
     prices = deps.unit_price_repo.list_by_location_year(db, location, year)
-    nodes = deps.breakdown_repo.list_by_scope(
+    nodes = deps.breakdown_repo.list_overlapping_year(
         db,
         location=location,
         vehicle_model=vehicle_model,
-        bom_version=bom_version,
+        year=year,
     )
     grouped: dict[int, list[int]] = defaultdict(list)
     for node in nodes:
@@ -45,7 +58,6 @@ def collect_calc_ready(
         year=year,
         location=location,
         vehicle_model=vehicle_model,
-        bom_version=bom_version,
         unit_price_count=len(prices),
         levels=levels,
     )

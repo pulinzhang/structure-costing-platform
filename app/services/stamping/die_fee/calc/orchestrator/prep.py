@@ -13,6 +13,7 @@ from app.exceptions.base import BusinessException
 from app.models.stamping.die import StampingDiePart
 from app.models.stamping.die_unit_price import StampingDieUnitPrice
 from app.schemas.dto.stamping_die_fee_dto import StampingDieFeeCalcDTO
+from app.services.masterdata.vehicle_model import VehicleModelService
 from app.services.stamping.die_fee.calc.constants import APPROVED_SCOPE_MESSAGE
 from app.services.stamping.die_fee.calc.orchestrator.deps import DieFeeCalcDeps
 from app.services.stamping.die_fee.calc.orchestrator.identity import parts_for_identity
@@ -47,22 +48,30 @@ def prepare_calc_run(
     dto: StampingDieFeeCalcDTO,
     progress: ProgressNotifier,
 ) -> CalcPrepContext:
+    location, vehicle_model = VehicleModelService().require_overlaps_year(
+        db, dto.location, dto.vehicle_model, dto.year
+    )
     started_at = now()
     version_filter = dto.version
     version_bit = f"version={version_filter}" if version_filter else ""
     detail_lines = [
         (
-            f"开始计算 year={dto.year} location={dto.location} "
-            f"vehicle={dto.vehicle_model} supplier=全部工厂"
+            f"开始计算 year={dto.year} location={location} "
+            f"vehicle={vehicle_model} supplier=全部工厂"
             + (f" {version_bit}" if version_bit else "")
         )
     ]
     progress.report(8, "加载模具布点...")
     parts = deps.die_repo.list_with_processes(
-        db, location=dto.location, vehicle_model=dto.vehicle_model
+        db,
+        location=location,
+        vehicle_model=vehicle_model,
+        overlap_year=dto.year,
     )
     if not parts:
-        raise BusinessException(f"基地「{dto.location}」项目「{dto.vehicle_model}」无模具布点")
+        raise BusinessException(
+            f"基地「{location}」项目「{vehicle_model}」" f"在 {dto.year} 年没有有效期内的模具布点"
+        )
 
     persist_parts = parts_for_identity(
         parts,
@@ -70,22 +79,29 @@ def prepare_calc_run(
         version=version_filter,
     )
     if version_filter and not persist_parts:
-        raise BusinessException("所选版本下无模具布点")
+        raise BusinessException("所选版本下无有效期内模具布点")
 
     progress.report(15, "加载模具单价...")
-    price = deps.unit_price_repo.get_effective(
-        db, location=dto.location, vehicle_model=dto.vehicle_model
-    )
+    price = deps.unit_price_repo.get_effective(db, location=location, vehicle_model=vehicle_model)
     if price is None or price.allocation_qty <= ZERO:
         raise BusinessException(
-            f"基地「{dto.location}」项目「{dto.vehicle_model}」无生效模具单价或分摊万台无效"
+            f"基地「{location}」项目「{vehicle_model}」无生效模具单价或分摊万台无效"
         )
 
-    if count_approved(db, deps, dto):
+    if count_approved(
+        db,
+        deps,
+        dto.model_copy(
+            update={
+                "location": location,
+                "vehicle_model": vehicle_model,
+            }
+        ),
+    ):
         raise BusinessException(APPROVED_SCOPE_MESSAGE, code=409)
 
     scrap_byproduct_keys = deps.part_repo.list_scrap_byproduct_keys(
-        db, location=dto.location, vehicle_model=dto.vehicle_model
+        db, location=location, vehicle_model=vehicle_model
     )
     return CalcPrepContext(
         parts=parts,

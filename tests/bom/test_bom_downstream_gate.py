@@ -112,6 +112,11 @@ def _add_node(db: Session, snapshot: BomSnapshot) -> BomNode:
         level=0,
         part_number="501006870AA",
         node_role="supply",
+        location=LOCATION,
+        vehicle_model=VEHICLE_MODEL,
+        bom_version=BOM_VERSION,
+        effective_year=2020,
+        effective_month=1,
         created_by="system",
         updated_by="system",
     )

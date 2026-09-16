@@ -4,18 +4,28 @@ from __future__ import annotations
 
 from typing import Literal
 
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, field_validator
 
 AssemblyCostView = Literal["finance", "procurement", "all"]
 
 
 class AssemblyCostCalcDTO(BaseModel):
+    """计算请求：年+月+基地+项目。版本忽略。取该月有效期内 BOM 树。"""
+
     year: int = Field(..., ge=2000, le=2100)
     month: int = Field(..., ge=1, le=12)
     location: str = Field(..., min_length=1, max_length=50)
     vehicle_model: str = Field(..., min_length=1, max_length=50)
-    bom_version: str = Field(..., min_length=1, max_length=20)
+    bom_version: str | None = Field(None, description="忽略。取该月有效期内 BOM 树")
     levels: list[int] | None = None
+
+    @field_validator("bom_version", mode="before")
+    @classmethod
+    def _empty_bom_version_to_none(cls, value: object) -> str | None:
+        if value is None:
+            return None
+        text = str(value).strip()
+        return text or None
 
 
 class AssemblyCostQuery(BaseModel):

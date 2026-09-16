@@ -67,7 +67,6 @@ def persist_calc_result(
             month=ctx.month,
             location=ctx.location,
             vehicle_model=ctx.vehicle_model,
-            bom_version=ctx.bom_version,
             status=status,
             message=message,
             subject_total=len(ctx.subjects),

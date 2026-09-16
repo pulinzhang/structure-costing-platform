@@ -87,7 +87,6 @@ def run_annual_item(
                 year=discovery.year,
                 location=scope.location if scope else discovery.location,
                 vehicle_model=vehicle_model,
-                bom_version=bom_version,
             )
             weld_result = orch.welding_orch.calculate(db, weld_dto, current_user=current_user)
             return (
@@ -174,13 +173,12 @@ def run_assembly(
             month=discovery.month,
             location=scope.location,
             vehicle_model=scope.vehicle_model,
-            bom_version=scope.bom_version,
         )
         result = orch.assembly_orch.calculate(db, dto, current_user=current_user)
         status = getattr(result, "status", "success")
         ok = status != "failed"
         return ok, _calc_step_message("总成核价", status), {"status": status}
     except Exception as exc:
-        logger.exception("总成核价失败: %s/%s", scope.vehicle_model, scope.bom_version)
+        logger.exception("总成核价失败: %s", scope.vehicle_model)
         db.rollback()
         return False, str(exc), None

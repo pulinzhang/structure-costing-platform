@@ -6,7 +6,12 @@ from sqlalchemy.orm import Session
 
 from app.repositories.bom.welding_unit_price_repository import BomWeldingUnitPriceRepository
 from app.schemas.vo.costing_engine_vo import CostingEngineGateItemVO
-from app.services.costing.engine.gate.item import USABLE_STATUSES, make_item, make_skipped
+from app.services.costing.engine.gate.item import (
+    USABLE_STATUSES,
+    make_item,
+    make_skipped,
+    skip_if_period_filtered,
+)
 from app.services.costing.engine.scope_discovery import DiscoveryResult
 
 
@@ -18,6 +23,11 @@ def check_welding_unit_price(
     year: int,
     month: int,
 ) -> CostingEngineGateItemVO:
+    skipped = skip_if_period_filtered(
+        discovery, code="welding_unit_price", location=location, year=year, month=month
+    )
+    if skipped is not None:
+        return skipped
     if not discovery.l0_scopes:
         return make_skipped(
             code="welding_unit_price",

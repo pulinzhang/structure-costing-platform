@@ -42,7 +42,6 @@ class BomWeldingFeeRepository:
         year: int,
         location: str,
         vehicle_model: str,
-        bom_version: str,
         source_breakdown_node_id: int | None,
     ) -> BomWeldingFee | None:
         return self._queries.get_by_business_key(
@@ -50,7 +49,6 @@ class BomWeldingFeeRepository:
             year=year,
             location=location,
             vehicle_model=vehicle_model,
-            bom_version=bom_version,
             source_breakdown_node_id=source_breakdown_node_id,
         )
 
@@ -61,7 +59,7 @@ class BomWeldingFeeRepository:
         year: int,
         location: str,
         vehicle_model: str,
-        bom_version: str,
+        bom_version: str | None = None,
         level: int | None = None,
     ) -> int:
         return self._queries.count_by_calc_scope(
@@ -80,7 +78,7 @@ class BomWeldingFeeRepository:
         year: int,
         location: str,
         vehicle_model: str,
-        bom_version: str,
+        bom_version: str | None = None,
         level: int | None = None,
     ) -> list[BomWeldingFee]:
         return self._queries.list_by_calc_scope(
@@ -192,7 +190,7 @@ class BomWeldingFeeRepository:
         year: int,
         location: str,
         vehicle_model: str,
-        bom_version: str,
+        bom_version: str | None = None,
         statuses: list[str],
         level: int | None = None,
         levels: list[int] | None = None,
@@ -255,7 +253,7 @@ class BomWeldingFeeRepository:
         year: int,
         location: str,
         vehicle_model: str,
-        bom_version: str,
+        bom_version: str | None = None,
         level: int | None = None,
         levels: list[int] | None = None,
     ) -> int:
@@ -276,7 +274,7 @@ class BomWeldingFeeRepository:
         year: int,
         location: str,
         vehicle_model: str,
-        bom_version: str,
+        bom_version: str | None = None,
         audited_by: str,
         audited_at: datetime,
         audit_remark: str | None,
@@ -305,7 +303,7 @@ class BomWeldingFeeRepository:
         year: int,
         location: str,
         vehicle_model: str,
-        bom_version: str,
+        bom_version: str | None = None,
         reverse_audited_by: str,
         reverse_audited_at: datetime,
         reverse_audit_remark: str,

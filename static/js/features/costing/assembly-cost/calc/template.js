@@ -19,7 +19,6 @@ export function assemblyCostCalcTemplate() {
                     ${filterSelect('lacCalcMonth', '月份', true)}
                     ${filterSelect('lacCalcLocation', '基地', true)}
                     ${filterSelect('lacCalcVehicleModel', '项目', true)}
-                    ${filterSelect('lacCalcBomVersion', 'BOM版本', true)}
 
                     <button id="lacCalcResetBtn"
                             class="inline-flex items-center gap-1 h-7 px-3 text-[11px] font-medium text-[#616161] hover:text-[#9e9e9e] transition-all duration-150">

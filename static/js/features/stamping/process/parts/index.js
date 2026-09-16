@@ -9,7 +9,17 @@ import {
     renderDetailContent,
     updatePartsFilterCapsules,
     updatePartsHud,
-} from './template.js?v=36';
+} from './template.js?v=37';
+import {
+    asOfFilterHtml,
+    fillAsOfSelects,
+    fillYearMonthSelects,
+    fmtPeriodRange,
+    periodEditorHtml,
+    readAsOf,
+    readPeriod,
+    wallClockYearMonth,
+} from '../../../common/period-ui.js?v=2';
 import {
     BTN_SAVE_ACTIVE,
     BTN_SAVE_DEFAULT,
@@ -108,6 +118,7 @@ const partsState = {
     isLoading: false,
     advancedOpen: false,
     pendingFilters: null,
+    total: 0,
 };
 
 export const PartsPage = {
@@ -116,6 +127,12 @@ export const PartsPage = {
         this.bindEvents();
         this.bindDrawerEvents();
         this.applyPermissionUi();
+        const asOfHost = document.getElementById('partsAsOfFilters');
+        if (asOfHost && !document.getElementById('partsYear')) {
+            asOfHost.innerHTML = asOfFilterHtml('parts', { variant: 'parts' });
+            const clock = wallClockYearMonth();
+            fillAsOfSelects('parts', clock.year, clock.month);
+        }
         partsState.pendingFilters = readHashFilters();
         if (partsState.pendingFilters) this.setAdvancedOpen(true);
         this.loadCascadeFilters().then(() => {
@@ -332,12 +349,18 @@ export const PartsPage = {
         if (scope.vehicle_model) params.vehicle_model = scope.vehicle_model;
         if (scope.version) params.version = scope.version;
         if (partNumber) params.part_number = partNumber;
+        const asOf = readAsOf('parts');
+        if (asOf) {
+            params.year = asOf.year;
+            params.month = asOf.month;
+        }
 
         try {
             const resp = await HttpClient.get(`${PARTS_API}/list`, { params });
             const pageInfo = resp.data ?? {};
             const items = pageInfo.items || [];
             const total = pageInfo.total ?? 0;
+            partsState.total = total;
             const totalPages = pageInfo.total_pages ?? 1;
 
             updatePartsHud(pageInfo.filters?.summary || null);
@@ -359,6 +382,7 @@ export const PartsPage = {
         } catch (error) {
             console.error('加载零件列表失败:', error);
             showToast(error.message || '加载失败', 'error');
+            partsState.total = 0;
             this.showEmptyHint('加载失败', esc(error.message) || '请稍后重试');
             updatePartsHud(null);
         } finally {
@@ -418,6 +442,7 @@ export const PartsPage = {
                 <td class="${cell} text-right tabular-nums ${muted}">${thickness}</td>
                 <td class="${cell} text-right tabular-nums ${muted}">${partWeight}</td>
                 <td class="${cell} text-right tabular-nums ${muted}">${processCount}</td>
+                <td class="${cell} ${muted} whitespace-nowrap">${esc(fmtPeriodRange(part.effective_year, part.effective_month, part.expiry_year, part.expiry_month))}</td>
                 <td class="${cell} text-[10px] text-[#555555] max-w-[160px] truncate" title="${esc(part.excel_filename || '')}">${esc(part.excel_filename) || '—'}</td>
                 <td class="px-1 py-2 text-center align-middle">
                     <div class="inline-flex items-center justify-center gap-0.5 opacity-0 pointer-events-none group-hover:opacity-100 group-hover:pointer-events-auto focus-within:opacity-100 focus-within:pointer-events-auto transition-opacity duration-100">
@@ -512,7 +537,33 @@ export const PartsPage = {
             const part = result.data?.data ?? result.data ?? result;
             contentEl.innerHTML = renderDetailContent(part, {
                 canUpdate: this.canUpdate !== false,
+                periodLabel: fmtPeriodRange(
+                    part.effective_year,
+                    part.effective_month,
+                    part.expiry_year,
+                    part.expiry_month,
+                ),
+                periodEditorHtml: this.canUpdate !== false
+                    ? `<div class="mx-4 mb-4">${periodEditorHtml('partPeriod')}
+                         <button type="button" id="savePartPeriodBtn"
+                                 class="mt-2 inline-flex items-center h-7 px-3 text-[10px] text-[#c8c8c8] border border-[#8a2020] hover:text-white">
+                             保存生失效
+                         </button>
+                       </div>`
+                    : '',
             });
+            if (this.canUpdate !== false) {
+                fillYearMonthSelects(
+                    'partPeriod',
+                    part.effective_year,
+                    part.effective_month,
+                    part.expiry_year,
+                    part.expiry_month,
+                );
+                document.getElementById('savePartPeriodBtn')?.addEventListener('click', () => {
+                    this.savePartPeriod(part.id);
+                });
+            }
 
             const btn = document.getElementById('saveProcessBtn');
             if (btn) {
@@ -697,6 +748,23 @@ export const PartsPage = {
         }
     },
 
+    async savePartPeriod(partId) {
+        if (this.canUpdate === false) {
+            showToast('无编辑权限', 'warning');
+            return;
+        }
+        const period = readPeriod('partPeriod');
+        if (!period) return;
+        try {
+            await HttpClient.patch(`${PARTS_API}/${partId}/period`, period);
+            showToast('已保存生失效', 'success');
+            this.loadParts(partsState.currentPage);
+            this.showDetail(partId);
+        } catch (error) {
+            showToast(error.message || '保存失败', 'error');
+        }
+    },
+
     async _saveOffalEdits(partId) {
         if (this.canUpdate === false) {
             showToast('无编辑权限', 'warning');
@@ -750,12 +818,22 @@ export const PartsPage = {
         }
         const scope = this.requireLocationForExport();
         if (!scope) return;
+        if (!partsState.total) {
+            showToast('当前筛选下没有零件，无法导出', 'warning');
+            return;
+        }
         const params = { location: scope.location };
         if (scope.stamping_supplier) params.stamping_supplier = scope.stamping_supplier;
         if (scope.vehicle_model) params.vehicle_model = scope.vehicle_model;
         if (scope.version) params.version = scope.version;
         const partNumber = document.getElementById('searchInput')?.value.trim() || '';
         if (partNumber) params.part_number = partNumber;
+        if (path === 'export-download') {
+            const asOf = readAsOf('parts');
+            if (!asOf) return;
+            params.year = asOf.year;
+            params.month = asOf.month;
+        }
 
         const btn = document.getElementById(buttonId);
         const originalHtml = btn ? btn.innerHTML : '';
@@ -782,7 +860,7 @@ export const PartsPage = {
             showToast(`导出成功: ${filename}`, 'success');
         } catch (error) {
             console.error(failLog, error);
-            showToast(error.message || '导出失败', 'error');
+            if (!error.status) showToast(error.message || '导出失败', 'error');
         } finally {
             if (btn) {
                 btn.disabled = false;

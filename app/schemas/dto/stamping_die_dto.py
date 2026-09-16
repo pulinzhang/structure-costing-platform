@@ -14,6 +14,9 @@ class StampingDiePartQuery(BaseModel):
     part_number: str | None = None
     page: int = Field(1, ge=1)
     size: int = Field(10, ge=1, le=100)
+    year: int | None = Field(None, ge=2000, le=2100, description="查看年；空则墙钟")
+    month: int | None = Field(None, ge=1, le=12, description="查看月；与年同空或同有")
+    include_expired: bool = Field(False, description="含已失效；模具清单不提供开关")
 
     @field_validator("part_number", mode="before")
     @classmethod
@@ -69,6 +72,10 @@ class StampingDiePartInsert:
     excel_part_col: int | None
     created_by: str
     updated_by: str
+    effective_year: int
+    effective_month: int
+    expiry_year: int | None = None
+    expiry_month: int | None = None
 
 
 @dataclass

@@ -52,8 +52,16 @@ from app.services.masterdata.location.location_service import LocationService
 logger = logging.getLogger("service.costing.engine")
 
 # 仍展示「去处理」提示，但不计入 hard_stop / 不阻断 can_start
-# 缺工艺/无 BOM 只提示，不阻断另一条核价路径
-SOFT_UPLOAD_GATE_CODES = frozenset({"packaging_transport", "stamping_process", "bom_snapshot"})
+# 缺工艺/无 BOM / 该月无命中零件或树 只提示；无路径时仍靠 has_path 禁止启动
+SOFT_UPLOAD_GATE_CODES = frozenset(
+    {
+        "packaging_transport",
+        "stamping_process",
+        "bom_snapshot",
+        "vehicle_model",
+        "vehicle_model_period",
+    }
+)
 
 
 class CostingEngineHardStopError(BusinessException):

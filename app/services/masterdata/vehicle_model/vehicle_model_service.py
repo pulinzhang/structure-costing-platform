@@ -36,6 +36,7 @@ from app.services.masterdata.vehicle_model.identity import (
     require_introducible_by_code,
     require_overlaps_year,
     require_registered,
+    require_row,
 )
 from app.services.masterdata.vehicle_model.upload import process_upload as process_vehicle_upload
 
@@ -57,6 +58,20 @@ class VehicleModelService:
         vehicle_model: str,
     ) -> str:
         return require_registered(self.repository, db, location, vehicle_model)
+
+    def project_sop_period(
+        self,
+        db: Session,
+        location: str,
+        vehicle_model: str,
+    ) -> tuple[int, int, int | None, int | None]:
+        record = require_row(self.repository, location, vehicle_model, db)
+        return (
+            record.effective_year,
+            record.effective_month,
+            record.expiry_year,
+            record.expiry_month,
+        )
 
     def require_introducible(
         self,

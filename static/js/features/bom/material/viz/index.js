@@ -6,7 +6,17 @@
  */
 
 import { can } from '../../../../permissions.js?v=8';
-import { bomVizTemplate } from './template.js?v=3';
+import { bomVizTemplate } from './template.js?v=4';
+import {
+    asOfFilterHtml,
+    fillAsOfSelects,
+    fillYearMonthSelects,
+    fmtPeriodRange,
+    periodEditorHtml,
+    readAsOf,
+    readPeriod,
+    wallClockYearMonth,
+} from '../../../common/period-ui.js?v=2';
 
 /** 布局常量（保证同层不重叠、标签不挤） */
 const LAYOUT = {
@@ -119,6 +129,9 @@ const bomVizState = {
     hoverId: null,
     selectedId: null,
     isLoading: false,
+    asOf: wallClockYearMonth(),
+    includeExpired: false,
+    canUpdatePeriod: false,
 };
 
 function parseHex(hex) {
@@ -539,6 +552,15 @@ const BomVizPage = {
         bomVizState.hoverId = null;
         bomVizState.selectedId = null;
         bomVizState.expandedIds = new Set();
+        bomVizState.canUpdatePeriod = can('op:bom-structure:update');
+        const asOfHost = document.getElementById('bomVizAsOfFilters');
+        if (asOfHost && !document.getElementById('bomVizYear')) {
+            asOfHost.innerHTML = asOfFilterHtml('bomViz', { includeExpired: true });
+            fillAsOfSelects('bomViz', bomVizState.asOf.year, bomVizState.asOf.month);
+            document.getElementById('bomVizYear')?.addEventListener('change', () => this.reloadAsOf());
+            document.getElementById('bomVizMonth')?.addEventListener('change', () => this.reloadAsOf());
+            document.getElementById('bomVizIncludeExpired')?.addEventListener('change', () => this.reloadAsOf());
+        }
 
         document.getElementById('bomVizBackAssemblies')?.addEventListener('click', () => {
             window.location.hash = snapshotId
@@ -573,7 +595,9 @@ const BomVizPage = {
         try {
             const [snapResp, treeResp] = await Promise.all([
                 HttpClient.get(`/api/bom/snapshots/${snapshotId}`),
-                HttpClient.get(`/api/bom/snapshots/${snapshotId}/tree`),
+                HttpClient.get(`/api/bom/snapshots/${snapshotId}/tree`, {
+                    params: this.treeQueryParams(),
+                }),
             ]);
             const snapshot = snapResp.data || null;
             const tree = Array.isArray(treeResp.data) ? treeResp.data : [];
@@ -600,6 +624,26 @@ const BomVizPage = {
         } finally {
             bomVizState.isLoading = false;
         }
+    },
+
+    treeQueryParams() {
+        const asOf = readAsOf('bomViz') || {
+            year: bomVizState.asOf.year,
+            month: bomVizState.asOf.month,
+            include_expired: bomVizState.includeExpired,
+        };
+        bomVizState.asOf = { year: asOf.year, month: asOf.month };
+        bomVizState.includeExpired = asOf.include_expired;
+        return {
+            year: asOf.year,
+            month: asOf.month,
+            include_expired: asOf.include_expired,
+        };
+    },
+
+    reloadAsOf() {
+        if (!bomVizState.snapshotId || !bomVizState.nodeId) return;
+        this.load(bomVizState.snapshotId, bomVizState.nodeId);
     },
 
     renderHeader() {
@@ -1029,6 +1073,12 @@ const BomVizPage = {
                             ? `<p class="text-[11px] font-mono text-[#555555]">${esc(node.part_number)}</p>`
                             : ''
                     }
+                    <p class="text-[11px] text-[#888888] mt-2">
+                        ${esc(node.location || '')} · ${esc(node.vehicle_model || '')} · ${esc(node.bom_version || '')}
+                    </p>
+                    <p class="text-[11px] text-[#9e9e9e] mt-1">
+                        ${esc(fmtPeriodRange(node.effective_year, node.effective_month, node.expiry_year, node.expiry_month))}
+                    </p>
                 </div>
 
                 ${
@@ -1097,9 +1147,36 @@ const BomVizPage = {
                     `
                             : ''
                     }
+                    ${
+                        !node.parent_id && bomVizState.canUpdatePeriod
+                            ? `
+                        <div>
+                            <p class="text-[10px] uppercase tracking-[0.14em] text-[#616161] mb-1.5">生失效</p>
+                            ${periodEditorHtml('bomVizL0')}
+                            <button type="button" id="bomVizSavePeriod"
+                                    class="mt-2 inline-flex items-center h-7 px-3 text-[10px] text-[#c8c8c8] border border-[#8a2020] hover:text-white">
+                                保存生失效
+                            </button>
+                        </div>
+                    `
+                            : ''
+                    }
                     ${renderExcelProvenance(node)}
                 </div>
             `;
+
+            if (!node.parent_id && bomVizState.canUpdatePeriod) {
+                fillYearMonthSelects(
+                    'bomVizL0',
+                    node.effective_year,
+                    node.effective_month,
+                    node.expiry_year,
+                    node.expiry_month,
+                );
+                document.getElementById('bomVizSavePeriod')?.addEventListener('click', () => {
+                    this.saveRootPeriod(node.id);
+                });
+            }
 
             document.getElementById('bomVizKnowledgeSketch')?.addEventListener('click', () => {
                 if (!src) return;
@@ -1127,6 +1204,18 @@ const BomVizPage = {
         if (backdrop) {
             backdrop.classList.add('pointer-events-none', 'opacity-0');
             backdrop.classList.remove('opacity-100');
+        }
+    },
+
+    async saveRootPeriod(nodeId) {
+        const period = readPeriod('bomVizL0');
+        if (!period) return;
+        try {
+            await HttpClient.patch(`/api/bom/nodes/${nodeId}`, period);
+            showToast('已保存生失效', 'success');
+            this.reloadAsOf();
+        } catch (error) {
+            showToast(error.message || '保存失败', 'error');
         }
     },
 };

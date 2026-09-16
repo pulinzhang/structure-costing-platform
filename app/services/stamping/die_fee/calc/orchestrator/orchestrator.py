@@ -156,8 +156,7 @@ class StampingDieFeeCalcOrchestrator:
         canonical, vehicle_model = VehicleModelService().require_overlaps_year(
             db, dto.location, dto.vehicle_model, dto.year
         )
-        if canonical != dto.location or vehicle_model != dto.vehicle_model:
-            dto = dto.model_copy(update={"location": canonical, "vehicle_model": vehicle_model})
+        dto = dto.model_copy(update={"location": canonical, "vehicle_model": vehicle_model})
         if count_approved(db, self._deps, dto):
             raise BusinessException(APPROVED_SCOPE_MESSAGE, code=409)
 

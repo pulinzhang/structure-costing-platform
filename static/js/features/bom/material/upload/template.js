@@ -27,6 +27,7 @@ export function bomUploadTemplate() {
                         下载模板
                     </button>
                 </div>
+                <div id="sopBannerSlot"></div>
                 <div class="p-5">
                     <form id="bomUploadForm">
                         <div class="bg-[#161616] border border-[#252525] p-4">
@@ -199,13 +200,13 @@ export function bomUploadTemplate() {
                             </ul>
                         </div>
                         <div>
-                            <h6 class="text-[10px] uppercase tracking-wider text-[#616161] mb-2">覆盖规则</h6>
+                            <h6 class="text-[10px] uppercase tracking-wider text-[#616161] mb-2">对齐规则</h6>
                             <ul class="list-disc list-inside text-xs text-[#616161] space-y-1.5">
-                                <li>唯一键：基地 + 项目 + 版本</li>
-                                <li>同键再次导入将替换整棵树</li>
+                                <li>第一次 SOP 抄项目起止；已有 SOP 后再导只更新文件里已有总成</li>
+                                <li>文件里出现新号将整单拒绝，换号请走工程变更</li>
+                                <li>未出现在文件里的树留下，不整包覆盖</li>
                                 <li>有内部号的物料必须一物一码（同一零件号对应唯一内部号，反之亦然）</li>
                                 <li>同一分总成挂在不同总成下时，焊信与二级子件单车用量必须相同</li>
-                                <li>源 Excel 与简图落盘保留</li>
                             </ul>
                         </div>
                         <div>

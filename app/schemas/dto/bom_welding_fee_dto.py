@@ -53,17 +53,28 @@ def resolve_welding_fee_levels(
 
 
 class BomWeldingFeeScopeDTO(BaseModel):
-    """范围必填：年度 + 基地 + 车型 + BOM 版本"""
+    """范围必填：年度 + 基地 + 项目。版本可选，有则只处理该版本。"""
 
     year: int = Field(..., ge=2000, le=2100, description="年度")
     location: str = Field(..., min_length=1, description="基地")
     vehicle_model: str = Field(..., min_length=1, description="项目")
-    bom_version: str = Field(..., min_length=1, description="材料清单版本")
+    bom_version: str | None = Field(None, description="材料清单版本（可选）")
+
+    @field_validator("bom_version", mode="before")
+    @classmethod
+    def _empty_bom_version(cls, value: object) -> str | None:
+        if value is None:
+            return None
+        text = str(value).strip()
+        return text or None
 
 
-class BomWeldingFeeCalcDTO(BomWeldingFeeScopeDTO):
-    """焊接费计算请求。levels 为空则计算拆解中出现的全部层级。"""
+class BomWeldingFeeCalcDTO(BaseModel):
+    """焊接费计算请求：年 + 基地 + 项目。计算页不传 levels，始终算全部层级。"""
 
+    year: int = Field(..., ge=2000, le=2100, description="年度")
+    location: str = Field(..., min_length=1, description="基地")
+    vehicle_model: str = Field(..., min_length=1, description="项目")
     levels: list[int] | None = Field(
         default=None,
         description="要计算的树层级；省略或空列表表示全部层级",

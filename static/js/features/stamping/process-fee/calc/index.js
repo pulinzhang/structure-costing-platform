@@ -5,7 +5,7 @@
 
 import {
     processFeeCalcTemplate,
-} from './template.js?v=25';
+} from './template.js?v=26';
 import {
     DEFAULT_PAGE_SIZE,
     bindPagination,
@@ -22,6 +22,8 @@ const POLL_INTERVAL_MS = 1500;
 const DUPLICATE_SCOPE_CALC_MESSAGE = '当前年度/基地/项目正在计算中，请勿重复提交。';
 /** 操作页固定要项目；后端允许「项目或工厂」以便引擎按厂补算。 */
 const SCOPE_REQUIRED_MESSAGE = '须选定年度、基地、项目。';
+const READY_FALLBACK =
+    '提示：级联为年度 → 基地 → 项目 → 版本。计算须选定年度、基地、项目，覆盖该车各冲压工厂。零件按冲压件有效期与该年有交集的才算，不是按项目档案期。并确保存在冲次单价。';
 
 const STATUS_META = {
     processing: { label: '计算中', className: 'text-[#64b5f6]' },
@@ -38,7 +40,7 @@ const calcState = {
     canRun: true,
     canDelete: true,
     lastResult: null,
-    ready: { part_count: 0, tonnage_rate_count: 0 },
+    ready: { part_count: 0, tonnage_rate_count: 0, message: null },
     history: {
         page: 1,
         size: DEFAULT_PAGE_SIZE,
@@ -203,7 +205,7 @@ async function loadCalcReady() {
     const version = document.getElementById('calcVersion')?.value || '';
 
     if (!year) {
-        calcState.ready = { part_count: 0, tonnage_rate_count: 0 };
+        calcState.ready = { part_count: 0, tonnage_rate_count: 0, message: null };
         setReadyCounts(0, 0);
         validateDataPreparation(location, year, vehicleModel, 0, 0);
         return;
@@ -219,12 +221,16 @@ async function loadCalcReady() {
         const data = res.data || {};
         const partCount = Number(data.part_count) || 0;
         const rateCount = Number(data.tonnage_rate_count) || 0;
-        calcState.ready = { part_count: partCount, tonnage_rate_count: rateCount };
+        calcState.ready = {
+            part_count: partCount,
+            tonnage_rate_count: rateCount,
+            message: data.message || null,
+        };
         setReadyCounts(partCount, rateCount);
         validateDataPreparation(location, year, vehicleModel, partCount, rateCount);
     } catch (error) {
         console.error('加载计算就绪统计失败:', error);
-        calcState.ready = { part_count: 0, tonnage_rate_count: 0 };
+        calcState.ready = { part_count: 0, tonnage_rate_count: 0, message: null };
         setReadyCounts(0, 0);
         validateDataPreparation(location, year, vehicleModel, 0, 0);
         showToast('加载数据依据失败', 'error');
@@ -243,8 +249,11 @@ function validateDataPreparation(location, year, vehicleModel, partCount, rateCo
     startBtn.disabled = !isReady;
     if (isReady) {
         errorBanner?.classList.add('hidden');
-    } else {
-        errorBanner?.classList.remove('hidden');
+    } else if (errorBanner) {
+        errorBanner.textContent = calcState.ready.message
+            ? `提示：${calcState.ready.message}`
+            : READY_FALLBACK;
+        errorBanner.classList.remove('hidden');
     }
 }
 

@@ -13,7 +13,7 @@ def test_prep_and_result_copy_is_plain_chinese() -> None:
         "开始计算：2025年，青岛，烟台海众汽车零部件有限公司"
     )
     assert format_rate_loaded(23) == "已加载 23 档冲次单价"
-    assert format_parts_matched(116) == "本范围共 116 个冲压零件"
+    assert format_parts_matched(116) == "本范围共 116 个有效期内冲压零件"
 
     batch = BatchCalcOutcome(
         success_count=116,

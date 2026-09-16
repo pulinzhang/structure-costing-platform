@@ -19,7 +19,7 @@ from app.services.costing.engine.orchestrator.runners import (
 )
 from app.services.costing.engine.orchestrator.summary import resolve_run_status, step_summary
 from app.services.costing.engine.progress import ProgressNotifier
-from app.services.costing.engine.scope_discovery import DiscoveryResult
+from app.services.costing.engine.scope_discovery import DiscoveryResult, L0Scope
 
 if TYPE_CHECKING:
     from app.services.costing.engine.orchestrator.run_orchestrator import RunOrchestrator
@@ -278,21 +278,31 @@ def execute_assembly(
     progress: ProgressNotifier,
     carry: PhaseCarry,
 ) -> None:
-    scopes = discovery.l0_scopes
+    vehicles: list[L0Scope] = []
+    seen: set[str] = set()
+    for scope in discovery.l0_scopes:
+        if scope.vehicle_model in seen:
+            continue
+        seen.add(scope.vehicle_model)
+        vehicles.append(scope)
     stamping_models = set(discovery.stamping_vehicle_models)
-    total = max(len(scopes), 1)
-    for idx, scope in enumerate(scopes):
-        scope_key = f"{scope.vehicle_model}|{scope.bom_version}"
+    total = max(len(vehicles), 1)
+    for idx, scope in enumerate(vehicles):
+        scope_key = scope.vehicle_model
         progress.report_stage(
             "assembly",
             idx,
             total,
-            f"总成核价 {idx + 1}/{len(scopes)} · {scope.vehicle_model} / {scope.bom_version}",
+            f"总成核价 {idx + 1}/{len(vehicles)} · {scope.vehicle_model}",
         )
         skip_reason = None
         if scope.vehicle_model in stamping_models and scope.vehicle_model in carry.failed_vehicles:
             skip_reason = "该项目加工费或零件价未完成，跳过总成核价"
-        elif scope_key in carry.failed_l0:
+        elif any(
+            f"{item.vehicle_model}|{item.bom_version}" in carry.failed_l0
+            for item in discovery.l0_scopes
+            if item.vehicle_model == scope.vehicle_model
+        ):
             skip_reason = "年度焊接拆解/焊接费补算失败，跳过总成核价"
         if skip_reason:
             step = finish_step(
@@ -329,5 +339,5 @@ def execute_assembly(
             "assembly",
             idx + 1,
             total,
-            f"总成核价 {idx + 1}/{len(scopes)} · {scope.vehicle_model} / {scope.bom_version}",
+            f"总成核价 {idx + 1}/{len(vehicles)} · {scope.vehicle_model}",
         )

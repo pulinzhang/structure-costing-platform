@@ -20,6 +20,20 @@ class LlmAnalysisScopeVO(BaseModel):
     stamping_supplier: str | None = None
 
 
+class LlmAnalysisTimeRangeVO(BaseModel):
+    start: str
+    end: str
+
+
+class LlmAnalysisCarryVO(BaseModel):
+    """下一问可沿用的已解析范围（不含 analyses / Markdown）。"""
+
+    time_range: LlmAnalysisTimeRangeVO
+    filters: dict[str, str] = Field(default_factory=dict)
+    subject: str
+    query_mode: str
+
+
 class LlmAnalysisReportMetadataVO(BaseModel):
     engine_run_id: int | None = None
     has_data: bool = True
@@ -94,6 +108,7 @@ class LlmAnalysisReportTaskVO(BaseModel):
     report_type: str
     resolved_report_type: str | None = None
     scope: LlmAnalysisScopeVO
+    carry: LlmAnalysisCarryVO | None = None
     from_cache: bool = False
     progress_percent: int = 0
     message: str = ""
@@ -111,6 +126,7 @@ class LlmAnalysisReportVO(BaseModel):
     prompt_id: str | None = None
     intent_source: str
     scope: LlmAnalysisScopeVO
+    carry: LlmAnalysisCarryVO | None = None
     status: str
     markdown_content: str | None = None
     error_message: str | None = None

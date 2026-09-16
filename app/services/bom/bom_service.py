@@ -5,8 +5,9 @@ import logging
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
 
-from app.common.audit import audit_create
+from app.common.audit import audit_create, audit_update
 from app.common.bom.manufacturing_category import resolve_manufacturing_category
+from app.common.period import is_in_period, resolve_as_of_month, validate_period
 from app.exceptions.base import BusinessException, NotFoundException
 from app.models.bom import BomNode
 from app.repositories.bom.bom_repository import (
@@ -26,6 +27,7 @@ from app.schemas.dto.bom_dto import (
     BomSnapshotQuery,
     BomSnapshotWrite,
 )
+from app.schemas.dto.period_dto import EffectivePeriodUpdateDTO
 from app.schemas.vo.bom_vo import (
     BomCascadeFilterOptionsVO,
     BomNodeTreeVO,
@@ -102,12 +104,42 @@ class BomService:
         )
         return vo
 
-    def list_nodes_flat(self, db: Session, snapshot_id: int) -> list[BomNodeVO]:
+    def list_nodes_flat(
+        self,
+        db: Session,
+        snapshot_id: int,
+        *,
+        year: int | None = None,
+        month: int | None = None,
+        include_expired: bool = False,
+    ) -> list[BomNodeVO]:
         if not self.snapshot_repo.get_by_id(db, snapshot_id):
             raise NotFoundException("BOM 清单不存在")
         rows = self.node_repo.list_by_snapshot(db, snapshot_id)
+        if not include_expired:
+            as_of_year, as_of_month = resolve_as_of_month(year, month)
+            rows = _filter_hit_subtrees(rows, as_of_year, as_of_month)
         parent_ids_with_children = {r.parent_id for r in rows if r.parent_id is not None}
         return [self._to_node_vo(r, has_children=r.id in parent_ids_with_children) for r in rows]
+
+    def list_nodes_tree(
+        self,
+        db: Session,
+        snapshot_id: int,
+        *,
+        year: int | None = None,
+        month: int | None = None,
+        include_expired: bool = False,
+    ) -> list[BomNodeTreeVO]:
+        return self._build_tree(
+            self.list_nodes_flat(
+                db,
+                snapshot_id,
+                year=year,
+                month=month,
+                include_expired=include_expired,
+            )
+        )
 
     def paginate_snapshots(
         self, db: Session, query: BomSnapshotQuery
@@ -288,9 +320,6 @@ class BomService:
             logger.exception("删除 BOM snapshot 失败")
             raise
 
-    def list_nodes_tree(self, db: Session, snapshot_id: int) -> list[BomNodeTreeVO]:
-        return self._build_tree(self.list_nodes_flat(db, snapshot_id))
-
     def create_node(
         self,
         db: Session,
@@ -316,6 +345,18 @@ class BomService:
 
         try:
             audit = audit_create(current_user)
+            if data.parent_id is None:
+                effective_year, effective_month, expiry_year, expiry_month = (
+                    VehicleModelService().project_sop_period(db, snapshot.location, snapshot.vehicle_model)
+                )
+            else:
+                parent = self.node_repo.get_by_id(db, data.parent_id)
+                if parent is None:
+                    raise NotFoundException("父节点不存在或不属于该 BOM")
+                effective_year = parent.effective_year
+                effective_month = parent.effective_month
+                expiry_year = parent.expiry_year
+                expiry_month = parent.expiry_month
             row = self.node_repo.create(
                 db,
                 BomNodeWrite(
@@ -343,8 +384,64 @@ class BomService:
                     weld_info=data.weld_info,
                     remark=data.remark,
                     sketch_url=data.sketch_url,
+                    location=snapshot.location,
+                    vehicle_model=snapshot.vehicle_model,
+                    bom_version=snapshot.bom_version,
+                    effective_year=effective_year,
+                    effective_month=effective_month,
+                    expiry_year=expiry_year,
+                    expiry_month=expiry_month,
                 ),
             )
+            db.commit()
+            db.refresh(row)
+            return self._to_node_vo(row)
+        except IntegrityError:
+            db.rollback()
+            raise BusinessException("同一清单下总成零件号已存在") from None
+        except (BusinessException, NotFoundException):
+            db.rollback()
+            raise
+        except Exception:
+            db.rollback()
+            logger.exception("创建 BOM node 失败")
+            raise
+
+    def patch_node_period(
+        self,
+        db: Session,
+        node_id: int,
+        dto: EffectivePeriodUpdateDTO,
+        current_user: UserVO,
+    ) -> BomNodeVO:
+        row = self.node_repo.get_by_id(db, node_id)
+        if not row:
+            raise NotFoundException("节点不存在")
+        if row.level != 0:
+            raise BusinessException("只能改总成（L0）生失效")
+        validate_period(
+            dto.effective_year,
+            dto.effective_month,
+            dto.expiry_year,
+            dto.expiry_month,
+        )
+        others = [
+            other
+            for other in self.node_repo.list_l0(db, row.snapshot_id)
+            if other.id != row.id and other.seq_no is not None and other.seq_no == row.seq_no
+        ]
+        for other in others:
+            if _seq_periods_overlap(dto, other):
+                raise BusinessException("同一序号两棵总成不能在同一月都有效")
+        audit = audit_update(current_user)
+        subtree = _collect_subtree(self.node_repo.list_by_snapshot(db, row.snapshot_id), row.id)
+        for node in subtree:
+            node.effective_year = dto.effective_year
+            node.effective_month = dto.effective_month
+            node.expiry_year = dto.expiry_year
+            node.expiry_month = dto.expiry_month
+            node.updated_by = audit["updated_by"]
+        try:
             db.commit()
             db.refresh(row)
             return self._to_node_vo(row)
@@ -353,7 +450,7 @@ class BomService:
             raise
         except Exception:
             db.rollback()
-            logger.exception("创建 BOM node 失败")
+            logger.exception("改 BOM 生失效失败")
             raise
 
     def delete_node(self, db: Session, node_id: int) -> None:
@@ -392,3 +489,66 @@ class BomService:
             else:
                 roots.append(node)
         return roots
+
+
+def _filter_hit_subtrees(rows: list[BomNode], as_of_year: int, as_of_month: int) -> list[BomNode]:
+    hit_l0 = {
+        row.id
+        for row in rows
+        if row.level == 0
+        and is_in_period(
+            effective_year=row.effective_year,
+            effective_month=row.effective_month,
+            expiry_year=row.expiry_year,
+            expiry_month=row.expiry_month,
+            as_of_year=as_of_year,
+            as_of_month=as_of_month,
+        )
+    }
+    keep = _descendant_ids(rows, hit_l0)
+    return [row for row in rows if row.id in keep]
+
+
+def _descendant_ids(rows: list[BomNode], roots: set[int]) -> set[int]:
+    children_of: dict[int, list[int]] = {}
+    for row in rows:
+        if row.parent_id is None:
+            continue
+        children_of.setdefault(row.parent_id, []).append(row.id)
+    keep = set(roots)
+    stack = list(roots)
+    while stack:
+        current = stack.pop()
+        for child_id in children_of.get(current, []):
+            if child_id in keep:
+                continue
+            keep.add(child_id)
+            stack.append(child_id)
+    return keep
+
+
+def _collect_subtree(rows: list[BomNode], root_id: int) -> list[BomNode]:
+    keep = _descendant_ids(rows, {root_id})
+    return [row for row in rows if row.id in keep]
+
+
+def _seq_periods_overlap(dto: EffectivePeriodUpdateDTO, other: BomNode) -> bool:
+    start = max(
+        (dto.effective_year, dto.effective_month),
+        (other.effective_year, other.effective_month),
+    )
+    dto_end = (
+        (dto.expiry_year, dto.expiry_month)
+        if dto.expiry_year is not None and dto.expiry_month is not None
+        else None
+    )
+    other_end = (
+        (other.expiry_year, other.expiry_month)
+        if other.expiry_year is not None and other.expiry_month is not None
+        else None
+    )
+    if dto_end is None:
+        return other_end is None or start <= other_end
+    if other_end is None:
+        return start <= dto_end
+    return start <= min(dto_end, other_end)

@@ -147,7 +147,6 @@ def process_upload(
                 location=file_info.safe_location,
                 stamping_suppliers=supplier_names,
                 vehicle_model=vehicle_model,
-                version=version,
             )
             cost_ratio_preserver.apply(
                 parse_result.processes,
@@ -171,6 +170,11 @@ def process_upload(
                 ),
                 current_user=current_user,
             )
+            mapped_ids = list(part_map.values())
+            if mapped_ids:
+                process_repo.delete_by_part_ids(db, mapped_ids)
+                for part_id in mapped_ids:
+                    tailor_weld_service.repository.delete_by_part_id(db, part_id)
             tailor_assemblies, tailor_blanks, tailor_warnings = (
                 tailor_weld_service.save_parsed_for_upload(
                     db,

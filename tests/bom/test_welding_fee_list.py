@@ -5,7 +5,11 @@ from __future__ import annotations
 from decimal import Decimal
 from unittest.mock import MagicMock
 
-from app.schemas.dto.bom_welding_fee_dto import BomWeldingFeeQuery
+from app.schemas.dto.bom_welding_fee_dto import (
+    BomWeldingFeeBatchDeleteDTO,
+    BomWeldingFeeQuery,
+    BomWeldingFeeScopeDTO,
+)
 from app.schemas.vo.bom_welding_fee_vo import WeldingFeeListSummaryVO
 from app.services.bom.welding_fee.service import BomWeldingFeeService
 
@@ -72,7 +76,7 @@ def test_list_fees_hud_ignores_partial_drilldown() -> None:
     hud_kw = service.fee_repo.summarize_by_filters.call_args.kwargs
     assert "calc_status" not in hud_kw
     assert hud_kw["year"] == 2026
-    assert hud_kw["location"] == "芜湖"
+    assert "locations" in hud_kw
     assert filters["summary"].partial_count == 3
     assert filters["summary"].total_count == 89
 
@@ -110,3 +114,34 @@ def test_list_fees_single_level_still_works() -> None:
     )
 
     assert service.fee_repo.paginate.call_args.kwargs["levels"] == [0]
+
+
+def test_batch_scope_treats_blank_bom_version_as_absent() -> None:
+    dto = BomWeldingFeeScopeDTO(
+        year=2026,
+        location="青岛",
+        vehicle_model="T13J",
+        bom_version="  ",
+    )
+    assert dto.bom_version is None
+
+
+def test_batch_delete_does_not_require_bom_version() -> None:
+    service = BomWeldingFeeService()
+    service.fee_repo = MagicMock()
+    service.fee_repo.count_by_scope_and_statuses.return_value = 2
+    service.fee_repo.delete_unaudited_by_scope.return_value = 5
+
+    result = service.batch_delete(
+        MagicMock(),
+        BomWeldingFeeBatchDeleteDTO(year=2026, location="青岛", vehicle_model="T13J"),
+    )
+
+    assert result.bom_version is None
+    assert result.deleted_count == 5
+    assert result.skipped_approved_count == 2
+    kwargs = service.fee_repo.delete_unaudited_by_scope.call_args.kwargs
+    assert kwargs["year"] == 2026
+    assert kwargs["location"] == "青岛"
+    assert kwargs["vehicle_model"] == "T13J"
+    assert kwargs["bom_version"] is None

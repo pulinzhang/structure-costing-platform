@@ -5,7 +5,7 @@ from __future__ import annotations
 from sqlalchemy.orm import Session
 
 from app.schemas.vo.costing_engine_vo import CostingEngineGateItemVO
-from app.services.costing.engine.gate.item import make_item, make_skipped
+from app.services.costing.engine.gate.item import make_item, make_skipped, skip_if_period_filtered
 from app.services.costing.engine.scope_discovery import DiscoveryResult
 from app.services.costing.stamping_part_cost.calc.resolvers import PriceResolver
 
@@ -18,6 +18,11 @@ def check_scrap_price(
     year: int,
     month: int,
 ) -> CostingEngineGateItemVO:
+    skipped = skip_if_period_filtered(
+        discovery, code="scrap_price", location=location, year=year, month=month
+    )
+    if skipped is not None:
+        return skipped
     if not discovery.stamping_vehicle_models:
         return make_skipped(
             code="scrap_price",

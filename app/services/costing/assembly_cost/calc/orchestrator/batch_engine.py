@@ -65,7 +65,6 @@ class BatchCalculationEngine:
                 month=ctx.month,
                 location=ctx.location,
                 vehicle_model=ctx.vehicle_model,
-                bom_version=ctx.bom_version,
                 source_node_id=root.id,
             )
             if existing is not None and existing.audit_status == AUDIT_APPROVED:
@@ -133,7 +132,7 @@ class BatchCalculationEngine:
                         month=ctx.month,
                         location=ctx.location,
                         vehicle_model=ctx.vehicle_model,
-                        bom_version=ctx.bom_version,
+                        bom_version=root.bom_version,
                         source_node_id=root.id,
                         level=root.level,
                         is_tree_root=root.parent_id is None,
@@ -145,7 +144,7 @@ class BatchCalculationEngine:
                         part_number=result.part_number,
                         part_name=result.part_name,
                         supply_qty=result.supply_qty,
-                        bom_snapshot_id=ctx.snapshot_id,
+                        bom_snapshot_id=root.snapshot_id,
                         sketch_url=result.sketch_url,
                         stamping_amount=result.stamping_amount,
                         purchased_amount=result.purchased_amount,

@@ -242,7 +242,7 @@ BETWEEN start AND end               贡献度、TopN、异常判定
 
 | 能力 | 范围 |
 |------|------|
-| **入口** | 浮动助理；`user_question` 一问一答；胶囊人话；异步轮询 |
+| **入口** | 浮动助理；自然语言提问，上一问范围可沿用；胶囊人话；异步轮询 |
 | **Query** | Parser（LLM 抽条件 + 词典对齐 + 规则定 `analyses[]`）；四级降级（C.4.2.1）；`usage_help` |
 | **取数与算** | Repository **直查明细表**区间一次聚合（B.7 #14）；Analysis `summary` / `trend` / `risk`（公式见 B.6.1）；`comparison_basis` 最小集（`same_part` + `same_bom_version`） |
 | **输出** | 瘦 Snapshot → LLM Markdown；聊天区仅正文；口径 tight/loose 写在正文 |
@@ -330,7 +330,10 @@ BETWEEN start AND end               贡献度、TopN、异常判定
 #### C.4.1 流水线
 
 ```text
-POST body：仅 user_question
+POST body：user_question（可选 previous_report_id）
+        │
+        ▼
+ 若有上一份本人报告 → 还原 AnalysisQuery 作为沿用范围
         │
         ▼
  ConditionExtractor（LLM，t=0，可无 key 则规则回退）
@@ -339,7 +342,7 @@ POST body：仅 user_question
  EntityAligner（Python）「青岛厂」→ location:"青岛"
         │
         ▼
- QueryParser 规则 → analyses / subject / basis → AnalysisQuery
+ QueryParser：问句证据覆盖 + 缺槽沿用 → analyses / subject / basis → AnalysisQuery
 ```
 
 #### C.4.2 LLM 抽取契约
@@ -447,7 +450,7 @@ POST body：仅 user_question
 
 | Method | Path | 说明 |
 |--------|------|------|
-| `POST` | `/api/llm/reports` | body：`user_question`（+ 可选 `audience` / `force_refresh` / `idempotency_key`） |
+| `POST` | `/api/llm/reports` | body：`user_question`（+ 可选 `audience` / `force_refresh` / `idempotency_key` / `previous_report_id`） |
 | `GET` | `/api/llm/tasks/{task_id}` | 轮询 |
 | `GET` | `/api/llm/reports/{id}` | Markdown + 元数据；校验 `user_id` |
 | `GET` | `/api/llm/reports` | 本人历史分页（`page` + `size`，默认 size=10）；**列表项 VO**，不含 `markdown_content` |
@@ -457,13 +460,14 @@ POST body：仅 user_question
 {
   "user_question": "2026年1月到8月，青岛采购成本怎么变化？",
   "force_refresh": false,
-  "idempotency_key": null
+  "idempotency_key": null,
+  "previous_report_id": null
 }
 ```
 
-对外不传 `scope` / `analyses[]`；由服务端解析组合。
+对外不传 `analyses[]`；由服务端解析组合。可选 `previous_report_id` 指向本人上一份报告，服务端沿用其已解析范围（问句有证据的维度覆盖，缺的补上）。无效 id 当作没有上一问，不 404。
 
-**落库字段（`llm_analysis_reports`）**：`user_id`、`user_question`、scope 字段、`markdown_content`、状态、审计等。完整 Snapshot **不落库整包**。
+**落库字段（`llm_analysis_reports`）**：`user_id`、`user_question`、scope 字段、`query_json`（解析后的 AnalysisQuery，供下一问沿用）、`markdown_content`、状态、审计等。完整 Snapshot **不落库整包**。
 
 ### C.7 目录结构
 

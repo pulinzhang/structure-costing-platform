@@ -57,7 +57,9 @@ class AssemblyCost(AuditUserMixin, Base):
     month: Mapped[int] = mapped_column(Integer, nullable=False, comment="计算月份")
     location: Mapped[str] = mapped_column(String(50), nullable=False, comment="采购基地")
     vehicle_model: Mapped[str] = mapped_column(String(50), nullable=False, comment="项目/车型")
-    bom_version: Mapped[str] = mapped_column(String(20), nullable=False, comment="BOM 版本")
+    bom_version: Mapped[str] = mapped_column(
+        String(20), nullable=False, comment="BOM 版本（抄节点，不进 UNIQUE）"
+    )
 
     source_node_id: Mapped[int] = mapped_column(
         Integer, nullable=False, comment="核价根 bom_nodes.id"
@@ -206,7 +208,6 @@ class AssemblyCost(AuditUserMixin, Base):
             "month",
             "location",
             "vehicle_model",
-            "bom_version",
             "source_node_id",
             name="uix_assembly_cost_scope_node",
         ),
@@ -223,7 +224,6 @@ class AssemblyCost(AuditUserMixin, Base):
             "month",
             "location",
             "vehicle_model",
-            "bom_version",
             "level",
         ),
         Index(
@@ -232,7 +232,6 @@ class AssemblyCost(AuditUserMixin, Base):
             "month",
             "location",
             "vehicle_model",
-            "bom_version",
             "is_tree_root",
         ),
     )

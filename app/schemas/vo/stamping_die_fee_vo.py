@@ -164,6 +164,7 @@ class StampingDieFeeCalcReadyVO(BaseModel):
     part_count: int = 0
     calculable_count: int = 0
     has_unit_price: bool = False
+    message: str | None = None
 
 
 class StampingDieFeeFilterVO(BaseModel):

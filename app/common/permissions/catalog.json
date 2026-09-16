@@ -467,6 +467,11 @@
                   "code": "op:bom-structure:view",
                   "label": "查看",
                   "type": "op"
+                },
+                {
+                  "code": "op:bom-structure:update",
+                  "label": "改生失效",
+                  "type": "op"
                 }
               ]
             },

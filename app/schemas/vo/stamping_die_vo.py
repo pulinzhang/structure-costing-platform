@@ -56,6 +56,10 @@ class StampingDiePartListVO(BaseModel):
     production_mode: str | None = None
     estimated_weight_subtotal_t: Decimal | None = None
     process_count: int = 0
+    effective_year: int | None = None
+    effective_month: int | None = None
+    expiry_year: int | None = None
+    expiry_month: int | None = None
 
     @field_serializer("estimated_weight_subtotal_t")
     def serialize_weight(self, value: Decimal | None) -> str | None:
@@ -96,6 +100,10 @@ class StampingDiePartDetailVO(BaseModel):
     updated_by: str | None = None
     created_at: datetime | None = None
     updated_at: datetime | None = None
+    effective_year: int | None = None
+    effective_month: int | None = None
+    expiry_year: int | None = None
+    expiry_month: int | None = None
     processes: list[StampingDieProcessVO] = []
 
     @field_serializer("created_at", "updated_at")

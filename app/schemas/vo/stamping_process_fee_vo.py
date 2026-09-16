@@ -213,6 +213,7 @@ class StampingProcessFeeCalcReadyVO(BaseModel):
     version: str | None = None
     part_count: int = 0
     tonnage_rate_count: int = 0
+    message: str | None = None
 
 
 class StampingProcessFeeBatchDeleteResultVO(BatchDeleteCountsVO):

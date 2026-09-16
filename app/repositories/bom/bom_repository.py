@@ -1,13 +1,16 @@
 """BOM Repository - 数据访问"""
 
+from collections import defaultdict
 from typing import TypedDict
 
 from sqlalchemy import func, or_
 from sqlalchemy.orm import Query, Session, joinedload
 from sqlalchemy.sql.elements import ColumnElement
 
+from app.common.period import is_in_period
 from app.common.types.repository_types import BomCascadeFilterOptions
 from app.models.bom import BomNode, BomSnapshot
+from app.repositories.period_query import period_hit_clause
 from app.repositories.persist import model_from_payload
 from app.schemas.dto.bom_dto import BomNodeWrite, BomSnapshotWrite
 
@@ -202,10 +205,32 @@ class BomSnapshotRepository:
             node_q = node_q.filter(BomSnapshot.vehicle_model == vehicle_model)
         return int(node_q.scalar() or 0)
 
-    def discover_l0_scopes(self, db: Session, locations: list[str]) -> list[BomL0ScopeRow]:
-        """发现指定基地别名下含 L0 节点的 BOM 版本。"""
+    def discover_l0_scopes(
+        self,
+        db: Session,
+        locations: list[str],
+        *,
+        as_of_year: int | None = None,
+        as_of_month: int | None = None,
+    ) -> list[BomL0ScopeRow]:
+        """发现指定基地别名下含 L0 节点的 BOM 版本；可按 L0 月命中裁。"""
         if not locations:
             return []
+        filters: list[ColumnElement[bool]] = [
+            BomSnapshot.location.in_(locations),
+            BomNode.level == 0,
+        ]
+        if as_of_year is not None and as_of_month is not None:
+            filters.append(
+                period_hit_clause(
+                    BomNode.effective_year,
+                    BomNode.effective_month,
+                    BomNode.expiry_year,
+                    BomNode.expiry_month,
+                    as_of_year,
+                    as_of_month,
+                )
+            )
         rows = (
             db.query(
                 BomSnapshot.location,
@@ -213,10 +238,7 @@ class BomSnapshotRepository:
                 BomSnapshot.bom_version,
             )
             .join(BomNode, BomNode.snapshot_id == BomSnapshot.id)
-            .filter(
-                BomSnapshot.location.in_(locations),
-                BomNode.level == 0,
-            )
+            .filter(*filters)
             .group_by(
                 BomSnapshot.location,
                 BomSnapshot.vehicle_model,
@@ -356,6 +378,60 @@ class BomNodeRepository:
             .all()
         )
 
+    def list_by_location_vehicle(
+        self,
+        db: Session,
+        *,
+        location: str,
+        vehicle_model: str,
+    ) -> list[BomNode]:
+        return (
+            db.query(BomNode)
+            .filter(
+                BomNode.location == location,
+                BomNode.vehicle_model == vehicle_model,
+            )
+            .order_by(BomNode.level, BomNode.sort_no, BomNode.id)
+            .all()
+        )
+
+    def list_as_of_trees(
+        self,
+        db: Session,
+        *,
+        location: str,
+        vehicle_model: str,
+        as_of_year: int,
+        as_of_month: int,
+    ) -> list[BomNode]:
+        """L0 命中 as_of 的树（含子树）。按月命中以树根为准。"""
+        all_nodes = self.list_by_location_vehicle(
+            db, location=location, vehicle_model=vehicle_model
+        )
+        children: dict[int | None, list[BomNode]] = defaultdict(list)
+        for node in all_nodes:
+            children[node.parent_id].append(node)
+        kept: list[BomNode] = []
+        stack = [
+            node
+            for node in all_nodes
+            if node.parent_id is None
+            and is_in_period(
+                effective_year=node.effective_year,
+                effective_month=node.effective_month,
+                expiry_year=node.expiry_year,
+                expiry_month=node.expiry_month,
+                as_of_year=as_of_year,
+                as_of_month=as_of_month,
+            )
+        ]
+        while stack:
+            current = stack.pop()
+            kept.append(current)
+            stack.extend(children.get(current.id, []))
+        kept.sort(key=lambda node: (int(node.level), node.sort_no or 0, node.id))
+        return kept
+
     def count_by_snapshot_and_level(self, db: Session, snapshot_id: int, level: int) -> int:
         return (
             db.query(BomNode)
@@ -364,11 +440,55 @@ class BomNodeRepository:
         )
 
     def create(self, db: Session, data: BomNodeWrite) -> BomNode:
+        snapshot = db.query(BomSnapshot).filter(BomSnapshot.id == data.snapshot_id).first()
+        if snapshot is not None and not data.location:
+            data.location = snapshot.location
+            data.vehicle_model = snapshot.vehicle_model
+            data.bom_version = snapshot.bom_version
         row = model_from_payload(BomNode, data)
         db.add(row)
         db.flush()
         db.refresh(row)
         return row
+
+    def get_l0_by_part_number(
+        self, db: Session, snapshot_id: int, part_number: str
+    ) -> BomNode | None:
+        return (
+            db.query(BomNode)
+            .filter(
+                BomNode.snapshot_id == snapshot_id,
+                BomNode.level == 0,
+                BomNode.part_number == part_number,
+            )
+            .first()
+        )
+
+    def list_l0(self, db: Session, snapshot_id: int) -> list[BomNode]:
+        return (
+            db.query(BomNode)
+            .filter(BomNode.snapshot_id == snapshot_id, BomNode.level == 0)
+            .order_by(BomNode.seq_no, BomNode.id)
+            .all()
+        )
+
+    def delete_descendants(self, db: Session, snapshot_id: int, root_id: int) -> None:
+        rows = self.list_by_snapshot(db, snapshot_id)
+        children_of: dict[int, list[int]] = {}
+        for row in rows:
+            if row.parent_id is None:
+                continue
+            children_of.setdefault(row.parent_id, []).append(row.id)
+        to_delete: list[int] = []
+        stack = list(children_of.get(root_id, []))
+        while stack:
+            current = stack.pop()
+            to_delete.append(current)
+            stack.extend(children_of.get(current, []))
+        if not to_delete:
+            return
+        db.query(BomNode).filter(BomNode.id.in_(to_delete)).delete(synchronize_session=False)
+        db.flush()
 
     def delete(self, db: Session, node: BomNode) -> None:
         db.delete(node)

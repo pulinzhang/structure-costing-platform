@@ -12,9 +12,10 @@ from app.models.costing.assembly_cost_calc_log import AssemblyCostCalcLog
 
 _STATUS_PROCESSING = "processing"
 
+_DROP_PROCESSING_LOCK_INDEX_SQL = "DROP INDEX IF EXISTS uq_assembly_calc_processing"
 _PROCESSING_LOCK_INDEX_SQL = """
 CREATE UNIQUE INDEX IF NOT EXISTS uq_assembly_calc_processing
-ON costing_assembly_cost_calc_logs(year, month, location, vehicle_model, bom_version)
+ON costing_assembly_cost_calc_logs(year, month, location, vehicle_model)
 WHERE status = 'processing'
 """
 
@@ -24,6 +25,7 @@ class AssemblyCostCalcLogRepository:
 
     def apply_processing_lock_index(self, conn: Connection) -> None:
         """在调用方连接上执行 DDL；不 commit（由 Service 提交）。"""
+        conn.execute(text(_DROP_PROCESSING_LOCK_INDEX_SQL))
         conn.execute(text(_PROCESSING_LOCK_INDEX_SQL))
 
     def mark_processing_lock_index_ensured(self) -> None:
@@ -51,7 +53,6 @@ class AssemblyCostCalcLogRepository:
         month: int,
         location: str,
         vehicle_model: str,
-        bom_version: str,
     ) -> AssemblyCostCalcLog | None:
         return (
             db.query(AssemblyCostCalcLog)
@@ -60,7 +61,6 @@ class AssemblyCostCalcLogRepository:
                 AssemblyCostCalcLog.month == month,
                 AssemblyCostCalcLog.location == location,
                 AssemblyCostCalcLog.vehicle_model == vehicle_model,
-                AssemblyCostCalcLog.bom_version == bom_version,
                 AssemblyCostCalcLog.status == _STATUS_PROCESSING,
             )
             .order_by(AssemblyCostCalcLog.id.desc())

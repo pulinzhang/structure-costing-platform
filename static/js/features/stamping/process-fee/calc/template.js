@@ -69,7 +69,7 @@ export function processFeeCalcTemplate() {
             </div>
 
             <div id="dataReadyErrorBanner" class="hidden text-[10px] text-[#d69e2e] bg-[#1a1710] px-2.5 py-1.5 border-l-2 border-[#d69e2e]">
-                提示：级联为年度 → 基地 → 项目 → 版本。计算须选定年度、基地、项目，覆盖该车各冲压工厂。并确保存在冲次单价与匹配零件。
+                提示：级联为年度 → 基地 → 项目 → 版本。计算须选定年度、基地、项目，覆盖该车各冲压工厂。零件按冲压件有效期与该年有交集的才算，不是按项目档案期。并确保存在冲次单价。
             </div>
 
             <div class="pt-2">

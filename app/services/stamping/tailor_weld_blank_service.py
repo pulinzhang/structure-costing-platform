@@ -334,7 +334,7 @@ class StampingTailorWeldBlankService:
         """
         上传事务内写入拼焊子片（不 commit）。
 
-        父件须已 flush；旧子片随父件删除级联清掉。
+        父件须已 flush；调用方先按 part_id 清掉旧子片再写入。
         返回 (成功总成数, 子片数, 警告)。
         """
         if not assemblies:
