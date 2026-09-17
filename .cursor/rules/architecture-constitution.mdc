@@ -72,7 +72,7 @@ app/
 
 ```
 上游（被消费）： masterdata · settings · stamping · bom · yishiyiyi
-下游（可组合上游）： costing · dashboard
+下游（可组合上游）： costing · dashboard · engineering_change
 解释层： llm（只读上游结果表；上游不得依赖 llm）
 横切登记： file_trace（被上传 Service 调用，不依赖 costing）
 ```

@@ -1,7 +1,8 @@
-"""工程变更合册样表：三张业务表从现网三个导入模板原样拷贝，再填本例数据。"""
+"""工程变更样表：封皮 + 三张业务表从日常三个导入模板原样拷贝，再填本例数据。"""
 
 from __future__ import annotations
 
+import sys
 from copy import copy
 from io import BytesIO
 from pathlib import Path
@@ -10,9 +11,15 @@ from openpyxl import Workbook, load_workbook
 from openpyxl.styles import Alignment, Border, Font, PatternFill, Side
 from openpyxl.worksheet.worksheet import Worksheet
 
-from app.services.bom.bom_template_builder import build_bom_material_template
-from app.services.stamping.die.template_builder import build_die_layout_template
-from app.services.stamping.upload.template_builder import build_stamping_process_template
+REPO = Path(__file__).resolve().parents[3]
+if str(REPO) not in sys.path:
+    sys.path.insert(0, str(REPO))
+
+from app.services.bom.bom_template_builder import build_bom_material_template  # noqa: E402
+from app.services.stamping.die.template_builder import build_die_layout_template  # noqa: E402
+from app.services.stamping.upload.template_builder import (  # noqa: E402
+    build_stamping_process_template,
+)
 
 OUT = Path(__file__).with_name("engineering-change-t13j-3086ab.xlsx")
 
@@ -77,44 +84,60 @@ def _write_cover(sheet: Worksheet) -> None:
     label = Font(name="微软雅黑", size=10)
     head = Font(name="微软雅黑", size=10, bold=True, color="FFFFFF")
     fill = PatternFill("solid", fgColor="4472C4")
-    sheet["A1"] = "工程变更合册（表头）"
+    sheet["A1"] = "工程变更（封皮）"
     sheet["A1"].font = title
-    sheet.merge_cells("A1:B1")
+    sheet.merge_cells("A1:J1")
     sheet["A2"] = (
-        "后面三张业务表的表名、表头、字体、合并规则与现网下载模板一致："
-        "材料清单导入模板 / 冲压工艺导入模板 / 冲压模具布点导入模板。"
-        "本例只改材料清单那一棵树；工艺确认、模具布点表体留空（无一级冲压换号）。"
+        "后面三张表和日常导入模板相同。"
+        "基地 芜湖，顾客 奇瑞公司。"
+        "先写变更类型和原来的交货总成，再写这一次动到的零件。"
+        "总成名称变更前后相同，只写一列。本行是总成改图：零件两列与零件名称空。"
+        "材料清单只写变化的行，没变的零件不要抄。"
+        "材料清单序号系统按变更前总成带出，人不用填。"
     )
     sheet["A2"].font = Font(name="微软雅黑", size=9, color="666666")
     sheet["A2"].alignment = Alignment(wrap_text=True, vertical="center")
-    sheet.merge_cells("A2:B2")
-    sheet.row_dimensions[2].height = 48
-    sheet["A4"] = "字段"
-    sheet["B4"] = "填写"
-    for col in (1, 2):
-        sheet.cell(4, col).font = head
-        sheet.cell(4, col).fill = fill
-        sheet.cell(4, col).border = _THIN
-        sheet.cell(4, col).alignment = _CENTER
-    rows = [
-        ("基地", "芜湖"),
-        ("顾客名称", "奇瑞公司"),
-        ("项目代号", "T13J"),
-        ("切点年", 2026),
-        ("切点月", 8),
-        ("被替换树根零件号", "551003086AA"),
-        ("新树根零件号", "551003086AB"),
-        ("SOP序号", 5),
-        ("变更说明", "分总成1137与冲压1133换AB；一级冲压3096不换号"),
-    ]
-    for offset, (key, value) in enumerate(rows):
-        excel_row = 5 + offset
-        sheet.cell(excel_row, 1, key).font = label
-        sheet.cell(excel_row, 1).border = _THIN
-        sheet.cell(excel_row, 2, value).font = label
-        sheet.cell(excel_row, 2).border = _THIN
-    sheet.column_dimensions["A"].width = 22
-    sheet.column_dimensions["B"].width = 56
+    sheet.merge_cells("A2:J2")
+    sheet.row_dimensions[2].height = 64
+    headers = (
+        "项目",
+        "生效年月",
+        "变更类型",
+        "变更前总成",
+        "变更后总成",
+        "总成名称",
+        "零件层级",
+        "变更前零件",
+        "变更后零件",
+        "零件名称",
+    )
+    for col, header in enumerate(headers, start=1):
+        cell = sheet.cell(4, col, header)
+        cell.font = head
+        cell.fill = fill
+        cell.border = _THIN
+        cell.alignment = _CENTER
+    values = (
+        "T13J",
+        "2026年08月",
+        "改图",
+        "551003086AA",
+        "551003086AB",
+        "右前门上铰链加强板总成",
+        "总成",
+        "",
+        "",
+        "",
+    )
+    for col, value in enumerate(values, start=1):
+        cell = sheet.cell(5, col, value)
+        cell.font = label
+        cell.border = _THIN
+        cell.alignment = _CENTER
+    sheet.row_dimensions[5].height = 28
+    widths = (12, 14, 12, 22, 22, 28, 10, 22, 22, 28)
+    for col, width in enumerate(widths, start=1):
+        sheet.column_dimensions[chr(64 + col)].width = width
     sheet.freeze_panes = "A5"
 
 
@@ -169,7 +192,7 @@ def _fill_bom_change_tree(sheet: Worksheet) -> None:
     sheet.cell(5, 20, "烟台海众")
     sheet.cell(5, 21, 0.85)
     sheet.cell(5, 22, "是")
-    sheet.cell(5, 23, "一级冲压不换号")
+    sheet.cell(5, 23, "一级冲压未改图")
 
     sheet.cell(6, 8, "ACA333N01")
     sheet.cell(6, 9, "551001137AB")
@@ -194,7 +217,7 @@ def _fill_bom_change_tree(sheet: Worksheet) -> None:
     sheet.cell(7, 19, "M6")
     sheet.cell(7, 21, 0.008)
     sheet.cell(7, 22, "/")
-    sheet.cell(7, 23, "标准件不换号")
+    sheet.cell(7, 23, "标准件未改图")
 
 
 def _strip_process_sample(sheet: Worksheet) -> None:
@@ -231,8 +254,8 @@ def main() -> None:
     combined = Workbook()
     cover = combined.active
     if cover is None:
-        cover = combined.create_sheet("变更头")
-    cover.title = "变更头"
+        cover = combined.create_sheet("封皮")
+    cover.title = "封皮"
     _write_cover(cover)
 
     bom_sheet = _copy_sheet(bom_wb["车身件材料清单"], combined, "车身件材料清单")

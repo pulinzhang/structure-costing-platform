@@ -81,7 +81,8 @@
 |------|------|
 | [README.md](engineering-change/README.md) | 目录 |
 | [bom-process-die-effective-period-design.md](engineering-change/bom-process-die-effective-period-design.md) | BOM / 冲压工艺 / 模具有效期（设计）：现网改造 |
-| [part-number-revision-design.md](engineering-change/part-number-revision-design.md) | 合册 Excel、切点作业；样表 `engineering-change/samples/` |
+| [part-number-revision-design.md](engineering-change/part-number-revision-design.md) | 切片 `engineering_change`、权限 §0、封皮十列；契约 §4.6–4.7、§8–§10；样表 `samples/` |
+| [t28-2025-07-import-bundle-test-design.md](engineering-change/t28-2025-07-import-bundle-test-design.md) | 测试：青岛 T28 · 对照一本 / 上传五份（§14） |
 
 ## 文件溯源 `file-trace/`
 

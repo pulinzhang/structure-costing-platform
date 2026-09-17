@@ -55,6 +55,8 @@
 weld_info 非空
 ```
 
+SOP / 无设变：仍扫全林。合册只扫新种那一棵（§6.1）。**合册落地时**本页 generate 才拒绝；落地前保持现网整包。
+
 **不按 level 过滤。** 分总成只要材料清单写了焊接列，就会落主表 + 明细。
 
 | 树上 | 有原文时 | 无原文 |
@@ -132,7 +134,7 @@ bom_welding_process_breakdown_generate_logs  一次「开始拆解」一条（�
 
 | 分组 | 字段 | 说明 |
 |------|------|------|
-| 范围 | `location`, `vehicle_model`, `bom_version` | 从 source `bom_nodes` 抄，不要只抄 snapshot 头 |
+| 范围 | `location`, `vehicle_model`, `bom_version` | `location` / `vehicle_model` 从 source 节点抄。`bom_version` **抄 snapshot 头**（合册新树节点可以写变更字；UNIQUE 与引擎 L0Scope 仍按头 D/09）。不要抄节点变更字 |
 | 时段 | （不落表） | `source_node_id` INNER JOIN `bom_nodes` 读四列 |
 | 溯源 | `snapshot_id`, `source_node_id`, `excel_row` | `source_node_id` 是取期钥匙；`snapshot_id` 不是身份 |
 | 零件 | `part_number`, `level`, `parent_*`, `supply_*` | L0 的 `supply_*` 为自身 |
@@ -164,7 +166,7 @@ start_generate
   → processing 日志当范围锁
   → 已审行存在则拒绝（须先批量反审核）
   → 删该范围未审核旧拆解
-  → 对每个有 weld_info 的节点：从该 `bom_nodes` 抄范围三列（不抄生失效）→ Parser → 落主表+明细 → 紧固件校验
+  → 对每个有 weld_info 的节点：从该 `bom_nodes` 抄范围三列（`bom_version` 抄 snapshot 头，不抄生失效）→ Parser → 落主表+明细 → 紧固件校验
   → apply_rollup_flags
   → 日志终态
 ```
@@ -174,6 +176,14 @@ start_generate
 `GET /generate/prep-stats`：有无清单、有焊信节点数、已审条数、是否可点生成。
 
 手工改明细后，同一范围 **重算** rollup 与子件校验（`recompute`），避免核对态撒谎。
+
+### 6.1 合册落地时才禁止整包 generate
+
+现网 generate 扫 **整份 snapshot**：有已审 409，无已审则删未审再全林。Parser / UNIQUE **不改**。
+
+**合册落地时**才收窄本页「开始生成」：该 snapshot 一旦有已失效树根、**或** 存在生效月不是项目 SOP 开始月的树根 → 拒绝（即使没有已审）。与采购对象同一把钥匙。缺新树拆解走 [工程变更合册](../engineering-change/part-number-revision-design.md) 重传，本页不提供「只补该树」。落地前本页保持现网整包 generate。
+
+合册同一事务只扫新种那一棵有焊信的节点 **插行**（不删旧树、不碰已审）；行上 `bom_version` 抄头。引擎 `annual_welding_breakdown` **落地时**不得再调本页 generate 补新树（合册 §4.6 门禁之 3）。合册上传是长任务，不走本页。
 
 ---
 
@@ -215,7 +225,7 @@ Parser  仅 generate / 改量映射 经 Service 调用
 
 下游：Ln 焊接费、核价引擎年度补算拆解、应成本读 L1 行。本切片 **不** 依赖 costing。
 
-核价引擎：该 L0Scope 还没有拆解时自动 `generate` 一次。
+核价引擎：现网该 L0Scope 还没有拆解时自动 `generate` 一次。合册落地后：年交集已齐则跳过；缺新树拆解不得调本页 generate，见 [合册 §4.6](../engineering-change/part-number-revision-design.md)。
 
 ---
 
@@ -238,7 +248,8 @@ Parser  仅 generate / 改量映射 经 Service 调用
 | [bom-process-die-effective-period-design.md](../engineering-change/bom-process-die-effective-period-design.md) | 生失效只在 `bom_nodes`；拆解用 `source_node_id` 取 |
 | [assembly-costing-design.md](../costing/assembly-costing-design.md) | 成品账读焊接费 **level=0** |
 | [l1-assembly-costing-design.md](../costing/l1-assembly-costing-design.md) | 应成本工艺量来自 L1 拆解行 |
-| [costing-engine-design.md](../costing/costing-engine-design.md) | 年度步骤可补算拆解 |
+| [costing-engine-design.md](../costing/costing-engine-design.md) | 年度步骤可补算拆解；合册落地后不得用本页 generate 补新树 |
+| [part-number-revision-design.md](../engineering-change/part-number-revision-design.md) | 合册只拆新树插行；`bom_version` 抄头 |
 | [bom-procurement-objects-design.md](bom-procurement-objects-design.md) | 认人不读拆解 |
 
 ---
@@ -250,3 +261,6 @@ Parser  仅 generate / 改量映射 经 Service 调用
 | 2026-08-31 | 按现网补文档：有原文即拆（含分总成）、过程量与装配用量、rollup、生成/审核/导出。 |
 | 2026-08-31 | 计费侧改为 `bom_welding_fees` + `level`。 |
 | 2026-09-16 | 生失效不落拆解表；用 `source_node_id` join `bom_nodes` 取期。范围三列现网已有。 |
+| 2026-09-16 | 设变后禁止整包 generate；合册插行 `bom_version` 抄 snapshot 头；引擎不得用本页补新树。 |
+| 2026-09-17 | 生成闸与采购对象对齐：已失效树根或生效月不是 SOP 开始月都拒绝整包 generate。 |
+| 2026-09-17 | 收口：禁止整包 generate / 引擎不调本页，都是 **合册落地时** 才改现网门禁。Parser 不改。 |
