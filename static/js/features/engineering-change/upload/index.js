@@ -2,7 +2,7 @@
  * 工程变更上传页 — 异步 task_id + 拖拽区原位进度（对齐布点 / 工艺上传）
  */
 
-import { engineeringChangeUploadTemplate } from './template.js?v=8';
+import { engineeringChangeUploadTemplate } from './template.js?v=10';
 import { can } from '../../../permissions.js?v=6';
 import {
     setDropzoneDragActive,
@@ -30,6 +30,7 @@ const EngineeringChangeUploadPage = {
         this.stopPolling();
         this.applyPermissionUi();
         this.bindEvents();
+        this.hideError();
         this.renderRecentUploads();
         this.fillPeriodSelects();
         this.loadScopeOptions();
@@ -106,6 +107,8 @@ const EngineeringChangeUploadPage = {
             event.preventDefault();
             this.handleSubmit();
         });
+        document.getElementById('ecUploadErrorCopyBtn')?.addEventListener('click', () => this.copyErrorText());
+        document.getElementById('ecUploadErrorCloseBtn')?.addEventListener('click', () => this.hideError());
     },
 
     fillPeriodSelects() {
@@ -171,6 +174,7 @@ const EngineeringChangeUploadPage = {
             return;
         }
         this.hideProgress();
+        this.hideError();
         this.selectedFile = file;
         const preview = document.getElementById('ecFilePreview');
         if (preview) {
@@ -260,7 +264,54 @@ const EngineeringChangeUploadPage = {
         const text = String(message || '操作失败').trim() || '操作失败';
         this.showProgress(0, text);
         this.updateProgress(0, text, 'failed');
+        this.showError(text);
         document.getElementById('ecUploadZone')?.classList.remove('pointer-events-none');
+    },
+
+    hideError() {
+        const panel = document.getElementById('ecUploadErrorPanel');
+        const body = document.getElementById('ecUploadErrorBody');
+        const copyBtn = document.getElementById('ecUploadErrorCopyBtn');
+        panel?.classList.add('hidden');
+        if (body) {
+            body.textContent = '';
+            body.dataset.raw = '';
+        }
+        if (copyBtn) copyBtn.textContent = '复制';
+    },
+
+    showError(message) {
+        const panel = document.getElementById('ecUploadErrorPanel');
+        const body = document.getElementById('ecUploadErrorBody');
+        const copyBtn = document.getElementById('ecUploadErrorCopyBtn');
+        const text = String(message || '导入失败').trim() || '导入失败';
+        if (!panel || !body) return;
+        body.textContent = text;
+        body.dataset.raw = text;
+        if (copyBtn) copyBtn.textContent = '复制';
+        panel.classList.remove('hidden');
+        panel.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+        showToast(text, 'error');
+    },
+
+    async copyErrorText() {
+        const body = document.getElementById('ecUploadErrorBody');
+        const copyBtn = document.getElementById('ecUploadErrorCopyBtn');
+        const text = body?.dataset?.raw || body?.textContent || '';
+        if (!text) return;
+        try {
+            await navigator.clipboard.writeText(text);
+            if (copyBtn) copyBtn.textContent = '已复制';
+            setTimeout(() => {
+                if (copyBtn && copyBtn.textContent === '已复制') copyBtn.textContent = '复制';
+            }, 1600);
+        } catch (_) {
+            const range = document.createRange();
+            range.selectNodeContents(body);
+            const selection = window.getSelection();
+            selection.removeAllRanges();
+            selection.addRange(range);
+        }
     },
 
     showProgress(progress = 0, msg = '已提交解析队列') {
@@ -349,6 +400,7 @@ const EngineeringChangeUploadPage = {
         }
         this.stopPolling();
         this.hideProgress();
+        this.hideError();
         this.activeTaskId = null;
         document.getElementById('ecUploadForm')?.reset();
         this.clearSelectedFile();
@@ -402,6 +454,8 @@ const EngineeringChangeUploadPage = {
                     this.activeTaskId = null;
                     this.setUploading(false);
                     document.getElementById('ecUploadZone')?.classList.remove('pointer-events-none');
+                    this.showError(data?.msg || '解析失败');
+                    return;
                 }
             } catch (error) {
                 this.stopPolling();
@@ -443,6 +497,7 @@ const EngineeringChangeUploadPage = {
         const periodLabel = typeof fmtPeriod === 'function' ? fmtPeriod(year, month) : `${year}年${String(month).padStart(2, '0')}月`;
         const scopeLabel = `${location} / ${vehicleModel} / ${periodLabel}`;
         this.setUploading(true);
+        this.hideError();
         this.showProgress(0, '已提交解析队列');
         try {
             const res = await HttpClient.post(`${API}/upload`, formData, { skipToast: true, timeout: 60000 });

@@ -8,10 +8,6 @@ from datetime import datetime
 from sqlalchemy.orm import Session
 
 from app.common.audit import audit_create, display_name
-from app.common.engineering_change_gates import (
-    is_letter_version_bump,
-    letter_version_base,
-)
 from app.common.timezone import now
 from app.exceptions.base import BusinessException, NotFoundException
 from app.models.bom.node import BomNode, BomSnapshot
@@ -37,7 +33,7 @@ logger = logging.getLogger("service.bom.procurement_object.insert")
 
 
 class BomProcurementObjectInsertService:
-    """合册插行门面：无头建空头；同号/字母版本抄确认；不删旧行。"""
+    """合册插行门面：无头建空头；同号或树上同一位置抄确认；不删旧行。"""
 
     def __init__(self) -> None:
         self.snapshot_repo = BomSnapshotRepository()
@@ -67,6 +63,7 @@ class BomProcurementObjectInsertService:
             raise BusinessException("新交货总成树为空，无法插采购对象")
         old_tree = _collect_subtree(all_nodes, old_l0_id) if old_l0_id else []
         old_by_number = self._index_old_object_rows(db, snapshot_id, old_tree)
+        new_to_old = _new_to_old_part_numbers(old_tree, new_tree)
 
         classified = classify_nodes(new_tree)
         audit = audit_create(current_user)
@@ -100,7 +97,7 @@ class BomProcurementObjectInsertService:
 
         payloads: list[BomProcurementObjectWrite] = []
         for row in classified.rows:
-            confirm = self._resolve_confirm(row, old_by_number)
+            confirm = self._resolve_confirm(row, old_by_number, new_to_old)
             confirm_map: dict[
                 int, tuple[str, str | None, datetime | None, str | None, str | None]
             ] = {}
@@ -193,22 +190,16 @@ class BomProcurementObjectInsertService:
         self,
         row: ClassifiedRow,
         old_by_number: dict[tuple[str, str, str | None], BomProcurementObject],
+        new_to_old: dict[str, str],
     ) -> tuple[str, str | None, datetime | None, str | None, str | None] | None:
         if row.section != SECTION_OBJECT:
             return None
         key = (row.part_number, row.section, row.object_kind)
         old = old_by_number.get(key)
         if old is None:
-            base = letter_version_base(row.part_number)
-            if base is not None:
-                for (part_number, section, kind), candidate in old_by_number.items():
-                    if section != row.section or kind != row.object_kind:
-                        continue
-                    if letter_version_base(part_number) != base:
-                        continue
-                    if is_letter_version_bump(part_number, row.part_number):
-                        old = candidate
-                        break
+            old_number = new_to_old.get(row.part_number)
+            if old_number:
+                old = old_by_number.get((old_number, row.section, row.object_kind))
         if old is None:
             return ("pending", None, None, None, None)
         return (
@@ -218,3 +209,41 @@ class BomProcurementObjectInsertService:
             old.confirm_remark,
             old.supplier_name,
         )
+
+
+def _new_to_old_part_numbers(old_tree: list[BomNode], new_tree: list[BomNode]) -> dict[str, str]:
+    """新树零件号 → 旧树同一位置（sort_no）零件号。不按字母版本配对。"""
+    if not old_tree or not new_tree:
+        return {}
+    old_root = next((node for node in old_tree if int(node.level) == 0), None)
+    new_root = next((node for node in new_tree if int(node.level) == 0), None)
+    if old_root is None or new_root is None:
+        return {}
+    old_children: dict[int | None, list[BomNode]] = {}
+    new_children: dict[int | None, list[BomNode]] = {}
+    for node in old_tree:
+        old_children.setdefault(node.parent_id, []).append(node)
+    for node in new_tree:
+        new_children.setdefault(node.parent_id, []).append(node)
+    mapping: dict[str, str] = {}
+    stack = [(old_root, new_root)]
+    while stack:
+        old_node, new_node = stack.pop()
+        old_number = (old_node.part_number or "").strip()
+        new_number = (new_node.part_number or "").strip()
+        if old_number and new_number:
+            mapping[new_number] = old_number
+        old_kids = sorted(
+            old_children.get(old_node.id, []),
+            key=lambda node: (node.sort_no or 0, node.id or 0),
+        )
+        new_kids = sorted(
+            new_children.get(new_node.id, []),
+            key=lambda node: (node.sort_no or 0, node.id or 0),
+        )
+        old_by_sort = {kid.sort_no: kid for kid in old_kids}
+        for new_kid in new_kids:
+            old_kid = old_by_sort.get(new_kid.sort_no)
+            if old_kid is not None:
+                stack.append((old_kid, new_kid))
+    return mapping

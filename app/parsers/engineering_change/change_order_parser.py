@@ -42,6 +42,8 @@ class ChangeOrderRowParsed:
     after_part_number: str | None
     part_name: str | None
     excel_row: int
+    before_assembly_span: tuple[int, int] | None = None
+    after_assembly_span: tuple[int, int] | None = None
 
 
 def parse_change_order_sheet(file_content: bytes) -> list[ChangeOrderRowParsed]:
@@ -55,7 +57,10 @@ def parse_change_order_sheet(file_content: bytes) -> list[ChangeOrderRowParsed]:
     assert sheet is not None
     header_row = _find_header_row(sheet)
     if header_row is None:
-        raise BusinessException(EC_CHANGE_ORDER_ROW_COUNT)
+        raise BusinessException(
+            f"{EC_CHANGE_ORDER_ROW_COUNT}：没找到工程变更单十列表头"
+            "（项目、生效年月、变更前总成…）。"
+        )
 
     data_rows: list[ChangeOrderRowParsed] = []
     for row_index in range(header_row + 1, sheet.max_row + 1):
@@ -78,11 +83,13 @@ def parse_change_order_sheet(file_content: bytes) -> list[ChangeOrderRowParsed]:
                 after_part_number=_as_optional_text(values[8]),
                 part_name=_as_optional_text(values[9]),
                 excel_row=row_index,
+                before_assembly_span=_vertical_merge_span(sheet, row_index, 3),
+                after_assembly_span=_vertical_merge_span(sheet, row_index, 4),
             )
         )
 
     if not data_rows:
-        raise BusinessException(EC_CHANGE_ORDER_ROW_COUNT)
+        raise BusinessException(f"{EC_CHANGE_ORDER_ROW_COUNT}。工程变更单表头下面没有数据行。")
     return data_rows
 
 
@@ -94,6 +101,15 @@ def _find_header_row(sheet: Worksheet) -> int | None:
         ]
         if cells == list(CHANGE_ORDER_HEADERS):
             return row_index
+    return None
+
+
+def _vertical_merge_span(sheet: Worksheet, row: int, col: int) -> tuple[int, int] | None:
+    for merged in sheet.merged_cells.ranges:
+        if merged.min_col != col or merged.max_col != col:
+            continue
+        if merged.min_row <= row <= merged.max_row and merged.max_row > merged.min_row:
+            return (merged.min_row, merged.max_row)
     return None
 
 

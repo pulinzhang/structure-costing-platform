@@ -1,4 +1,4 @@
-"""合册工艺硬门禁：序号对齐、缺新号、多余新号、旧号仍挂其它有效总成。"""
+"""合册工艺硬门禁：缺新号、多余新号、旧号仍挂其它有效总成。"""
 
 from __future__ import annotations
 
@@ -17,13 +17,14 @@ from app.common.engineering_change_gates import (
     EC_PROCESS_EXTRA_NEW,
     EC_PROCESS_MISSING_NEW,
     EC_PROCESS_SHARED_OLD,
-    EC_SEQ_MISMATCH,
     PART_LEVEL_ASSEMBLY,
-    is_letter_version_bump,
+    listed,
+    quoted,
 )
 from app.exceptions.base import BusinessException
 from app.parsers.bom.bom_parser import BomParsedNode
 from app.parsers.engineering_change.change_order_parser import ChangeOrderRowParsed
+from app.parsers.engineering_change.sheet_extract import SHEET_PROCESS
 from app.parsers.stamping.stamping_parser import parse_stamping_excel
 from app.services.bom.bom_service import BomService
 from app.services.stamping.stamping_service import StampingPartService
@@ -35,24 +36,7 @@ class ProcessGateItem:
 
     change_order: ChangeOrderRowParsed
     before_root_id: int
-    before_seq_no: int | None
     sliced_nodes: list[BomParsedNode] | None
-
-
-def validate_bom_seq_matches(
-    parsed_nodes: list[BomParsedNode],
-    *,
-    before_seq_no: int | None,
-) -> None:
-    """材料清单第 1 列若填了序号，须等于变更前总成投产序号。"""
-    file_l0 = [node for node in parsed_nodes if node.level == 0]
-    if len(file_l0) != 1:
-        raise BusinessException(EC_BOM_NEW_ROOT)
-    file_seq = file_l0[0].seq_no
-    if file_seq is None or before_seq_no is None:
-        return
-    if int(file_seq) != int(before_seq_no):
-        raise BusinessException(EC_SEQ_MISMATCH)
 
 
 def discover_bom_process_news(
@@ -87,13 +71,7 @@ def discover_bom_process_news(
     for file_number in file_numbers:
         if file_number in old_numbers or file_number in mapped_news or file_number in adds:
             continue
-        candidates = [old for old in old_numbers if is_letter_version_bump(old, file_number)]
-        if candidates:
-            candidates.sort(reverse=True)
-            bumps[candidates[0]] = file_number
-            mapped_news.add(file_number)
-        else:
-            adds.add(file_number)
+        adds.add(file_number)
     return bumps, adds
 
 
@@ -108,10 +86,10 @@ def validate_process_hard_gates(
     effective_month: int,
     bom_service: BomService | None = None,
     stamping_service: StampingPartService | None = None,
-) -> set[str]:
+) -> dict[str, str]:
     """
     整本工艺硬门禁。完成停止 / 此件不装：该行不必出工艺。
-    返回改图换号的新零件号（工艺按号增行时才按字母版本停旧号）。
+    返回改图钉明的旧号→新号（工艺/布点只停变更单写出的旧号，不按茎猜）。
     """
     bom = bom_service or BomService()
     stamping = stamping_service or StampingPartService()
@@ -127,14 +105,16 @@ def validate_process_hard_gates(
     exclude_l0_ids = {item.before_root_id for item in items}
 
     allowed_new: set[str] = set()
-    revise_new_numbers: set[str] = set()
+    revise_old_to_new: dict[str, str] = {}
     for item in items:
         if item.change_order.change_type == CHANGE_TYPE_STOP:
             continue
         nodes = item.sliced_nodes
         if nodes is None:
-            raise BusinessException(EC_BOM_NEW_ROOT)
-        validate_bom_seq_matches(nodes, before_seq_no=item.before_seq_no)
+            raise BusinessException(
+                f"{EC_BOM_NEW_ROOT}：变更后总成 "
+                f"{quoted(item.change_order.after_assembly_part_number)} 没有材料清单。"
+            )
         old_nodes = bom.list_subtree_nodes(db, root_id=item.before_root_id)
         old_tree_numbers = {(node.part_number or "").strip() for node in old_nodes}
         bumps, adds = discover_bom_process_news(
@@ -144,12 +124,15 @@ def validate_process_hard_gates(
         )
         allowed_new |= set(bumps.values()) | adds
         if item.change_order.change_type == CHANGE_TYPE_REVISE:
-            revise_new_numbers |= set(bumps.values())
+            revise_old_to_new.update(bumps)
             for old_number, new_number in bumps.items():
                 if old_number not in as_of_numbers:
                     continue
                 if new_number not in process_numbers:
-                    raise BusinessException(f"{EC_PROCESS_MISSING_NEW}：{new_number}")
+                    raise BusinessException(
+                        f"{EC_PROCESS_MISSING_NEW}：{quoted(new_number)}。"
+                        "请在冲压工艺确认表写出这一号。"
+                    )
                 if bom.part_number_used_on_other_active_l0(
                     db,
                     location=location,
@@ -157,10 +140,12 @@ def validate_process_hard_gates(
                     part_number=old_number,
                     as_of_year=effective_year,
                     as_of_month=effective_month,
-                    exclude_l0_id=item.before_root_id,
                     exclude_l0_ids=exclude_l0_ids,
                 ):
-                    raise BusinessException(EC_PROCESS_SHARED_OLD)
+                    raise BusinessException(
+                        f"{EC_PROCESS_SHARED_OLD}：{quoted(old_number)} "
+                        "还装在别的交货总成上，这一行不能按改图停掉。"
+                    )
         if (
             item.change_order.change_type == CHANGE_TYPE_ADD_PART
             and item.change_order.after_part_number
@@ -176,44 +161,19 @@ def validate_process_hard_gates(
                 and _parsed_needs_process(nodes, add_row)
                 and required not in process_numbers
             ):
-                raise BusinessException(f"{EC_PROCESS_MISSING_NEW}：{required}")
+                raise BusinessException(
+                    f"{EC_PROCESS_MISSING_NEW}：{quoted(required)}。"
+                    "请在冲压工艺确认表写出这一号。"
+                )
 
     process_new = {number for number in process_numbers if number not in as_of_numbers}
-    if process_new - allowed_new:
-        raise BusinessException(EC_PROCESS_EXTRA_NEW)
-    return revise_new_numbers
-
-
-def assert_part_not_shared_on_other_l0(
-    db: Session,
-    *,
-    location: str,
-    vehicle_model: str,
-    part_number: str,
-    as_of_year: int,
-    as_of_month: int,
-    exclude_l0_id: int,
-    exclude_l0_ids: set[int] | None = None,
-    bom_service: BomService | None = None,
-) -> None:
-    """
-    改图按字母版本停旧号前：旧号不得仍挂在「本文件不替换」的其它有效交货总成上。
-
-    例：T28 左右总成共用一级件时，只改右总成却停 AA，左总成当月会断工艺/摊模具。
-    字母版本失效是项目+厂维度，不是「只停这一棵树」。
-    """
-    bom = bom_service or BomService()
-    if bom.part_number_used_on_other_active_l0(
-        db,
-        location=location,
-        vehicle_model=vehicle_model,
-        part_number=part_number,
-        as_of_year=as_of_year,
-        as_of_month=as_of_month,
-        exclude_l0_id=exclude_l0_id,
-        exclude_l0_ids=exclude_l0_ids,
-    ):
-        raise BusinessException(EC_PROCESS_SHARED_OLD)
+    extra = process_new - allowed_new
+    if extra:
+        raise BusinessException(
+            f"{EC_PROCESS_EXTRA_NEW}：{listed(extra)}。"
+            "冲压工艺确认表只写这次换号或新加的冲压件。"
+        )
+    return revise_old_to_new
 
 
 def _parsed_needs_process(nodes: list[BomParsedNode], add_row: BomParsedNode) -> bool:
@@ -268,4 +228,22 @@ def _parse_process_part_numbers(process_sheet: bytes | None) -> set[str]:
         (part.part_number or "").strip()
         for part in parsed.parts
         if (part.part_number or "").strip()
+    }
+
+
+def parse_process_part_sketches(file_content: bytes | None) -> dict[str, bytes]:
+    """从合册原件抽冲压工艺确认表零件简图。必须读原 xlsx，抽表会丢掉 WMF。"""
+    if not file_content:
+        return {}
+    with tempfile.NamedTemporaryFile(suffix=".xlsx", delete=False) as tmp:
+        tmp.write(file_content)
+        tmp_path = tmp.name
+    try:
+        parsed = parse_stamping_excel(tmp_path, sheet_title=SHEET_PROCESS)
+    finally:
+        Path(tmp_path).unlink(missing_ok=True)
+    return {
+        (part_number or "").strip(): payload
+        for part_number, payload in parsed.images_by_part.items()
+        if (part_number or "").strip() and payload
     }

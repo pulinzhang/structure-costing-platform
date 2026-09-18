@@ -9,17 +9,8 @@ import {
     renderDetailContent,
     updatePartsFilterCapsules,
     updatePartsHud,
-} from './template.js?v=37';
-import {
-    asOfFilterHtml,
-    fillAsOfSelects,
-    fillYearMonthSelects,
-    fmtPeriodRange,
-    periodEditorHtml,
-    readAsOf,
-    readPeriod,
-    wallClockYearMonth,
-} from '../../../common/period-ui.js?v=2';
+} from './template.js?v=39';
+import { fmtPeriodRange } from '../../../common/period-ui.js?v=2';
 import {
     BTN_SAVE_ACTIVE,
     BTN_SAVE_DEFAULT,
@@ -127,12 +118,6 @@ export const PartsPage = {
         this.bindEvents();
         this.bindDrawerEvents();
         this.applyPermissionUi();
-        const asOfHost = document.getElementById('partsAsOfFilters');
-        if (asOfHost && !document.getElementById('partsYear')) {
-            asOfHost.innerHTML = asOfFilterHtml('parts', { variant: 'parts' });
-            const clock = wallClockYearMonth();
-            fillAsOfSelects('parts', clock.year, clock.month);
-        }
         partsState.pendingFilters = readHashFilters();
         if (partsState.pendingFilters) this.setAdvancedOpen(true);
         this.loadCascadeFilters().then(() => {
@@ -349,11 +334,7 @@ export const PartsPage = {
         if (scope.vehicle_model) params.vehicle_model = scope.vehicle_model;
         if (scope.version) params.version = scope.version;
         if (partNumber) params.part_number = partNumber;
-        const asOf = readAsOf('parts');
-        if (asOf) {
-            params.year = asOf.year;
-            params.month = asOf.month;
-        }
+        params.include_expired = true;
 
         try {
             const resp = await HttpClient.get(`${PARTS_API}/list`, { params });
@@ -543,27 +524,7 @@ export const PartsPage = {
                     part.expiry_year,
                     part.expiry_month,
                 ),
-                periodEditorHtml: this.canUpdate !== false
-                    ? `<div class="mx-4 mb-4">${periodEditorHtml('partPeriod')}
-                         <button type="button" id="savePartPeriodBtn"
-                                 class="mt-2 inline-flex items-center h-7 px-3 text-[10px] text-[#c8c8c8] border border-[#8a2020] hover:text-white">
-                             保存生失效
-                         </button>
-                       </div>`
-                    : '',
             });
-            if (this.canUpdate !== false) {
-                fillYearMonthSelects(
-                    'partPeriod',
-                    part.effective_year,
-                    part.effective_month,
-                    part.expiry_year,
-                    part.expiry_month,
-                );
-                document.getElementById('savePartPeriodBtn')?.addEventListener('click', () => {
-                    this.savePartPeriod(part.id);
-                });
-            }
 
             const btn = document.getElementById('saveProcessBtn');
             if (btn) {
@@ -748,23 +709,6 @@ export const PartsPage = {
         }
     },
 
-    async savePartPeriod(partId) {
-        if (this.canUpdate === false) {
-            showToast('无编辑权限', 'warning');
-            return;
-        }
-        const period = readPeriod('partPeriod');
-        if (!period) return;
-        try {
-            await HttpClient.patch(`${PARTS_API}/${partId}/period`, period);
-            showToast('已保存生失效', 'success');
-            this.loadParts(partsState.currentPage);
-            this.showDetail(partId);
-        } catch (error) {
-            showToast(error.message || '保存失败', 'error');
-        }
-    },
-
     async _saveOffalEdits(partId) {
         if (this.canUpdate === false) {
             showToast('无编辑权限', 'warning');
@@ -829,10 +773,7 @@ export const PartsPage = {
         const partNumber = document.getElementById('searchInput')?.value.trim() || '';
         if (partNumber) params.part_number = partNumber;
         if (path === 'export-download') {
-            const asOf = readAsOf('parts');
-            if (!asOf) return;
-            params.year = asOf.year;
-            params.month = asOf.month;
+            params.include_expired = true;
         }
 
         const btn = document.getElementById(buttonId);

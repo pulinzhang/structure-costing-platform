@@ -6,6 +6,7 @@ from decimal import Decimal
 
 from sqlalchemy.orm import Session
 
+from app.common.bom.node_order import bom_node_order_from
 from app.exceptions.base import NotFoundException
 from app.models.bom.node import BomNode
 from app.models.bom.procurement_object import BomProcurementObjectList
@@ -39,6 +40,7 @@ from app.services.costing.procurement_contract_report.assemble import (
     build_assembly_prep_rows,
     build_prep_rows,
     count_missing_month_cells,
+    prep_row_order_key,
     report_sort_key,
     resolve_tooling,
     sum_vehicle_total,
@@ -203,7 +205,7 @@ class ProcurementContractReportService:
         nodes = self.node_repo.list_by_snapshot(db, snapshot.id)
         roots = sorted(
             [node for node in nodes if node.parent_id is None],
-            key=lambda node: (node.sort_no, node.id),
+            key=bom_node_order_from,
         )
         costs = self._load_costs(
             db,
@@ -258,8 +260,7 @@ class ProcurementContractReportService:
         prep_rows.sort(
             key=lambda row: (
                 *report_sort_key(*scope_key, row.seq_label),
-                row.sort_no,
-                row.source_node_id,
+                *prep_row_order_key(row),
             )
         )
         price_rows.sort(

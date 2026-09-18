@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+from collections.abc import Sequence
+
 from sqlalchemy.orm import Session
 
 from app.parsers.bom.bom_parser import BomParsedNode
@@ -53,6 +55,7 @@ def plant_change_tree(
     seq_no: int | None,
     change_order: ChangeOrderRowParsed,
     parsed_nodes: list[BomParsedNode],
+    extra_change_orders: Sequence[ChangeOrderRowParsed] = (),
     effective_year: int,
     effective_month: int,
     expiry_year: int | None,
@@ -70,6 +73,7 @@ def plant_change_tree(
         seq_no=seq_no,
         spec=change_order_to_plant_spec(change_order),
         parsed_nodes=parsed_nodes,
+        extra_specs=tuple(change_order_to_plant_spec(item) for item in extra_change_orders),
         effective_year=effective_year,
         effective_month=effective_month,
         expiry_year=expiry_year,

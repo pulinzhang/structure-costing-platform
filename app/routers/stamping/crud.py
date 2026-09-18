@@ -13,7 +13,6 @@ from app.common.permissions.codes import Perm
 from app.database import get_db
 from app.deps.permissions import require_any_perm, require_perm
 from app.schemas.common.page_result import PageResult
-from app.schemas.dto.period_dto import EffectivePeriodUpdateDTO
 from app.schemas.dto.stamping_part_dto import (
     StampingCascadeFilterQuery,
     StampingMaterialQuery,
@@ -73,8 +72,8 @@ def _xlsx_response(content: bytes, filename: str) -> StreamingResponse:
 @router.get("/parts/export-download")
 def export_download(
     location: str = Query(..., min_length=1, description="采购基地"),
-    year: int = Query(..., ge=2000, le=2100, description="导出命中年"),
-    month: int = Query(..., ge=1, le=12, description="导出命中月"),
+    year: int | None = Query(None, ge=2000, le=2100, description="导出命中年"),
+    month: int | None = Query(None, ge=1, le=12, description="导出命中月"),
     stamping_supplier: str | None = Query(None, description="冲压工厂"),
     vehicle_model: str | None = Query(None, description="项目"),
     version: str | None = Query(None, description="版本"),
@@ -165,20 +164,6 @@ def update_part_offal(
     """零件详情纠错：是否利废、利用哪类废料。"""
     vo = _stamping_service.update_offal(db, part_id, body, current_user=current_user)
     return ApiResponse.updated(data=vo, message="利废设置已保存")
-
-
-@router.patch(
-    "/parts/{part_id}/period",
-    response_model=ApiResponse[StampingPartResponse],
-)
-def patch_part_period(
-    part_id: int,
-    body: EffectivePeriodUpdateDTO,
-    db: Session = Depends(get_db),
-    current_user: UserVO = Depends(require_perm(Perm.STAMPING_PARTS_UPDATE)),
-) -> ApiResponse[StampingPartResponse]:
-    vo = _stamping_service.patch_period(db, part_id, body, current_user=current_user)
-    return ApiResponse.updated(data=vo, message="已保存生失效")
 
 
 @router.delete("/parts/{part_id}", response_model=ApiResponse[None])

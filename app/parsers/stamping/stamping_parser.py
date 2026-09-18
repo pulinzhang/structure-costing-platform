@@ -79,7 +79,7 @@ class StampingExcelParser:
         self._sketch_anchors: list[SketchAnchor] = []
         self._used_sketch_indexes: set[int] = set()
 
-    def parse(self, file_path: str) -> ParserResult:
+    def parse(self, file_path: str, sheet_title: str | None = None) -> ParserResult:
         """解析冲压工艺 Excel 文件"""
         start_time = time.time()
         logger.info(f"开始解析冲压工艺文件: {file_path}")
@@ -89,7 +89,7 @@ class StampingExcelParser:
 
         try:
             # === 第一阶段：初始化 ===
-            self._init_parsers(file_path)
+            self._init_parsers(file_path, sheet_title=sheet_title)
 
             # === 第二阶段：解析数据 ===
             self._parse_data(part_saver)
@@ -106,14 +106,14 @@ class StampingExcelParser:
             if self._excel_ctx:
                 self._excel_ctx.close()
 
-    def _init_parsers(self, file_path: str) -> None:
+    def _init_parsers(self, file_path: str, sheet_title: str | None = None) -> None:
         """初始化各模块"""
         # Excel 上下文
         self._excel_ctx = ExcelContext()
         self._excel_ctx.load(file_path)
 
         # 先识别 Sheet（但还不知道表头在哪行）
-        self._excel_ctx.find_sheet()
+        self._excel_ctx.find_sheet(sheet_title)
         self.result.sheet_name = self._excel_ctx.sheet.title
 
         # 初始化 HeaderResolver（需要先创建才能使用）
@@ -157,7 +157,9 @@ class StampingExcelParser:
         )
 
         sketch_cols = allowed_sketch_anchor_cols(header_ctx.col_map.get("sketch"))
-        self._sketch_anchors = extract_stamping_sketches(file_path, sketch_cols)
+        self._sketch_anchors = extract_stamping_sketches(
+            file_path, sketch_cols, sheet_name=self.result.sheet_name
+        )
         self._used_sketch_indexes = set()
 
     def _parse_data(self, part_saver: PartSaver) -> None:
@@ -343,7 +345,7 @@ class StampingExcelParser:
                 logger.warning(f"  - {w}")
 
 
-def parse_stamping_excel(file_path: str) -> ParserResult:
-    """便捷函数"""
+def parse_stamping_excel(file_path: str, sheet_title: str | None = None) -> ParserResult:
+    """便捷函数。合册传入工作表名，避免误读工程变更单。"""
     parser = StampingExcelParser()
-    return parser.parse(file_path)
+    return parser.parse(file_path, sheet_title=sheet_title)

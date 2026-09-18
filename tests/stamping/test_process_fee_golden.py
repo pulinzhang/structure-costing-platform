@@ -66,11 +66,9 @@ def test_process_fee_golden_wuhu_2026_swing_shear(db_session: Session) -> None:
         version="V3",
     )
     result = PartFeeCalculator().calc_part_fee(
-        db_session,
         part,
         _rate_map(db_session),
         YEAR,
-        {},
     )
     assert isinstance(result, tuple)
     total, process_count, items = result
@@ -109,11 +107,9 @@ def test_process_fee_golden_wuhu_2026_half_ratio(db_session: Session) -> None:
         version="V3",
     )
     result = PartFeeCalculator().calc_part_fee(
-        db_session,
         part,
         _rate_map(db_session),
         YEAR,
-        {},
     )
     assert isinstance(result, tuple)
     total, process_count, items = result

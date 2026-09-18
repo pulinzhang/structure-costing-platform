@@ -12,6 +12,7 @@ from sqlalchemy import and_, case, func, or_
 from sqlalchemy.orm import Query, Session, joinedload, noload
 
 from app.common.audit import AUDIT_APPROVED, AUDIT_PENDING
+from app.common.bom.node_order import MISSING_SEQ_NO
 from app.models.bom.node import BomNode
 from app.models.costing.assembly_cost import AssemblyCost
 from app.repositories.costing.assembly_cost.payloads import (
@@ -82,14 +83,19 @@ class AssemblyCostQueries:
 
     @staticmethod
     def _order_like_bom_import(q: Query[_T]) -> Query[_T]:
-        """与材料清单导入顺序一致：Excel 行序（BomNode.sort_no），不是零件号。"""
+        """与材料清单导入顺序一致：seq_no → level → L0 零件号 → excel_row。"""
         return q.outerjoin(BomNode, BomNode.id == AssemblyCost.source_node_id).order_by(
             AssemblyCost.year.desc(),
             AssemblyCost.month.desc(),
             AssemblyCost.location.asc(),
             AssemblyCost.vehicle_model.asc(),
             AssemblyCost.bom_version.asc(),
-            func.coalesce(BomNode.sort_no, BomNode.excel_row, 0).asc(),
+            func.coalesce(BomNode.seq_no, MISSING_SEQ_NO).asc(),
+            BomNode.level.asc(),
+            case((BomNode.level == 0, BomNode.part_number), else_="").asc(),
+            func.coalesce(BomNode.excel_row, BomNode.sort_no, 0).asc(),
+            BomNode.part_number.asc(),
+            func.coalesce(BomNode.sort_no, 0).asc(),
             AssemblyCost.id.asc(),
         )
 

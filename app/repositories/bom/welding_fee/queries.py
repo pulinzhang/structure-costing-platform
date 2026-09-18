@@ -8,6 +8,7 @@ from sqlalchemy import case, func
 from sqlalchemy.orm import Query, Session, joinedload, noload
 
 from app.common.audit import AUDIT_APPROVED, AUDIT_PENDING
+from app.common.bom.node_order import MISSING_SEQ_NO
 from app.models.bom import BomNode, BomWeldingFee, BomWeldingProcessBreakdownNode
 from app.repositories.bom.welding_fee.types import WeldingFeeFilterSummary
 from app.schemas.dto.bom_welding_fee_dto import resolve_welding_fee_levels
@@ -156,7 +157,7 @@ class BomWeldingFeeQueries:
 
     @staticmethod
     def _order_like_bom_nodes(q: Query[BomWeldingFee]) -> Query[BomWeldingFee]:
-        """与材料清单 ``list_by_snapshot`` 一致：level → sort_no → id。"""
+        """与材料清单 ``list_by_snapshot`` 一致：seq_no → level → L0 零件号 → excel_row。"""
         return (
             q.outerjoin(
                 BomWeldingProcessBreakdownNode,
@@ -167,12 +168,17 @@ class BomWeldingFeeQueries:
                 BomWeldingProcessBreakdownNode.source_node_id == BomNode.id,
             )
             .order_by(
+                func.coalesce(BomNode.seq_no, MISSING_SEQ_NO).asc(),
                 BomWeldingFee.level.asc(),
+                case((BomNode.level == 0, BomNode.part_number), else_="").asc(),
                 func.coalesce(
+                    BomNode.excel_row,
                     BomNode.sort_no,
                     BomWeldingProcessBreakdownNode.excel_row,
                     0,
                 ).asc(),
+                BomNode.part_number.asc(),
+                func.coalesce(BomNode.sort_no, 0).asc(),
                 BomWeldingFee.id.asc(),
             )
         )

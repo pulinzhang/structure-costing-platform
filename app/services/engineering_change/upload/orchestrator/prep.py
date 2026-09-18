@@ -13,9 +13,9 @@ from sqlalchemy.orm import Session
 from app.common.engineering_change_gates import (
     CHANGE_TYPE_STOP,
     EC_AFTER_ASSEMBLY_BUSY,
-    EC_CUSTOMER_MISMATCH,
+    EC_CHANGE_ORDER_COLUMNS,
     EC_PROJECT_MISMATCH,
-    EC_SHEET_REQUIRED,
+    quoted,
 )
 from app.common.period import previous_month
 from app.exceptions.base import BusinessException
@@ -38,16 +38,18 @@ from app.services.bom.bom_service import BomService
 from app.services.engineering_change.upload.gates.bom_slice import slice_bom_nodes_for_l0
 from app.services.engineering_change.upload.gates.process_gates import (
     ProcessGateItem,
+    parse_process_part_sketches,
     validate_process_hard_gates,
 )
 from app.services.engineering_change.upload.gates.tree_gates import (
+    apply_process_sketches_to_bom_nodes,
     validate_change_tree_gates,
     validate_identity_gates,
 )
 from app.services.engineering_change.upload.gates.validate import (
-    validate_after_assembly_absent,
     validate_before_assembly_active,
     validate_bom_l0_matches_change_orders,
+    validate_change_order_before_after,
     validate_change_order_rows,
 )
 from app.services.engineering_change.upload.orchestrator.types import (
@@ -107,14 +109,29 @@ def prepare_engineering_change_run(
         snapshot_ids.add(before_root.snapshot_id)
         snapshot = bom_service.get_snapshot(db, before_root.snapshot_id)
         customer_name = (snapshot.customer_name or "").strip()
+        old_nodes = bom_service.list_subtree_nodes(db, root_id=before_root.id)
+        after_assembly = None
         if change_order.after_assembly_part_number:
-            existing = bom_service.find_l0_by_part_number(
+            after_assembly = bom_service.find_l0_by_part_number(
                 db,
                 location=location,
                 vehicle_model=vehicle_model,
                 part_number=change_order.after_assembly_part_number,
             )
-            validate_after_assembly_absent(existing)
+        after_part_as_l0 = None
+        if change_order.after_part_number:
+            after_part_as_l0 = bom_service.find_l0_by_part_number(
+                db,
+                location=location,
+                vehicle_model=vehicle_model,
+                part_number=change_order.after_part_number,
+            )
+        validate_change_order_before_after(
+            change_order,
+            old_nodes=old_nodes,
+            after_assembly=after_assembly,
+            after_part_as_l0=after_part_as_l0,
+        )
         prepared_change_orders.append(
             PreparedChangeOrder(
                 change_order=change_order,
@@ -126,41 +143,49 @@ def prepare_engineering_change_run(
         )
 
     if len(snapshot_ids) != 1:
-        raise BusinessException(EC_PROJECT_MISMATCH)
+        raise BusinessException(
+            f"{EC_PROJECT_MISMATCH}：变更前总成分属不同投产清单，一本只能一个项目。"
+        )
 
     _, _, project_expiry_year, project_expiry_month = VehicleModelService().project_sop_period(
         db, location, vehicle_model
     )
 
     parsed_bom = parse_bom_excel(args.file_content, sheet_name=SHEET_BOM)
-    file_customer = (parsed_bom.meta.customer_name or "").strip()
-    if not file_customer or not customer_name or file_customer != customer_name:
-        raise BusinessException(EC_CUSTOMER_MISMATCH)
     file_project = (parsed_bom.meta.vehicle_model or "").strip()
-    if not file_project or file_project.upper() != vehicle_model.strip().upper():
-        raise BusinessException(EC_PROJECT_MISMATCH)
+    page_project = vehicle_model.strip()
+    if not file_project or file_project.upper() != page_project.upper():
+        raise BusinessException(
+            f"{EC_PROJECT_MISMATCH}：材料清单项目代号写成{quoted(file_project)}，"
+            f"上传页是{quoted(page_project)}。请改材料清单第 3 行「项目代号」。"
+        )
     validate_bom_l0_matches_change_orders(parsed_bom.nodes, change_orders)
     node_bom_version = (parsed_bom.meta.bom_version or "").strip() or None
+    apply_process_sketches_to_bom_nodes(
+        parsed_bom.nodes, parse_process_part_sketches(args.file_content)
+    )
 
     for item in prepared_change_orders:
         if item.change_order.change_type == CHANGE_TYPE_STOP:
             continue
         after_number = item.change_order.after_assembly_part_number
         if not after_number:
-            raise BusinessException(EC_SHEET_REQUIRED)
+            raise BusinessException(
+                f"{EC_CHANGE_ORDER_COLUMNS}：工程变更单第 {item.change_order.excel_row} 行"
+                f"{item.change_order.change_type}必须填变更后总成。"
+            )
         item.sliced_bom_nodes = slice_bom_nodes_for_l0(parsed_bom.nodes, after_number)
         old_nodes = bom_service.list_subtree_nodes(db, root_id=item.before_root_id)
         validate_change_tree_gates(item.change_order, old_nodes, item.sliced_bom_nodes)
         validate_identity_gates(old_nodes, item.sliced_bom_nodes)
 
     report_progress(on_progress, 20, "校验工艺门禁")
-    revise_new = validate_process_hard_gates(
+    revise_old_to_new = validate_process_hard_gates(
         db,
         items=[
             ProcessGateItem(
                 change_order=item.change_order,
                 before_root_id=item.before_root_id,
-                before_seq_no=item.before_seq_no,
                 sliced_nodes=item.sliced_bom_nodes,
             )
             for item in prepared_change_orders
@@ -183,11 +208,11 @@ def prepare_engineering_change_run(
         effective_year=effective_year,
         effective_month=effective_month,
         change_orders=prepared_change_orders,
-        sheets=sheets,
+        file_content=args.file_content,
         project_expiry_year=project_expiry_year,
         project_expiry_month=project_expiry_month,
         node_bom_version=node_bom_version,
-        revise_new_part_numbers=revise_new,
+        revise_old_to_new=revise_old_to_new,
         part_change_order_index=part_change_order_index,
     )
 
@@ -215,7 +240,11 @@ def _assert_after_assemblies_idle(
             if row.id != log_id
         ]
         if busy:
-            raise BusinessException(EC_AFTER_ASSEMBLY_BUSY, code=409)
+            raise BusinessException(
+                f"{EC_AFTER_ASSEMBLY_BUSY}：{quoted(change_order.after_assembly_part_number)} "
+                "已有正在导入的任务。",
+                code=409,
+            )
 
 
 def _locate_before_root(
@@ -250,6 +279,7 @@ def _locate_before_root(
         before_root,
         effective_year=effective_year,
         effective_month=effective_month,
+        part_number=change_order.before_assembly_part_number,
     )
 
 

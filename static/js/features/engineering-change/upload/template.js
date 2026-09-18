@@ -116,6 +116,32 @@ export function engineeringChangeUploadTemplate() {
                                         </div>
                                     </div>
                                     <div id="ecFilePreview" class="hidden mb-4"></div>
+                                    <div id="ecUploadErrorPanel"
+                                         class="hidden mb-4 border border-[#5c1a1a] bg-[#1a0808]"
+                                         role="alert">
+                                        <div class="flex items-start justify-between gap-3 px-3 py-2.5 border-b border-[#3a1515]">
+                                            <div class="min-w-0">
+                                                <h6 id="ecUploadErrorTitle"
+                                                    class="text-[11px] font-semibold text-[#ef5350] mb-0.5 tracking-wide">导入失败</h6>
+                                                <p class="text-[10px] text-[#8E8E93] mb-0">请对照提示修改 Excel 后重新上传，可复制全文</p>
+                                            </div>
+                                            <div class="flex items-center gap-1 shrink-0">
+                                                <button type="button"
+                                                        id="ecUploadErrorCopyBtn"
+                                                        class="px-2 py-1 text-[10px] text-[#9e9e9e] border border-[#2c2c2c] rounded-sm hover:border-[#9e9e9e] hover:text-white transition-all">
+                                                    复制
+                                                </button>
+                                                <button type="button"
+                                                        id="ecUploadErrorCloseBtn"
+                                                        class="text-[#616161] hover:text-[#ffffff] transition-colors p-1"
+                                                        aria-label="关闭错误提示">
+                                                    <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
+                                                </button>
+                                            </div>
+                                        </div>
+                                        <pre id="ecUploadErrorBody"
+                                             class="m-0 px-3 py-3 text-[12px] font-mono leading-relaxed text-[#ffcdd2] whitespace-pre-wrap break-words max-h-[360px] overflow-y-auto select-text"></pre>
+                                    </div>
                                     <div class="flex items-center justify-end gap-3">
                                         <button type="button" id="ecUploadResetBtn" class="${BTN_GHOST}">
                                             <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path></svg>
@@ -144,7 +170,7 @@ export function engineeringChangeUploadTemplate() {
                         <p>下载模板即青岛 T28 五种填法样表。整本一次上传，后台解析，本页看进度。</p>
                         <p>工程变更单一行一种改法：完成停止 / 改图 / 增加零件 / 此件不装。同一本可以多行，也可以只有一行。</p>
                         <p>上方基地、项目、生效年月须与 Excel 互校。项目、生效年月必须和工程变更单一致。</p>
-                        <p>硬门禁三张表：工程变更单、车身件材料清单、冲压工艺确认表。零件汇总可缺、可空，不拒收。</p>
+                        <p>硬门禁三张表：工程变更单、车身件材料清单、冲压工艺确认表。合册不要「零件汇总」；模具按变更单从旧号逻辑建立，简图从工艺确认表抄过去。</p>
                         <p class="text-[#ffb74d]">改图后不要再走投产三页整包覆盖。换号与切点只走本页。</p>
                     </div>
                 </div>

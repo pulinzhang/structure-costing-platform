@@ -10,7 +10,6 @@ from app.common.permissions.codes import Perm
 from app.database import get_db
 from app.deps.permissions import require_any_perm, require_perm
 from app.schemas.common import PageResult
-from app.schemas.dto.period_dto import EffectivePeriodUpdateDTO
 from app.schemas.dto.stamping_die_dto import (
     StampingDieAllocRatioUpdate,
     StampingDiePartQuery,
@@ -128,19 +127,6 @@ def get_die_part(
     return ApiResponse.ok(data=_die_service.get_part(db, part_id))
 
 
-@router.patch("/parts/{part_id}/period", response_model=ApiResponse[StampingDiePartDetailVO])
-def patch_die_part_period(
-    part_id: int,
-    body: EffectivePeriodUpdateDTO,
-    db: Session = Depends(get_db),
-    current_user: UserVO = Depends(require_perm(Perm.STAMPING_DIE_LIST_UPDATE)),
-) -> ApiResponse[StampingDiePartDetailVO]:
-    return ApiResponse.updated(
-        data=_die_service.patch_period(db, part_id, body, current_user=current_user),
-        message="已保存生失效",
-    )
-
-
 @router.patch("/processes/{process_id}", response_model=ApiResponse[StampingDieProcessVO])
 def patch_die_process_alloc_ratio(
     process_id: int,
@@ -158,9 +144,10 @@ def patch_die_process_alloc_ratio(
 def export_die_parts(
     location: str = Query(""),
     vehicle_model: str = Query(""),
-    year: int = Query(..., ge=2000, le=2100, description="导出命中年"),
-    month: int = Query(..., ge=1, le=12, description="导出命中月"),
+    year: int | None = Query(None, ge=2000, le=2100, description="导出命中年"),
+    month: int | None = Query(None, ge=1, le=12, description="导出命中月"),
     part_number: str | None = Query(None),
+    include_expired: bool = Query(False, description="含已失效"),
     db: Session = Depends(get_db),
     current_user: UserVO = Depends(require_perm(Perm.STAMPING_DIE_LIST_EXPORT)),
 ) -> StreamingResponse:
@@ -171,6 +158,7 @@ def export_die_parts(
         part_number=part_number.strip() if part_number else None,
         year=year,
         month=month,
+        include_expired=include_expired,
         current_user=current_user,
     )
     return StreamingResponse(

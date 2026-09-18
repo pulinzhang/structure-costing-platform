@@ -4,7 +4,7 @@ from __future__ import annotations
 
 from dataclasses import dataclass, field
 
-from app.parsers.bom.models import BomParsedNode
+from app.parsers.bom.bom_parser import BomParsedNode
 from app.parsers.engineering_change.change_order_parser import ChangeOrderRowParsed
 from app.repositories.engineering_change.effect_link_repository import (
     EngineeringChangeEffectLinkInsert,
@@ -55,13 +55,12 @@ class PreparedBundle:
     effective_year: int
     effective_month: int
     change_orders: list[PreparedChangeOrder]
-    sheets: dict[str, bytes]
+    file_content: bytes
     project_expiry_year: int | None = None
     project_expiry_month: int | None = None
     node_bom_version: str | None = None
-    revise_new_part_numbers: set[str] = field(default_factory=set)
+    revise_old_to_new: dict[str, str] = field(default_factory=dict)
     part_change_order_index: dict[str, int] = field(default_factory=dict)
-    warnings: list[str] = field(default_factory=list)
 
 
 @dataclass(slots=True)

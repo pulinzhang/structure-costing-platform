@@ -66,8 +66,12 @@ class ProcessConfirmExport:
         include_expired: bool = False,
         current_user: UserVO,
     ) -> tuple[bytes, str]:
-        as_of_year, as_of_month = require_export_as_of(year, month)
-        period_label = format_period(as_of_year, as_of_month)
+        if include_expired:
+            as_of_year, as_of_month = None, None
+            period_label = "全部"
+        else:
+            as_of_year, as_of_month = require_export_as_of(year, month)
+            period_label = format_period(as_of_year, as_of_month)
         location, stamping_supplier, vehicle_model, version, part_number, parts = (
             self._parts_for_export(
                 db,

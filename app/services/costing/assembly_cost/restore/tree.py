@@ -10,6 +10,7 @@ from decimal import Decimal
 
 from sqlalchemy.orm import Session
 
+from app.common.bom.node_order import bom_node_order_from
 from app.models.bom.node import BomNode
 from app.models.costing.assembly_cost import AssemblyCost
 from app.models.costing.assembly_cost_item import AssemblyCostItem
@@ -126,7 +127,7 @@ class RestoreTree:
         for snap in snapshot_nodes:
             children_by_parent[snap.parent_id].append(snap)
         for siblings in children_by_parent.values():
-            siblings.sort(key=lambda row: (row.sort_no, row.id))
+            siblings.sort(key=bom_node_order_from)
         by_bom_id = {node.bom_node_id: node for node in item_nodes if node.bom_node_id is not None}
         root_node = next((row for row in snapshot_nodes if row.id == card.source_node_id), None)
         root_seq = ""

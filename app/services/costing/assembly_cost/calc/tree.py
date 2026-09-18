@@ -5,6 +5,7 @@ from __future__ import annotations
 from decimal import Decimal
 from typing import Literal
 
+from app.common.bom.node_order import bom_node_order_from
 from app.services.costing.assembly_cost.calc.rollup_models import RollupBomNode
 
 
@@ -47,10 +48,10 @@ def node_qty(node: RollupBomNode) -> Decimal:
 
 def sorted_children(
     children_by_parent: dict[int | None, list[RollupBomNode]],
-    node_id: int,
+    node_id: int | None,
 ) -> list[RollupBomNode]:
     kids = children_by_parent.get(node_id, [])
-    return sorted(kids, key=lambda n: (n.sort_no, n.id))
+    return sorted(kids, key=bom_node_order_from)
 
 
 def collect_descendants(

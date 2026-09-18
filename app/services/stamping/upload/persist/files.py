@@ -74,3 +74,25 @@ def save_part_images(
 
     logger.info("零件简图落盘: %d/%d -> %s", saved, len(images_by_part), target_dir)
     return saved
+
+
+def save_part_sketches(
+    images_by_part: dict[str, bytes],
+    *,
+    location: str,
+    vehicle_model: str,
+    version: str,
+) -> dict[str, str]:
+    """零件简图落到 {基地}/{项目}/{版本}/{零件号}.png，返回零件号 → sketch_url。"""
+    if not images_by_part:
+        return {}
+    safe_location = location.replace("/", "_").replace("\\", "_")
+    safe_vehicle = vehicle_model.replace("/", "_").replace("\\", "_")
+    safe_version = (version or "EC").replace("/", "_").replace("\\", "_").replace(" ", "_")
+    target_dir = settings.UPLOAD_DIR / safe_location / safe_vehicle / safe_version
+    save_part_images(images_by_part, str(target_dir))
+    return {
+        part_number: f"{safe_location}/{safe_vehicle}/{safe_version}/{part_number}.png"
+        for part_number, payload in images_by_part.items()
+        if part_number and payload
+    }

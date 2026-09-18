@@ -7,15 +7,13 @@ import logging
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
 
-from app.common.audit import audit_create, audit_update, display_name
-from app.common.period import validate_period
+from app.common.audit import audit_create, display_name
 from app.exceptions import BusinessException, NotFoundException
 from app.models.stamping import StampingPart
 from app.repositories.stamping.stamping_repository import (
     StampingPartRepository,
     StampingProcessRepository,
 )
-from app.schemas.dto.period_dto import EffectivePeriodUpdateDTO
 from app.schemas.dto.stamping_part_dto import (
     StampingPartBatchDeleteDTO,
     StampingPartOffalUpdateDTO,
@@ -125,37 +123,6 @@ def update_offal(
     db.commit()
     db.refresh(part)
     return StampingPartResponse.model_validate(part)
-
-
-def patch_part_period(
-    repository: StampingPartRepository,
-    db: Session,
-    part_id: int,
-    dto: EffectivePeriodUpdateDTO,
-    current_user: UserVO,
-) -> StampingPartResponse:
-    part = repository.get_by_id(db, part_id)
-    if not part:
-        raise NotFoundException(f"零件不存在: id={part_id}")
-    validate_period(
-        dto.effective_year,
-        dto.effective_month,
-        dto.expiry_year,
-        dto.expiry_month,
-    )
-    part.effective_year = dto.effective_year
-    part.effective_month = dto.effective_month
-    part.expiry_year = dto.expiry_year
-    part.expiry_month = dto.expiry_month
-    part.updated_by = audit_update(current_user)["updated_by"]
-    try:
-        db.commit()
-        db.refresh(part)
-        return StampingPartResponse.model_validate(part)
-    except Exception:
-        db.rollback()
-        logger.exception("改冲压零件生失效失败: id=%s", part_id)
-        raise
 
 
 def batch_delete_parts(

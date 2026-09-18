@@ -1,6 +1,7 @@
 """BOM Service - 业务逻辑"""
 
 import logging
+from collections.abc import Sequence
 
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
@@ -28,7 +29,6 @@ from app.schemas.dto.bom_dto import (
     BomSnapshotQuery,
     BomSnapshotWrite,
 )
-from app.schemas.dto.period_dto import EffectivePeriodUpdateDTO
 from app.schemas.vo.bom_vo import (
     BomCascadeFilterOptionsVO,
     BomNodeTreeVO,
@@ -415,52 +415,6 @@ class BomService:
             logger.exception("创建 BOM node 失败")
             raise
 
-    def patch_node_period(
-        self,
-        db: Session,
-        node_id: int,
-        dto: EffectivePeriodUpdateDTO,
-        current_user: UserVO,
-    ) -> BomNodeVO:
-        row = self.node_repo.get_by_id(db, node_id)
-        if not row:
-            raise NotFoundException("节点不存在")
-        if row.level != 0:
-            raise BusinessException("只能改总成（L0）生失效")
-        validate_period(
-            dto.effective_year,
-            dto.effective_month,
-            dto.expiry_year,
-            dto.expiry_month,
-        )
-        others = [
-            other
-            for other in self.node_repo.list_l0(db, row.snapshot_id)
-            if other.id != row.id and other.seq_no is not None and other.seq_no == row.seq_no
-        ]
-        for other in others:
-            if _seq_periods_overlap(dto, other):
-                raise BusinessException("同一序号两棵总成不能在同一月都有效")
-        audit = audit_update(current_user)
-        subtree = _collect_subtree(self.node_repo.list_by_snapshot(db, row.snapshot_id), row.id)
-        for node in subtree:
-            node.effective_year = dto.effective_year
-            node.effective_month = dto.effective_month
-            node.expiry_year = dto.expiry_year
-            node.expiry_month = dto.expiry_month
-            node.updated_by = audit["updated_by"]
-        try:
-            db.commit()
-            db.refresh(row)
-            return self._to_node_vo(row)
-        except (BusinessException, NotFoundException):
-            db.rollback()
-            raise
-        except Exception:
-            db.rollback()
-            logger.exception("改 BOM 生失效失败")
-            raise
-
     def delete_node(self, db: Session, node_id: int) -> None:
         row = self.node_repo.get_by_id(db, node_id)
         if not row:
@@ -612,16 +566,13 @@ class BomService:
         part_number: str,
         as_of_year: int,
         as_of_month: int,
-        exclude_l0_id: int,
-        exclude_l0_ids: set[int] | None = None,
+        exclude_l0_ids: set[int],
     ) -> bool:
         """工程变更：零件号是否仍挂在排除树以外的当月有效总成上。"""
         target = (part_number or "").strip()
         if not target:
             return False
-        excluded = {exclude_l0_id}
-        if exclude_l0_ids:
-            excluded |= exclude_l0_ids
+        excluded = set(exclude_l0_ids)
         nodes = self.node_repo.list_as_of_trees(
             db,
             location=location,
@@ -662,6 +613,7 @@ class BomService:
         seq_no: int | None,
         spec: BomChangePlantSpec,
         parsed_nodes: list[BomParsedNode],
+        extra_specs: Sequence[BomChangePlantSpec] = (),
         effective_year: int,
         effective_month: int,
         expiry_year: int | None,
@@ -680,6 +632,7 @@ class BomService:
             seq_no=seq_no,
             spec=spec,
             parsed_nodes=parsed_nodes,
+            extra_specs=extra_specs,
             effective_year=effective_year,
             effective_month=effective_month,
             expiry_year=expiry_year,
@@ -743,25 +696,3 @@ def _descendant_ids(rows: list[BomNode], roots: set[int]) -> set[int]:
 def _collect_subtree(rows: list[BomNode], root_id: int) -> list[BomNode]:
     keep = _descendant_ids(rows, {root_id})
     return [row for row in rows if row.id in keep]
-
-
-def _seq_periods_overlap(dto: EffectivePeriodUpdateDTO, other: BomNode) -> bool:
-    start = max(
-        (dto.effective_year, dto.effective_month),
-        (other.effective_year, other.effective_month),
-    )
-    dto_end = (
-        (dto.expiry_year, dto.expiry_month)
-        if dto.expiry_year is not None and dto.expiry_month is not None
-        else None
-    )
-    other_end = (
-        (other.expiry_year, other.expiry_month)
-        if other.expiry_year is not None and other.expiry_month is not None
-        else None
-    )
-    if dto_end is None:
-        return other_end is None or start <= other_end
-    if other_end is None:
-        return start <= dto_end
-    return start <= min(dto_end, other_end)

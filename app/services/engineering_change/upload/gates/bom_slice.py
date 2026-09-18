@@ -4,9 +4,9 @@ from __future__ import annotations
 
 from dataclasses import replace
 
-from app.common.engineering_change_gates import EC_BOM_NEW_ROOT
+from app.common.engineering_change_gates import EC_BOM_NEW_ROOT, quoted
 from app.exceptions.base import BusinessException
-from app.parsers.bom.models import BomParsedNode
+from app.parsers.bom.bom_parser import BomParsedNode
 
 
 def slice_bom_nodes_for_l0(nodes: list[BomParsedNode], l0_part_number: str) -> list[BomParsedNode]:
@@ -18,7 +18,10 @@ def slice_bom_nodes_for_l0(nodes: list[BomParsedNode], l0_part_number: str) -> l
         if node.level == 0 and (node.part_number or "").strip() == target
     ]
     if len(roots) != 1:
-        raise BusinessException(EC_BOM_NEW_ROOT)
+        raise BusinessException(
+            f"{EC_BOM_NEW_ROOT}：材料清单里交货总成 {quoted(target)} "
+            f"出现 {len(roots)} 次，必须恰好一次。"
+        )
     keep: set[int] = {roots[0]}
     pending = [roots[0]]
     while pending:

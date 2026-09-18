@@ -1,23 +1,18 @@
-"""工程变更工艺硬门禁与序号校验。"""
+"""工程变更工艺硬门禁。"""
 
 from __future__ import annotations
-
-import pytest
 
 from app.common.engineering_change_gates import (
     CHANGE_TYPE_ADD_PART,
     CHANGE_TYPE_REVISE,
-    EC_SEQ_MISMATCH,
     PART_LEVEL_ASSEMBLY,
     PART_LEVEL_L1,
     PART_LEVEL_L2,
 )
-from app.exceptions.base import BusinessException
 from app.parsers.bom.models import BomParsedNode
 from app.parsers.engineering_change.change_order_parser import ChangeOrderRowParsed
 from app.services.engineering_change.upload.gates.process_gates import (
     discover_bom_process_news,
-    validate_bom_seq_matches,
 )
 
 
@@ -43,38 +38,6 @@ def _change_order(
     )
 
 
-def test_validate_bom_seq_mismatch() -> None:
-    nodes = [
-        BomParsedNode(
-            level=0,
-            parent_index=None,
-            part_number="551003086AB",
-            part_name="x",
-            seq_no=9,
-            sort_no=0,
-            source_row=2,
-        )
-    ]
-    with pytest.raises(BusinessException) as exc:
-        validate_bom_seq_matches(nodes, before_seq_no=5)
-    assert str(exc.value) == EC_SEQ_MISMATCH
-
-
-def test_validate_bom_seq_empty_ok() -> None:
-    nodes = [
-        BomParsedNode(
-            level=0,
-            parent_index=None,
-            part_number="551003086AB",
-            part_name="x",
-            seq_no=None,
-            sort_no=0,
-            source_row=2,
-        )
-    ]
-    validate_bom_seq_matches(nodes, before_seq_no=5)
-
-
 def test_discover_change_order_part_bump() -> None:
     change_order = _change_order(
         part_level=PART_LEVEL_L1,
@@ -90,7 +53,7 @@ def test_discover_change_order_part_bump() -> None:
     assert adds == set()
 
 
-def test_discover_file_letter_bump_and_add() -> None:
+def test_discover_file_new_numbers_are_adds_not_letter_bumps() -> None:
     change_order = _change_order()
     bumps, adds = discover_bom_process_news(
         change_order=change_order,
@@ -114,7 +77,8 @@ def test_discover_file_letter_bump_and_add() -> None:
             ),
         ],
     )
-    assert bumps["501006875AA"] == "501006875AB"
+    assert bumps == {}
+    assert "501006875AB" in adds
     assert "501007040AA" in adds
 
 
@@ -134,35 +98,7 @@ def test_discover_add_part_change_order() -> None:
     assert adds == {"501007040AA"}
 
 
-def test_letter_version_helpers_roundtrip() -> None:
-    from app.common.engineering_change_gates import (
-        bump_letter_version,
-        find_letter_predecessor_number,
-        is_letter_version_bump,
-        letter_version_base,
-        letter_version_suffix,
-    )
-
-    assert letter_version_base("501006875AB") == "501006875"
-    assert is_letter_version_bump("501006875AA", "501006875AB")
-    assert not is_letter_version_bump("501006875AB", "501006875AA")
-    assert (
-        find_letter_predecessor_number(["501006875AA", "501006875AB", "501009122AA"], "501006875AC")
-        == "501006875AB"
-    )
-    assert letter_version_suffix("501009122AA-1") == "AA"
-    assert letter_version_base("501009122AA-1") == "501009122-1"
-    assert letter_version_base("501009122AB-1") == "501009122-1"
-    assert is_letter_version_bump("501009122AA-1", "501009122AB-1")
-    assert not is_letter_version_bump("501009122AA", "501009122AB-1")
-    assert bump_letter_version("501009122AA-1") == "501009122AB-1"
-    assert (
-        find_letter_predecessor_number(["501009122AA-1", "501009122AA"], "501009122AB-1")
-        == "501009122AA-1"
-    )
-
-
-def test_discover_file_letter_bump_subassembly() -> None:
+def test_discover_l2_intermediate_is_add_not_inferred_bump() -> None:
     change_order = _change_order(
         part_level=PART_LEVEL_L2,
         before_part="501009122AA",
@@ -191,8 +127,8 @@ def test_discover_file_letter_bump_subassembly() -> None:
         ],
     )
     assert bumps["501009122AA"] == "501009122AB"
-    assert bumps["501009122AA-1"] == "501009122AB-1"
-    assert adds == set()
+    assert "501009122AA-1" not in bumps
+    assert "501009122AB-1" in adds
 
 
 def test_add_stamping_needs_process_standard_and_glue_do_not() -> None:

@@ -136,7 +136,6 @@ export function partsTemplate() {
                             ${filterSelect('versionFilter', '版本')}
                             ${filterSelect('supplierFilter', '冲压工厂')}
                             ${filterInput('searchInput', '零件号', '短号或完整零件号')}
-                            <div id="partsAsOfFilters" class="flex items-end gap-3"></div>
                             <button id="partsResetBtn" type="button"
                                     class="inline-flex items-center gap-1.5 h-8 px-3 text-[11px] font-medium rounded-md bg-transparent text-[#6E6E73] border border-[#2A2A35] hover:bg-[#FF1E27]/10 hover:border-[#FF1E27]/50 hover:text-[#FF1E27] transition-all duration-200">
                                 ${window.svgIcon('refresh', 'w-3 h-3')}
@@ -516,8 +515,6 @@ export function renderDetailContent(part, options = {}) {
             </div>
 
             ${renderExcelProvenance(part)}
-
-            ${options.periodEditorHtml || ''}
 
             <!-- 工序列表 -->
             <div class="mx-4 mb-4 flex flex-col shrink-0">

@@ -30,7 +30,6 @@ from app.repositories.stamping.stamping_die_repository import (
     StampingDieProcessRepository,
 )
 from app.repositories.stamping.stamping_part_repository import StampingPartRepository
-from app.schemas.dto.period_dto import EffectivePeriodUpdateDTO
 from app.schemas.dto.stamping_die_fee_dto import StampingDieFeeCalcDTO
 from app.schemas.dto.stamping_upload_dto import FileInfo
 from app.schemas.vo.user_vo import UserVO
@@ -547,47 +546,28 @@ def test_bom_align_keeps_missing_l0_and_patched_period(memory_db: Session) -> No
     assert ec_tree.part_name == "合册树"
 
 
-def test_l0_patch_cascades_l1_reject_and_seq_overlap(memory_db: Session) -> None:
+def test_expire_l0_tree_cascades_children_and_rejects_l1(memory_db: Session) -> None:
     snapshot = _snapshot(memory_db)
     l0 = _node(memory_db, snapshot, level=0, part_number="L0001AA", seq_no=1)
     child = _node(memory_db, snapshot, level=1, part_number="L1001AA", parent_id=l0.id)
-    other = _node(
-        memory_db,
-        snapshot,
-        level=0,
-        part_number="L0002AA",
-        seq_no=1,
-        effective_year=2024,
-        effective_month=7,
-        expiry_year=2025,
-        expiry_month=12,
-    )
     service = BomService()
-    dto = EffectivePeriodUpdateDTO(
-        effective_year=2026,
-        effective_month=1,
-        expiry_year=2026,
+    service.expire_l0_tree(
+        memory_db,
+        root_id=l0.id,
+        expiry_year=2025,
         expiry_month=6,
+        current_user=_user(),
     )
-    service.patch_node_period(memory_db, l0.id, dto, current_user=_user())
     memory_db.refresh(child)
-    assert child.effective_year == 2026
-    assert child.effective_month == 1
+    assert child.expiry_year == 2025
     assert child.expiry_month == 6
 
     with pytest.raises(BusinessException, match="只能改总成"):
-        service.patch_node_period(memory_db, child.id, dto, current_user=_user())
-
-    with pytest.raises(BusinessException, match="同一序号"):
-        service.patch_node_period(
+        service.expire_l0_tree(
             memory_db,
-            other.id,
-            EffectivePeriodUpdateDTO(
-                effective_year=2026,
-                effective_month=3,
-                expiry_year=2026,
-                expiry_month=8,
-            ),
+            root_id=child.id,
+            expiry_year=2025,
+            expiry_month=6,
             current_user=_user(),
         )
 

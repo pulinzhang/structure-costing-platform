@@ -20,6 +20,7 @@ from app.services.stamping.process_fee.calc.orchestrator.deps import ProcessFeeC
 from app.services.stamping.process_fee.calc.orchestrator.prep import CalcPrepContext
 from app.services.stamping.process_fee.calc.orchestrator.progress import ProgressNotifier
 from app.services.stamping.process_fee.calc.part_calculator import PartFeeCalculator
+from app.services.stamping.process_fee.calc.previous_part import PreviousPartIndex
 from app.services.stamping.process_fee.calc.snapshot import part_snapshot
 from app.services.stamping.process_fee.calc.tailor_weld_calculator import (
     TailorWeldFeeCalculator,
@@ -54,7 +55,7 @@ class BatchCalculationEngine:
         outcome = BatchCalcOutcome()
         audit = audit_create(current_user)
         update_audit = audit_update(current_user)
-        prev_part_cache: dict[int, StampingPart | None] = {}
+        previous_parts = PreviousPartIndex.from_parts(ctx.parts)
         total = len(ctx.parts)
 
         for index, part in enumerate(ctx.parts, start=1):
@@ -66,7 +67,7 @@ class BatchCalculationEngine:
                 existing_created_by=audit["created_by"],
                 existing_updated_by=update_audit["updated_by"],
                 new_updated_by=audit["updated_by"],
-                prev_part_cache=prev_part_cache,
+                previous_parts=previous_parts,
                 outcome=outcome,
             )
             progress.tick_parts(index, total)
@@ -90,7 +91,7 @@ class BatchCalculationEngine:
         existing_created_by: str,
         existing_updated_by: str,
         new_updated_by: str,
-        prev_part_cache: dict[int, StampingPart | None],
+        previous_parts: PreviousPartIndex,
         outcome: BatchCalcOutcome,
     ) -> None:
         existing = self._deps.fee_repo.get_by_business_key(
@@ -107,7 +108,7 @@ class BatchCalculationEngine:
             return
 
         fee_or_error = self._select_calculator(part).calc_part_fee(
-            db, part, ctx.rate_map, dto.year, prev_part_cache
+            part, ctx.rate_map, dto.year, previous_parts
         )
         other_fee = existing.other_fee if existing else None
 

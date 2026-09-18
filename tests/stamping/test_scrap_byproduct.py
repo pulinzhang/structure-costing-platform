@@ -110,7 +110,7 @@ def test_scrap_byproduct_process_fee_is_zero_not_failed() -> None:
         is_scrap_byproduct=True,
         processes=[SimpleNamespace(id=1, process_seq="OP10", process_code="合并")],
     )
-    result = PartFeeCalculator().calc_part_fee(None, part, {}, 2026, {})
+    result = PartFeeCalculator().calc_part_fee(part, {}, 2026)
     assert not isinstance(result, StampingProcessFeeFailedItemVO)
     fee, process_count, items = result
     assert fee == Decimal("0.000")

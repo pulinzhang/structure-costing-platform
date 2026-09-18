@@ -8,9 +8,15 @@ from app.common.timezone import now
 from app.common.upload_scope_validation import validate_stamping_process_upload_scope
 from app.config import settings
 from app.exceptions.base import BusinessException
+from app.parsers.stamping.models.part import Part
 from app.parsers.stamping.models.process import Process
 from app.services.masterdata.supplier import SupplierService
 from app.services.masterdata.vehicle_model import VehicleModelService
+from app.services.stamping.part_seq_validator import (
+    PartSeqOccurrence,
+    format_part_seq_issues,
+    inspect_part_seq_nos,
+)
 from app.services.stamping.process_seq_validator import (
     ProcessSeqOccurrence,
     find_duplicate_process_seqs,
@@ -55,6 +61,23 @@ def require_no_duplicate_process_seqs(processes: list[Process]) -> None:
         raise BusinessException(
             format_duplicate_process_seq_issues(duplicate_seqs, source_name="工艺确认表")
         )
+
+
+def require_consecutive_part_seq_nos(parts: list[Part]) -> None:
+    report = inspect_part_seq_nos(
+        [
+            PartSeqOccurrence(
+                part_number=(part.part_number or "").strip(),
+                seq_no=int(part.seq_no) if part.seq_no is not None else 0,
+                excel_row=part.excel_row,
+            )
+            for part in parts
+            if (part.part_number or "").strip()
+        ]
+    )
+    message = format_part_seq_issues(report)
+    if message:
+        raise BusinessException(message)
 
 
 def resolve_stamping_upload_scope(

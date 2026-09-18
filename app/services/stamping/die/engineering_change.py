@@ -11,6 +11,7 @@ from app.common.audit import audit_create, audit_update
 from app.common.money import Q2, quantize_money
 from app.common.period import is_in_period
 from app.exceptions.base import BusinessException, NotFoundException
+from app.models.stamping.die import StampingDiePart
 from app.repositories.stamping.stamping_die_repository import (
     StampingDiePartRepository,
     StampingDieProcessRepository,
@@ -33,6 +34,7 @@ class EngineeringChangeDieProcessSpec:
     estimated_weight_t: Decimal | None
     tonnage: int | None
     alloc_ratio: Decimal
+    remark: str | None = None
 
 
 @dataclass(slots=True)
@@ -56,7 +58,6 @@ class EngineeringChangeDiePartResult:
 class EngineeringChangeDieAsOfRow:
     id: int
     part_number: str
-    seq_no: int | None = None
 
 
 def list_parts_as_of(
@@ -82,45 +83,84 @@ def list_parts_as_of(
             as_of_month=as_of_month,
         ):
             continue
-        rows.append(
-            EngineeringChangeDieAsOfRow(id=row.id, part_number=row.part_number, seq_no=row.seq_no)
-        )
+        rows.append(EngineeringChangeDieAsOfRow(id=row.id, part_number=row.part_number))
     return rows
 
 
-def alloc_ratios_by_seq(
-    die_part_repo: StampingDiePartRepository,
-    db: Session,
-    part_id: int,
-) -> dict[str, Decimal]:
-    """旧布点工序分摊比例（按 process_seq）。"""
-    part = die_part_repo.get_by_id(db, part_id)
-    if part is None:
-        return {}
-    ratios: dict[str, Decimal] = {}
-    for process in part.processes:
-        seq = (process.process_seq or "").strip()
-        if seq:
-            ratios[seq] = quantize_money(process.alloc_ratio, Q2)
-    return ratios
-
-
-def die_numbers_by_seq(
-    die_part_repo: StampingDiePartRepository,
-    db: Session,
-    part_id: int,
-) -> dict[str, str]:
-    """旧布点模具编号（按 process_seq）。"""
-    part = die_part_repo.get_by_id(db, part_id)
-    if part is None:
-        return {}
-    numbers: dict[str, str] = {}
-    for process in part.processes:
-        seq = (process.process_seq or "").strip()
-        die_number = (process.die_number or "").strip()
-        if seq and die_number:
-            numbers[seq] = die_number
-    return numbers
+def clone_revise_die_spec(
+    old_part: StampingDiePart,
+    *,
+    new_part_number: str,
+    version: str | None,
+    effective_year: int,
+    effective_month: int,
+    expiry_year: int | None,
+    expiry_month: int | None,
+    created_by: str,
+    updated_by: str,
+    predecessor_expiry_year: int | None = None,
+    predecessor_expiry_month: int | None = None,
+) -> EngineeringChangeDiePartSpec:
+    """改图：除零件号、版本、生失效外整行抄旧布点，工序含 alloc_ratio。"""
+    processes = [
+        EngineeringChangeDieProcessSpec(
+            process_seq=process.process_seq,
+            process_order=int(process.process_order),
+            process_code=process.process_code,
+            die_sets=process.die_sets,
+            die_number=process.die_number,
+            die_length=process.die_length,
+            die_width=process.die_width,
+            die_height=process.die_height,
+            hollow_factor=process.hollow_factor,
+            estimated_weight_t=process.estimated_weight_t,
+            tonnage=process.tonnage,
+            alloc_ratio=quantize_money(process.alloc_ratio, Q2),
+            remark=process.remark,
+        )
+        for process in old_part.processes
+    ]
+    return EngineeringChangeDiePartSpec(
+        part=StampingDiePartInsert(
+            location=old_part.location,
+            vehicle_model=old_part.vehicle_model,
+            stamping_supplier=old_part.stamping_supplier,
+            version=version,
+            seq_no=old_part.seq_no,
+            part_number=new_part_number,
+            part_name=old_part.part_name,
+            material=old_part.material,
+            thickness=old_part.thickness,
+            part_weight=old_part.part_weight,
+            sheet_length=old_part.sheet_length,
+            sheet_width=old_part.sheet_width,
+            sheet_shape=old_part.sheet_shape,
+            parts_per_sheet=old_part.parts_per_sheet,
+            material_consumption=old_part.material_consumption,
+            material_utilization=old_part.material_utilization,
+            estimated_weight_subtotal_t=old_part.estimated_weight_subtotal_t,
+            die_type=old_part.die_type,
+            die_method=old_part.die_method,
+            production_mode=old_part.production_mode,
+            needs_end_effector=old_part.needs_end_effector,
+            part_grade=old_part.part_grade,
+            remark=old_part.remark,
+            excel_filename=old_part.excel_filename or "",
+            excel_sheet_name=old_part.excel_sheet_name,
+            excel_row=old_part.excel_row,
+            excel_part_col=old_part.excel_part_col,
+            created_by=created_by,
+            updated_by=updated_by,
+            effective_year=effective_year,
+            effective_month=effective_month,
+            expiry_year=expiry_year,
+            expiry_month=expiry_month,
+        ),
+        processes=processes,
+        expire_predecessor_id=old_part.id,
+        predecessor_expiry_year=predecessor_expiry_year,
+        predecessor_expiry_month=predecessor_expiry_month,
+    )
 
 
 def insert_for_engineering_change(
@@ -166,6 +206,7 @@ def insert_for_engineering_change(
                     estimated_weight_t=process.estimated_weight_t,
                     tonnage=process.tonnage,
                     alloc_ratio=process.alloc_ratio,
+                    remark=process.remark,
                     created_by=audit["created_by"],
                     updated_by=audit["updated_by"],
                 )

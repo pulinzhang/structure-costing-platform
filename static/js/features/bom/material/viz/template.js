@@ -21,8 +21,6 @@ export function bomVizTemplate() {
                         <p id="bomVizPath" class="text-[10px] text-[#555555] tracking-wide truncate"></p>
                     </div>
                 </div>
-                <div class="flex items-end gap-2 shrink-0">
-                    <div id="bomVizAsOfFilters" class="flex items-end gap-2"></div>
                 <div id="bomVizCategoryLegend"
                      class="shrink-0 flex flex-wrap justify-end gap-x-3 gap-y-1 text-[10px] tracking-wide text-[#6b6b6b] max-w-md">
                 </div>
@@ -48,6 +46,7 @@ export function bomVizTemplate() {
                             <p id="bomVizPreviewName" class="text-[12px] text-[#9e9e9e] leading-snug"></p>
                             <p id="bomVizPreviewNo" class="text-[11px] font-mono text-[#616161]"></p>
                             <p id="bomVizPreviewParent" class="text-[11px] text-[#777777]"></p>
+                            <p id="bomVizPreviewPeriod" class="text-[10px] text-[#3a3a3a] tracking-wide"></p>
                             <p id="bomVizPreviewHint" class="text-[11px] text-[#6b6b6b] leading-relaxed pt-1"></p>
                         </div>
                     </div>

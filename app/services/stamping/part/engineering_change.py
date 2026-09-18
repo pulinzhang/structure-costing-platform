@@ -4,7 +4,6 @@ from __future__ import annotations
 
 from collections.abc import Sequence
 from dataclasses import dataclass
-from decimal import Decimal
 
 from sqlalchemy.orm import Session
 
@@ -12,10 +11,14 @@ from app.common.audit import audit_create, audit_update
 from app.common.period import is_in_period
 from app.exceptions.base import BusinessException, NotFoundException
 from app.models.stamping import StampingPart, StampingProcess
-from app.repositories.stamping.stamping_repository import (
-    StampingPartRepository,
+from app.repositories.stamping.stamping_part_repository import StampingPartRepository
+from app.repositories.stamping.stamping_process_repository import (
     StampingProcessRepository,
 )
+from app.repositories.stamping.tailor_weld_blank_repository import (
+    StampingTailorWeldBlankRepository,
+)
+from app.schemas.dto.stamping_tailor_weld_blank_dto import TailorWeldBlankWrite
 from app.schemas.dto.stamping_upload_dto import PartData, ProcessData
 from app.schemas.vo.user_vo import UserVO
 
@@ -41,7 +44,6 @@ class EngineeringChangeProcessPartResult:
 class EngineeringChangePartAsOfRow:
     id: int
     part_number: str
-    seq_no: int | None = None
     stamping_supplier: str = ""
 
 
@@ -72,23 +74,10 @@ def list_parts_as_of(
             EngineeringChangePartAsOfRow(
                 id=row.id,
                 part_number=row.part_number,
-                seq_no=row.seq_no,
                 stamping_supplier=(row.stamping_supplier or "").strip(),
             )
         )
     return rows
-
-
-def process_cost_ratios_by_seq(
-    process_repo: StampingProcessRepository,
-    db: Session,
-    part_id: int,
-) -> dict[str, Decimal]:
-    """旧零件工序成本系数（按 process_seq 字符串键）。"""
-    ratios: dict[str, Decimal] = {}
-    for proc in process_repo.get_by_part_id(db, part_id):
-        ratios[str(proc.process_seq)] = proc.cost_ratio
-    return ratios
 
 
 def clone_revise_part_payload(
@@ -101,14 +90,10 @@ def clone_revise_part_payload(
     effective_month: int,
     expiry_year: int | None,
     expiry_month: int | None,
-    excel_filename: str,
-    excel_sheet_name: str | None,
-    excel_row: int | None,
-    excel_part_col: int | None,
     created_by: str | None,
     updated_by: str | None,
 ) -> tuple[PartData, list[ProcessData]]:
-    """改图换号：除零件号、版本、生失效外整行抄旧号；工序整表相同。"""
+    """改图换号：除零件号、版本、生失效、简图外整行抄旧号；工序整表相同。excel_row 抄旧零件，不用合册。"""
     die_sets_default = 1
     part_data = PartData(
         location=str(old_part.location),
@@ -116,50 +101,50 @@ def clone_revise_part_payload(
         version=version,
         stamping_supplier=str(old_part.stamping_supplier or ""),
         part_number=new_part_number,
-        excel_filename=excel_filename,
+        excel_filename=str(old_part.excel_filename or ""),
         effective_year=effective_year,
         effective_month=effective_month,
         expiry_year=expiry_year,
         expiry_month=expiry_month,
-        seq_no=getattr(old_part, "seq_no", None),
-        part_name=getattr(old_part, "part_name", None),
-        material=getattr(old_part, "material", None),
-        thickness=getattr(old_part, "thickness", None),
-        part_weight=getattr(old_part, "part_weight", None),
-        sheet_length=getattr(old_part, "sheet_length", None),
-        sheet_width=getattr(old_part, "sheet_width", None),
-        parts_per_sheet=getattr(old_part, "parts_per_sheet", None),
-        sheet_type=getattr(old_part, "sheet_type", None),
-        is_offal_nested=bool(getattr(old_part, "is_offal_nested", False)),
-        offal_source=getattr(old_part, "offal_source", None),
-        is_scrap_byproduct=bool(getattr(old_part, "is_scrap_byproduct", False)),
-        has_swing_shear=bool(getattr(old_part, "has_swing_shear", False)),
-        die_type=getattr(old_part, "die_type", None),
-        process_method=getattr(old_part, "process_method", None),
-        automation=getattr(old_part, "automation", None),
-        remark=getattr(old_part, "remark", None),
-        sketch_url=getattr(old_part, "sketch_url", None),
-        is_tailor_welded=bool(getattr(old_part, "is_tailor_welded", False)),
-        excel_sheet_name=excel_sheet_name,
-        excel_row=excel_row,
-        excel_part_col=excel_part_col,
+        seq_no=old_part.seq_no,
+        part_name=old_part.part_name,
+        material=old_part.material,
+        thickness=old_part.thickness,
+        part_weight=old_part.part_weight,
+        sheet_length=old_part.sheet_length,
+        sheet_width=old_part.sheet_width,
+        parts_per_sheet=old_part.parts_per_sheet,
+        sheet_type=old_part.sheet_type,
+        is_offal_nested=bool(old_part.is_offal_nested),
+        offal_source=old_part.offal_source,
+        is_scrap_byproduct=bool(old_part.is_scrap_byproduct),
+        has_swing_shear=bool(old_part.has_swing_shear),
+        die_type=old_part.die_type,
+        process_method=old_part.process_method,
+        automation=old_part.automation,
+        remark=old_part.remark,
+        sketch_url=None,
+        is_tailor_welded=bool(old_part.is_tailor_welded),
+        excel_sheet_name=old_part.excel_sheet_name,
+        excel_row=old_part.excel_row,
+        excel_part_col=old_part.excel_part_col,
         created_by=created_by,
         updated_by=updated_by,
     )
     processes: list[ProcessData] = []
-    for proc in old_processes:
-        die_sets = getattr(proc, "die_sets", None)
+    for process in old_processes:
+        die_sets = process.die_sets
         processes.append(
             ProcessData(
                 part_id=0,
-                process_seq=str(proc.process_seq),
-                process_order=int(proc.process_order),
+                process_seq=str(process.process_seq),
+                process_order=int(process.process_order),
                 die_sets=int(die_sets) if die_sets is not None else die_sets_default,
-                process_code=getattr(proc, "process_code", None),
-                die_number=getattr(proc, "die_number", None),
-                tonnage=getattr(proc, "tonnage", None),
-                cost_ratio=proc.cost_ratio,
-                remark=getattr(proc, "remark", None),
+                process_code=process.process_code,
+                die_number=process.die_number,
+                tonnage=process.tonnage,
+                cost_ratio=process.cost_ratio,
+                remark=process.remark,
                 created_by=created_by,
                 updated_by=updated_by,
             )
@@ -179,10 +164,6 @@ def clone_revise_from_predecessor(
     effective_month: int,
     expiry_year: int | None,
     expiry_month: int | None,
-    excel_filename: str,
-    excel_sheet_name: str | None,
-    excel_row: int | None,
-    excel_part_col: int | None,
     created_by: str | None,
     updated_by: str | None,
 ) -> tuple[PartData, list[ProcessData]]:
@@ -200,10 +181,6 @@ def clone_revise_from_predecessor(
         effective_month=effective_month,
         expiry_year=expiry_year,
         expiry_month=expiry_month,
-        excel_filename=excel_filename,
-        excel_sheet_name=excel_sheet_name,
-        excel_row=excel_row,
-        excel_part_col=excel_part_col,
         created_by=created_by,
         updated_by=updated_by,
     )
@@ -235,6 +212,13 @@ def insert_for_engineering_change(
             old_part.expiry_year = spec.predecessor_expiry_year
             old_part.expiry_month = spec.predecessor_expiry_month
             old_part.updated_by = audit["updated_by"]
+            _clone_tailor_weld_blanks(
+                db,
+                old_part=old_part,
+                new_part=new_part,
+                created_by=audit["created_by"],
+                updated_by=audit["updated_by"],
+            )
 
         for process in spec.processes:
             process.part_id = new_part.id
@@ -250,6 +234,59 @@ def insert_for_engineering_change(
         )
     db.flush()
     return results
+
+
+def _remapped_blank_part_number(
+    *,
+    old_parent: str,
+    new_parent: str,
+    blank_part_number: str,
+    blank_seq: int,
+) -> str:
+    if blank_part_number.startswith(old_parent):
+        return new_parent + blank_part_number[len(old_parent) :]
+    return f"{new_parent}-{blank_seq}"
+
+
+def _clone_tailor_weld_blanks(
+    db: Session,
+    *,
+    old_part: StampingPart,
+    new_part: StampingPart,
+    created_by: str | None,
+    updated_by: str | None,
+) -> None:
+    blank_repo = StampingTailorWeldBlankRepository()
+    old_blanks = blank_repo.list_by_part_id(db, old_part.id)
+    if not old_blanks:
+        return
+    old_parent = str(old_part.part_number)
+    new_parent = str(new_part.part_number)
+    for blank in old_blanks:
+        blank_repo.create(
+            db,
+            TailorWeldBlankWrite(
+                part_id=new_part.id,
+                parent_part_number=new_parent,
+                blank_seq=int(blank.blank_seq),
+                blank_part_number=_remapped_blank_part_number(
+                    old_parent=old_parent,
+                    new_parent=new_parent,
+                    blank_part_number=str(blank.blank_part_number or ""),
+                    blank_seq=int(blank.blank_seq),
+                ),
+                material=blank.material,
+                thickness=blank.thickness,
+                part_weight=blank.part_weight,
+                sheet_length=blank.sheet_length,
+                sheet_width=blank.sheet_width,
+                parts_per_sheet=blank.parts_per_sheet,
+                sheet_type=blank.sheet_type,
+                remark=blank.remark,
+                created_by=created_by,
+                updated_by=updated_by,
+            ),
+        )
 
 
 def rollback_engineering_change_part(

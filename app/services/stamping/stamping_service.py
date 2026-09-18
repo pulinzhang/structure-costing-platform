@@ -13,7 +13,6 @@ from app.repositories.stamping.stamping_repository import (
     StampingPartRepository,
     StampingProcessRepository,
 )
-from app.schemas.dto.period_dto import EffectivePeriodUpdateDTO
 from app.schemas.dto.stamping_part_dto import (
     StampingCascadeFilterQuery,
     StampingMaterialQuery,
@@ -93,7 +92,6 @@ from app.services.stamping.part.mutations import (
     bulk_create_parts,
     create_part,
     delete_part,
-    patch_part_period,
     update_part,
 )
 from app.services.stamping.part.mutations import (
@@ -105,6 +103,7 @@ from app.services.stamping.part.mutations import (
 from app.services.stamping.part.mutations import (
     update_process as update_process_fn,
 )
+from app.services.stamping.part_seq_validator import next_consecutive_seq_no
 
 
 class StampingPartService:
@@ -226,15 +225,6 @@ class StampingPartService:
     ) -> StampingPartResponse:
         return update_offal_fn(self.repository, db, part_id, dto, current_user)
 
-    def patch_period(
-        self,
-        db: Session,
-        part_id: int,
-        dto: EffectivePeriodUpdateDTO,
-        current_user: UserVO,
-    ) -> StampingPartResponse:
-        return patch_part_period(self.repository, db, part_id, dto, current_user)
-
     def batch_delete(
         self,
         db: Session,
@@ -278,6 +268,19 @@ class StampingPartService:
             as_of_month=as_of_month,
         )
 
+    def next_seq_no_in_scope_for_engineering_change(
+        self,
+        db: Session,
+        *,
+        location: str,
+        vehicle_model: str,
+    ) -> int:
+        """工程变更增加零件：该厂该项目已有 seq_no（含已失效）的 max+1。"""
+        existing_parts = self.repository.list_by_location_and_vehicle(
+            db, location=location, vehicle_model=vehicle_model
+        )
+        return next_consecutive_seq_no(part.seq_no for part in existing_parts)
+
     def clone_revise_for_engineering_change(
         self,
         db: Session,
@@ -289,10 +292,6 @@ class StampingPartService:
         effective_month: int,
         expiry_year: int | None,
         expiry_month: int | None,
-        excel_filename: str,
-        excel_sheet_name: str | None,
-        excel_row: int | None,
-        excel_part_col: int | None,
         created_by: str | None,
         updated_by: str | None,
     ) -> tuple[PartData, list[ProcessData]]:
@@ -308,10 +307,6 @@ class StampingPartService:
             effective_month=effective_month,
             expiry_year=expiry_year,
             expiry_month=expiry_month,
-            excel_filename=excel_filename,
-            excel_sheet_name=excel_sheet_name,
-            excel_row=excel_row,
-            excel_part_col=excel_part_col,
             created_by=created_by,
             updated_by=updated_by,
         )

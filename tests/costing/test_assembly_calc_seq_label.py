@@ -26,9 +26,9 @@ def _po(**kwargs: object) -> SimpleNamespace:
 
 
 def test_calc_seq_labels_match_procurement_agreement() -> None:
-    root = _node(id=10, parent_id=None, seq_no=5, sort_no=1, part_number="L0")
-    stamping = _node(id=11, parent_id=10, seq_no=None, sort_no=2, part_number="S1")
-    sub = _node(id=12, parent_id=10, seq_no=None, sort_no=3, part_number="A1")
+    root = _node(id=10, parent_id=None, seq_no=5, sort_no=1, part_number="L0", level=0)
+    stamping = _node(id=11, parent_id=10, seq_no=None, sort_no=2, part_number="S1", level=1)
+    sub = _node(id=12, parent_id=10, seq_no=None, sort_no=3, part_number="A1", level=1)
     labels = calc_card_seq_labels(
         [root, stamping, sub],
         [
@@ -53,7 +53,7 @@ def test_calc_seq_labels_match_procurement_agreement() -> None:
 
 
 def test_degenerate_supply_seq_is_plain_number() -> None:
-    root = _node(id=20, parent_id=None, seq_no=5, sort_no=1, part_number="L0")
+    root = _node(id=20, parent_id=None, seq_no=5, sort_no=1, part_number="L0", level=0)
     labels = calc_card_seq_labels(
         [root],
         [

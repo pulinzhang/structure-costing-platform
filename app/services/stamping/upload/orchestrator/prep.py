@@ -11,6 +11,7 @@ from sqlalchemy.orm import Session
 from app.parsers.stamping.stamping_parser import parse_stamping_excel
 from app.parsers.stamping.tailor_weld_parser import parse_tailor_weld_excel
 from app.services.stamping.upload.gates.validate import (
+    require_consecutive_part_seq_nos,
     require_no_duplicate_process_seqs,
     require_parsed_scope_headers,
     resolve_stamping_upload_scope,
@@ -52,6 +53,7 @@ def prepare_stamping_upload_run(
             )
         )
         require_no_duplicate_process_seqs(parse_result.processes)
+        require_consecutive_part_seq_nos(parse_result.parts)
         canonicalize_materials(db, parse_result.parts, tailor_result.assemblies)
         logger.info(
             "解析 Excel 完成：%d 个零件、%d 道工序、%d 个拼焊总成",
