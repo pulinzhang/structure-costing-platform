@@ -502,7 +502,7 @@ class BomService:
             expiry_month,
         )
         audit = audit_update(current_user)
-        subtree = _collect_subtree(self.node_repo.list_by_snapshot(db, row.snapshot_id), row.id)
+        subtree = collect_subtree(self.node_repo.list_by_snapshot(db, row.snapshot_id), row.id)
         for node in subtree:
             node.expiry_year = expiry_year
             node.expiry_month = expiry_month
@@ -524,7 +524,7 @@ class BomService:
         if row.level != 0:
             raise BusinessException("只能改总成（L0）生失效")
         audit = audit_update(current_user)
-        subtree = _collect_subtree(self.node_repo.list_by_snapshot(db, row.snapshot_id), row.id)
+        subtree = collect_subtree(self.node_repo.list_by_snapshot(db, row.snapshot_id), row.id)
         for node in subtree:
             node.expiry_year = None
             node.expiry_month = None
@@ -555,7 +555,7 @@ class BomService:
         row = self.node_repo.get_by_id(db, root_id)
         if not row:
             raise NotFoundException("节点不存在")
-        return _collect_subtree(self.node_repo.list_by_snapshot(db, row.snapshot_id), row.id)
+        return collect_subtree(self.node_repo.list_by_snapshot(db, row.snapshot_id), row.id)
 
     def part_number_used_on_other_active_l0(
         self,
@@ -693,6 +693,7 @@ def _descendant_ids(rows: list[BomNode], roots: set[int]) -> set[int]:
     return keep
 
 
-def _collect_subtree(rows: list[BomNode], root_id: int) -> list[BomNode]:
+def collect_subtree(rows: list[BomNode], root_id: int) -> list[BomNode]:
+    """含 root 的整棵子树（同 snapshot 节点列表上按 parent_id 展开）。"""
     keep = _descendant_ids(rows, {root_id})
     return [row for row in rows if row.id in keep]

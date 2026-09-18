@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+from typing import Any, TypedDict, cast
+
 from sqlalchemy.orm import Session
 
 from app.common.period import resolve_as_of_month
@@ -24,6 +26,20 @@ __all__ = [
     "rows_to_vos",
     "scope_from_query",
 ]
+
+
+class _ObjectVoOverlay(TypedDict, total=False):
+    """清单头字段 + 所属树根四列；禁止当成 ORM 列。"""
+
+    location: str
+    vehicle_model: str
+    bom_version: str
+    source_filename: str
+    qa_passed: bool
+    effective_year: int
+    effective_month: int
+    expiry_year: int | None
+    expiry_month: int | None
 
 
 def as_of_when_excluding_expired(include_expired: bool) -> tuple[int | None, int | None]:
@@ -94,7 +110,7 @@ def _to_object_vo(
 ) -> BomProcurementObjectVO:
     header = row.object_list
     vo = BomProcurementObjectVO.model_validate(row)
-    update: dict[str, object] = {
+    update: _ObjectVoOverlay = {
         "location": header.location,
         "vehicle_model": header.vehicle_model,
         "bom_version": header.bom_version,
@@ -103,15 +119,11 @@ def _to_object_vo(
     }
     if l0_period is not None:
         effective_year, effective_month, expiry_year, expiry_month = l0_period
-        update.update(
-            {
-                "effective_year": effective_year,
-                "effective_month": effective_month,
-                "expiry_year": expiry_year,
-                "expiry_month": expiry_month,
-            }
-        )
-    return vo.model_copy(update=update)
+        update["effective_year"] = effective_year
+        update["effective_month"] = effective_month
+        update["expiry_year"] = expiry_year
+        update["expiry_month"] = expiry_month
+    return vo.model_copy(update=cast(dict[str, Any], update))
 
 
 def rows_to_vos(

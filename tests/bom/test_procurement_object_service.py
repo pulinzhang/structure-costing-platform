@@ -37,6 +37,7 @@ from app.schemas.dto.bom_procurement_object_dto import (
     BomProcurementObjectConfirmDTO,
     BomProcurementObjectGenerateDTO,
     BomProcurementObjectGenerateLogQuery,
+    BomProcurementObjectPrepQuery,
     BomProcurementObjectQuery,
     BomProcurementObjectSupplierDTO,
 )
@@ -826,3 +827,45 @@ def test_batch_delete_ignores_include_expired_filter(db: Session) -> None:
         )
         is None
     )
+
+
+def test_generate_normalizes_vehicle_model_case(db: Session) -> None:
+    """§13：干净库精确匹配前 normalize；t13j 与 T13J 同一代号。"""
+    _seed_tree(db)
+    service = BomProcurementObjectService()
+    result = service.generate(
+        db,
+        BomProcurementObjectGenerateDTO(
+            location="芜湖",
+            vehicle_model="t13j",
+            bom_version="V3",
+        ),
+        current_user=SYSTEM_USER,
+    )
+    assert result.object_count == 1
+    prep = service.prep_stats(
+        db,
+        BomProcurementObjectPrepQuery(
+            location="芜湖",
+            vehicle_model="t13j",
+            bom_version="V3",
+        ),
+    )
+    assert prep.object_count == 1
+    assert prep.node_count == 2
+    assert prep.message == ""
+
+
+def test_generate_rejects_vehicle_model_that_normalizes_empty(db: Session) -> None:
+    """§13：normalize 后空代号 → 项目代号无效（禁止靠 expand 猜）。"""
+    _seed_tree(db)
+    with pytest.raises(BusinessException, match="项目代号无效"):
+        BomProcurementObjectService().generate(
+            db,
+            BomProcurementObjectGenerateDTO(
+                location="芜湖",
+                vehicle_model="青岛",
+                bom_version="V3",
+            ),
+            current_user=SYSTEM_USER,
+        )

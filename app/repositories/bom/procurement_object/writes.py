@@ -33,10 +33,17 @@ class BomProcurementObjectWrites:
         db.refresh(row)
         return row
 
-    def bulk_create_objects(self, db: Session, payloads: list[BomProcurementObjectWrite]) -> None:
+    def bulk_create_objects(
+        self, db: Session, payloads: list[BomProcurementObjectWrite]
+    ) -> list[int]:
+        rows: list[BomProcurementObject] = []
         for payload in payloads:
-            db.add(model_from_payload(BomProcurementObject, payload))
-        db.flush()
+            row = model_from_payload(BomProcurementObject, payload)
+            db.add(row)
+            rows.append(row)
+        if rows:
+            db.flush()
+        return [row.id for row in rows]
 
     def delete_list(self, db: Session, header: BomProcurementObjectList) -> None:
         db.delete(header)

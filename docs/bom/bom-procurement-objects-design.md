@@ -3,7 +3,7 @@
 > **状态：分类 / 生成 / 确认 / 审核 / 列表档案（§14）/ 设变插行 / 生成门禁已落地。** 口径与代码以本切片为准；对人展示文案见 `labels.py` / `labels.js`。  
 > **列表 §14：** 默认包含已过期；生失效一列只认所属 L0 树根；筛「是否指定供应商」；不含已过期相对墙钟本月问树根。  
 > **设变：** 合册种树同一事务 `insert_for_new_tree`；`snapshot_blocks_full_generate` 已挡整包 generate（失效树根或生效月 ≠ SOP 开始月 → 409）。  
-> **主数据对齐（部分缺口）：** 列表基地筛已接 `LocationService`；生成查找 snapshot 仍精确 strip 匹配（未 expand / 未 normalize），见 §13。指定合同对方见独立设计。  
+> **主数据对齐：** 列表基地筛 `expand_for_query`；生成找 snapshot = `require_enabled` + `normalize_vehicle_model` + 规范名精确匹配（干净库不 expand 历史别名），见 §13。指定合同对方见独立设计。  
 > 切片：**`bom`**。生成时只读 `bom_snapshots` / `bom_nodes`，写入本切片采购对象表与生成日志。  
 > 界面：**项目**。库字段：`vehicle_model`。  
 > 基地：[location-design.md](../masterdata/location-design.md)。项目：[vehicle-model-design.md](../masterdata/vehicle-model-design.md)。  
@@ -12,6 +12,15 @@
 > 硬约束：分层与切片见 [architecture.md](../architecture.md)；引用保护见宪法 **§4.3**。
 
 **对人展示 vs 内部码。** 页面、生成摘要、Excel 单元格用中文（退化供货件、分总成、冲压件、标准件/胶等）。库字段、API、分类函数仍用 `l0_degenerate` / `other_leaf` 等码。Excel **工作表名**不能含 `/`，标准件分区表名用「标准件及胶等」。
+
+### 改前必读（不变量；违反即回归）
+
+1. **对象行不落生失效四列。** VO 的 `effective_*` / `expiry_*` 只来自所属 L0 树根（`map_l0_periods` / join）；禁止加 ORM 列、禁止读 `source_node_id` 自身四列当真相。  
+2. **列表是档案。** 默认 `include_expired=true`；禁止给列表 API 加 `year`/`month`。不含已过期 = 墙钟本月问树根。批量审核/反审/删除 **不过期筛**。  
+3. **列表 expand vs 导出精确。** 列表 `locations`=`expand_for_query`；导出 `location` 精确匹配。  
+4. **设变插行。** `insert_for_new_tree` 不删旧行；抄确认/厂家、**不抄** `audit_status`（`row_write` 始终 pending）；配对同号或 `sort_no`，**禁止**字母版本同茎。  
+5. **写路径共用。** 生成与插行只经 `row_write.build_object_row_write`；子树用 `bom_service.collect_subtree`（公开符号）。  
+6. **生成找 snapshot（干净库）。** 写：`require_enabled` + `normalize_vehicle_model` + `get_by_unique_key` 精确匹配。prep 同 normalize，不强制 `require_enabled`。**禁止**在生成路径 `expand_for_query` 扫历史别名；别名只给列表读。  
 
 ---
 
@@ -541,15 +550,15 @@ HUD：**采购对象**是霓虹强调格；标准件/胶等、待审、已审为
 
 ### 13.2 生成：怎么找到 snapshot
 
+干净库约定：`bom_snapshots.location` / `vehicle_model` 落库时已是规范名 + 归一化代号（与 BOM 上传同一套）。生成 **不** 为历史「青岛基地」等别名再 expand。
+
 1. `canonical = LocationService.require_enabled(raw_location)` → 规范名。不过则硬停。  
-2. `code = normalize_vehicle_model(raw_vehicle_model)`。空 / 占位符 → `BusinessException`。  
-3. 先 `get_by_unique_key(canonical, code, bom_version)`。没有：对 `expand_for_query(canonical)` 里每个别名再找（历史 snapshot 可能仍是「青岛基地」）。都没有 → `NotFoundException("未找到对应材料清单")`。  
-4. 清单头抄 **该 snapshot** 的 `location` / `vehicle_model` / `bom_version` / `source_filename`。新行不把别名改写成规范名。  
+2. `code = normalize_vehicle_model(raw_vehicle_model)`。空 / 占位符 → `BusinessException("项目代号无效")`。  
+3. `get_by_unique_key(canonical, code, bom_version.strip())`。没有 → `NotFoundException("未找到对应材料清单")`。  
+4. 清单头抄 **该 snapshot** 的 `location` / `vehicle_model` / `bom_version` / `source_filename`。  
 5. 其余覆盖写、带回确认、已审 409：§8.4 不变。设变增量不走本入口，见 §14。
 
-现网已做：第 1 步 `require_enabled`；第 3 步只按用户所选字符串 `strip` 精确匹配（未 expand、未 normalize）。第 2 / 3 步是落地缺口。
-
-prep-stats 是读：不强制 `require_enabled`（禁用基地仍可看「将列入」）。文案「请选定基地 / 项目 / 版本」。
+prep-stats 是读：不强制 `require_enabled`（禁用基地仍可看「将列入」）；项目仍 `normalize`。文案「请选定基地 / 项目 / 版本」。
 
 失败日志：业务事务 `rollback` 之后 **单独提交** 一条 `failed`（现网 `persist_failed`）。成功日志进同一生成事务。
 
@@ -681,3 +690,6 @@ HUD 把 AA/AB 并排计数是档案全貌，不要写成「本月待审」。计
 | 2026-09-18 | 列表/导出/HUD 筛参收成 `ProcurementObjectScopeFilters`；`mapping.scope_from_query`；查询 `_apply_object_filters(scope)`。包内 README 与 §14 现网要点同步。 |
 | 2026-09-18 | 可维护性护栏：VO 四列 Field 标明「树根非本表列」；变更记录废止旧「按月裁 / 字母同茎」表述；服务包入口指向 §14；回归测「L1 期≠L0 仍读树根」与「插行配对按 sort_no 不按字母同茎」。 |
 | 2026-09-18 | 抽出 `row_write.build_object_row_write`（generate/插行共用，禁止再调私有 `_row_write`）；补插行端到端（抄确认不抄审核）、`has_supplier`、列表 expand vs 导出精确、批量不过期筛回归测。 |
+| 2026-09-18 | 可维护性收口：`collect_subtree` 公开；`bulk_create_objects` 返回 id；插行一次 confirm map；mapping `_ObjectVoOverlay`；文首「改前必读」五条不变量。 |
+| 2026-09-18 | §13 按干净库收口：生成找 snapshot = `require_enabled` + `normalize_vehicle_model` + 精确匹配；**不做**别名 expand（列表读路径仍 expand）。 |
+| 2026-09-18 | §13 可维护性：文首不变量第 6 条；prep/generate 共用 `_lookup_snapshot`；回归测 normalize 与空代号拒绝。 |

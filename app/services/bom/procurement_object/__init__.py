@@ -1,8 +1,12 @@
 """
 采购对象清单服务包
 
-改前先读：docs/bom/bom-procurement-objects-design.md（尤其 §14：列表档案、只认 L0 树根、设变插行）。
+改前先读：docs/bom/bom-procurement-objects-design.md 文首「改前必读」+ §14。
 指定对方：docs/bom/bom-procurement-object-supplier-design.md。
+
+不变量（再强调）：对象行不落生失效；列表档案默认含已过期；VO 四列=树根；
+插行抄确认不抄审核；generate/插行共用 row_write；子树用 collect_subtree；
+生成找 snapshot = require_enabled + normalize + 精确匹配（禁止生成路径 expand 别名）。
 
 分层：
   labels.py              对人展示文案（种类 / 分区）

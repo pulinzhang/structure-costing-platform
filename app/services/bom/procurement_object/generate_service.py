@@ -1,6 +1,9 @@
 """采购对象清单 — 从材料清单树生成。
 
 列入规则在 classify：退化仅 L0（无子件，或全部 L1 无内部号）。L1 有内部号才列入采购对象。
+
+找 snapshot（§13 干净库）：写路径 require_enabled + normalize_vehicle_model + 精确匹配；
+prep 同 normalize、不强制 require_enabled。禁止在本文件 expand 基地别名。
 """
 
 from __future__ import annotations
@@ -16,6 +19,7 @@ from app.common.engineering_change_gates import (
     snapshot_blocks_full_generate,
 )
 from app.common.timezone import now
+from app.common.vehicle_model import normalize_vehicle_model
 from app.exceptions.base import BusinessException, NotFoundException
 from app.models.bom.node import BomSnapshot
 from app.repositories.bom.bom_repository import BomNodeRepository, BomSnapshotRepository
@@ -53,13 +57,15 @@ class BomProcurementObjectGenerateService:
         self, db: Session, query: BomProcurementObjectPrepQuery
     ) -> BomProcurementObjectPrepStatsVO:
         location = (query.location or "").strip()
-        vehicle_model = (query.vehicle_model or "").strip()
+        vehicle_model = normalize_vehicle_model(query.vehicle_model)
         bom_version = (query.bom_version or "").strip()
         if not location or not vehicle_model or not bom_version:
             return BomProcurementObjectPrepStatsVO(
                 message="请选定基地 / 项目 / 版本",
             )
-        snapshot = self.snapshot_repo.get_by_unique_key(db, location, vehicle_model, bom_version)
+        snapshot = self._lookup_snapshot(
+            db, location=location, vehicle_model=vehicle_model, bom_version=bom_version
+        )
         if snapshot is None:
             return BomProcurementObjectPrepStatsVO(
                 message="未找到对应材料清单，请先上传 BOM",
@@ -97,7 +103,9 @@ class BomProcurementObjectGenerateService:
     ) -> BomProcurementObjectGenerateResultVO:
         started_at = now()
         location = LocationService().require_enabled(db, dto.location)
-        vehicle_model = dto.vehicle_model.strip()
+        vehicle_model = normalize_vehicle_model(dto.vehicle_model)
+        if not vehicle_model:
+            raise BusinessException("项目代号无效")
         bom_version = dto.bom_version.strip()
         snapshot_id: int | None = None
         node_count = 0
@@ -273,6 +281,17 @@ class BomProcurementObjectGenerateService:
             anomaly_count=anomaly_count,
         )
 
+    def _lookup_snapshot(
+        self,
+        db: Session,
+        *,
+        location: str,
+        vehicle_model: str,
+        bom_version: str,
+    ) -> BomSnapshot | None:
+        """精确匹配。调用方须已 normalize / 规范名；禁止在此 expand 别名。"""
+        return self.snapshot_repo.get_by_unique_key(db, location, vehicle_model, bom_version)
+
     def _require_snapshot(
         self,
         db: Session,
@@ -280,8 +299,8 @@ class BomProcurementObjectGenerateService:
         vehicle_model: str,
         bom_version: str,
     ) -> BomSnapshot:
-        snapshot = self.snapshot_repo.get_by_unique_key(
-            db, location.strip(), vehicle_model.strip(), bom_version.strip()
+        snapshot = self._lookup_snapshot(
+            db, location=location, vehicle_model=vehicle_model, bom_version=bom_version
         )
         if snapshot is None:
             raise NotFoundException("未找到对应材料清单")

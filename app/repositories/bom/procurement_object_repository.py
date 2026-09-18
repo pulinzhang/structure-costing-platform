@@ -170,7 +170,9 @@ class BomProcurementObjectRepository:
     ) -> BomProcurementObjectList:
         return self._writes.create_list(db, payload)
 
-    def bulk_create_objects(self, db: Session, payloads: list[BomProcurementObjectWrite]) -> None:
+    def bulk_create_objects(
+        self, db: Session, payloads: list[BomProcurementObjectWrite]
+    ) -> list[int]:
         return self._writes.bulk_create_objects(db, payloads)
 
     def delete_list(self, db: Session, header: BomProcurementObjectList) -> None:

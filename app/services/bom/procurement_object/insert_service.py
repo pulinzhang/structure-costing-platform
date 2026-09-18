@@ -13,13 +13,9 @@ from app.models.bom.node import BomNode, BomSnapshot
 from app.models.bom.procurement_object import BomProcurementObject, BomProcurementObjectList
 from app.repositories.bom.bom_repository import BomNodeRepository, BomSnapshotRepository
 from app.repositories.bom.procurement_object_repository import BomProcurementObjectRepository
-from app.repositories.persist import model_from_payload
-from app.schemas.dto.bom_procurement_object_dto import (
-    BomProcurementObjectListWrite,
-    BomProcurementObjectWrite,
-)
+from app.schemas.dto.bom_procurement_object_dto import BomProcurementObjectListWrite
 from app.schemas.vo.user_vo import UserVO
-from app.services.bom.bom_service import _collect_subtree
+from app.services.bom.bom_service import collect_subtree
 from app.services.bom.procurement_object.classify import (
     SECTION_OBJECT,
     ClassifiedRow,
@@ -59,10 +55,10 @@ class BomProcurementObjectInsertService:
         if snapshot is None:
             raise NotFoundException("未找到对应材料清单")
         all_nodes = self.node_repo.list_by_snapshot(db, snapshot_id)
-        new_tree = _collect_subtree(all_nodes, new_l0_id)
+        new_tree = collect_subtree(all_nodes, new_l0_id)
         if not new_tree:
             raise BusinessException("新交货总成树为空，无法插采购对象")
-        old_tree = _collect_subtree(all_nodes, old_l0_id) if old_l0_id else []
+        old_tree = collect_subtree(all_nodes, old_l0_id) if old_l0_id else []
         old_by_number = self._index_old_object_rows(db, snapshot_id, old_tree)
         new_to_old = _new_to_old_part_numbers(old_tree, new_tree)
 
@@ -70,28 +66,23 @@ class BomProcurementObjectInsertService:
         audit = audit_create(current_user)
         header = self._ensure_header(db, snapshot=snapshot, current_user=current_user)
 
-        payloads: list[BomProcurementObjectWrite] = []
+        confirm_by_node: ConfirmByNode = {}
         for row in classified.rows:
             confirm = self._resolve_confirm(row, old_by_number, new_to_old)
-            confirm_map: ConfirmByNode = {}
             if confirm is not None:
-                confirm_map[row.source_node_id] = confirm
-            payloads.append(
-                build_object_row_write(
-                    db,
-                    row,
-                    list_id=header.id,
-                    confirm_by_node=confirm_map,
-                    created_by=audit["created_by"],
-                    updated_by=audit["updated_by"],
-                )
+                confirm_by_node[row.source_node_id] = confirm
+        payloads = [
+            build_object_row_write(
+                db,
+                row,
+                list_id=header.id,
+                confirm_by_node=confirm_by_node,
+                created_by=audit["created_by"],
+                updated_by=audit["updated_by"],
             )
-        inserted_ids: list[int] = []
-        for payload in payloads:
-            obj = model_from_payload(BomProcurementObject, payload)
-            db.add(obj)
-            db.flush()
-            inserted_ids.append(obj.id)
+            for row in classified.rows
+        ]
+        inserted_ids = self.repository.bulk_create_objects(db, payloads)
         logger.info(
             "合册插采购对象 snapshot=%s l0=%s count=%s",
             snapshot_id,
@@ -99,20 +90,6 @@ class BomProcurementObjectInsertService:
             len(inserted_ids),
         )
         return inserted_ids
-
-    def ensure_empty_list_id(
-        self,
-        db: Session,
-        *,
-        snapshot: BomSnapshot,
-        current_user: UserVO,
-    ) -> tuple[int, bool]:
-        """返回 (list_id, newly_created)。"""
-        existing = self.repository.get_list_by_snapshot_id(db, snapshot.id)
-        if existing is not None:
-            return existing.id, False
-        header = self._create_empty_header(db, snapshot=snapshot, current_user=current_user)
-        return header.id, True
 
     def _ensure_header(
         self,
