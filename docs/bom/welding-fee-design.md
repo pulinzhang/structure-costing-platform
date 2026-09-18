@@ -1,7 +1,7 @@
 # 焊接费 — 设计说明
 
 > **状态：已上线。** 表 `bom_welding_fees` + `level`；公式与层级无关。财务读 `level=0`。  
-> **计算入参（已落地）：** `#/bom-welding-fee-calc` 只要年 + 基地 + 项目；跟拆解列表；join 节点年交集。不要版本、不要 snapshot、不选层级（一次算全部层）。见 [有效期 §6.3](../engineering-change/bom-process-die-effective-period-design.md)。  
+> **计算入参（已落地）：** `#/bom-welding-fee-calc` 只要年 + 基地 + 项目；跟拆解列表；join 节点后按 **L0 树根** 年交集。不要版本、不要 snapshot、不选层级（一次算全部层）。见 [有效期 §6.3](../engineering-change/bom-process-die-effective-period-design.md)。  
 > 切片：**`bom`**。只读焊接工艺拆解与焊接单价。  
 > 硬约束：分层见 [architecture.md](../architecture.md)；编排见指挥家宪法。
 
@@ -154,14 +154,17 @@ API 仍可传 `levels`（核价引擎补算可用 `[0]`），计算页不传。
 ```text
 location + vehicle_model 的拆解行（不按 bom_version 过滤）
   INNER JOIN bom_nodes ON source_node_id
-  overlaps_year(year)
+  沿 parent 找到 L0 树根
+  树根 overlaps_year(year)
 ```
+
+**以树根为准，不能漂。** L1/L2 拆解行不得用本行生失效筛期（合册后子孙可能失效空、树根已截断）。
 
 前置拒绝：无该基地年单价；从未生成拆解；过滤后 **零个** 有效期内拆解节点。
 
 `GET /calc/ready`：同一把钥匙，按 level 给出节点数 / 工艺行 / 零工艺数，不要只报 L0。
 
-不要 join snapshot 问期，不要用项目 `require_overlaps_year` 当取件。身份 `require_overlaps_year`（账期年）。结果表仍是年度账，不加月。
+不要 join snapshot 问期，不要用项目 `require_overlaps_year` 当取件，不要按 L1/L2 本行期取件。身份 `require_overlaps_year`（账期年）。结果表仍是年度账，不加月。
 
 ---
 
@@ -195,7 +198,7 @@ app/repositories/bom/welding_fee_repository.py
 static/js/features/bom/welding-fee/{calc,list}/
 ```
 
-指挥家：`prepare`（单价 + 该基地项目拆解 join 节点年交集 + levels）→ `engine`（逐节点套 §3）→ `persist`。  
+指挥家：`prepare`（单价 + 该基地项目拆解按 L0 树根年交集 + levels）→ `engine`（逐节点套 §3）→ `persist`。  
 单件公式按节点 `level` 共用，不要按 level 分支公式。
 
 下游 costing：**只读** `final_welding_fee` where `level=0`。bom **不** 依赖 costing。
@@ -223,7 +226,7 @@ static/js/features/bom/welding-fee/{calc,list}/
 | 财务读 0、采购读 1 | 把子层金额加进父层 |
 | 有拆解才有焊接费行 | 在本切片扫 BOM 认外发 |
 | 现网一年一次 | 本期改月（另文） |
-| 计算入参年+基地+项目；join 节点年交集 | 计算页选版本 / 选 snapshot；拆解表加四列 |
+| 计算入参年+基地+项目；按 L0 树根年交集 | 计算页选版本 / 选 snapshot；拆解表加四列；按 L1 本行期取件 |
 
 ---
 
@@ -232,7 +235,7 @@ static/js/features/bom/welding-fee/{calc,list}/
 | 文档 | 关系 |
 |------|------|
 | [welding-process-breakdown-design.md](welding-process-breakdown-design.md) | `level` 与过程量的上游；取期靠 `source_node_id` |
-| [bom-process-die-effective-period-design.md](../engineering-change/bom-process-die-effective-period-design.md) | 计算入参与节点年交集 §6.3 |
+| [bom-process-die-effective-period-design.md](../engineering-change/bom-process-die-effective-period-design.md) | 计算入参与 L0 树根年交集 §6.3 |
 | [assembly-costing-design.md](../costing/assembly-costing-design.md) | 成品账只读 **level=0** |
 | [l1-assembly-costing-design.md](../costing/l1-assembly-costing-design.md) | 应成本工艺费读 **level=1** |
 | [costing-engine-design.md](../costing/costing-engine-design.md) | 补算默认 `levels=[0]` |
@@ -253,3 +256,4 @@ static/js/features/bom/welding-fee/{calc,list}/
 | 2026-09-16 | 列表批量审核 / 反审核 / 删除只要年+基地+项目；版本可选。 |
 | 2026-09-16 | 计算页不选层级，始终算拆解全部层。 |
 | 2026-09-16 | 身份改问账期 `require_overlaps_year`；取件仍 join 节点年交集。 |
+| 2026-09-18 | 取件改为以 L0 树根年交集为准；禁止用 L1/L2 本行生失效筛期。 |

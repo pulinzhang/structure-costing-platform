@@ -1,4 +1,4 @@
-"""计算开场：焊接单价与拆解节点（按年交集 + levels 过滤）。"""
+"""计算开场：焊接单价与拆解节点（按 L0 树根年交集 + levels 过滤）。"""
 
 from __future__ import annotations
 

@@ -41,7 +41,7 @@
 | 模块 | 做什么 | 不做什么 |
 |------|--------|----------|
 | 本文 | 扫树上 **有焊接原文** 的节点，落过程量、映射标准工艺、打 rollup | 不乘单价、不按年存结果、不落生失效、不独立改期 |
-| 焊接费 | 对该节点拆解行 × 年单价（`level` 抄自拆解）；入参年+基地+项目，join 节点取期 | 不编工艺、不靠版本/snapshot、不再扫树认人 |
+| 焊接费 | 对该节点拆解行 × 年单价（`level` 抄自拆解）；入参年+基地+项目，按 L0 树根取期 | 不编工艺、不靠版本/snapshot、不再扫树认人 |
 
 拆解 **没有计算年字段**（不是年账）。同一 `(location, vehicle_model, bom_version)` 共用一份拆解。换年只换单价表，不必为每一年再拆一份。**生失效只在 `bom_nodes` 上**，拆解用 `source_node_id` 取，见 [有效期 §6](../engineering-change/bom-process-die-effective-period-design.md)。
 
@@ -244,7 +244,7 @@ Parser  仅 generate / 改量映射 经 Service 调用
 
 | 文档 | 关系 |
 |------|------|
-| [welding-fee-design.md](welding-fee-design.md) | 按拆解 `level` 计费；一表 `bom_welding_fees`；将来 join 节点年交集取件 |
+| [welding-fee-design.md](welding-fee-design.md) | 按拆解 `level` 计费；一表 `bom_welding_fees`；按 L0 树根年交集取件 |
 | [bom-process-die-effective-period-design.md](../engineering-change/bom-process-die-effective-period-design.md) | 生失效只在 `bom_nodes`；拆解用 `source_node_id` 取 |
 | [assembly-costing-design.md](../costing/assembly-costing-design.md) | 成品账读焊接费 **level=0** |
 | [l1-assembly-costing-design.md](../costing/l1-assembly-costing-design.md) | 应成本工艺量来自 L1 拆解行 |

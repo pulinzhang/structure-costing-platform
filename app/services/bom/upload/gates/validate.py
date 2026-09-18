@@ -14,6 +14,11 @@ from app.exceptions.base import BusinessException
 from app.models.bom import BomNode, BomSnapshot
 from app.parsers.bom.models import BomParsedNode
 from app.services.bom.internal_number_uniqueness import validate_internal_number_uniqueness
+from app.services.bom.l0_seq_validator import (
+    format_l0_seq_issues,
+    inspect_l0_seq_nos,
+    l0_seq_occurrences,
+)
 from app.services.bom.subassembly_consistency import validate_subassembly_consistency
 from app.services.masterdata.vehicle_model import VehicleModelService
 
@@ -40,9 +45,17 @@ def validate_upload_file(*, filename: str, file_content: bytes) -> None:
         raise BusinessException(f"文件过大，上限 {settings.MAX_UPLOAD_SIZE // (1024 * 1024)}MB")
 
 
+def require_consecutive_l0_seq_nos(nodes: list[BomParsedNode]) -> None:
+    report = inspect_l0_seq_nos(l0_seq_occurrences(nodes))
+    message = format_l0_seq_issues(report)
+    if message:
+        raise BusinessException(message)
+
+
 def validate_parsed_nodes(nodes: list[BomParsedNode]) -> None:
     if not nodes:
         raise BusinessException("未解析到 BOM 节点，请检查 Excel 格式")
+    require_consecutive_l0_seq_nos(nodes)
     validate_internal_number_uniqueness(nodes)
     validate_subassembly_consistency(nodes)
 
