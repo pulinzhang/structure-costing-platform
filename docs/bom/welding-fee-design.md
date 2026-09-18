@@ -154,11 +154,11 @@ API 仍可传 `levels`（核价引擎补算可用 `[0]`），计算页不传。
 ```text
 location + vehicle_model 的拆解行（不按 bom_version 过滤）
   INNER JOIN bom_nodes ON source_node_id
-  沿 parent 找到 L0 树根
-  树根 overlaps_year(year)
+  树根 = level==0；树根 overlaps_year(year) → source 落在该子树内才取
+  实现：app/repositories/bom/period_trees.py
 ```
 
-**以树根为准，不能漂。** L1/L2 拆解行不得用本行生失效筛期（合册后子孙可能失效空、树根已截断）。
+**以树根为准，不能漂。** L1/L2 拆解行不得用本行生失效筛期（合册后子孙可能失效空、树根已截断）。四年后改树期口径只改 `period_trees`。
 
 前置拒绝：无该基地年单价；从未生成拆解；过滤后 **零个** 有效期内拆解节点。
 

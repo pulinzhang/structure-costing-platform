@@ -7,33 +7,13 @@ from sqlalchemy.orm import Query, Session, joinedload
 from sqlalchemy.sql.elements import ColumnElement
 
 from app.common.audit import AUDIT_APPROVED, AUDIT_PENDING
-from app.common.period import overlaps_year
 from app.models.bom import (
     BomNode,
     BomWeldingProcessBreakdownLine,
     BomWeldingProcessBreakdownNode,
 )
+from app.repositories.bom.period_trees import node_ids_in_year_overlap_trees
 from app.repositories.bom.welding_process_breakdown.types import WeldingBreakdownFilterSummary
-
-
-def _resolve_l0_root(by_id: dict[int, BomNode], source_node_id: int | None) -> BomNode | None:
-    """沿 parent_id 爬到 level=0；断链或找不到则 None。"""
-    if source_node_id is None:
-        return None
-    current = by_id.get(int(source_node_id))
-    seen: set[int] = set()
-    while current is not None:
-        node_id = int(current.id)
-        if node_id in seen:
-            return None
-        seen.add(node_id)
-        if int(current.level) == 0:
-            return current
-        parent_id = current.parent_id
-        if parent_id is None:
-            return None
-        current = by_id.get(int(parent_id))
-    return None
 
 
 class WeldingBreakdownQueries:
@@ -338,27 +318,19 @@ class WeldingBreakdownQueries:
             if snapshot_ids
             else []
         )
-        by_id: dict[int, BomNode] = {int(node.id): node for node in forest}
-        for node in sources:
-            by_id.setdefault(int(node.id), node)
+        # 按 snapshot 分组，与 list_year_overlap_trees 同一口径
+        by_snapshot: dict[int, list[BomNode]] = {}
+        for node in forest:
+            by_snapshot.setdefault(int(node.snapshot_id), []).append(node)
+        allowed_ids: set[int] = set()
+        for nodes in by_snapshot.values():
+            allowed_ids |= node_ids_in_year_overlap_trees(nodes, year=year)
 
-        matched: list[BomWeldingProcessBreakdownNode] = []
-        for row in rows:
-            root = _resolve_l0_root(
-                by_id,
-                int(row.source_node_id) if row.source_node_id is not None else None,
-            )
-            if root is None:
-                continue
-            if overlaps_year(
-                effective_year=int(root.effective_year),
-                effective_month=int(root.effective_month),
-                expiry_year=root.expiry_year,
-                expiry_month=root.expiry_month,
-                year=year,
-            ):
-                matched.append(row)
-        return matched
+        return [
+            row
+            for row in rows
+            if row.source_node_id is not None and int(row.source_node_id) in allowed_ids
+        ]
 
     def exists_by_bom_scope(
         self,

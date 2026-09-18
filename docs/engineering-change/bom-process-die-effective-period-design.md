@@ -355,10 +355,11 @@ L0 生效 <= 该年该月  且  （失效空  或  失效 >= 该年该月）
 
 ```text
 拆解行 INNER JOIN bom_nodes ON source_node_id = bom_nodes.id
-沿 parent 找到 L0 树根，对树根四列做 overlaps_year
+树根 = level==0；树根 overlaps_year(year) → 收下整棵子树
+实现：app/repositories/bom/period_trees.py（node_ids_in_year_overlap_trees）
 ```
 
-**禁止** join `bom_snapshots` 问期（头上无这四列），也 **禁止** 用项目 `require_overlaps_year` 当取件 WHERE，也 **禁止** 用 L1/L2 本行生失效筛期。
+**禁止** join `bom_snapshots` 问期（头上无这四列），也 **禁止** 用项目 `require_overlaps_year` 当取件 WHERE，也 **禁止** 用 L1/L2 本行生失效筛期。四年后改树期口径只改 `period_trees`。
 
 切片正文：[焊接工艺拆解](../bom/welding-process-breakdown-design.md)。焊接费计算已按 §6.3 落地。
 
@@ -407,8 +408,8 @@ year, location, vehicle_model
 ```text
 该基地 + 该项目 的全部拆解行（不按版本过滤）
   INNER JOIN bom_nodes ON source_node_id = bom_nodes.id
-  沿 parent 找到 L0 树根
-  树根 overlaps_year(year)
+  树根 = level==0；树根 overlaps_year(year) → 收下整棵子树
+  实现：app/repositories/bom/period_trees.py
 ```
 
 ```text
