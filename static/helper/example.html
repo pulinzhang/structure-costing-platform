@@ -31,6 +31,7 @@
         <li><a href="#year">一年维护</a></li>
         <li><a href="#month">每月核价</a></li>
         <li><a href="#how">怎么算出成品价</a></li>
+        <li><a href="#engineering-change">工程变更（2025·07）</a></li>
         <li><a href="#map">全貌收口</a></li>
       </ul>
       <div class="nav-label">快捷</div>
@@ -47,7 +48,8 @@
         <h1>③ 样例 · 青岛 · 2025 · 01 · T28</h1>
         <p>
           章节与<a href="knowledge.html">知识库</a>一一对应。
-          用库内真实数据，把「前置 → 年度 → 每月 → 成品总费用」落到具体数字。
+          用库内真实数据，把「前置 → 年度 → 每月 → 成品总费用」落到具体数字；
+          另附青岛 T28 · <strong>2025年07月</strong>工程变更合册五种改法（与上传页下载模板同一本）。
         </p>
         <div class="scope-pill">
           <span>青岛</span>
@@ -77,6 +79,7 @@
             <tr><td>材料清单标题</td><td>T28项目产品材料清单（27 个成品 / 288 个节点）</td></tr>
             <tr><td>讲解成品</td><td>流水槽加强梁总成　501006873AA</td></tr>
             <tr><td>冲压工艺版本</td><td>V3（85 个自制件）</td></tr>
+            <tr><td>工程变更样册</td><td>同一项目 · 2025年07月 · 五种改法（见下节）</td></tr>
           </tbody>
         </table>
       </section>
@@ -449,6 +452,88 @@
           <p style="margin-top:10px;font-size:13px;color:#9e9e9e;">
             流水槽加强梁总成（501006873AA）· 青岛 · T28 · D/00 · 2025 年 01 月
           </p>
+        </div>
+      </section>
+
+      <section id="engineering-change">
+        <h2>工程变更样例 · 青岛 · T28 · 2025年07月</h2>
+        <p class="lead">
+          与上传页「下载模板」同一本：变更单五行 = 五种改法、五个交货总成，一行一种改法。
+          基地青岛、项目 T28、清单版本仍是 D/00（工程变更不改这个字）。生效月 2025年07月：新总成从 7 月启用，旧总成用到 6 月到期。
+        </p>
+
+        <div class="scope-pill">
+          <span>青岛</span>
+          <span>2025 年</span>
+          <span>07 月</span>
+          <span>T28</span>
+          <span>D/00</span>
+          <span>合册五种改法</span>
+        </div>
+
+        <h3>变更单五行对照</h3>
+        <table>
+          <thead>
+            <tr>
+              <th>类型</th>
+              <th>变更前总成</th>
+              <th>变更后总成</th>
+              <th>动到的零件</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td>完成停止</td>
+              <td>501009533AA<br><span style="color:#9e9e9e">发盖左铰链安装支架总成</span></td>
+              <td>（空）</td>
+              <td>整棵交货总成 7 月起不再交；材料清单不写该总成</td>
+            </tr>
+            <tr>
+              <td>改图 · 一级</td>
+              <td>501006873AA<br><span style="color:#9e9e9e">流水槽加强梁总成</span></td>
+              <td>501006873AB</td>
+              <td>501006875AA → 501006875AB<br><span style="color:#9e9e9e">雨刮电机安装支架Ⅰ（与 1 月样例同一成品换号）</span></td>
+            </tr>
+            <tr>
+              <td>改图 · 二级</td>
+              <td>501009144AA<br><span style="color:#9e9e9e">后防撞梁总成</span></td>
+              <td>501009144AB</td>
+              <td>501009122AA → 501009122AB<br><span style="color:#9e9e9e">后保下安装支架</span></td>
+            </tr>
+            <tr>
+              <td>此件不装</td>
+              <td>501008897AA<br><span style="color:#9e9e9e">后围总成</span></td>
+              <td>501008897AB</td>
+              <td>504000341AA 不装<br><span style="color:#9e9e9e">用量 0 + 备注含「此件不装」</span></td>
+            </tr>
+            <tr>
+              <td>增加零件</td>
+              <td>501007029AA<br><span style="color:#9e9e9e">中通道左后纵梁总成</span></td>
+              <td>501007029AB</td>
+              <td>新加 501007040AA<br><span style="color:#9e9e9e">中通道后纵梁加强板（变更前零件空）</span></td>
+            </tr>
+          </tbody>
+        </table>
+
+        <h3>与 1 月样例怎么对上</h3>
+        <div class="tree">
+          <div class="root">1 月核价对象：501006873AA（流水槽加强梁总成）· 总费用 21.20</div>
+          <div class="mid">　└── 一级冲压件 501006875AA（雨刮电机安装支架Ⅰ）· 月价 0.9615</div>
+          <div class="leaf">　　↓ 工程变更 · 2025年07月 · 改图</div>
+          <div class="root">7 月起交货总成：501006873AB（同名）</div>
+          <div class="mid">　└── 一级冲压件 501006875AB（新号工艺 + 简图在工艺确认表）</div>
+        </div>
+        <p>
+          6 月及以前仍按 AA 取树与工艺；7 月起按 AB。
+          系统照抄变更单上的 AB，不会自己把 AA 加成 AB。
+          材料清单只写变化的行；合册不要「零件汇总」。
+          已经算过的 6 月核价<strong>不会</strong>自动改成新号——要看新号价，对 7 月及以后重跑月度核价。
+        </p>
+
+        <div class="callout ok">
+          操作步骤见<a href="help.html#engineering-change">帮助 · 工程变更</a>；
+          口径见<a href="knowledge.html#engineering-change">知识库 · 工程变更</a>。
+          系统内：工程变更 → 上传工程变更 → 下载模板，即本册。
         </div>
       </section>
 

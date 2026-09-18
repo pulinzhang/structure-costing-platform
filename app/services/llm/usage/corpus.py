@@ -187,6 +187,7 @@ def _extra_faq_chunks() -> list[CorpusChunk]:
             text=(
                 "上传入口在侧栏各模块的「上传」页：冲压工艺文件、模具布点、冲次单价、检具费、"
                 "材料清单、焊接单价、包装运输、年度零件价、基准价与加减价政策等。"
+                "投产后改图换号请走「工程变更 → 上传工程变更」合册，不要在材料清单/工艺/布点页整包覆盖新号。"
                 "上传前确认基地、项目、清单版本、年月维度与本次核价一致；列表页只读核对，写入靠上传或计算页。"
             ),
             source_page="help.html",
@@ -362,6 +363,7 @@ def load_corpus_chunks() -> tuple[CorpusChunk, ...]:
                 "导航",
                 "冲压工程",
                 "焊接工程",
+                "工程变更",
                 "一事一议",
                 "主数据",
                 "核价",
@@ -384,6 +386,26 @@ def load_corpus_chunks() -> tuple[CorpusChunk, ...]:
             source_page="help.html",
             anchor="welding",
             keywords=("焊接工程", "焊接单价", "焊接拆解", "焊接费", "包装运输", "采购对象"),
+        ),
+        CorpusChunk(
+            chunk_id="engineering-change",
+            title="工程变更怎么用",
+            text=_extract_section(help_html, "engineering-change"),
+            source_page="help.html",
+            anchor="engineering-change",
+            keywords=(
+                "工程变更",
+                "改图",
+                "此件不装",
+                "完成停止",
+                "增加零件",
+                "换号",
+                "设变",
+                "变更单",
+                "变更合册",
+                "零件汇总",
+                "材料清单换号",
+            ),
         ),
         CorpusChunk(
             chunk_id="yishiyiyi",
@@ -439,7 +461,7 @@ def load_corpus_chunks() -> tuple[CorpusChunk, ...]:
             text=_extract_section(help_html, "export"),
             source_page="help.html",
             anchor="export",
-            keywords=("导出", "合册", "excel", "Excel", "核对合册", "导出 Excel", "导出协议"),
+            keywords=("导出", "excel", "Excel", "核对合册", "导出 Excel", "导出协议"),
         ),
         CorpusChunk(
             chunk_id="monthly",
@@ -448,6 +470,14 @@ def load_corpus_chunks() -> tuple[CorpusChunk, ...]:
             source_page="knowledge.html",
             anchor="month",
             keywords=("每月", "月度", "当月", "一个月要做", "维护", "哪些数据"),
+        ),
+        CorpusChunk(
+            chunk_id="engineering_change_knowledge",
+            title="工程变更核价口径",
+            text=_extract_section(knowledge_html, "engineering-change"),
+            source_page="knowledge.html",
+            anchor="engineering-change",
+            keywords=("时间轴", "切点", "生效月", "到期月", "新旧并存"),
         ),
         CorpusChunk(
             chunk_id="procurement_knowledge",

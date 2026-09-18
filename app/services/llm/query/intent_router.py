@@ -145,6 +145,7 @@ _USAGE_TOPIC_SIGNALS: tuple[str, ...] = (
     "短码",
     "怎么查价",
     "怎么问价",
+    "工程变更",
 )
 
 _STUCK_SIGNALS: tuple[str, ...] = (
@@ -197,7 +198,7 @@ _HELP_TOPIC_RULES: tuple[tuple[str, tuple[str, ...]], ...] = (
         ),
     ),
     ("audit", ("怎么审核", "如何审核", "反审核", "审核按钮")),
-    ("export", ("导出", "合册", "excel", "Excel", "核对合册")),
+    ("export", ("导出", "excel", "Excel", "核对合册")),
     ("faq_permission", _PERMISSION_SIGNALS),
     ("faq_stuck", _STUCK_SIGNALS),
     ("faq_calc_stuck", _CALC_STUCK_SIGNALS + _CALC_STUCK_STATE_SIGNALS),
@@ -211,6 +212,27 @@ _HELP_TOPIC_RULES: tuple[tuple[str, tuple[str, ...]], ...] = (
         ("采购价格", "采购价格协议", "批量零部件价格协议", "价格协议", "导出协议"),
     ),
     ("procurement", ("采购对象", "外发", "退化供货件")),
+    (
+        "engineering_change_knowledge",
+        ("时间轴", "切点", "生效月", "到期月", "新旧并存"),
+    ),
+    (
+        "engineering-change",
+        (
+            "工程变更",
+            "改图",
+            "此件不装",
+            "完成停止",
+            "增加零件",
+            "换号",
+            "设变",
+            "变更单",
+            "投产后改图",
+            "投产后换号",
+            "材料清单换号",
+            "变更合册",
+        ),
+    ),
     ("file_trace", ("文件溯源", "溯源")),
     ("assembly_cost", ("总成核价", "成品核价计算", "总成核价计算")),
     ("masterdata", ("牌号分类",)),
