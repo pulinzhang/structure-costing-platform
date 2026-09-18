@@ -46,6 +46,13 @@ class BomWeldingProcessBreakdownRepository:
     def get_line_by_id(self, db: Session, line_id: int) -> BomWeldingProcessBreakdownLine | None:
         return self._queries.get_line_by_id(db, line_id)
 
+    def list_by_source_node_ids(
+        self,
+        db: Session,
+        source_node_ids: list[int],
+    ) -> list[BomWeldingProcessBreakdownNode]:
+        return self._queries.list_by_source_node_ids(db, source_node_ids)
+
     def paginate(
         self,
         db: Session,

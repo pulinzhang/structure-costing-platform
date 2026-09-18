@@ -5,6 +5,7 @@
 import { paginationBarHtml } from '../../../../page-size.js?v=3';
 import { AUDIT_LABELS, CONFIRM_LABELS, KIND_LABELS, SECTION_LABELS } from '../labels.js?v=2';
 import { partShortCodeCellHtml, partNumberNameCellHtml } from '../../../../part-identity.js?v=3';
+import { fmtPeriodRange, hasClosedPeriod } from '../../../common/period-ui.js?v=3';
 
 export function procurementObjectListTemplate() {
     return `
@@ -126,7 +127,8 @@ export function procurementObjectListTemplate() {
                             ${filterSelect('poConfirmFilter', '确认')}
                             ${filterSelect('poAuditFilter', '审核')}
                             ${filterInput('poSupplierFilter', '供应商', '缩写/工商名称/ERP')}
-                            ${filterSelect('poHasSupplierFilter', '对方')}
+                            ${filterSelect('poHasSupplierFilter', '是否指定供应商')}
+                            ${filterSelect('poIncludeExpiredFilter', '是否已过期')}
                             ${filterInput('poPartFilter', '零件号', '零件号或总成')}
                             <button id="poResetBtn" type="button"
                                     class="inline-flex items-center gap-1.5 h-8 px-3 text-[11px] font-medium rounded-md bg-transparent text-[#6E6E73] border border-[#2A2A35] hover:bg-[#FF1E27]/10 hover:border-[#FF1E27]/50 hover:text-[#FF1E27] transition-all duration-200">
@@ -139,7 +141,7 @@ export function procurementObjectListTemplate() {
                 </div>
 
                 <div class="overflow-x-auto bg-[#0A0A0E] brabus-bg-grid">
-                    <table class="w-full table-fixed bg-transparent border-collapse" style="min-width: 1420px;">
+                    <table class="w-full table-fixed bg-transparent border-collapse" style="min-width: 1560px;">
                         <colgroup>
                             <col style="width:3px">
                             <col style="width:88px">
@@ -152,6 +154,7 @@ export function procurementObjectListTemplate() {
                             <col style="width:72px">
                             <col style="width:140px">
                             <col style="width:72px">
+                            <col style="width:140px">
                             <col style="width:88px">
                             <col style="width:88px">
                         </colgroup>
@@ -168,6 +171,7 @@ export function procurementObjectListTemplate() {
                                 <th class="px-2 py-2 text-left text-[9px] font-medium tracking-[0.06em] text-[#555555]">确认</th>
                                 <th class="px-2 py-2 text-left text-[9px] font-medium tracking-[0.06em] text-[#555555]">供应商</th>
                                 <th class="px-2 py-2 text-left text-[9px] font-medium tracking-[0.06em] text-[#555555]">审核</th>
+                                <th class="px-2 py-2 text-left text-[9px] font-medium tracking-[0.06em] text-[#555555]">生失效</th>
                                 <th class="px-2 py-2 text-center text-[9px] font-medium tracking-[0.06em] text-[#555555]">操作</th>
                                 <th class="px-2 py-2 text-left text-[9px] font-medium tracking-[0.06em] text-[#555555]">范围</th>
                             </tr>
@@ -347,7 +351,7 @@ function excelTraceHtml(records, start, span) {
 
 export function renderProcurementObjectRows(records) {
     if (!records || records.length === 0) {
-        return `<tr><td colspan="13" class="py-10 text-center text-[#8E8E93] text-[12px]">暂无数据</td></tr>`;
+        return `<tr><td colspan="14" class="py-10 text-center text-[#8E8E93] text-[12px]">暂无数据</td></tr>`;
     }
     const kindLabel = KIND_LABELS;
     const sectionLabel = SECTION_LABELS;
@@ -373,6 +377,7 @@ export function renderProcurementObjectRows(records) {
             ? `<td class="${mergeCell}" rowspan="${l0Span}">${partShortCodeCellHtml(row.l0_part_number)}</td>
                <td class="${mergeCell}" rowspan="${l0Span}">${partNumberNameCellHtml(row.l0_part_number, row.l0_part_name)}</td>`
             : '';
+        const periodTd = periodCellHtml(row);
         return `
         <tr class="group relative font-mono text-[11px] border-b border-[#141418] hover:bg-[#161620] transition-colors duration-100">
             <td class="p-0 relative">
@@ -406,6 +411,7 @@ export function renderProcurementObjectRows(records) {
                     : `<span class="text-[#3A3A42]">—</span>`}
             </td>
             <td class="px-2 py-2 text-[10px] text-[#8E8E93]">${esc(AUDIT_LABELS[row.audit_status] || row.audit_status)}</td>
+            ${periodTd}
             <td class="px-1 py-2 text-center">
                 ${confirmBtn}
                 <button type="button" data-action="detail" data-id="${esc(row.id)}"
@@ -415,5 +421,23 @@ export function renderProcurementObjectRows(records) {
             <td class="px-2 py-2 text-[9px] text-[#555555] truncate">${esc(row.location)} · ${esc(row.vehicle_model)} · ${esc(row.bom_version)}</td>
         </tr>`;
     }).join('');
+}
+
+function periodCellHtml(row) {
+    const periodText = fmtPeriodRange(
+        row.effective_year,
+        row.effective_month,
+        row.expiry_year,
+        row.expiry_month,
+    );
+    const periodClass = hasClosedPeriod(
+        row.effective_year,
+        row.effective_month,
+        row.expiry_year,
+        row.expiry_month,
+    )
+        ? 'text-[#FF1E27]'
+        : 'text-[#8E8E93]';
+    return `<td class="px-2 py-2 text-[10px] whitespace-nowrap ${periodClass}">${esc(periodText)}</td>`;
 }
 

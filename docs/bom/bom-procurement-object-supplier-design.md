@@ -16,7 +16,7 @@
 
 选项只来自供应商主数据。找不到：停止，去 `#/supplier-list` 补。禁止自由输入，禁止从备注 / 钢厂列 / 年度价发明对方。
 
-写门禁与 [supplier-design.md](../masterdata/supplier-design.md) **§6.0 / S12** 同一套：`SupplierService.require_enabled`。指定或改成非空才跑；清空、再生成带回不跑。供应商切片与工艺确认门禁已在第一期落地；**本页是供应商第二期必做**。禁止另写一套校验。
+写门禁与 [supplier-design.md](../masterdata/supplier-design.md) **§6.0 / S12** 同一套：`SupplierService.require_enabled`。指定或改成非空才跑；清空、再生成带回不跑。供应商切片与工艺确认门禁、本页点选均已落地。禁止另写一套校验。
 
 ---
 
@@ -97,7 +97,7 @@ ForeignKey("suppliers.full_name", ondelete="RESTRICT", onupdate="RESTRICT")
 | `confirm_status=pending` | 允许先指定（待定也可以写对方）；签约报表默认不出待定 |
 | `confirm_status=outsourced` | 允许空（待指定）或已填 |
 
-不要求「必须先外发再指定」，也不要求「必须指定才能审核」。列表要能筛：未指定 / 已指定；外发且未指定是采购缺口。
+不要求「必须先外发再指定」，也不要求「必须指定才能审核」。列表要能筛：未指定 / 已指定；过滤标签写 **是否指定供应商**，禁止写「对方」。外发且未指定是采购缺口。
 
 已审锁定：禁止改确认、禁止改供应商、禁止再生成覆盖（现网已审规则不变，只把供应商列入「行上业务勾选」一并锁）。
 
@@ -133,9 +133,7 @@ ForeignKey("suppliers.full_name", ondelete="RESTRICT", onupdate="RESTRICT")
 
 导出三表里，仅「采购对象」表有供应商列；标准件/胶等、异常不写。
 
-前端风格仍对齐现网采购对象列表（HUD / `#FF1E27`），不新开一页。
-
-落地时同步：[supplier-design.md](../masterdata/supplier-design.md) §4.1 第二期清单。权限沿用现网 `op:bom-procurement-object-list:update`，不新增供应商权限码。
+前端风格仍对齐现网采购对象列表（HUD / `#FF1E27`），不新开一页。与 [supplier-design.md](../masterdata/supplier-design.md) §4.1 第二期清单同步。
 
 ---
 
@@ -175,3 +173,5 @@ Router  → 现网 ProcurementObjectService（门面，可下沉 AuditService）
 | 2026-09-08 | 本表改为供应商直接下一跳：`supplier_name` 可空 FK `RESTRICT`/`RESTRICT`。NULL 不挡删/改主键。 |
 | 2026-09-08 | 空串收 `NULL`；带回时父行已删则该行 `NULL`，不整单 FK 失败。 |
 | 2026-09-08 | 打开 Excel 批改：禁止的是列表导出导回；窄表上传见独立设计。 |
+| 2026-09-18 | 列表 `has_supplier` 过滤标签写「是否指定供应商」，禁止写「对方」。 |
+| 2026-09-18 | 文首与 §6：本页点选已落地；去掉「第二期必做 / 落地时」残留。 |

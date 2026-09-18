@@ -1,7 +1,7 @@
 """
 工程变更管线（指挥家第二步）。
 
-职责边界：在同一业务 Session 内按序 flush——按变更单行种树/失效 → 采购对象 → 拆解 →
+职责边界：在同一业务 Session 内按序 flush——按变更单行种树/失效 → 采购对象 → 拆解（从旧树结果抄）→
 工艺按号增行一次 → 布点按变更单从旧号逻辑建立，组装 effect_links（change_order_id 暂为变更单行下标）。
 禁止：变更单落库与上传头标成功（persist）；禁止本文件内 commit。
 依赖：树算法在 BomService；工艺/布点写入在 stamping 上游 Service。
@@ -74,7 +74,7 @@ def run_engineering_change_pipeline(
             sort_no += 1
             has_bom_assembly = True
             continue
-        tree_links, planted, not_install = _plant_or_expire(
+        tree_links, planted, not_install, source_id_remap = _plant_or_expire(
             db,
             prepared=prepared,
             item=item,
@@ -109,6 +109,7 @@ def run_engineering_change_pipeline(
             db,
             change_order=item.change_order,
             after_root_id=new_l0_id,
+            source_id_remap=source_id_remap,
             current_user=current_user,
             sort_no_start=sort_no,
             change_order_id=change_order_index,
@@ -175,7 +176,7 @@ def _plant_or_expire(
     prev_month: int,
     current_user: UserVO,
     extra_change_orders: Sequence[ChangeOrderRowParsed] = (),
-) -> tuple[list[EngineeringChangeEffectLinkInsert], bool, int]:
+) -> tuple[list[EngineeringChangeEffectLinkInsert], bool, int, dict[int, int]]:
     change_order = item.change_order
     if change_order.change_type == CHANGE_TYPE_STOP:
         expire_l0_tree(
@@ -197,6 +198,7 @@ def _plant_or_expire(
             ],
             True,
             0,
+            {},
         )
     if item.sliced_bom_nodes is None:
         raise BusinessException("缺车身件材料清单")
@@ -236,6 +238,7 @@ def _plant_or_expire(
         ],
         True,
         plant.not_install_count,
+        plant.source_id_remap,
     )
 
 

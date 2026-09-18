@@ -55,7 +55,7 @@
 weld_info 非空
 ```
 
-SOP / 无设变：仍扫全林。合册只扫新种那一棵（§6.1）。**合册落地时**本页 generate 才拒绝；落地前保持现网整包。
+SOP / 无设变：仍扫全林。合册不走本页 generate：从旧树已有拆解结果抄到新树（§6.1）。**合册落地时**本页 generate 才拒绝；落地前保持现网整包。
 
 **不按 level 过滤。** 分总成只要材料清单写了焊接列，就会落主表 + 明细。
 
@@ -183,7 +183,7 @@ start_generate
 
 **合册落地时**才收窄本页「开始生成」：该 snapshot 一旦有已失效树根、**或** 存在生效月不是项目 SOP 开始月的树根 → 拒绝（即使没有已审）。与采购对象同一把钥匙。缺新树拆解走 [工程变更合册](../engineering-change/part-number-revision-design.md) 重传，本页不提供「只补该树」。落地前本页保持现网整包 generate。
 
-合册同一事务只扫新种那一棵有焊信的节点 **插行**（不删旧树、不碰已审）；行上 `bom_version` 抄头。引擎 `annual_welding_breakdown` **落地时**不得再调本页 generate 补新树（合册 §4.6 门禁之 3）。合册上传是长任务，不走本页。
+合册同一事务：按新旧 BOM 节点对照，把旧树 **已有拆解结果** 抄到新树再插一套（主表身份对齐新节点；`weld_info_raw` / 解析态 / 过程量等与 **全部明细行**——可多行——从旧结果照抄）。**禁止**按新节点 `weld_info` 重新自动拆（保留手工改量）。不删旧树拆解。无旧拆解可对的新节点不插。行上 `bom_version` 抄头。引擎 `annual_welding_breakdown` **落地时**不得再调本页 generate 补新树（合册 §4.6 门禁之 3）。合册上传是长任务，不走本页。
 
 ---
 
@@ -249,7 +249,7 @@ Parser  仅 generate / 改量映射 经 Service 调用
 | [assembly-costing-design.md](../costing/assembly-costing-design.md) | 成品账读焊接费 **level=0** |
 | [l1-assembly-costing-design.md](../costing/l1-assembly-costing-design.md) | 应成本工艺量来自 L1 拆解行 |
 | [costing-engine-design.md](../costing/costing-engine-design.md) | 年度步骤可补算拆解；合册落地后不得用本页 generate 补新树 |
-| [part-number-revision-design.md](../engineering-change/part-number-revision-design.md) | 合册只拆新树插行；`bom_version` 抄头 |
+| [part-number-revision-design.md](../engineering-change/part-number-revision-design.md) | 合册从旧树拆解结果抄到新树（主表+全部明细，禁止按焊信重拆）；`bom_version` 抄头 |
 | [bom-procurement-objects-design.md](bom-procurement-objects-design.md) | 认人不读拆解 |
 
 ---
@@ -264,3 +264,4 @@ Parser  仅 generate / 改量映射 经 Service 调用
 | 2026-09-16 | 设变后禁止整包 generate；合册插行 `bom_version` 抄 snapshot 头；引擎不得用本页补新树。 |
 | 2026-09-17 | 生成闸与采购对象对齐：已失效树根或生效月不是 SOP 开始月都拒绝整包 generate。 |
 | 2026-09-17 | 收口：禁止整包 generate / 引擎不调本页，都是 **合册落地时** 才改现网门禁。Parser 不改。 |
+| 2026-09-18 | 合册改为从旧树拆解结果抄到新树（主表+全部明细，可多行）；禁止按新节点焊信重拆。 |

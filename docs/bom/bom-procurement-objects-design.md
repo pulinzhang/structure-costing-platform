@@ -1,13 +1,14 @@
 # 采购对象清单 — 设计说明
 
-> **状态：分类 / 生成 / 确认 / 审核已落地。** 口径与代码以本切片为准；对人展示文案见 `labels.py` / `labels.js`。  
-> **未落地：** §14 跟树根有效期（as_of 列/数/检/审）、设变增量插行。生成页拒绝整包是 **合册落地时** 才改的门禁，落地前仍 §8.4。  
-> **主数据对齐（未做完）：** 基地筛已接 `LocationService`；生成查找 snapshot、项目筛、代号大写见 §13。指定合同对方见独立设计。  
+> **状态：分类 / 生成 / 确认 / 审核 / 列表档案（§14）/ 设变插行 / 生成门禁已落地。** 口径与代码以本切片为准；对人展示文案见 `labels.py` / `labels.js`。  
+> **列表 §14：** 默认包含已过期；生失效一列只认所属 L0 树根；筛「是否指定供应商」；不含已过期相对墙钟本月问树根。  
+> **设变：** 合册种树同一事务 `insert_for_new_tree`；`snapshot_blocks_full_generate` 已挡整包 generate（失效树根或生效月 ≠ SOP 开始月 → 409）。  
+> **主数据对齐（部分缺口）：** 列表基地筛已接 `LocationService`；生成查找 snapshot 仍精确 strip 匹配（未 expand / 未 normalize），见 §13。指定合同对方见独立设计。  
 > 切片：**`bom`**。生成时只读 `bom_snapshots` / `bom_nodes`，写入本切片采购对象表与生成日志。  
 > 界面：**项目**。库字段：`vehicle_model`。  
 > 基地：[location-design.md](../masterdata/location-design.md)。项目：[vehicle-model-design.md](../masterdata/vehicle-model-design.md)。  
 > 样本：`excel_sample/T13J项目车身件材料清单 (1).xlsx`（T13J · D/09）。  
-> 树根有效期现网改造见 [bom-process-die-effective-period-design.md](../engineering-change/bom-process-die-effective-period-design.md)。对象行不写生失效；**列表 / 检测 / 审核 / 核价**严格跟所属树根 as_of。设变增量带出见 §14、[工程变更](../engineering-change/part-number-revision-design.md) §4.4。  
+> 树根有效期见 [bom-process-die-effective-period-design.md](../engineering-change/bom-process-die-effective-period-design.md)。**有效期只认所属 L0 树根四列**；对象行 **不落** 生失效；禁止用 source 节点自身四列、项目期、清单头当对象时段（与焊接拆解同一纪律：join 取期，不抄）。**列表是档案台账**：默认包含已过期，不按年+月裁；生失效一列 = 所属树根。**核价 / 签约 / 引擎**仍按账期月命中树根。设变增量带出见 §14、[工程变更](../engineering-change/part-number-revision-design.md) §4.4。  
 > 硬约束：分层与切片见 [architecture.md](../architecture.md)；引用保护见宪法 **§4.3**。
 
 **对人展示 vs 内部码。** 页面、生成摘要、Excel 单元格用中文（退化供货件、分总成、冲压件、标准件/胶等）。库字段、API、分类函数仍用 `l0_degenerate` / `other_leaf` 等码。Excel **工作表名**不能含 `/`，标准件分区表名用「标准件及胶等」。
@@ -295,7 +296,7 @@ bom_procurement_object_generate_logs  一次「开始生成」一条终态日志
 
 - 只改 `section=object` 的 `confirm_status`（待定 / 外发 / 自制）和确认备注。
 - 不改 `object_kind`、核对凭据、材料快照。
-- `qa_passed=false` 或 `approved` 时拒绝（已审须先批量反审核）。有效期改造后：`qa_passed` 取 **该月命中树根** 上的 7.1–7.3，不读清单头整包字段，见 §14。
+- `qa_passed=false` 或 `approved` 时拒绝（已审须先批量反审核）。检测口径见 §14：列表档案不按月裁；核价侧才按账期月问命中树。
 - 确认允许 **单条**（操作列改外发/自制）：这是「这一件怎么买」，不是锁定。
 
 **删除 / 审核 / 反审核（只批量，按清单范围）**
@@ -304,17 +305,17 @@ bom_procurement_object_generate_logs  一次「开始生成」一条终态日志
 
 | 项 | 口径 |
 |----|------|
-| 范围 | 一份清单 = 基地 + 项目 + BOM 版本（对应一个 snapshot）。有效期改造后 **加年+月**：只打该月命中树根下的行，见 §14 |
+| 范围 | 一份清单 = 基地 + 项目 + BOM 版本（对应一个 snapshot）。**不加年+月**；**不过**「是否已过期」筛——按范围打整份清单（见 §14.1） |
 | 入口 | 列表工具栏按钮 + 抽屉；**审核意见 / 反审核原因必填**（`min_length=1`） |
-| 删除 | 按范围：无年+月且无 `approved` 时 **`delete_list` 清清单头**（行级联，与 SOP 生成覆盖一致）；有 `approved` 或已带年+月时只删范围内 `pending` 行（含标准件/胶等、异常），已审与其它月行跳过，返回 `skipped_approved_count` |
+| 删除 | 按范围：无 `approved` 时 **`delete_list` 清清单头**（行级联，与 SOP 生成覆盖一致）；有 `approved` 时只删该清单全部 `pending` 行（含标准件/胶等、异常），已审跳过，返回 `skipped_approved_count` |
 | 审核 | 把范围内 `section=object` 且 `pending` 改为 `approved`；已审跳过；意见写入 `audit_remark` |
 | 反审核 | 把范围内 `section=object` 且 `approved` 改回 `pending`；非已审跳过；原因写入 `reverse_audit_remark` |
 | 锁定 | `approved` 禁止改确认、禁止 SOP 再生成覆盖 |
-| 检测 | 该月命中树根上 7.1–7.3 未过则拒绝审核（可导出、可删 pending 以便重生成）。不拿清单头整包 `qa_passed` 当本月门禁 |
+| 检测 | 审核前仍可看清单头 / 现场检测提示；**不**拿「墙钟本月命中」当列表默认门禁。核价覆盖检查才按账期月，见 §14 |
 
 不要求先确认外发才能审。列表要能筛未确认已审。
 
-无已审时整单删头，不必重算。有已审时删 pending 后重算清单头计数；完备性被破坏则 `qa_passed=false`。核对区不审核、不反审核。有效期改造后日常删除走 §14.4（按命中树根），不要靠这段整包重算当本月账。
+无已审时整单删头，不必重算。有已审时删 pending 后重算清单头计数；完备性被破坏则 `qa_passed=false`。核对区不审核、不反审核。
 
 **CRUD**
 
@@ -338,11 +339,14 @@ bom_procurement_object_generate_logs  一次「开始生成」一条终态日志
 
 ```text
 Router  → ProcurementObjectService 门面（查询 + 委托）
-              ├── GenerateService      写门禁 + 分类 + 覆盖写
+              ├── GenerateService      写门禁 + 分类 + 覆盖写（含 snapshot_blocks_full_generate）
+              ├── InsertService        合册种树后本树插行（不 commit）
               ├── AuditService         单条确认 / 按范围批量审核·反审核·删除
               ├── GenerateLogService   成功进生成事务；失败 rollback 后单独提交
               ├── ExportService        与列表同一套筛选，不分页
-              └── classify / labels / mapping  纯函数
+              └── classify / labels / mapping / row_write
+                    classify 纯函数；mapping 树根期 → VO + scope_from_query；
+                    row_write.build_object_row_write 供 generate / 插行共用（始终 pending 审核）
                     └── 只读 BomNodeRepository / BomSnapshotRepository
 ```
 
@@ -356,7 +360,8 @@ Parser 不参与（树已在 `bom_nodes`）。
 app/models/bom/procurement_object.py
 app/models/bom/procurement_object_generate_log.py
 app/repositories/bom/procurement_object_repository.py
-app/services/bom/procurement_object/   service · generate_service · audit_service · generate_log_service · export · classify · labels · mapping
+app/repositories/bom/procurement_object/   queries · writes · types（ScopeFilters / HUD TypedDict）
+app/services/bom/procurement_object/   service · generate_service · insert_service · audit_service · generate_log_service · export_service · classify · labels · mapping · row_write
 app/routers/bom/procurement_object.py
 app/schemas/dto|vo/bom_procurement_object_*.py
 static/js/features/bom/procurement-object/
@@ -367,22 +372,22 @@ static/js/features/bom/procurement-object/
 - `app/services/bom/procurement_object/labels.py`
 - `static/js/features/bom/procurement-object/labels.js`
 
-API 前缀：`/api/bom/procurement-objects`。生成与批量范围键均为 **基地 + 项目 + BOM 版本**（不是客户端传 `snapshot_id`）。有效期改造后列表 / 导出 / 批量写 **加 `year` + `month`**（§14）。
+API 前缀：`/api/bom/procurement-objects`。生成与批量范围键均为 **基地 + 项目 + BOM 版本**（不是客户端传 `snapshot_id`）。列表 / 导出 **不加** `year` + `month`；过期筛用 `include_expired`（§14）。批量审核 / 反审核 / 删除 **不传** `include_expired`。
 
 | 方法 | 路径 | 说明 |
 |------|------|------|
 | GET | `/generate/prep-stats` | 生成页 KPI：节点 / 将列入 / 标准件/胶等 / 异常 / 已审锁定 |
-| POST | `/generate` | body：范围；有已审行则 409。**合册落地时**含失效树/合册树的 snapshot 亦拒绝，见 §14 |
+| POST | `/generate` | body：范围；有已审行则 409；失效树根或生效月 ≠ SOP 开始月亦 409（`snapshot_blocks_full_generate`），见 §14 |
 | GET | `/generate/logs` | 生成历史分页 `page`+`size` |
 | GET | `/generate/logs/{log_id}` | 过程全文 |
-| GET | `/summary` | 当前范围；有效期改造后计数/检测按该月命中树根（尚未生成则 404） |
-| GET | `/` | 分页 `page`+`size`；筛范围 / section / object_kind / confirm_status / audit_status / part_number / l0_part_number / excel_row；`section` 空 = 全部。有效期改造后加 `year` / `month` / `include_expired` |
-| GET | `/items/{id}` | 单条详情 |
+| GET | `/summary` | 范围键下清单头（`qa_passed` / 计数等）；列表 QA 横幅用。**不是** HUD 计数源 |
+| GET | `/` | 分页 `page`+`size`；筛范围 / section / object_kind / confirm_status / audit_status / part_number / l0_part_number / excel_row / `has_supplier`；`section` 空 = 全部。`include_expired` 默认 `true`（§14）；**不要** `year` / `month`。响应 `filters.summary` = HUD |
+| GET | `/items/{id}` | 单条详情（VO 带所属树根四列） |
 | PATCH | `/items/{id}/confirm` | 单条确认三态（待审） |
-| POST | `/batch-approve` | **按范围** 批量审核；`audit_remark` 必填；禁止 ids |
-| POST | `/batch-reverse-audit` | **按范围** 批量反审核；`reverse_audit_remark` 必填；禁止 ids |
-| POST | `/batch-delete` | **按范围** 整单删除：无已审清清单头；有已审只删 pending（含核对区）并跳过；禁止 ids |
-| GET | `/export` | 与列表相同筛选，不分页，Excel |
+| POST | `/batch-approve` | **按范围** 批量审核；`audit_remark` 必填；禁止 ids；不过期筛 |
+| POST | `/batch-reverse-audit` | **按范围** 批量反审核；`reverse_audit_remark` 必填；禁止 ids；不过期筛 |
+| POST | `/batch-delete` | **按范围** 整单删除：无已审清清单头；有已审只删全部 pending（含核对区）并跳过；禁止 ids；不过期筛 |
+| GET | `/export` | 与列表相同筛选（含 `include_expired`），不分页，Excel |
 
 禁止：`POST /items/{id}/approve`、`POST /items/{id}/reverse-audit`、`DELETE /items/{id}`、按勾选 id 的 batch。
 
@@ -409,11 +414,21 @@ HUD：**采购对象**是霓虹强调格；标准件/胶等、待审、已审为
 
 ### 9.2 页面内容
 
-列表页签：**全部**（默认，不传 `section`）| 采购对象 | 标准件/胶等 | 异常。HUD 展示采购对象条数、标准件/胶等、待审、已审（有效期改造后 = 该月命中树根，与结构树同一 as_of）。该月 7.1–7.3 未过用错误文案，不要静默当成功、不要用清单头整包 `qa_passed`。
+列表页签：**全部**（默认，不传 `section`）| 采购对象 | 标准件/胶等 | 异常。HUD 展示采购对象条数、标准件/胶等、待审、已审 = 列表响应 `filters.summary`（跟当前「是否已过期」等筛，默认含已过期），**不是**本月账，也 **不是** `GET /summary`。不要用清单头整包 `qa_passed` 当 HUD 成功态；检测未通过用 QA 横幅（读 `/summary`）。
 
-筛选条：现网范围键之外，有效期改造后加年、月（与结构树同一默认）；开关「含已失效」默认关。列表须有生效日期、失效日期两列，**从所属树根读**，与结构树 L0 同值；对象行不能改这两项。
+筛选条：现网范围键（基地 / 项目 / 版本 / 对象种类 / 确认 / 审核 / 零件号）之外：
 
-工具栏：**批量审核 / 批量反审核 / 批量删除** + 导出 Excel。抽屉展示当前清单范围（基地 · 项目 · 版本；有效期改造后加年+月），意见必填。删除口径见 §8.5 / §14。禁止勾选行再批量。
+| 筛 | 文案 | 默认 |
+|----|------|------|
+| `include_expired` | **是否已过期**（全部 / 不含已过期） | **包含已过期**（全部） |
+| `has_supplier` | **是否指定供应商**（已指定 / 未指定） | 空 = 全部 |
+| 供应商文本 | **供应商**（缩写 / 工商名称 / ERP） | 空 |
+
+禁止再写过滤标签「对方」。禁止摆年、月下拉当列表 as_of。
+
+列表须有 **生失效一列区间**（与产品结构 / 模具清单同一套 `fmtPeriodRange`，如 `2025年07月 – 2026年12月`），值 **只认所属 L0 树根** 四列，与结构树 L0 同值；对象行不能改。禁止读 source 节点自身四列当展示真相（库里虽与树根同值，本切片仍只认树根）。没有这一列，包含已过期也分不清哪行是历史。
+
+工具栏：**批量审核 / 批量反审核 / 批量删除** + 导出 Excel。抽屉展示当前清单范围（基地 · 项目 · 版本），意见必填。删除口径见 §8.5 / §14。禁止勾选行再批量。
 
 **核对列：** 列表与导出须能直接对回原件：
 
@@ -421,7 +436,8 @@ HUD：**采购对象**是霓虹强调格；标准件/胶等、待审、已审为
 2. **行号**：`excel_row`（Excel 界面 1-based）
 3. **供货总成**：`l0_part_number` / `l0_part_name`
 4. **本行**：零件号 / **短码**（数字末四位）/ 内部号（弱化）/ 名称
-5. **对象种类 / 确认 / 审核**
+5. **对象种类 / 确认 / 供应商 / 审核**
+6. **生失效**（所属 L0 树根区间，只读；只认树根）
 
 列表 **无「关注点」列**。不要让采购只拿本行零件号去材料清单里搜。工作表名有则一并展示。
 
@@ -467,8 +483,8 @@ HUD：**采购对象**是霓虹强调格；标准件/胶等、待审、已审为
 | 按树列入三类采购对象并落库 | 用备注 / 焊信 / 年度价决定列不列入 |
 | 清单头记检测结果；失败也落库 | `qa_passed=false` 仍当「名单已合格」 |
 | 标准件/胶等 + 异常进核对区 | 把子件带内部号的供货总成、L2 写入采购对象 |
-| 同 snapshot 再生成带回确认；已审禁止覆盖 | 覆盖导入后自动把确认对到新 `source_node_id`；设变后仍走生成页整表重写；对象行另写生失效；清单头整包数当本月账 |
-| 确认外发/自制（单条）；批量审核/反审核/删除（按清单，有效期后加月） | 单条审核、单条删除、按 id 勾选批量；手建一行改分类；Excel 导回当审核 |
+| 同 snapshot 再生成带回确认；已审禁止覆盖 | 覆盖导入后自动把确认对到新 `source_node_id`；设变后仍走生成页整表重写；对象行另写生失效；用 source 节点自身四列当对象时段；清单头整包数当本月账；列表默认按墙钟月裁掉历史 |
+| 确认外发/自制（单条）；批量审核/反审核/删除（按清单，不加年+月） | 单条审核、单条删除、按 id 勾选批量；手建一行改分类；Excel 导回当审核 |
 | 生成页/列表页抄零件价格计算 + 一览 | 抄年度零件价列表壳；自创第三套样式 |
 | 已审禁止改确认/删除/再生成 | 算单价、应成本 |
 | 退化供货件全部列入，再标亚类 | 无工艺就不列入，或编成电泳 |
@@ -496,7 +512,7 @@ HUD：**采购对象**是霓虹强调格；标准件/胶等、待审、已审为
 | [bom-procurement-object-supplier-upload-design.md](bom-procurement-object-supplier-upload-design.md) | 按清单范围 Excel 批改对方（已落地） |
 | [assembly-costing-design.md](../costing/assembly-costing-design.md) | 下游应成本；集合以本清单为准 |
 | [procurement-contract-report-design.md](../costing/procurement-contract-report-design.md) | 签约横表（已落地）；只读本清单 + 应成本 |
-| [bom-process-die-effective-period-design.md](../engineering-change/bom-process-die-effective-period-design.md) | 树根生失效；本清单列表 as_of |
+| [bom-process-die-effective-period-design.md](../engineering-change/bom-process-die-effective-period-design.md) | 树根生失效；本清单有效期 **只认 L0 树根**；列表 join 展示、过期筛相对墙钟；核价仍按账期月 |
 | [part-number-revision-design.md](../engineering-change/part-number-revision-design.md) | 设变增量带出（§14） |
 | `static/js/features/costing/stamping-part-cost/calc/` | 生成页 UI 对照 |
 | `static/js/features/costing/stamping-part-cost/list/` | 列表页 UI 对照 |
@@ -519,7 +535,7 @@ HUD：**采购对象**是霓虹强调格；标准件/胶等、待审、已审为
 | O4 | 库字段仍 `vehicle_model`。界面、Toast、抽屉、导出页头写 **项目**，不要写车型 |
 | O5 | 代号查找前 `normalize_vehicle_model`（含大写）。`t13j` 与 `T13J` 同一代号。不做项目别名展开（项目设计 P14） |
 | O6 | 清单头 `location` / `vehicle_model` / `bom_version` **抄 snapshot**（现网已如此）。不在生成时改写 snapshot，也不为迁就外键改历史清单头 |
-| O7 | 列表 / 导出：基地选项 `list_registered`；选了基地后查询条件 `expand_for_query`（命中历史「×基地」）。项目选项 `VehicleModelService.list_registered`（先选基地；未选则各基地代号并集）。**禁止**本表 `DISTINCT location` / `DISTINCT vehicle_model` 当身份选项。版本仍列本范围已有 BOM / 清单版本（存在性，不是身份）。HUD 计数仍扫本表 |
+| O7 | 列表：基地选项 `list_registered`；选了基地后查询条件 `expand_for_query`（命中历史「×基地」）。项目选项 `VehicleModelService.list_filter_codes`（先选基地；未选则各基地代号并集）。**禁止**本表 `DISTINCT location` / `DISTINCT vehicle_model` 当身份选项。版本仍列本范围已有 BOM / 清单版本（存在性，不是身份）。HUD 计数来自列表 `filters.summary`（跟当前筛，含 `include_expired`）。导出现网按请求里的 `location` 精确匹配（不走 expand） |
 | O8 | 生成页下拉：基地 `list_enabled`（写路径）。项目 / 版本 = 该基地下 **已有** `bom_snapshots` 的 cascade（没有材料清单不能生成）。废止写死四基地。现网 `/api/bom/filters/cascade` 须把基地源改成主数据，不要从本切片 DISTINCT |
 | O9 | 确认 / 审核 / 反审核 / 删除是改已有清单，不过 `require_enabled`。基地禁用后已有清单仍可查、仍可反审核以便清理。新生成仍走 O1 |
 
@@ -555,61 +571,80 @@ prep-stats 是读：不强制 `require_enabled`（禁用基地仍可看「将列
 
 ---
 
-## 14. 跟树根有效期（未落地）
+## 14. 跟树根有效期（列表 / 设变插行 / 生成门禁已落地）
 
-对象行 **不加** 生失效四列。某月在不在、数多少、检过没过、能不能审，**完全等于**所属 L0 树根该月命不命中。与结构树同一 `as_of`、同一默认月。L0 PATCH 改期后对象立刻跟，无须改对象行。禁止对象行另存四列、禁止清单头整包计数当本月账。
+**写死：本切片有效期只认所属 L0 树根四列。**
 
-作业入口见 [工程变更](../engineering-change/part-number-revision-design.md) §4.4；树根改造见 [有效期](../engineering-change/bom-process-die-effective-period-design.md)。分类规则、一 snapshot 一份清单、`(list_id, source_node_id)` 唯一键：**不改**。
+| 认 | 不认 |
+|----|------|
+| 该对象行所属供货总成（`l0_part_number` 那棵树）的 **L0** `effective_*` / `expiry_*` | 对象行自己的列（**没有**；禁止加） |
+| | `source_node_id` 指向的 L1/L2 **自身**四列（库里虽与树根同值，本切片仍上溯到 L0 再读；禁止当独立切点） |
+| | 项目主数据起止、清单头、墙钟、snapshot 头版本字 |
 
-### 14.1 按月：只打命中树根
+对象行 **不加** 生失效四列。列表 / 导出 / 「是否已过期」筛 / 核价侧按月命中：一律先定位所属 L0，再读树根四列。SOP 生成与工程变更插行 **不用多抄**；结构页 **只许** PATCH L0 改期（级联子树），对象立刻跟。禁止对象页改期。与焊接拆解同一纪律（拆解也 join 取期、不抄四列；本清单取期锚点是树根，不是任意 source 节点）。
 
-`year` + `month` 与结构树同一默认。`include_expired` 默认关；打开时行上仍展示 **树根** 的生效/失效，避免当成在产。
+现网实现要点：列表 / 详情 / 确认回写 VO 经 `mapping.rows_to_vos` / `row_to_vo`，树根四列来自 `map_l0_periods`（`(snapshot_id, l0_part_number)` → L0）。列表 / 导出 / HUD 共用 `ProcurementObjectScopeFilters`（工厂 `object_scope_filters`；列表与导出经 `mapping.scope_from_query` 从 Query 组 scope——列表 `locations`=expand，导出 `location`=精确）。查询侧 `_apply_object_filters(scope)` 一条路径。`include_expired=false` 时 `as_of_when_excluding_expired` → 墙钟本月，join L0 + `period_hit_clause`。导出同筛，Excel「生失效」列走同一棵树根 map。
 
-先收集该月命中的 L0，再收子树 `source_node_id`，再取对象行。7.1–7.3、HUD、summary、导出、确认门禁、批量审核/反审核/删除、核价覆盖，全部只用这一批。
+分类规则、一 snapshot 一份清单、`(list_id, source_node_id)` 唯一键：**不改**。作业入口见 [工程变更](../engineering-change/part-number-revision-design.md) §4.4；树根改造见 [有效期](../engineering-change/bom-process-die-effective-period-design.md)。
 
-| 入口 | 该月做什么 |
-|------|------------|
-| 列表 / HUD / 导出 | 只出命中树根下的行。生效/失效两列 = 所属 L0，与结构树同值、同 `YYYY-MM`。同一零件号新旧两行靠月分开 |
-| 单条确认 / 指定供应商 | 仍按行 `id`；已审拒绝。该月检测未过拒绝确认 |
-| 批量审核 / 反审核 / 删除 | 范围键 **加上年+月**，只打命中树根下的行 |
-| 核价覆盖检查 | 只要求该月命中树的节点都有对象行 |
+### 14.1 列表是档案，不是月账
 
-未选月：与结构树同一默认。禁止默认把 AA/AB 并排当本月账。
+采购对象列表要回答「哪些行曾经是、现在仍是采购对象」，不是「这个月车上装什么」。结构树 / 核价才按年+月命中。
 
-清单头 `l0_count` / `qa_passed` 仍是 SOP 生成时的整包痕迹，**列表与门禁不读**。本月数现场按命中树根算。
+| 入口 | 规则 |
+|------|------|
+| 列表 / HUD / 导出 | **不传年+月 as_of**。筛的是 **是否已过期**，不是「某年某月命中」 |
+| `include_expired` 默认 | **`true` = 包含已过期**（有效 + 已到期都出；档案全貌） |
+| `include_expired=false` | **不含已过期** = 相对 **墙钟本月**，**所属 L0 树根**仍命中（`is_in_period(now)`）；未到生效月的也不出 |
+| 生失效列 | 一列区间 `fmtPeriodRange`，**只读所属 L0 树根**四列。同一零件号新旧两行靠这一列分开 |
+| 批量审核 / 反审核 / 删除 | 范围仍是基地 + 项目 + 版本这份清单，**不加年+月**，**不过期筛**——打整份清单（有已审时删除只清全部 pending） |
+| 核价覆盖 / 签约报表 / 引擎发现 | **必须**按账期月命中 **树根**。列表全貌 ≠ 本月账。禁止把 AA/AB 并进本月核价 |
+
+「已过期」相对墙钟本月：**树根**失效月早于本月。不是「选一个历史月再问当时在不在」，也不是问 source 节点自己的失效。界面文案写「是否已过期」，不要叫 as_of，不要摆年+月下拉。
+
+VO 出参带 `effective_year` / `effective_month` / `expiry_year` / `expiry_month`，语义 = **所属树根**，不是对象表列。前端禁止当可编辑；已关闭时段用共用 `hasClosedPeriod` 标红。
+
+HUD 把 AA/AB 并排计数是档案全貌，不要写成「本月待审」。计数来自列表响应 `filters.summary`（跟当前筛）。清单头 `l0_count` / `qa_passed` 仍是 SOP 生成时的整包痕迹；`GET /summary` 只给 QA 横幅读头，**不当** HUD。
+
+筛文案：`has_supplier` 对人写 **是否指定供应商**（已指定 / 未指定）；列与文本筛写 **供应商**。禁止过滤条写「对方」。
 
 ### 14.2 SOP 生成 vs 设变插行
 
 | | SOP / 无设变 | 工程变更种新树 |
 |--|----------------|----------------|
 | 谁触发 | 生成页「开始生成」（当时林子里树根时段相同） | 设变导入同一事务，只扫新种的那一棵 |
-| 写 | §8.4 删头重写；按 `source_node_id` 带回确认与供应商 | **不删头、不碰旧行**；按现网规则分类后 **插新行** |
+| 写 | §8.4 删头重写；按 `source_node_id` 带回确认与供应商 | **不删头、不碰旧行**；`InsertService.insert_for_new_tree` 按现网规则分类后 **插新行** |
+| 生失效 | **不写对象行**；只认新/旧树上的 **L0 树根**四列（已在节点库） | **不写对象行**；新 **树根** 生效=变更月、失效=项目结束月（子孙同值，本切片仍只认树根） |
 | 已审 | 有一行已审 → 409 | 不挡；旧已审行不动 |
 | 日志 | `bom_procurement_object_generate_logs` | 不写一条冒充整单覆盖的生成日志；件数记在变更单 |
 
-现网「开始生成」仍按 §8.4 整 snapshot 删头重写。**合册落地时**才收窄：该 snapshot 一旦有已失效树根、或树根生效月不是项目 SOP 开始月 → 拒绝（即使没有已审）。按 `source_node_id` 带回 **抄不到** 新树上的同号对象。缺对象走工程变更重传，不在生成页做「只补该月」。合册种树与插行在 **同一事务**，不走本页 `generate`。SOP 纠错改期请在种树前做；种树后改期走结构页 L0。见 [合册 §4.6](../engineering-change/part-number-revision-design.md)。
+「开始生成」仍按 §8.4 整 snapshot 删头重写。**现网已收窄**：该 snapshot 一旦有已失效树根、或树根生效月不是项目 SOP 开始月 → `snapshot_blocks_full_generate` → 409（即使没有已审）。按 `source_node_id` 带回 **抄不到** 新树上的同号对象。缺对象走工程变更重传，不在生成页做「只补该月」。合册种树与插行在 **同一事务**，不走本页 `generate`。SOP 纠错改期请在种树前做；种树后改期走结构页 L0。见 [合册 §4.6](../engineering-change/part-number-revision-design.md)。
 
 ### 14.3 从被替换旧树抄确认
 
-只匹配 **被替换的那一棵旧树**（本例 3086AA），禁止扫 snapshot 里其它总成的同号。新行的命中月跟 **新树根**，不继承旧树根时段。
+只匹配 **被替换的那一棵旧树**（本例 3086AA），禁止扫 snapshot 里其它总成的同号。新行的展示时段跟 **新树 L0 树根**（只认树根），不继承旧树根时段，也不抄四列到对象行。
+
+确认 / 厂家配对 **按现网**（与合册 §4.4 一致）：
+
+1. 先同 `part_number` + `section` + `object_kind`  
+2. 对不上再按新旧树 **同一位置**（同级兄弟 `sort_no`）抄旧行  
+3. **不按**字母版本同茎配对，也不另走变更单号对
 
 | 新树节点 | 落行 |
 |----------|------|
-| 采购对象，旧树有同行（同 `part_number` + `section` + `object_kind`） | 插新行。抄确认三态 / 确认人时 / 确认备注 / `supplier_name`。**不抄** `audit_status`（新行待审）。`l0_*`、父件、Excel 行号、材料快照抄 **新节点** |
-| 采购对象，旧树无同号，但是改图字母版本换号（同茎、字母版本进一位；分总成 `-1` 留在茎上），旧树有旧号同行且 `object_kind` 不变 | 插新行；确认 / 厂家 **从旧号同行抄**（树上号关系；改图整条链分总成 AA→AB、此件不装上级换号同样适用）。**不抄** `audit_status` |
-| 采购对象，旧树无同行且无字母版本可对（增加零件；`object_kind` 变了） | 插新行，`pending`，供应商空。禁止从钢厂列 / 备注 / 年度价猜 |
+| 采购对象，旧树对上（同号或同一 `sort_no` 位置），且 `object_kind` 不变 | 插新行。抄确认三态 / 确认人时 / 确认备注 / `supplier_name`。**不抄** `audit_status`（新行待审）。`l0_*`、父件、Excel 行号、材料快照抄 **新节点** |
+| 采购对象，对不上（增加零件；`object_kind` 变了） | 插新行，`pending`，供应商空。禁止从钢厂列 / 备注 / 年度价猜 |
 | 该 snapshot 尚无清单头 | 合册 **先建空头再插行**（不走 generate），见合册 §4.4 |
 | `other_leaf` / `anomaly` | 插新行；无确认可抄 |
 | `object_kind` 变了 | 当新号，不抄确认 |
 
 抄来的 `supplier_name` 不跑 `require_enabled`（与 §8.4 带回相同）；全称已不在 `suppliers` 则该行落空，不让整单 `IntegrityError`。插完 **不** 把清单头改成全林计数。
 
-同一零件号可同时有旧树行与新树行。指定供应商批传仍按现网整清单、按零件号去重——同号多行时 **拒绝批传**，改走行上点选。细则仍在供应商上传设计，落地时改那篇。
+同一零件号可同时有旧树行与新树行。指定供应商批传仍按现网整清单、按零件号去重——同号多行时 **拒绝批传**，改走行上点选。细则仍在供应商上传设计。
 
 ### 14.4 删除
 
-带年+月：只删该月命中树上的 `pending`（含核对区）；已审与未命中树的行跳过；**不清清单头**。  
-不带年+月：维持 §8.5（无已审才 `delete_list`）。设变之后不要用不带月的整单删除当日常。
+按清单范围（基地 + 项目 + 版本），**不加年+月**，**不过期筛**。无已审 → `delete_list` 清头（§8.5）。有已审 → 只删该清单全部 `pending`（含核对区）；已审跳过；**不清清单头**。设变之后不要用「只删本月命中」当日常——列表本来就不按月裁；批量也不跟列表过期筛。
 
 ---
 
@@ -634,9 +669,15 @@ prep-stats 是读：不强制 `require_enabled`（禁用基地仍可看「将列
 | 2026-09-09 | 一物一码在材料清单上传拦（有内部号的零件号↔内部号一一对应）；本切片生成不再复检。 |
 | 2026-09-16 | 批量删除覆盖核对区（标准件/胶等、异常）；审核 / 反审核仍只针对采购对象。 |
 | 2026-09-16 | 无已审时批量删除连清单头 `delete_list`（与生成覆盖一致）；有已审仍只删 pending 并重算头。 |
-| 2026-09-16 | §14：采购对象严格跟树根有效期；检测/计数/审核只对该月命中树；列表展示树根生失效；设变只给新树插行。 |
+| 2026-09-16 | §14：采购对象严格跟树根有效期；**（已废止）**检测/计数/审核只对该月命中树 → 见 09-18 列表档案口径；列表展示树根生失效；设变只给新树插行。 |
 | 2026-09-16 | 设变插行与合册同一事务，不走 `generate`；种树后生成页保持拒绝。 |
 | 2026-09-17 | 收口：生成页拒绝整包是 **合册落地时** 才改的现网门禁；落地前仍按 §8.4 整 snapshot 覆盖。 |
-| 2026-09-17 | §14.3：改图字母版本换号允许从旧号抄确认与厂家（与合册少手工对齐）；增加零件仍 pending。 |
-| 2026-09-17 | §14.3：无清单头时合册先建空头；字母版本抄确认亦适用于此件不装祖先升号。 |
-| 2026-09-17 | §14.3：字母版本同茎含分总成 `-1`；改图整条链分总成换号同样从旧号抄确认。 |
+| 2026-09-17 | §14.3：**（已废止）**改图字母版本换号从旧号抄确认 → 见 09-18 改为同号或 `sort_no` 位置。 |
+| 2026-09-17 | §14.3：无清单头时合册先建空头；**（抄确认规则已废止字母同茎，见 09-18）**。 |
+| 2026-09-17 | §14.3：**（已废止）**字母版本同茎含分总成 `-1` → 见 09-18。 |
+| 2026-09-18 | §14 拍板选 A：对象行仍不落四列，列表 join 树根展示生失效一列；生成/设变不抄；改期自动跟；与拆解同一纪律。列表不按年+月裁；筛「是否已过期」默认包含；`has_supplier` 文案「是否指定供应商」（禁止「对方」）。核价/签约/引擎仍按账期月命中。批量不加年+月。 |
+| 2026-09-18 | §14 写死：有效期 **只认所属 L0 树根**四列；禁止认 source 节点自身四列、项目期、清单头；VO 出参时段语义=树根。 |
+| 2026-09-18 | **与现网对齐：** 设变插行 / `snapshot_blocks_full_generate` 已落地；§14.3 抄确认改为同号或 `sort_no` 位置（否决字母版本同茎）；批量审核·反审核·删除不过期筛；HUD 来自列表 `filters.summary`，`GET /summary` 只供 QA 横幅；分层补 `InsertService` / `mapping` 树根期。 |
+| 2026-09-18 | 列表/导出/HUD 筛参收成 `ProcurementObjectScopeFilters`；`mapping.scope_from_query`；查询 `_apply_object_filters(scope)`。包内 README 与 §14 现网要点同步。 |
+| 2026-09-18 | 可维护性护栏：VO 四列 Field 标明「树根非本表列」；变更记录废止旧「按月裁 / 字母同茎」表述；服务包入口指向 §14；回归测「L1 期≠L0 仍读树根」与「插行配对按 sort_no 不按字母同茎」。 |
+| 2026-09-18 | 抽出 `row_write.build_object_row_write`（generate/插行共用，禁止再调私有 `_row_write`）；补插行端到端（抄确认不抄审核）、`has_supplier`、列表 expand vs 导出精确、批量不过期筛回归测。 |

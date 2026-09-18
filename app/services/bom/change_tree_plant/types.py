@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 
 
 @dataclass(slots=True)
@@ -23,3 +23,5 @@ class BomChangePlantSpec:
 class BomChangePlantResult:
     new_l0_id: int
     not_install_count: int = 0
+    # 旧 bom_nodes.id → 新 bom_nodes.id（此件不装未进新树的不在此表）
+    source_id_remap: dict[int, int] = field(default_factory=dict)

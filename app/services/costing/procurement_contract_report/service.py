@@ -11,7 +11,10 @@ from app.exceptions.base import NotFoundException
 from app.models.bom.node import BomNode
 from app.models.bom.procurement_object import BomProcurementObjectList
 from app.repositories.bom.bom_repository import BomNodeRepository, BomSnapshotRepository
-from app.repositories.bom.procurement_object_repository import BomProcurementObjectRepository
+from app.repositories.bom.procurement_object_repository import (
+    BomProcurementObjectRepository,
+    object_scope_filters,
+)
 from app.repositories.costing.assembly_cost.assembly_cost_repository import (
     AssemblyCostRepository,
     SettlementAmountField,
@@ -163,10 +166,12 @@ class ProcurementContractReportService:
         supplier_name = self._resolve_supplier(db, query.supplier_name)
         scope_objects = self.object_repo.list_objects_for_export(
             db,
-            location=query.location,
-            vehicle_model=query.vehicle_model,
-            bom_version=query.bom_version,
-            section=_SECTION_OBJECT,
+            scope=object_scope_filters(
+                location=query.location,
+                vehicle_model=query.vehicle_model,
+                bom_version=query.bom_version,
+                section=_SECTION_OBJECT,
+            ),
         )
         objects = [
             row for row in scope_objects if not supplier_name or row.supplier_name == supplier_name

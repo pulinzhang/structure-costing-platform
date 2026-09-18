@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-COL_COUNT = 23
+COL_COUNT = 24
 GROUP_ROW = 4
 HEADER_ROW = 5
 DATA_START = 6
@@ -13,7 +13,7 @@ GROUP_SPANS = (
     (9, 12, "判定"),
     (13, 17, "佐证"),
     (18, 20, "原件补充"),
-    (21, 23, "范围"),
+    (21, 24, "范围"),
 )
 
 HEADERS = (
@@ -40,6 +40,7 @@ HEADERS = (
     "基地",
     "项目",
     "BOM版本",
+    "生失效",
 )
 WIDTHS = (
     12,
@@ -65,6 +66,7 @@ WIDTHS = (
     10,
     10,
     12,
+    22,
 )
 SHEET_COL = 2
 L0_NO_COL = 7

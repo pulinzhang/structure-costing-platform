@@ -5,7 +5,7 @@
 import {
     procurementObjectListTemplate,
     renderProcurementObjectRows,
-} from './template.js?v=21';
+} from './template.js?v=25';
 import {
     DEFAULT_PAGE_SIZE,
     bindPagination,
@@ -13,6 +13,7 @@ import {
 } from '../../../../page-size.js?v=3';
 import { setSearchBusy } from '../../../../search-busy.js?v=1';
 import { AUDIT_LABELS, CONFIRM_LABELS, KIND_LABELS, SECTION_LABELS } from '../labels.js?v=2';
+import { fmtPeriodRange } from '../../../common/period-ui.js?v=3';
 
 const API_BASE = '/api/bom/procurement-objects';
 const CASCADE_API = '/api/bom/filters/cascade';
@@ -90,6 +91,7 @@ function bindEvents() {
     document.getElementById('poConfirmFilter')?.addEventListener('change', () => loadList(1));
     document.getElementById('poAuditFilter')?.addEventListener('change', () => loadList(1));
     document.getElementById('poHasSupplierFilter')?.addEventListener('change', () => loadList(1));
+    document.getElementById('poIncludeExpiredFilter')?.addEventListener('change', () => loadList(1));
     document.getElementById('poConfirmStatus')?.addEventListener('change', syncConfirmSupplierEnabled);
     document.getElementById('poConfirmSupplierSearch')?.addEventListener('input', onSupplierSearchInput);
     document.getElementById('poConfirmSupplierSearch')?.addEventListener('focus', onSupplierSearchFocus);
@@ -153,6 +155,9 @@ function fillStaticSelects() {
         ['true', '已指定'],
         ['false', '未指定'],
     ]);
+    fillOptions('poIncludeExpiredFilter', [
+        ['false', '不含已过期'],
+    ]);
 }
 
 function fillOptions(id, pairs) {
@@ -183,6 +188,7 @@ function queryParams() {
     if (val('poAuditFilter')) params.audit_status = val('poAuditFilter');
     if (val('poSupplierFilter')) params.supplier_name = val('poSupplierFilter');
     if (val('poHasSupplierFilter')) params.has_supplier = val('poHasSupplierFilter') === 'true';
+    if (val('poIncludeExpiredFilter') === 'false') params.include_expired = false;
     if (val('poPartFilter')) params.part_number = val('poPartFilter');
     return params;
 }
@@ -489,7 +495,7 @@ function syncTabs() {
 }
 
 function resetFilters() {
-    ['poLocationFilter', 'poModelFilter', 'poVersionFilter', 'poKindFilter', 'poConfirmFilter', 'poAuditFilter', 'poSupplierFilter', 'poHasSupplierFilter', 'poPartFilter']
+    ['poLocationFilter', 'poModelFilter', 'poVersionFilter', 'poKindFilter', 'poConfirmFilter', 'poAuditFilter', 'poSupplierFilter', 'poHasSupplierFilter', 'poIncludeExpiredFilter', 'poPartFilter']
         .forEach((id) => {
             const el = document.getElementById(id);
             if (el) el.value = '';
@@ -675,6 +681,7 @@ function openDetailDrawer(id) {
             ['确认', CONFIRM_LABELS[row.confirm_status] || row.confirm_status],
             ['供应商', row.supplier_name || '未指定'],
             ['审核', AUDIT_LABELS[row.audit_status] || row.audit_status],
+            ['生失效', fmtPeriodRange(row.effective_year, row.effective_month, row.expiry_year, row.expiry_month)],
         ].map(([k, v]) => `<div><span class="text-[#555555]">${esc(k)}</span> ${esc(v)}</div>`).join('');
     }
     openDrawer('poDetailDrawer');

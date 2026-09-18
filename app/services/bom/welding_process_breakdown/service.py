@@ -120,19 +120,19 @@ class BomWeldingProcessBreakdownService:
             started_at=started_at,
         )
 
-    def insert_for_new_tree(
+    def copy_for_new_tree(
         self,
         db: Session,
         *,
         snapshot_id: int,
-        new_l0_id: int,
+        source_id_remap: dict[int, int],
         current_user: UserVO,
     ) -> list[int]:
-        """合册种树后只拆新树焊信节点（不 commit）。"""
-        return self._generate_service.insert_for_new_tree(
+        """合册种树后：从旧树拆解结果抄到新树（不 commit）。"""
+        return self._generate_service.copy_for_new_tree(
             db,
             snapshot_id=snapshot_id,
-            new_l0_id=new_l0_id,
+            source_id_remap=source_id_remap,
             current_user=current_user,
         )
 

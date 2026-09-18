@@ -33,6 +33,7 @@ from app.services.bom.procurement_object.columns import (
     SHORT_CODE_COL,
     WIDTHS,
 )
+from app.services.bom.procurement_object.mapping import L0Period, l0_period_for_row
 from app.services.bom.procurement_object.styles import (
     CONFIRM_FILLS,
     FILL_EMPTY,
@@ -235,16 +236,22 @@ def write_column_headers(sheet: Worksheet) -> None:
     sheet.row_dimensions[HEADER_ROW].height = 22
 
 
-def write_rows(sheet: Worksheet, rows: list[BomProcurementObject]) -> None:
+def write_rows(
+    sheet: Worksheet,
+    rows: list[BomProcurementObject],
+    *,
+    period_map: dict[tuple[int, str], L0Period] | None = None,
+) -> None:
     left = Alignment(horizontal="left", vertical="center", wrap_text=True)
     center = Alignment(horizontal="center", vertical="center")
     previous_l0 = object()
+    periods = period_map or {}
     for offset, row in enumerate(rows):
         row_idx = DATA_START + offset
         zebra = offset % 2 == 1
         is_group_start = row.l0_part_number != previous_l0
         previous_l0 = row.l0_part_number
-        values = row_values(row)
+        values = row_values(row, l0_period=l0_period_for_row(row, periods))
         for col, value in enumerate(values, start=1):
             cell = sheet.cell(row=row_idx, column=col, value=value)
             cell.border = cell_border(col, is_group_start=is_group_start and offset > 0)
@@ -297,12 +304,14 @@ def write_data_sheet(
     query: BomProcurementObjectQuery,
     stamp: datetime,
     sheet_title: str,
+    *,
+    period_map: dict[tuple[int, str], L0Period] | None = None,
 ) -> None:
     write_banner(sheet, rows, query, stamp, sheet_title)
     write_group_headers(sheet)
     write_column_headers(sheet)
     if rows:
-        write_rows(sheet, rows)
+        write_rows(sheet, rows, period_map=period_map)
         merge_consecutive(sheet, rows, columns=L0_COLS, key_of=l0_merge_key, fill=FILL_L0)
         merge_consecutive(sheet, rows, columns=(FILENAME_COL,), key_of=excel_filename_key)
         merge_consecutive(sheet, rows, columns=(SHEET_COL,), key_of=excel_sheet_key)

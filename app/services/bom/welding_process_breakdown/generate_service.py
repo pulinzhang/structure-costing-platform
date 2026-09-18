@@ -312,49 +312,132 @@ class BomWeldingProcessBreakdownGenerateService:
             logger.exception("生成焊接工艺拆解失败")
             raise
 
-    def insert_for_new_tree(
+    def copy_for_new_tree(
         self,
         db: Session,
         *,
         snapshot_id: int,
-        new_l0_id: int,
+        source_id_remap: dict[int, int],
         current_user: UserVO,
     ) -> list[int]:
         """
-        只拆新树有焊信的节点并插行；bom_version 抄 snapshot 头。
-        不删旧拆解、不 commit。返回新拆解主表 id。
+        从旧树已有拆解结果抄到新树。
+
+        source_id_remap：种树给出的「旧 bom_nodes.id → 新 bom_nodes.id」。
+        主表身份对齐新节点；过程量等结果字段与全部明细行（可多行）从旧结果照抄。
+        明细 rollup 先落 own，再按新树结构 apply_rollup_flags。
+        禁止按 weld_info 重新自动拆。不删旧拆解、不 commit。返回新拆解主表 id。
         """
+        if not source_id_remap:
+            return []
         snapshot = self.snapshot_repository.get_by_id(db, snapshot_id)
         if snapshot is None:
             raise NotFoundException("未找到对应材料清单")
-        from app.services.bom.bom_service import _collect_subtree
 
         all_nodes = self.node_repository.list_by_snapshot(db, snapshot_id)
-        new_tree = _collect_subtree(all_nodes, new_l0_id)
         by_id = index_nodes_by_id(all_nodes)
         children_map = build_children_map(all_nodes)
-        weld_candidates = [n for n in new_tree if (n.weld_info or "").strip()]
+        old_breakdowns = self.repository.list_by_source_node_ids(db, list(source_id_remap.keys()))
+
         audit_fields = audit_create(current_user)
         created_nodes: list[BomWeldingProcessBreakdownNode] = []
         source_to_breakdown: dict[int, BomWeldingProcessBreakdownNode] = {}
-        for bom_node in weld_candidates:
-            weld_raw = (bom_node.weld_info or "").strip()
-            breakdown_node, _lines = self._persist_node_with_lines(
+        for old_breakdown in old_breakdowns:
+            old_source_id = old_breakdown.source_node_id
+            if old_source_id is None:
+                continue
+            new_source_id = source_id_remap.get(old_source_id)
+            if new_source_id is None:
+                continue
+            new_bom_node = by_id.get(new_source_id)
+            if new_bom_node is None:
+                continue
+            new_breakdown = self._copy_breakdown_node_with_lines(
                 db,
                 snapshot=snapshot,
-                bom_node=bom_node,
+                old_breakdown=old_breakdown,
+                new_bom_node=new_bom_node,
                 by_id=by_id,
-                children_map=children_map,
-                weld_raw=weld_raw,
                 created_by=audit_fields["created_by"],
                 updated_by=audit_fields["updated_by"],
             )
-            created_nodes.append(breakdown_node)
-            source_to_breakdown[bom_node.id] = breakdown_node
+            created_nodes.append(new_breakdown)
+            source_to_breakdown[new_bom_node.id] = new_breakdown
+
         if created_nodes:
             apply_rollup_flags(created_nodes, source_to_breakdown, children_map)
             db.flush()
         return [node.id for node in created_nodes]
+
+    def _copy_breakdown_node_with_lines(
+        self,
+        db: Session,
+        *,
+        snapshot: BomSnapshot,
+        old_breakdown: BomWeldingProcessBreakdownNode,
+        new_bom_node: BomNode,
+        by_id: dict[int, BomNode],
+        created_by: str,
+        updated_by: str,
+    ) -> BomWeldingProcessBreakdownNode:
+        parent = by_id.get(new_bom_node.parent_id) if new_bom_node.parent_id else None
+        supply = resolve_supply_root(new_bom_node, by_id)
+        assembly_qty = new_bom_node.qty if new_bom_node.qty is not None else Decimal("1")
+        breakdown_node = self.repository.create_node(
+            db,
+            BomWeldingProcessBreakdownNodeWrite(
+                location=snapshot.location,
+                customer_name=snapshot.customer_name,
+                vehicle_model=snapshot.vehicle_model,
+                bom_version=snapshot.bom_version,
+                snapshot_id=snapshot.id,
+                source_node_id=new_bom_node.id,
+                part_number=new_bom_node.part_number,
+                part_name=new_bom_node.part_name,
+                level=int(new_bom_node.level),
+                node_role=new_bom_node.node_role,
+                parent_part_number=parent.part_number if parent else None,
+                parent_part_name=parent.part_name if parent else None,
+                supply_part_number=supply.part_number,
+                supply_part_name=supply.part_name,
+                assembly_qty=assembly_qty,
+                assembly_qty_unit=new_bom_node.qty_unit,
+                weld_info_raw=old_breakdown.weld_info_raw,
+                excel_row=new_bom_node.excel_row,
+                parse_status=old_breakdown.parse_status,
+                process_line_count=old_breakdown.process_line_count,
+                qa_note=old_breakdown.qa_note,
+                audit_status=AUDIT_PENDING,
+                created_by=created_by,
+                updated_by=updated_by,
+            ),
+        )
+        for old_line in sorted(old_breakdown.lines, key=lambda line: line.line_no):
+            self.repository.create_line(
+                db,
+                BomWeldingProcessBreakdownLineWrite(
+                    breakdown_node_id=breakdown_node.id,
+                    part_number=new_bom_node.part_number,
+                    line_no=old_line.line_no,
+                    process_token=old_line.process_token,
+                    matched_span=old_line.matched_span,
+                    process_qty=old_line.process_qty,
+                    process_qty_unit=old_line.process_qty_unit,
+                    process_qty_secondary=old_line.process_qty_secondary,
+                    process_qty_secondary_unit=old_line.process_qty_secondary_unit,
+                    standard_process_name=old_line.standard_process_name,
+                    standard_process_unit=old_line.standard_process_unit,
+                    map_status=old_line.map_status,
+                    rollup_flag="own",
+                    child_fastener_qty_sum=old_line.child_fastener_qty_sum,
+                    qty_check_status=old_line.qty_check_status,
+                    qty_check_detail=old_line.qty_check_detail,
+                    created_by=created_by,
+                    updated_by=updated_by,
+                ),
+            )
+        reloaded = self.repository.get_node_by_id(db, breakdown_node.id)
+        return reloaded if reloaded is not None else breakdown_node
 
     def mark_log_failed(
         self,

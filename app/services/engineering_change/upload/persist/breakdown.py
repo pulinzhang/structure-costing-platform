@@ -1,4 +1,4 @@
-"""本树焊接拆解插行。"""
+"""本树焊接拆解：从旧树已有结果抄插（禁止按焊信重拆）。"""
 
 from __future__ import annotations
 
@@ -28,6 +28,7 @@ def persist_breakdown(
     *,
     change_order: ChangeOrderRowParsed,
     after_root_id: int | None,
+    source_id_remap: dict[int, int],
     current_user: UserVO,
     sort_no_start: int = 0,
     change_order_id: int = 0,
@@ -41,10 +42,11 @@ def persist_breakdown(
             inserted_count=0,
             warnings=["新树根不存在，跳过拆解插行"],
         )
-    breakdown_ids = BomWeldingProcessBreakdownService().insert_for_new_tree(
+
+    breakdown_ids = BomWeldingProcessBreakdownService().copy_for_new_tree(
         db,
         snapshot_id=node.snapshot_id,
-        new_l0_id=after_root_id,
+        source_id_remap=source_id_remap,
         current_user=current_user,
     )
     links: list[EngineeringChangeEffectLinkInsert] = [

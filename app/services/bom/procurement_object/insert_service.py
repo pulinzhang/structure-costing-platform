@@ -3,7 +3,6 @@
 from __future__ import annotations
 
 import logging
-from datetime import datetime
 
 from sqlalchemy.orm import Session
 
@@ -11,9 +10,10 @@ from app.common.audit import audit_create, display_name
 from app.common.timezone import now
 from app.exceptions.base import BusinessException, NotFoundException
 from app.models.bom.node import BomNode, BomSnapshot
-from app.models.bom.procurement_object import BomProcurementObject
+from app.models.bom.procurement_object import BomProcurementObject, BomProcurementObjectList
 from app.repositories.bom.bom_repository import BomNodeRepository, BomSnapshotRepository
 from app.repositories.bom.procurement_object_repository import BomProcurementObjectRepository
+from app.repositories.persist import model_from_payload
 from app.schemas.dto.bom_procurement_object_dto import (
     BomProcurementObjectListWrite,
     BomProcurementObjectWrite,
@@ -25,8 +25,10 @@ from app.services.bom.procurement_object.classify import (
     ClassifiedRow,
     classify_nodes,
 )
-from app.services.bom.procurement_object.generate_service import (
-    BomProcurementObjectGenerateService,
+from app.services.bom.procurement_object.row_write import (
+    ConfirmByNode,
+    ConfirmTuple,
+    build_object_row_write,
 )
 
 logger = logging.getLogger("service.bom.procurement_object.insert")
@@ -39,7 +41,6 @@ class BomProcurementObjectInsertService:
         self.snapshot_repo = BomSnapshotRepository()
         self.node_repo = BomNodeRepository()
         self.repository = BomProcurementObjectRepository()
-        self._generate = BomProcurementObjectGenerateService()
 
     def insert_for_new_tree(
         self,
@@ -67,44 +68,16 @@ class BomProcurementObjectInsertService:
 
         classified = classify_nodes(new_tree)
         audit = audit_create(current_user)
-        header = self.repository.get_list_by_snapshot_id(db, snapshot_id)
-        if header is None:
-            header = self.repository.create_list(
-                db,
-                BomProcurementObjectListWrite(
-                    snapshot_id=snapshot.id,
-                    location=snapshot.location,
-                    vehicle_model=snapshot.vehicle_model,
-                    bom_version=snapshot.bom_version,
-                    source_filename=snapshot.source_filename or "",
-                    qa_passed=True,
-                    qa_error_text=None,
-                    l0_count=0,
-                    l0_with_children_count=0,
-                    l2_count=0,
-                    subassembly_child_sum=0,
-                    object_l0_degenerate_count=0,
-                    object_l1_subassembly_count=0,
-                    object_l1_stamping_count=0,
-                    other_leaf_count=0,
-                    anomaly_count=0,
-                    generated_at=now(),
-                    generated_by=display_name(current_user),
-                    created_by=audit["created_by"],
-                    updated_by=audit["updated_by"],
-                ),
-            )
+        header = self._ensure_header(db, snapshot=snapshot, current_user=current_user)
 
         payloads: list[BomProcurementObjectWrite] = []
         for row in classified.rows:
             confirm = self._resolve_confirm(row, old_by_number, new_to_old)
-            confirm_map: dict[
-                int, tuple[str, str | None, datetime | None, str | None, str | None]
-            ] = {}
+            confirm_map: ConfirmByNode = {}
             if confirm is not None:
                 confirm_map[row.source_node_id] = confirm
             payloads.append(
-                self._generate._row_write(
+                build_object_row_write(
                     db,
                     row,
                     list_id=header.id,
@@ -115,8 +88,6 @@ class BomProcurementObjectInsertService:
             )
         inserted_ids: list[int] = []
         for payload in payloads:
-            from app.repositories.persist import model_from_payload
-
             obj = model_from_payload(BomProcurementObject, payload)
             db.add(obj)
             db.flush()
@@ -140,8 +111,30 @@ class BomProcurementObjectInsertService:
         existing = self.repository.get_list_by_snapshot_id(db, snapshot.id)
         if existing is not None:
             return existing.id, False
+        header = self._create_empty_header(db, snapshot=snapshot, current_user=current_user)
+        return header.id, True
+
+    def _ensure_header(
+        self,
+        db: Session,
+        *,
+        snapshot: BomSnapshot,
+        current_user: UserVO,
+    ) -> BomProcurementObjectList:
+        existing = self.repository.get_list_by_snapshot_id(db, snapshot.id)
+        if existing is not None:
+            return existing
+        return self._create_empty_header(db, snapshot=snapshot, current_user=current_user)
+
+    def _create_empty_header(
+        self,
+        db: Session,
+        *,
+        snapshot: BomSnapshot,
+        current_user: UserVO,
+    ) -> BomProcurementObjectList:
         audit = audit_create(current_user)
-        header = self.repository.create_list(
+        return self.repository.create_list(
             db,
             BomProcurementObjectListWrite(
                 snapshot_id=snapshot.id,
@@ -166,7 +159,6 @@ class BomProcurementObjectInsertService:
                 updated_by=audit["updated_by"],
             ),
         )
-        return header.id, True
 
     def _index_old_object_rows(
         self,
@@ -191,7 +183,7 @@ class BomProcurementObjectInsertService:
         row: ClassifiedRow,
         old_by_number: dict[tuple[str, str, str | None], BomProcurementObject],
         new_to_old: dict[str, str],
-    ) -> tuple[str, str | None, datetime | None, str | None, str | None] | None:
+    ) -> ConfirmTuple | None:
         if row.section != SECTION_OBJECT:
             return None
         key = (row.part_number, row.section, row.object_kind)

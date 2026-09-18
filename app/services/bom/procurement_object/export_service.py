@@ -6,12 +6,16 @@ from openpyxl import Workbook
 from sqlalchemy.orm import Session
 
 from app.common.export_watermark import workbook_to_xlsx_bytes
-from app.common.period import resolve_as_of_month
 from app.common.timezone import now
 from app.models.bom.procurement_object import BomProcurementObject
 from app.repositories.bom.procurement_object_repository import BomProcurementObjectRepository
 from app.schemas.dto.bom_procurement_object_dto import BomProcurementObjectQuery
 from app.schemas.vo.user_vo import UserVO
+from app.services.bom.procurement_object.mapping import (
+    as_of_when_excluding_expired,
+    load_l0_period_map,
+    scope_from_query,
+)
 from app.services.bom.procurement_object.styles import SHEETS
 from app.services.bom.procurement_object.values import build_filename
 from app.services.bom.procurement_object.workbook import write_data_sheet
@@ -29,30 +33,21 @@ class BomProcurementObjectExportService:
         current_user: UserVO,
     ) -> tuple[bytes, str]:
         supplier_names = SupplierService().names_for_query(db, query.supplier_name)
-        as_of_year: int | None = None
-        as_of_month: int | None = None
-        if not query.include_expired:
-            as_of_year, as_of_month = resolve_as_of_month(query.year, query.month)
+        as_of_year, as_of_month = as_of_when_excluding_expired(query.include_expired)
         if supplier_names is not None and not supplier_names:
             rows: list[BomProcurementObject] = []
         else:
             rows = self.repository.list_objects_for_export(
                 db,
-                location=query.location,
-                vehicle_model=query.vehicle_model,
-                bom_version=query.bom_version,
-                section=query.section,
-                object_kind=query.object_kind,
-                confirm_status=query.confirm_status,
-                audit_status=query.audit_status,
-                part_number=query.part_number,
-                l0_part_number=query.l0_part_number,
-                excel_row=query.excel_row,
-                supplier_names=supplier_names,
-                has_supplier=query.has_supplier,
-                as_of_year=as_of_year,
-                as_of_month=as_of_month,
+                scope=scope_from_query(
+                    query,
+                    location=query.location,
+                    supplier_names=supplier_names,
+                    as_of_year=as_of_year,
+                    as_of_month=as_of_month,
+                ),
             )
+        period_map = load_l0_period_map(db, self.repository, rows)
         stamp = now()
         workbook = Workbook()
         first_sheet = True
@@ -67,7 +62,7 @@ class BomProcurementObjectExportService:
             else:
                 sheet = workbook.create_sheet(title)
             sheet.sheet_properties.tabColor = tab_color
-            write_data_sheet(sheet, sheet_rows, query, stamp, title)
+            write_data_sheet(sheet, sheet_rows, query, stamp, title, period_map=period_map)
 
         content = workbook_to_xlsx_bytes(workbook, current_user)
         filename = build_filename(query, stamp)

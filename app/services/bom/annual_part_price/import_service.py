@@ -20,6 +20,7 @@ from app.repositories.bom.annual_part_price_repository import (
 from app.repositories.bom.bom_repository import BomNodeRepository, BomSnapshotRepository
 from app.repositories.bom.procurement_object_repository import (
     BomProcurementObjectRepository,
+    object_scope_filters,
 )
 from app.repositories.stamping.stamping_part_repository import StampingPartRepository
 from app.schemas.dto.bom_annual_part_price_dto import (
@@ -108,9 +109,11 @@ class BomAnnualPartPriceImportService:
             (obj.part_number or "").strip()
             for obj in self.procurement_object_repository.list_objects_for_export(
                 db,
-                location=location,
-                vehicle_model=vehicle_model,
-                section=SECTION_OTHER_LEAF,
+                scope=object_scope_filters(
+                    location=location,
+                    vehicle_model=vehicle_model,
+                    section=SECTION_OTHER_LEAF,
+                ),
             )
             if (obj.part_number or "").strip()
         }

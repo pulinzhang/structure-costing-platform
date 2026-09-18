@@ -3,12 +3,13 @@
 > 状态：**现网改造进行中**  
 > **本期范围：** BOM / 冲压工艺 / 模具布点三块自身（表、导入按对象对齐、单条改期、本切片列表/树按月命中），以及 **冲压加工费 / 冲压模具费按零件（布点）年交集取件**、**冲压零件价格计算按零件月命中取件**、**总成核价按节点月命中取件**、**核价引擎发现按零件/L0 as_of 再滤项目月**。  
 > **拆解与焊接费（计算已落地）：** 拆解表不落生失效，取期 join `source_node_id`。`#/bom-welding-fee-calc` 入参 **年 + 基地 + 项目**，跟拆解列表，按节点年交集取树；**不靠版本号、不靠 snapshot**。见 §6。  
-> **本期仍不动：** 采购对象、LLM、零件用在哪。下游其它入口仍可能按现网读全量。  
+> **本期仍不动：** LLM、零件用在哪。下游其它入口仍可能按现网读全量。  
+> **采购对象（列表 / 设变插行已落地）：** 对象行不落四列；列表默认包含已过期、join 树根；整包 generate 门禁见 [采购对象 §14](../bom/bom-procurement-objects-design.md)。  
 > 本文不是工程变更合册，也不是一口价年内分段。  
 > 关联：[材料清单 / 采购对象](../bom/bom-procurement-objects-design.md)、[冲压工艺确认表](../stamping/stamping-process-confirmation-design.md)、[模具布点](../stamping/stamping-die-management-design.md)、[焊接工艺拆解](../bom/welding-process-breakdown-design.md)、[焊接费](../bom/welding-fee-design.md)、[项目](../masterdata/vehicle-model-design.md)、[核价引擎](../costing/costing-engine-design.md)。  
 > 合册切点入口（以后；**设计让步给现网**，落地只改三条写入门禁）：[工程变更](part-number-revision-design.md)。  
 > 协议价分段（另一件事）：[年度协议价生效期](../costing/effective-period-design.md)。  
-> 下游 as_of：总成月核价与引擎 `start_run` 已接零件/节点月命中；计算身份另按账期问项目期。采购对象 §14 仍可能按项目可引入。
+> 下游 as_of：总成月核价与引擎 `start_run` 已接零件/节点月命中；计算身份另按账期问项目期。采购对象列表是档案（默认包含已过期、join 树根），见 [采购对象 §14](../bom/bom-procurement-objects-design.md)；核价侧仍按账期月裁树。
 
 ---
 
@@ -510,7 +511,7 @@ year, location, vehicle_model
 
 **不是本期缺口（合册自己做）**
 
-合册 Excel / 变更头 / 按树对齐换号 / `seq_no` 继承写法 / 采购对象插行抄确认 / 焊接拆解随新树（`bom_version` 抄头）。核价与引擎 as_of **已落地**。Parser / UNIQUE / 引擎发现键 **设计让步，不改**。合册落地只收窄三条整包写入门禁，见 [合册 §4.6](part-number-revision-design.md)。
+合册 Excel / 变更头 / 按树对齐换号 / `seq_no` 继承写法 / 采购对象插行抄确认 / 焊接拆解从旧树结果抄到新树（主表+全部明细，禁止按焊信重拆；`bom_version` 抄头）。核价与引擎 as_of **已落地**。Parser / UNIQUE / 引擎发现键 **设计让步，不改**。合册落地只收窄三条整包写入门禁，见 [合册 §4.6](part-number-revision-design.md)。
 
 ---
 
@@ -519,7 +520,7 @@ year, location, vehicle_model
 | 不做 | 说明 |
 |------|------|
 | 采购对象 / LLM 就绪按月裁树 | 总成核价与引擎发现已按节点/零件月命中。`list_by_snapshot` 全量读法仍给结构页等 |
-| 采购对象列/数/检/审跟树根 as_of | [采购对象 §14](../bom/bom-procurement-objects-design.md)；对象行仍不落四列 |
+| 采购对象列表默认按月 as_of | **否决。** 列表是档案：默认包含已过期；生失效 join 树根一列；对象行仍不落四列。见 [采购对象 §14](../bom/bom-procurement-objects-design.md) |
 | 拆解结果表补生失效四列 | **否决。** 期 join source 节点，见 §6 |
 | 零件用在哪 as_of | 仍按整份 snapshot |
 | 工艺批量删改键、布点批量删改键 | 本期导入不再走它们；管理删除可暂留现网 |
@@ -583,3 +584,5 @@ year, location, vehicle_model
 | 2026-09-16 | 合册对照现网：SOP 再导已失效 L0 整棵跳过；拆解行 `bom_version` 抄 snapshot 头；新树失效抄项目结束月。 |
 | 2026-09-17 | SOP 再导同时跳过合册种的树（生效月≠项目 SOP 开始月），避免重建 AB 子孙。 |
 | 2026-09-17 | 收口：跳过合册树 / 生成页拒绝整包 / 引擎不调 generate，都是 **合册落地时** 才改现网门禁；本期 SOP 写入保持现网。Parser 不改。 |
+| 2026-09-18 | 采购对象列表：否决默认按月 as_of；默认包含已过期；对象行仍不落四列、join 树根。见采购对象 §14。 |
+| 2026-09-18 | 文首「本期仍不动：采购对象」改为已落地口径；与采购对象 §14 / 合册插行现网对齐。 |

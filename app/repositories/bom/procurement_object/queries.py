@@ -1,7 +1,7 @@
 """采购对象清单查询：清单/对象、分页、导出、HUD、生成日志。"""
 
-from sqlalchemy import func
-from sqlalchemy.orm import Query, Session
+from sqlalchemy import and_, func
+from sqlalchemy.orm import Query, Session, aliased
 
 from app.common.audit import AUDIT_APPROVED, AUDIT_PENDING
 from app.models.bom.node import BomNode
@@ -14,9 +14,12 @@ from app.repositories.bom.procurement_object.types import (
     KIND_L0_DEGENERATE,
     SECTION_OBJECT,
     ProcurementObjectAuditSummary,
+    ProcurementObjectScopeFilters,
     count_matching,
 )
 from app.repositories.period_query import period_hit_clause
+
+L0Period = tuple[int, int, int | None, int | None]
 
 
 class BomProcurementObjectQueries:
@@ -146,41 +149,13 @@ class BomProcurementObjectQueries:
         self,
         db: Session,
         *,
-        location: str | None = None,
-        locations: list[str] | None = None,
-        vehicle_model: str | None = None,
-        bom_version: str | None = None,
-        section: str | None = None,
-        object_kind: str | None = None,
-        confirm_status: str | None = None,
-        audit_status: str | None = None,
-        part_number: str | None = None,
-        l0_part_number: str | None = None,
-        excel_row: int | None = None,
-        supplier_names: list[str] | None = None,
-        has_supplier: bool | None = None,
-        as_of_year: int | None = None,
-        as_of_month: int | None = None,
+        scope: ProcurementObjectScopeFilters,
         skip: int = 0,
         limit: int = 20,
     ) -> tuple[list[BomProcurementObject], int]:
         query = self._apply_object_filters(
             db.query(BomProcurementObject).join(BomProcurementObjectList),
-            location=location,
-            locations=locations,
-            vehicle_model=vehicle_model,
-            bom_version=bom_version,
-            section=section,
-            object_kind=object_kind,
-            confirm_status=confirm_status,
-            audit_status=audit_status,
-            part_number=part_number,
-            l0_part_number=l0_part_number,
-            excel_row=excel_row,
-            supplier_names=supplier_names,
-            has_supplier=has_supplier,
-            as_of_year=as_of_year,
-            as_of_month=as_of_month,
+            scope,
         )
         total = query.count()
         rows = self._apply_check_order(query).offset(skip).limit(limit).all()
@@ -190,39 +165,11 @@ class BomProcurementObjectQueries:
         self,
         db: Session,
         *,
-        location: str | None = None,
-        locations: list[str] | None = None,
-        vehicle_model: str | None = None,
-        bom_version: str | None = None,
-        section: str | None = None,
-        object_kind: str | None = None,
-        confirm_status: str | None = None,
-        audit_status: str | None = None,
-        part_number: str | None = None,
-        l0_part_number: str | None = None,
-        excel_row: int | None = None,
-        supplier_names: list[str] | None = None,
-        has_supplier: bool | None = None,
-        as_of_year: int | None = None,
-        as_of_month: int | None = None,
+        scope: ProcurementObjectScopeFilters,
     ) -> list[BomProcurementObject]:
         query = self._apply_object_filters(
             db.query(BomProcurementObject).join(BomProcurementObjectList),
-            location=location,
-            locations=locations,
-            vehicle_model=vehicle_model,
-            bom_version=bom_version,
-            section=section,
-            object_kind=object_kind,
-            confirm_status=confirm_status,
-            audit_status=audit_status,
-            part_number=part_number,
-            l0_part_number=l0_part_number,
-            excel_row=excel_row,
-            supplier_names=supplier_names,
-            has_supplier=has_supplier,
-            as_of_year=as_of_year,
-            as_of_month=as_of_month,
+            scope,
         )
         return self._apply_check_order(query).all()
 
@@ -257,39 +204,11 @@ class BomProcurementObjectQueries:
         self,
         db: Session,
         *,
-        location: str | None = None,
-        locations: list[str] | None = None,
-        vehicle_model: str | None = None,
-        bom_version: str | None = None,
-        section: str | None = None,
-        object_kind: str | None = None,
-        confirm_status: str | None = None,
-        audit_status: str | None = None,
-        part_number: str | None = None,
-        l0_part_number: str | None = None,
-        excel_row: int | None = None,
-        supplier_names: list[str] | None = None,
-        has_supplier: bool | None = None,
-        as_of_year: int | None = None,
-        as_of_month: int | None = None,
+        scope: ProcurementObjectScopeFilters,
     ) -> ProcurementObjectAuditSummary:
         base = self._apply_object_filters(
             db.query(BomProcurementObject).join(BomProcurementObjectList),
-            location=location,
-            locations=locations,
-            vehicle_model=vehicle_model,
-            bom_version=bom_version,
-            section=section,
-            object_kind=object_kind,
-            confirm_status=confirm_status,
-            audit_status=audit_status,
-            part_number=part_number,
-            l0_part_number=l0_part_number,
-            excel_row=excel_row,
-            supplier_names=supplier_names,
-            has_supplier=has_supplier,
-            as_of_year=as_of_year,
-            as_of_month=as_of_month,
+            scope,
         )
         row = base.with_entities(
             func.count(BomProcurementObject.id).label("total_count"),
@@ -322,23 +241,23 @@ class BomProcurementObjectQueries:
     def _apply_object_filters(
         self,
         query: Query[BomProcurementObject],
-        *,
-        location: str | None,
-        locations: list[str] | None = None,
-        vehicle_model: str | None,
-        bom_version: str | None,
-        section: str | None,
-        object_kind: str | None,
-        confirm_status: str | None,
-        audit_status: str | None,
-        part_number: str | None,
-        l0_part_number: str | None,
-        excel_row: int | None,
-        supplier_names: list[str] | None = None,
-        has_supplier: bool | None = None,
-        as_of_year: int | None = None,
-        as_of_month: int | None = None,
+        scope: ProcurementObjectScopeFilters,
     ) -> Query[BomProcurementObject]:
+        location = scope["location"]
+        locations = scope["locations"]
+        vehicle_model = scope["vehicle_model"]
+        bom_version = scope["bom_version"]
+        section = scope["section"]
+        object_kind = scope["object_kind"]
+        confirm_status = scope["confirm_status"]
+        audit_status = scope["audit_status"]
+        part_number = scope["part_number"]
+        l0_part_number = scope["l0_part_number"]
+        excel_row = scope["excel_row"]
+        supplier_names = scope["supplier_names"]
+        has_supplier = scope["has_supplier"]
+        as_of_year = scope["as_of_year"]
+        as_of_month = scope["as_of_month"]
         if locations is not None:
             query = query.filter(BomProcurementObjectList.location.in_(locations))
         elif location:
@@ -368,20 +287,61 @@ class BomProcurementObjectQueries:
         elif has_supplier is False:
             query = query.filter(BomProcurementObject.supplier_name.is_(None))
         if as_of_year is not None and as_of_month is not None:
+            # 有效期只认所属 L0 树根，禁止用 source 节点自身四列。
+            tree_root = aliased(BomNode)
             query = query.join(
-                BomNode,
-                BomNode.id == BomProcurementObject.source_node_id,
+                tree_root,
+                and_(
+                    tree_root.snapshot_id == BomProcurementObjectList.snapshot_id,
+                    tree_root.part_number == BomProcurementObject.l0_part_number,
+                    tree_root.level == 0,
+                ),
             ).filter(
                 period_hit_clause(
-                    BomNode.effective_year,
-                    BomNode.effective_month,
-                    BomNode.expiry_year,
-                    BomNode.expiry_month,
+                    tree_root.effective_year,
+                    tree_root.effective_month,
+                    tree_root.expiry_year,
+                    tree_root.expiry_month,
                     as_of_year,
                     as_of_month,
                 )
             )
         return query
+
+    def map_l0_periods(
+        self,
+        db: Session,
+        *,
+        snapshot_l0_keys: list[tuple[int, str]],
+    ) -> dict[tuple[int, str], L0Period]:
+        """(snapshot_id, l0_part_number) → 所属树根四列。"""
+        if not snapshot_l0_keys:
+            return {}
+        wanted = set(snapshot_l0_keys)
+        snapshot_ids = {snapshot_id for snapshot_id, _ in wanted}
+        part_numbers = {part_number for _, part_number in wanted}
+        rows = (
+            db.query(
+                BomNode.snapshot_id,
+                BomNode.part_number,
+                BomNode.effective_year,
+                BomNode.effective_month,
+                BomNode.expiry_year,
+                BomNode.expiry_month,
+            )
+            .filter(
+                BomNode.snapshot_id.in_(snapshot_ids),
+                BomNode.part_number.in_(part_numbers),
+                BomNode.level == 0,
+            )
+            .all()
+        )
+        result: dict[tuple[int, str], L0Period] = {}
+        for snapshot_id, part_number, ey, em, xy, xm in rows:
+            key = (int(snapshot_id), str(part_number))
+            if key in wanted:
+                result[key] = (int(ey), int(em), xy, xm)
+        return result
 
     @staticmethod
     def _apply_check_order(

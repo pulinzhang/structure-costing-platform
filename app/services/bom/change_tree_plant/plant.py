@@ -142,7 +142,11 @@ def plant_change_tree(
     new_tree = bom_service.list_subtree_nodes(db, root_id=new_l0_id)
     if len(new_tree) <= 1 and not has_add_part and has_not_install:
         raise BusinessException(EC_NOT_INSTALL_SIGNAL)
-    return BomChangePlantResult(new_l0_id=new_l0_id, not_install_count=not_install_count)
+    return BomChangePlantResult(
+        new_l0_id=new_l0_id,
+        not_install_count=not_install_count,
+        source_id_remap=dict(id_remap),
+    )
 
 
 def _assert_add_and_not_install(
