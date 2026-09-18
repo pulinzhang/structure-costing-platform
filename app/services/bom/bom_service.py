@@ -17,6 +17,7 @@ from app.repositories.bom.bom_repository import (
     BomSnapshotListFilters,
     BomSnapshotRepository,
 )
+from app.repositories.bom.period_trees import nodes_in_as_of_trees
 from app.repositories.bom.procurement_object_repository import BomProcurementObjectRepository
 from app.repositories.bom.welding_process_breakdown_repository import (
     BomWeldingProcessBreakdownRepository,
@@ -658,21 +659,8 @@ class BomService:
 
 
 def _filter_hit_subtrees(rows: list[BomNode], as_of_year: int, as_of_month: int) -> list[BomNode]:
-    hit_l0 = {
-        row.id
-        for row in rows
-        if row.level == 0
-        and is_in_period(
-            effective_year=row.effective_year,
-            effective_month=row.effective_month,
-            expiry_year=row.expiry_year,
-            expiry_month=row.expiry_month,
-            as_of_year=as_of_year,
-            as_of_month=as_of_month,
-        )
-    }
-    keep = _descendant_ids(rows, hit_l0)
-    return [row for row in rows if row.id in keep]
+    """L0 月命中再收子树；口径见 repositories.bom.period_trees。"""
+    return nodes_in_as_of_trees(rows, as_of_year=as_of_year, as_of_month=as_of_month)
 
 
 def _descendant_ids(rows: list[BomNode], roots: set[int]) -> set[int]:

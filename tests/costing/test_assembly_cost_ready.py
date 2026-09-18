@@ -126,22 +126,34 @@ def test_welding_coverage_expired_node_in_snapshot_is_not_stale() -> None:
     assert cov.breakdown_complete is True
 
 
-def test_evaluate_welding_coverage_only_year_overlapping_nodes() -> None:
+def test_evaluate_welding_coverage_only_year_overlapping_roots() -> None:
     from app.services.costing.assembly_cost.calc.orchestrator.ready import (
         evaluate_welding_coverage,
     )
 
-    expired = SimpleNamespace(
+    expired_root = SimpleNamespace(
         id=1,
+        parent_id=None,
+        level=0,
         weld_info="焊",
+        seq_no=1,
+        excel_row=1,
+        sort_no=1,
+        part_number="A",
         effective_year=2020,
         effective_month=1,
         expiry_year=2024,
         expiry_month=12,
     )
-    live = SimpleNamespace(
+    live_root = SimpleNamespace(
         id=2,
+        parent_id=None,
+        level=0,
         weld_info="焊",
+        seq_no=2,
+        excel_row=2,
+        sort_no=2,
+        part_number="B",
         effective_year=2025,
         effective_month=1,
         expiry_year=None,
@@ -171,8 +183,9 @@ def test_evaluate_welding_coverage_only_year_overlapping_nodes() -> None:
             "app.services.costing.assembly_cost.calc.orchestrator.ready.BomWeldingFeeRepository"
         ) as fee_cls,
     ):
-        snap_cls.return_value.get_by_unique_key.return_value = SimpleNamespace(id=1)
-        node_cls.return_value.list_by_snapshot.return_value = [expired, live]
+        snap_cls.return_value.get_by_unique_key.return_value = SimpleNamespace(id=99)
+        node_repo = node_cls.return_value
+        node_repo.list_by_snapshot.return_value = [expired_root, live_root]
         log_cls.return_value.get_latest.return_value = SimpleNamespace(status="success")
         bd_cls.return_value.list_by_scope.return_value = [live_bd, expired_bd]
         fee_cls.return_value.list_by_calc_scope.return_value = fees
@@ -183,3 +196,75 @@ def test_evaluate_welding_coverage_only_year_overlapping_nodes() -> None:
     assert cov.complete is True
     assert cov.fee_count == 1
     assert cov.breakdown_complete is True
+    node_repo.list_by_snapshot.assert_called_once_with(db, 99)
+
+
+def test_evaluate_welding_coverage_ignores_l1_open_expiry_under_expired_root() -> None:
+    """树根已截断、L1 失效空：不得因 L1 本行漂进该年覆盖检查。"""
+    from app.services.costing.assembly_cost.calc.orchestrator.ready import (
+        evaluate_welding_coverage,
+    )
+
+    expired_root = SimpleNamespace(
+        id=1,
+        parent_id=None,
+        level=0,
+        weld_info="焊",
+        seq_no=1,
+        excel_row=1,
+        sort_no=1,
+        part_number="A",
+        effective_year=2020,
+        effective_month=1,
+        expiry_year=2024,
+        expiry_month=12,
+    )
+    open_l1 = SimpleNamespace(
+        id=2,
+        parent_id=1,
+        level=1,
+        weld_info="焊",
+        seq_no=None,
+        excel_row=2,
+        sort_no=2,
+        part_number="A-1",
+        effective_year=2020,
+        effective_month=1,
+        expiry_year=None,
+        expiry_month=None,
+    )
+    orphan_bd = SimpleNamespace(id=20, source_node_id=2)
+    db = MagicMock()
+    with (
+        patch(
+            "app.services.costing.assembly_cost.calc.orchestrator.ready.BomSnapshotRepository"
+        ) as snap_cls,
+        patch(
+            "app.services.costing.assembly_cost.calc.orchestrator.ready.BomNodeRepository"
+        ) as node_cls,
+        patch(
+            "app.services.costing.assembly_cost.calc.orchestrator.ready.BomWeldingFeeCalcLogRepository"
+        ) as log_cls,
+        patch(
+            "app.services.costing.assembly_cost.calc.orchestrator.ready.BomWeldingProcessBreakdownRepository"
+        ) as bd_cls,
+        patch(
+            "app.services.costing.assembly_cost.calc.orchestrator.ready.BomWeldingFeeRepository"
+        ) as fee_cls,
+    ):
+        snap_cls.return_value.get_by_unique_key.return_value = SimpleNamespace(id=7)
+        node_repo = node_cls.return_value
+        node_repo.list_by_snapshot.return_value = [expired_root, open_l1]
+        log_cls.return_value.get_latest.return_value = SimpleNamespace(status="success")
+        bd_cls.return_value.list_by_scope.return_value = [orphan_bd]
+        fee_cls.return_value.list_by_calc_scope.return_value = [
+            SimpleNamespace(source_breakdown_node_id=20, level=1)
+        ]
+        cov = evaluate_welding_coverage(
+            db, year=2025, location="青岛", vehicle_model="T28", bom_version="D/00"
+        )
+
+    assert cov.complete is True
+    assert cov.fee_count == 0
+    assert cov.breakdown_complete is True
+    assert cov.message == "焊接费已完成"

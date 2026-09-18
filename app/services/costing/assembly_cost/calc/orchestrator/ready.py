@@ -7,9 +7,9 @@ from typing import NamedTuple
 
 from sqlalchemy.orm import Session
 
-from app.common.period import overlaps_year
 from app.exceptions.base import BusinessException
 from app.repositories.bom.bom_repository import BomNodeRepository, BomSnapshotRepository
+from app.repositories.bom.period_trees import nodes_in_year_overlap_trees
 from app.repositories.bom.procurement_object_repository import BomProcurementObjectRepository
 from app.repositories.bom.welding_fee_calc_log_repository import BomWeldingFeeCalcLogRepository
 from app.repositories.bom.welding_fee_repository import BomWeldingFeeRepository
@@ -44,23 +44,16 @@ def evaluate_welding_coverage(
     bom_version: str,
     welding_fee_repo: BomWeldingFeeRepository | None = None,
 ) -> WeldingCoverage:
-    """该年有效期内树上拆解是否齐、拆解节点是否都有焊接费行。不问项目档案起止。"""
+    """该年有效期内树上拆解是否齐、拆解节点是否都有焊接费行。
+
+    年交集只问 L0 树根，再收子树；不问项目档案起止，不用 L1/L2 本行期。
+    """
     snap = BomSnapshotRepository().get_by_unique_key(db, location, vehicle_model, bom_version)
     if snap is None:
         return WeldingCoverage(False, "未找到对应 BOM 快照", 0, {}, False)
-    orm_nodes = BomNodeRepository().list_by_snapshot(db, snap.id)
-    snapshot_ids = {int(n.id) for n in orm_nodes}
-    period_nodes = [
-        node
-        for node in orm_nodes
-        if overlaps_year(
-            effective_year=node.effective_year,
-            effective_month=node.effective_month,
-            expiry_year=node.expiry_year,
-            expiry_month=node.expiry_month,
-            year=year,
-        )
-    ]
+    all_nodes = BomNodeRepository().list_by_snapshot(db, snap.id)
+    snapshot_ids = {int(n.id) for n in all_nodes}
+    period_nodes = nodes_in_year_overlap_trees(all_nodes, year=year)
     current_ids = {int(n.id) for n in period_nodes}
     weld_info_count = sum(1 for n in period_nodes if (n.weld_info or "").strip())
     return _welding_coverage(

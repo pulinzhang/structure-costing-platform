@@ -1,16 +1,18 @@
 """BOM Repository - 数据访问"""
 
-from collections import defaultdict
 from typing import TypedDict
 
 from sqlalchemy import case, func, or_
 from sqlalchemy.orm import Query, Session, joinedload
 from sqlalchemy.sql.elements import ColumnElement
 
-from app.common.bom.node_order import MISSING_SEQ_NO, bom_node_order_from
-from app.common.period import is_in_period
+from app.common.bom.node_order import MISSING_SEQ_NO
 from app.common.types.repository_types import BomCascadeFilterOptions
 from app.models.bom import BomNode, BomSnapshot
+from app.repositories.bom.period_trees import (
+    nodes_in_as_of_trees,
+    nodes_in_year_overlap_trees,
+)
 from app.repositories.period_query import period_hit_clause
 from app.repositories.persist import model_from_payload
 from app.schemas.dto.bom_dto import BomNodeWrite, BomSnapshotWrite
@@ -420,29 +422,18 @@ class BomNodeRepository:
         all_nodes = self.list_by_location_vehicle(
             db, location=location, vehicle_model=vehicle_model
         )
-        children: dict[int | None, list[BomNode]] = defaultdict(list)
-        for node in all_nodes:
-            children[node.parent_id].append(node)
-        kept: list[BomNode] = []
-        stack = [
-            node
-            for node in all_nodes
-            if node.parent_id is None
-            and is_in_period(
-                effective_year=node.effective_year,
-                effective_month=node.effective_month,
-                expiry_year=node.expiry_year,
-                expiry_month=node.expiry_month,
-                as_of_year=as_of_year,
-                as_of_month=as_of_month,
-            )
-        ]
-        while stack:
-            current = stack.pop()
-            kept.append(current)
-            stack.extend(children.get(current.id, []))
-        kept.sort(key=bom_node_order_from)
-        return kept
+        return nodes_in_as_of_trees(all_nodes, as_of_year=as_of_year, as_of_month=as_of_month)
+
+    def list_year_overlap_trees_for_snapshot(
+        self,
+        db: Session,
+        *,
+        snapshot_id: int,
+        year: int,
+    ) -> list[BomNode]:
+        """该 snapshot 内：树根年交集命中的整棵树。禁止用 L1/L2 本行期。"""
+        all_nodes = self.list_by_snapshot(db, snapshot_id)
+        return nodes_in_year_overlap_trees(all_nodes, year=year)
 
     def count_by_snapshot_and_level(self, db: Session, snapshot_id: int, level: int) -> int:
         return (
