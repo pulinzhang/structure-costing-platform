@@ -106,19 +106,20 @@ class ProcessConfirmExport:
         blank_count = 0
         sketch_count = 0
         sketch_buffers: list[BytesIO] = []
-        for seq_no, part in enumerate(parts, start=1):
+        for index, part in enumerate(parts, start=1):
             processes = self._sorted_processes(part)
             blanks = self._sorted_blanks(part)
             process_count += len(processes)
             blank_count += len(blanks)
+            display_seq = part.seq_no if part.seq_no is not None else index
             used, has_sketch = self._write_part_block(
                 ws,
                 start_row=row_idx,
-                seq_no=seq_no,
+                seq_no=display_seq,
                 part=part,
                 processes=processes,
                 blanks=blanks,
-                zebra=seq_no % 2 == 0,
+                zebra=index % 2 == 0,
                 sketch_buffers=sketch_buffers,
             )
             if has_sketch:

@@ -6,6 +6,7 @@ from openpyxl import Workbook
 from sqlalchemy.orm import Session
 
 from app.common.export_watermark import workbook_to_xlsx_bytes
+from app.common.period import resolve_as_of_month
 from app.common.timezone import now
 from app.models.bom.procurement_object import BomProcurementObject
 from app.repositories.bom.procurement_object_repository import BomProcurementObjectRepository
@@ -28,6 +29,10 @@ class BomProcurementObjectExportService:
         current_user: UserVO,
     ) -> tuple[bytes, str]:
         supplier_names = SupplierService().names_for_query(db, query.supplier_name)
+        as_of_year: int | None = None
+        as_of_month: int | None = None
+        if not query.include_expired:
+            as_of_year, as_of_month = resolve_as_of_month(query.year, query.month)
         if supplier_names is not None and not supplier_names:
             rows: list[BomProcurementObject] = []
         else:
@@ -45,6 +50,8 @@ class BomProcurementObjectExportService:
                 excel_row=query.excel_row,
                 supplier_names=supplier_names,
                 has_supplier=query.has_supplier,
+                as_of_year=as_of_year,
+                as_of_month=as_of_month,
             )
         stamp = now()
         workbook = Workbook()

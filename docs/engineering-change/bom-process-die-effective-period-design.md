@@ -22,7 +22,7 @@
 
 ---
 
-## 1. 现网入口（动手前）
+## 1. 页面与 API
 
 级联上的年+月 **只筛项目是否可引入**，不是树/零件 as_of。上传门禁用墙钟月问 `require_introducible`。展示年月用现网 `fmtPeriod`（`2026年07月`），不要 `2026-08`。
 
@@ -30,14 +30,14 @@
 
 | 页 | Hash | 读 | 写 |
 |----|------|----|----|
-| 上传材料清单 | `#/bom-upload` | `GET /api/bom/filters/cascade`（墙钟年+月 → 可引入项目） | `POST /api/bom/upload` Form：`location` + `vehicle_model` + file |
+| 上传材料清单 | `#/bom-upload` | `GET /api/bom/filters/cascade`（墙钟年+月 → 可引入项目） | `POST /api/bom/upload` Form：`location` + `vehicle_model` + file → `task_id`；`GET /api/bom/upload/tasks/{task_id}` 轮询 |
 | 材料清单列表 | `#/bom-material` | `GET /api/bom/snapshots`（`BomSnapshotQuery`：基地/项目/版本/状态，**无年+月**） | `DELETE /api/bom/snapshots/{id}`（有采购对象/焊接拆解则 409） |
 | 产品结构 | `#/bom-structure` | 先 `GET /snapshots` 出项目卡；进清单后 `GET /snapshots/{id}` + `GET /snapshots/{id}/tree`，前端把 `level===0` 当总成卡 | 无节点编辑 |
 | 产品结构图 | `#/bom-viz` | 同上 `GET …/tree` | 无 |
 
-写入实际只走 `BomUploadService.import_excel`：同 `(location, vehicle_model, bom_version)` 且无下游 → **删整份 snapshot 再插**。`POST /snapshots`、`POST /snapshots/{id}/nodes` 路由在，前端不用。节点只有 `DELETE /api/bom/nodes/{id}`，**无 PATCH**。扁平 `GET …/nodes` 前端不用，结构/结构图都吃 `/tree`。
+写入走 `BomUploadService.start_upload`（`task_id` 轮询）→ 指挥家；落库见 §3.2：**按树对齐，不删 snapshot**。`POST /snapshots`、`POST /snapshots/{id}/nodes` 路由在，前端不用。节点有 `DELETE /api/bom/nodes/{id}` 与生失效 PATCH。扁平 `GET …/nodes` 前端不用，结构/结构图都吃 `/tree`。
 
-`bom_snapshots` UNIQUE `(location, vehicle_model, bom_version)`。`bom_nodes` 只有 `snapshot_id`，**没有** 基地/项目/版本，也无生失效；读节点必须 join 头表。`list_by_snapshot` 全量。头上 D/09、`status` **不是** 总成切点。芜湖 T13J 改造后仍是 **一份** snapshot，林子里同时有有效树和失效树。
+`bom_snapshots` UNIQUE `(location, vehicle_model, bom_version)`。节点带基地/项目/版本与四列生失效，见 §3.1。头上 D/09、`status` **不是** 总成切点。同一份 snapshot 里可同时有有效树和失效树。
 
 ### 1.2 冲压工艺
 
@@ -46,7 +46,7 @@
 | 上传工艺文件 | `#/stamping-upload` | 无范围控件 | `POST /api/stamping/upload/` **只传 file**（异步）。项目/厂从表头解析，基地由可引入项目带出 |
 | 冲压零件列表 | `#/stamping-parts` | `GET /api/stamping/parts/list`（`StampingPartQuery`：基地/项目/**版本**/厂/零件号，**无年+月**）；级联 `GET /api/stamping/filters/cascade` 的年+月只问可引入项目 | 详情：`PATCH …/parts/{id}/offal`、`PUT …/parts/{id}/processes`、`PATCH …/processes/{id}`。删：`DELETE …/parts/{id}`；`POST …/parts/batch-delete` 键仍是基地+项目+**版本**（厂可选） |
 
-落库 `upload/persist.save_parts`：同范围 `delete_by_scope` 再插；有加工费 → IntegrityError →「仍被引用，不能删除」。覆盖前 `cost_ratio_preserver` 按零件号+工序号沿用已改比例。UNIQUE `(location, stamping_supplier, vehicle_model, version, part_number)`。`version` 是确认表 SOP 字，不是切点。
+落库 `upload/persist/parts.py`：按号更新已有行，**不** `delete_by_scope`。文件里没有的号留下；已有 SOP 后文件出现新号 → 整单拒绝。覆盖前 `cost_ratio_preserver` 按零件号+工序号沿用已改比例。UNIQUE `(location, stamping_supplier, vehicle_model, part_number)`（无 `version`）。`version` 列仍在，是确认表 SOP 字，不是切点。细则 §4.2。
 
 本切片导出（`/parts/export-download`）必须带 `year`、`month`。钢材测算导出无库内命中行则不出文件。**冲压加工费计算按冲压件有效期与计算年做年交集**，见 §4.4；不要再用项目 `require_overlaps_year` 当取件 WHERE。零件价列表 **本期不改**。
 
@@ -161,7 +161,7 @@ UNIQUE 只约束 L0：`(snapshot_id, part_number)`。**不含** 生失效。同�
 
 ### 3.2 写入
 
-`bom_upload_service`：禁止再「删 snapshot 再插入」。有采购对象/焊接拆解时，现网整包覆盖本就会 409；改成按树对齐后 **不再需要删头**，有下游也不挡「给文件里的新 L0 插树 / 更新已有树属性」（仍禁止删未出现的树）。真删除 snapshot 仍走现网 `assert_bom_scope_unused`。
+`upload/persist/nodes.py`：按树对齐，**不删 snapshot**。真删除 snapshot 仍走 `assert_bom_scope_unused`（有采购对象/焊接拆解则 409）。再导不挡「更新文件里已有的 L0」；仍禁止删文件里没出现的树，禁止已有 SOP 后用本页种新号。
 
 - 该项目尚无清单（第一次 SOP）→ 整表插入，**每个节点**（L0 与全部子孙）写入 `location` / `vehicle_model` / `bom_version`（抄 snapshot），生失效抄项目起止（结束空则空）。
 - 已有 SOP 后，文件中的 L0 库里没有 → **拒绝整单**，文案指向工程变更。不要在本页用切点月种新树。
@@ -198,7 +198,7 @@ Service：不过滤子孙行；先收集命中的 L0 id 再收子树。`list_by_
 
 ### 4.2 写入
 
-`upload/persist.py`：**去掉** `delete_by_scope` 作为日常导入。上传仍只选文件解析范围，**不加切点年+月**。
+`upload/persist/parts.py`：日常导入 **不** 调用 `delete_by_scope`。上传仍只选文件解析范围，**不加切点年+月**。
 
 按 `(location, stamping_supplier, vehicle_model, part_number)` 找 **这一行**（唯一键，至多一行）：
 

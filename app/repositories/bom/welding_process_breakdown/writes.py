@@ -113,6 +113,15 @@ class WeldingBreakdownWrites:
         )
         return count
 
+    def delete_node_by_id(self, db: Session, node_id: int) -> bool:
+        """删单节点（明细 CASCADE）。只 flush。"""
+        row = self._queries.get_node_by_id(db, node_id)
+        if row is None:
+            return False
+        db.delete(row)
+        db.flush()
+        return True
+
     def approve_by_scope(
         self,
         db: Session,

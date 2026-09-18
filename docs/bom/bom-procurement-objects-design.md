@@ -487,7 +487,7 @@ HUD：**采购对象**是霓虹强调格；标准件/胶等、待审、已审为
 | `app/parsers/bom/node_parser.py` | 树怎么进库；L0 材料是否落地 |
 | `app/common/bom/manufacturing_category.py` | L1 叶子是否 `stamping` |
 | [welding-process-breakdown-design.md](welding-process-breakdown-design.md) | 拆解；生成清单时不读 |
-| `app/services/bom/bom_upload_service.py` | 覆盖导入前检查直接下游；无下游才删 snapshot（清单级联没）。落库前拦一物一码 |
+| `app/services/bom/upload/` | 再导按树对齐，不删 snapshot。真删头仍走 `assert_bom_scope_unused`。落库前拦一物一码 |
 | [bom-annual-part-prices-design.md](bom-annual-part-prices-design.md) | 价表；本文不读 |
 | [location-design.md](../masterdata/location-design.md) | 基地；生成写门禁、列表筛 |
 | [vehicle-model-design.md](../masterdata/vehicle-model-design.md) | 项目；列表筛；本文不是下一跳 |
@@ -596,7 +596,7 @@ prep-stats 是读：不强制 `require_enabled`（禁用基地仍可看「将列
 | 新树节点 | 落行 |
 |----------|------|
 | 采购对象，旧树有同行（同 `part_number` + `section` + `object_kind`） | 插新行。抄确认三态 / 确认人时 / 确认备注 / `supplier_name`。**不抄** `audit_status`（新行待审）。`l0_*`、父件、Excel 行号、材料快照抄 **新节点** |
-| 采购对象，旧树无同号，但是改图字母版本换号（去掉末两位后相同、字母版本进一位），旧树有旧号同行且 `object_kind` 不变 | 插新行；确认 / 厂家 **从旧号同行抄**（树上号关系；此件不装祖先升号同样适用）。**不抄** `audit_status` |
+| 采购对象，旧树无同号，但是改图字母版本换号（同茎、字母版本进一位；分总成 `-1` 留在茎上），旧树有旧号同行且 `object_kind` 不变 | 插新行；确认 / 厂家 **从旧号同行抄**（树上号关系；改图整条链分总成 AA→AB、此件不装上级换号同样适用）。**不抄** `audit_status` |
 | 采购对象，旧树无同行且无字母版本可对（增加零件；`object_kind` 变了） | 插新行，`pending`，供应商空。禁止从钢厂列 / 备注 / 年度价猜 |
 | 该 snapshot 尚无清单头 | 合册 **先建空头再插行**（不走 generate），见合册 §4.4 |
 | `other_leaf` / `anomaly` | 插新行；无确认可抄 |
@@ -639,3 +639,4 @@ prep-stats 是读：不强制 `require_enabled`（禁用基地仍可看「将列
 | 2026-09-17 | 收口：生成页拒绝整包是 **合册落地时** 才改的现网门禁；落地前仍按 §8.4 整 snapshot 覆盖。 |
 | 2026-09-17 | §14.3：改图字母版本换号允许从旧号抄确认与厂家（与合册少手工对齐）；增加零件仍 pending。 |
 | 2026-09-17 | §14.3：无清单头时合册先建空头；字母版本抄确认亦适用于此件不装祖先升号。 |
+| 2026-09-17 | §14.3：字母版本同茎含分总成 `-1`；改图整条链分总成换号同样从旧号抄确认。 |

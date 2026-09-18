@@ -166,7 +166,7 @@ class StampingPartQueries:
         total = q.count()
         from sqlalchemy.orm import selectinload
 
-        parts = q.options(selectinload(StampingPart.processes)).order_by(StampingPart.seq_no).all()
+        parts = q.options(selectinload(StampingPart.processes)).order_by(*_PART_LIST_ORDER).all()
         return parts, total
 
     def _build_list_query(
@@ -235,7 +235,7 @@ class StampingPartQueries:
         as_of_month: int | None = None,
         include_expired: bool = False,
     ) -> tuple[list[StampingPart], int]:
-        """分页查询零件。排序与导出相同：基地 → 车型 → 版本 → 工厂 → id。"""
+        """分页查询零件。排序与导出相同：基地 → 车型 → 冲压厂 → 序号（对齐 Excel，不用 id）。"""
         q = self._build_list_query(
             db,
             location=location,
@@ -342,7 +342,7 @@ class StampingPartQueries:
                 selectinload(StampingPart.processes),
                 selectinload(StampingPart.tailor_weld_blanks),
             )
-            .order_by(StampingPart.seq_no, StampingPart.id)
+            .order_by(*_PART_LIST_ORDER)
             .all()
         )
 
@@ -362,7 +362,7 @@ class StampingPartQueries:
     ) -> list[StampingPart]:
         """按列表筛选加载零件 + 工序 + 拼焊子片（导出用，不分页）。
 
-        排序与列表分页相同：基地 → 车型 → 版本 → 工厂 → id。
+        排序与列表分页相同：基地 → 车型 → 冲压厂 → 序号（对齐 Excel，不用 id）。
         """
         from sqlalchemy.orm import selectinload
 

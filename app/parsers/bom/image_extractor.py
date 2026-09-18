@@ -27,8 +27,10 @@ _NS = {
     "xdr": "http://schemas.openxmlformats.org/drawingml/2006/spreadsheetDrawing",
     "a": "http://schemas.openxmlformats.org/drawingml/2006/main",
     "r": "http://schemas.openxmlformats.org/officeDocument/2006/relationships",
+    "main": "http://schemas.openxmlformats.org/spreadsheetml/2006/main",
 }
 _R_EMBED = "{http://schemas.openxmlformats.org/officeDocument/2006/relationships}embed"
+_R_ID = "{http://schemas.openxmlformats.org/officeDocument/2006/relationships}id"
 
 # 只抽取业务图示列（含左邻：图常锚在名称列）
 ASSEMBLY_SKETCH_COL = 4  # E
@@ -54,7 +56,9 @@ class BomImageAnchor:
     source_name: str | None = None
 
 
-def extract_bom_images(source: str | Path | bytes) -> list[BomImageAnchor]:
+def extract_bom_images(
+    source: str | Path | bytes, *, sheet_name: str | None = None
+) -> list[BomImageAnchor]:
     """从 xlsx 抽取总成/单件图示，统一转为 PNG。"""
     if isinstance(source, bytes | bytearray):
         zip_file = ZipFile(BytesIO(source))
@@ -67,6 +71,9 @@ def extract_bom_images(source: str | Path | bytes) -> list[BomImageAnchor]:
             for name in zip_file.namelist()
             if name.startswith("xl/drawings/drawing") and name.endswith(".xml")
         ]
+        if sheet_name:
+            allowed = _drawing_paths_for_sheet(zip_file, sheet_name)
+            drawing_paths = [path for path in drawing_paths if path in allowed]
         if not drawing_paths:
             logger.info("BOM 简图: 未找到 drawing XML")
             return []
@@ -92,6 +99,51 @@ def extract_bom_images(source: str | Path | bytes) -> list[BomImageAnchor]:
         zip_file.close()
 
 
+def _drawing_paths_for_sheet(zip_file: ZipFile, sheet_name: str) -> set[str]:
+    """只收指定工作表挂上的 drawing，避免合册工艺表同行列抢总成图。"""
+    try:
+        workbook_xml = zip_file.read("xl/workbook.xml")
+        rels_xml = zip_file.read("xl/_rels/workbook.xml.rels")
+    except KeyError:
+        return set()
+    rid_to_target: dict[str, str] = {}
+    for rel in ET.fromstring(rels_xml):
+        rid = rel.attrib.get("Id")
+        target = (rel.attrib.get("Target") or "").replace("\\", "/")
+        if rid and target:
+            rid_to_target[rid] = target
+    workbook_root = ET.fromstring(workbook_xml)
+    sheet_target = None
+    for sheet in workbook_root.findall("main:sheets/main:sheet", _NS):
+        if sheet.attrib.get("name") != sheet_name:
+            continue
+        rid = sheet.attrib.get(_R_ID)
+        sheet_target = rid_to_target.get(rid or "")
+        break
+    if not sheet_target:
+        return set()
+    sheet_target = sheet_target.lstrip("/")
+    sheet_path = sheet_target if sheet_target.startswith("xl/") else "xl/" + sheet_target
+    rels_path = sheet_path.replace("xl/worksheets/", "xl/worksheets/_rels/") + ".rels"
+    try:
+        sheet_rels = zip_file.read(rels_path)
+    except KeyError:
+        return set()
+    found: set[str] = set()
+    for rel in ET.fromstring(sheet_rels):
+        rel_type = rel.attrib.get("Type") or ""
+        target = (rel.attrib.get("Target") or "").replace("\\", "/").lstrip("/")
+        if "drawing" not in rel_type.lower() or not target:
+            continue
+        if target.startswith("../"):
+            found.add("xl/" + target[3:])
+        elif target.startswith("xl/"):
+            found.add(target)
+        else:
+            found.add("xl/drawings/" + target)
+    return found
+
+
 def _load_rid_map(zip_file: ZipFile, rels_path: str) -> dict[str, str]:
     try:
         rels_xml = zip_file.read(rels_path)
@@ -104,8 +156,8 @@ def _load_rid_map(zip_file: ZipFile, rels_path: str) -> dict[str, str]:
         target = rel.attrib.get("Target")
         if not rid or not target:
             continue
-        # Target 形如 ../media/image1.wmf
-        normalized = target.replace("\\", "/")
+        # Target 形如 ../media/image1.wmf，openpyxl 也可能写成 /xl/media/image1.png
+        normalized = target.replace("\\", "/").lstrip("/")
         if normalized.startswith("../"):
             normalized = "xl/" + normalized[3:]
         elif not normalized.startswith("xl/"):

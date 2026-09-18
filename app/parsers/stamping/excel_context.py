@@ -84,10 +84,10 @@ class ExcelContext:
 
     def build_merged_cache(self, part_no_col: int) -> None:
         """
-        建立零件号列的合并单元格缓存。
+        建立零件号列的范围缓存。
 
-        Args:
-            part_no_col: 零件号列号（1-based）
+        先收录零件号列上的纵向合并；再把未合并、非表头的单格零件号做成一行一段
+        （工程变更合册常只写一道工序，不像 SOP 样表那样整段合并）。
         """
         if self.sheet is None:
             return
@@ -112,6 +112,20 @@ class ExcelContext:
                     end_row=max_r,
                 )
             )
+
+        covered_rows = {
+            row
+            for part_range in self._part_no_ranges
+            for row in range(part_range.start_row, part_range.end_row + 1)
+        }
+        for row in range(1, (self.max_row or 0) + 1):
+            if row in covered_rows:
+                continue
+            value = self.sheet.cell(row, part_no_col).value
+            text = str(value).strip() if value is not None else ""
+            if not text or "零件号" in text or "件号" in text:
+                continue
+            self._part_no_ranges.append(PartNoRange(value=value, start_row=row, end_row=row))
 
         # 按起始行排序
         self._part_no_ranges.sort(key=lambda x: x.start_row)

@@ -120,6 +120,22 @@ class BomWeldingProcessBreakdownService:
             started_at=started_at,
         )
 
+    def insert_for_new_tree(
+        self,
+        db: Session,
+        *,
+        snapshot_id: int,
+        new_l0_id: int,
+        current_user: UserVO,
+    ) -> list[int]:
+        """合册种树后只拆新树焊信节点（不 commit）。"""
+        return self._generate_service.insert_for_new_tree(
+            db,
+            snapshot_id=snapshot_id,
+            new_l0_id=new_l0_id,
+            current_user=current_user,
+        )
+
     def begin_generate_processing(
         self,
         db: Session,
@@ -239,3 +255,16 @@ class BomWeldingProcessBreakdownService:
         current_user: UserVO,
     ) -> BomWeldingProcessBreakdownBatchAuditResultVO:
         return self._audit_service.batch_reverse_audit(db, dto, current_user)
+
+    def delete_node_for_engineering_change_rollback(self, db: Session, node_id: int) -> None:
+        """工程变更回滚：删未审拆解节点；已审则 409。只 flush。"""
+        from app.common.audit import AUDIT_APPROVED
+        from app.common.engineering_change_gates import EC_ROLLBACK_BLOCKED
+        from app.exceptions.base import BusinessException
+
+        row = self.repository.get_node_by_id(db, node_id)
+        if row is None:
+            return
+        if row.audit_status == AUDIT_APPROVED:
+            raise BusinessException(EC_ROLLBACK_BLOCKED, code=409)
+        self.repository.delete_node_by_id(db, node_id)

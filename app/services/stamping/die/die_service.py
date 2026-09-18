@@ -1,5 +1,7 @@
 """冲压模具查询、更新、按作用域删除。"""
 
+from decimal import Decimal
+
 from sqlalchemy.orm import Session
 
 from app.common.audit import audit_update
@@ -26,6 +28,26 @@ from app.schemas.vo.stamping_die_vo import (
 from app.schemas.vo.user_vo import UserVO
 from app.services.masterdata.location.location_service import LocationService
 from app.services.masterdata.vehicle_model import VehicleModelService
+from app.services.stamping.die.engineering_change import (
+    EngineeringChangeDieAsOfRow,
+    EngineeringChangeDiePartResult,
+    EngineeringChangeDiePartSpec,
+)
+from app.services.stamping.die.engineering_change import (
+    alloc_ratios_by_seq as alloc_ratios_by_seq_fn,
+)
+from app.services.stamping.die.engineering_change import (
+    die_numbers_by_seq as die_numbers_by_seq_fn,
+)
+from app.services.stamping.die.engineering_change import (
+    insert_for_engineering_change as insert_for_engineering_change_fn,
+)
+from app.services.stamping.die.engineering_change import (
+    list_parts_as_of as list_parts_as_of_fn,
+)
+from app.services.stamping.die.engineering_change import (
+    rollback_engineering_change_part as rollback_engineering_change_part_fn,
+)
 
 
 class StampingDieService:
@@ -162,3 +184,78 @@ class StampingDieService:
             db.rollback()
             raise
         return StampingDieBatchDeleteResultVO(deleted_parts=deleted)
+
+    def list_parts_as_of_for_engineering_change(
+        self,
+        db: Session,
+        *,
+        location: str,
+        vehicle_model: str,
+        as_of_year: int,
+        as_of_month: int,
+    ) -> list[EngineeringChangeDieAsOfRow]:
+        """工程变更：当月命中布点零件号。"""
+        return list_parts_as_of_fn(
+            self.die_part_repo,
+            db,
+            location=location,
+            vehicle_model=vehicle_model,
+            as_of_year=as_of_year,
+            as_of_month=as_of_month,
+        )
+
+    def process_alloc_ratios_for_engineering_change(
+        self, db: Session, part_id: int
+    ) -> dict[str, Decimal]:
+        """工程变更：旧号工序分摊比例。"""
+        return alloc_ratios_by_seq_fn(self.die_part_repo, db, part_id)
+
+    def process_die_numbers_for_engineering_change(
+        self, db: Session, part_id: int
+    ) -> dict[str, str]:
+        """工程变更：旧号模具编号（按工序序号）。"""
+        return die_numbers_by_seq_fn(self.die_part_repo, db, part_id)
+
+    def list_die_numbers_for_scope(
+        self,
+        db: Session,
+        *,
+        location: str,
+        vehicle_model: str,
+    ) -> list[str]:
+        return self.die_process_repo.list_die_numbers_for_scope(
+            db, location=location, vehicle_model=vehicle_model
+        )
+
+    def insert_for_engineering_change(
+        self,
+        db: Session,
+        specs: list[EngineeringChangeDiePartSpec],
+        current_user: UserVO,
+    ) -> list[EngineeringChangeDiePartResult]:
+        """工程变更合册按号插布点零件（不 commit）。"""
+        return insert_for_engineering_change_fn(
+            self.die_part_repo,
+            self.die_process_repo,
+            db,
+            specs,
+            current_user,
+        )
+
+    def rollback_engineering_change_part(
+        self,
+        db: Session,
+        *,
+        after_part_id: int | None,
+        before_part_id: int | None,
+        current_user: UserVO,
+    ) -> None:
+        """工程变更回滚布点零件（不 commit）。"""
+        rollback_engineering_change_part_fn(
+            self.die_part_repo,
+            self.die_process_repo,
+            db,
+            after_part_id=after_part_id,
+            before_part_id=before_part_id,
+            current_user=current_user,
+        )

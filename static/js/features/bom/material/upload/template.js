@@ -117,16 +117,16 @@ export function bomUploadTemplate() {
                                             <div class="flex items-center justify-between gap-3 mb-3">
                                                 <div class="flex items-center gap-2 min-w-0">
                                                     ${window.svgIcon('spinner', 'w-4 h-4 text-[#d32f2f]')}
-                                                    <h5 id="bomUploadProgressTitle" class="text-xs font-medium text-[#ffffff] truncate mb-0">正在导入材料清单...</h5>
+                                                    <h5 id="bomUploadProgressTitle" class="text-xs font-medium text-[#ffffff] truncate mb-0">正在解析材料清单...</h5>
                                                 </div>
-                                                <span id="bomUploadProgressPercent" class="text-xs font-mono tabular-nums text-[#d32f2f] shrink-0">…</span>
+                                                <span id="bomUploadProgressPercent" class="text-xs font-mono tabular-nums text-[#d32f2f] shrink-0">0%</span>
                                             </div>
                                             <div class="h-1.5 w-full bg-[#0a0a0a] border border-[#2c2c2c] overflow-hidden mb-3">
                                                 <div id="bomUploadProgressBar"
-                                                     class="h-full bg-[#d32f2f] shadow-[0_0_8px_rgba(211,47,47,0.5)] transition-all duration-300 animate-pulse"
-                                                     style="width: 60%"></div>
+                                                     class="h-full bg-[#d32f2f] shadow-[0_0_8px_rgba(211,47,47,0.5)] transition-all duration-300"
+                                                     style="width: 0%"></div>
                                             </div>
-                                            <p id="bomUploadProgressMsg" class="text-[11px] text-[#9e9e9e] leading-relaxed mb-0">解析三级树并落盘简图，请稍候</p>
+                                            <p id="bomUploadProgressMsg" class="text-[11px] text-[#9e9e9e] leading-relaxed mb-0 whitespace-pre-wrap break-words max-h-48 overflow-y-auto">已提交解析队列</p>
                                         </div>
                                     </div>
 

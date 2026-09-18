@@ -200,7 +200,7 @@ Router（权限 + 文件校验）──► Upload Service.start_upload
         │                         │
         │                         ├── create_task + submit（立即返回 task_id）
         │                         └── 后台：async_task runner 开独立 Session
-        │                                    └── process_upload → Parser → Repository
+        │                                    └── 指挥家 execute（预备 → 管线 → 落库）
         ▼
 ApiResponse[AsyncTaskAcceptedVO]
 前端轮询 GET …/tasks/{task_id}
@@ -227,7 +227,7 @@ ApiResponse[AsyncTaskAcceptedVO]
 | 谁 | 做什么 |
 |----|--------|
 | **Router** | 校验；调 `start_*` 或同步 `upload`；返回 `AsyncTaskAcceptedVO` 或结果 VO；查进度 |
-| **切片 Service** | 长任务：`create_task` + `submit_session_worker`；真正的 `process_upload` / `calculate` / 引擎 `execute`；成功文案；任务终态；崩溃时释放计算锁或回写引擎 Run |
+| **切片 Service** | 长任务：`start_*` 入队（`create_task` + `submit_session_worker`）；worker 调指挥家 `execute`（或核算 `calculate`）；成功文案；任务终态；崩溃时释放计算锁或回写引擎 Run |
 | **`async_task` runner** | 仅服务长任务：任务 Session、`on_progress` 写辅助库、统一 catch、关 Session |
 
 公共 runner 放 `app/services/async_task/`（已有切片归属），**不要**进 `common/`，也**不要**为每个长任务复制一份 60 行 worker。

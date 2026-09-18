@@ -7,12 +7,10 @@ from typing import TYPE_CHECKING
 
 from sqlalchemy.orm import Session
 
+from app.common.engineering_change_gates import EC_GATE_ENGINE_BREAKDOWN
 from app.common.types.repository_types import StepMetricsJson
 from app.schemas.dto.assembly_cost_dto import AssemblyCostCalcDTO
 from app.schemas.dto.bom_welding_fee_dto import BomWeldingFeeCalcDTO
-from app.schemas.dto.bom_welding_process_breakdown_dto import (
-    BomWeldingProcessBreakdownGenerateDTO,
-)
 from app.schemas.dto.stamping_part_cost_dto import StampingPartCostCalcDTO
 from app.schemas.dto.stamping_process_fee_dto import StampingProcessFeeCalcDTO
 from app.schemas.vo.costing_engine_vo import CostingEngineAnnualItemVO
@@ -66,19 +64,8 @@ def run_annual_item(
             )
 
         if item.code == "annual_welding_breakdown":
-            vehicle_model, bom_version = item.scope_key.split("|", 1)
-            scope = find_l0(discovery, vehicle_model, bom_version)
-            breakdown_dto = BomWeldingProcessBreakdownGenerateDTO(
-                location=scope.location if scope else discovery.location,
-                vehicle_model=vehicle_model,
-                bom_version=bom_version,
-            )
-            orch.breakdown_svc.generate(db, breakdown_dto, current_user=current_user)
-            return (
-                True,
-                "焊接工艺拆解补算完成",
-                {"result": True},
-            )
+            # 门禁 3：缺新树拆解禁止整包 generate；须工程变更重传。
+            return False, EC_GATE_ENGINE_BREAKDOWN, None
 
         if item.code == "annual_welding_fee":
             vehicle_model, bom_version = item.scope_key.split("|", 1)

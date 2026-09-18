@@ -108,6 +108,11 @@ class BomProcurementObjectWrites:
         db.flush()
         return int(count)
 
+    def delete_object(self, db: Session, row: BomProcurementObject) -> None:
+        """删单条采购对象行。只 flush。"""
+        db.delete(row)
+        db.flush()
+
     def recount_header_from_rows(self, db: Session, header: BomProcurementObjectList) -> None:
         rows = self._queries.list_objects_by_list_id(db, header.id)
         header.object_l0_degenerate_count = sum(

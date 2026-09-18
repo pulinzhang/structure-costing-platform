@@ -13,7 +13,7 @@
  * 入口 URL 的 query 串驱动整体刷新；每次脚本更新后需要同步递增 ?v= 版本号。
  */
 
-import { pageMeta } from './features/index.js?v=44';
+import { pageMeta } from './features/index.js?v=45';
 
 // 页面导入（路径与 index.html 菜单树 / features 目录对齐）
 import { getUserSession, initUserMenu, startTokenHeartbeat, updateUserSession } from './features/login/index.js?v=15';
@@ -54,7 +54,7 @@ import { pageConfig as scrapPricePage } from './features/yishiyiyi/scrap-price/i
 import { pageConfig as bomStructurePage }  from './features/bom/material/structure/index.js?v=11';
 import { pageConfig as bomWhereUsedPage } from './features/bom/material/where-used/index.js?v=14';
 import { pageConfig as bomVizPage }        from './features/bom/material/viz/index.js?v=31';
-import { pageConfig as bomUploadPage }     from './features/bom/material/upload/index.js?v=15';
+import { pageConfig as bomUploadPage }     from './features/bom/material/upload/index.js?v=16';
 import { pageConfig as bomMaterialListPage } from './features/bom/material/list/index.js?v=9';
 import { pageConfig as bomWeldingUnitPriceUploadPage } from './features/bom/welding-unit-price/upload/index.js?v=14';
 import { pageConfig as bomWeldingUnitPricePage } from './features/bom/welding-unit-price/list/index.js?v=20';
@@ -69,6 +69,8 @@ import { pageConfig as bomWeldingProcessBreakdownGeneratePage } from './features
 import { pageConfig as bomWeldingProcessBreakdownListPage } from './features/bom/welding-process-breakdown/list/index.js?v=46';
 import { pageConfig as bomWeldingFeeCalcPage } from './features/bom/welding-fee/calc/index.js?v=15';
 import { pageConfig as bomWeldingFeeListPage } from './features/bom/welding-fee/list/index.js?v=16';
+import { pageConfig as engineeringChangeUploadPage } from './features/engineering-change/upload/index.js?v=10';
+import { pageConfig as engineeringChangeListPage } from './features/engineering-change/list/index.js?v=10';
 import { pageConfig as costingPage }        from './features/costing/engine/index.js?v=37';
 import { pageConfig as fileTracePage }       from './features/file-trace/index.js?v=10';
 import { pageConfig as locationPage }        from './features/masterdata/location/index.js?v=7';
@@ -135,6 +137,8 @@ const pages = {
     'bom-welding-process-breakdown-list': bomWeldingProcessBreakdownListPage,
     'bom-welding-fee-calc': bomWeldingFeeCalcPage,
     'bom-welding-fee-list': bomWeldingFeeListPage,
+    'engineering-change-upload': engineeringChangeUploadPage,
+    'engineering-change-order-list': engineeringChangeListPage,
     costing:          costingPage,
     'file-trace':     fileTracePage,
     location:         locationPage,

@@ -19,7 +19,7 @@ from app.parsers.stamping.models.tailor_weld import (
 )
 from app.schemas.dto.steel_grade_category_dto import SteelGradeCategoryCreate
 from app.services.masterdata.steel_grade_category import SteelGradeCategoryService
-from app.services.stamping.upload.stamping_upload import StampingUploadService
+from app.services.stamping.upload.materials import canonicalize_materials
 
 
 @pytest.fixture
@@ -68,7 +68,7 @@ def test_canonicalize_materials_rewrites_letter_o(memory_db: Session) -> None:
             blanks=[blank],
         )
     ]
-    StampingUploadService(memory_db)._canonicalize_materials(parts, assemblies)
+    canonicalize_materials(memory_db, parts, assemblies)
     assert parts[0].material == "DC01"
     assert assemblies[0].material is None
     assert blank.material == "DC01"

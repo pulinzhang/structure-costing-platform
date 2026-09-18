@@ -327,6 +327,16 @@ export const pageMeta = {
         en: 'WELDING_FEE_LIST',
         breadcrumb: ['焊接工程', '焊接费', '列表'],
     },
+    'engineering-change-upload': {
+        title: '上传工程变更',
+        en: 'ENGINEERING_CHANGE_UPLOAD',
+        breadcrumb: ['工程变更', '上传工程变更'],
+    },
+    'engineering-change-order-list': {
+        title: '工程变更单列表',
+        en: 'ENGINEERING_CHANGE_ORDER_LIST',
+        breadcrumb: ['工程变更', '工程变更单列表'],
+    },
     costing: {
         title: '自动核价引擎',
         en: 'AUTOMATED_COSTING',

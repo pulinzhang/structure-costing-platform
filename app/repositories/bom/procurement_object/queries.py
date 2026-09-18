@@ -4,6 +4,7 @@ from sqlalchemy import func
 from sqlalchemy.orm import Query, Session
 
 from app.common.audit import AUDIT_APPROVED, AUDIT_PENDING
+from app.models.bom.node import BomNode
 from app.models.bom.procurement_object import (
     BomProcurementObject,
     BomProcurementObjectList,
@@ -15,6 +16,7 @@ from app.repositories.bom.procurement_object.types import (
     ProcurementObjectAuditSummary,
     count_matching,
 )
+from app.repositories.period_query import period_hit_clause
 
 
 class BomProcurementObjectQueries:
@@ -157,6 +159,8 @@ class BomProcurementObjectQueries:
         excel_row: int | None = None,
         supplier_names: list[str] | None = None,
         has_supplier: bool | None = None,
+        as_of_year: int | None = None,
+        as_of_month: int | None = None,
         skip: int = 0,
         limit: int = 20,
     ) -> tuple[list[BomProcurementObject], int]:
@@ -175,6 +179,8 @@ class BomProcurementObjectQueries:
             excel_row=excel_row,
             supplier_names=supplier_names,
             has_supplier=has_supplier,
+            as_of_year=as_of_year,
+            as_of_month=as_of_month,
         )
         total = query.count()
         rows = self._apply_check_order(query).offset(skip).limit(limit).all()
@@ -197,6 +203,8 @@ class BomProcurementObjectQueries:
         excel_row: int | None = None,
         supplier_names: list[str] | None = None,
         has_supplier: bool | None = None,
+        as_of_year: int | None = None,
+        as_of_month: int | None = None,
     ) -> list[BomProcurementObject]:
         query = self._apply_object_filters(
             db.query(BomProcurementObject).join(BomProcurementObjectList),
@@ -213,6 +221,8 @@ class BomProcurementObjectQueries:
             excel_row=excel_row,
             supplier_names=supplier_names,
             has_supplier=has_supplier,
+            as_of_year=as_of_year,
+            as_of_month=as_of_month,
         )
         return self._apply_check_order(query).all()
 
@@ -260,6 +270,8 @@ class BomProcurementObjectQueries:
         excel_row: int | None = None,
         supplier_names: list[str] | None = None,
         has_supplier: bool | None = None,
+        as_of_year: int | None = None,
+        as_of_month: int | None = None,
     ) -> ProcurementObjectAuditSummary:
         base = self._apply_object_filters(
             db.query(BomProcurementObject).join(BomProcurementObjectList),
@@ -276,6 +288,8 @@ class BomProcurementObjectQueries:
             excel_row=excel_row,
             supplier_names=supplier_names,
             has_supplier=has_supplier,
+            as_of_year=as_of_year,
+            as_of_month=as_of_month,
         )
         row = base.with_entities(
             func.count(BomProcurementObject.id).label("total_count"),
@@ -322,6 +336,8 @@ class BomProcurementObjectQueries:
         excel_row: int | None,
         supplier_names: list[str] | None = None,
         has_supplier: bool | None = None,
+        as_of_year: int | None = None,
+        as_of_month: int | None = None,
     ) -> Query[BomProcurementObject]:
         if locations is not None:
             query = query.filter(BomProcurementObjectList.location.in_(locations))
@@ -351,6 +367,20 @@ class BomProcurementObjectQueries:
             query = query.filter(BomProcurementObject.supplier_name.isnot(None))
         elif has_supplier is False:
             query = query.filter(BomProcurementObject.supplier_name.is_(None))
+        if as_of_year is not None and as_of_month is not None:
+            query = query.join(
+                BomNode,
+                BomNode.id == BomProcurementObject.source_node_id,
+            ).filter(
+                period_hit_clause(
+                    BomNode.effective_year,
+                    BomNode.effective_month,
+                    BomNode.expiry_year,
+                    BomNode.expiry_month,
+                    as_of_year,
+                    as_of_month,
+                )
+            )
         return query
 
     @staticmethod

@@ -35,7 +35,9 @@ from app.schemas.dto.stamping_die_fee_dto import StampingDieFeeCalcDTO
 from app.schemas.dto.stamping_upload_dto import FileInfo
 from app.schemas.vo.user_vo import UserVO
 from app.services.bom.bom_service import BomService
-from app.services.bom.bom_upload_service import BomUploadService
+from app.services.bom.upload.orchestrator import BomUploadOrchestrator
+from app.services.bom.upload.orchestrator.types import BomUploadExecuteArgs
+from app.services.bom.upload.persist.nodes import align_existing_trees
 from app.services.stamping.die.die_number_assigner import assign_die_numbers
 from app.services.stamping.die.export_service import StampingDieExportService
 from app.services.stamping.die_fee.calc.orchestrator.prep import prepare_calc_run
@@ -43,7 +45,7 @@ from app.services.stamping.die_fee.calc.orchestrator.progress import ProgressNot
 from app.services.stamping.part_export.helpers import PartExportStyle
 from app.services.stamping.part_export.process_confirm import ProcessConfirmExport
 from app.services.stamping.stamping_part_export_service import StampingPartExportService
-from app.services.stamping.upload.persist import save_parts
+from app.services.stamping.upload.persist.parts import save_parts
 
 LOCATION = "青岛"
 VEHICLE_MODEL = "T13J"
@@ -228,29 +230,27 @@ def _stub_bom_upload(
         sheet_name="Sheet1",
     )
     monkeypatch.setattr(
-        "app.services.bom.bom_upload_service.parse_bom_excel",
+        "app.services.bom.upload.orchestrator.prep.parse_bom_excel",
         lambda *_args, **_kwargs: result,
     )
     monkeypatch.setattr(
-        "app.services.bom.bom_upload_service.validate_internal_number_uniqueness",
+        "app.services.bom.upload.gates.validate.validate_internal_number_uniqueness",
         lambda *_args, **_kwargs: None,
     )
     monkeypatch.setattr(
-        "app.services.bom.bom_upload_service.validate_subassembly_consistency",
+        "app.services.bom.upload.gates.validate.validate_subassembly_consistency",
         lambda *_args, **_kwargs: None,
     )
     monkeypatch.setattr(
-        BomUploadService,
-        "_save_excel_file",
+        "app.services.bom.upload.orchestrator.pipeline.save_excel_file",
         lambda *_args, **_kwargs: "bom/x.xlsx",
     )
     monkeypatch.setattr(
-        BomUploadService,
-        "_save_node_sketches",
+        "app.services.bom.upload.orchestrator.pipeline.save_node_sketches",
         lambda *_args, **_kwargs: {},
     )
     monkeypatch.setattr(
-        "app.services.bom.bom_upload_service.register_existing",
+        "app.services.bom.upload.persist.nodes.register_existing",
         lambda *_args, **_kwargs: None,
     )
 
@@ -446,13 +446,15 @@ def test_bom_first_import_copies_project_period(
         bom_version=BOM_VERSION,
         nodes=[_l0_parsed("L0001AA", part_name="总成")],
     )
-    BomUploadService().import_excel(
+    BomUploadOrchestrator().execute(
         memory_db,
-        file_content=b"fake-xlsx",
-        filename="sop.xlsx",
-        location=LOCATION,
-        vehicle_model=VEHICLE_MODEL,
-        current_user=_user(),
+        BomUploadExecuteArgs(
+            file_content=b"fake-xlsx",
+            filename="sop.xlsx",
+            location=LOCATION,
+            vehicle_model=VEHICLE_MODEL,
+        ),
+        _user(),
     )
     row = memory_db.query(BomNode).one()
     assert row.effective_year == 2024
@@ -474,13 +476,15 @@ def test_existing_sop_rejects_new_bom_version(
         nodes=[_l0_parsed("L0001AA")],
     )
     with pytest.raises(BusinessException, match=SOP_NEW_NUMBER_REJECT):
-        BomUploadService().import_excel(
+        BomUploadOrchestrator().execute(
             memory_db,
-            file_content=b"fake-xlsx",
-            filename="next.xlsx",
-            location=LOCATION,
-            vehicle_model=VEHICLE_MODEL,
-            current_user=_user(),
+            BomUploadExecuteArgs(
+                file_content=b"fake-xlsx",
+                filename="next.xlsx",
+                location=LOCATION,
+                vehicle_model=VEHICLE_MODEL,
+            ),
+            _user(),
         )
 
 
@@ -495,29 +499,52 @@ def test_bom_align_keeps_missing_l0_and_patched_period(memory_db: Session) -> No
         seq_no=2,
         part_name="旧名",
         effective_year=2025,
-        effective_month=3,
+        effective_month=1,
         expiry_year=None,
         expiry_month=None,
     )
-    BomUploadService()._align_existing_trees(
+    ec_tree = _node(
+        memory_db,
+        snapshot,
+        level=0,
+        part_number="ECTREEAB",
+        seq_no=3,
+        part_name="合册树",
+        effective_year=2025,
+        effective_month=7,
+        expiry_year=None,
+        expiry_month=None,
+    )
+    align_existing_trees(
         memory_db,
         snapshot_id=snapshot.id,
-        existing_l0={kept.part_number: kept, patched.part_number: patched},
-        parsed_nodes=[_l0_parsed("PATCHAA", part_name="新名")],
+        existing_l0={
+            kept.part_number: kept,
+            patched.part_number: patched,
+            ec_tree.part_number: ec_tree,
+        },
+        parsed_nodes=[
+            _l0_parsed("PATCHAA", part_name="新名"),
+            _l0_parsed("ECTREEAB", part_name="不应被重建"),
+        ],
         saved_images={},
         original_name="again.xlsx",
         sheet_name="Sheet1",
         updated_by="tester",
+        sop_year=2025,
+        sop_month=1,
     )
     memory_db.commit()
     numbers = {row.part_number for row in memory_db.query(BomNode).filter(BomNode.level == 0).all()}
-    assert numbers == {"KEEPAA", "PATCHAA"}
+    assert numbers == {"KEEPAA", "PATCHAA", "ECTREEAB"}
     memory_db.refresh(patched)
+    memory_db.refresh(ec_tree)
     assert patched.part_name == "新名"
     assert patched.effective_year == 2025
-    assert patched.effective_month == 3
+    assert patched.effective_month == 1
     assert patched.expiry_year is None
     assert patched.seq_no == 2
+    assert ec_tree.part_name == "合册树"
 
 
 def test_l0_patch_cascades_l1_reject_and_seq_overlap(memory_db: Session) -> None:

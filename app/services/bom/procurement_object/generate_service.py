@@ -11,6 +11,11 @@ from datetime import datetime
 from sqlalchemy.orm import Session
 
 from app.common.audit import AUDIT_PENDING, audit_create, display_name
+from app.common.engineering_change_gates import (
+    EC_GATE_FULL_GENERATE,
+    PeriodRoot,
+    snapshot_blocks_full_generate,
+)
 from app.common.timezone import now
 from app.exceptions.base import BusinessException, NotFoundException
 from app.models.bom.node import BomSnapshot
@@ -38,6 +43,7 @@ from app.services.bom.procurement_object.generate_log_service import (
 )
 from app.services.masterdata.location.location_service import LocationService
 from app.services.masterdata.supplier import SupplierService
+from app.services.masterdata.vehicle_model import VehicleModelService
 
 logger = logging.getLogger("service.bom.procurement_object.generate")
 
@@ -115,6 +121,25 @@ class BomProcurementObjectGenerateService:
             node_count = len(nodes)
             if not nodes:
                 raise BusinessException("该材料清单没有节点，无法生成采购对象清单")
+            sop_year, sop_month, _, _ = VehicleModelService().project_sop_period(
+                db, location, vehicle_model
+            )
+            l0_roots = [
+                PeriodRoot(
+                    effective_year=node.effective_year,
+                    effective_month=node.effective_month,
+                    expiry_year=node.expiry_year,
+                    expiry_month=node.expiry_month,
+                )
+                for node in nodes
+                if int(node.level) == 0
+            ]
+            if snapshot_blocks_full_generate(
+                l0_roots,
+                sop_year=sop_year,
+                sop_month=sop_month,
+            ):
+                raise BusinessException(EC_GATE_FULL_GENERATE, code=409)
             # 列入：退化仅 L0；L1 有内部号才进采购对象。规则在 classify。
             classified = classify_nodes(nodes)
             qa_passed = classified.qa_passed

@@ -117,6 +117,8 @@ class BomProcurementObjectRepository:
         excel_row: int | None = None,
         supplier_names: list[str] | None = None,
         has_supplier: bool | None = None,
+        as_of_year: int | None = None,
+        as_of_month: int | None = None,
         skip: int = 0,
         limit: int = 20,
     ) -> tuple[list[BomProcurementObject], int]:
@@ -135,6 +137,8 @@ class BomProcurementObjectRepository:
             excel_row=excel_row,
             supplier_names=supplier_names,
             has_supplier=has_supplier,
+            as_of_year=as_of_year,
+            as_of_month=as_of_month,
             skip=skip,
             limit=limit,
         )
@@ -156,6 +160,8 @@ class BomProcurementObjectRepository:
         excel_row: int | None = None,
         supplier_names: list[str] | None = None,
         has_supplier: bool | None = None,
+        as_of_year: int | None = None,
+        as_of_month: int | None = None,
     ) -> list[BomProcurementObject]:
         return self._queries.list_objects_for_export(
             db,
@@ -172,6 +178,8 @@ class BomProcurementObjectRepository:
             excel_row=excel_row,
             supplier_names=supplier_names,
             has_supplier=has_supplier,
+            as_of_year=as_of_year,
+            as_of_month=as_of_month,
         )
 
     def get_filter_options(self, db: Session) -> tuple[list[str], list[str], list[str]]:
@@ -194,6 +202,8 @@ class BomProcurementObjectRepository:
         excel_row: int | None = None,
         supplier_names: list[str] | None = None,
         has_supplier: bool | None = None,
+        as_of_year: int | None = None,
+        as_of_month: int | None = None,
     ) -> ProcurementObjectAuditSummary:
         return self._queries.summarize_objects(
             db,
@@ -210,6 +220,8 @@ class BomProcurementObjectRepository:
             excel_row=excel_row,
             supplier_names=supplier_names,
             has_supplier=has_supplier,
+            as_of_year=as_of_year,
+            as_of_month=as_of_month,
         )
 
     def get_generate_log_by_id(
@@ -246,6 +258,9 @@ class BomProcurementObjectRepository:
 
     def delete_list(self, db: Session, header: BomProcurementObjectList) -> None:
         return self._writes.delete_list(db, header)
+
+    def delete_object(self, db: Session, row: BomProcurementObject) -> None:
+        return self._writes.delete_object(db, row)
 
     def approve_objects_by_list_id(
         self,

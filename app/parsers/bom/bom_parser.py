@@ -28,7 +28,7 @@ __all__ = [
 ]
 
 
-def parse_bom_excel(source: str | Path | bytes) -> BomParseResult:
+def parse_bom_excel(source: str | Path | bytes, *, sheet_name: str | None = None) -> BomParseResult:
     """解析车身件材料清单 Excel，返回头信息 + 扁平节点列表（含 parent_index）。"""
     if isinstance(source, bytes | bytearray):
         file_bytes = bytes(source)
@@ -40,10 +40,18 @@ def parse_bom_excel(source: str | Path | bytes) -> BomParseResult:
 
     if not wb.worksheets:
         raise ValueError("Excel 中没有工作表")
-    ws = wb.worksheets[0]
+    if sheet_name:
+        matching = [sheet for sheet in wb.worksheets if sheet.title == sheet_name]
+        if not matching:
+            raise ValueError(f"Excel 中没有工作表 {sheet_name}")
+        ws = matching[0]
+    else:
+        ws = wb.worksheets[0]
     meta = parse_bom_meta(ws)
     nodes, row_l0, row_part_sketch = parse_bom_nodes(ws)
-    image_count = assign_sketch_images(file_bytes, nodes, row_l0, row_part_sketch)
+    image_count = assign_sketch_images(
+        file_bytes, nodes, row_l0, row_part_sketch, sheet_name=ws.title
+    )
     return BomParseResult(
         meta=meta,
         nodes=nodes,

@@ -23,7 +23,7 @@ from app.schemas.dto.stamping_part_dto import (
     StampingProcessItemUpdate,
     StampingProcessUpdate,
 )
-from app.schemas.dto.stamping_upload_dto import PartData, StampingPartPatch
+from app.schemas.dto.stamping_upload_dto import PartData, ProcessData, StampingPartPatch
 from app.schemas.vo.stamping_vo import (
     StampingCascadeFilterOptionsVO,
     StampingMaterialResponse,
@@ -35,6 +35,23 @@ from app.schemas.vo.stamping_vo import (
     StampingProcessResponse,
 )
 from app.schemas.vo.user_vo import UserVO
+from app.services.stamping.part.engineering_change import (
+    EngineeringChangePartAsOfRow,
+    EngineeringChangeProcessPartResult,
+    EngineeringChangeProcessPartSpec,
+)
+from app.services.stamping.part.engineering_change import (
+    clone_revise_from_predecessor as clone_revise_from_predecessor_fn,
+)
+from app.services.stamping.part.engineering_change import (
+    insert_for_engineering_change as insert_for_engineering_change_fn,
+)
+from app.services.stamping.part.engineering_change import (
+    list_parts_as_of as list_parts_as_of_fn,
+)
+from app.services.stamping.part.engineering_change import (
+    rollback_engineering_change_part as rollback_engineering_change_part_fn,
+)
 from app.services.stamping.part.list import (
     count_parts as count_parts_fn,
 )
@@ -241,3 +258,93 @@ class StampingPartService:
         current_user: UserVO,
     ) -> int:
         return batch_update_processes_fn(db, items, current_user)
+
+    def list_parts_as_of_for_engineering_change(
+        self,
+        db: Session,
+        *,
+        location: str,
+        vehicle_model: str,
+        as_of_year: int,
+        as_of_month: int,
+    ) -> list[EngineeringChangePartAsOfRow]:
+        """工程变更：当月命中零件号。"""
+        return list_parts_as_of_fn(
+            self.repository,
+            db,
+            location=location,
+            vehicle_model=vehicle_model,
+            as_of_year=as_of_year,
+            as_of_month=as_of_month,
+        )
+
+    def clone_revise_for_engineering_change(
+        self,
+        db: Session,
+        *,
+        predecessor_id: int,
+        new_part_number: str,
+        version: str,
+        effective_year: int,
+        effective_month: int,
+        expiry_year: int | None,
+        expiry_month: int | None,
+        excel_filename: str,
+        excel_sheet_name: str | None,
+        excel_row: int | None,
+        excel_part_col: int | None,
+        created_by: str | None,
+        updated_by: str | None,
+    ) -> tuple[PartData, list[ProcessData]]:
+        """工程变更改图：除零件号、版本、生失效外整行抄旧号，工序相同。"""
+        return clone_revise_from_predecessor_fn(
+            self.repository,
+            self.process_repository,
+            db,
+            predecessor_id=predecessor_id,
+            new_part_number=new_part_number,
+            version=version,
+            effective_year=effective_year,
+            effective_month=effective_month,
+            expiry_year=expiry_year,
+            expiry_month=expiry_month,
+            excel_filename=excel_filename,
+            excel_sheet_name=excel_sheet_name,
+            excel_row=excel_row,
+            excel_part_col=excel_part_col,
+            created_by=created_by,
+            updated_by=updated_by,
+        )
+
+    def insert_for_engineering_change(
+        self,
+        db: Session,
+        specs: list[EngineeringChangeProcessPartSpec],
+        current_user: UserVO,
+    ) -> list[EngineeringChangeProcessPartResult]:
+        """工程变更合册插工艺零件（不 commit）。"""
+        return insert_for_engineering_change_fn(
+            self.repository,
+            self.process_repository,
+            db,
+            specs,
+            current_user,
+        )
+
+    def rollback_engineering_change_part(
+        self,
+        db: Session,
+        *,
+        after_part_id: int | None,
+        before_part_id: int | None,
+        current_user: UserVO,
+    ) -> None:
+        """工程变更回滚工艺零件（不 commit）。"""
+        rollback_engineering_change_part_fn(
+            self.repository,
+            self.process_repository,
+            db,
+            after_part_id=after_part_id,
+            before_part_id=before_part_id,
+            current_user=current_user,
+        )

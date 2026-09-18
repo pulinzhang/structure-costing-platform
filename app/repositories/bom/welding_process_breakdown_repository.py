@@ -325,6 +325,9 @@ class BomWeldingProcessBreakdownRepository:
             db, location=location, vehicle_model=vehicle_model, bom_version=bom_version
         )
 
+    def delete_node_by_id(self, db: Session, node_id: int) -> bool:
+        return self._writes.delete_node_by_id(db, node_id)
+
     def approve_by_scope(
         self,
         db: Session,

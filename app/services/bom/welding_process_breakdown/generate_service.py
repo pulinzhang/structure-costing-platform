@@ -15,6 +15,11 @@ from decimal import Decimal
 from sqlalchemy.orm import Session
 
 from app.common.audit import AUDIT_APPROVED, AUDIT_PENDING, audit_create
+from app.common.engineering_change_gates import (
+    EC_GATE_FULL_GENERATE,
+    PeriodRoot,
+    snapshot_blocks_full_generate,
+)
 from app.common.timezone import now
 from app.exceptions.base import BusinessException, NotFoundException
 from app.models.bom import BomNode, BomSnapshot, BomWeldingProcessBreakdownNode
@@ -48,6 +53,7 @@ from app.services.bom.welding_process_breakdown.generate_log_service import (
 )
 from app.services.bom.welding_process_breakdown.process_log import ProcessLogBuilder
 from app.services.bom.welding_process_breakdown.rollup import apply_rollup_flags
+from app.services.masterdata.vehicle_model import VehicleModelService
 
 logger = logging.getLogger("service.bom.welding_process_breakdown.generate")
 
@@ -178,6 +184,25 @@ class BomWeldingProcessBreakdownGenerateService:
             bom_nodes = self.node_repository.list_by_snapshot(db, snapshot.id)
             by_id = index_nodes_by_id(bom_nodes)
             children_map = build_children_map(bom_nodes)
+            sop_year, sop_month, _, _ = VehicleModelService().project_sop_period(
+                db, location, vehicle_model
+            )
+            l0_roots = [
+                PeriodRoot(
+                    effective_year=node.effective_year,
+                    effective_month=node.effective_month,
+                    expiry_year=node.expiry_year,
+                    expiry_month=node.expiry_month,
+                )
+                for node in bom_nodes
+                if int(node.level) == 0
+            ]
+            if snapshot_blocks_full_generate(
+                l0_roots,
+                sop_year=sop_year,
+                sop_month=sop_month,
+            ):
+                raise BusinessException(EC_GATE_FULL_GENERATE, code=409)
             weld_candidates = [n for n in bom_nodes if (n.weld_info or "").strip()]
             l0_leaf_without_weld = sum(
                 1
@@ -286,6 +311,50 @@ class BomWeldingProcessBreakdownGenerateService:
             db.rollback()
             logger.exception("生成焊接工艺拆解失败")
             raise
+
+    def insert_for_new_tree(
+        self,
+        db: Session,
+        *,
+        snapshot_id: int,
+        new_l0_id: int,
+        current_user: UserVO,
+    ) -> list[int]:
+        """
+        只拆新树有焊信的节点并插行；bom_version 抄 snapshot 头。
+        不删旧拆解、不 commit。返回新拆解主表 id。
+        """
+        snapshot = self.snapshot_repository.get_by_id(db, snapshot_id)
+        if snapshot is None:
+            raise NotFoundException("未找到对应材料清单")
+        from app.services.bom.bom_service import _collect_subtree
+
+        all_nodes = self.node_repository.list_by_snapshot(db, snapshot_id)
+        new_tree = _collect_subtree(all_nodes, new_l0_id)
+        by_id = index_nodes_by_id(all_nodes)
+        children_map = build_children_map(all_nodes)
+        weld_candidates = [n for n in new_tree if (n.weld_info or "").strip()]
+        audit_fields = audit_create(current_user)
+        created_nodes: list[BomWeldingProcessBreakdownNode] = []
+        source_to_breakdown: dict[int, BomWeldingProcessBreakdownNode] = {}
+        for bom_node in weld_candidates:
+            weld_raw = (bom_node.weld_info or "").strip()
+            breakdown_node, _lines = self._persist_node_with_lines(
+                db,
+                snapshot=snapshot,
+                bom_node=bom_node,
+                by_id=by_id,
+                children_map=children_map,
+                weld_raw=weld_raw,
+                created_by=audit_fields["created_by"],
+                updated_by=audit_fields["updated_by"],
+            )
+            created_nodes.append(breakdown_node)
+            source_to_breakdown[bom_node.id] = breakdown_node
+        if created_nodes:
+            apply_rollup_flags(created_nodes, source_to_breakdown, children_map)
+            db.flush()
+        return [node.id for node in created_nodes]
 
     def mark_log_failed(
         self,

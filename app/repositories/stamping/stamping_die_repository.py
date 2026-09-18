@@ -221,6 +221,18 @@ class StampingDiePartRepository:
         db.flush()
         return int(deleted)
 
+    def delete_by_ids(self, db: Session, part_ids: list[int]) -> int:
+        unique_ids = list(dict.fromkeys(part_ids))
+        if not unique_ids:
+            return 0
+        deleted = (
+            db.query(StampingDiePart)
+            .filter(StampingDiePart.id.in_(unique_ids))
+            .delete(synchronize_session=False)
+        )
+        db.flush()
+        return int(deleted)
+
     def delete_scope(
         self,
         db: Session,
