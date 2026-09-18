@@ -18,6 +18,8 @@ def _node(
     qty: str = "1",
     node_role: str = "structure",
     sort_no: int = 0,
+    seq_no: int | None = None,
+    excel_row: int | None = None,
 ) -> RollupBomNode:
     return RollupBomNode(
         id=node_id,
@@ -28,6 +30,8 @@ def _node(
         qty=Decimal(qty),
         node_role=node_role,
         sort_no=sort_no,
+        seq_no=seq_no,
+        excel_row=excel_row,
     )
 
 
@@ -189,3 +193,64 @@ def test_leaf_root_with_annual_is_purchased_not_bundle() -> None:
     assert result.purchased_amount == Decimal("0.2100")
     assert result.bundle_amount == Decimal("0.0000")
     assert result.lines[0].cost_source == "annual"
+
+
+def test_sorted_children_same_seq_level_before_excel_row() -> None:
+    from app.services.costing.assembly_cost.calc.tree import sorted_children
+
+    deeper = _node(11, parent_id=10, level=2, part_number="L2", seq_no=5, excel_row=10, sort_no=1)
+    shallower = _node(
+        12, parent_id=10, level=1, part_number="L1", seq_no=5, excel_row=99, sort_no=9
+    )
+    children, _by_id = _children([deeper, shallower])
+    ordered = sorted_children(children, 10)
+    assert [node.part_number for node in ordered] == ["L1", "L2"]
+
+
+def test_sorted_children_seq_no_then_level_then_excel_row() -> None:
+    from app.services.costing.assembly_cost.calc.tree import sorted_children
+
+    later_seq = _node(11, parent_id=10, level=0, part_number="A", seq_no=2, excel_row=10, sort_no=1)
+    earlier_seq = _node(
+        12, parent_id=10, level=0, part_number="B", seq_no=1, excel_row=99, sort_no=9
+    )
+    children, _by_id = _children([later_seq, earlier_seq])
+    ordered = sorted_children(children, 10)
+    assert [node.part_number for node in ordered] == ["B", "A"]
+
+
+def test_sorted_children_same_seq_follow_copied_excel_row() -> None:
+    from app.services.costing.assembly_cost.calc.tree import sorted_children
+
+    old_left = _node(11, parent_id=10, level=1, part_number="A", seq_no=5, sort_no=1, excel_row=40)
+    added = _node(99, parent_id=10, level=1, part_number="NEW", seq_no=5, sort_no=8, excel_row=40)
+    old_right = _node(12, parent_id=10, level=1, part_number="B", seq_no=5, sort_no=2, excel_row=50)
+    children, _by_id = _children([old_left, added, old_right])
+    ordered = sorted_children(children, 10)
+    assert [node.part_number for node in ordered] == ["A", "NEW", "B"]
+
+
+def test_sorted_children_same_slot_aa_before_ab() -> None:
+    from app.services.costing.assembly_cost.calc.tree import sorted_children
+
+    rev_ab = _node(
+        1365,
+        parent_id=None,
+        level=0,
+        part_number="551007577AB",
+        seq_no=2,
+        excel_row=5,
+        sort_no=4,
+    )
+    rev_aa = _node(
+        649,
+        parent_id=None,
+        level=0,
+        part_number="551007577AA",
+        seq_no=2,
+        excel_row=7,
+        sort_no=4,
+    )
+    children, _by_id = _children([rev_ab, rev_aa])
+    ordered = sorted_children(children, None)
+    assert [node.part_number for node in ordered] == ["551007577AA", "551007577AB"]

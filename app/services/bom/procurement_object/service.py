@@ -14,6 +14,7 @@ from app.exceptions.base import NotFoundException
 from app.repositories.bom.procurement_object_repository import (
     BomProcurementObjectRepository,
     ProcurementObjectAuditSummary,
+    ProcurementObjectScopeFilters,
     empty_procurement_object_summary,
 )
 from app.schemas.dto.bom_procurement_object_dto import (
@@ -47,7 +48,13 @@ from app.services.bom.procurement_object.generate_log_service import (
 from app.services.bom.procurement_object.generate_service import (
     BomProcurementObjectGenerateService,
 )
-from app.services.bom.procurement_object.mapping import to_object_vo
+from app.services.bom.procurement_object.insert_service import BomProcurementObjectInsertService
+from app.services.bom.procurement_object.mapping import (
+    as_of_when_excluding_expired,
+    row_to_vo,
+    rows_to_vos,
+    scope_from_query,
+)
 from app.services.bom.procurement_object.supplier_upload_service import (
     BomProcurementObjectSupplierUploadService,
 )
@@ -71,6 +78,7 @@ class BomProcurementObjectService:
     def __init__(self) -> None:
         self.repository = BomProcurementObjectRepository()
         self._generate_service = BomProcurementObjectGenerateService()
+        self._insert_service = BomProcurementObjectInsertService()
         self._generate_log_service = BomProcurementObjectGenerateLogService()
         self._audit_service = BomProcurementObjectAuditService()
         self._supplier_upload_service = BomProcurementObjectSupplierUploadService()
@@ -87,6 +95,24 @@ class BomProcurementObjectService:
         current_user: UserVO,
     ) -> BomProcurementObjectGenerateResultVO:
         return self._generate_service.generate(db, dto, current_user)
+
+    def insert_for_new_tree(
+        self,
+        db: Session,
+        *,
+        snapshot_id: int,
+        new_l0_id: int,
+        old_l0_id: int | None,
+        current_user: UserVO,
+    ) -> list[int]:
+        """合册种树后插本树采购对象行（不 commit）。"""
+        return self._insert_service.insert_for_new_tree(
+            db,
+            snapshot_id=snapshot_id,
+            new_l0_id=new_l0_id,
+            old_l0_id=old_l0_id,
+            current_user=current_user,
+        )
 
     def list_generate_logs(
         self,
@@ -125,26 +151,23 @@ class BomProcurementObjectService:
         locations: list[str] | None = None
         supplier_names: list[str] | None = supplier_service.names_for_query(db, query.supplier_name)
         empty_supplier = supplier_names is not None and not supplier_names
+        as_of_year, as_of_month = as_of_when_excluding_expired(query.include_expired)
         if query.location:
             locations = location_service.expand_for_query(db, query.location)
             if not locations:
                 return [], 0, self._list_filters(db, location_service, query, empty=True)
         if empty_supplier:
             return [], 0, self._list_filters(db, location_service, query, empty=True)
+        scope = scope_from_query(
+            query,
+            locations=locations,
+            supplier_names=supplier_names,
+            as_of_year=as_of_year,
+            as_of_month=as_of_month,
+        )
         rows, total = self.repository.paginate_objects(
             db,
-            locations=locations,
-            vehicle_model=query.vehicle_model,
-            bom_version=query.bom_version,
-            section=query.section,
-            object_kind=query.object_kind,
-            confirm_status=query.confirm_status,
-            audit_status=query.audit_status,
-            part_number=query.part_number,
-            l0_part_number=query.l0_part_number,
-            excel_row=query.excel_row,
-            supplier_names=supplier_names,
-            has_supplier=query.has_supplier,
+            scope=scope,
             skip=skip,
             limit=query.size,
         )
@@ -153,9 +176,9 @@ class BomProcurementObjectService:
             location_service,
             query,
             empty=False,
-            locations=locations,
+            scope=scope,
         )
-        return [to_object_vo(row) for row in rows], total, filters
+        return rows_to_vos(db, self.repository, rows), total, filters
 
     def _list_filters(
         self,
@@ -164,28 +187,14 @@ class BomProcurementObjectService:
         query: BomProcurementObjectQuery,
         *,
         empty: bool,
-        locations: list[str] | None = None,
+        scope: ProcurementObjectScopeFilters | None = None,
     ) -> ProcurementObjectListFilters:
         _unused, _models, versions = self.repository.get_filter_options(db)
         if empty:
             summary: ProcurementObjectAuditSummary = empty_procurement_object_summary()
         else:
-            supplier_names = SupplierService().names_for_query(db, query.supplier_name)
-            summary = self.repository.summarize_objects(
-                db,
-                locations=locations,
-                vehicle_model=query.vehicle_model,
-                bom_version=query.bom_version,
-                section=query.section,
-                object_kind=query.object_kind,
-                confirm_status=query.confirm_status,
-                audit_status=query.audit_status,
-                part_number=query.part_number,
-                l0_part_number=query.l0_part_number,
-                excel_row=query.excel_row,
-                supplier_names=supplier_names,
-                has_supplier=query.has_supplier,
-            )
+            assert scope is not None
+            summary = self.repository.summarize_objects(db, scope=scope)
         return {
             "locations": location_service.list_registered(db),
             "vehicle_models": VehicleModelService().list_filter_codes(db, query.location),
@@ -245,7 +254,7 @@ class BomProcurementObjectService:
         row = self.repository.get_object_by_id(db, object_id)
         if row is None:
             raise NotFoundException(f"采购对象不存在: id={object_id}")
-        return to_object_vo(row)
+        return row_to_vo(db, self.repository, row)
 
     def confirm(
         self,
@@ -288,3 +297,37 @@ class BomProcurementObjectService:
         current_user: UserVO,
     ) -> BomProcurementObjectBatchDeleteResultVO:
         return self._audit_service.batch_delete(db, dto, current_user)
+
+    def get_list_id_by_snapshot(self, db: Session, snapshot_id: int) -> int | None:
+        """工程变更：snapshot 上是否已有采购对象清单头。"""
+        header = self.repository.get_list_by_snapshot_id(db, snapshot_id)
+        return header.id if header is not None else None
+
+    def delete_object_for_engineering_change_rollback(self, db: Session, object_id: int) -> None:
+        """工程变更回滚：删未审对象行；已审则 409。只 flush。"""
+        from app.common.audit import AUDIT_APPROVED
+        from app.common.engineering_change_gates import EC_ROLLBACK_BLOCKED
+        from app.exceptions.base import BusinessException
+
+        row = self.repository.get_object_by_id(db, object_id)
+        if row is None:
+            return
+        if row.audit_status == AUDIT_APPROVED:
+            raise BusinessException(EC_ROLLBACK_BLOCKED, code=409)
+        list_id = row.list_id
+        self.repository.delete_object(db, row)
+        header = self.repository.get_list_by_id(db, list_id)
+        if header is not None:
+            self.repository.recount_header_from_rows(db, header)
+
+    def delete_list_if_empty_for_engineering_change_rollback(
+        self, db: Session, list_id: int
+    ) -> None:
+        """工程变更回滚：头下无行则删头。只 flush。"""
+        header = self.repository.get_list_by_id(db, list_id)
+        if header is None:
+            return
+        objects = self.repository.list_objects_by_list_id(db, header.id)
+        if objects:
+            return
+        self.repository.delete_list(db, header)

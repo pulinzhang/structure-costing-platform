@@ -65,11 +65,15 @@ class BomProcurementObjectSupplierChoiceQuery(BaseModel):
 
 
 class BomProcurementObjectQuery(BaseModel):
-    """列表查询。"""
+    """列表查询。档案台账：默认包含已过期；不含已过期时相对墙钟本月问所属 L0 树根。"""
 
     location: str | None = Field(None, max_length=50)
     vehicle_model: str | None = Field(None, max_length=50)
     bom_version: str | None = Field(None, max_length=20)
+    include_expired: bool = Field(
+        True,
+        description="True=包含已过期（默认）；False=不含已过期（墙钟本月仍命中所属树根）",
+    )
     section: str | None = Field(None, max_length=20)
     object_kind: str | None = Field(None, max_length=30)
     confirm_status: str | None = Field(None, max_length=20)
@@ -78,7 +82,7 @@ class BomProcurementObjectQuery(BaseModel):
     l0_part_number: str | None = Field(None, max_length=50)
     excel_row: int | None = Field(None, ge=1)
     supplier_name: str | None = Field(None, max_length=100)
-    has_supplier: bool | None = Field(None, description="True=已指定对方；False=未指定")
+    has_supplier: bool | None = Field(None, description="True=已指定供应商；False=未指定")
     page: int = Field(1, ge=1)
     size: int = Field(20, ge=1, le=200)
 

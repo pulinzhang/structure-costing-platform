@@ -1,4 +1,4 @@
-import { dieListTemplate } from './template.js?v=10';
+import { dieListTemplate } from './template.js?v=11';
 import {
     DEFAULT_PAGE_SIZE,
     bindPagination,
@@ -7,16 +7,7 @@ import {
 } from '../../../../page-size.js?v=3';
 import { setSearchBusy } from '../../../../search-busy.js?v=1';
 import { partShortCodeCellHtml, partNumberNameCellHtml, shortPartNumber } from '../../../../part-identity.js?v=3';
-import {
-    asOfFilterHtml,
-    fillAsOfSelects,
-    fillYearMonthSelects,
-    fmtPeriodRange,
-    periodEditorHtml,
-    readAsOf,
-    readPeriod,
-    wallClockYearMonth,
-} from '../../../common/period-ui.js?v=2';
+import { fmtPeriodRange } from '../../../common/period-ui.js?v=2';
 
 const STORAGE_KEY = 'dieListPageSize';
 
@@ -47,12 +38,6 @@ export const DieListPage = {
         dieState.pageSize = normalizePageSize(localStorage.getItem(STORAGE_KEY));
         if (!this.canDelete) document.getElementById('dieBatchDeleteBtn')?.classList.add('hidden');
         if (!this.canExport) document.getElementById('dieExportBtn')?.classList.add('hidden');
-        const asOfHost = document.getElementById('dieListAsOfFilters');
-        if (asOfHost && !document.getElementById('dieListYear')) {
-            asOfHost.innerHTML = asOfFilterHtml('dieList', { variant: 'die' });
-            const clock = wallClockYearMonth();
-            fillAsOfSelects('dieList', clock.year, clock.month);
-        }
         this.bindEvents();
         bindPagination({
             selectId: 'dieListPageSize',
@@ -145,12 +130,10 @@ export const DieListPage = {
     },
 
     collectListFilters() {
-        const asOf = readAsOf('dieList') || wallClockYearMonth();
         return {
             ...this.collectScope(),
             part_number: document.getElementById('dieListPartNumber')?.value?.trim() || '',
-            year: asOf.year,
-            month: asOf.month,
+            include_expired: true,
         };
     },
 
@@ -199,8 +182,7 @@ export const DieListPage = {
                     location: filters.location,
                     vehicle_model: filters.vehicle_model,
                     part_number: filters.part_number || undefined,
-                    year: filters.year,
-                    month: filters.month,
+                    include_expired: true,
                     page: dieState.page,
                     size: dieState.pageSize,
                 },
@@ -308,14 +290,8 @@ export const DieListPage = {
                 <div class="text-[10px] font-mono text-[#3A3A42] mt-0.5">${esc(part.part_number)}</div>
                 <div class="text-[11px] text-[#555555] mt-0.5">${esc(part.part_name)}</div>
                 <div class="text-[10px] text-[#555555] mt-1">${esc(part.location)} · ${esc(part.vehicle_model)}</div>
-                <div class="text-[10px] text-[#9e9e9e] mt-1">${esc(fmtPeriodRange(part.effective_year, part.effective_month, part.expiry_year, part.expiry_month))}</div>
+                <div class="text-[10px] text-[#555555] mt-0.5">${esc(fmtPeriodRange(part.effective_year, part.effective_month, part.expiry_year, part.expiry_month))}</div>
             </div>
-            ${this.canUpdate ? `<div class="mb-4">${periodEditorHtml('diePeriod')}
-                <button type="button" id="dieSavePeriodBtn"
-                        class="mt-2 inline-flex items-center h-7 px-3 text-[10px] text-[#c8c8c8] border border-[#8a2020] hover:text-white">
-                    保存生失效
-                </button>
-            </div>` : ''}
             <div class="grid grid-cols-3 gap-3 text-[11px] mb-5">
                 <div class="bg-[#111111] border border-[#222222] p-3">
                     <span class="text-[9px] tracking-wider text-[#555555]">模具类型</span>
@@ -365,31 +341,6 @@ export const DieListPage = {
         content.querySelectorAll('button[data-save-ratio]').forEach((btn) => {
             btn.addEventListener('click', () => this.saveRatio(Number(btn.getAttribute('data-save-ratio')), part.id));
         });
-        if (this.canUpdate) {
-            fillYearMonthSelects(
-                'diePeriod',
-                part.effective_year,
-                part.effective_month,
-                part.expiry_year,
-                part.expiry_month,
-            );
-            document.getElementById('dieSavePeriodBtn')?.addEventListener('click', () => {
-                this.savePeriod(part.id);
-            });
-        }
-    },
-
-    async savePeriod(partId) {
-        const period = readPeriod('diePeriod');
-        if (!period) return;
-        try {
-            await HttpClient.patch(`/api/stamping/die/parts/${partId}/period`, period);
-            showToast('已保存生失效', 'success');
-            this.loadList(dieState.page);
-            this.showDetail(partId);
-        } catch (error) {
-            showToast(error.message || '保存失败', 'error');
-        }
     },
 
     async saveRatio(processId, partId) {

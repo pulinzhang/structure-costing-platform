@@ -118,7 +118,7 @@ class Perm:
 
     MENU_BOM_STRUCTURE = "menu:bom-structure"  # 产品结构
     BOM_STRUCTURE_VIEW = "op:bom-structure:view"  # 查看
-    BOM_STRUCTURE_UPDATE = "op:bom-structure:update"  # 改树根生失效
+    BOM_STRUCTURE_UPDATE = "op:bom-structure:update"  # 改生失效
 
     MENU_BOM_WHERE_USED = "menu:bom-where-used"  # 零件用在哪
     BOM_WHERE_USED_VIEW = "op:bom-where-used:view"  # 查看
@@ -230,6 +230,16 @@ class Perm:
     BOM_WELDING_FEE_LIST_APPROVE = "op:bom-welding-fee-list:approve"  # 审核通过
     BOM_WELDING_FEE_LIST_REVERSE = "op:bom-welding-fee-list:reverse"  # 反审核
     BOM_WELDING_FEE_LIST_EXPORT = "op:bom-welding-fee-list:export"  # 导出
+
+    MENU_ENGINEERING_CHANGE = "menu:engineering-change"  # 工程变更
+
+    MENU_ENGINEERING_CHANGE_UPLOAD = "menu:engineering-change-upload"  # 上传工程变更
+    ENGINEERING_CHANGE_UPLOAD_VIEW = "op:engineering-change-upload:view"  # 查看
+    ENGINEERING_CHANGE_UPLOAD_UPLOAD = "op:engineering-change-upload:upload"  # 上传
+
+    MENU_ENGINEERING_CHANGE_ORDER_LIST = "menu:engineering-change-order-list"  # 工程变更单列表
+    ENGINEERING_CHANGE_ORDER_LIST_VIEW = "op:engineering-change-order-list:view"  # 查看
+    ENGINEERING_CHANGE_ORDER_LIST_DELETE = "op:engineering-change-order-list:delete"  # 删除回滚
 
     MENU_YISHIYIYI = "menu:yishiyiyi"  # 一事一议
 

@@ -26,6 +26,7 @@ from app.models.bom.procurement_object_generate_log import (  # noqa: F401
 )
 from app.models.masterdata.location import Location, LocationAlias  # noqa: F401
 from app.models.masterdata.supplier import Supplier, SupplierAlias  # noqa: F401
+from app.models.masterdata.vehicle_model import VehicleModel
 from app.repositories.bom.bom_repository import BomNodeRepository, BomSnapshotRepository
 from app.repositories.masterdata.location.location_repository import LocationRepository
 from app.schemas.dto.bom_dto import BomNodeWrite, BomSnapshotWrite
@@ -36,11 +37,16 @@ from app.schemas.dto.bom_procurement_object_dto import (
     BomProcurementObjectConfirmDTO,
     BomProcurementObjectGenerateDTO,
     BomProcurementObjectGenerateLogQuery,
+    BomProcurementObjectPrepQuery,
     BomProcurementObjectQuery,
+    BomProcurementObjectSupplierDTO,
 )
 from app.schemas.dto.location_dto import LocationAliasInsert, LocationInsert
+from app.schemas.dto.supplier_dto import SupplierCreateDTO
 from app.services.bom.procurement_object.export import BomProcurementObjectExportService
+from app.services.bom.procurement_object.insert_service import BomProcurementObjectInsertService
 from app.services.bom.procurement_object.service import BomProcurementObjectService
+from app.services.masterdata.supplier import SupplierService
 
 
 @pytest.fixture()
@@ -65,6 +71,17 @@ def db() -> Generator[Session, None, None]:
         ),
     )
     repo.create_alias(session, LocationAliasInsert(alias="芜湖基地", location="芜湖"))
+    session.add(
+        VehicleModel(
+            location="芜湖",
+            vehicle_model="T13J",
+            effective_year=2020,
+            effective_month=1,
+            current_supplied_units=0,
+            created_by="system",
+            updated_by="system",
+        )
+    )
     session.flush()
     try:
         yield session
@@ -95,6 +112,7 @@ def _seed_tree(db: Session, *, with_review_rows: bool = False) -> None:
             node_role="supply",
             created_by="tester",
             updated_by="tester",
+            sort_no=0,
             is_supply_unit=True,
             excel_filename="t13j.xlsx",
             excel_row=8,
@@ -111,6 +129,7 @@ def _seed_tree(db: Session, *, with_review_rows: bool = False) -> None:
             node_role="make",
             created_by="tester",
             updated_by="tester",
+            sort_no=1,
             part_name="加强板",
             internal_number="ACA674001",
             thickness_mm=Decimal("0.8000"),
@@ -397,6 +416,8 @@ def test_export_workbook_has_styled_sheets_without_cover(db: Session) -> None:
     assert object_sheet["D6"].value is None
     assert object_sheet["E6"].value == "ACA674001"
     assert object_sheet["U6"].value == "芜湖"
+    assert object_sheet["X5"].value == "生失效"
+    assert object_sheet["X6"].value == "2020年01月 – 未结束"
     assert object_sheet["C6"].font.color.rgb in {"0037474F", "37474F"}
     assert object_sheet["D6"].font.color.rgb in {"001F4E79", "1F4E79"}
     assert object_sheet["E6"].font.color.rgb in {"00808080", "808080"}
@@ -443,3 +464,408 @@ def test_export_merges_same_l0_assembly_cells(db: Session) -> None:
     assert object_sheet["G6"].value == "L0-A"
     assert object_sheet["T6"].value == "t13j.xlsx"
     workbook.close()
+
+
+def test_list_default_includes_expired_and_reads_l0_period(db: Session) -> None:
+    _seed_tree(db)
+    service = BomProcurementObjectService()
+    service.generate(db, _scope(), current_user=SYSTEM_USER)
+    l0 = db.query(BomNode).filter(BomNode.part_number == "L0-A", BomNode.level == 0).one()
+    l0.expiry_year = 2020
+    l0.expiry_month = 6
+    for child in db.query(BomNode).filter(BomNode.parent_id == l0.id).all():
+        child.expiry_year = 2020
+        child.expiry_month = 6
+    db.commit()
+
+    all_items, all_total, _ = service.paginate(
+        db,
+        BomProcurementObjectQuery(location="芜湖", vehicle_model="T13J", bom_version="V3", size=50),
+    )
+    assert all_total == 1
+    assert all_items[0].effective_year == 2020
+    assert all_items[0].effective_month == 1
+    assert all_items[0].expiry_year == 2020
+    assert all_items[0].expiry_month == 6
+
+    active_items, active_total, _ = service.paginate(
+        db,
+        BomProcurementObjectQuery(
+            location="芜湖",
+            vehicle_model="T13J",
+            bom_version="V3",
+            include_expired=False,
+            size=50,
+        ),
+    )
+    assert active_total == 0
+    assert active_items == []
+
+
+def test_list_period_reads_l0_even_when_source_node_differs(db: Session) -> None:
+    """防回归：VO/过期筛只认树根；故意把 L1 四列改成别的也不能当真相。"""
+    _seed_tree(db)
+    service = BomProcurementObjectService()
+    service.generate(db, _scope(), current_user=SYSTEM_USER)
+    l0 = db.query(BomNode).filter(BomNode.part_number == "L0-A", BomNode.level == 0).one()
+    l1 = db.query(BomNode).filter(BomNode.part_number == "L1-STAMP").one()
+    l0.effective_year = 2020
+    l0.effective_month = 1
+    l0.expiry_year = 2021
+    l0.expiry_month = 6
+    l1.effective_year = 2090
+    l1.effective_month = 1
+    l1.expiry_year = 2099
+    l1.expiry_month = 12
+    db.commit()
+
+    items, total, _ = service.paginate(
+        db,
+        BomProcurementObjectQuery(location="芜湖", vehicle_model="T13J", bom_version="V3", size=50),
+    )
+    assert total == 1
+    assert items[0].part_number == "L1-STAMP"
+    assert items[0].effective_year == 2020
+    assert items[0].effective_month == 1
+    assert items[0].expiry_year == 2021
+    assert items[0].expiry_month == 6
+
+
+def test_insert_pair_by_sort_no_not_letter_stem() -> None:
+    """§14.3：换号抄确认按树上同一 sort_no；禁止字母版本同茎猜旧号。"""
+    from types import SimpleNamespace
+
+    from app.services.bom.procurement_object.insert_service import _new_to_old_part_numbers
+
+    def node(
+        *,
+        node_id: int,
+        level: int,
+        parent_id: int | None,
+        part_number: str,
+        sort_no: int,
+    ) -> SimpleNamespace:
+        return SimpleNamespace(
+            id=node_id,
+            level=level,
+            parent_id=parent_id,
+            part_number=part_number,
+            sort_no=sort_no,
+        )
+
+    old_tree = [
+        node(node_id=1, level=0, parent_id=None, part_number="3086AA", sort_no=0),
+        node(node_id=2, level=1, parent_id=1, part_number="PART-AA", sort_no=1),
+        node(node_id=3, level=1, parent_id=1, part_number="OTHER-1", sort_no=2),
+    ]
+    # 同茎 PART-AB 故意放在 sort_no=2；若按字母同茎会错配到 PART-AA
+    new_tree = [
+        node(node_id=11, level=0, parent_id=None, part_number="3086AB", sort_no=0),
+        node(node_id=12, level=1, parent_id=11, part_number="OTHER-2", sort_no=1),
+        node(node_id=13, level=1, parent_id=11, part_number="PART-AB", sort_no=2),
+    ]
+    mapping = _new_to_old_part_numbers(old_tree, new_tree)  # type: ignore[arg-type]
+    assert mapping["3086AB"] == "3086AA"
+    assert mapping["OTHER-2"] == "PART-AA"
+    assert mapping["PART-AB"] == "OTHER-1"
+    assert mapping["PART-AB"] != "PART-AA"
+
+
+def test_insert_for_new_tree_copies_confirm_not_audit(db: Session) -> None:
+    """合册插行：按 sort_no 抄确认与厂家；新行待审；旧已审行仍在。"""
+    _seed_tree(db)
+    service = BomProcurementObjectService()
+    service.generate(db, _scope(), current_user=SYSTEM_USER)
+    SupplierService().create(
+        db,
+        SupplierCreateDTO(
+            abbreviation="常庆",
+            full_name="安庆常庆汽车部件有限公司",
+            erp_code="CQ001",
+        ),
+        current_user=SYSTEM_USER,
+    )
+    items, _, _ = service.paginate(
+        db,
+        BomProcurementObjectQuery(location="芜湖", vehicle_model="T13J", bom_version="V3", size=50),
+    )
+    old_item = items[0]
+    service.confirm(
+        db,
+        old_item.id,
+        BomProcurementObjectConfirmDTO(confirm_status="outsourced", confirm_remark="外发旧树"),
+        current_user=SYSTEM_USER,
+    )
+    service.update_supplier(
+        db,
+        old_item.id,
+        BomProcurementObjectSupplierDTO(supplier_name="安庆常庆汽车部件有限公司"),
+        current_user=SYSTEM_USER,
+    )
+    service.batch_approve(
+        db,
+        BomProcurementObjectBatchApproveDTO(
+            location="芜湖",
+            vehicle_model="T13J",
+            bom_version="V3",
+            audit_remark="旧树已审",
+        ),
+        current_user=SYSTEM_USER,
+    )
+
+    old_l0 = db.query(BomNode).filter(BomNode.part_number == "L0-A", BomNode.level == 0).one()
+    snapshot_id = old_l0.snapshot_id
+    node_repo = BomNodeRepository()
+    new_l0 = node_repo.create(
+        db,
+        BomNodeWrite(
+            snapshot_id=snapshot_id,
+            level=0,
+            part_number="L0-B",
+            node_role="supply",
+            created_by="tester",
+            updated_by="tester",
+            sort_no=0,
+            seq_no=2,
+            is_supply_unit=True,
+            excel_filename="t13j.xlsx",
+            excel_row=30,
+            effective_year=2025,
+            effective_month=7,
+        ),
+    )
+    node_repo.create(
+        db,
+        BomNodeWrite(
+            snapshot_id=snapshot_id,
+            parent_id=new_l0.id,
+            level=1,
+            part_number="L1-STAMP-NEW",
+            node_role="make",
+            created_by="tester",
+            updated_by="tester",
+            sort_no=1,
+            part_name="加强板新",
+            internal_number="ACA674002",
+            thickness_mm=Decimal("0.8000"),
+            thickness_text="T=0.8",
+            excel_filename="t13j.xlsx",
+            excel_row=31,
+            effective_year=2025,
+            effective_month=7,
+        ),
+    )
+    db.flush()
+
+    inserted_ids = BomProcurementObjectInsertService().insert_for_new_tree(
+        db,
+        snapshot_id=snapshot_id,
+        new_l0_id=new_l0.id,
+        old_l0_id=old_l0.id,
+        current_user=SYSTEM_USER,
+    )
+    db.commit()
+    assert len(inserted_ids) == 1
+
+    all_items, total, _ = service.paginate(
+        db,
+        BomProcurementObjectQuery(location="芜湖", vehicle_model="T13J", bom_version="V3", size=50),
+    )
+    assert total == 2
+    by_number = {item.part_number: item for item in all_items}
+    old_row = by_number["L1-STAMP"]
+    new_row = by_number["L1-STAMP-NEW"]
+    assert old_row.audit_status == "approved"
+    assert old_row.confirm_status == "outsourced"
+    assert new_row.id == inserted_ids[0]
+    assert new_row.confirm_status == "outsourced"
+    assert new_row.confirm_remark == "外发旧树"
+    assert new_row.supplier_name == "安庆常庆汽车部件有限公司"
+    assert new_row.audit_status == "pending"
+    assert new_row.l0_part_number == "L0-B"
+
+
+def test_has_supplier_filter(db: Session) -> None:
+    _seed_tree(db)
+    service = BomProcurementObjectService()
+    service.generate(db, _scope(), current_user=SYSTEM_USER)
+    SupplierService().create(
+        db,
+        SupplierCreateDTO(
+            abbreviation="常庆",
+            full_name="安庆常庆汽车部件有限公司",
+            erp_code="CQ001",
+        ),
+        current_user=SYSTEM_USER,
+    )
+    items, _, _ = service.paginate(
+        db,
+        BomProcurementObjectQuery(location="芜湖", vehicle_model="T13J", bom_version="V3", size=50),
+    )
+    service.confirm(
+        db,
+        items[0].id,
+        BomProcurementObjectConfirmDTO(confirm_status="outsourced"),
+        current_user=SYSTEM_USER,
+    )
+    service.update_supplier(
+        db,
+        items[0].id,
+        BomProcurementObjectSupplierDTO(supplier_name="安庆常庆汽车部件有限公司"),
+        current_user=SYSTEM_USER,
+    )
+
+    with_supplier, with_total, _ = service.paginate(
+        db,
+        BomProcurementObjectQuery(
+            location="芜湖",
+            vehicle_model="T13J",
+            bom_version="V3",
+            has_supplier=True,
+            size=50,
+        ),
+    )
+    assert with_total == 1
+    assert with_supplier[0].supplier_name == "安庆常庆汽车部件有限公司"
+
+    without_supplier, without_total, _ = service.paginate(
+        db,
+        BomProcurementObjectQuery(
+            location="芜湖",
+            vehicle_model="T13J",
+            bom_version="V3",
+            has_supplier=False,
+            size=50,
+        ),
+    )
+    assert without_total == 0
+    assert without_supplier == []
+
+
+def test_list_expands_location_alias_export_uses_exact(db: Session) -> None:
+    """列表 expand 别名命中规范名行；导出按请求 location 精确匹配。"""
+    _seed_tree(db)
+    service = BomProcurementObjectService()
+    service.generate(db, _scope(), current_user=SYSTEM_USER)
+
+    listed, total, _ = service.paginate(
+        db,
+        BomProcurementObjectQuery(
+            location="芜湖基地",
+            vehicle_model="T13J",
+            bom_version="V3",
+            size=50,
+        ),
+    )
+    assert total == 1
+    assert listed[0].location == "芜湖"
+
+    content, filename = BomProcurementObjectExportService().export_excel(
+        db,
+        BomProcurementObjectQuery(
+            location="芜湖基地",
+            vehicle_model="T13J",
+            bom_version="V3",
+        ),
+        SYSTEM_USER,
+    )
+    assert "芜湖基地" in filename
+    workbook = load_workbook(BytesIO(content))
+    object_sheet = workbook["采购对象"]
+    # 精确匹配无行：表头下无数据（数据从第 6 行起）
+    assert object_sheet["C6"].value is None
+    workbook.close()
+
+    content_ok, _ = BomProcurementObjectExportService().export_excel(
+        db,
+        BomProcurementObjectQuery(location="芜湖", vehicle_model="T13J", bom_version="V3"),
+        SYSTEM_USER,
+    )
+    workbook_ok = load_workbook(BytesIO(content_ok))
+    assert workbook_ok["采购对象"]["C6"].value == "L1-STAMP"
+    workbook_ok.close()
+
+
+def test_batch_delete_ignores_include_expired_filter(db: Session) -> None:
+    """批量按整份清单打；列表「不含已过期」看不到的行仍会被删。"""
+    _seed_tree(db)
+    service = BomProcurementObjectService()
+    service.generate(db, _scope(), current_user=SYSTEM_USER)
+    l0 = db.query(BomNode).filter(BomNode.part_number == "L0-A", BomNode.level == 0).one()
+    l0.expiry_year = 2020
+    l0.expiry_month = 6
+    for child in db.query(BomNode).filter(BomNode.parent_id == l0.id).all():
+        child.expiry_year = 2020
+        child.expiry_month = 6
+    db.commit()
+
+    _, active_total, _ = service.paginate(
+        db,
+        BomProcurementObjectQuery(
+            location="芜湖",
+            vehicle_model="T13J",
+            bom_version="V3",
+            include_expired=False,
+            size=50,
+        ),
+    )
+    assert active_total == 0
+
+    result = service.batch_delete(
+        db,
+        BomProcurementObjectBatchDeleteDTO(
+            location="芜湖",
+            vehicle_model="T13J",
+            bom_version="V3",
+        ),
+        current_user=SYSTEM_USER,
+    )
+    assert result.deleted_count == 1
+    assert (
+        service.repository.get_list_by_scope(
+            db, location="芜湖", vehicle_model="T13J", bom_version="V3"
+        )
+        is None
+    )
+
+
+def test_generate_normalizes_vehicle_model_case(db: Session) -> None:
+    """§13：干净库精确匹配前 normalize；t13j 与 T13J 同一代号。"""
+    _seed_tree(db)
+    service = BomProcurementObjectService()
+    result = service.generate(
+        db,
+        BomProcurementObjectGenerateDTO(
+            location="芜湖",
+            vehicle_model="t13j",
+            bom_version="V3",
+        ),
+        current_user=SYSTEM_USER,
+    )
+    assert result.object_count == 1
+    prep = service.prep_stats(
+        db,
+        BomProcurementObjectPrepQuery(
+            location="芜湖",
+            vehicle_model="t13j",
+            bom_version="V3",
+        ),
+    )
+    assert prep.object_count == 1
+    assert prep.node_count == 2
+    assert prep.message == ""
+
+
+def test_generate_rejects_vehicle_model_that_normalizes_empty(db: Session) -> None:
+    """§13：normalize 后空代号 → 项目代号无效（禁止靠 expand 猜）。"""
+    _seed_tree(db)
+    with pytest.raises(BusinessException, match="项目代号无效"):
+        BomProcurementObjectService().generate(
+            db,
+            BomProcurementObjectGenerateDTO(
+                location="芜湖",
+                vehicle_model="青岛",
+                bom_version="V3",
+            ),
+            current_user=SYSTEM_USER,
+        )

@@ -3,14 +3,13 @@
 from sqlalchemy.orm import Session
 
 from app.common.audit import audit_update
-from app.common.period import resolve_as_of_month, validate_period
+from app.common.period import resolve_as_of_month
 from app.common.vehicle_model import normalize_vehicle_model
 from app.exceptions.base import BusinessException, NotFoundException
 from app.repositories.stamping.stamping_die_repository import (
     StampingDiePartRepository,
     StampingDieProcessRepository,
 )
-from app.schemas.dto.period_dto import EffectivePeriodUpdateDTO
 from app.schemas.dto.stamping_die_dto import (
     StampingDieAllocRatioUpdate,
     StampingDiePartQuery,
@@ -26,6 +25,21 @@ from app.schemas.vo.stamping_die_vo import (
 from app.schemas.vo.user_vo import UserVO
 from app.services.masterdata.location.location_service import LocationService
 from app.services.masterdata.vehicle_model import VehicleModelService
+from app.services.stamping.die.engineering_change import (
+    EngineeringChangeDieAsOfRow,
+    EngineeringChangeDiePartResult,
+    EngineeringChangeDiePartSpec,
+    clone_revise_die_spec,
+)
+from app.services.stamping.die.engineering_change import (
+    insert_for_engineering_change as insert_for_engineering_change_fn,
+)
+from app.services.stamping.die.engineering_change import (
+    list_parts_as_of as list_parts_as_of_fn,
+)
+from app.services.stamping.die.engineering_change import (
+    rollback_engineering_change_part as rollback_engineering_change_part_fn,
+)
 
 
 class StampingDieService:
@@ -99,35 +113,6 @@ class StampingDieService:
             raise NotFoundException(f"模具零件不存在: id={part_id}")
         return StampingDiePartDetailVO.model_validate(part)
 
-    def patch_period(
-        self,
-        db: Session,
-        part_id: int,
-        dto: EffectivePeriodUpdateDTO,
-        current_user: UserVO,
-    ) -> StampingDiePartDetailVO:
-        part = self.die_part_repo.get_by_id(db, part_id)
-        if not part:
-            raise NotFoundException(f"模具零件不存在: id={part_id}")
-        validate_period(
-            dto.effective_year,
-            dto.effective_month,
-            dto.expiry_year,
-            dto.expiry_month,
-        )
-        part.effective_year = dto.effective_year
-        part.effective_month = dto.effective_month
-        part.expiry_year = dto.expiry_year
-        part.expiry_month = dto.expiry_month
-        part.updated_by = audit_update(current_user)["updated_by"]
-        try:
-            db.commit()
-            db.refresh(part)
-            return StampingDiePartDetailVO.model_validate(part)
-        except Exception:
-            db.rollback()
-            raise
-
     def update_alloc_ratio(
         self,
         db: Session,
@@ -162,3 +147,100 @@ class StampingDieService:
             db.rollback()
             raise
         return StampingDieBatchDeleteResultVO(deleted_parts=deleted)
+
+    def list_parts_as_of_for_engineering_change(
+        self,
+        db: Session,
+        *,
+        location: str,
+        vehicle_model: str,
+        as_of_year: int,
+        as_of_month: int,
+    ) -> list[EngineeringChangeDieAsOfRow]:
+        """工程变更：当月命中布点零件号。"""
+        return list_parts_as_of_fn(
+            self.die_part_repo,
+            db,
+            location=location,
+            vehicle_model=vehicle_model,
+            as_of_year=as_of_year,
+            as_of_month=as_of_month,
+        )
+
+    def clone_revise_for_engineering_change(
+        self,
+        db: Session,
+        *,
+        predecessor_id: int,
+        new_part_number: str,
+        version: str | None,
+        effective_year: int,
+        effective_month: int,
+        expiry_year: int | None,
+        expiry_month: int | None,
+        predecessor_expiry_year: int | None,
+        predecessor_expiry_month: int | None,
+        created_by: str,
+        updated_by: str,
+    ) -> EngineeringChangeDiePartSpec:
+        """工程变更改图：整行抄旧布点（含工序 alloc_ratio）。"""
+        old_part = self.die_part_repo.get_by_id(db, predecessor_id)
+        if old_part is None:
+            raise NotFoundException(f"变更前模具零件不存在: id={predecessor_id}")
+        return clone_revise_die_spec(
+            old_part,
+            new_part_number=new_part_number,
+            version=version,
+            effective_year=effective_year,
+            effective_month=effective_month,
+            expiry_year=expiry_year,
+            expiry_month=expiry_month,
+            predecessor_expiry_year=predecessor_expiry_year,
+            predecessor_expiry_month=predecessor_expiry_month,
+            created_by=created_by,
+            updated_by=updated_by,
+        )
+
+    def list_die_numbers_for_scope(
+        self,
+        db: Session,
+        *,
+        location: str,
+        vehicle_model: str,
+    ) -> list[str]:
+        return self.die_process_repo.list_die_numbers_for_scope(
+            db, location=location, vehicle_model=vehicle_model
+        )
+
+    def insert_for_engineering_change(
+        self,
+        db: Session,
+        specs: list[EngineeringChangeDiePartSpec],
+        current_user: UserVO,
+    ) -> list[EngineeringChangeDiePartResult]:
+        """工程变更合册按号插布点零件（不 commit）。"""
+        return insert_for_engineering_change_fn(
+            self.die_part_repo,
+            self.die_process_repo,
+            db,
+            specs,
+            current_user,
+        )
+
+    def rollback_engineering_change_part(
+        self,
+        db: Session,
+        *,
+        after_part_id: int | None,
+        before_part_id: int | None,
+        current_user: UserVO,
+    ) -> None:
+        """工程变更回滚布点零件（不 commit）。"""
+        rollback_engineering_change_part_fn(
+            self.die_part_repo,
+            self.die_process_repo,
+            db,
+            after_part_id=after_part_id,
+            before_part_id=before_part_id,
+            current_user=current_user,
+        )

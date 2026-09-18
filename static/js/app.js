@@ -13,7 +13,7 @@
  * 入口 URL 的 query 串驱动整体刷新；每次脚本更新后需要同步递增 ?v= 版本号。
  */
 
-import { pageMeta } from './features/index.js?v=44';
+import { pageMeta } from './features/index.js?v=45';
 
 // 页面导入（路径与 index.html 菜单树 / features 目录对齐）
 import { getUserSession, initUserMenu, startTokenHeartbeat, updateUserSession } from './features/login/index.js?v=15';
@@ -25,9 +25,9 @@ import {
 import { bootLlmAssistant } from './llm-assistant/boot.js?v=36';
 import { pageConfig as dashboardPage }      from './features/dashboard/index.js?v=12';
 import { pageConfig as stampingUploadPage } from './features/stamping/process/upload/index.js?v=63';
-import { pageConfig as stampingPartsPage }  from './features/stamping/process/parts/index.js?v=56';
+import { pageConfig as stampingPartsPage }  from './features/stamping/process/parts/index.js?v=58';
 import { pageConfig as stampingDieUploadPage } from './features/stamping/die/upload/index.js?v=15';
-import { pageConfig as stampingDieListPage } from './features/stamping/die/list/index.js?v=19';
+import { pageConfig as stampingDieListPage } from './features/stamping/die/list/index.js?v=21';
 import { pageConfig as stampingDieUnitPricePage } from './features/stamping/die/unit-price/index.js?v=10';
 import { pageConfig as stampingDieFeeCalcPage } from './features/stamping/die-fee/calc/index.js?v=20';
 import { pageConfig as stampingDieFeePage } from './features/stamping/die-fee/list/index.js?v=17';
@@ -51,10 +51,10 @@ import { pageConfig as basePriceDownloadPage } from './features/yishiyiyi/base-p
 import { pageConfig as winningThicknessDownloadPage } from './features/yishiyiyi/winning-thickness/list/index.js?v=18';
 import { pageConfig as steelGradeCategoryPage } from './features/masterdata/steel-grade-category/index.js?v=7';
 import { pageConfig as scrapPricePage } from './features/yishiyiyi/scrap-price/index.js?v=22';
-import { pageConfig as bomStructurePage }  from './features/bom/material/structure/index.js?v=11';
+import { pageConfig as bomStructurePage }  from './features/bom/material/structure/index.js?v=14';
 import { pageConfig as bomWhereUsedPage } from './features/bom/material/where-used/index.js?v=14';
-import { pageConfig as bomVizPage }        from './features/bom/material/viz/index.js?v=31';
-import { pageConfig as bomUploadPage }     from './features/bom/material/upload/index.js?v=15';
+import { pageConfig as bomVizPage }        from './features/bom/material/viz/index.js?v=34';
+import { pageConfig as bomUploadPage }     from './features/bom/material/upload/index.js?v=16';
 import { pageConfig as bomMaterialListPage } from './features/bom/material/list/index.js?v=9';
 import { pageConfig as bomWeldingUnitPriceUploadPage } from './features/bom/welding-unit-price/upload/index.js?v=14';
 import { pageConfig as bomWeldingUnitPricePage } from './features/bom/welding-unit-price/list/index.js?v=20';
@@ -63,12 +63,14 @@ import { pageConfig as bomAnnualPartPricePage } from './features/bom/annual-part
 import { pageConfig as bomPackagingTransportFeeUploadPage } from './features/bom/packaging-transport-fee/upload/index.js?v=9';
 import { pageConfig as bomPackagingTransportFeePage } from './features/bom/packaging-transport-fee/list/index.js?v=13';
 import { pageConfig as bomProcurementObjectGeneratePage } from './features/bom/procurement-object/generate/index.js?v=9';
-import { pageConfig as bomProcurementObjectListPage } from './features/bom/procurement-object/list/index.js?v=26';
+import { pageConfig as bomProcurementObjectListPage } from './features/bom/procurement-object/list/index.js?v=30';
 import { pageConfig as bomProcurementObjectSupplierUploadPage } from './features/bom/procurement-object/supplier-upload/index.js?v=8';
 import { pageConfig as bomWeldingProcessBreakdownGeneratePage } from './features/bom/welding-process-breakdown/generate/index.js?v=10';
 import { pageConfig as bomWeldingProcessBreakdownListPage } from './features/bom/welding-process-breakdown/list/index.js?v=46';
 import { pageConfig as bomWeldingFeeCalcPage } from './features/bom/welding-fee/calc/index.js?v=15';
 import { pageConfig as bomWeldingFeeListPage } from './features/bom/welding-fee/list/index.js?v=16';
+import { pageConfig as engineeringChangeUploadPage } from './features/engineering-change/upload/index.js?v=12';
+import { pageConfig as engineeringChangeListPage } from './features/engineering-change/list/index.js?v=10';
 import { pageConfig as costingPage }        from './features/costing/engine/index.js?v=37';
 import { pageConfig as fileTracePage }       from './features/file-trace/index.js?v=10';
 import { pageConfig as locationPage }        from './features/masterdata/location/index.js?v=7';
@@ -135,6 +137,8 @@ const pages = {
     'bom-welding-process-breakdown-list': bomWeldingProcessBreakdownListPage,
     'bom-welding-fee-calc': bomWeldingFeeCalcPage,
     'bom-welding-fee-list': bomWeldingFeeListPage,
+    'engineering-change-upload': engineeringChangeUploadPage,
+    'engineering-change-order-list': engineeringChangeListPage,
     costing:          costingPage,
     'file-trace':     fileTracePage,
     location:         locationPage,

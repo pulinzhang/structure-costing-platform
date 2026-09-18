@@ -39,6 +39,11 @@ from app.models.costing import (
     SteelPrice,
     SteelPriceCalcLog,
 )
+from app.models.engineering_change import (
+    EngineeringChangeEffectLink,
+    EngineeringChangeOrder,
+    EngineeringChangeUploadLog,
+)
 from app.models.file_trace import UploadFile
 from app.models.llm import LlmAnalysisReport
 from app.models.masterdata import (
@@ -102,6 +107,9 @@ __all__ = [
     "BomWeldingUnitPrice",
     "CostingEngineRun",
     "CostingEngineRunStep",
+    "EngineeringChangeOrder",
+    "EngineeringChangeEffectLink",
+    "EngineeringChangeUploadLog",
     "LlmAnalysisReport",
     "Location",
     "LocationAlias",

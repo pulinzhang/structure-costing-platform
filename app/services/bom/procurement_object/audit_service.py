@@ -11,7 +11,10 @@ from app.common.audit import AUDIT_APPROVED, AUDIT_PENDING, display_name
 from app.common.timezone import now
 from app.exceptions.base import BusinessException, NotFoundException
 from app.models.bom.procurement_object import BomProcurementObjectList
-from app.repositories.bom.procurement_object_repository import BomProcurementObjectRepository
+from app.repositories.bom.procurement_object_repository import (
+    BomProcurementObjectRepository,
+    object_scope_filters,
+)
 from app.schemas.dto.bom_procurement_object_dto import (
     BomProcurementObjectBatchApproveDTO,
     BomProcurementObjectBatchDeleteDTO,
@@ -26,7 +29,7 @@ from app.schemas.vo.bom_procurement_object_vo import (
 )
 from app.schemas.vo.user_vo import UserVO
 from app.services.bom.procurement_object.classify import SECTION_OBJECT
-from app.services.bom.procurement_object.mapping import to_object_vo
+from app.services.bom.procurement_object.mapping import row_to_vo
 from app.services.masterdata.supplier import SupplierService
 
 logger = logging.getLogger("service.bom.procurement_object.audit")
@@ -82,7 +85,7 @@ class BomProcurementObjectAuditService:
             db.rollback()
             logger.exception("确认采购对象失败")
             raise
-        return to_object_vo(row)
+        return row_to_vo(db, self.repository, row)
 
     def update_supplier(
         self,
@@ -123,7 +126,7 @@ class BomProcurementObjectAuditService:
             db.rollback()
             logger.exception("更新采购对象供应商失败")
             raise
-        return to_object_vo(row)
+        return row_to_vo(db, self.repository, row)
 
     def batch_approve(
         self,
@@ -181,11 +184,13 @@ class BomProcurementObjectAuditService:
             )
             skipped = self.repository.summarize_objects(
                 db,
-                location=header.location,
-                vehicle_model=header.vehicle_model,
-                bom_version=header.bom_version,
-                section=SECTION_OBJECT,
-                audit_status=AUDIT_PENDING,
+                scope=object_scope_filters(
+                    location=header.location,
+                    vehicle_model=header.vehicle_model,
+                    bom_version=header.bom_version,
+                    section=SECTION_OBJECT,
+                    audit_status=AUDIT_PENDING,
+                ),
             )["pending_count"]
             db.commit()
         except Exception:

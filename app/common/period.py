@@ -87,6 +87,13 @@ def resolve_as_of_month(year: int | None, month: int | None) -> tuple[int, int]:
     return year, month
 
 
+def previous_month(year: int, month: int) -> tuple[int, int]:
+    """上一个月（工程变更切点：生效月的前一月）。"""
+    if month <= 1:
+        return year - 1, 12
+    return year, month - 1
+
+
 def require_export_as_of(year: int | None, month: int | None) -> tuple[int, int]:
     """从库里按命中倒出的导出：前端必须给出年+月。"""
     if year is None or month is None:

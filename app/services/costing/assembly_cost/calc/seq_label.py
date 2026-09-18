@@ -16,6 +16,7 @@ from app.services.bom.procurement_object.classify import SECTION_OBJECT
 from app.services.costing.procurement_contract_report.assemble import (
     PrepRow,
     assign_seq_labels,
+    prep_fields_from_node,
     seq_sort_key,
 )
 from app.services.costing.procurement_contract_report.qty import l0_node_of
@@ -35,7 +36,7 @@ def calc_card_seq_labels(
         l0 = l0_node_of(item.source_node_id, nodes_by_id)
         l0_node_id = l0.id if l0 is not None else item.source_node_id
         l0_seq_no = l0.seq_no if l0 is not None else None
-        sort_no = node.sort_no if node is not None else (item.excel_row or 0)
+        level, excel_row, sort_no = prep_fields_from_node(node, fallback_excel_row=item.excel_row)
         po_rows.append(
             PrepRow(
                 source_node_id=item.source_node_id,
@@ -48,6 +49,8 @@ def calc_card_seq_labels(
                 l0_part_number=item.l0_part_number,
                 l0_seq_no=l0_seq_no,
                 sort_no=sort_no,
+                excel_row=excel_row,
+                level=level,
                 vehicle_qty=Decimal("0"),
                 month_amounts=[],
             )

@@ -100,14 +100,19 @@ class StampingDieExportService:
         part_number: str | None = None,
         year: int | None = None,
         month: int | None = None,
+        include_expired: bool = False,
         current_user: UserVO,
     ) -> tuple[bytes, str]:
         loc = (location or "").strip()
         vehicle = normalize_vehicle_model(vehicle_model) or ""
         if not loc or not vehicle:
             raise BusinessException("导出须选择基地和项目")
-        as_of_year, as_of_month = require_export_as_of(year, month)
-        period_label = format_period(as_of_year, as_of_month)
+        if include_expired:
+            as_of_year, as_of_month = None, None
+            period_label = "全部"
+        else:
+            as_of_year, as_of_month = require_export_as_of(year, month)
+            period_label = format_period(as_of_year, as_of_month)
         part_filter = (part_number or "").strip() or None
         parts = self.repository.list_for_export(
             db,
@@ -116,6 +121,7 @@ class StampingDieExportService:
             part_number=part_filter,
             as_of_year=as_of_year,
             as_of_month=as_of_month,
+            include_expired=include_expired,
         )
 
         workbook = Workbook()

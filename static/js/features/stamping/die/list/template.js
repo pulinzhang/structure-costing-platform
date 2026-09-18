@@ -52,7 +52,6 @@ export function dieListTemplate() {
                             <input id="dieListPartNumber" type="text" placeholder="可选"
                                    class="h-9 min-w-[140px] px-3 text-xs bg-[#0a0a0a] border border-[#2c2c2c] text-[#ffffff] placeholder:text-[#616161] focus:outline-none focus:border-[#ff5252]">
                         </label>
-                        <div id="dieListAsOfFilters" class="flex items-end gap-2"></div>
                         <button id="dieListSearchBtn" type="button"
                                 class="inline-flex items-center gap-1.5 h-9 px-3 text-[11px] font-semibold rounded-sm text-[#c8c8c8] border border-[#8a2020] hover:text-white"
                                 style="background: linear-gradient(180deg, #3d1515 0%, #2d0f0f 100%);">

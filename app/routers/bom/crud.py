@@ -14,7 +14,6 @@ from app.schemas.dto.bom_dto import (
     BomSnapshotCreate,
     BomSnapshotQuery,
 )
-from app.schemas.dto.period_dto import EffectivePeriodUpdateDTO
 from app.schemas.vo.bom_vo import (
     BomCascadeFilterOptionsVO,
     BomNodeTreeVO,
@@ -51,6 +50,8 @@ _bom_cascade_read = require_any_perm(
     Perm.BOM_ANNUAL_PART_PRICE_VIEW,
     Perm.PROCUREMENT_CONTRACT_REPORT_VIEW,
     Perm.BOM_WHERE_USED_VIEW,
+    Perm.ENGINEERING_CHANGE_UPLOAD_VIEW,
+    Perm.ENGINEERING_CHANGE_ORDER_LIST_VIEW,
 )
 
 
@@ -181,20 +182,6 @@ def create_node(
 ) -> ApiResponse[BomNodeVO]:
     row = _bom_service.create_node(db, snapshot_id, body, current_user=current_user)
     return ApiResponse.created(data=row, message="节点创建成功")
-
-
-@router.patch(
-    "/nodes/{node_id}",
-    response_model=ApiResponse[BomNodeVO],
-)
-def patch_node_period(
-    node_id: int,
-    body: EffectivePeriodUpdateDTO,
-    db: Session = Depends(get_db),
-    current_user: UserVO = Depends(require_perm(Perm.BOM_STRUCTURE_UPDATE)),
-) -> ApiResponse[BomNodeVO]:
-    row = _bom_service.patch_node_period(db, node_id, body, current_user=current_user)
-    return ApiResponse.updated(data=row, message="已保存生失效")
 
 
 @router.delete(

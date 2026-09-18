@@ -19,6 +19,11 @@ export function fmtPeriodRange(effectiveYear, effectiveMonth, expiryYear, expiry
     return `${start} – ${end}`;
 }
 
+/** 开始月、到期月都有 = 已被工程变更切过，列表用红字。 */
+export function hasClosedPeriod(effectiveYear, effectiveMonth, expiryYear, expiryMonth) {
+    return Boolean(effectiveYear && effectiveMonth && expiryYear && expiryMonth);
+}
+
 export function wallClockYearMonth() {
     const clock = new Date();
     return { year: clock.getFullYear(), month: clock.getMonth() + 1 };

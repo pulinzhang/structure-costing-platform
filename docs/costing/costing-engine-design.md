@@ -20,7 +20,7 @@
 |---|---|---|
 | R1 | 入口三参数 | 仅 `location`（基地）、`year`、`month` |
 | R2 | 上传/配置缺失 → 硬停 | 见 §5.1；含 **基准价**；覆盖不全视为缺失。缺工艺 / 缺 BOM 为黄灯，不挡另一条路径 |
-| R3 | 年度计算所得缺失 → 自动补算 | 加工费、焊接工艺拆解、L0 焊接费（`levels=[0]`） |
+| R3 | 年度计算所得缺失 → 自动补算 | 加工费、焊接工艺拆解、L0 焊接费（`levels=[0]`）。现网缺拆解仍调 generate。**合册落地时** 缺新树拆解不得调现网整包 `generate`（会掐断已失效树），走 [工程变更合册](../engineering-change/part-number-revision-design.md) |
 | R4 | 同项目多 BOM 版本的树，只要该月有效就进总成核价 | 总成按项目算一次，不要按版本拆多趟；焊接年度补算仍可按 L0Scope |
 | R5 | 不改公式 | 复用现有 Orchestrator；合册只导出不算价 |
 | R6 | 前端单通道异步 | 一次 `task_id` + 与现网同形的进度 VO |
@@ -131,7 +131,7 @@ CostingEngineService                 ← 编排唯一入口
 | 结果 | 触发粒度 | 依赖（须已过 5.1） |
 |---|---|---|
 | 冲压加工费 | 每个 **已有冲压工艺** 的 `vehicle_model`（工厂空则覆盖该车各厂） | 工艺 + 冲次单价；无工艺的项目不列入、不补算 |
-| 焊接工艺拆解 | 每个 L0Scope（该年与节点有效期有交集） | BOM + 焊接单价等；无该月命中 L0 则无 L0Scope，不判焊接费 |
+| 焊接工艺拆解 | 每个 L0Scope（该年与节点有效期有交集） | BOM + 焊接单价等；无该月命中 L0 则无 L0Scope，不判焊接费。年交集已齐则跳过。现网缺拆解仍调 generate。**合册落地时** 该 snapshot 已有失效树根则禁止整包 generate 补新树；缺拆解走工程变更合册 |
 | 成品 L0 焊接费 | 每个 L0Scope | 拆解结果；覆盖检查只问该年有效期内节点 |
 
 规则：
@@ -139,6 +139,7 @@ CostingEngineService                 ← 编排唯一入口
 - 仅当该 scope **尚无可用结果** 时补算  
 - 已有结果（含已审核）→ **默认不重算、不覆盖**  
 - 补算失败 → 仅阻断依赖它的下游单元，记入 step  
+- `annual_welding_breakdown`：现网缺拆解仍调 `POST /api/bom/welding-process-breakdown/generate`。**合册落地时**：snapshot 一旦有已失效树根，不得再调这条（整林覆盖）。合册已插新树拆解则视为齐；缺则硬停并跳转工程变更，不要用现网 generate 顶上。见 [合册 §4.6](../engineering-change/part-number-revision-design.md)。  
 
 ### 5.3 硬停 → 功能页快速跳转（必做）
 
@@ -217,7 +218,7 @@ L0Scope      = (location, year, month, vehicle_model, bom_version)
 ### 6.2 发现规则
 
 1. **项目**：先该基地该月 **冲压零件月命中** 的 `vehicle_model` ∪ **L0 节点月命中** 的 `vehicle_model`（`as_of_vehicle_models`），再留下 `list_introducible(账期年, 月)` 里的。项目该月已失效 → **不进计划**（即使对象失效为空）。**仅有冲压工艺且项目期覆盖该月的项目**进入加工费补算与 PartCost 计划（一车多厂一次算完）。as_of 两边都空则 `has_path=false`，去零件列表 / 产品结构。as_of 有件但项目期裁空：门禁 code `vehicle_model_period`，去 `#/vehicle-model-list`。  
-2. **L0Scope**：该基地下含 **该月命中 L0** 的 BOM 快照 `(vehicle_model, bom_version)` 全部进入焊接年度计划（多版本可逐个补算）。总成核价仍按项目一次跑完该月有效树。无该月命中 L0 则不进入焊接拆解 / 焊接费 / 总成。  
+2. **L0Scope**：该基地下含 **该月命中 L0** 的 BOM 快照 `(vehicle_model, bom_version)` 全部进入焊接年度计划（多版本可逐个补算）。`bom_version` 取 **snapshot 头**，不是节点变更字（**不改发现键**）。总成核价仍按项目一次跑完该月有效树。无该月命中 L0 则不进入焊接拆解 / 焊接费 / 总成。合册落地后补拆解见 §5.2，不要按头版本去整包 generate。  
 3. **地点规范化**：由 `LocationService.expand_for_query` 展开规范名与别名（如「青岛」/「青岛基地」），门禁与发现用同一套，避免假缺失。引擎 `get_ready` / `start_run` 先 `require_enabled`，只写入规范名。
 
 ### 6.3 与合册参数对齐
@@ -613,3 +614,5 @@ can_start: bool   # = not hard_stop 且存在可执行路径（该月命中冲�
 | 2026-09-16 | 总成核价阶段按项目一次跑完该月有效期内各版本树，不再逐 BOM 版本拆趟 |
 | 2026-09-16 | 引擎发现 as_of 之后再按 `list_introducible` 裁项目月；空名单分无件 vs 项目停（`vehicle_model_period`） |
 | 2026-09-16 | 检查就绪焊接年度覆盖只问该年有效期内节点，快照里已过期树不挡补算判断 |
+| 2026-09-16 | 设变后 `annual_welding_breakdown` 不得调现网整包 generate；缺新树拆解走工程变更合册。L0Scope 的 `bom_version` 取 snapshot 头。 |
+| 2026-09-17 | 收口：不得调 generate 是 **合册落地时** 才改的门禁；发现键 `bom_version`=snapshot 头保持现网。落地前缺拆解仍自动 generate。 |

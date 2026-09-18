@@ -1,24 +1,17 @@
-"""冲压工艺上传：落盘文件/简图，以及零件/工序写库。"""
+"""冲压零件 / 工序写库。只 flush，不 commit。"""
 
 from __future__ import annotations
 
 import logging
 from decimal import Decimal
-from pathlib import Path
 
 from sqlalchemy.orm import Session
 
 from app.common.audit import audit_create, display_name
 from app.common.period import SOP_NEW_NUMBER_REJECT
-from app.common.timezone import now
-from app.config import settings
 from app.exceptions.base import BusinessException
 from app.parsers.stamping.models.part import Part
 from app.parsers.stamping.models.process import Process
-from app.parsers.stamping.models.tailor_weld import (
-    TailorWeldAssemblyParsed,
-    TailorWeldBlankParsed,
-)
 from app.repositories.persist import apply_payload_fields
 from app.repositories.stamping.stamping_repository import (
     StampingPartRepository,
@@ -26,90 +19,10 @@ from app.repositories.stamping.stamping_repository import (
 )
 from app.schemas.dto.stamping_upload_dto import FileInfo, PartData, ProcessData
 from app.schemas.vo.user_vo import UserVO
-from app.services.masterdata.steel_grade_category import SteelGradeCategoryService
 from app.services.masterdata.supplier import SupplierService
 from app.services.masterdata.vehicle_model import VehicleModelService
 
 logger = logging.getLogger("service.stamping_upload")
-
-
-def canonicalize_materials(
-    db: Session,
-    parts: list[Part],
-    assemblies: list[TailorWeldAssemblyParsed],
-) -> None:
-    holders: list[Part | TailorWeldAssemblyParsed | TailorWeldBlankParsed] = [*parts]
-    for assembly in assemblies:
-        holders.append(assembly)
-        holders.extend(assembly.blanks)
-    bound = SteelGradeCategoryService().bind_stored_grades(
-        db,
-        [holder.material for holder in holders],
-    )
-    for holder, grade in zip(holders, bound, strict=True):
-        holder.material = grade
-
-
-def save_file(
-    file_content: bytes,
-    filename: str,
-    location: str,
-    vehicle_model: str,
-    version: str,
-) -> FileInfo:
-    """保存上传文件到磁盘，返回文件信息"""
-    safe_location = location.replace("/", "_").replace("\\", "_")
-    safe_vehicle = vehicle_model.replace("/", "_").replace("\\", "_")
-    safe_version = version.replace("/", "_").replace("\\", "_").replace(" ", "_")
-    timestamp_str = now().strftime("%H%M%S")
-    new_filename = f"{safe_location}_{safe_vehicle}_{safe_version}_{timestamp_str}_{filename}"
-
-    upload_subdir = settings.UPLOAD_DIR / safe_location / safe_vehicle / safe_version
-    upload_subdir.mkdir(parents=True, exist_ok=True)
-    file_path = upload_subdir / new_filename
-
-    with open(file_path, "wb") as f:
-        f.write(file_content)
-
-    logger.info("文件保存成功: %s", file_path)
-
-    return FileInfo(
-        file_path=str(file_path),
-        new_filename=new_filename,
-        safe_location=safe_location,
-        safe_vehicle=safe_vehicle,
-        safe_version=safe_version,
-        upload_subdir=str(upload_subdir),
-    )
-
-
-def save_part_images(
-    images_by_part: dict[str, bytes],
-    target_dir: str,
-) -> int:
-    """保存零件简图到磁盘"""
-    if not images_by_part:
-        return 0
-
-    target_path = Path(target_dir)
-    target_path.mkdir(parents=True, exist_ok=True)
-    saved = 0
-    for part_number, img_bytes in images_by_part.items():
-        if not part_number or not img_bytes:
-            continue
-        safe_name = "".join(c if c.isalnum() or c in ("_", "-") else "_" for c in str(part_number))
-        if not safe_name:
-            continue
-        img_path = target_path / f"{safe_name}.png"
-        try:
-            with open(img_path, "wb") as f:
-                f.write(img_bytes)
-            saved += 1
-        except Exception as e:
-            logger.warning("保存零件简图失败 %s: %s", part_number, e)
-
-    logger.info("零件简图落盘: %d/%d -> %s", saved, len(images_by_part), target_dir)
-    return saved
 
 
 def save_parts(
@@ -127,7 +40,7 @@ def save_parts(
     *,
     current_user: UserVO,
 ) -> dict[str, int]:
-    """保存零件数据到数据库，返回 part_number -> part_id 映射"""
+    """保存零件数据到数据库，返回 part_number -> part_id 映射。"""
     tailor_parents = tailor_parent_numbers or set()
     swing_shear_parts = swing_shear_part_numbers or set()
     location = file_info.safe_location
@@ -243,7 +156,7 @@ def save_processes(
     part_map: dict[str, int],
     current_user: UserVO,
 ) -> int:
-    """保存工序数据到数据库"""
+    """保存工序数据到数据库。"""
     audit = audit_create(current_user)
     processes_to_create: list[ProcessData] = []
     part_order_counter: dict[str, int] = {}

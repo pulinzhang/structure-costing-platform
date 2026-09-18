@@ -1,19 +1,19 @@
 # 冲压工艺上传（`upload/`）
 
-解析 Excel、落盘、写零件/工序。主数据单一大事务；进度写辅助库。
+入口在本包根：`upload_service`（门面）、`start_upload`（入队）、`template_builder`（下载模板）。
+编排在 `orchestrator/`；校验帮手在 `gates/`；flush 适配在 `persist/`。
 
-对外入口：`StampingUploadService`（`stamping_upload.py`）。
+对外入口：`StampingUploadService`（`upload_service.py`）。Router 只依赖本类。
 
 ## 架构
 
-门面入队；`orchestrate` 校验范围并提交事务；`persist` 写文件与库。
-
-## 职责
-
-| 模块 | 职责 |
+| 层 | 职责 |
 |------|------|
-| `stamping_upload.py` | 异步入队、对外入口 |
-| `orchestrate.py` | 解析后校验范围、进度、提交事务 |
-| `persist.py` | 文件/简图落盘、零件工序写库、牌号归一 |
+| `upload_service.py` | 模板 + 入队转发 |
+| `start_upload.py` | 校验文件后 `create_task` + worker 调指挥家 |
+| `orchestrator/` | 预备 → 管线 → 落库（主方法三行） |
+| `gates/` | 能不能写；不写库 |
+| `persist/` | 落盘与 flush；不 commit |
 | `cost_ratio_preserver.py` | 已设成本系数回写 |
+| `materials.py` | 牌号改写（预备调用；不是门禁） |
 | `template_builder.py` | 导入模板 |

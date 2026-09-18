@@ -79,9 +79,10 @@
 
 | 文档 | 状态 |
 |------|------|
-| [README.md](engineering-change/README.md) | 目录 |
+| [README.md](engineering-change/README.md) | 敢改地图：入口 / 不变量 / 代码地图（合册已落地） |
 | [bom-process-die-effective-period-design.md](engineering-change/bom-process-die-effective-period-design.md) | BOM / 冲压工艺 / 模具有效期（设计）：现网改造 |
-| [part-number-revision-design.md](engineering-change/part-number-revision-design.md) | 合册 Excel、切点作业；样表 `engineering-change/samples/` |
+| [part-number-revision-design.md](engineering-change/part-number-revision-design.md) | 领域契约 §4.6–4.7、§8–§10；状态以同目录 README 为准；样表 `samples/` |
+| [t28-2025-07-import-bundle-test-design.md](engineering-change/t28-2025-07-import-bundle-test-design.md) | 测试：青岛 T28 · 五种改法一本即可上传 |
 
 ## 文件溯源 `file-trace/`
 

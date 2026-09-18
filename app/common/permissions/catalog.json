@@ -895,6 +895,47 @@
       ]
     },
     {
+      "code": "menu:engineering-change",
+      "label": "工程变更",
+      "type": "group",
+      "children": [
+        {
+          "code": "menu:engineering-change-upload",
+          "label": "上传工程变更",
+          "type": "menu",
+          "children": [
+            {
+              "code": "op:engineering-change-upload:view",
+              "label": "查看",
+              "type": "op"
+            },
+            {
+              "code": "op:engineering-change-upload:upload",
+              "label": "上传",
+              "type": "op"
+            }
+          ]
+        },
+        {
+          "code": "menu:engineering-change-order-list",
+          "label": "工程变更单列表",
+          "type": "menu",
+          "children": [
+            {
+              "code": "op:engineering-change-order-list:view",
+              "label": "查看",
+              "type": "op"
+            },
+            {
+              "code": "op:engineering-change-order-list:delete",
+              "label": "删除回滚",
+              "type": "op"
+            }
+          ]
+        }
+      ]
+    },
+    {
       "code": "menu:yishiyiyi",
       "label": "一事一议",
       "type": "group",

@@ -5,7 +5,7 @@
 工序规则：
   1. 「两块方料&拼焊」或摆剪 → 计 0，不查冲次单价
   2. 自有吨位 > 0 → 按本工序吨位直接算
-  3. 无吨位且双槽/合并/共用 → 继承上一件(id-1)对应工序
+  3. 缺吨位且双槽/合并/共用 → 继承上一件（序号减 1）对应工序
   4. 其它 → 失败
 
 不按子片数翻倍：拼焊板先焊再冲，压机工序只计一套。
@@ -16,8 +16,6 @@ from __future__ import annotations
 
 import logging
 from decimal import ROUND_HALF_UP, Decimal
-
-from sqlalchemy.orm import Session
 
 from app.models.stamping import StampingPart, StampingProcess
 from app.schemas.dto.stamping_process_fee_dto import ProcessFeeItemPayload
@@ -37,6 +35,7 @@ from app.services.stamping.process_fee.calc.models import (
     ProcessTonnageResolveResult,
     TonnageRateInfo,
 )
+from app.services.stamping.process_fee.calc.previous_part import PreviousPartIndex
 from app.services.stamping.process_fee.calc.tonnage_resolver import TonnageResolver
 from app.services.stamping.process_fee.fee_math import FEE_QUANTIZE
 
@@ -66,15 +65,16 @@ class TailorWeldFeeCalculator:
 
     def calc_part_fee(
         self,
-        db: Session,
         part: StampingPart,
         rate_map: dict[int, TonnageRateInfo],
         year: int,
-        prev_part_cache: dict[int, StampingPart | None],
+        previous_parts: PreviousPartIndex | None = None,
     ) -> tuple[Decimal, int, list[ProcessFeeItemPayload]] | StampingProcessFeeFailedItemVO:
         processes = list(part.processes or [])
         if not processes:
             return self.build_failed_item(part, "拼焊件无工序数据")
+
+        previous_parts = previous_parts or PreviousPartIndex()
 
         total = Decimal("0")
         process_items: list[ProcessFeeItemPayload] = []
@@ -114,7 +114,7 @@ class TailorWeldFeeCalculator:
                 )
                 continue
 
-            tonnage_or_error = self.tonnage_resolver.resolve(db, part, process, prev_part_cache)
+            tonnage_or_error = self.tonnage_resolver.resolve(part, process, previous_parts)
             if isinstance(tonnage_or_error, str):
                 return self.build_failed_item(part, tonnage_or_error, process)
 

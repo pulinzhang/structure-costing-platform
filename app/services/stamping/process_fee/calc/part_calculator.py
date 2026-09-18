@@ -5,8 +5,6 @@ from __future__ import annotations
 import logging
 from decimal import ROUND_HALF_UP, Decimal
 
-from sqlalchemy.orm import Session
-
 from app.models.stamping import StampingPart, StampingProcess
 from app.schemas.dto.stamping_process_fee_dto import ProcessFeeItemPayload
 from app.schemas.vo.stamping_process_fee_vo import StampingProcessFeeFailedItemVO
@@ -21,6 +19,7 @@ from app.services.stamping.process_fee.calc.labels import (
     summarize_processes,
 )
 from app.services.stamping.process_fee.calc.models import TonnageRateInfo
+from app.services.stamping.process_fee.calc.previous_part import PreviousPartIndex
 from app.services.stamping.process_fee.calc.tonnage_resolver import TonnageResolver
 from app.services.stamping.process_fee.fee_math import FEE_QUANTIZE
 
@@ -50,10 +49,9 @@ class PartFeeCalculator:
 
     def _select_processes_for_calc(
         self,
-        db: Session,
         part: StampingPart,
         processes: list[StampingProcess],
-        prev_part_cache: dict[int, StampingPart | None],
+        previous_parts: PreviousPartIndex,
     ) -> list[StampingProcess]:
         """
         共模右件常多出空工序行：仅裁掉「无自有吨位、且上一件对不上」的序。
@@ -66,7 +64,7 @@ class PartFeeCalculator:
         if not can_inherit_previous_tonnage(part, processes[0]):
             return processes
 
-        previous_part = self.tonnage_resolver.get_previous_part(db, part, prev_part_cache)
+        previous_part = self.tonnage_resolver.get_previous_part(part, previous_parts)
         if previous_part is None:
             return processes
 
@@ -97,11 +95,10 @@ class PartFeeCalculator:
 
     def calc_part_fee(
         self,
-        db: Session,
         part: StampingPart,
         rate_map: dict[int, TonnageRateInfo],
         year: int,
-        prev_part_cache: dict[int, StampingPart | None],
+        previous_parts: PreviousPartIndex | None = None,
     ) -> tuple[Decimal, int, list[ProcessFeeItemPayload]] | StampingProcessFeeFailedItemVO:
         processes = list(part.processes or [])
         if not processes:
@@ -114,7 +111,8 @@ class PartFeeCalculator:
                 [],
             )
 
-        processes = self._select_processes_for_calc(db, part, processes, prev_part_cache)
+        previous_parts = previous_parts or PreviousPartIndex()
+        processes = self._select_processes_for_calc(part, processes, previous_parts)
         if not processes:
             return self.build_failed_item(part, "共模件按上一件工序方案筛选后无有效工序")
 
@@ -161,7 +159,7 @@ class PartFeeCalculator:
                 )
                 continue
 
-            tonnage_or_error = self.tonnage_resolver.resolve(db, part, process, prev_part_cache)
+            tonnage_or_error = self.tonnage_resolver.resolve(part, process, previous_parts)
             if isinstance(tonnage_or_error, str):
                 return self.build_failed_item(part, tonnage_or_error, process)
 

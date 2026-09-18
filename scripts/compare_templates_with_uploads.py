@@ -91,7 +91,7 @@ def check_stamping() -> list[str]:
 
 def check_bom() -> list[str]:
     from app.parsers.bom.bom_parser import parse_bom_excel
-    from app.services.bom.bom_template_builder import build_bom_material_template
+    from app.services.bom.upload.template_builder import build_bom_material_template
 
     issues: list[str] = []
     content, _name = build_bom_material_template()

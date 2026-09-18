@@ -51,6 +51,22 @@ class WeldingBreakdownQueries:
             .first()
         )
 
+    def list_by_source_node_ids(
+        self,
+        db: Session,
+        source_node_ids: list[int],
+    ) -> list[BomWeldingProcessBreakdownNode]:
+        """按 BOM source_node_id 批量取拆解主表（含明细）。"""
+        ids = sorted({int(node_id) for node_id in source_node_ids if node_id})
+        if not ids:
+            return []
+        return (
+            db.query(BomWeldingProcessBreakdownNode)
+            .options(joinedload(BomWeldingProcessBreakdownNode.lines))
+            .filter(BomWeldingProcessBreakdownNode.source_node_id.in_(ids))
+            .all()
+        )
+
     def _scope_filter(
         self,
         *,

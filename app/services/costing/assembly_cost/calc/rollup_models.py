@@ -42,6 +42,8 @@ class RollupBomNode:
     qty: Decimal
     node_role: str
     sort_no: int = 0
+    seq_no: int | None = None
+    excel_row: int | None = None
     supply_type: str | None = None
     sketch_url: str | None = None
     snapshot_id: int | None = None

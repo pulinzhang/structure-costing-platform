@@ -3,7 +3,7 @@
 from datetime import datetime
 from decimal import Decimal
 
-from pydantic import BaseModel, field_serializer
+from pydantic import BaseModel, Field, field_serializer
 
 from app.common.money import Q4, optional_format_money
 from app.common.timezone import datetime_to_iso
@@ -89,6 +89,19 @@ class BomProcurementObjectVO(BaseModel):
     bom_version: str | None = None
     source_filename: str | None = None
     qa_passed: bool | None = None
+    # 所属 L0 树根四列（mapping join 填入）；非本表列，禁止加到 ORM / 禁止当对象时段真相
+    effective_year: int | None = Field(
+        None, description="所属 L0 树根生效年；非 bom_procurement_objects 列"
+    )
+    effective_month: int | None = Field(
+        None, description="所属 L0 树根生效月；非 bom_procurement_objects 列"
+    )
+    expiry_year: int | None = Field(
+        None, description="所属 L0 树根失效年；非 bom_procurement_objects 列"
+    )
+    expiry_month: int | None = Field(
+        None, description="所属 L0 树根失效月；非 bom_procurement_objects 列"
+    )
     created_by: str | None = None
     updated_by: str | None = None
     created_at: datetime | None = None

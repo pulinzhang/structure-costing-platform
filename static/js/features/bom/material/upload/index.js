@@ -1,9 +1,9 @@
 /**
  * BOM 材料清单上传页
- * 仅负责 Excel 导入，不含列表 / 删除 / 树
+ * 与冲压工艺上传同一模式：task_id + 进度轮询
  */
 
-import { bomUploadTemplate } from './template.js?v=6';
+import { bomUploadTemplate } from './template.js?v=7';
 import { can } from '../../../../permissions.js?v=6';
 import {
     SOP_INTRO,
@@ -13,18 +13,22 @@ import {
 } from '../../../common/period-ui.js?v=2';
 
 const MAX_FILE_SIZE = 50 * 1024 * 1024;
+const POLL_INTERVAL_MS = 2000;
 
 const BomUploadPage = {
     selectedFile: null,
     isUploading: false,
     canUpload: true,
+    pollTimer: null,
+    pollInFlight: false,
+    activeTaskId: null,
+    activeFileName: null,
 
     init() {
+        this.stopPolling();
         this.selectedFile = null;
-        this.isUploading = false;
         this.applyPermissionUi();
         this.bindEvents();
-        this.hideProgress();
         this.hideError();
         this.clearSelectedFile(false);
         const slot = document.getElementById('sopBannerSlot');
@@ -32,6 +36,21 @@ const BomUploadPage = {
             slot.innerHTML = sopBannerHtml();
         }
         this.loadScopeOptions();
+
+        if (this.isUploading && this.activeTaskId) {
+            this.setUploading(true);
+            this.showProgress(0, '正在恢复任务进度...');
+            this.startPolling(this.activeTaskId, this.activeFileName);
+            return;
+        }
+
+        this.isUploading = false;
+        this.activeTaskId = null;
+        this.hideProgress();
+    },
+
+    destroy() {
+        this.stopPolling();
     },
 
     applyPermissionUi() {
@@ -226,8 +245,7 @@ const BomUploadPage = {
         const title = document.getElementById('bomUploadTitle');
         if (title) title.innerHTML = `<span class="text-[#2e7d32]">${esc(file.name)}</span> 已选择`;
 
-        const submitBtn = document.getElementById('bomUploadSubmitBtn');
-        if (submitBtn) submitBtn.disabled = false;
+        this.updateSubmitEnabled();
     },
 
     clearSelectedFile(resetTitle = true) {
@@ -246,17 +264,18 @@ const BomUploadPage = {
             if (title) title.textContent = '拖拽文件到此处';
         }
 
-        const submitBtn = document.getElementById('bomUploadSubmitBtn');
-        if (submitBtn) submitBtn.disabled = true;
+        this.updateSubmitEnabled();
     },
 
     reset() {
         if (this.isUploading) {
-            showToast('导入进行中，请稍候再重置', 'warning');
+            showToast('解析进行中，请稍候再重置', 'warning');
             return;
         }
+        this.stopPolling();
         this.hideProgress();
         this.hideError();
+        this.clearActiveTask();
         this.clearSelectedFile(true);
         const location = document.getElementById('bomUploadLocation');
         if (location) location.value = '';
@@ -264,18 +283,17 @@ const BomUploadPage = {
         if (vehicle) vehicle.value = '';
     },
 
-    showProgress(msg = '解析三级树并落盘简图，请稍候') {
+    showProgress(progress = 0, msg = '已提交解析队列') {
         const idle = document.getElementById('bomUploadDropIdle');
         const panel = document.getElementById('bomUploadProgressPanel');
         const zone = document.getElementById('bomUploadZone');
-        const progressMsg = document.getElementById('bomUploadProgressMsg');
         if (idle) idle.classList.add('hidden');
         if (panel) panel.classList.remove('hidden');
         if (zone) {
             zone.classList.add('pointer-events-none');
             zone.classList.remove('border-[#d32f2f]');
         }
-        if (progressMsg) progressMsg.textContent = msg;
+        this.updateProgress(progress, msg);
     },
 
     hideProgress() {
@@ -285,6 +303,43 @@ const BomUploadPage = {
         if (idle) idle.classList.remove('hidden');
         if (panel) panel.classList.add('hidden');
         if (zone) zone.classList.remove('pointer-events-none');
+        this.updateProgress(0, '已提交解析队列');
+    },
+
+    updateProgress(progress, msg, status) {
+        const pct = Math.max(0, Math.min(100, Number(progress) || 0));
+        const bar = document.getElementById('bomUploadProgressBar');
+        const percentEl = document.getElementById('bomUploadProgressPercent');
+        const msgEl = document.getElementById('bomUploadProgressMsg');
+        const titleEl = document.getElementById('bomUploadProgressTitle');
+
+        if (bar) bar.style.width = `${pct}%`;
+        if (percentEl) percentEl.textContent = `${pct}%`;
+        if (msgEl) msgEl.textContent = msg || '';
+
+        if (titleEl) {
+            if (status === 'completed') {
+                titleEl.textContent = '解析成功';
+                titleEl.className = 'text-xs font-medium text-[#4caf50] truncate mb-0';
+            } else if (status === 'failed') {
+                titleEl.textContent = '解析失败';
+                titleEl.className = 'text-xs font-medium text-[#ef5350] truncate mb-0';
+            } else {
+                titleEl.textContent = '正在解析材料清单...';
+                titleEl.className = 'text-xs font-medium text-[#ffffff] truncate mb-0';
+            }
+        }
+
+        if (status === 'completed' && bar) {
+            bar.className = 'h-full bg-[#2e7d32] transition-all duration-300';
+            if (percentEl) percentEl.className = 'text-xs font-mono tabular-nums text-[#4caf50] shrink-0';
+        } else if (status === 'failed' && bar) {
+            bar.className = 'h-full bg-[#c62828] transition-all duration-300';
+            if (percentEl) percentEl.className = 'text-xs font-mono tabular-nums text-[#ef5350] shrink-0';
+        } else if (bar) {
+            bar.className = 'h-full bg-[#d32f2f] shadow-[0_0_8px_rgba(211,47,47,0.5)] transition-all duration-300';
+            if (percentEl) percentEl.className = 'text-xs font-mono tabular-nums text-[#d32f2f] shrink-0';
+        }
     },
 
     hideError() {
@@ -332,6 +387,12 @@ const BomUploadPage = {
         }
     },
 
+    updateSubmitEnabled() {
+        const submitBtn = document.getElementById('bomUploadSubmitBtn');
+        if (!submitBtn) return;
+        submitBtn.disabled = this.isUploading || this.canUpload === false || !this.selectedFile;
+    },
+
     setUploading(isUploading) {
         this.isUploading = isUploading;
         const submitBtn = document.getElementById('bomUploadSubmitBtn');
@@ -339,7 +400,12 @@ const BomUploadPage = {
         const location = document.getElementById('bomUploadLocation');
         const vehicle = document.getElementById('bomUploadVehicleModel');
         const templateBtn = document.getElementById('bomUploadTemplateBtn');
-        if (submitBtn) submitBtn.disabled = isUploading || !this.selectedFile;
+        if (submitBtn) {
+            submitBtn.innerHTML = isUploading
+                ? `${window.svgIcon('spinner', 'w-3.5 h-3.5')} 解析中...`
+                : `<svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12"></path></svg> 上传`;
+        }
+        this.updateSubmitEnabled();
         if (resetBtn) resetBtn.disabled = isUploading;
         if (location && this.canUpload) location.disabled = isUploading;
         if (vehicle && this.canUpload) vehicle.disabled = isUploading;
@@ -363,6 +429,81 @@ const BomUploadPage = {
         } catch (error) {
             this.showError(error.message || '模板下载失败');
         }
+    },
+
+    stopPolling() {
+        if (this.pollTimer) {
+            clearInterval(this.pollTimer);
+            this.pollTimer = null;
+        }
+        this.pollInFlight = false;
+    },
+
+    clearActiveTask() {
+        this.activeTaskId = null;
+        this.activeFileName = null;
+    },
+
+    async fetchTaskProgress(taskId) {
+        const response = await HttpClient.get(
+            `/api/bom/upload/tasks/${encodeURIComponent(taskId)}`,
+            { skipToast: true },
+        );
+        return response.data;
+    },
+
+    startPolling(taskId, fileName) {
+        this.stopPolling();
+        this.activeTaskId = taskId;
+        this.activeFileName = fileName;
+
+        const tick = async () => {
+            if (this.pollInFlight) return;
+            this.pollInFlight = true;
+            try {
+                const data = await this.fetchTaskProgress(taskId);
+                const status = data?.status || 'running';
+                const progress = data?.progress ?? 0;
+                const msg = data?.msg || '';
+
+                this.updateProgress(progress, msg, status);
+
+                if (status === 'completed') {
+                    this.stopPolling();
+                    const result = data?.result || {};
+                    const nodeCount = result.node_count ?? '-';
+                    showToast(msg || `导入成功：${nodeCount} 个节点`, 'success');
+                    this.clearActiveTask();
+                    this.setUploading(false);
+                    this.clearSelectedFile(true);
+                    this.refreshSopBanner();
+                    setTimeout(() => {
+                        if (!this.isUploading) this.hideProgress();
+                    }, 1800);
+                    return;
+                }
+
+                if (status === 'failed') {
+                    this.stopPolling();
+                    this.showError(msg || '导入失败');
+                    this.clearActiveTask();
+                    this.setUploading(false);
+                    document.getElementById('bomUploadZone')?.classList.remove('pointer-events-none');
+                    return;
+                }
+            } catch (error) {
+                this.stopPolling();
+                this.showError(error.message || '查询进度失败');
+                this.updateProgress(0, error.message || '查询进度失败', 'failed');
+                this.clearActiveTask();
+                this.setUploading(false);
+            } finally {
+                this.pollInFlight = false;
+            }
+        };
+
+        tick();
+        this.pollTimer = setInterval(tick, POLL_INTERVAL_MS);
     },
 
     async submit() {
@@ -392,29 +533,26 @@ const BomUploadPage = {
         formData.append('vehicle_model', vehicleModel);
         formData.append('file', this.selectedFile);
 
+        const fileName = this.selectedFile.name;
         this.hideError();
         this.setUploading(true);
-        this.showProgress();
+        this.showProgress(0, '已提交解析队列');
 
         try {
             const res = await HttpClient.post('/api/bom/upload', formData, {
                 skipToast: true,
-                timeout: 120000,
+                timeout: 60000,
             });
-            const data = res.data || {};
-            const msg = res.message
-                || data.message
-                || `导入成功：${data.node_count ?? '-'} 个节点`;
-            showToast(msg, 'success');
-            this.hideProgress();
-            this.hideError();
-            this.clearSelectedFile(true);
-            const loc = document.getElementById('bomUploadLocation');
-            if (loc) loc.value = location;
-        } catch (err) {
-            this.hideProgress();
-            this.showError(err.message || '导入失败');
-        } finally {
+            const taskId = res.data?.task_id;
+            if (!taskId) {
+                throw new Error('未返回任务 ID');
+            }
+            this.startPolling(taskId, fileName);
+        } catch (error) {
+            this.stopPolling();
+            this.showError(error.message || '提交失败');
+            this.updateProgress(0, error.message || '提交失败', 'failed');
+            this.clearActiveTask();
             this.setUploading(false);
         }
     },
@@ -430,4 +568,5 @@ const BomUploadPage = {
 export const pageConfig = {
     render: bomUploadTemplate,
     init: () => BomUploadPage.init(),
+    destroy: () => BomUploadPage.destroy(),
 };

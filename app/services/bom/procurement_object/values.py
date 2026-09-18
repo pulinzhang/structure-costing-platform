@@ -5,6 +5,7 @@ from __future__ import annotations
 from datetime import datetime
 
 from app.common.bom.manufacturing_category import short_part_number_digits
+from app.common.period import format_period
 from app.models.bom.procurement_object import BomProcurementObject
 from app.schemas.dto.bom_procurement_object_dto import BomProcurementObjectQuery
 from app.services.bom.procurement_object.labels import (
@@ -14,6 +15,7 @@ from app.services.bom.procurement_object.labels import (
     SECTION_LABELS,
     SUBTYPE_LABELS,
 )
+from app.services.bom.procurement_object.mapping import L0Period
 
 ExcelCell = str | int | None
 
@@ -52,7 +54,11 @@ def build_filename(query: BomProcurementObjectQuery, stamp: datetime) -> str:
     return "_".join(parts) + f"_{stamp.strftime('%Y%m%d_%H%M%S')}.xlsx"
 
 
-def row_values(row: BomProcurementObject) -> list[ExcelCell]:
+def row_values(
+    row: BomProcurementObject,
+    *,
+    l0_period: L0Period | None = None,
+) -> list[ExcelCell]:
     header = row.object_list
     return [
         row.excel_row,
@@ -78,7 +84,21 @@ def row_values(row: BomProcurementObject) -> list[ExcelCell]:
         header.location if header else "",
         header.vehicle_model if header else "",
         header.bom_version if header else "",
+        period_label(l0_period),
     ]
+
+
+def period_label(l0_period: L0Period | None) -> str:
+    if l0_period is None:
+        return "—"
+    effective_year, effective_month, expiry_year, expiry_month = l0_period
+    start = format_period(effective_year, effective_month)
+    end = (
+        format_period(expiry_year, expiry_month)
+        if expiry_year is not None and expiry_month is not None
+        else "未结束"
+    )
+    return f"{start} – {end}"
 
 
 def l0_merge_key(row: BomProcurementObject) -> tuple[str, ...]:

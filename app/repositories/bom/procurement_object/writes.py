@@ -33,10 +33,17 @@ class BomProcurementObjectWrites:
         db.refresh(row)
         return row
 
-    def bulk_create_objects(self, db: Session, payloads: list[BomProcurementObjectWrite]) -> None:
+    def bulk_create_objects(
+        self, db: Session, payloads: list[BomProcurementObjectWrite]
+    ) -> list[int]:
+        rows: list[BomProcurementObject] = []
         for payload in payloads:
-            db.add(model_from_payload(BomProcurementObject, payload))
-        db.flush()
+            row = model_from_payload(BomProcurementObject, payload)
+            db.add(row)
+            rows.append(row)
+        if rows:
+            db.flush()
+        return [row.id for row in rows]
 
     def delete_list(self, db: Session, header: BomProcurementObjectList) -> None:
         db.delete(header)
@@ -107,6 +114,11 @@ class BomProcurementObjectWrites:
         )
         db.flush()
         return int(count)
+
+    def delete_object(self, db: Session, row: BomProcurementObject) -> None:
+        """删单条采购对象行。只 flush。"""
+        db.delete(row)
+        db.flush()
 
     def recount_header_from_rows(self, db: Session, header: BomProcurementObjectList) -> None:
         rows = self._queries.list_objects_by_list_id(db, header.id)

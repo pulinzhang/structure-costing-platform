@@ -95,3 +95,4 @@ class StampingDieProcessInsert:
     alloc_ratio: Decimal
     created_by: str
     updated_by: str
+    remark: str | None = None

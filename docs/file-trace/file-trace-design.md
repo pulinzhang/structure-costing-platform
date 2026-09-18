@@ -27,8 +27,8 @@
 
 | `file_category` | 登记触发 Service / 工具 |
 |-----------------|-------------------------|
-| `bom_material` | `BomUploadService.import_excel` |
-| `stamping_process` | `StampingUploadService.process_upload` |
+| `bom_material` | `BomUploadService.start_upload` → 管线 flush 时 `register_existing` |
+| `stamping_process` | `StampingUploadService.start_upload` → 管线 flush 时 `register_existing` |
 | `stamping_die` | `StampingDieUploadService.process_upload` |
 | `stamping_gauge_fee` | `StampingGaugeFeeUploadService.import_excel` |
 | `stamping_tonnage_price` | `StampingTonnagePriceImportService` + `save_tonnage_price_upload` |
@@ -225,8 +225,8 @@ file_trace Service → upload_file Repository（读列表 / 下载）
 
 | `file_category` | 中文 | scope 字段 | 登记触发点 |
 |-----------------|------|------------|------------|
-| `bom_material` | BOM 材料清单 | `location`, `vehicle_model`, `bom_version` | `BomUploadService.import_excel` |
-| `stamping_process` | 冲压工艺 | `location`, `vehicle_model`, `process_version`, `stamping_supplier` | `StampingUploadService.process_upload` |
+| `bom_material` | BOM 材料清单 | `location`, `vehicle_model`, `bom_version` | `BomUploadService.start_upload` → `persist/nodes.py` flush |
+| `stamping_process` | 冲压工艺 | `location`, `vehicle_model`, `process_version`, `stamping_supplier` | `StampingUploadService.start_upload` → 管线 flush |
 | `stamping_die` | 冲压模具布点 | `location`, `vehicle_model` | `StampingDieUploadService.process_upload` |
 | `stamping_gauge_fee` | 冲压检具费 | `location`, `vehicle_model` | `StampingGaugeFeeUploadService.import_excel` |
 | `stamping_tonnage_price` | 冲次单价 | `location`, `year` | 冲次单价 import（归档后登记） |
@@ -250,7 +250,7 @@ file_trace Service → upload_file Repository（读列表 / 下载）
 
 | 策略 | 说明 |
 |------|------|
-| **A** | `upload_files` 为 **溯源列表唯一真相**；`bom_snapshots` 保留 `source_filename / source_file_path / source_file_hash` 作 BOM 切片内冗余。`BomUploadService` 在同一事务内：`register_existing` + 写 snapshot 字段（值一致）。 |
+| **A** | `upload_files` 为 **溯源列表唯一真相**；`bom_snapshots` 保留 `source_filename / source_file_path / source_file_hash` 作 BOM 切片内冗余。材料清单管线 flush 时同一事务：`register_existing` + 写 snapshot 字段（值一致），指挥家第三步 `commit`。 |
 | B（远期可选） | snapshot 仅存 `upload_file_id`。 |
 
 禁止：列表读 snapshot、下载走另一路径，与 `upload_files` 多套真相并存。
@@ -396,8 +396,8 @@ JSON 端点使用 `response_model=ApiResponse[T]`；**下载为 `StreamingRespon
 
 | 模块 | 改造 |
 |------|------|
-| `BomUploadService` | 事务内 `register_existing` + snapshot 冗余字段（§4.3）；`business_ref_type=bom_snapshot` |
-| `StampingUploadService` | `db.begin()` 内、`commit` 前 `register_existing`（相对路径） |
+| `BomUploadService` | `persist/nodes.py` flush 内 `register_existing` + snapshot 冗余字段（§4.3）；`business_ref_type=bom_snapshot`；指挥家第三步 `commit` |
+| `StampingUploadService` | 管线 flush 内 `register_existing`（相对路径）；指挥家第三步 `commit` |
 | `StampingTonnagePriceImportService` | archive 后、事务 `commit` 前 `register_existing` |
 | `BomWeldingUnitPriceImportService` | archive 后、事务 `commit` 前 `register_existing` |
 | `BomAnnualPartPriceImportService` | archive 后、事务 `commit` 前 `register_existing` |

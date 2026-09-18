@@ -19,6 +19,9 @@ def on_startup() -> None:
     from app.bootstrap.effective_period_schema import ensure_effective_period_schema
 
     ensure_effective_period_schema(DatabaseConfig.get_engine())
+    from app.bootstrap.engineering_change_schema import ensure_engineering_change_schema
+
+    ensure_engineering_change_schema(DatabaseConfig.get_engine())
     from app.bootstrap.llm_report_schema import ensure_llm_report_schema
 
     ensure_llm_report_schema(DatabaseConfig.get_engine())

@@ -22,8 +22,10 @@ def assign_sketch_images(
     nodes: list[BomParsedNode],
     row_l0: dict[int, int],
     row_part_sketch: dict[int, int],
+    *,
+    sheet_name: str | None = None,
 ) -> int:
-    anchors = extract_bom_images(file_bytes)
+    anchors = extract_bom_images(file_bytes, sheet_name=sheet_name)
     assigned = 0
     for anchor in anchors:
         node_index: int | None = None

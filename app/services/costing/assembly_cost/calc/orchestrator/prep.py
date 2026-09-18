@@ -8,6 +8,7 @@ from decimal import Decimal
 
 from sqlalchemy.orm import Session
 
+from app.common.bom.node_order import bom_node_order_from
 from app.exceptions.base import BusinessException
 from app.models.costing import StampingPartCost
 from app.repositories.bom.procurement_object_repository import BomProcurementObjectRepository
@@ -131,6 +132,8 @@ def prepare_calc_run(
             qty=Decimal(str(n.qty if n.qty is not None else 1)),
             node_role=n.node_role,
             sort_no=n.sort_no or 0,
+            seq_no=n.seq_no,
+            excel_row=n.excel_row,
             supply_type=getattr(n, "supply_type", None),
             sketch_url=getattr(n, "sketch_url", None),
             snapshot_id=n.snapshot_id,
@@ -177,7 +180,7 @@ def prepare_calc_run(
         }
     subjects = sorted(
         [nodes_by_id[nid] for nid in subject_ids if nid in nodes_by_id],
-        key=lambda n: (n.sort_no, n.id),
+        key=bom_node_order_from,
     )
     if not subjects:
         raise BusinessException("无核价主体（装配∪树根∪采购对象）")

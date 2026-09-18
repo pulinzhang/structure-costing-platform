@@ -29,7 +29,7 @@ def main() -> None:
 
     # 2 BOM
     from app.parsers.bom.bom_parser import parse_bom_excel
-    from app.services.bom.bom_template_builder import build_bom_material_template
+    from app.services.bom.upload.template_builder import build_bom_material_template
 
     content, name = build_bom_material_template()
     bom = parse_bom_excel(content)

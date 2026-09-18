@@ -55,7 +55,6 @@ export function bomStructureTemplate() {
                         </div>
                     </div>
                     <div class="flex items-end gap-2 shrink-0 flex-wrap justify-end">
-                        <div id="bomStructureAsOfFilters" class="flex items-end gap-2"></div>
                         <div class="relative w-full sm:w-64 shrink-0">
                         <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
                             <svg class="w-3.5 h-3.5 text-[#616161]" fill="none" stroke="currentColor" viewBox="0 0 24 24">

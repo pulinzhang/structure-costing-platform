@@ -66,8 +66,12 @@ class ProcessConfirmExport:
         include_expired: bool = False,
         current_user: UserVO,
     ) -> tuple[bytes, str]:
-        as_of_year, as_of_month = require_export_as_of(year, month)
-        period_label = format_period(as_of_year, as_of_month)
+        if include_expired:
+            as_of_year, as_of_month = None, None
+            period_label = "全部"
+        else:
+            as_of_year, as_of_month = require_export_as_of(year, month)
+            period_label = format_period(as_of_year, as_of_month)
         location, stamping_supplier, vehicle_model, version, part_number, parts = (
             self._parts_for_export(
                 db,
@@ -106,19 +110,20 @@ class ProcessConfirmExport:
         blank_count = 0
         sketch_count = 0
         sketch_buffers: list[BytesIO] = []
-        for seq_no, part in enumerate(parts, start=1):
+        for index, part in enumerate(parts, start=1):
             processes = self._sorted_processes(part)
             blanks = self._sorted_blanks(part)
             process_count += len(processes)
             blank_count += len(blanks)
+            display_seq = part.seq_no if part.seq_no is not None else index
             used, has_sketch = self._write_part_block(
                 ws,
                 start_row=row_idx,
-                seq_no=seq_no,
+                seq_no=display_seq,
                 part=part,
                 processes=processes,
                 blanks=blanks,
-                zebra=seq_no % 2 == 0,
+                zebra=index % 2 == 0,
                 sketch_buffers=sketch_buffers,
             )
             if has_sketch:

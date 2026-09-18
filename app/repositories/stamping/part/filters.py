@@ -16,9 +16,9 @@ _StringColumn = InstrumentedAttribute[str] | InstrumentedAttribute[str | None]
 _PART_LIST_ORDER = (
     StampingPart.location,
     StampingPart.vehicle_model,
-    StampingPart.version,
     StampingPart.stamping_supplier,
-    StampingPart.id,
+    StampingPart.seq_no,
+    StampingPart.part_number,
 )
 
 

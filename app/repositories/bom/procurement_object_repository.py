@@ -14,7 +14,9 @@ from app.models.bom.procurement_object_generate_log import BomProcurementObjectG
 from app.repositories.bom.procurement_object.queries import BomProcurementObjectQueries
 from app.repositories.bom.procurement_object.types import (
     ProcurementObjectAuditSummary,
+    ProcurementObjectScopeFilters,
     empty_procurement_object_summary,
+    object_scope_filters,
 )
 from app.repositories.bom.procurement_object.writes import BomProcurementObjectWrites
 from app.schemas.dto.bom_procurement_object_dto import (
@@ -26,7 +28,9 @@ from app.schemas.dto.bom_procurement_object_dto import (
 __all__ = [
     "BomProcurementObjectRepository",
     "ProcurementObjectAuditSummary",
+    "ProcurementObjectScopeFilters",
     "empty_procurement_object_summary",
+    "object_scope_filters",
 ]
 
 
@@ -104,75 +108,19 @@ class BomProcurementObjectRepository:
         self,
         db: Session,
         *,
-        location: str | None = None,
-        locations: list[str] | None = None,
-        vehicle_model: str | None = None,
-        bom_version: str | None = None,
-        section: str | None = None,
-        object_kind: str | None = None,
-        confirm_status: str | None = None,
-        audit_status: str | None = None,
-        part_number: str | None = None,
-        l0_part_number: str | None = None,
-        excel_row: int | None = None,
-        supplier_names: list[str] | None = None,
-        has_supplier: bool | None = None,
+        scope: ProcurementObjectScopeFilters,
         skip: int = 0,
         limit: int = 20,
     ) -> tuple[list[BomProcurementObject], int]:
-        return self._queries.paginate_objects(
-            db,
-            location=location,
-            locations=locations,
-            vehicle_model=vehicle_model,
-            bom_version=bom_version,
-            section=section,
-            object_kind=object_kind,
-            confirm_status=confirm_status,
-            audit_status=audit_status,
-            part_number=part_number,
-            l0_part_number=l0_part_number,
-            excel_row=excel_row,
-            supplier_names=supplier_names,
-            has_supplier=has_supplier,
-            skip=skip,
-            limit=limit,
-        )
+        return self._queries.paginate_objects(db, scope=scope, skip=skip, limit=limit)
 
     def list_objects_for_export(
         self,
         db: Session,
         *,
-        location: str | None = None,
-        locations: list[str] | None = None,
-        vehicle_model: str | None = None,
-        bom_version: str | None = None,
-        section: str | None = None,
-        object_kind: str | None = None,
-        confirm_status: str | None = None,
-        audit_status: str | None = None,
-        part_number: str | None = None,
-        l0_part_number: str | None = None,
-        excel_row: int | None = None,
-        supplier_names: list[str] | None = None,
-        has_supplier: bool | None = None,
+        scope: ProcurementObjectScopeFilters,
     ) -> list[BomProcurementObject]:
-        return self._queries.list_objects_for_export(
-            db,
-            location=location,
-            locations=locations,
-            vehicle_model=vehicle_model,
-            bom_version=bom_version,
-            section=section,
-            object_kind=object_kind,
-            confirm_status=confirm_status,
-            audit_status=audit_status,
-            part_number=part_number,
-            l0_part_number=l0_part_number,
-            excel_row=excel_row,
-            supplier_names=supplier_names,
-            has_supplier=has_supplier,
-        )
+        return self._queries.list_objects_for_export(db, scope=scope)
 
     def get_filter_options(self, db: Session) -> tuple[list[str], list[str], list[str]]:
         return self._queries.get_filter_options(db)
@@ -181,36 +129,17 @@ class BomProcurementObjectRepository:
         self,
         db: Session,
         *,
-        location: str | None = None,
-        locations: list[str] | None = None,
-        vehicle_model: str | None = None,
-        bom_version: str | None = None,
-        section: str | None = None,
-        object_kind: str | None = None,
-        confirm_status: str | None = None,
-        audit_status: str | None = None,
-        part_number: str | None = None,
-        l0_part_number: str | None = None,
-        excel_row: int | None = None,
-        supplier_names: list[str] | None = None,
-        has_supplier: bool | None = None,
+        scope: ProcurementObjectScopeFilters,
     ) -> ProcurementObjectAuditSummary:
-        return self._queries.summarize_objects(
-            db,
-            location=location,
-            locations=locations,
-            vehicle_model=vehicle_model,
-            bom_version=bom_version,
-            section=section,
-            object_kind=object_kind,
-            confirm_status=confirm_status,
-            audit_status=audit_status,
-            part_number=part_number,
-            l0_part_number=l0_part_number,
-            excel_row=excel_row,
-            supplier_names=supplier_names,
-            has_supplier=has_supplier,
-        )
+        return self._queries.summarize_objects(db, scope=scope)
+
+    def map_l0_periods(
+        self,
+        db: Session,
+        *,
+        snapshot_l0_keys: list[tuple[int, str]],
+    ) -> dict[tuple[int, str], tuple[int, int, int | None, int | None]]:
+        return self._queries.map_l0_periods(db, snapshot_l0_keys=snapshot_l0_keys)
 
     def get_generate_log_by_id(
         self, db: Session, log_id: int
@@ -241,11 +170,16 @@ class BomProcurementObjectRepository:
     ) -> BomProcurementObjectList:
         return self._writes.create_list(db, payload)
 
-    def bulk_create_objects(self, db: Session, payloads: list[BomProcurementObjectWrite]) -> None:
+    def bulk_create_objects(
+        self, db: Session, payloads: list[BomProcurementObjectWrite]
+    ) -> list[int]:
         return self._writes.bulk_create_objects(db, payloads)
 
     def delete_list(self, db: Session, header: BomProcurementObjectList) -> None:
         return self._writes.delete_list(db, header)
+
+    def delete_object(self, db: Session, row: BomProcurementObject) -> None:
+        return self._writes.delete_object(db, row)
 
     def approve_objects_by_list_id(
         self,

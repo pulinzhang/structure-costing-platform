@@ -6,6 +6,7 @@ from collections import defaultdict
 from dataclasses import dataclass, field
 from decimal import Decimal
 
+from app.common.bom.node_order import MISSING_SEQ_NO, bom_node_order_key
 from app.common.money import Q4, quantize_money
 from app.exceptions.base import BusinessException
 from app.models.bom.node import BomNode
@@ -42,7 +43,33 @@ class PrepRow:
     sort_no: int
     vehicle_qty: Decimal
     month_amounts: list[MonthAmount]
+    excel_row: int | None = None
+    level: int = 0
     seq_label: str = ""
+
+
+def prep_fields_from_node(
+    node: object | None, *, fallback_excel_row: int | None = None
+) -> tuple[int, int | None, int]:
+    """level, excel_row, sort_no。excel_row 缺省时留给 bom_node_order_key 回落到 sort_no。"""
+    if node is None:
+        return 0, fallback_excel_row, 0
+    return (
+        int(getattr(node, "level", 0) or 0),
+        getattr(node, "excel_row", None),
+        int(getattr(node, "sort_no", 0) or 0),
+    )
+
+
+def prep_row_order_key(row: PrepRow) -> tuple[int, int, str, int, str, int, int]:
+    return bom_node_order_key(
+        seq_no=row.l0_seq_no,
+        level=row.level,
+        excel_row=row.excel_row,
+        part_number=row.part_number,
+        sort_no=row.sort_no,
+        node_id=row.source_node_id,
+    )
 
 
 @dataclass(frozen=True)
@@ -104,7 +131,7 @@ def build_prep_rows(
         l0 = l0_node_of(item.source_node_id, nodes_by_id)
         l0_node_id = l0.id if l0 is not None else item.source_node_id
         l0_seq_no = l0.seq_no if l0 is not None else None
-        sort_no = node.sort_no if node is not None else (item.excel_row or 0)
+        level, excel_row, sort_no = prep_fields_from_node(node, fallback_excel_row=item.excel_row)
         rows.append(
             PrepRow(
                 source_node_id=item.source_node_id,
@@ -117,6 +144,8 @@ def build_prep_rows(
                 l0_part_number=item.l0_part_number,
                 l0_seq_no=l0_seq_no,
                 sort_no=sort_no,
+                excel_row=excel_row,
+                level=level,
                 vehicle_qty=vehicle_qty_from_l0(item.source_node_id, nodes_by_id),
                 month_amounts=_month_amounts(item.source_node_id, months, costs),
             )
@@ -134,6 +163,7 @@ def build_assembly_prep_rows(
     rows: list[PrepRow] = []
     for node in roots:
         seq_no = node.seq_no
+        level, excel_row, sort_no = prep_fields_from_node(node)
         rows.append(
             PrepRow(
                 source_node_id=node.id,
@@ -145,7 +175,9 @@ def build_assembly_prep_rows(
                 l0_node_id=node.id,
                 l0_part_number=node.part_number,
                 l0_seq_no=seq_no,
-                sort_no=node.sort_no,
+                sort_no=sort_no,
+                excel_row=excel_row,
+                level=level,
                 vehicle_qty=node_qty(node),
                 month_amounts=_month_amounts(node.id, months, costs),
                 seq_label="" if seq_no is None else str(seq_no),
@@ -187,7 +219,7 @@ def assign_seq_labels(rows: list[PrepRow]) -> None:
     for row in rows:
         grouped[row.l0_node_id].append(row)
     for group in grouped.values():
-        group.sort(key=lambda row: (row.sort_no, row.source_node_id))
+        group.sort(key=prep_row_order_key)
         for index, row in enumerate(group, start=1):
             row.seq_label = format_procurement_seq_label(
                 object_kind=row.object_kind,
@@ -196,14 +228,11 @@ def assign_seq_labels(rows: list[PrepRow]) -> None:
             )
 
 
-_SEQ_MISSING = 10**9
-
-
 def seq_sort_key(seq_label: str) -> tuple[int, int]:
     """序号：总成序号、组内顺序。空号排最后。"""
     text = (seq_label or "").strip()
     if not text:
-        return (_SEQ_MISSING, _SEQ_MISSING)
+        return (MISSING_SEQ_NO, MISSING_SEQ_NO)
     if "-" in text:
         head, tail = text.split("-", 1)
         return (_parse_seq_part(head), _parse_seq_part(tail))
@@ -224,7 +253,7 @@ def _parse_seq_part(raw: str) -> int:
     try:
         return int(raw)
     except ValueError:
-        return _SEQ_MISSING
+        return MISSING_SEQ_NO
 
 
 def aggregate_price_rows(
@@ -238,7 +267,7 @@ def aggregate_price_rows(
 
     price_rows: list[PriceRow] = []
     for part_number, group in grouped.items():
-        group.sort(key=lambda row: (row.sort_no, row.source_node_id))
+        group.sort(key=prep_row_order_key)
         first = group[0]
         month_amounts = [
             MonthAmount(

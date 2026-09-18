@@ -13,8 +13,10 @@ logger = get_logger("parser.stamping.sketch")
 
 _NS = {
     "xdr": "http://schemas.openxmlformats.org/drawingml/2006/spreadsheetDrawing",
+    "main": "http://schemas.openxmlformats.org/spreadsheetml/2006/main",
 }
 _R_EMBED = "{http://schemas.openxmlformats.org/officeDocument/2006/relationships}embed"
+_R_ID = "{http://schemas.openxmlformats.org/officeDocument/2006/relationships}id"
 
 
 @dataclass(frozen=True, slots=True)
@@ -29,8 +31,10 @@ class SketchAnchor:
 def extract_stamping_sketches(
     file_path: str,
     allowed_cols_0idx: frozenset[int],
+    *,
+    sheet_name: str | None = None,
 ) -> list[SketchAnchor]:
-    """抽取简图列（及左邻列）上的嵌入图，统一成 PNG。"""
+    """抽取简图列（及左邻列）上的嵌入图，统一成 PNG。合册可限定工作表，避免材料清单的图抢行。"""
     if not file_path.lower().endswith(".xlsx") or not allowed_cols_0idx:
         return []
     try:
@@ -44,6 +48,9 @@ def extract_stamping_sketches(
             for name in zip_file.namelist()
             if name.startswith("xl/drawings/drawing") and name.endswith(".xml")
         ]
+        if sheet_name:
+            allowed = _drawing_paths_for_sheet(zip_file, sheet_name)
+            drawing_paths = [path for path in drawing_paths if path in allowed]
         results: list[SketchAnchor] = []
         for drawing_path in sorted(drawing_paths):
             rels_path = drawing_path.replace("xl/drawings/", "xl/drawings/_rels/") + ".rels"
@@ -59,6 +66,50 @@ def extract_stamping_sketches(
         zip_file.close()
 
 
+def _drawing_paths_for_sheet(zip_file: ZipFile, sheet_name: str) -> set[str]:
+    try:
+        workbook_xml = zip_file.read("xl/workbook.xml")
+        rels_xml = zip_file.read("xl/_rels/workbook.xml.rels")
+    except KeyError:
+        return set()
+    rid_to_target: dict[str, str] = {}
+    for rel in ET.fromstring(rels_xml):
+        rid = rel.attrib.get("Id")
+        target = (rel.attrib.get("Target") or "").replace("\\", "/")
+        if rid and target:
+            rid_to_target[rid] = target
+    workbook_root = ET.fromstring(workbook_xml)
+    sheet_target = None
+    for sheet in workbook_root.findall("main:sheets/main:sheet", _NS):
+        if sheet.attrib.get("name") != sheet_name:
+            continue
+        rid = sheet.attrib.get(_R_ID)
+        sheet_target = rid_to_target.get(rid or "")
+        break
+    if not sheet_target:
+        return set()
+    sheet_target = sheet_target.lstrip("/")
+    sheet_path = sheet_target if sheet_target.startswith("xl/") else "xl/" + sheet_target
+    rels_path = sheet_path.replace("xl/worksheets/", "xl/worksheets/_rels/") + ".rels"
+    try:
+        sheet_rels = zip_file.read(rels_path)
+    except KeyError:
+        return set()
+    found: set[str] = set()
+    for rel in ET.fromstring(sheet_rels):
+        rel_type = rel.attrib.get("Type") or ""
+        target = (rel.attrib.get("Target") or "").replace("\\", "/").lstrip("/")
+        if "drawing" not in rel_type.lower() or not target:
+            continue
+        if target.startswith("../"):
+            found.add("xl/" + target[3:])
+        elif target.startswith("xl/"):
+            found.add(target)
+        else:
+            found.add("xl/drawings/" + target)
+    return found
+
+
 def _load_rid_map(zip_file: ZipFile, rels_path: str) -> dict[str, str]:
     try:
         rels_xml = zip_file.read(rels_path)
@@ -71,7 +122,7 @@ def _load_rid_map(zip_file: ZipFile, rels_path: str) -> dict[str, str]:
         target = rel.attrib.get("Target")
         if not rid or not target:
             continue
-        normalized = target.replace("\\", "/")
+        normalized = target.replace("\\", "/").lstrip("/")
         if normalized.startswith("../"):
             normalized = "xl/" + normalized[3:]
         elif not normalized.startswith("xl/"):

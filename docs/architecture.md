@@ -83,14 +83,16 @@ app/parsers/stamping/     # 仅上传类切片有 Parser
 核价平台天然要「下游组合上游数据」。规则：
 
 ```
-✅ costing / dashboard  →  调用 stamping、yishiyiyi、bom、settings（Service 或只读 Repository）
+✅ costing / dashboard / engineering_change  →  调用 stamping、yishiyiyi、bom、masterdata、settings（Service 或 Repository）
 ✅ llm → 只读上游结果表 Model（不经上游 Service→VO）；内部工具留在本切片
-✅ stamping / bom / yishiyiyi 上传 Service → file_trace.register_existing（横切登记）
-❌ stamping / yishiyiyi →  依赖 costing、dashboard、llm（上游不得依赖下游）
+✅ stamping / bom / yishiyiyi / engineering_change 上传 Service → file_trace.register_existing（横切登记）
+❌ stamping / bom / yishiyiyi →  依赖 costing、dashboard、llm、engineering_change（上游不得依赖下游）
 ❌ file_trace → costing（登记切片不得依赖核价）
 ❌ 把 llm 内部工具抽到 app/common（污染主业务）
 ❌ 同层互相 import 成环
 ```
+
+`engineering_change`（工程变更）是 **完全独立** 的下游切片：自有菜单/API/表/前端；通过调用 `bom` / `stamping` / `masterdata` 等 **Service** 完成跨域写入。**bom/stamping/costing 不得 import 它**；三条整包门禁文案进 `app/common/engineering_change_gates.py`。细则见 [工程变更设计 §4.7](engineering-change/part-number-revision-design.md)。
 
 优先序：上游稳定查询 API → 只读上游 Repository（批量/导出/热路径）→ 真正无归属的算法再进 `common/`。
 
@@ -198,7 +200,7 @@ Router（权限 + 文件校验）──► Upload Service.start_upload
         │                         │
         │                         ├── create_task + submit（立即返回 task_id）
         │                         └── 后台：async_task runner 开独立 Session
-        │                                    └── process_upload → Parser → Repository
+        │                                    └── 指挥家 execute（预备 → 管线 → 落库）
         ▼
 ApiResponse[AsyncTaskAcceptedVO]
 前端轮询 GET …/tasks/{task_id}
@@ -225,7 +227,7 @@ ApiResponse[AsyncTaskAcceptedVO]
 | 谁 | 做什么 |
 |----|--------|
 | **Router** | 校验；调 `start_*` 或同步 `upload`；返回 `AsyncTaskAcceptedVO` 或结果 VO；查进度 |
-| **切片 Service** | 长任务：`create_task` + `submit_session_worker`；真正的 `process_upload` / `calculate` / 引擎 `execute`；成功文案；任务终态；崩溃时释放计算锁或回写引擎 Run |
+| **切片 Service** | 长任务：`start_*` 入队（`create_task` + `submit_session_worker`）；worker 调指挥家 `execute`（或核算 `calculate`）；成功文案；任务终态；崩溃时释放计算锁或回写引擎 Run |
 | **`async_task` runner** | 仅服务长任务：任务 Session、`on_progress` 写辅助库、统一 catch、关 Session |
 
 公共 runner 放 `app/services/async_task/`（已有切片归属），**不要**进 `common/`，也**不要**为每个长任务复制一份 60 行 worker。
@@ -323,6 +325,7 @@ ApiResponse[AsyncTaskAcceptedVO]
 | **masterdata** | [基地](masterdata/location-design.md)（已落地）· [项目](masterdata/vehicle-model-design.md)（本切片已落地；下游改读另做）· [供应商](masterdata/supplier-design.md)（第一期 + 第二期已落地：采购对象可空指定、工艺/采购对象 `RESTRICT`、一览改主键/删除）· [牌号分类](masterdata/steel-grade-category-design.md)（已落地：手工档案，下游只读） |
 | **stamping** | [产品质量先期策划（APQP）先布点后工艺](stamping/stamping-apqp-die-before-process-design.md) · [工艺确认表](stamping/stamping-process-confirmation-design.md) · [模具布点](stamping/stamping-die-management-design.md) · [模具单价](stamping/stamping-die-unit-price-design.md) · [检具费档案](stamping/stamping-gauge-fee-design.md) · [年度模具费（不含检具）](stamping/stamping-die-fee-design.md) |
 | **bom** | [年度零件价](bom/bom-annual-part-prices-design.md) · [焊接工艺拆解](bom/welding-process-breakdown-design.md) · [焊接费](bom/welding-fee-design.md) · [采购对象清单](bom/bom-procurement-objects-design.md) · [指定供应商](bom/bom-procurement-object-supplier-design.md) · [批量上传供应商](bom/bom-procurement-object-supplier-upload-design.md) |
+| **engineering-change** | [目录](engineering-change/README.md) · [有效期（已落地）](engineering-change/bom-process-die-effective-period-design.md) · [合册切片+权限+契约（设计）](engineering-change/part-number-revision-design.md) · [T28 对照/拆测](engineering-change/t28-2025-07-import-bundle-test-design.md) |
 | **yishiyiyi** | [分类级厚度政策](yishiyiyi/thickness-policy-category-level-design.md) |
 | **costing** | [核价引擎](costing/costing-engine-design.md) · [总成核价](costing/assembly-costing-design.md) · [L0 成品核价（冻结）](costing/l0-assembly-costing-design.md) · [采购价格协议](costing/procurement-contract-report-design.md) · [协议价生效期](costing/effective-period-design.md) · [暂估正式](costing/provisional-final-settlement-design.md) · [锚点送货](costing/anchor-true-up-design.md) |
 | **file_trace** | [文件溯源](file-trace/file-trace-design.md) |
