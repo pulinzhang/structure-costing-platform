@@ -7,13 +7,33 @@ from sqlalchemy.orm import Query, Session, joinedload
 from sqlalchemy.sql.elements import ColumnElement
 
 from app.common.audit import AUDIT_APPROVED, AUDIT_PENDING
+from app.common.period import overlaps_year
 from app.models.bom import (
     BomNode,
     BomWeldingProcessBreakdownLine,
     BomWeldingProcessBreakdownNode,
 )
 from app.repositories.bom.welding_process_breakdown.types import WeldingBreakdownFilterSummary
-from app.repositories.period_query import period_overlaps_year_clause
+
+
+def _resolve_l0_root(by_id: dict[int, BomNode], source_node_id: int | None) -> BomNode | None:
+    """沿 parent_id 爬到 level=0；断链或找不到则 None。"""
+    if source_node_id is None:
+        return None
+    current = by_id.get(int(source_node_id))
+    seen: set[int] = set()
+    while current is not None:
+        node_id = int(current.id)
+        if node_id in seen:
+            return None
+        seen.add(node_id)
+        if int(current.level) == 0:
+            return current
+        parent_id = current.parent_id
+        if parent_id is None:
+            return None
+        current = by_id.get(int(parent_id))
+    return None
 
 
 class WeldingBreakdownQueries:
@@ -288,8 +308,8 @@ class WeldingBreakdownQueries:
         vehicle_model: str,
         year: int,
     ) -> list[BomWeldingProcessBreakdownNode]:
-        """该基地+项目全部拆解行，INNER JOIN 节点后按年交集取件。"""
-        return (
+        """该基地+项目全部拆解行；年交集只问 source 所在树的 L0 树根。"""
+        rows = (
             db.query(BomWeldingProcessBreakdownNode)
             .options(joinedload(BomWeldingProcessBreakdownNode.lines))
             .join(
@@ -299,11 +319,6 @@ class WeldingBreakdownQueries:
             .filter(
                 BomWeldingProcessBreakdownNode.location == location,
                 BomWeldingProcessBreakdownNode.vehicle_model == vehicle_model,
-                period_overlaps_year_clause(
-                    BomNode.effective_year,
-                    BomNode.expiry_year,
-                    year,
-                ),
             )
             .order_by(
                 BomWeldingProcessBreakdownNode.level,
@@ -312,6 +327,38 @@ class WeldingBreakdownQueries:
             )
             .all()
         )
+        if not rows:
+            return []
+
+        source_ids = {int(row.source_node_id) for row in rows if row.source_node_id is not None}
+        sources = db.query(BomNode).filter(BomNode.id.in_(source_ids)).all() if source_ids else []
+        snapshot_ids = {int(node.snapshot_id) for node in sources if node.snapshot_id is not None}
+        forest = (
+            db.query(BomNode).filter(BomNode.snapshot_id.in_(snapshot_ids)).all()
+            if snapshot_ids
+            else []
+        )
+        by_id: dict[int, BomNode] = {int(node.id): node for node in forest}
+        for node in sources:
+            by_id.setdefault(int(node.id), node)
+
+        matched: list[BomWeldingProcessBreakdownNode] = []
+        for row in rows:
+            root = _resolve_l0_root(
+                by_id,
+                int(row.source_node_id) if row.source_node_id is not None else None,
+            )
+            if root is None:
+                continue
+            if overlaps_year(
+                effective_year=int(root.effective_year),
+                effective_month=int(root.effective_month),
+                expiry_year=root.expiry_year,
+                expiry_month=root.expiry_month,
+                year=year,
+            ):
+                matched.append(row)
+        return matched
 
     def exists_by_bom_scope(
         self,
