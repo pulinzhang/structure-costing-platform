@@ -38,7 +38,7 @@ from app.utils.bom_procurement_object_supplier_archive import (
 
 logger = logging.getLogger("service.bom.procurement_object.supplier_upload")
 
-_PAGE_HINT = "请到供应商一览表手工增加或上传（#/supplier-list）"
+_PAGE_HINT = "请到供应商一览手工增加或上传（#/supplier-list）"
 
 
 class BomProcurementObjectSupplierUploadService:

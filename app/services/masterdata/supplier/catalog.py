@@ -34,7 +34,7 @@ EXPORT_HEADERS = (*IMPORT_HEADERS, HEADER_STATUS)
 
 def catalog_sheet_styles() -> tuple[Font, Font, PatternFill, Alignment, Border]:
     header_font = Font(name="微软雅黑", size=10, bold=True, color="FFFFFF")
-    header_fill = PatternFill(start_color="4472C4", end_color="4472C4", fill_type="solid")
+    header_fill = PatternFill(start_color="1A1A22", end_color="1A1A22", fill_type="solid")
     header_alignment = Alignment(horizontal="center", vertical="center")
     data_font = Font(name="微软雅黑", size=9)
     thin_border = Border(

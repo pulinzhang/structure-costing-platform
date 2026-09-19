@@ -26,9 +26,7 @@ def check_period_projects(
             code="vehicle_model_period",
             ok=False,
             missing=["该月项目未生效或已失效"],
-            message=(
-                "该月命中的零件或 BOM 树所属项目未生效或已失效，" "请到项目一览表核对生效/失效"
-            ),
+            message=("该月命中的零件或 BOM 树所属项目未生效或已失效，" "请到项目一览核对生效/失效"),
             location=location,
             year=year,
             month=month,

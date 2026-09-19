@@ -6,7 +6,7 @@ import {
     steelGradeCategoryTemplate,
     renderTableRows,
     syncTabStyles,
-} from './template.js?v=7';
+} from './template.js?v=10';
 import {
     DEFAULT_PAGE_SIZE,
     bindPagination,
@@ -66,6 +66,18 @@ function applyPermissionUi() {
     if (!canOp('op:steel-grade-category:export')) {
         document.getElementById('sgcExportBtn')?.classList.add('hidden');
     }
+    const moreItems = ['sgcTemplateBtn', 'sgcImportBtn', 'sgcExportBtn']
+        .map((id) => document.getElementById(id))
+        .filter((el) => el && !el.classList.contains('hidden'));
+    if (!moreItems.length) {
+        document.getElementById('sgcMoreWrap')?.classList.add('hidden');
+    }
+}
+
+function setMoreMenuOpen(isOpen) {
+    const menu = document.getElementById('sgcMoreMenu');
+    if (!menu) return;
+    menu.classList.toggle('hidden', !isOpen);
 }
 
 function buildFilterParams() {
@@ -299,9 +311,28 @@ async function importExcel(file) {
 
 function bindEvents() {
     document.getElementById('sgcAddBtn')?.addEventListener('click', () => openCreateDrawer());
-    document.getElementById('sgcExportBtn')?.addEventListener('click', () => exportExcel());
-    document.getElementById('sgcTemplateBtn')?.addEventListener('click', () => downloadTemplate());
+    document.getElementById('sgcMoreBtn')?.addEventListener('click', (event) => {
+        event.stopPropagation();
+        const menu = document.getElementById('sgcMoreMenu');
+        const isOpen = menu && !menu.classList.contains('hidden');
+        setMoreMenuOpen(!isOpen);
+    });
+    document.addEventListener('click', (event) => {
+        const moreWrap = document.getElementById('sgcMoreWrap');
+        if (moreWrap && !moreWrap.contains(event.target)) {
+            setMoreMenuOpen(false);
+        }
+    });
+    document.getElementById('sgcExportBtn')?.addEventListener('click', () => {
+        setMoreMenuOpen(false);
+        exportExcel();
+    });
+    document.getElementById('sgcTemplateBtn')?.addEventListener('click', () => {
+        setMoreMenuOpen(false);
+        downloadTemplate();
+    });
     document.getElementById('sgcImportBtn')?.addEventListener('click', () => {
+        setMoreMenuOpen(false);
         document.getElementById('sgcImportFileInput')?.click();
     });
     document.getElementById('sgcImportFileInput')?.addEventListener('change', (event) => {

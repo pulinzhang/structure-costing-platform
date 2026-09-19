@@ -6,7 +6,7 @@ import {
     locationTemplate,
     renderLocationRows,
     renderAliasItems,
-} from './template.js?v=7';
+} from './template.js?v=9';
 
 const API_BASE = '/api/masterdata/locations';
 const DRAWER_ANIMATION_MS = 300;
@@ -112,7 +112,7 @@ function bindCreateDrawer() {
         const name = document.getElementById('locationCreateName')?.value?.trim() || '';
         const aliases = parseAliasLines(document.getElementById('locationCreateAliases')?.value || '');
         if (!name) {
-            showToast('请填写规范名', 'warning');
+            showToast('请填写基地名', 'warning');
             return;
         }
         if (!aliases.length) {

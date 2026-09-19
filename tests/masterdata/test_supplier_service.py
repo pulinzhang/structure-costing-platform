@@ -75,7 +75,7 @@ def _create(
 def _excel_bytes(rows: list[tuple[str, str, str, str]]) -> bytes:
     workbook = Workbook()
     sheet = workbook.active
-    sheet.append(["缩写", "工商名称", "ERP 代码", "别名"])
+    sheet.append(["缩写", "全称", "对外代码", "别名"])
     for row in rows:
         sheet.append(list(row))
     buffer = BytesIO()
@@ -106,14 +106,14 @@ def test_create_records_canonical_and_alias(memory_db: Session) -> None:
 def test_create_duplicate_full_name_raises(memory_db: Session) -> None:
     service = SupplierService()
     _create(service, memory_db)
-    with pytest.raises(BusinessException, match="该工商名称已有供应商"):
+    with pytest.raises(BusinessException, match="该全称已有供应商"):
         _create(service, memory_db, abbreviation="常庆二", erp_code="CQ002")
 
 
 def test_namespace_is_mutually_exclusive(memory_db: Session) -> None:
     service = SupplierService()
     _create(service, memory_db, aliases=["常庆汽配"])
-    with pytest.raises(BusinessException, match="该工商名称已有供应商"):
+    with pytest.raises(BusinessException, match="该全称已有供应商"):
         _create(
             service,
             memory_db,
@@ -129,7 +129,7 @@ def test_namespace_is_mutually_exclusive(memory_db: Session) -> None:
             full_name="另一家冲压有限公司",
             erp_code="OT002",
         )
-    with pytest.raises(BusinessException, match="该 ERP 代码已被占用"):
+    with pytest.raises(BusinessException, match="该对外代码已被占用"):
         _create(
             service,
             memory_db,
@@ -148,7 +148,7 @@ def test_namespace_is_mutually_exclusive(memory_db: Session) -> None:
 
 def test_identity_fields_must_be_distinct(memory_db: Session) -> None:
     service = SupplierService()
-    with pytest.raises(BusinessException, match="缩写、工商名称、ERP 代码与别名不得相同"):
+    with pytest.raises(BusinessException, match="缩写、全称、对外代码与别名不得相同"):
         _create(
             service,
             memory_db,

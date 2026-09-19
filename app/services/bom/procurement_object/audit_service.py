@@ -117,7 +117,7 @@ class BomProcurementObjectAuditService:
         except IntegrityError:
             db.rollback()
             raise BusinessException(
-                "没有该供应商，请到供应商一览表手工增加或上传（#/supplier-list）"
+                "没有该供应商，请到供应商一览手工增加或上传（#/supplier-list）"
             ) from None
         except BusinessException:
             db.rollback()

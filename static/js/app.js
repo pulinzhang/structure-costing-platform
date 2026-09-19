@@ -13,7 +13,7 @@
  * 入口 URL 的 query 串驱动整体刷新；每次脚本更新后需要同步递增 ?v= 版本号。
  */
 
-import { pageMeta } from './features/index.js?v=45';
+import { pageMeta } from './features/index.js?v=46';
 
 // 页面导入（路径与 index.html 菜单树 / features 目录对齐）
 import { getUserSession, initUserMenu, startTokenHeartbeat, updateUserSession } from './features/login/index.js?v=15';
@@ -49,7 +49,7 @@ import { pageConfig as steelPricePolicyDownloadPage } from './features/yishiyiyi
 import { pageConfig as basePriceUploadPage } from './features/yishiyiyi/base-price/upload/index.js?v=45';
 import { pageConfig as basePriceDownloadPage } from './features/yishiyiyi/base-price/list/index.js?v=39';
 import { pageConfig as winningThicknessDownloadPage } from './features/yishiyiyi/winning-thickness/list/index.js?v=18';
-import { pageConfig as steelGradeCategoryPage } from './features/masterdata/steel-grade-category/index.js?v=8';
+import { pageConfig as steelGradeCategoryPage } from './features/masterdata/steel-grade-category/index.js?v=11';
 import { pageConfig as scrapPricePage } from './features/yishiyiyi/scrap-price/index.js?v=22';
 import { pageConfig as bomStructurePage }  from './features/bom/material/structure/index.js?v=14';
 import { pageConfig as bomWhereUsedPage } from './features/bom/material/where-used/index.js?v=14';
@@ -73,11 +73,11 @@ import { pageConfig as engineeringChangeUploadPage } from './features/engineerin
 import { pageConfig as engineeringChangeListPage } from './features/engineering-change/list/index.js?v=10';
 import { pageConfig as costingPage }        from './features/costing/engine/index.js?v=39';
 import { pageConfig as fileTracePage }       from './features/file-trace/index.js?v=10';
-import { pageConfig as locationPage }        from './features/masterdata/location/index.js?v=7';
-import { pageConfig as vehicleModelUploadPage } from './features/masterdata/vehicle-model/upload/index.js?v=5';
-import { pageConfig as vehicleModelListPage } from './features/masterdata/vehicle-model/list/index.js?v=4';
-import { pageConfig as supplierUploadPage } from './features/masterdata/supplier/upload/index.js?v=5';
-import { pageConfig as supplierListPage } from './features/masterdata/supplier/list/index.js?v=6';
+import { pageConfig as locationPage }        from './features/masterdata/location/index.js?v=9';
+import { pageConfig as vehicleModelUploadPage } from './features/masterdata/vehicle-model/upload/index.js?v=6';
+import { pageConfig as vehicleModelListPage } from './features/masterdata/vehicle-model/list/index.js?v=7';
+import { pageConfig as supplierUploadPage } from './features/masterdata/supplier/upload/index.js?v=6';
+import { pageConfig as supplierListPage } from './features/masterdata/supplier/list/index.js?v=10';
 import { pageConfig as settingsPage }       from './features/settings/system/index.js?v=24';
 import { pageConfig as settingsUsersPage }  from './features/settings/users/index.js?v=15';
 import { pageConfig as settingsLogsPage }   from './features/settings/logs/index.js?v=17';

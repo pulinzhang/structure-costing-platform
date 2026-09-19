@@ -355,7 +355,7 @@ class Perm:
     VEHICLE_MODEL_UPLOAD_VIEW = "op:vehicle-model-upload:view"  # 查看
     VEHICLE_MODEL_UPLOAD_UPLOAD = "op:vehicle-model-upload:upload"  # 导入
 
-    MENU_VEHICLE_MODEL_LIST = "menu:vehicle-model-list"  # 一览表
+    MENU_VEHICLE_MODEL_LIST = "menu:vehicle-model-list"  # 一览
     VEHICLE_MODEL_LIST_VIEW = "op:vehicle-model-list:view"  # 查看
     VEHICLE_MODEL_LIST_EXPORT = "op:vehicle-model-list:export"  # 导出
     VEHICLE_MODEL_LIST_CREATE = "op:vehicle-model-list:create"  # 新增
@@ -368,7 +368,7 @@ class Perm:
     SUPPLIER_UPLOAD_VIEW = "op:supplier-upload:view"  # 查看
     SUPPLIER_UPLOAD_UPLOAD = "op:supplier-upload:upload"  # 导入
 
-    MENU_SUPPLIER_LIST = "menu:supplier-list"  # 一览表
+    MENU_SUPPLIER_LIST = "menu:supplier-list"  # 一览
     SUPPLIER_LIST_VIEW = "op:supplier-list:view"  # 查看
     SUPPLIER_LIST_EXPORT = "op:supplier-list:export"  # 导出
     SUPPLIER_LIST_CREATE = "op:supplier-list:create"  # 新增

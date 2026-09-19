@@ -35,16 +35,27 @@ export function vehicleModelListTemplate() {
                      style="background: linear-gradient(135deg, #0E0E12 0%, #121218 45%, #0C0C10 100%);">
                     <div class="flex items-start justify-between gap-4 mb-3">
                         <div id="vmHudCards" class="flex flex-wrap gap-2 flex-1 min-w-0"></div>
-                        <div class="flex items-center gap-2 shrink-0">
-                            <button id="vmBtnExport" type="button"
-                                    class="inline-flex items-center gap-1.5 bg-transparent text-[#8E8E93] border border-[#2A2A35] px-3 py-1.5 text-[11px] font-medium rounded-md hover:border-[#FF1E27]/50 hover:text-[#FF1E27] transition-all">
-                                ${window.svgIcon('download', 'w-3 h-3')}
-                                导出 Excel
-                            </button>
+                        <div class="flex items-center gap-1.5 shrink-0">
+                            <div class="relative" id="vmMoreWrap">
+                                <button type="button" id="vmMoreBtn"
+                                        class="w-8 h-8 flex items-center justify-center text-[#484848] hover:text-[#ffffff] transition-colors"
+                                        aria-label="更多操作" title="更多">
+                                    <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+                                        <circle cx="5" cy="12" r="1.6"/><circle cx="12" cy="12" r="1.6"/><circle cx="19" cy="12" r="1.6"/>
+                                    </svg>
+                                </button>
+                                <div id="vmMoreMenu"
+                                     class="hidden absolute right-0 top-full mt-1 z-[40] min-w-[132px] py-1 bg-[#161616] border border-[#2c2c2c] shadow-[0_8px_24px_rgba(0,0,0,0.55)]">
+                                    <button type="button" id="vmBtnExport"
+                                            class="w-full px-3.5 py-2 text-left text-[12px] text-[#9e9e9e] hover:bg-[#1e1e1e] hover:text-[#ffffff] transition-colors">
+                                        导出
+                                    </button>
+                                </div>
+                            </div>
                             <button id="vmBtnCreate" type="button"
                                     class="inline-flex items-center gap-1.5 bg-[#FF1E27] hover:bg-[#d32f2f] text-white px-3 py-1.5 text-[11px] font-semibold rounded-md transition-all">
                                 ${window.svgIcon('plus', 'w-3.5 h-3.5')}
-                                新增项目
+                                新增
                             </button>
                         </div>
                     </div>
@@ -81,7 +92,7 @@ export function vehicleModelListTemplate() {
                 </div>
                 <div id="vmEmptyState" class="hidden flex flex-col items-center justify-center py-16 text-center">
                     <p class="text-xs text-[#8E8E93] mb-1">暂无项目</p>
-                    <p class="text-[11px] text-[#555555]">点右上角新增，或到上传页导入 Excel</p>
+                    <p class="text-[11px] text-[#555555]">点右上角新增，或从上传页补档</p>
                 </div>
                 <div id="vmLoadingState" class="hidden flex flex-col items-center justify-center py-16 gap-2">
                     <div class="w-5 h-5 border-2 border-[#2c2c2c] border-t-[#FF1E27] rounded-full animate-spin"></div>

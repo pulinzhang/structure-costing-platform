@@ -56,7 +56,7 @@ def test_gate_navigate_hard_stop_codes_have_page() -> None:
         if code == "vehicle_model_period":
             assert nav.page == "vehicle-model-list"
             assert nav.query.get("location") == "青岛"
-            assert nav.label == "去项目一览表"
+            assert nav.label == "去项目一览"
         if code == "base_price":
             assert nav.query.get("year") == 2025
             assert nav.query.get("month") == 1

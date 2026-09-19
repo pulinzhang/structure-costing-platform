@@ -129,7 +129,7 @@ def create_supplier(
         db.refresh(record)
     except IntegrityError:
         db.rollback()
-        raise BusinessException("该工商名称已有供应商") from None
+        raise BusinessException("该全称已有供应商") from None
     except BusinessException:
         db.rollback()
         raise
@@ -197,7 +197,7 @@ def update_supplier(
         db.rollback()
         if renamed:
             raise BusinessException("仍被引用，不能修改") from None
-        raise BusinessException("该工商名称已有供应商") from None
+        raise BusinessException("该全称已有供应商") from None
     except BusinessException:
         db.rollback()
         raise

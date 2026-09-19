@@ -9,8 +9,8 @@ from app.models.masterdata.supplier import Supplier
 from app.repositories.masterdata.supplier import SupplierRepository
 from app.schemas.vo.supplier_vo import SupplierVO
 
-PAGE_HINT = "请到供应商一览表手工增加或上传（#/supplier-list）"
-DISABLED_HINT = "请到供应商一览表启用（#/supplier-list）"
+PAGE_HINT = "请到供应商一览手工增加或上传（#/supplier-list）"
+DISABLED_HINT = "请到供应商一览启用（#/supplier-list）"
 
 
 def to_vo(row: Supplier) -> SupplierVO:
@@ -46,7 +46,7 @@ def assert_identity_distinct(
     seen: set[str] = set()
     for token in tokens:
         if token in seen:
-            raise BusinessException("缩写、工商名称、ERP 代码与别名不得相同")
+            raise BusinessException("缩写、全称、对外代码与别名不得相同")
         seen.add(token)
 
 
@@ -69,7 +69,7 @@ def lookup_token_owner(repository: SupplierRepository, db: Session, token: str) 
 def assert_canonical_available(repository: SupplierRepository, db: Session, name: str) -> None:
     owner = lookup_token_owner(repository, db, name)
     if owner is not None:
-        raise BusinessException("该工商名称已有供应商")
+        raise BusinessException("该全称已有供应商")
 
 
 def assert_canonical_available_for(
@@ -77,7 +77,7 @@ def assert_canonical_available_for(
 ) -> None:
     current = lookup_token_owner(repository, db, name)
     if current is not None and current != owner:
-        raise BusinessException("该工商名称已有供应商")
+        raise BusinessException("该全称已有供应商")
 
 
 def assert_abbreviation_available(repository: SupplierRepository, db: Session, name: str) -> None:
@@ -95,7 +95,7 @@ def assert_abbreviation_available_for(
 
 def assert_erp_available(repository: SupplierRepository, db: Session, name: str) -> None:
     if lookup_token_owner(repository, db, name) is not None:
-        raise BusinessException("该 ERP 代码已被占用")
+        raise BusinessException("该对外代码已被占用")
 
 
 def assert_erp_available_for(
@@ -103,12 +103,12 @@ def assert_erp_available_for(
 ) -> None:
     current = lookup_token_owner(repository, db, name)
     if current is not None and current != owner:
-        raise BusinessException("该 ERP 代码已被占用")
+        raise BusinessException("该对外代码已被占用")
 
 
 def assert_alias_available(repository: SupplierRepository, db: Session, name: str) -> None:
     if lookup_token_owner(repository, db, name) is not None:
-        raise BusinessException("别名不得等于已有缩写、工商名称、ERP 代码或别名")
+        raise BusinessException("别名不得等于已有缩写、全称、对外代码或别名")
 
 
 def resolve_canonical(repository: SupplierRepository, db: Session, raw: str) -> str | None:

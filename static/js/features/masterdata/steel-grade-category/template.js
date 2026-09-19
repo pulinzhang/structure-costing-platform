@@ -35,28 +35,37 @@ export function steelGradeCategoryTemplate() {
                     <div class="flex items-start justify-between gap-4">
                         <div>
                             <h2 class="text-[13px] font-semibold text-[#F0F0F2] tracking-wide">牌号分类</h2>
-                            <p class="mt-1 text-[11px] text-[#555555]">一个牌号一行，挂冷轧 / 镀锌 / 酸洗；列表导出可直接再导入</p>
+                            <p class="mt-1 text-[11px] text-[#555555]">核价材质分类；工艺与基价只读本档，不自动补行</p>
                         </div>
-                        <div class="flex items-center gap-2 shrink-0">
-                            <button type="button" id="sgcTemplateBtn"
-                                    class="inline-flex items-center gap-1.5 bg-transparent text-[#8E8E93] border border-[#2A2A35] px-3 py-1.5 text-[11px] font-medium rounded hover:border-[#FF1E27]/50 hover:text-[#FF1E27] transition-all">
-                                ${window.svgIcon('download', 'w-3 h-3')}
-                                下载模板
-                            </button>
-                            <button type="button" id="sgcImportBtn"
-                                    class="inline-flex items-center gap-1.5 bg-transparent text-[#8E8E93] border border-[#2A2A35] px-3 py-1.5 text-[11px] font-medium rounded hover:border-[#FF1E27]/50 hover:text-[#FF1E27] transition-all">
-                                ${window.svgIcon('upload', 'w-3 h-3')}
-                                导入 Excel
-                            </button>
+                        <div class="flex items-center gap-1.5 shrink-0">
+                            <div class="relative" id="sgcMoreWrap">
+                                <button type="button" id="sgcMoreBtn"
+                                        class="w-8 h-8 flex items-center justify-center text-[#484848] hover:text-[#ffffff] transition-colors"
+                                        aria-label="更多操作" title="更多">
+                                    <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+                                        <circle cx="5" cy="12" r="1.6"/><circle cx="12" cy="12" r="1.6"/><circle cx="19" cy="12" r="1.6"/>
+                                    </svg>
+                                </button>
+                                <div id="sgcMoreMenu"
+                                     class="hidden absolute right-0 top-full mt-1 z-[40] min-w-[132px] py-1 bg-[#161616] border border-[#2c2c2c] shadow-[0_8px_24px_rgba(0,0,0,0.55)]">
+                                    <button type="button" id="sgcTemplateBtn"
+                                            class="w-full px-3.5 py-2 text-left text-[12px] text-[#9e9e9e] hover:bg-[#1e1e1e] hover:text-[#ffffff] transition-colors">
+                                        下载模板
+                                    </button>
+                                    <button type="button" id="sgcImportBtn"
+                                            class="w-full px-3.5 py-2 text-left text-[12px] text-[#9e9e9e] hover:bg-[#1e1e1e] hover:text-[#ffffff] transition-colors">
+                                        导入
+                                    </button>
+                                    <button type="button" id="sgcExportBtn"
+                                            class="w-full px-3.5 py-2 text-left text-[12px] text-[#9e9e9e] hover:bg-[#1e1e1e] hover:text-[#ffffff] transition-colors">
+                                        导出
+                                    </button>
+                                </div>
+                            </div>
                             <input type="file" id="sgcImportFileInput" class="hidden" accept=".xlsx,.xls">
-                            <button type="button" id="sgcExportBtn"
-                                    class="inline-flex items-center gap-1.5 bg-transparent text-[#8E8E93] border border-[#2A2A35] px-3 py-1.5 text-[11px] font-medium rounded hover:border-[#FF1E27]/50 hover:text-[#FF1E27] transition-all">
-                                ${window.svgIcon('download', 'w-3 h-3')}
-                                导出 Excel
-                            </button>
                             <button type="button" id="sgcAddBtn"
-                                    class="inline-flex items-center gap-1.5 bg-[#FF1E27] text-white px-3 py-1.5 text-[11px] font-semibold rounded hover:bg-[#d32f2f] transition-all">
-                                ${window.svgIcon('plus', 'w-3 h-3')}
+                                    class="inline-flex items-center gap-1.5 bg-[#FF1E27] hover:bg-[#d32f2f] text-white px-3 py-1.5 text-[11px] font-semibold rounded-md transition-all">
+                                ${window.svgIcon('plus', 'w-3.5 h-3.5')}
                                 新增
                             </button>
                         </div>
@@ -98,13 +107,12 @@ export function steelGradeCategoryTemplate() {
                 </div>
 
                 <div id="sgcEmptyState" class="hidden flex flex-col items-center justify-center py-16 text-center bg-[#0A0A0E]">
-                    <div class="text-[#555555] mb-2">${window.svgIcon('inbox')}</div>
-                    <p class="text-[12px] text-[#8E8E93] mb-1">暂无牌号</p>
+                    <p class="text-xs text-[#8E8E93] mb-1">暂无牌号</p>
                     <p class="text-[11px] text-[#555555]">请在本页手工新增；工艺或基价导入不会自动补档</p>
                 </div>
                 <div id="sgcLoadingState" class="hidden flex flex-col items-center justify-center py-16 gap-2 bg-[#0A0A0E]">
                     <div class="w-5 h-5 border-2 border-[#2c2c2c] border-t-[#FF1E27] rounded-full animate-spin"></div>
-                    <span class="text-[11px] text-[#555555]">加载中</span>
+                    <span class="text-[11px] text-[#555555]">加载中..</span>
                 </div>
 
                 ${paginationBarHtml({ infoId: 'sgcTotalCount', selectId: 'sgcPageSize', buttonsId: 'sgcPaginationBtns' })}
@@ -150,34 +158,35 @@ export function steelGradeCategoryTemplate() {
                 </form>
             </div>
             <div class="px-5 py-3 border-t border-[#2c2c2c] flex items-center justify-end gap-2 bg-[#16161a] shrink-0">
-                <button type="button" id="sgcCancelEdit"
-                        class="px-4 py-1.5 text-xs text-[#9e9e9e] hover:text-white border border-[#2c2c2c] hover:bg-[#262626] transition-all">取消</button>
+                    <button type="button" id="sgcCancelEdit"
+                        class="px-4 py-1.5 text-xs text-[#9e9e9e] border border-[#2c2c2c] hover:text-white">取消</button>
                 <button type="button" id="sgcSubmitEdit"
                         class="bg-[#FF1E27] hover:bg-[#d32f2f] text-white px-5 py-1.5 text-xs font-semibold transition-all">保存</button>
             </div>
         </div>
 
-        <div class="fixed inset-0 z-[80] bg-black/70 backdrop-blur-sm" id="sgcDeleteBackdrop" style="display:none"></div>
-        <div class="fixed inset-y-0 right-0 z-[85] w-[380px] bg-[#1a1a1a] border-l border-[#2a2a2a]
+        <div class="fixed inset-0 z-[80] bg-black/80 backdrop-blur-sm" id="sgcDeleteBackdrop" style="display:none"></div>
+        <div class="fixed inset-y-0 right-0 z-[85] w-[360px] bg-[#121215] border-l border-[#2c2c2c]
                     transform translate-x-full transition-transform duration-300 ease-in-out flex flex-col"
              id="sgcDeleteDrawer" style="display:none; max-height: 100vh;">
-            <div class="px-5 py-3.5 flex items-center justify-between shrink-0 border-b border-[#333333]">
-                <h5 class="text-[11px] font-semibold tracking-wider text-[#b0b0b0] flex items-center gap-2.5">
-                    <span class="w-[3px] h-3.5 bg-[#c62828] inline-block"></span>
-                    确认删除
-                </h5>
-                <button type="button" id="sgcCloseDelete" class="w-8 h-8 text-[#707070] hover:text-white">✕</button>
+            <div class="px-5 py-3.5 flex items-center justify-between border-b border-[#2c2c2c] bg-[#16161a] shrink-0">
+                <div class="flex items-center gap-2">
+                    <span class="w-1 h-3.5 bg-[#FF1E27]"></span>
+                    <h5 class="text-xs font-semibold text-white tracking-wider">删除牌号</h5>
+                </div>
+                <button type="button" id="sgcCloseDelete" class="text-[#616161] hover:text-white w-6 h-6 flex items-center justify-center">✕</button>
             </div>
-            <div class="flex-1 p-6">
+            <div class="flex-1 p-5">
                 <input type="hidden" id="sgcDeleteId" value="">
-                <p class="text-[12px] text-[#9e9e9e] mb-2">确定删除牌号 <span id="sgcDeleteGrade" class="font-mono text-white"></span>？</p>
-                <p class="text-[11px] text-[#616161]">只删档案行，不改零件和基价。</p>
+                <p class="text-xs text-[#9e9e9e] mb-2">确认删除牌号</p>
+                <p id="sgcDeleteGrade" class="text-sm font-semibold text-white font-mono"></p>
+                <p class="text-[11px] text-[#555555] mt-3">只删档案行，不改零件和基价。</p>
             </div>
-            <div class="px-6 py-4 border-t border-[#262626] flex items-center justify-end gap-2 shrink-0">
+            <div class="px-5 py-3 border-t border-[#2c2c2c] flex items-center justify-end gap-2 bg-[#16161a] shrink-0">
                 <button type="button" id="sgcCancelDelete"
-                        class="inline-flex items-center bg-transparent text-[#9e9e9e] border border-[#2c2c2c] px-4 py-2 text-[11px] font-medium rounded hover:text-white">取消</button>
+                        class="px-4 py-1.5 text-xs text-[#9e9e9e] border border-[#2c2c2c]">取消</button>
                 <button type="button" id="sgcConfirmDelete"
-                        class="inline-flex items-center bg-[#c62828] text-white px-4 py-2 text-[11px] font-semibold rounded hover:bg-[#b71c1c]">删除</button>
+                        class="bg-[#c62828] hover:bg-[#b71c1c] text-white px-5 py-1.5 text-xs font-semibold">删除</button>
             </div>
         </div>
     `;
@@ -207,21 +216,19 @@ export function renderTableRows(records) {
                 <div>${esc(record.updated_by || '—')}</div>
                 <div>${esc(updated)}</div>
             </td>
-            <td class="px-1 py-2 text-center">
-                <div class="inline-flex items-center justify-center gap-0.5 opacity-0 pointer-events-none group-hover:opacity-100 group-hover:pointer-events-auto focus-within:opacity-100 focus-within:pointer-events-auto transition-opacity duration-100">
-                    ${canUpdate ? `
-                    <button type="button" data-action="edit" data-id="${esc(record.id)}"
-                            class="inline-flex items-center justify-center w-7 h-7 rounded-sm text-[#555555] hover:text-[#C8C8D0] hover:bg-[#161620] transition-all"
-                            title="编辑" aria-label="编辑">
-                        ${window.svgIcon('pencil', 'w-3.5 h-3.5')}
-                    </button>` : ''}
-                    ${canDelete ? `
-                    <button type="button" data-action="delete" data-id="${esc(record.id)}" data-grade="${esc(record.grade)}"
-                            class="inline-flex items-center justify-center w-7 h-7 rounded-sm text-[#555555] hover:text-[#ef5350] hover:bg-[#161620] transition-all"
-                            title="删除" aria-label="删除">
-                        ${window.svgIcon('trash', 'w-3.5 h-3.5')}
-                    </button>` : ''}
-                </div>
+            <td class="px-1 py-2 text-center whitespace-nowrap">
+                ${canUpdate ? `
+                <button type="button" data-action="edit" data-id="${esc(record.id)}"
+                        class="w-7 h-7 inline-flex items-center justify-center text-[#6E6E73] hover:text-[#FF1E27] opacity-0 group-hover:opacity-100 focus:opacity-100"
+                        title="编辑" aria-label="编辑">
+                    ${window.svgIcon('pencil', 'w-3.5 h-3.5')}
+                </button>` : ''}
+                ${canDelete ? `
+                <button type="button" data-action="delete" data-id="${esc(record.id)}" data-grade="${esc(record.grade)}"
+                        class="w-7 h-7 inline-flex items-center justify-center text-[#6E6E73] hover:text-[#ef5350] opacity-0 group-hover:opacity-100 focus:opacity-100"
+                        title="删除" aria-label="删除">
+                    ${window.svgIcon('trash', 'w-3.5 h-3.5')}
+                </button>` : ''}
             </td>
         </tr>`;
         })

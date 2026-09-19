@@ -79,7 +79,7 @@ def _nav_vehicle_model_period(
 ) -> CostingEngineNavigateVO:
     return CostingEngineNavigateVO(
         page="vehicle-model-list",
-        label="去项目一览表",
+        label="去项目一览",
         query=_query(
             location=location,
             include_location=True,
