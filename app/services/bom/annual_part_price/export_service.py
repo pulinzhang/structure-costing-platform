@@ -1,8 +1,9 @@
-"""BOM 年度零件价 Excel 导出服务。"""
+"""年度零件价 Excel 导出：核心列对齐导入 Parser；另含基地/年份/审核审计列。"""
 
 from __future__ import annotations
 
 import logging
+from datetime import datetime
 from decimal import Decimal
 from typing import Any
 
@@ -11,10 +12,24 @@ from openpyxl.styles import Alignment, Border, Font, PatternFill, Side
 from openpyxl.utils import get_column_letter
 from sqlalchemy.orm import Session
 
+from app.common.audit import audit_status_label
 from app.common.excel_workbook import resolve_worksheet
 from app.common.export_watermark import workbook_to_xlsx_bytes
 from app.common.money import Q4, excel_money_cell
 from app.common.timezone import now
+from app.parsers.bom.annual_part_price_parser import (
+    HEADER_CONVERSION_FACTOR,
+    HEADER_PART_NAME,
+    HEADER_PART_NUMBER,
+    HEADER_PURCHASE_UNIT,
+    HEADER_PURCHASE_UNIT_PRICE,
+    HEADER_REMARK,
+    HEADER_SPECIFICATION,
+    HEADER_SUPPLIER,
+    HEADER_SUPPLY_TYPE,
+    HEADER_UNIT,
+    HEADER_UNIT_PRICE,
+)
 from app.repositories.bom.annual_part_price_repository import (
     BomAnnualPartPriceRepository,
 )
@@ -22,20 +37,20 @@ from app.schemas.vo.user_vo import UserVO
 
 logger = logging.getLogger("service.bom_annual_part_price_export")
 
-_AUDIT_LABELS: dict[str, str] = {
-    "pending": "待审",
-    "approved": "已通过",
-    "rejected": "已驳回",
-}
-
 
 def _unit_price_cell(value: Any) -> Decimal | str:
     """导出单价：保持 Decimal，不经 float。"""
     return excel_money_cell(value, Q4)
 
 
+def _dt(value: datetime | None) -> str:
+    if value is None:
+        return ""
+    return f"{value:%Y-%m-%d %H:%M:%S}"
+
+
 class BomAnnualPartPriceExportService:
-    """年度零件价 Excel 导出。"""
+    """年度零件价 Excel 导出（可再导入）。"""
 
     def __init__(self) -> None:
         self.repository = BomAnnualPartPriceRepository()
@@ -76,7 +91,7 @@ class BomAnnualPartPriceExportService:
         *,
         location: str | None = None,
         year: int | None = None,
-        sheet_title: str = "BOM年度零件价",
+        sheet_title: str = "年度零件价",
     ) -> tuple[str, int]:
         records = self.repository.list_for_export(
             db,
@@ -102,18 +117,22 @@ class BomAnnualPartPriceExportService:
         headers = [
             "基地",
             "年份",
-            "零件号",
-            "零件名称",
-            "规格",
-            "采购单位",
-            "采购单价",
-            "转换系数",
-            "单位",
-            "单价",
-            "原供货类型",
-            "供应商",
-            "备注",
+            HEADER_PART_NUMBER,
+            HEADER_PART_NAME,
+            HEADER_SPECIFICATION,
+            HEADER_PURCHASE_UNIT,
+            HEADER_PURCHASE_UNIT_PRICE,
+            HEADER_CONVERSION_FACTOR,
+            HEADER_UNIT,
+            HEADER_UNIT_PRICE,
+            HEADER_SUPPLY_TYPE,
+            HEADER_SUPPLIER,
+            HEADER_REMARK,
             "审核状态",
+            "创建人",
+            "创建时间",
+            "更新人",
+            "更新时间",
         ]
         for col, title in enumerate(headers, start=1):
             cell = ws.cell(row=1, column=col, value=title)
@@ -123,7 +142,6 @@ class BomAnnualPartPriceExportService:
             cell.border = thin_border
 
         for row_idx, record in enumerate(records, start=2):
-            audit_label = _AUDIT_LABELS.get(record.audit_status, record.audit_status)
             values: list[Any] = [
                 record.location,
                 record.year,
@@ -140,7 +158,11 @@ class BomAnnualPartPriceExportService:
                 record.supply_type,
                 record.supplier_name or "",
                 record.remark or "",
-                audit_label,
+                audit_status_label(record.audit_status),
+                record.created_by or "",
+                _dt(record.created_at),
+                record.updated_by or "",
+                _dt(record.updated_at),
             ]
             for col, value in enumerate(values, start=1):
                 cell = ws.cell(row=row_idx, column=col, value=value)
@@ -157,10 +179,11 @@ class BomAnnualPartPriceExportService:
                 else:
                     cell.alignment = align_left
 
-        widths = [12, 10, 18, 24, 16, 12, 12, 12, 8, 12, 12, 16, 20, 10]
+        widths = [12, 10, 18, 24, 16, 12, 12, 12, 8, 12, 12, 16, 20, 10, 12, 20, 12, 20]
         for idx, width in enumerate(widths, start=1):
             ws.column_dimensions[get_column_letter(idx)].width = width
 
         ws.freeze_panes = "A2"
-        ws.auto_filter.ref = f"A1:N{max(1, len(records) + 1)}"
+        last_col = get_column_letter(len(headers))
+        ws.auto_filter.ref = f"A1:{last_col}{max(1, len(records) + 1)}"
         return ws.title, len(records)

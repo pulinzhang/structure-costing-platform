@@ -92,7 +92,7 @@ def export_excel(
     db: Session = Depends(get_db),
     current_user: UserVO = Depends(require_perm(Perm.BOM_ANNUAL_PART_PRICE_EXPORT)),
 ) -> StreamingResponse:
-    """按当前筛选条件导出年度零件价 Excel。"""
+    """按当前筛选条件导出年度零件价 Excel（含基地/年份/审核列；导入列可再导入）。"""
     content, filename = _export_service.export(
         db,
         location=location.strip() if location else None,

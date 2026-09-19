@@ -34,7 +34,7 @@ import { pageConfig as stampingDieFeePage } from './features/stamping/die-fee/li
 import { pageConfig as stampingGaugeFeeUploadPage } from './features/stamping/gauge-fee/upload/index.js?v=7';
 import { pageConfig as stampingGaugeFeePage } from './features/stamping/gauge-fee/list/index.js?v=16';
 import { pageConfig as stampingTonnagePage } from './features/stamping/tonnage/list/index.js?v=28';
-import { pageConfig as stampingTonnageUploadPage } from './features/stamping/tonnage/upload/index.js?v=9';
+import { pageConfig as stampingTonnageUploadPage } from './features/stamping/tonnage/upload/index.js?v=11';
 import { pageConfig as stampingProcessFeeCalcPage } from './features/stamping/process-fee/calc/index.js?v=44';
 import { pageConfig as stampingProcessFeePage } from './features/stamping/process-fee/list/index.js?v=59';
 import { pageConfig as steelPriceListPage }   from './features/costing/steel-price/list/index.js?v=64';
@@ -56,9 +56,9 @@ import { pageConfig as bomWhereUsedPage } from './features/bom/material/where-us
 import { pageConfig as bomVizPage }        from './features/bom/material/viz/index.js?v=34';
 import { pageConfig as bomUploadPage }     from './features/bom/material/upload/index.js?v=16';
 import { pageConfig as bomMaterialListPage } from './features/bom/material/list/index.js?v=9';
-import { pageConfig as bomWeldingUnitPriceUploadPage } from './features/bom/welding-unit-price/upload/index.js?v=14';
+import { pageConfig as bomWeldingUnitPriceUploadPage } from './features/bom/welding-unit-price/upload/index.js?v=15';
 import { pageConfig as bomWeldingUnitPricePage } from './features/bom/welding-unit-price/list/index.js?v=20';
-import { pageConfig as bomAnnualPartPriceUploadPage } from './features/bom/annual-part-price/upload/index.js?v=16';
+import { pageConfig as bomAnnualPartPriceUploadPage } from './features/bom/annual-part-price/upload/index.js?v=17';
 import { pageConfig as bomAnnualPartPricePage } from './features/bom/annual-part-price/list/index.js?v=20';
 import { pageConfig as bomPackagingTransportFeeUploadPage } from './features/bom/packaging-transport-fee/upload/index.js?v=9';
 import { pageConfig as bomPackagingTransportFeePage } from './features/bom/packaging-transport-fee/list/index.js?v=13';

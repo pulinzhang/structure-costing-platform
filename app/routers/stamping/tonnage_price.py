@@ -127,7 +127,7 @@ def export_excel(
     db: Session = Depends(get_db),
     current_user: UserVO = Depends(require_perm(Perm.STAMPING_TONNAGE_EXPORT)),
 ) -> StreamingResponse:
-    """按当前筛选条件导出冲次单价 Excel。"""
+    """按当前筛选条件导出冲次单价 Excel（含基地/年份/审核列；名称/单位/单价可再导入）。"""
     content, filename = _export_service.export(
         db,
         location=location.strip() if location else None,

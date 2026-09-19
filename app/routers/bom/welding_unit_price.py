@@ -127,7 +127,7 @@ def export_excel(
     db: Session = Depends(get_db),
     current_user: UserVO = Depends(require_perm(Perm.BOM_WELDING_UNIT_PRICE_EXPORT)),
 ) -> StreamingResponse:
-    """按当前筛选条件导出焊接单价 Excel。"""
+    """按当前筛选条件导出焊接单价 Excel（含基地/年份/审核列；名称/单位/费用/备注可再导入）。"""
     content, filename = _export_service.export(
         db,
         location=location.strip() if location else None,

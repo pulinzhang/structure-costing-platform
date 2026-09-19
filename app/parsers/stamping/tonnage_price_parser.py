@@ -87,9 +87,22 @@ def _parse_price(value: Any) -> Decimal | None:
 def _find_header_row(sheet: Any) -> tuple[int, dict[str, int]] | None:
     """定位表头行，返回 (行号, 列名→列号)。"""
     aliases = {
-        HEADER_NAME: {HEADER_NAME, "名称", "吨位", "压机吨位", "吨位名称"},
+        HEADER_NAME: {
+            HEADER_NAME,
+            "名称",
+            "吨位",
+            "压机吨位",
+            "压机吨位(T)",
+            "吨位名称",
+        },
         HEADER_UNIT: {HEADER_UNIT, "单位"},
-        HEADER_PRICE: {HEADER_PRICE, "单价", "单冲次价格", "价格"},
+        HEADER_PRICE: {
+            HEADER_PRICE,
+            "单价",
+            "单冲次价格",
+            "单冲次价格(元)",
+            "价格",
+        },
     }
     max_scan = min(sheet.max_row or 1, 20)
     max_col = min(sheet.max_column or 1, 20)

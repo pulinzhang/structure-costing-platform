@@ -14,7 +14,12 @@ from sqlalchemy.orm import Session
 from app.common.audit import audit_create, audit_update
 from app.config import settings
 from app.exceptions.base import BusinessException
-from app.parsers.stamping.tonnage_price_parser import parse_tonnage_price_excel
+from app.parsers.stamping.tonnage_price_parser import (
+    HEADER_NAME,
+    HEADER_PRICE,
+    HEADER_UNIT,
+    parse_tonnage_price_excel,
+)
 from app.repositories.stamping.tonnage_price_repository import StampingTonnagePriceRepository
 from app.schemas.dto.stamping_tonnage_price_dto import (
     StampingTonnagePriceCreate,
@@ -63,7 +68,7 @@ class StampingTonnagePriceImportService:
             bottom=Side(style="thin", color="BFBFBF"),
         )
 
-        headers = ["名称", "单位", "单价"]
+        headers = [HEADER_NAME, HEADER_UNIT, HEADER_PRICE]
         for col, title in enumerate(headers, start=1):
             cell = sheet.cell(row=1, column=col, value=title)
             cell.font = header_font
