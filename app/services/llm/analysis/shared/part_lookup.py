@@ -3,11 +3,16 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
-from typing import Any, Literal
+from typing import Literal
 
 from app.repositories.llm.cost_analysis import L0PartPeriodRow
 from app.repositories.llm.stamping_cost_analysis_repository import StampingPartPeriodRow
 from app.repositories.llm.stamping_process_analysis_repository import StampingProcessPartRow
+from app.schemas.llm.analysis_payload import (
+    PartExistencePayload,
+    PartPresenceBlock,
+    SummaryPayload,
+)
 from app.services.llm._money import money_str, month_key
 from app.services.llm.analysis.shared.drilldown import (
     assembly_card_role,
@@ -89,7 +94,7 @@ def build_part_lookup_summary(
     l0_rows: list[L0PartPeriodRow],
     stamping_rows: list[StampingPartPeriodRow],
     process_rows: list[StampingProcessPartRow],
-) -> dict[str, Any]:
+) -> SummaryPayload:
     resolved: set[str] = set()
     part_names: set[str] = set()
     locations: set[str] = set()
@@ -125,7 +130,7 @@ def build_part_lookup_summary(
     }
 
 
-def _l0_presence(rows: list[L0PartPeriodRow], query_token: str) -> dict[str, Any]:
+def _l0_presence(rows: list[L0PartPeriodRow], query_token: str) -> PartPresenceBlock:
     if not rows:
         return {
             "found": False,
@@ -142,7 +147,7 @@ def _l0_presence(rows: list[L0PartPeriodRow], query_token: str) -> dict[str, Any
             int(row.level or 0),
         )
         by_identity.setdefault(key, []).append(row)
-    identities: list[dict[str, Any]] = []
+    identities: list[dict[str, object]] = []
     heads: list[L0PartPeriodRow] = []
     for items in by_identity.values():
         latest_item = sorted(items, key=lambda row: (row.year, row.month))[-1]
@@ -195,7 +200,7 @@ def _l0_presence(rows: list[L0PartPeriodRow], query_token: str) -> dict[str, Any
     }
 
 
-def _not_applicable_presence(source: str, note: str) -> dict[str, Any]:
+def _not_applicable_presence(source: str, note: str) -> PartPresenceBlock:
     return {
         "found": False,
         "source": source,
@@ -209,7 +214,7 @@ def _not_applicable_presence(source: str, note: str) -> dict[str, Any]:
 def _stamping_cost_presence(
     rows: list[StampingPartPeriodRow],
     query_token: str,
-) -> dict[str, Any]:
+) -> PartPresenceBlock:
     if not rows:
         return {
             "found": False,
@@ -238,7 +243,7 @@ def _stamping_cost_presence(
 def _stamping_process_presence(
     rows: list[StampingProcessPartRow],
     query_token: str,
-) -> dict[str, Any]:
+) -> PartPresenceBlock:
     if not rows:
         return {
             "found": False,
@@ -272,7 +277,7 @@ def build_part_existence(
     l0_rows: list[L0PartPeriodRow],
     stamping_rows: list[StampingPartPeriodRow],
     process_rows: list[StampingProcessPartRow],
-) -> dict[str, Any]:
+) -> PartExistencePayload:
     profile = resolve_part_data_profile(
         l0_rows=l0_rows,
         stamping_rows=stamping_rows,

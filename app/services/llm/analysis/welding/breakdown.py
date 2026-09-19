@@ -3,10 +3,14 @@
 from __future__ import annotations
 
 from decimal import ROUND_HALF_UP, Decimal
-from typing import Any
 
 from app.repositories.llm.welding_process_breakdown_analysis_repository import (
     WeldingBreakdownNodeRow,
+)
+from app.schemas.llm.analysis_payload import (
+    DrilldownPayload,
+    DriversPayload,
+    SummaryPayload,
 )
 
 
@@ -17,7 +21,7 @@ def _qty_str(value: Decimal | None) -> str | None:
     return f"{quantized:.4f}"
 
 
-def build_welding_breakdown_summary(rows: list[WeldingBreakdownNodeRow]) -> dict[str, Any]:
+def build_welding_breakdown_summary(rows: list[WeldingBreakdownNodeRow]) -> SummaryPayload:
     if not rows:
         return {
             "subject": "welding_process_breakdown",
@@ -46,7 +50,7 @@ def build_welding_breakdown_drilldown(
     *,
     part_token: str,
     head: WeldingBreakdownNodeRow | None = None,
-) -> dict[str, Any]:
+) -> DrilldownPayload:
     if not rows:
         return {
             "kind": "drilldown",
@@ -88,7 +92,7 @@ def build_welding_breakdown_drivers(
     rows: list[WeldingBreakdownNodeRow],
     *,
     top_n: int = 8,
-) -> dict[str, Any]:
+) -> DriversPayload:
     if not rows:
         return {"kind": "drivers", "items": [], "top_n": top_n}
 

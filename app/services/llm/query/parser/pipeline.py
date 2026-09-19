@@ -2,8 +2,6 @@
 
 from __future__ import annotations
 
-from typing import Any
-
 from sqlalchemy.orm import Session
 
 from app.common.part_number import extract_part_number_from_text, sanitize_part_number_token
@@ -11,6 +9,7 @@ from app.common.timezone import now
 from app.common.tonnage import extract_tonnage_from_text
 from app.repositories.llm.cost_analysis import L0CostAnalysisRepository
 from app.schemas.llm.analysis_query import AnalysisQuery
+from app.schemas.llm.parser_draft import ParserDraft
 from app.services.llm.client import LlmClientError
 from app.services.llm.comparison_basis import default_comparison_basis
 from app.services.llm.query.condition_extractor import ConditionExtractor
@@ -75,7 +74,7 @@ class QueryParser:
         clock = now()
         default = DefaultScopeMonth(year=clock.year, month=clock.month)
 
-        draft: dict[str, Any] = {}
+        draft: ParserDraft = {}
         try:
             draft = self._extractor.extract(
                 question,
@@ -135,7 +134,7 @@ class QueryParser:
     ) -> AnalysisQuery:
         clock = now()
         default = DefaultScopeMonth(year=clock.year, month=clock.month)
-        draft: dict[str, Any] = {}
+        draft: ParserDraft = {}
         fallback_level = 1
         parser_message: str | None = None
         try:
@@ -157,7 +156,7 @@ class QueryParser:
 
         filter_mentions: list[tuple[str, str]] = []
         filters_raw = draft.get("filters")
-        raw_filters: dict[str, Any] = filters_raw if isinstance(filters_raw, dict) else {}
+        raw_filters: dict[str, object] = filters_raw if isinstance(filters_raw, dict) else {}
         for key in ("location", "vehicle_model"):
             value = raw_filters.get(key)
             if value is not None and str(value).strip():
@@ -219,13 +218,13 @@ class QueryParser:
         db: Session,
         *,
         question: str,
-        draft: dict[str, Any],
+        draft: ParserDraft,
         default: DefaultScopeMonth,
         previous_query: AnalysisQuery | None = None,
     ) -> AnalysisQuery:
         filter_mentions: list[tuple[str, str]] = []
         filters_raw = draft.get("filters")
-        raw_filters: dict[str, Any] = filters_raw if isinstance(filters_raw, dict) else {}
+        raw_filters: dict[str, object] = filters_raw if isinstance(filters_raw, dict) else {}
         for key in ("location", "vehicle_model", "bom_version", "part_number", "tonnage"):
             value = raw_filters.get(key)
             if value is None or not str(value).strip():

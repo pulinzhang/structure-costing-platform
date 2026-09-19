@@ -2,8 +2,6 @@
 
 from __future__ import annotations
 
-from typing import Any
-
 from app.common.part_number import part_numbers_match
 from app.repositories.llm.annual_part_price_analysis_repository import AnnualPartPriceRow
 from app.repositories.llm.cost_analysis import (
@@ -11,6 +9,7 @@ from app.repositories.llm.cost_analysis import (
     L0CompositionLineRow,
     L0PartPeriodRow,
 )
+from app.schemas.llm.analysis_payload import DrilldownLatest, DrilldownPayload
 from app.services.llm._money import money_str, month_key
 from app.services.llm.analysis.shared.formulas import build_period_diff
 
@@ -80,7 +79,7 @@ def pick_finance_card(rows: list[L0PartPeriodRow]) -> L0PartPeriodRow:
     return rows[0]
 
 
-def _latest_payload(row: L0PartPeriodRow) -> dict[str, Any]:
+def _latest_payload(row: L0PartPeriodRow) -> DrilldownLatest:
     return {
         "month": month_key(row.year, row.month),
         "year": int(row.year),
@@ -111,7 +110,7 @@ def _latest_payload(row: L0PartPeriodRow) -> dict[str, Any]:
     }
 
 
-def _drilldown_one_identity(rows: list[L0PartPeriodRow]) -> dict[str, Any]:
+def _drilldown_one_identity(rows: list[L0PartPeriodRow]) -> DrilldownPayload:
     ordered = sorted(rows, key=lambda item: (item.year, item.month))
     latest = ordered[-1]
     start_row = ordered[0]
@@ -155,7 +154,7 @@ def build_drilldown(
     rows: list[L0PartPeriodRow],
     *,
     part_number: str,
-) -> dict[str, Any]:
+) -> DrilldownPayload:
     matched = [row for row in rows if part_numbers_match(row.part_number, part_number)]
     if not matched:
         return {
@@ -186,8 +185,10 @@ def build_drilldown(
     payload["fork"] = fork
     payload["identities"] = identities
     payload["identity_count"] = len(identities)
-    payload["year"] = payload["latest"]["year"]
-    payload["month"] = payload["latest"]["month_number"]
+    latest = payload.get("latest")
+    if isinstance(latest, dict):
+        payload["year"] = latest.get("year")
+        payload["month"] = latest.get("month_number")
     payload["found"] = True
     payload["price_source"] = "assembly_cost_card"
     payload["price_source_label"] = "核价表"
@@ -224,7 +225,7 @@ def build_item_price_drilldown(
     rows: list[L0CompositionLineRow],
     *,
     part_token: str,
-) -> dict[str, Any]:
+) -> DrilldownPayload:
     matched = [row for row in rows if part_numbers_match(row.child_part_number, part_token)]
     if not matched:
         return build_missing_part_price(part_token, costing_searched=True, annual_searched=False)
@@ -278,7 +279,7 @@ def build_annual_leaf_price(
     row: AnnualPartPriceRow,
     *,
     part_token: str,
-) -> dict[str, Any]:
+) -> DrilldownPayload:
     return {
         "kind": "drilldown",
         "found": True,
@@ -311,7 +312,7 @@ def build_missing_part_price(
     *,
     costing_searched: bool = True,
     annual_searched: bool = True,
-) -> dict[str, Any]:
+) -> DrilldownPayload:
     looked_in: list[str] = []
     if costing_searched:
         looked_in.append("核价表")
@@ -334,7 +335,7 @@ def build_branch_related(
     *,
     parent: L0PartPeriodRow | None,
     items: list[AssemblyCardItemRow],
-) -> dict[str, Any]:
+) -> DrilldownPayload:
     parent_payload = None
     if parent is not None:
         parent_payload = {

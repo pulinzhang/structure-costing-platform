@@ -4,11 +4,16 @@ from __future__ import annotations
 
 from collections import defaultdict
 from decimal import Decimal
-from typing import Any
 
 from app.repositories.llm.cost_analysis import L0PartPeriodRow
 from app.repositories.llm.l0_welding_fee_analysis_repository import L0WeldingFeeRow
 from app.repositories.llm.stamping_cost_analysis_repository import StampingPartPeriodRow
+from app.schemas.llm.analysis_payload import (
+    DriverItem,
+    DriversPayload,
+    MomAnomaliesPayload,
+    MomAnomalyItem,
+)
 from app.services.llm._money import money_str, month_key, rate_str
 from app.services.llm.analysis.shared.constants import (
     ASSEMBLY_UNIT_PRICE_MOM_THRESHOLD,
@@ -29,13 +34,13 @@ def build_l0_drivers(
     rows: list[L0PartPeriodRow],
     *,
     top_n: int = DEFAULT_DRIVER_TOP_N,
-) -> dict[str, Any]:
+) -> DriversPayload:
     priced_rows = [row for row in rows if _is_priced_unit(assembly_unit_price(row))]
     by_part: dict[str, list[L0PartPeriodRow]] = defaultdict(list)
     for row in priced_rows:
         by_part[row.part_number].append(row)
 
-    drivers: list[dict[str, Any]] = []
+    drivers: list[DriverItem] = []
     for part_number, items in by_part.items():
         ordered = sorted(items, key=lambda item: (item.year, item.month))
         first = ordered[0]
@@ -66,13 +71,13 @@ def build_stamping_drivers(
     rows: list[StampingPartPeriodRow],
     *,
     top_n: int = DEFAULT_DRIVER_TOP_N,
-) -> dict[str, Any]:
+) -> DriversPayload:
     priced_rows = [row for row in rows if row.unit_cost is not None and row.unit_cost > 0]
     by_part: dict[str, list[StampingPartPeriodRow]] = defaultdict(list)
     for row in priced_rows:
         by_part[row.part_number].append(row)
 
-    drivers: list[dict[str, Any]] = []
+    drivers: list[DriverItem] = []
     for part_number, items in by_part.items():
         ordered = sorted(items, key=lambda item: (item.year, item.month))
         first = ordered[0]
@@ -101,7 +106,7 @@ def build_l0_mom_anomalies(
     top_n: int = 15,
     min_rate: Decimal | None = None,
     focus_month: str | None = None,
-) -> dict[str, Any]:
+) -> MomAnomaliesPayload:
     """按月环比找单价跳变：相对上月绝对值 ≥ 10%（或从上月 0 变成有价）。"""
     rate_threshold = (
         min_rate if min_rate is not None else Decimal(ASSEMBLY_UNIT_PRICE_MOM_THRESHOLD)
@@ -110,7 +115,7 @@ def build_l0_mom_anomalies(
     for row in rows:
         by_part[row.part_number].append(row)
 
-    spikes: list[dict[str, Any]] = []
+    spikes: list[MomAnomalyItem] = []
     for part_number, items in by_part.items():
         ordered = sorted(items, key=lambda item: (item.year, item.month))
         for index in range(1, len(ordered)):
@@ -165,8 +170,8 @@ def build_l0_mom_anomalies(
     return _rank_mom_spikes(spikes, top_n=top_n)
 
 
-def _rank_mom_spikes(spikes: list[dict[str, Any]], *, top_n: int) -> dict[str, Any]:
-    def sort_key(item: dict[str, Any]) -> tuple[int, Decimal, Decimal]:
+def _rank_mom_spikes(spikes: list[MomAnomalyItem], *, top_n: int) -> MomAnomaliesPayload:
+    def sort_key(item: MomAnomalyItem) -> tuple[int, Decimal, Decimal]:
         if item.get("anomaly_type") == "calc_incomplete":
             return (2, Decimal("999999"), Decimal("0"))
         change_raw = item.get("change")
@@ -200,14 +205,14 @@ def build_stamping_mom_anomalies(
     top_n: int = 15,
     min_rate: Decimal | None = None,
     focus_month: str | None = None,
-) -> dict[str, Any]:
+) -> MomAnomaliesPayload:
     """冲压零件单价环比：相对上月绝对值 ≥ 10%。"""
     rate_threshold = _mom_rate_threshold(min_rate)
     by_part: dict[str, list[StampingPartPeriodRow]] = defaultdict(list)
     for row in rows:
         by_part[f"{row.part_number}|{row.stamping_supplier}"].append(row)
 
-    spikes: list[dict[str, Any]] = []
+    spikes: list[MomAnomalyItem] = []
     for _key, items in by_part.items():
         ordered = sorted(items, key=lambda item: (item.year, item.month))
         for index in range(1, len(ordered)):
@@ -274,14 +279,14 @@ def build_welding_fee_mom_anomalies(
     top_n: int = 15,
     min_rate: Decimal | None = None,
     focus_year: int | None = None,
-) -> dict[str, Any]:
+) -> MomAnomaliesPayload:
     """焊接费按年核算：相对上年绝对值 ≥ 10%。问某月时用该年结果对上年。"""
     rate_threshold = _mom_rate_threshold(min_rate)
     by_part: dict[str, list[L0WeldingFeeRow]] = defaultdict(list)
     for row in rows:
         by_part[_welding_fee_key(row)].append(row)
 
-    spikes: list[dict[str, Any]] = []
+    spikes: list[MomAnomalyItem] = []
     for _key, items in by_part.items():
         ordered = sorted(items, key=lambda item: item.year)
         for index in range(1, len(ordered)):

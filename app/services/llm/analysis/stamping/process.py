@@ -4,15 +4,19 @@ from __future__ import annotations
 
 from collections import defaultdict
 from decimal import Decimal
-from typing import Any
 
 from app.repositories.llm.stamping_process_analysis_repository import (
     StampingProcessDetailRow,
     StampingProcessPartRow,
 )
+from app.schemas.llm.analysis_payload import (
+    DrilldownPayload,
+    DriverItem,
+    SummaryPayload,
+)
 
 
-def build_stamping_process_summary(rows: list[StampingProcessPartRow]) -> dict[str, Any]:
+def build_stamping_process_summary(rows: list[StampingProcessPartRow]) -> SummaryPayload:
     if not rows:
         return {
             "subject": "stamping_process",
@@ -51,7 +55,7 @@ def build_stamping_process_drivers(
     rows: list[StampingProcessPartRow],
     *,
     top_n: int = 15,
-) -> dict[str, Any]:
+) -> SummaryPayload:
     """工序数最多的零件 TopN。"""
     ranked_rows = sorted(
         [row for row in rows if row.process_count > 0],
@@ -59,7 +63,7 @@ def build_stamping_process_drivers(
         reverse=True,
     )[:top_n]
 
-    items: list[dict[str, Any]] = []
+    items: list[DriverItem] = []
     for index, row in enumerate(ranked_rows, start=1):
         items.append(
             {
@@ -82,7 +86,7 @@ def build_stamping_process_drilldown(
     processes: list[StampingProcessDetailRow],
     *,
     part_number: str,
-) -> dict[str, Any]:
+) -> DrilldownPayload:
     if part is None:
         return {
             "kind": "drilldown",

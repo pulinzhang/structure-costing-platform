@@ -3,11 +3,11 @@
 from __future__ import annotations
 
 from decimal import Decimal
-from typing import Any
 
 from app.repositories.llm.cost_analysis import L0PartPeriodRow
 from app.repositories.llm.l0_welding_fee_analysis_repository import L0WeldingFeeRow
 from app.repositories.llm.stamping_cost_analysis_repository import StampingPartPeriodRow
+from app.schemas.llm.analysis_payload import RiskEntry, RiskPayload
 from app.services.llm.analysis.shared.formulas import assembly_unit_price
 
 
@@ -16,7 +16,7 @@ def build_risks(
     *,
     sample_limit: int = 20,
     filtered_missing_price_count: int = 0,
-) -> dict[str, Any]:
+) -> RiskPayload:
     missing_by_part: dict[str, L0PartPeriodRow] = {}
     zero_unit_by_part: dict[str, L0PartPeriodRow] = {}
     for row in rows:
@@ -70,7 +70,7 @@ def build_risks(
         key = (row.calc_message or row.calc_status or "unknown").strip()[:80]
         reason_counts[key] = reason_counts.get(key, 0) + 1
 
-    risks: list[dict[str, Any]] = []
+    risks: list[RiskEntry] = []
     if zero_unit_by_part:
         risks.append(
             {
@@ -120,7 +120,7 @@ def build_stamping_risks(
     rows: list[StampingPartPeriodRow],
     *,
     sample_limit: int = 20,
-) -> dict[str, Any]:
+) -> RiskPayload:
     missing_by_part: dict[str, StampingPartPeriodRow] = {}
     for row in rows:
         if row.unit_cost is None or row.unit_cost == 0:
@@ -144,7 +144,7 @@ def build_stamping_risks(
         )
         status_counts[row.calc_status] = status_counts.get(row.calc_status, 0) + 1
 
-    risks: list[dict[str, Any]] = []
+    risks: list[RiskEntry] = []
     if missing_by_part:
         zero_unit_samples = []
         for row in list(missing_by_part.values())[:sample_limit]:
@@ -200,7 +200,7 @@ def build_welding_fee_risks(
     rows: list[L0WeldingFeeRow],
     *,
     sample_limit: int = 20,
-) -> dict[str, Any]:
+) -> RiskPayload:
     zero_by_part: dict[str, L0WeldingFeeRow] = {}
     for row in rows:
         if _welding_fee_amount(row) == 0:
@@ -238,7 +238,7 @@ def build_welding_fee_risks(
         )
         status_counts[row.calc_status] = status_counts.get(row.calc_status, 0) + 1
 
-    risks: list[dict[str, Any]] = []
+    risks: list[RiskEntry] = []
     if zero_by_part:
         risks.append(
             {

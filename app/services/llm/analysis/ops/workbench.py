@@ -2,12 +2,11 @@
 
 from __future__ import annotations
 
-from typing import Any
-
 from app.repositories.llm.ops_workbench_repository import WorkbenchBoardRow
+from app.schemas.llm.analysis_payload import OpsWorkbenchPayload, RiskEntry, RiskPayload
 
 
-def build_ops_workbench_summary(boards: list[WorkbenchBoardRow]) -> dict[str, Any]:
+def build_ops_workbench_summary(boards: list[WorkbenchBoardRow]) -> OpsWorkbenchPayload:
     items = [
         {
             "slice_id": row.slice_id,
@@ -39,8 +38,8 @@ def build_ops_workbench_summary(boards: list[WorkbenchBoardRow]) -> dict[str, An
     }
 
 
-def build_ops_workbench_risks(summary: dict[str, Any]) -> dict[str, Any]:
-    risks: list[dict[str, Any]] = []
+def build_ops_workbench_risks(summary: OpsWorkbenchPayload) -> RiskPayload:
+    risks: list[RiskEntry] = []
     pending = int(summary.get("pending_audit_total") or 0)
     incomplete = int(summary.get("incomplete_total") or 0)
     confirm = int(summary.get("pending_confirm_total") or 0)

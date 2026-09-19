@@ -4,15 +4,17 @@ from __future__ import annotations
 
 from collections import Counter
 from decimal import Decimal
-from typing import Any
 
 from app.repositories.llm.die_fee_analysis_repository import DieFeeRow
 from app.repositories.llm.gauge_fee_analysis_repository import GaugeFeeRow
 from app.repositories.llm.procurement_object_analysis_repository import ProcurementObjectRow
+from app.schemas.llm.analysis_payload import (
+    SummaryPayload,
+)
 from app.services.llm._money import money_str
 
 
-def build_die_fee_summary(rows: list[DieFeeRow]) -> dict[str, Any]:
+def build_die_fee_summary(rows: list[DieFeeRow]) -> SummaryPayload:
     if not rows:
         return {
             "subject": "stamping_die_fee",
@@ -40,7 +42,7 @@ def build_die_fee_drilldown(
     *,
     part_token: str,
     head: DieFeeRow | None = None,
-) -> dict[str, Any]:
+) -> SummaryPayload:
     if not rows:
         return {
             "kind": "drilldown",
@@ -70,7 +72,7 @@ def build_die_fee_drilldown(
     }
 
 
-def build_gauge_fee_summary(rows: list[GaugeFeeRow]) -> dict[str, Any]:
+def build_gauge_fee_summary(rows: list[GaugeFeeRow]) -> SummaryPayload:
     if not rows:
         return {
             "subject": "stamping_gauge_fee",
@@ -95,7 +97,7 @@ def build_gauge_fee_drilldown(
     *,
     part_token: str,
     head: GaugeFeeRow | None = None,
-) -> dict[str, Any]:
+) -> SummaryPayload:
     if not rows:
         return {
             "kind": "drilldown",
@@ -116,7 +118,7 @@ def build_gauge_fee_drilldown(
     }
 
 
-def build_procurement_object_summary(rows: list[ProcurementObjectRow]) -> dict[str, Any]:
+def build_procurement_object_summary(rows: list[ProcurementObjectRow]) -> SummaryPayload:
     if not rows:
         return {
             "subject": "procurement_object",
@@ -150,7 +152,7 @@ def build_procurement_object_drilldown(
     *,
     part_token: str,
     head: ProcurementObjectRow | None = None,
-) -> dict[str, Any]:
+) -> SummaryPayload:
     if not rows:
         return {
             "kind": "drilldown",

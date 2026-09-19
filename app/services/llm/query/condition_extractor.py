@@ -4,8 +4,9 @@ from __future__ import annotations
 
 import json
 import re
-from typing import Any
+from typing import cast
 
+from app.schemas.llm.parser_draft import ParserDraft
 from app.services.llm.client import LlmClientError, OpenAiCompatibleClient
 
 _EXTRACT_SYSTEM = """你是核价分析条件抽取器。用户用中文提问采购/核价相关问题。
@@ -47,7 +48,7 @@ class ConditionExtractor:
         *,
         current_year: int,
         current_month: int,
-    ) -> dict[str, Any]:
+    ) -> ParserDraft:
         question = (user_question or "").strip()
         if not question:
             raise LlmClientError("问题为空")
@@ -68,4 +69,4 @@ class ConditionExtractor:
             raise LlmClientError(f"条件抽取 JSON 解析失败: {raw[:200]}") from exc
         if not isinstance(data, dict):
             raise LlmClientError("条件抽取结果不是对象")
-        return data
+        return cast(ParserDraft, data)

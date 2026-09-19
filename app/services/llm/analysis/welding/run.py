@@ -2,8 +2,6 @@
 
 from __future__ import annotations
 
-from typing import Any
-
 from sqlalchemy.orm import Session
 
 from app.repositories.llm.l0_welding_fee_analysis_repository import (
@@ -14,6 +12,9 @@ from app.repositories.llm.welding_process_breakdown_analysis_repository import (
 )
 from app.repositories.llm.welding_unit_price_analysis_repository import (
     WeldingUnitPriceAnalysisRepository,
+)
+from app.schemas.llm.analysis_payload import (
+    AnalysisResultLeafPayload,
 )
 from app.schemas.llm.analysis_query import AnalysisQuery
 from app.services.llm.analysis.shared.anomaly import build_welding_fee_risks
@@ -59,7 +60,7 @@ class WeldingAnalysis:
             has_data=bool(rows),
             data_message=(f"焊接单价行={len(rows)}" if rows else "当前范围无焊接单价数据"),
         )
-        parts_result: dict[str, Any] = {}
+        parts_result: dict[str, AnalysisResultLeafPayload] = {}
 
         if "summary" in query.analyses:
             out.summary = build_welding_unit_price_summary(rows)
@@ -110,7 +111,7 @@ class WeldingAnalysis:
                 f"焊接工艺拆解节点={len(rows)}" if rows else "当前范围无焊接工艺拆解数据"
             ),
         )
-        parts_result: dict[str, Any] = {}
+        parts_result: dict[str, AnalysisResultLeafPayload] = {}
         if "summary" in query.analyses:
             out.summary = build_welding_breakdown_summary(rows)
         if "drivers" in query.analyses:
@@ -176,7 +177,7 @@ class WeldingAnalysis:
                 f"成品焊接费行={len(focus_rows)}" if focus_rows else "当前范围无成品焊接费数据"
             ),
         )
-        parts_result: dict[str, Any] = {}
+        parts_result: dict[str, AnalysisResultLeafPayload] = {}
         if "summary" in query.analyses:
             out.summary = build_l0_welding_fee_summary(focus_rows)
         if "comparison" in query.analyses:

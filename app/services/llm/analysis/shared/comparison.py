@@ -4,9 +4,9 @@ from __future__ import annotations
 
 from collections import defaultdict
 from decimal import Decimal
-from typing import Any
 
 from app.repositories.llm.cost_analysis import L0MonthlyTotalRow
+from app.schemas.llm.analysis_payload import ComparisonPayload
 from app.schemas.llm.analysis_query import ComparisonBasis
 from app.services.llm._money import money_str, month_key, rate_str
 from app.services.llm.analysis.shared.formulas import compute_change_rate, compute_spread
@@ -17,12 +17,12 @@ def build_location_comparison(
     rows: list[L0MonthlyTotalRow],
     *,
     basis: ComparisonBasis,
-) -> dict[str, Any]:
+) -> ComparisonPayload:
     by_location: dict[str, list[L0MonthlyTotalRow]] = defaultdict(list)
     for row in rows:
         by_location[row.location].append(row)
 
-    series: list[dict[str, Any]] = []
+    series: list[dict[str, object]] = []
     for location, items in sorted(by_location.items()):
         ordered = sorted(items, key=lambda item: (item.year, item.month))
         points = [
@@ -48,18 +48,18 @@ def build_location_comparison(
             }
         )
 
-    winner: dict[str, str] | None = None
+    winner: dict[str, object] | None = None
     best_rate: Decimal | None = None
     for item in series:
         rate_text = item.get("change_rate")
         if rate_text is None:
             continue
-        rate = Decimal(rate_text)
+        rate = Decimal(str(rate_text))
         if best_rate is None or rate > best_rate:
             best_rate = rate
             winner = {"location": item["location"], "by": "change_rate"}
 
-    spreads: list[dict[str, Any]] = []
+    spreads: list[dict[str, object]] = []
     for left_index in range(len(series)):
         for right_index in range(left_index + 1, len(series)):
             left = series[left_index]
@@ -75,7 +75,8 @@ def build_location_comparison(
                 {
                     "location_a": left["location"],
                     "location_b": right["location"],
-                    **spread_result,
+                    "spread": spread_result["spread"],
+                    "status": spread_result["status"],
                 }
             )
 

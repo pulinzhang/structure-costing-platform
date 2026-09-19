@@ -2,14 +2,15 @@
 
 from __future__ import annotations
 
-from typing import Any
-
 from sqlalchemy.orm import Session
 
 from app.repositories.llm.base_price_analysis_repository import BasePriceAnalysisRepository
 from app.repositories.llm.policy_analysis_repository import PolicyAnalysisRepository
 from app.repositories.llm.scrap_price_analysis_repository import ScrapPriceAnalysisRepository
 from app.repositories.llm.steel_price_analysis_repository import SteelPriceAnalysisRepository
+from app.schemas.llm.analysis_payload import (
+    AnalysisResultLeafPayload,
+)
 from app.schemas.llm.analysis_query import AnalysisQuery
 from app.services.llm._money import money_str
 from app.services.llm.analysis.shared.compose import compose_result
@@ -68,7 +69,7 @@ class SteelAnalysis:
             has_data=bool(rows),
             data_message=(f"加减价阶梯行={len(rows)}" if rows else "当前范围无加减价政策数据"),
         )
-        parts_result: dict[str, Any] = {}
+        parts_result: dict[str, AnalysisResultLeafPayload] = {}
         if "summary" in query.analyses:
             out.summary = build_policy_summary(rows)
         if "drivers" in query.analyses:
@@ -112,7 +113,7 @@ class SteelAnalysis:
             has_data=bool(rows),
             data_message=(f"基准价行={len(rows)}" if rows else "当前范围无基准价格数据"),
         )
-        parts_result: dict[str, Any] = {}
+        parts_result: dict[str, AnalysisResultLeafPayload] = {}
         if "summary" in query.analyses:
             out.summary = build_base_price_summary(rows)
         if "drivers" in query.analyses:
@@ -161,7 +162,7 @@ class SteelAnalysis:
             has_data=bool(rows),
             data_message=(f"中标厚度价行={len(rows)}" if rows else "当前范围无中标厚度价数据"),
         )
-        parts_result: dict[str, Any] = {}
+        parts_result: dict[str, AnalysisResultLeafPayload] = {}
         if "summary" in query.analyses:
             out.summary = build_winning_thickness_summary(rows)
         if "drivers" in query.analyses:
@@ -195,7 +196,7 @@ class SteelAnalysis:
             has_data=bool(rows),
             data_message=(f"废料价行={len(rows)}" if rows else "当前范围无废料销售价数据"),
         )
-        parts_result: dict[str, Any] = {}
+        parts_result: dict[str, AnalysisResultLeafPayload] = {}
         if "summary" in query.analyses:
             out.summary = build_scrap_price_summary(rows)
         if "drivers" in query.analyses:
@@ -228,7 +229,7 @@ class SteelAnalysis:
             has_data=bool(steel_rows),
             data_message=f"钢材月度均价点数={len(steel_rows)}",
         )
-        parts_result: dict[str, Any] = {}
+        parts_result: dict[str, AnalysisResultLeafPayload] = {}
         if "summary" in query.analyses:
             out.summary = build_steel_summary(steel_rows)
         if "trend" in query.analyses:

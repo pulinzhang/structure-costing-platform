@@ -2,8 +2,6 @@
 
 from __future__ import annotations
 
-from typing import Any
-
 from sqlalchemy.orm import Session
 
 from app.repositories.llm.die_fee_analysis_repository import DieFeeAnalysisRepository
@@ -11,6 +9,10 @@ from app.repositories.llm.gauge_fee_analysis_repository import GaugeFeeAnalysisR
 from app.repositories.llm.ops_workbench_repository import OpsWorkbenchRepository
 from app.repositories.llm.procurement_object_analysis_repository import (
     ProcurementObjectAnalysisRepository,
+)
+from app.schemas.llm.analysis_payload import (
+    AnalysisResultLeafPayload,
+    RiskEntry,
 )
 from app.schemas.llm.analysis_query import AnalysisQuery
 from app.services.llm.analysis.ops.masterdata import (
@@ -57,7 +59,7 @@ class OpsAnalysis:
             ),
             summary=summary,
         )
-        parts_result: dict[str, Any] = {}
+        parts_result: dict[str, AnalysisResultLeafPayload] = {}
         if "risk" in query.analyses:
             parts_result["risk"] = build_ops_workbench_risks(summary)
         out.result = compose_result(parts_result, default_kind="summary")
@@ -80,13 +82,13 @@ class OpsAnalysis:
             has_data=bool(rows),
             data_message=(f"模具费行={len(rows)}" if rows else "当前范围无模具费数据"),
         )
-        parts_result: dict[str, Any] = {}
+        parts_result: dict[str, AnalysisResultLeafPayload] = {}
         if "summary" in query.analyses:
             out.summary = build_die_fee_summary(rows)
         if "risk" in query.analyses and out.summary:
-            pending = int(out.summary.get("pending_audit_count") or 0)
-            zero = int(out.summary.get("zero_fee_count") or 0)
-            risks: list[dict[str, Any]] = []
+            pending = int(str(out.summary.get("pending_audit_count") or 0))
+            zero = int(str(out.summary.get("zero_fee_count") or 0))
+            risks: list[RiskEntry] = []
             if pending:
                 risks.append(
                     {
@@ -128,13 +130,13 @@ class OpsAnalysis:
             has_data=bool(rows),
             data_message=(f"检具费行={len(rows)}" if rows else "当前范围无检具费档案"),
         )
-        parts_result: dict[str, Any] = {}
+        parts_result: dict[str, AnalysisResultLeafPayload] = {}
         if "summary" in query.analyses:
             out.summary = build_gauge_fee_summary(rows)
         if "risk" in query.analyses and out.summary:
-            zero = int(out.summary.get("zero_fee_count") or 0)
-            invalid = int(out.summary.get("invalid_count") or 0)
-            gauge_risks: list[dict[str, Any]] = []
+            zero = int(str(out.summary.get("zero_fee_count") or 0))
+            invalid = int(str(out.summary.get("invalid_count") or 0))
+            gauge_risks: list[RiskEntry] = []
             if zero:
                 gauge_risks.append(
                     {
@@ -179,7 +181,7 @@ class OpsAnalysis:
             has_data=bool(rows),
             data_message=(f"采购对象行={len(rows)}" if rows else "当前范围无采购对象清单"),
         )
-        parts_result: dict[str, Any] = {}
+        parts_result: dict[str, AnalysisResultLeafPayload] = {}
         if "summary" in query.analyses:
             out.summary = build_procurement_object_summary(rows)
         if "drilldown" in query.analyses or part_token:
@@ -187,10 +189,10 @@ class OpsAnalysis:
                 rows, part_token=part_token, head=head
             )
         if "risk" in query.analyses and out.summary:
-            pending_confirm = int(out.summary.get("pending_confirm_count") or 0)
-            pending_audit = int(out.summary.get("pending_audit_count") or 0)
-            anomaly = int(out.summary.get("anomaly_count") or 0)
-            risks: list[dict[str, Any]] = []
+            pending_confirm = int(str(out.summary.get("pending_confirm_count") or 0))
+            pending_audit = int(str(out.summary.get("pending_audit_count") or 0))
+            anomaly = int(str(out.summary.get("anomaly_count") or 0))
+            risks: list[RiskEntry] = []
             if pending_confirm:
                 risks.append(
                     {

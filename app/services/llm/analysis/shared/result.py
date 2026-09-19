@@ -3,16 +3,20 @@
 from __future__ import annotations
 
 from dataclasses import dataclass, field
-from typing import Any
 
+from app.schemas.llm.analysis_payload import (
+    AnalysisResultPayload,
+    AnalysisSummaryBag,
+    EvidencePayload,
+)
 from app.services.llm.analysis.shared.constants import ANALYSIS_VERSION
 
 
 @dataclass
 class AnalysisRunResult:
-    summary: dict[str, Any] | None = None
-    result: dict[str, Any] = field(default_factory=dict)
-    evidence: dict[str, Any] = field(default_factory=dict)
+    summary: AnalysisSummaryBag | None = None
+    result: AnalysisResultPayload = field(default_factory=dict)
+    evidence: EvidencePayload = field(default_factory=dict)
     has_data: bool = False
     data_message: str = ""
     comparability: str = "unknown"

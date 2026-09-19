@@ -2,17 +2,18 @@
 
 from __future__ import annotations
 
-from typing import Any
-
 from app.common.part_number import part_numbers_match
 from app.repositories.llm.stamping_cost_analysis_repository import StampingPartPeriodRow
+from app.schemas.llm.analysis_payload import (
+    DrilldownPayload,
+)
 
 
 def build_stamping_cost_drilldown(
     rows: list[StampingPartPeriodRow],
     *,
     part_number: str,
-) -> dict[str, Any]:
+) -> DrilldownPayload:
     matched = (
         [row for row in rows if part_numbers_match(row.part_number, part_number)]
         if part_number

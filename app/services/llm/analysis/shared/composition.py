@@ -3,9 +3,13 @@
 from __future__ import annotations
 
 from decimal import Decimal
-from typing import Any
 
 from app.repositories.llm.cost_analysis import L0CompositionLineRow
+from app.schemas.llm.analysis_payload import (
+    CompositionAnomaliesPayload,
+    CompositionAnomalyItem,
+    RiskEntry,
+)
 from app.services.llm._money import money_str, month_key, rate_str
 from app.services.llm.analysis.shared.constants import (
     COMPOSITION_EXTREME_QTY,
@@ -32,10 +36,10 @@ def build_composition_anomalies(
     top_n: int = 15,
     min_share: Decimal | None = None,
     extreme_qty: Decimal | None = None,
-) -> dict[str, Any]:
+) -> CompositionAnomaliesPayload:
     share_threshold = min_share if min_share is not None else Decimal(COMPOSITION_SHARE_THRESHOLD)
     qty_threshold = extreme_qty if extreme_qty is not None else Decimal(COMPOSITION_EXTREME_QTY)
-    items: list[dict[str, Any]] = []
+    items: list[CompositionAnomalyItem] = []
     seen: set[tuple[str, str, str]] = set()
     for line in lines:
         if line.root_should_cost <= 0 or line.line_amount <= 0:
@@ -80,7 +84,7 @@ def build_composition_anomalies(
     }
 
 
-def composition_risk_entry(payload: dict[str, Any]) -> dict[str, Any] | None:
+def composition_risk_entry(payload: CompositionAnomaliesPayload) -> RiskEntry | None:
     items = list(payload.get("items") or [])
     if not items:
         return None

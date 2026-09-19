@@ -4,13 +4,13 @@ from __future__ import annotations
 
 import json
 import uuid
-from typing import Any
 
 from sqlalchemy.orm import Session
 
 from app.common.audit import audit_create, display_name
 from app.config import settings
 from app.exceptions.base import BusinessException, NotFoundException, PermissionException
+from app.models.llm import LlmAnalysisReport
 from app.repositories.llm import (
     LlmAnalysisReportFailPatch,
     LlmAnalysisReportInsert,
@@ -86,7 +86,7 @@ def analysis_query_from_report_fields(
     """沿用上一问：优先 query_json。扁字段只还原加列前的旧行，不要当主路径改。"""
     if query_json:
         try:
-            parsed: Any = json.loads(query_json)
+            parsed: object = json.loads(query_json)
         except (TypeError, ValueError, json.JSONDecodeError):
             parsed = None
         if isinstance(parsed, dict):
@@ -448,7 +448,7 @@ class LlmAnalysisReportService:
 
     def _to_task_vo(
         self,
-        row: Any,
+        row: LlmAnalysisReport,
         *,
         from_cache: bool,
         message: str,
@@ -500,7 +500,7 @@ class LlmAnalysisReportService:
         return self._query_from_row(row)
 
     @staticmethod
-    def _query_from_row(row: Any) -> AnalysisQuery | None:
+    def _query_from_row(row: LlmAnalysisReport) -> AnalysisQuery | None:
         return analysis_query_from_report_fields(
             query_json=getattr(row, "query_json", None),
             location=str(getattr(row, "location", "") or ""),
@@ -514,7 +514,7 @@ class LlmAnalysisReportService:
         )
 
     @classmethod
-    def _carry_from_row(cls, row: Any) -> LlmAnalysisCarryVO | None:
+    def _carry_from_row(cls, row: LlmAnalysisReport) -> LlmAnalysisCarryVO | None:
         query = cls._query_from_row(row)
         if query is None:
             return None
@@ -529,12 +529,12 @@ class LlmAnalysisReportService:
         )
 
     @classmethod
-    def _report_vo(cls, row: Any) -> LlmAnalysisReportVO:
+    def _report_vo(cls, row: LlmAnalysisReport) -> LlmAnalysisReportVO:
         # carry 要从 query_json 还原，不塞进 from_orm_row（VO 不解析 Query）。
         vo = LlmAnalysisReportVO.from_orm_row(row)
         carry = cls._carry_from_row(row)
         markdown = vo.markdown_content
-        updates: dict[str, Any] = {"carry": carry}
+        updates: dict[str, object] = {"carry": carry}
         if isinstance(markdown, str) and markdown:
             updates["markdown_content"] = sanitize_report_markdown(markdown)
         return vo.model_copy(update=updates)
