@@ -1,4 +1,6 @@
-"""冲压检具费查询、单条改删、整包删除。"""
+"""冲压检具费查询、单条改删、整包删除；工程变更入口转发。"""
+
+from __future__ import annotations
 
 import logging
 
@@ -23,6 +25,15 @@ from app.schemas.vo.stamping_gauge_fee_vo import (
 from app.schemas.vo.user_vo import UserVO
 from app.services.masterdata.location.location_service import LocationService
 from app.services.masterdata.vehicle_model import VehicleModelService
+from app.services.stamping.gauge_fee.engineering_change import (
+    EngineeringChangeGaugeFeeCloneResult,
+)
+from app.services.stamping.gauge_fee.engineering_change import (
+    clone_revise_for_engineering_change as clone_revise_gauge_fee,
+)
+from app.services.stamping.gauge_fee.engineering_change import (
+    delete_for_engineering_change_rollback as delete_gauge_fee_for_rollback,
+)
 
 logger = logging.getLogger("service.stamping_gauge_fee")
 
@@ -150,3 +161,28 @@ class StampingGaugeFeeService:
         if not vehicle:
             raise BusinessException("请选择项目")
         return loc, vehicle
+
+    def clone_revise_for_engineering_change(
+        self,
+        db: Session,
+        *,
+        location: str,
+        vehicle_model: str,
+        old_part_number: str,
+        new_part_number: str,
+        current_user: UserVO,
+    ) -> EngineeringChangeGaugeFeeCloneResult | None:
+        """改图抄检具费。只 flush。实现见 engineering_change。"""
+        return clone_revise_gauge_fee(
+            self.repository,
+            db,
+            location=location,
+            vehicle_model=vehicle_model,
+            old_part_number=old_part_number,
+            new_part_number=new_part_number,
+            current_user=current_user,
+        )
+
+    def delete_for_engineering_change_rollback(self, db: Session, fee_id: int) -> None:
+        """回滚删新检具费行。只 flush。"""
+        delete_gauge_fee_for_rollback(self.repository, db, fee_id)

@@ -28,14 +28,14 @@ def export_download(
     month: int = Query(..., ge=1, le=12, description="月份"),
     location: str = Query(..., min_length=1, description="基地"),
     vehicle_model: str = Query(..., min_length=1, description="项目"),
-    bom_version: str = Query(..., min_length=1, description="BOM 版本"),
+    bom_version: str | None = Query(None, description="BOM 版本（可选；空=该月全部）"),
     db: Session = Depends(get_db),
     current_user: UserVO = Depends(require_perm(Perm.ASSEMBLY_COST_EXPORT)),
 ) -> StreamingResponse:
     """
     导出月度核对：成品核价 + 冲压零件核价 + 焊接费 + 加工费 + 钢材联动等。
 
-    须选定年/月/基地/项目/BOM 版本；冲压侧按整车导出，不按工厂切分。
+    须选定年/月/基地/项目；版本可选（工程变更后同月可多版本）。
     """
     content, filename = _export_service.export(
         db,

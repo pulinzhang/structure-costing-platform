@@ -3,11 +3,23 @@
  * 同步导入：基地 + 年度 + 项目必选；基地/项目取自材料清单（BOM）
  */
 
-import { pkgTransportFeeUploadTemplate } from './template.js?v=7';
+import { pkgTransportFeeUploadTemplate } from './template.js?v=8';
+import { bindSyncUploadProgress } from '../../../../sync-upload-progress.js?v=1';
 
 const API_BASE = '/api/bom/packaging-transport-fee';
 const CASCADE_API = '/api/bom/filters/cascade';
 const MAX_FILE_SIZE = 5 * 1024 * 1024;
+
+const uploadProgress = bindSyncUploadProgress({
+    zoneId: 'pkgTransportFeeUploadZone',
+    idleId: 'pkgTransportFeeUploadDropIdle',
+    panelId: 'pkgTransportFeeUploadProgressPanel',
+    iconId: 'pkgTransportFeeUploadProgressIcon',
+    titleId: 'pkgTransportFeeUploadProgressTitle',
+    barId: 'pkgTransportFeeUploadProgressBar',
+    msgId: 'pkgTransportFeeUploadProgressMsg',
+    runningTitle: '正在导入包装运输费...',
+});
 const MAX_RECENT_UPLOADS = 8;
 
 const PkgTransportFeeUploadPage = {
@@ -370,28 +382,27 @@ const PkgTransportFeeUploadPage = {
     },
 
     showProgress(msg = '解析并写入数据库，请稍候') {
-        document.getElementById('pkgTransportFeeUploadDropIdle')?.classList.add('hidden');
-        document.getElementById('pkgTransportFeeUploadProgressPanel')?.classList.remove('hidden');
-        const zone = document.getElementById('pkgTransportFeeUploadZone');
-        if (zone) zone.classList.add('pointer-events-none');
-        const progressMsg = document.getElementById('pkgTransportFeeUploadProgressMsg');
-        if (progressMsg) progressMsg.textContent = msg;
+        uploadProgress.setRunning(msg);
+    },
+
+    showDoneOnPanel(message, opts = {}) {
+        uploadProgress.setDone(message, opts);
+        this.lockZoneIfNeeded();
     },
 
     failOnPanel(message) {
-        const text = String(message || '操作失败').trim() || '操作失败';
-        this.showProgress(text);
-        if (this.hasBomOptions && this.canUpload) {
-            document.getElementById('pkgTransportFeeUploadZone')?.classList.remove('pointer-events-none');
-        }
+        uploadProgress.setFail(message);
+        this.lockZoneIfNeeded();
     },
 
     hideProgress() {
-        document.getElementById('pkgTransportFeeUploadDropIdle')?.classList.remove('hidden');
-        document.getElementById('pkgTransportFeeUploadProgressPanel')?.classList.add('hidden');
-        if (this.hasBomOptions && this.canUpload) {
-            document.getElementById('pkgTransportFeeUploadZone')?.classList.remove('pointer-events-none');
-        }
+        uploadProgress.hide();
+        this.lockZoneIfNeeded();
+    },
+
+    lockZoneIfNeeded() {
+        if (this.hasBomOptions && this.canUpload) return;
+        document.getElementById('pkgTransportFeeUploadZone')?.classList.add('pointer-events-none');
     },
 
     setUploading(isUploading) {
@@ -477,12 +488,10 @@ const PkgTransportFeeUploadPage = {
         try {
             const res = await HttpClient.post(`${API_BASE}/upload`, formData, { skipToast: true });
             const data = res.data || {};
+            const skippedApproved = data.skipped_approved_count ?? 0;
             const summary = `新增 ${data.created_count ?? 0}，更新 ${data.updated_count ?? 0}`
-                + (data.skipped_approved_count ? `，跳过已审 ${data.skipped_approved_count}` : '');
-            showToast(
-                res.message || data.message || `导入成功：${summary}`,
-                'success',
-            );
+                + (skippedApproved ? `，跳过已审 ${skippedApproved}` : '');
+            const msg = res.message || data.message || `导入成功：${summary}`;
             this.addRecentUpload(
                 this.selectedFile.name,
                 location,
@@ -490,7 +499,7 @@ const PkgTransportFeeUploadPage = {
                 vehicleModel,
                 summary,
             );
-            this.hideProgress();
+            this.showDoneOnPanel(msg, { hasSkip: skippedApproved > 0 });
             this.clearSelectedFile(true);
         } catch (err) {
             this.failOnPanel(err.message || '导入失败');

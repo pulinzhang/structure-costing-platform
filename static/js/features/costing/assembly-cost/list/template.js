@@ -83,7 +83,7 @@ export function assemblyCostListTemplate() {
                             <div class="flex items-center gap-1.5" role="group" aria-label="一览视图">
                                 <button id="lacViewFinanceBtn" type="button"
                                         class="px-3 py-1.5 text-[11px] font-medium rounded-md bg-[#1A080A] border border-[#FF1E27]/50 text-[#FF1E27] transition-all">
-                                    财务（树根）
+                                    财务（总成）
                                 </button>
                                 <button id="lacViewProcurementBtn" type="button"
                                         class="px-3 py-1.5 text-[11px] font-medium rounded-md bg-transparent border border-[#2A2A35] text-[#6E6E73] hover:text-white transition-all">
@@ -114,7 +114,7 @@ export function assemblyCostListTemplate() {
                             </button>
                             <button id="lacExportBundleBtn" type="button"
                                     class="inline-flex items-center gap-1.5 bg-transparent text-[#6E6E73] border border-[#2A2A35] px-3 py-1.5 text-[11px] font-medium rounded-md hover:border-[#FF1E27]/50 hover:text-[#FF1E27] hover:bg-[#FF1E27]/10 hover:shadow-[0_0_12px_rgba(255,30,39,0.2)] transition-all duration-200"
-                                    title="导出月度核对：成品核价（树根）+ 冲压零件核价 + 焊接费 + 加工费 + 钢材联动等（须选定年/月/基地/项目/版本）">
+                                    title="导出月度核对：成品核价（总成）+ 冲压零件核价 + 焊接费 + 加工费 + 钢材联动等。须选定年/月/基地/项目；版本可不选（空=该月全部）。">
                                 ${window.svgIcon('download', 'w-3 h-3')}
                                 导出月度核对
                             </button>
@@ -167,7 +167,7 @@ export function assemblyCostListTemplate() {
                                 重置
                             </button>
                         </div>
-                        <p class="mt-2 text-[10px] text-[#555555]">批量删除 / 审核 / 反审核须选定年度、月份、基地、项目、版本。反审核后可重新计算覆盖。</p>
+                        <p class="mt-2 text-[10px] text-[#555555]">批量删除 / 审核 / 反审核 / 导出零件成本 / 导出月度核对须选定年度、月份、基地、项目；版本可不选（同月可有多个工程变更字）。反审核后可重新计算覆盖。</p>
                     </div>
                 </div>
 

@@ -146,7 +146,7 @@ class StampingDieService:
             db.commit()
         except IntegrityError:
             db.rollback()
-            raise BusinessException("仍被引用，不能删除") from None
+            raise BusinessException("仍被冲压模具费引用，请先删除对应模具费后再删") from None
         except Exception:
             db.rollback()
             raise

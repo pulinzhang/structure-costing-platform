@@ -34,6 +34,9 @@ from app.services.costing.stamping_part_cost.calc.orchestrator import (
     StampingPartCostCalcOrchestrator,
 )
 from app.services.costing.steel_price.calc.orchestrator import SteelPriceCalcOrchestrator
+from app.services.stamping.die_fee.calc.orchestrator import (
+    StampingDieFeeCalcOrchestrator,
+)
 from app.services.stamping.process_fee.calc.orchestrator import (
     StampingProcessFeeCalcOrchestrator,
 )
@@ -45,6 +48,7 @@ class RunOrchestrator:
     def __init__(self) -> None:
         self.run_repo = CostingEngineRunRepository()
         self.process_fee_orch = StampingProcessFeeCalcOrchestrator()
+        self.die_fee_orch = StampingDieFeeCalcOrchestrator()
         self.procurement_svc = BomProcurementObjectGenerateService()
         self.breakdown_svc = BomWeldingProcessBreakdownGenerateService()
         self.welding_orch = BomWeldingFeeCalcOrchestrator()

@@ -29,6 +29,7 @@ from app.services.costing.stamping_part_cost.export.process_sheet.columns import
     _FEE_RATE_COLS,
     _ID_COLS,
     _PROCESS_COL_LETTERS,
+    _SCOPE_WEAK_COLS,
     _TRACE_COLS,
     PROCESS_SHEET_HEADERS,
 )
@@ -151,18 +152,18 @@ def write_process_sheet_to_workbook(
     meta_text = " · ".join(meta_parts) if meta_parts else "按筛选条件导出"
     formula_hint = (
         f"核价口径："
-        f"N=L×W×T×ρ_steel÷1,000,000÷n；"
-        f"P=N−I；"
-        f"S=N×Q×(1+λ)−N×λ×η×R−P×η×R；"
-        f"直接成本=S+T+U+V；"
+        f"P=M×N×J×ρ_steel÷1,000,000÷O；"
+        f"R=P−K；"
+        f"U=P×S×(1+λ)−P×λ×η×T−R×η×T；"
+        f"直接成本=U+V+W+X；"
         f"最终价=直接成本+仓储包装费+管理费+财务费+税前利润。"
-        f"拼焊件按子片分行：H/K/L/Q 各片一格；"
-        f"子片 N=K×L×H×ρ/1e6/M；"
-        f"总成 P=SUM(N)−I，S=Σ(Ni×Qi×(1+λ))−SUM(N)×λ×η×R−P×η×R。"
+        f"拼焊件按子片分行：J/M/N/S 各片一格；"
+        f"子片 P=M×N×J×ρ/1e6/O；"
+        f"总成 R=SUM(P)−K，U=Σ(Pi×Si×(1+λ))−SUM(P)×λ×η×T−R×η×T。"
         f"其中 ρ_steel={density_text} g/cm³，"
         f"λ={loss_rate_text}（{loss_permille_text}‰），"
         f"η={recovery_text}（{recovery_percent_text}%），"
-        f"Q/R 为元/kg（吨价÷1000；Q 含本月摆剪加价），"
+        f"S/T 为元/kg（吨价÷1000；S 含本月摆剪加价），"
         f"÷1,000,000 为 mm·g/cm³ → kg 量纲换算。"
     )
 
@@ -183,7 +184,8 @@ def write_process_sheet_to_workbook(
     meta_cell = sheet["A2"]
     meta_cell.value = (
         f"{meta_text}　|　共 {len(rows)} 件　|　{formula_hint}"
-        f"　|　AC~AH 人可读溯源可核对/补填；AI~AM 为关联 ID"
+        f"　|　AE~AJ 人可读溯源可核对/补填；AK~AO 为关联 ID"
+        f"　|　B/C 冲压工厂与版本弱化显示"
     )
     meta_cell.font = meta_font
     meta_cell.alignment = Alignment(horizontal="left", vertical="center", wrap_text=True)
@@ -194,33 +196,33 @@ def write_process_sheet_to_workbook(
 
     # Row 3 分组表头
     group_fills = {
-        range(1, 3): fill_group_id,
-        range(3, 11): fill_group_product,
-        range(11, 20): fill_group_process,
-        range(20, 21): fill_group_fee,
-        range(21, 23): fill_group_fee,
-        range(23, 24): fill_group_fee,
-        range(24, 28): fill_group_fee_rate,
-        range(28, 29): fill_group_final,
-        range(29, 35): fill_group_trace,
-        range(35, 40): fill_group_trace,
-        range(40, 42): fill_group_product,
-        range(42, 44): fill_group_id,
+        range(1, 4): fill_group_id,
+        range(4, 13): fill_group_product,
+        range(13, 22): fill_group_process,
+        range(22, 23): fill_group_fee,
+        range(23, 25): fill_group_fee,
+        range(25, 26): fill_group_fee,
+        range(26, 30): fill_group_fee_rate,
+        range(30, 31): fill_group_final,
+        range(31, 37): fill_group_trace,
+        range(37, 42): fill_group_trace,
+        range(42, 44): fill_group_product,
+        range(44, 46): fill_group_id,
     }
     for merge_range, label in (
-        ("A3:B3", "标识"),
-        ("C3:J3", "产品信息"),
-        ("K3:S3", "材料费"),
-        ("T3:T3", "加工费"),
-        ("U3:U3", "模具费"),
-        ("V3:V3", "检具费"),
-        ("W3:W3", "直接成本"),
-        ("X3:AA3", "成品费率费用"),
-        ("AB3:AB3", "最终价"),
-        ("AC3:AH3", "溯源"),
-        ("AI3:AM3", "关联ID"),
-        ("AN3:AO3", "利废"),
-        ("AP3:AQ3", "摆剪"),
+        ("A3:C3", "标识"),
+        ("D3:L3", "产品信息"),
+        ("M3:U3", "材料费"),
+        ("V3:V3", "加工费"),
+        ("W3:W3", "模具费"),
+        ("X3:X3", "检具费"),
+        ("Y3:Y3", "直接成本"),
+        ("Z3:AC3", "成品费率费用"),
+        ("AD3:AD3", "最终价"),
+        ("AE3:AJ3", "溯源"),
+        ("AK3:AO3", "关联ID"),
+        ("AP3:AQ3", "利废"),
+        ("AR3:AS3", "摆剪"),
     ):
         sheet.merge_cells(merge_range)
         cell = sheet[merge_range.split(":")[0]]
@@ -244,11 +246,12 @@ def write_process_sheet_to_workbook(
         cell.value = title
         is_trace = col_letter in trace_cols
         is_fee_rate = col_letter in fee_rate_cols
-        if is_trace or is_fee_rate:
+        is_scope_weak = col_letter in _SCOPE_WEAK_COLS
+        if is_trace or is_fee_rate or is_scope_weak:
             cell.font = weak_header_font
         else:
             cell.font = header_font
-        if is_trace:
+        if is_trace or is_scope_weak:
             cell.fill = fill_header_trace
         elif is_fee_rate:
             cell.fill = fill_header_fee_rate
@@ -292,53 +295,55 @@ def write_process_sheet_to_workbook(
 
     widths = {
         "A": 6,
-        "B": 22,
-        "C": 14,
-        "D": 8,
-        "E": 20,
-        "F": 10,
-        "G": 14,
-        "H": 12,
-        "I": 9,
-        "J": 18,
-        "K": 14,
-        "L": 14,
-        "M": 10,
+        "B": 12,
+        "C": 10,
+        "D": 22,
+        "E": 14,
+        "F": 8,
+        "G": 20,
+        "H": 10,
+        "I": 14,
+        "J": 12,
+        "K": 9,
+        "L": 18,
+        "M": 14,
         "N": 14,
-        "O": 11,
-        "P": 10,
-        "Q": 16,
-        "R": 13,
-        "S": 12,
-        "T": 10,
-        "U": 10,
+        "O": 10,
+        "P": 14,
+        "Q": 11,
+        "R": 10,
+        "S": 16,
+        "T": 13,
+        "U": 12,
         "V": 10,
-        "W": 11,
+        "W": 10,
         "X": 10,
-        "Y": 10,
-        "Z": 12,
+        "Y": 11,
+        "Z": 10,
         "AA": 10,
-        "AB": 11,
-        "AC": 28,
-        "AD": 14,
-        "AE": 8,
-        "AF": 42,
-        "AG": 28,
-        "AH": 36,
-        "AI": 10,
-        "AJ": 10,
+        "AB": 12,
+        "AC": 10,
+        "AD": 11,
+        "AE": 28,
+        "AF": 14,
+        "AG": 8,
+        "AH": 42,
+        "AI": 28,
+        "AJ": 36,
         "AK": 10,
         "AL": 10,
         "AM": 10,
         "AN": 10,
-        "AO": 14,
+        "AO": 10,
         "AP": 10,
-        "AQ": 16,
+        "AQ": 14,
+        "AR": 10,
+        "AS": 16,
     }
     for col_letter, width in widths.items():
         sheet.column_dimensions[col_letter].width = width
 
-    sheet.freeze_panes = "E5"  # 冻结至短码列（A~D：序号/总成供货号/零件号/短码）
+    sheet.freeze_panes = "G5"  # 冻结至短码列（A~F：序号/工厂/版本/总成供货号/零件号/短码）
     if rows:
         sheet.auto_filter.ref = f"A4:{last_col_letter}{last_data_row}"
     sheet.print_title_rows = "1:4"

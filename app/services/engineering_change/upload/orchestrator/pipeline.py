@@ -2,9 +2,9 @@
 工程变更管线（指挥家第二步）。
 
 职责边界：在同一业务 Session 内按序 flush——按变更单行种树/失效 → 采购对象 → 拆解（从旧树结果抄）→
-工艺按号增行一次 → 布点按变更单从旧号逻辑建立，组装 effect_links（change_order_id 暂为变更单行下标）。
+工艺按号增行一次 → 布点按变更单从旧号逻辑建立 → 检具费/模具费有则抄到新号，组装 effect_links（change_order_id 暂为变更单行下标）。
 禁止：变更单落库与上传头标成功（persist）；禁止本文件内 commit。
-依赖：树算法在 BomService；工艺/布点写入在 stamping 上游 Service。
+依赖：树算法在 BomService；工艺/布点/检具/模具费写入在 stamping 上游 Service。
 """
 
 from __future__ import annotations
@@ -33,6 +33,8 @@ from app.services.engineering_change.upload.orchestrator.types import (
 )
 from app.services.engineering_change.upload.persist.breakdown import persist_breakdown
 from app.services.engineering_change.upload.persist.die import persist_die_parts
+from app.services.engineering_change.upload.persist.die_fee import persist_die_fees
+from app.services.engineering_change.upload.persist.gauge_fee import persist_gauge_fees
 from app.services.engineering_change.upload.persist.process import persist_process_parts
 from app.services.engineering_change.upload.persist.procurement import persist_procurement
 from app.services.engineering_change.upload.persist.tree import (
@@ -137,7 +139,7 @@ def run_engineering_change_pipeline(
     )
     links.extend(process_links)
     sort_no += len(process_links)
-    die_links, die_count = persist_die_parts(
+    die_links, die_count, new_die_part_ids = persist_die_parts(
         db,
         revise_old_to_new=prepared.revise_old_to_new,
         part_change_order_index=prepared.part_change_order_index,
@@ -152,6 +154,32 @@ def run_engineering_change_pipeline(
         expiry_month=prepared.project_expiry_month,
     )
     links.extend(die_links)
+    sort_no += len(die_links)
+
+    report_progress(on_progress, 94, "检具费与模具费")
+    gauge_links = persist_gauge_fees(
+        db,
+        revise_old_to_new=prepared.revise_old_to_new,
+        part_change_order_index=prepared.part_change_order_index,
+        location=prepared.location,
+        vehicle_model=prepared.vehicle_model,
+        current_user=current_user,
+        sort_no_start=sort_no,
+    )
+    links.extend(gauge_links)
+    sort_no += len(gauge_links)
+    die_fee_links = persist_die_fees(
+        db,
+        revise_old_to_new=prepared.revise_old_to_new,
+        part_change_order_index=prepared.part_change_order_index,
+        new_die_part_ids=new_die_part_ids,
+        effective_year=prepared.effective_year,
+        location=prepared.location,
+        vehicle_model=prepared.vehicle_model,
+        current_user=current_user,
+        sort_no_start=sort_no,
+    )
+    links.extend(die_fee_links)
 
     return PipelineBundle(
         not_install_count=not_install_count,

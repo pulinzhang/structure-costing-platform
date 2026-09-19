@@ -37,8 +37,8 @@ class WinningThicknessExporter:
         self,
         rows: list[WinningThicknessRowVO],
         *,
-        year: int,
-        month: int,
+        year: int | None,
+        month: int | None,
         location: str,
         current_user: UserVO,
     ) -> tuple[bytes, str]:
@@ -53,7 +53,7 @@ class WinningThicknessExporter:
         meta = WorkbookMeta(
             year=year,
             month=month,
-            location=location,
+            location=location or "",
             row_count=len(export_rows),
             exported_at=now(),
         )
@@ -87,7 +87,7 @@ class WinningThicknessExporter:
         )
         write_example_sheet(example_sheet, export_rows, meta)
 
-        filename = build_filename(year=year, month=month, location=location)
+        filename = build_filename(year=year, month=month, location=location or None)
         content = workbook_to_xlsx_bytes(wb, current_user)
         logger.info(
             "导出中标钢厂厚度价格一览表完成: filename=%s rows=%d",

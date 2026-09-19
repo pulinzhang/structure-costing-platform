@@ -228,3 +228,33 @@ export async function loadProjectPeriod(location, vehicleModel) {
         return null;
     }
 }
+
+/** 一事一议列表：年度筛默认当年（可改 / 可清空）。 */
+export const EXPORT_YEAR_MONTH_REQUIRED_MESSAGE =
+    '导出须选定年度和月份（一事一议按月定价）';
+
+export function selectDefaultYear(selectId) {
+    const select = document.getElementById(selectId);
+    if (!select) return;
+    const year = String(wallClockYearMonth().year);
+    const escape = typeof esc === 'function' ? esc : (value) => String(value ?? '');
+    const label = typeof fmtYear === 'function' ? fmtYear(year) : `${year}年`;
+    if (![...select.options].some((opt) => opt.value === year)) {
+        select.insertAdjacentHTML(
+            'beforeend',
+            `<option value="${escape(year)}">${escape(label)}</option>`,
+        );
+    }
+    select.value = year;
+}
+
+/** 一事一议导出：必须锁年 + 月。通过返回 true。 */
+export function requireExportYearMonth(filters) {
+    if (!filters?.year || !filters?.month) {
+        if (typeof showToast === 'function') {
+            showToast(EXPORT_YEAR_MONTH_REQUIRED_MESSAGE, 'warning');
+        }
+        return false;
+    }
+    return true;
+}

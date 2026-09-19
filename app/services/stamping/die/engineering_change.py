@@ -51,6 +51,7 @@ class EngineeringChangeDiePartSpec:
 @dataclass(slots=True)
 class EngineeringChangeDiePartResult:
     part_id: int
+    part_number: str
     predecessor_id: int | None = None
 
 
@@ -217,6 +218,7 @@ def insert_for_engineering_change(
         results.append(
             EngineeringChangeDiePartResult(
                 part_id=created.id,
+                part_number=str(created.part_number),
                 predecessor_id=spec.expire_predecessor_id,
             )
         )

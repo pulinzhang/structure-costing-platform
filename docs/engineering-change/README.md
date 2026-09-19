@@ -44,6 +44,7 @@
 |----|------|
 | 硬门禁 | 变更单 + 材料清单 + 工艺确认表。材料清单总成列必须等于变更后总成；改图层必须等于变更后零件。缺新号 / 多新号 / 旧号仍挂其它有效总成 → 拒收 |
 | 工程变更不读布点表 | 不要「零件汇总」。模具 **逻辑建立**：改图有旧布点则从库里变更前零件整行抄到变更后零件。新号布点简图从冲压工艺确认表抄，不从旧布点、不从 Excel 抽 |
+| 改图抄检具/模具费 | 旧号有检具费生效档或 `year≥生效年` 模具费结果 → **必须抄到新号**（旧号保留）；无则跳过；不读 Excel、非硬门禁。回滚删本次新行（先费后布点） |
 | 种树 | 只经 `persist/tree.py` → BomService；到期经 `expire_l0_tree`（写失效月，不删行）。改图以旧树为底 **启用**新树，**整条链**换号：总成/改图层用变更单，中间分总成用材料清单已写出的号，**禁止自己进一位**；没改的零件原号带走 |
 | `change_order_id` 占位 | 管线里 `change_order_id` 是变更单行下标；persist 插变更单后再回填真实 id。勿提前 flush |
 | SOP 不改 | Parser / UNIQUE / 引擎发现键 / 投产整包覆盖路径不为本切片去改 |
@@ -105,7 +106,7 @@ flowchart TB
   RB --> MF[mark_log_failed]
 ```
 
-回滚：删除列表任意一条 = `list/rollback_service.py` 按 `effect_links` **逆序**恢复业务对象，再 **物理删除** 本本上传头 / 变更单 / 效果链接。未知 `effect_kind` 拒收。存档 Excel 保留。
+回滚：删除列表任意一条 = `list/rollback_service.py` 按 `effect_links` **逆序**恢复业务对象，再 **物理删除** 本本上传头 / 变更单 / 效果链接。未知 `effect_kind` 拒收。存档 Excel 保留。逆序时先删本次新插的模具费/检具费，再滚布点（避免布点 RESTRICT）。
 
 ---
 
@@ -130,6 +131,7 @@ flowchart TB
 | `EC_PROJECT_MISMATCH` | 工程变更单项目和上传页不一致 | 对照上传页、工程变更单、材料清单项目代号 |
 | `EC_CHANGE_ORDER_*` | 变更单行数、类型、填法、同一个总成写了多次 | 类型只准四句：完成停止、改图、增加零件、此件不装；一个总成改了好几处请把总成格子上下合并 |
 | `EC_ROLLBACK_BLOCKED` | 不能删本次 | 其后还有未回滚变更，或采购对象已审未反审 |
+| `EC_ROLLBACK_REFERENCED` | 不能删本次 | 加工费/模具费等仍引用本次变更产生的零件或布点 |
 | `EC_GATE_FULL_GENERATE` | 禁止整包 generate | 已有设变树（或失效 L0）；请走工程变更重传 |
 | `EC_GATE_ENGINE_BREAKDOWN` | 引擎拆解补算被同一把钥匙拦住 | 引擎已调 generate；`FULL_GENERATE` 映射为此文案。查是否工程变更未抄齐拆解 |
 | `EC_GATE_ENGINE_PROCUREMENT` | 引擎采购对象补算被同一把钥匙拦住 | 引擎已调 generate；查是否工程变更未插齐本树对象行 |
@@ -172,9 +174,9 @@ Router → EngineeringChangeUploadService.start_upload
 | `upload/template_builder.py` | 下载模板（与导入执行无关） |
 | `upload/orchestrator/` | 指挥家：prep / pipeline / persist |
 | `upload/gates/` | 校验帮手：变更单 / 树 / 工艺 / 切清单 |
-| `upload/persist/` | 写入适配（树 / 对象 / 拆解 / 工艺 / 布点）；只 flush |
+| `upload/persist/` | 写入适配（树 / 对象 / 拆解 / 工艺 / 布点 / 检具费 / 模具费）；只 flush |
 | `list/query_service.py` | 工程变更单列表 / 详情 |
-| `list/rollback_service.py` | 六种 `EFFECT_*` 回滚 |
+| `list/rollback_service.py` | `EFFECT_*` 回滚（含 `gauge_fee` / `die_fee`） |
 | `app/common/engineering_change_gates.py` | 文案常量 + 整包门禁谓词（新旧号整号比较，不 bump） |
 
 上游内核（勿把业务搬回 EC）：
@@ -182,6 +184,8 @@ Router → EngineeringChangeUploadService.start_upload
 - `app/services/bom/change_tree_plant.py`
 - `app/services/stamping/part/engineering_change.py`
 - `app/services/stamping/die/engineering_change.py`
+- `app/services/stamping/gauge_fee/engineering_change.py`
+- `app/services/stamping/die_fee/engineering_change.py`
 
 ---
 
@@ -192,9 +196,13 @@ Router → EngineeringChangeUploadService.start_upload
 | [part-number-revision-design.md](part-number-revision-design.md) | 领域契约（样表即规格、§4 写入、§8 产品）；**落地状态以本节为准** |
 | [bom-process-die-effective-period-design.md](bom-process-die-effective-period-design.md) | 交货总成 / 工艺 / 布点生失效（已落地） |
 | [t28-2025-07-import-bundle-test-design.md](t28-2025-07-import-bundle-test-design.md) | 青岛 T28 测试样本（对照一本可整本上传；另有五份单种改法夹具） |
-| [samples/engineering-change-t13j-3086ab.xlsx](samples/engineering-change-t13j-3086ab.xlsx) | T13J 3086AA→AB 样表 |
+| [t13j-2025-05-import-bundle-test-design.md](t13j-2025-05-import-bundle-test-design.md) | 芜湖 T13J · 2025-05 测试样本（对照一本 + 五份夹具） |
+| [samples/engineering-change-t13j-3086ab.xlsx](samples/engineering-change-t13j-3086ab.xlsx) | T13J 3086AA→AB 样表（单总成演示） |
 | [samples/t28-2025-07-import-bundle.xlsx](samples/t28-2025-07-import-bundle.xlsx) | 下载模板 / 对照一本：T28 五种填法 |
 | [samples/t28-2025-07-stop.xlsx](samples/t28-2025-07-stop.xlsx) 等五份 | 单种改法夹具（完成停止 / 一级改图 / 二级改图 / 此件不装 / 增加零件） |
 | [samples/build_t28_2025_07_import_bundles.py](samples/build_t28_2025_07_import_bundles.py) | 写出对照一本 + 五种改法各一份 |
+| [samples/t13j-2025-05-import-bundle.xlsx](samples/t13j-2025-05-import-bundle.xlsx) | 芜湖 T13J 对照一本：五种填法 |
+| [samples/t13j-2025-05-stop.xlsx](samples/t13j-2025-05-stop.xlsx) 等五份 | T13J 单种改法夹具 |
+| [samples/build_t13j_2025_05_import_bundles.py](samples/build_t13j_2025_05_import_bundles.py) | 写出 T13J 对照一本 + 五种改法各一份 |
 
 一口价年内分段不在本目录，见 [effective-period-design.md](../costing/effective-period-design.md)。

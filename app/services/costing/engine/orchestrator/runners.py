@@ -20,6 +20,7 @@ from app.schemas.dto.bom_welding_fee_dto import BomWeldingFeeCalcDTO
 from app.schemas.dto.bom_welding_process_breakdown_dto import (
     BomWeldingProcessBreakdownGenerateDTO,
 )
+from app.schemas.dto.stamping_die_fee_dto import StampingDieFeeCalcDTO
 from app.schemas.dto.stamping_part_cost_dto import StampingPartCostCalcDTO
 from app.schemas.dto.stamping_process_fee_dto import StampingProcessFeeCalcDTO
 from app.schemas.vo.costing_engine_vo import CostingEngineAnnualItemVO
@@ -70,6 +71,19 @@ def run_annual_item(
                 True,
                 f"加工费补算完成 status={process_fee_result.status}",
                 {"status": process_fee_result.status},
+            )
+
+        if item.code == "annual_die_fee":
+            die_fee_dto = StampingDieFeeCalcDTO(
+                year=discovery.year,
+                location=discovery.location,
+                vehicle_model=item.scope_key,
+            )
+            die_fee_result = orch.die_fee_orch.calculate(db, die_fee_dto, current_user=current_user)
+            return (
+                True,
+                f"模具费补算完成 status={die_fee_result.status}",
+                {"status": die_fee_result.status},
             )
 
         if item.code == "annual_procurement_object":

@@ -56,6 +56,7 @@ const PIPELINE_STAGES = [
         zh: '成本归集',
         gateCodes: [
             'annual_process_fee',
+            'annual_die_fee',
             'annual_procurement_object',
             'annual_welding_breakdown',
             'annual_welding_fee',
@@ -72,6 +73,7 @@ const GATE_LABELS = {
     vehicle_model: '本期有效范围',
     stamping_process: '冲压工艺',
     tonnage_price: '冲次单价',
+    die_unit_price: '模具单价',
     welding_unit_price: '焊接单价',
     bom_snapshot: '材料清单',
     annual_part_price: '年度零件价',
@@ -81,6 +83,7 @@ const GATE_LABELS = {
     scrap_price: '废料价',
     system_rates: '系统费率',
     annual_process_fee: '冲压加工费',
+    annual_die_fee: '冲压模具费',
     annual_procurement_object: '采购对象清单',
     annual_welding_breakdown: '焊接工艺拆解',
     annual_welding_fee: '焊接费',
@@ -103,6 +106,11 @@ const STEP_STAGE_META = {
         label: '冲压加工费',
         page: 'stamping-process-fee-calc',
         action: '去看加工费',
+    },
+    annual_die_fee: {
+        label: '冲压模具费',
+        page: 'stamping-die-fee-calc',
+        action: '去看模具费',
     },
     annual_procurement_object: {
         label: '采购对象清单',
@@ -1502,7 +1510,11 @@ function stepNavQuery(result, step) {
         const [vehicleModel, bomVersion] = key.split('|');
         if (vehicleModel) query.vehicle_model = vehicleModel;
         if (bomVersion) query.bom_version = bomVersion;
-    } else if (step.stage === 'part_cost' || step.stage === 'annual_process_fee') {
+    } else if (
+        step.stage === 'part_cost' ||
+        step.stage === 'annual_process_fee' ||
+        step.stage === 'annual_die_fee'
+    ) {
         if (key) query.vehicle_model = key;
     }
     return query;

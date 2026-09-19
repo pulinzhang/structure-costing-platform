@@ -30,13 +30,14 @@ from app.services.yishiyiyi.winning_thickness.export.values import (
     DOC_TITLE,
     PRICE_UNIT,
     TABLE_HEADER_ROW,
+    format_period_label,
 )
 
 
 @dataclass(frozen=True, slots=True)
 class WorkbookMeta:
-    year: int
-    month: int
+    year: int | None
+    month: int | None
     location: str
     row_count: int
     exported_at: datetime
@@ -71,10 +72,10 @@ def write_letterhead(
         height=20,
     )
 
-    period = f"{meta.year}年{meta.month}月"
+    period = format_period_label(year=meta.year, month=meta.month)
     date_text = meta.exported_at.strftime("%Y年%m月%d日")
     pairs = [
-        ("基地", meta.location),
+        ("基地", meta.location or "全部"),
         ("期间", period),
         ("计价单位", PRICE_UNIT),
         ("记录数", str(meta.row_count)),
@@ -140,7 +141,7 @@ def apply_sheet_chrome(
         footer=0.25,
     )
     ws.print_options.horizontalCentered = True
-    period = f"{meta.location} {meta.year}年{meta.month}月"
+    period = format_period_label(year=meta.year, month=meta.month, location=meta.location or None)
     _set_header_footer_text(
         cast(_HeaderFooterItem | None, ws.oddHeader),
         left=DOC_TITLE,

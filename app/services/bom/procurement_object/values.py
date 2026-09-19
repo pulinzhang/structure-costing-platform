@@ -32,7 +32,7 @@ def qa_summary(rows: list[BomProcurementObject]) -> tuple[str, bool]:
         return "尚未生成或当前筛选无行", True
     failed = [item for item in headers.values() if not item.qa_passed]
     if failed:
-        return "检测未通过（仍可导出，禁止确认/审核）", False
+        return "检测未通过（仍可确认/审核，已审行跳过不改）", False
     return "检测通过", True
 
 

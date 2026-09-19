@@ -241,7 +241,7 @@ class TestBomDownstreamGate:
 
         with pytest.raises(BusinessException) as caught:
             BomService().delete_snapshot(memory_db, snapshot.id)
-        assert caught.value.message == "仍被引用，不能删除"
+        assert caught.value.message == "仍被工程变更单引用，请先回滚相关变更后再删"
         assert memory_db.get(BomSnapshot, snapshot.id) is not None
 
         memory_db.query(EngineeringChangeOrder).delete()

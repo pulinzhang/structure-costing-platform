@@ -124,7 +124,7 @@ class AssemblyCostRepository:
         month: int,
         location: str,
         vehicle_model: str,
-        bom_version: str,
+        bom_version: str | None = None,
         only_pending: bool = False,
         view: str = "finance",
     ) -> list[int]:
@@ -147,7 +147,7 @@ class AssemblyCostRepository:
         month: int,
         location: str,
         vehicle_model: str,
-        bom_version: str,
+        bom_version: str | None = None,
     ) -> int:
         return self._queries.count_approved_by_scope(
             db,

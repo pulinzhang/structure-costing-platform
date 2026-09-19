@@ -2,10 +2,22 @@
  * 冲压检具费同步上传
  */
 
-import { gaugeFeeUploadTemplate } from './template.js?v=5';
+import { gaugeFeeUploadTemplate } from './template.js?v=6';
 import { setDropzoneDragActive } from '../../../../upload-dropzone.js?v=1';
+import { bindSyncUploadProgress } from '../../../../sync-upload-progress.js?v=1';
 
 const API_BASE = '/api/stamping/gauge-fees';
+
+const uploadProgress = bindSyncUploadProgress({
+    zoneId: 'gfuZone',
+    idleId: 'gfuDropIdle',
+    panelId: 'gfuProgressPanel',
+    iconId: 'gfuProgressIcon',
+    titleId: 'gfuProgressTitle',
+    barId: 'gfuProgressBar',
+    msgId: 'gfuProgressMsg',
+    runningTitle: '正在导入检具费...',
+});
 
 const GaugeFeeUploadPage = {
     selectedFile: null,
@@ -148,32 +160,20 @@ const GaugeFeeUploadPage = {
     },
 
     showProgress(msg = '解析并写入数据库，请稍候') {
-        const idle = document.getElementById('gfuDropIdle');
-        const panel = document.getElementById('gfuProgressPanel');
-        const zone = document.getElementById('gfuZone');
-        const progressMsg = document.getElementById('gfuProgressMsg');
-        if (idle) idle.classList.add('hidden');
-        if (panel) panel.classList.remove('hidden');
-        if (zone) {
-            zone.classList.add('pointer-events-none');
-            zone.classList.remove('border-[#d32f2f]');
-        }
-        if (progressMsg) progressMsg.textContent = msg;
+        uploadProgress.setRunning(msg);
+        document.getElementById('gfuZone')?.classList.remove('border-[#d32f2f]');
+    },
+
+    showDoneOnPanel(message, opts = {}) {
+        uploadProgress.setDone(message, opts);
     },
 
     failOnPanel(message) {
-        const text = String(message || '操作失败').trim() || '操作失败';
-        this.showProgress(text);
-        document.getElementById('gfuZone')?.classList.remove('pointer-events-none');
+        uploadProgress.setFail(message);
     },
 
     hideProgress() {
-        const idle = document.getElementById('gfuDropIdle');
-        const panel = document.getElementById('gfuProgressPanel');
-        const zone = document.getElementById('gfuZone');
-        if (idle) idle.classList.remove('hidden');
-        if (panel) panel.classList.add('hidden');
-        if (zone) zone.classList.remove('pointer-events-none');
+        uploadProgress.hide();
     },
 
     setUploading(isUploading) {
@@ -238,8 +238,8 @@ const GaugeFeeUploadPage = {
         this.showProgress();
         try {
             const res = await HttpClient.post(`${API_BASE}/upload`, formData, { skipToast: true });
-            showToast(res.message || res.data?.message || '导入成功', 'success');
-            this.hideProgress();
+            const msg = res.message || res.data?.message || '导入成功';
+            this.showDoneOnPanel(msg);
             this.clearSelectedFile(true);
         } catch (err) {
             this.failOnPanel(err.message || '导入失败');

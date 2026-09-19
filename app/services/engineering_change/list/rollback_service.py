@@ -10,12 +10,16 @@ from __future__ import annotations
 
 import logging
 
+from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
 
 from app.common.engineering_change_gates import (
     EC_ROLLBACK_BLOCKED,
+    EC_ROLLBACK_REFERENCED,
     EFFECT_ASSEMBLY_L0,
+    EFFECT_DIE_FEE,
     EFFECT_DIE_PART,
+    EFFECT_GAUGE_FEE,
     EFFECT_PROCESS_PART,
     EFFECT_PROCUREMENT_LIST,
     EFFECT_PROCUREMENT_OBJECT,
@@ -37,6 +41,8 @@ from app.services.bom.bom_service import BomService
 from app.services.bom.procurement_object.service import BomProcurementObjectService
 from app.services.bom.welding_process_breakdown.service import BomWeldingProcessBreakdownService
 from app.services.stamping.die.die_service import StampingDieService
+from app.services.stamping.die_fee.die_fee_service import StampingDieFeeService
+from app.services.stamping.gauge_fee.gauge_fee_service import StampingGaugeFeeService
 from app.services.stamping.stamping_service import StampingPartService
 
 logger = logging.getLogger("service.engineering_change.rollback")
@@ -52,6 +58,8 @@ class EngineeringChangeRollbackService:
         self.breakdown_service = BomWeldingProcessBreakdownService()
         self.stamping_service = StampingPartService()
         self.die_service = StampingDieService()
+        self.gauge_fee_service = StampingGaugeFeeService()
+        self.die_fee_service = StampingDieFeeService()
 
     def rollback(self, db: Session, upload_log_id: int, current_user: UserVO) -> None:
         log_row = self.log_repo.get_by_id(db, upload_log_id)
@@ -90,6 +98,10 @@ class EngineeringChangeRollbackService:
         except BusinessException:
             db.rollback()
             raise
+        except IntegrityError:
+            db.rollback()
+            # 加工费/模具费等对零件、布点 RESTRICT；转业务异常给前端 Toast，勿 500
+            raise BusinessException(EC_ROLLBACK_REFERENCED, code=409) from None
         except Exception:
             db.rollback()
             logger.exception("工程变更回滚失败 upload_log_id=%s", upload_log_id)
@@ -103,6 +115,12 @@ class EngineeringChangeRollbackService:
         current_user: UserVO,
     ) -> None:
         kind = link.effect_kind
+        if kind == EFFECT_DIE_FEE and link.after_id:
+            self.die_fee_service.delete_for_engineering_change_rollback(db, link.after_id)
+            return
+        if kind == EFFECT_GAUGE_FEE and link.after_id:
+            self.gauge_fee_service.delete_for_engineering_change_rollback(db, link.after_id)
+            return
         if kind == EFFECT_PROCUREMENT_OBJECT and link.after_id:
             self.po_service.delete_object_for_engineering_change_rollback(db, link.after_id)
             return

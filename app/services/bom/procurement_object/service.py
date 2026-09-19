@@ -304,7 +304,7 @@ class BomProcurementObjectService:
         return header.id if header is not None else None
 
     def delete_object_for_engineering_change_rollback(self, db: Session, object_id: int) -> None:
-        """工程变更回滚：删未审对象行；已审则 409。只 flush。"""
+        """工程变更回滚：删未审对象行；已审则 409。行删光后删空头。不改头上 QA/计数。只 flush。"""
         from app.common.audit import AUDIT_APPROVED
         from app.common.engineering_change_gates import EC_ROLLBACK_BLOCKED
         from app.exceptions.base import BusinessException
@@ -316,9 +316,7 @@ class BomProcurementObjectService:
             raise BusinessException(EC_ROLLBACK_BLOCKED, code=409)
         list_id = row.list_id
         self.repository.delete_object(db, row)
-        header = self.repository.get_list_by_id(db, list_id)
-        if header is not None:
-            self.repository.recount_header_from_rows(db, header)
+        self.delete_list_if_empty_for_engineering_change_rollback(db, list_id)
 
     def delete_list_if_empty_for_engineering_change_rollback(
         self, db: Session, list_id: int

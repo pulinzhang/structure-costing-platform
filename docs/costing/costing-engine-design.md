@@ -20,7 +20,7 @@
 |---|---|---|
 | R1 | 入口三参数 | 仅 `location`（基地）、`year`、`month` |
 | R2 | 上传/配置缺失 → 硬停 | 见 §5.1；含 **基准价**；覆盖不全视为缺失。缺工艺 / 缺 BOM 为黄灯，不挡另一条路径 |
-| R3 | 年度计算所得缺失 → 自动补算 | 加工费、采购对象清单、焊接工艺拆解、焊接费。缺则引擎同进程调 generate/calculate；`snapshot_blocks_full_generate` 拦住时映射引擎门禁文案，走 [工程变更](../engineering-change/part-number-revision-design.md) |
+| R3 | 年度计算所得缺失 → 自动补算 | 加工费、模具费、采购对象清单、焊接工艺拆解、焊接费。缺则引擎同进程调 generate/calculate；`snapshot_blocks_full_generate` 拦住时映射引擎门禁文案，走 [工程变更](../engineering-change/part-number-revision-design.md)。**检具费永不进年度补算**（上传档案；零件价缺档记 0） |
 | R4 | 同项目多 BOM 版本的树，只要该月有效就进总成核价 | 总成按项目算一次，不要按版本拆多趟；焊接年度补算仍可按 L0Scope |
 | R5 | 不改公式 | 复用现有 Orchestrator；月度核对导出只导出不算价 |
 | R6 | 前端单通道异步 | 一次 `task_id` + 与现网同形的进度 VO |
@@ -82,7 +82,7 @@ CostingEngineService                 ← 编排唯一入口
     SteelPriceCalcOrchestrator
     StampingPartCostCalcOrchestrator
     AssemblyCostCalcOrchestrator
-    冲压加工费 / 焊接拆解 / L0 焊接费 Service
+    冲压加工费 / 冲压模具费 / 焊接拆解 / L0 焊接费 Service
     MonthlyBundleExportService（可选 Phase，只导出）
 ```
 
@@ -114,6 +114,7 @@ CostingEngineService                 ← 编排唯一入口
 | 该月有效期内项目 | 基地 + 年 + 月 | 先冲压零件月命中 ∪ L0 节点月命中，再留下 `list_introducible` 里的。as_of 两边都空 → 软提示去零件列表 / 产品结构。as_of 有件但项目期裁空 → 去项目一览（`vehicle_model_period`） |
 | 冲压工艺零件 / 工序 | 该月有效期内项目 | 对照该月命中的零件表；只有 BOM、没有冲压件的项目不判冲压加工费/零件价。**黄灯不硬停**，有 BOM 的仍可总成核价 |
 | 冲次单价 | 基地相关 | 加工费输入；**仅当本期有冲压工艺时检查**，无工艺则跳过，不去判冲压加工费 |
+| 模具单价 | 基地 + 项目 | 模具费输入；**仅当发现名单内存在该年与布点年交集有件的项目时检查**；缺生效档或分摊万台无效 → 硬停；无此类项目则跳过 |
 | 焊接单价 | 年 + 基地 | 上传；**仅当存在含 L0 的 BOM 时检查**，无 BOM 则跳过，不去判焊接加工费 |
 | BOM 材料清单快照 | 基地 + 项目 + BOM 版本 | 须含 L0 才跑焊接与总成；**无 BOM 黄灯不硬停**，有工艺的仍可跑冲压路径 |
 | 年度零件价 | 年 + 基地 | 上传；**仅当有含 L0 的 BOM 时检查** |
@@ -131,6 +132,7 @@ CostingEngineService                 ← 编排唯一入口
 | 结果 | 触发粒度 | 依赖（须已过 5.1） |
 |---|---|---|
 | 冲压加工费 | 每个 **已有冲压工艺** 的 `vehicle_model`（工厂空则覆盖该车各厂） | 工艺 + 冲次单价；无工艺的项目不列入、不补算 |
+| 冲压模具费 | 每个 **该年与布点年交集有件** 且在发现名单内的 `vehicle_model` | 布点 + 模具单价；无布点不列入。`year+location+vehicle` 下已有任意模具费行 → 跳过；**0 条** → `will_auto_calc`。不做布点↔费用逐件对齐（系统费 ≤ 0 本就不落库）。改图换号时若旧号已有结果，由工程变更抄到新号（见 [part-number-revision §4.3.2](../engineering-change/part-number-revision-design.md)），勿指望本跳过逻辑给新号补行 |
 | 采购对象清单 | 每个 L0Scope | BOM；齐则跳过。缺 → 引擎同进程调 generate（门禁在 generate 内） |
 | 焊接工艺拆解 | 每个 L0Scope（该年与节点有效期有交集） | BOM + 焊接单价等；无该月命中 L0 则无 L0Scope，不判焊接费。年交集已齐则跳过。缺拆解 → 引擎同进程调 generate（门禁在 generate 内）。不可整包时硬停走工程变更 |
 | 成品 L0 焊接费 | 每个 L0Scope | 拆解结果；覆盖检查按 **L0 树根年交集** 收子树，不用 L1/L2 本行期 |
@@ -140,6 +142,7 @@ CostingEngineService                 ← 编排唯一入口
 - 仅当该 scope **尚无可用结果** 时补算  
 - 已有结果（含已审核）→ **默认不重算、不覆盖**  
 - 补算失败 → 仅阻断依赖它的下游单元，记入 step  
+- `annual_die_fee`：缺当年模具费时引擎同进程调 `StampingDieFeeCalcOrchestrator.calculate`。失败 → 该项目记入 `failed_vehicles`，跳过零件价（与加工费相同）。零件价 lookup 缺档仍计 0，不改公式。
 - `annual_procurement_object`：缺清单时引擎同进程调 `BomProcurementObjectGenerateService.generate`（与生成页同一把钥匙）。可整包 → 生成；不可整包 → `EC_GATE_ENGINE_PROCUREMENT`。工程变更上传应已插齐本树对象行。
 - `annual_welding_breakdown`：缺拆解时引擎 **同进程** 调 `BomWeldingProcessBreakdownGenerateService.generate`（与拆解页同一把钥匙 `snapshot_blocks_full_generate`）。可整包 → 生成；不可整包 → generate 抛 `EC_GATE_FULL_GENERATE`，runner 映射为 `EC_GATE_ENGINE_BREAKDOWN`。**禁止**在 runner 写死一律失败（会掐死从未工程变更的项目）。工程变更上传应已抄齐新树拆解；缺则重传，不要用整包 generate 顶。见 [工程变更 §4.6](../engineering-change/part-number-revision-design.md)。  
 
@@ -166,6 +169,7 @@ CostingEngineService                 ← 编排唯一入口
 | `vehicle_model` | 该月有效期内零件 / L0 树 | `#/stamping-parts` | `#/bom-structure` | `year`, `month`, `location`；空名单不要说「没有可引入项目」，不要跳项目一览表 |
 | `stamping_process` | 冲压工艺 | `#/stamping-upload` | `#/stamping-parts` | `location`；对照该月命中项目，缺工艺才去上传页 |
 | `tonnage_price` | 冲次单价 | `#/stamping-tonnage-upload` | `#/stamping-tonnage` | `location` |
+| `die_unit_price` | 模具单价 | `#/stamping-die-unit-price` | — | `location`；仅当发现名单内有该年布点交集项目时检查 |
 | `welding_unit_price` | 焊接单价 | `#/bom-welding-unit-price-upload` | `#/bom-welding-unit-price` | `year`, `location` |
 | `bom_snapshot` | BOM 材料清单 | `#/bom-upload` | `#/bom-material` / `#/bom-structure` | `location`；缺版本时文案点名项目 |
 | `annual_part_price` | 年度零件价 | `#/bom-annual-part-price-upload` | `#/bom-annual-part-price` | `year`, `location` |
@@ -225,7 +229,7 @@ L0Scope      = (location, year, month, vehicle_model, bom_version)
 
 ### 6.3 与月度核对导出参数对齐
 
-月度核对导出参数：年、月、基地、项目、BOM 版本。冲压侧按整车入册，工厂只出现在明细列。  
+月度核对导出参数：年、月、基地、项目；BOM 版本可选（空=该月全部节点版本字）。冲压侧按整车入册，工厂只出现在明细列。  
 引擎导出阶段对每个成功 L0Scope 调用现有导出服务；导出内不算价。
 
 ---
@@ -422,7 +426,7 @@ step 表可预留 `child_task_id` 字段供二期，首版可空。
 | 字段意图 | 说明 |
 |---|---|
 | id, run_id | |
-| stage | `annual_process_fee` / `annual_procurement_object` / `annual_welding_breakdown` / `annual_welding_fee` / `steel` / `part_cost` / `assembly` / `export` |
+| stage | `annual_process_fee` / `annual_die_fee` / `annual_procurement_object` / `annual_welding_breakdown` / `annual_welding_fee` / `steel` / `part_cost` / `assembly` / `export` |
 | scope_key | 项目代号，或 `vehicle_model|bom_version` |
 | status | §8.2 |
 | child_task_id / child_log_id | 可选引用 |
@@ -515,12 +519,22 @@ can_start: bool   # = not hard_stop 且存在可执行路径（该月命中冲�
 
 | 阶段 | 调用 | 注意 |
 |---|---|---|
-| 门禁 | 上游 Repository / 现有 count、政策 match | 覆盖检查集中在 GateChecker |
-| 年度补算 | 加工费 / 拆解 / 焊接费 Service（阶段 id `annual_welding_fee`，全 level） | 有焊接费结果则跳过 |
+| 门禁 | 上游 Repository / 现有 count、政策 match | 覆盖检查集中在 GateChecker；有布点时 `die_unit_price` 硬停 |
+| 年度补算 | 加工费 / 模具费 / 采购对象 / 拆解 / 焊接费（`annual_*`） | 有结果则跳过；**检具费不补算** |
 | 钢材 | `SteelPriceCalcOrchestrator` | 材料→基价→厚度政策→宽度政策→落库 |
-| 零件价 | `StampingPartCostCalcOrchestrator` | 现 ready：零件∧钢材∧废料∧加工费 |
+| 零件价 | `StampingPartCostCalcOrchestrator` | ready：零件∧钢材∧废料∧加工费。**不**要求模具费齐、**不**在 prepare 补算模具费；lookup 缺档记 0（与引擎补算分工，见下） |
 | 总成 | `AssemblyCostCalcOrchestrator` | 不绑工厂；有工艺才要求冲压价完成；有 BOM 才判焊接费 |
 | 导出 | `MonthlyBundleExportService` | 每成功 L0Scope；可选 |
+
+**模具费双轨（冻结，禁止再开第三条路径）：**
+
+| 入口 | 行为 |
+|---|---|
+| 自动核价引擎 | 有布点年交集且当年 0 条模具费 → `annual_die_fee` 同进程补算；缺模具单价硬停；补算失败跳过该项目零件价 |
+| 冲压零件价计算页 | 只 lookup；缺档记 0；不自动补算、不因缺模具费挡算 |
+| 冲压模具费计算页 | 用户手动算；唯一写公式入口（引擎复用同一 Orchestrator） |
+
+禁止：零件价 prepare 再嵌一套自动补算；禁止引擎与零件价两套「有无布点」判定（一律 `evaluate_die_fee_coverage`）。
 
 已审核月度结果：沿用现网「跳过不覆盖」，step 记 `skipped`。
 
@@ -554,7 +568,7 @@ can_start: bool   # = not hard_stop 且存在可执行路径（该月命中冲�
 |---|---|
 | 门禁 | 无基价 / 基价缺钢种 / 无厚度政策 / 无废料 → 均不可 start |
 | 硬停跳转 | 每条 `ok=false` 含合法 `navigate`；点击到达对应上传/维护页；无权限时禁用可感知 |
-| 年度补算 | 有工艺无加工费 → 自动补算后再跑零件价；无工艺不判冲压加工费；无 BOM 不判焊接费 |
+| 年度补算 | 有工艺无加工费 → 自动补算后再跑零件价；有布点无当年模具费 → 自动补算；无工艺不判冲压加工费；无布点不判模具费；无 BOM 不判焊接费 |
 | 多 BOM | 同基地同项目两版本 → 两个 L0 step 均执行 |
 | 异步 | 仅返回一个 task_id；进度单调；完成 result.status 正确 |
 | 部分失败 | 一工厂失败、另一工厂成功 → Run=`partial` |
@@ -576,7 +590,8 @@ can_start: bool   # = not hard_stop 且存在可执行路径（该月命中冲�
 
 - [ ] R1–R8 产品规则接受  
 - [ ] §5.1 上传/配置清单无遗漏、无误归入「硬停」  
-- [ ] §5.2 仅含「缺则自动算」的四项年度结果（加工费 / 采购对象 / 焊接拆解 / 焊接费）  
+- [ ] §5.2 仅含「缺则自动算」的五项年度结果（加工费 / 模具费 / 采购对象 / 焊接拆解 / 焊接费）；检具费永不列入
+- [ ] §13 模具费双轨冻结：引擎补算 / 零件价只 lookup / 计算页手算；无第三条 prepare 补算
 - [ ] §5.3 硬停 code→页面映射正确，P0 必须带「去处理」  
 - [ ] §8.4 `running` 也可删，不回滚业务结果  
 - [ ] 多 BOM 全量进 L0Scope，工程变更按版本分别导出  
@@ -622,3 +637,4 @@ can_start: bool   # = not hard_stop 且存在可执行路径（该月命中冲�
 | 2026-09-17 | 收口：整包 generate 门禁在 `snapshot_blocks_full_generate`；工程变更写入前缺拆解仍自动 generate。 |
 | 2026-09-19 | 引擎 `annual_welding_breakdown` 恢复同进程调 generate；`FULL_GENERATE`→`ENGINE_BREAKDOWN`。禁止 runner 一律硬停。用语「合册」改为工程变更 / 月度核对导出。 |
 | 2026-09-19 | 年度补算增加 `annual_procurement_object`；总成 P20 采购对象硬门；`FULL_GENERATE`→`ENGINE_PROCUREMENT`。 |
+| 2026-09-19 | 年度补算增加 `annual_die_fee`（有布点且当年无模具费行 → 同进程补算）；硬门 `die_unit_price`；失败跳过零件价。§13 冻结双轨：引擎补算 / 零件价页只 lookup。 |

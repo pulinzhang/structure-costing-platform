@@ -152,6 +152,8 @@ effective <= as_of_month 且（expiry 空 或 as_of_month <= expiry）
 
 写入时 `location` / `vehicle_model` 必须与所属 snapshot 同一基地、同一项目。`bom_version`：**SOP 导入抄头**（如 D/09）；**禁止**做成「节点版本永远等于头」的硬约束——工程变更要在同一份 snapshot 里给新树写变更字，头上仍留 SOP 那一版。同一棵树（一个 L0 及其子孙）生失效 **同值**：SOP 插入时每个节点都抄项目起止；PATCH 树根后级联写子树。不要让子件自己另开一段有效期。
 
+**级联版本下拉（`GET /api/bom/filters/cascade` 的 `bom_versions`）：** 只对 **L0** 节点 `bom_version` 去重。工程变更写入 `EC-202505` 后一览能看见该字。有年+月时只收该月命中的 L0。不要用 snapshot 头当版本下拉。
+
 UNIQUE 只约束 L0：`(snapshot_id, part_number)`。**不含** 生失效。同一 snapshot、同一总成号只有一行（3086AA 与 3086AB 是两个号）。同一 `seq_no` 在同一月至多一棵有效树（列表按月过滤时）；「含已失效」时同一序号可多棵——Service 校验，不进 UNIQUE。
 
 `seq_no` 是 SOP 槽位。第一次 SOP 从 Excel 写入后，本页再导已有树 **不得改** L0 `seq_no`（工程变更的 AB 要继承这个号）。`sort_no` / `excel_row` 可随文件更新。
@@ -308,9 +310,9 @@ L0 生效 <= 该年该月  且  （失效空  或  失效 >= 该年该月）
 
 禁止：UNIQUE 含 `effective_year` / `effective_month` / `expiry_year` / `expiry_month`；同一号截断旧行再插新行冒充两段。不换号只改尺寸/工序：更新 **这一行**，生失效走 §2.2 PATCH。
 
-有模具费行引用：禁止删被引用的布点行（库级 `source_die_part_id` `RESTRICT`，文案「仍被引用，不能删除」）；改期走 §2.2，不删行。
+有模具费行引用：禁止删被引用的布点行（库级 `source_die_part_id` `RESTRICT`，文案「仍被冲压模具费引用，请先删除对应模具费后再删」）；改期走 §2.2，不删行。
 
-检具费 **不加列**。不要用布点有效期冒充检具。
+检具费 **不加列**。不要用布点有效期冒充检具。改图换号时检具费档案 / 模具费结果抄写见 [part-number-revision-design.md](part-number-revision-design.md) §4.3.1 / §4.3.2，不在本文件展开。
 
 ### 5.2 写入
 

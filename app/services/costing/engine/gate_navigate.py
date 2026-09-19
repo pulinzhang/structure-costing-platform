@@ -20,6 +20,7 @@ def build_navigate(
         "vehicle_model_period": _nav_vehicle_model_period,
         "stamping_process": _nav_stamping_process,
         "tonnage_price": _nav_tonnage_price,
+        "die_unit_price": _nav_die_unit_price,
         "welding_unit_price": _nav_welding_unit_price,
         "bom_snapshot": _nav_bom_snapshot,
         "annual_part_price": _nav_annual_part_price,
@@ -108,6 +109,16 @@ def _nav_tonnage_price(
         query=_query(location=location, include_location=True),
         secondary_page="stamping-tonnage",
         secondary_label="查看冲次单价列表",
+    )
+
+
+def _nav_die_unit_price(
+    *, year: int | None, month: int | None, location: str | None
+) -> CostingEngineNavigateVO:
+    return CostingEngineNavigateVO(
+        page="stamping-die-unit-price",
+        label="去维护模具单价",
+        query=_query(location=location, include_location=True),
     )
 
 

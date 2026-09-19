@@ -43,11 +43,12 @@ export function supplierUploadTemplate() {
                             </div>
                             <div id="supplierUploadProgressPanel" class="hidden text-left w-full">
                                 <div class="flex items-center gap-2 min-w-0 mb-3">
-                                    ${window.svgIcon('spinner', 'w-4 h-4 text-[#FF1E27]')}
-                                    <h5 class="text-xs font-medium text-[#ffffff] truncate mb-0">正在写入…</h5>
+                                    <span id="supplierUploadProgressIcon">${window.svgIcon('spinner', 'w-4 h-4 text-[#FF1E27]')}</span>
+                                    <h5 id="supplierUploadProgressTitle" class="text-xs font-medium text-[#ffffff] truncate mb-0">正在写入…</h5>
                                 </div>
                                 <div class="h-1.5 w-full bg-[#0a0a0a] border border-[#2c2c2c] overflow-hidden mb-3">
-                                    <div class="h-full bg-[#FF1E27] transition-all duration-300 animate-pulse"
+                                    <div id="supplierUploadProgressBar"
+                                         class="h-full bg-[#FF1E27] transition-all duration-300 animate-pulse"
                                          style="width: 60%"></div>
                                 </div>
                                 <p id="supplierUploadProgressMsg" class="text-[11px] text-[#9e9e9e] leading-relaxed mb-0 whitespace-pre-wrap break-words max-h-48 overflow-y-auto">解析中</p>

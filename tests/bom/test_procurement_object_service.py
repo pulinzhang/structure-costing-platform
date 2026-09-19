@@ -347,9 +347,70 @@ def test_batch_delete_clears_review_rows_while_skipping_approved(db: Session) ->
     )
     assert header.other_leaf_count == 0
     assert header.anomaly_count == 0
+    assert header.qa_passed is False
+    assert header.qa_error_text is not None
+    assert "部分删除" in header.qa_error_text
 
 
-def test_confirm_rejected_when_approved(db: Session) -> None:
+def test_engineering_change_rollback_delete_keeps_header_when_rows_remain(db: Session) -> None:
+    """整包 generate 后的清单：回滚只删部分行时头保留，且不改 QA。"""
+    _seed_tree(db, with_review_rows=True)
+    service = BomProcurementObjectService()
+    result = service.generate(db, _scope(), current_user=SYSTEM_USER)
+    assert result.header.qa_passed is True
+    items, _, _ = service.paginate(
+        db,
+        BomProcurementObjectQuery(location="芜湖", vehicle_model="T13J", bom_version="V3", size=50),
+    )
+    object_items = [item for item in items if item.section == "object"]
+    assert len(object_items) >= 2
+    target_id = object_items[0].id
+    before = service.repository.get_list_by_scope(
+        db, location="芜湖", vehicle_model="T13J", bom_version="V3"
+    )
+    assert before is not None
+    before_qa = before.qa_passed
+    before_error = before.qa_error_text
+    before_stamping = before.object_l1_stamping_count
+
+    service.delete_object_for_engineering_change_rollback(db, target_id)
+    db.commit()
+
+    after = service.repository.get_list_by_scope(
+        db, location="芜湖", vehicle_model="T13J", bom_version="V3"
+    )
+    assert after is not None
+    assert after.qa_passed is before_qa
+    assert after.qa_error_text == before_error
+    assert after.object_l1_stamping_count == before_stamping
+    assert service.repository.get_object_by_id(db, target_id) is None
+
+
+def test_engineering_change_rollback_deletes_empty_header(db: Session) -> None:
+    """EC 建空头插行后全部回滚：头须删掉（不依赖 procurement_list 效果链接）。"""
+    _seed_tree(db)
+    snapshot = db.query(BomSnapshot).one()
+    service = BomProcurementObjectService()
+    inserted_ids = BomProcurementObjectInsertService().insert_for_new_tree(
+        db,
+        snapshot_id=snapshot.id,
+        new_l0_id=db.query(BomNode).filter(BomNode.level == 0).one().id,
+        old_l0_id=None,
+        current_user=SYSTEM_USER,
+    )
+    assert inserted_ids
+    header = service.repository.get_list_by_snapshot_id(db, snapshot.id)
+    assert header is not None
+    assert header.qa_passed is True
+
+    for object_id in inserted_ids:
+        service.delete_object_for_engineering_change_rollback(db, object_id)
+    db.commit()
+
+    assert service.repository.get_list_by_snapshot_id(db, snapshot.id) is None
+
+
+def test_confirm_skipped_when_approved(db: Session) -> None:
     _seed_tree(db)
     service = BomProcurementObjectService()
     service.generate(db, _scope(), current_user=SYSTEM_USER)
@@ -367,13 +428,38 @@ def test_confirm_rejected_when_approved(db: Session) -> None:
         ),
         current_user=SYSTEM_USER,
     )
-    with pytest.raises(BusinessException, match="已审核"):
-        service.confirm(
-            db,
-            items[0].id,
-            BomProcurementObjectConfirmDTO(confirm_status="in_house"),
-            current_user=SYSTEM_USER,
-        )
+    vo = service.confirm(
+        db,
+        items[0].id,
+        BomProcurementObjectConfirmDTO(confirm_status="in_house"),
+        current_user=SYSTEM_USER,
+    )
+    assert vo.confirm_status != "in_house"
+    assert vo.audit_status == "approved"
+
+
+def test_confirm_allowed_when_qa_failed(db: Session) -> None:
+    _seed_tree(db)
+    service = BomProcurementObjectService()
+    service.generate(db, _scope(), current_user=SYSTEM_USER)
+    header = service.repository.get_list_by_scope(
+        db, location="芜湖", vehicle_model="T13J", bom_version="V3"
+    )
+    assert header is not None
+    header.qa_passed = False
+    header.qa_error_text = "结构缺口"
+    db.commit()
+    items, _, _ = service.paginate(
+        db,
+        BomProcurementObjectQuery(location="芜湖", vehicle_model="T13J", bom_version="V3", size=50),
+    )
+    vo = service.confirm(
+        db,
+        items[0].id,
+        BomProcurementObjectConfirmDTO(confirm_status="outsourced", confirm_remark="外发"),
+        current_user=SYSTEM_USER,
+    )
+    assert vo.confirm_status == "outsourced"
 
 
 def test_batch_reverse_audit_required_remark() -> None:

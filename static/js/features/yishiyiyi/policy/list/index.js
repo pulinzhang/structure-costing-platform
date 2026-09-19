@@ -4,7 +4,7 @@
  * 用于测试部门核对数据，主子表联合查询导出 Excel
  */
 
-import { policyDownloadTemplate, renderPolicyRows } from './template.js?v=37';
+import { policyDownloadTemplate, renderPolicyRows } from './template.js?v=40';
 import {
     DEFAULT_PREVIEW_PAGE_SIZE,
     PREVIEW_PAGE_SIZE_OPTIONS,
@@ -12,6 +12,10 @@ import {
     paintPagination,
 } from '../../../../page-size.js?v=3';
 import { setSearchBusy } from '../../../../search-busy.js?v=1';
+import {
+    requireExportYearMonth,
+    selectDefaultYear,
+} from '../../../common/period-ui.js?v=4';
 
 // 状态管理
 const policyDownloadState = {
@@ -53,9 +57,7 @@ function init() {
             loadGradesForCategory(pendingCategory);
         }
         updateConditionsDisplay();
-        if (policyDownloadState.pendingFilters) {
-            previewData(1);
-        }
+        previewData(1);
     });
     applyPermissionUi();
 }
@@ -141,6 +143,9 @@ async function loadFilterOptions() {
             }
             fillSelect('policyDownloadYear', years);
         }
+        if (!policyDownloadState.pendingFilters?.year) {
+            selectDefaultYear('policyDownloadYear');
+        }
 
         // 填充月份
         const months = Array.from({ length: 12 }, (_, i) => ({
@@ -170,6 +175,9 @@ async function loadFilterOptions() {
                 years.push({ value: y, label: fmtYear(y) });
         }
         fillSelect('policyDownloadYear', years);
+        if (!policyDownloadState.pendingFilters?.year) {
+            selectDefaultYear('policyDownloadYear');
+        }
 
         const months = Array.from({ length: 12 }, (_, i) => ({
             value: i + 1,
@@ -301,8 +309,6 @@ function bindDatalistFilterInput(id, { onChange } = {}) {
 
 function queryAfterFilterSelect() {
     updateConditionsDisplay();
-    const filters = collectFilters();
-    if (!hasAnyFilter(filters)) return;
     previewData(1);
 }
 
@@ -320,7 +326,7 @@ function updateConditionsDisplay() {
 
     const display = document.getElementById('selectedConditions');
     if (display) {
-        display.textContent = conditions.length > 0 ? conditions.join(' | ') : '请选择筛选条件';
+        display.textContent = conditions.length > 0 ? conditions.join(' | ') : '全部';
     }
 }
 
@@ -343,16 +349,6 @@ function collectFilters() {
     };
 }
 
-function hasAnyFilter(filters) {
-    return !!(
-        filters.year ||
-        filters.month ||
-        filters.steel_mill ||
-        filters.category_name ||
-        filters.grade_value
-    );
-}
-
 /**
  * 组装政策查询/导出请求参数：年度、月份、钢厂、分类、牌号。
  * 牌号经后端牌号分类档案解析为大类后再匹配 CATEGORY 厚度政策。
@@ -369,16 +365,11 @@ function applyFiltersToParams(params, filters) {
  * 预览数据
  */
 async function previewData(page = 1) {
-    const filters = collectFilters();
-
-    if (!hasAnyFilter(filters)) {
-        showToast('请至少选择一个筛选条件', 'warning');
-        return;
-    }
     if (policyDownloadState.isLoading) return;
     policyDownloadState.isLoading = true;
     setSearchBusy('btnPreview', true);
 
+    const filters = collectFilters();
     const tableBody = document.getElementById('policyPreviewBody');
     if (tableBody) {
         tableBody.innerHTML = `
@@ -418,9 +409,18 @@ async function previewData(page = 1) {
 
         // 渲染预览表格
         if (tableBody) {
-            tableBody.innerHTML = renderPolicyRows(records);
+            tableBody.innerHTML = records.length
+                ? renderPolicyRows(records)
+                : `
+                <tr>
+                    <td colspan="20" class="px-4 py-8 text-center text-[#616161] text-xs">
+                        当前筛选下暂无数据
+                    </td>
+                </tr>
+            `;
         }
         paintPagination('policyPagination', policyDownloadState.page, policyDownloadState.totalPages);
+        updateConditionsDisplay();
     } catch (error) {
         console.error('预览数据失败:', error);
         if (tableBody) {
@@ -454,8 +454,7 @@ async function exportExcel() {
     }
     const filters = collectFilters();
 
-    if (!hasAnyFilter(filters)) {
-        showToast('请至少选择一个筛选条件', 'warning');
+    if (!requireExportYearMonth(filters)) {
         return;
     }
 

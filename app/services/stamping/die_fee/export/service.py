@@ -8,14 +8,15 @@ from openpyxl import Workbook
 from sqlalchemy.orm import Session
 
 from app.common.excel_workbook import resolve_worksheet
+from app.common.export_filters import require_at_least_one_export_filter
 from app.common.export_watermark import workbook_to_xlsx_bytes
 from app.common.vehicle_model import normalize_vehicle_model
-from app.exceptions.base import BusinessException
 from app.models.stamping.die import StampingDieProcess
 from app.models.stamping.die_fee import StampingDieFee
 from app.repositories.stamping.die_fee_repository import StampingDieFeeRepository
 from app.repositories.stamping.stamping_die_repository import StampingDieProcessRepository
 from app.schemas.vo.user_vo import UserVO
+from app.services.masterdata.location import LocationService
 from app.services.stamping.die_fee.export.styles import build_sheet_style
 from app.services.stamping.die_fee.export.values import build_filename, filter_text
 from app.services.stamping.die_fee.export.workbook import fill_sheet
@@ -35,23 +36,40 @@ class StampingDieFeeExportService:
         self,
         db: Session,
         *,
-        year: int,
-        location: str,
-        vehicle_model: str,
-        part_number: str | None,
-        audit_status: str | None,
-        only_zero: bool,
+        year: int | None = None,
+        location: str | None = None,
+        vehicle_model: str | None = None,
+        part_number: str | None = None,
+        audit_status: str | None = None,
+        only_zero: bool = False,
         stamping_supplier: str | None = None,
         version: str | None = None,
         current_user: UserVO,
     ) -> tuple[bytes, str]:
-        loc = location.strip()
-        vehicle = normalize_vehicle_model(vehicle_model)
-        if not loc or not vehicle:
-            raise BusinessException("导出必须指定基地和项目")
+        loc = (location or "").strip() or None
+        vehicle = normalize_vehicle_model(vehicle_model) if vehicle_model else None
+        vehicle = vehicle or None
         part = (part_number or "").strip() or None
         supplier = (stamping_supplier or "").strip() or None
         version_value = (version or "").strip() or None
+        status = (audit_status or "").strip() or None
+
+        require_at_least_one_export_filter(
+            year,
+            loc,
+            vehicle,
+            supplier,
+            version_value,
+            part,
+            status,
+            only_zero,
+        )
+
+        locations: list[str] | None = None
+        if loc:
+            locations = LocationService().expand_for_query(db, loc)
+            if not locations:
+                locations = []
 
         workbook = Workbook()
         _title, fee_count = self._write_to_workbook(
@@ -59,9 +77,10 @@ class StampingDieFeeExportService:
             db,
             year=year,
             location=loc,
+            locations=locations,
             vehicle_model=vehicle,
             part_number=part,
-            audit_status=audit_status,
+            audit_status=status,
             only_zero=only_zero,
             stamping_supplier=supplier,
             version=version_value,
@@ -83,9 +102,10 @@ class StampingDieFeeExportService:
         workbook: Workbook,
         db: Session,
         *,
-        year: int,
-        location: str,
-        vehicle_model: str,
+        year: int | None = None,
+        location: str | None = None,
+        locations: list[str] | None = None,
+        vehicle_model: str | None = None,
         part_number: str | None,
         audit_status: str | None,
         only_zero: bool,
@@ -96,7 +116,8 @@ class StampingDieFeeExportService:
         records = self.fee_repo.list_for_export(
             db,
             year=year,
-            location=location,
+            location=location if locations is None else None,
+            locations=locations,
             vehicle_model=vehicle_model,
             part_number=part_number,
             audit_status=audit_status,

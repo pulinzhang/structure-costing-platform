@@ -185,7 +185,7 @@ def write_cover_sheet(
     month: int,
     location: str,
     vehicle_model: str,
-    bom_version: str,
+    bom_version: str | None = None,
 ) -> str:
     """写入月度核对导出首页封皮；返回 sheet 名。"""
     ws = resolve_worksheet(wb, _SHEET_TITLE)
@@ -200,6 +200,7 @@ def write_cover_sheet(
 
     left = Alignment(horizontal="left", vertical="center", wrap_text=True, indent=1)
 
+    version_label = (bom_version or "").strip() or "全部版本"
     # —— 标题 / 范围 ——
     _band(
         ws,
@@ -214,7 +215,7 @@ def write_cover_sheet(
         row=2,
         value=(
             f"{year}年{month}月　·　基地 {location}　·　项目 {vehicle_model}"
-            f"　·　BOM {bom_version}"
+            f"　·　BOM {version_label}"
             f"　　{now().strftime('%Y-%m-%d %H:%M')}"
         ),
         fill=_FILL_ICE,

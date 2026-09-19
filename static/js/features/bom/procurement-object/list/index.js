@@ -447,7 +447,7 @@ async function loadSummaryBanner() {
         const res = await HttpClient.get(`${API_BASE}/summary`, { params: scope });
         const header = res.data || {};
         if (header.qa_passed === false) {
-            banner.textContent = `检测未通过：${header.qa_error_text || '禁止确认与审核'}`;
+            banner.textContent = `检测未通过：${header.qa_error_text || '仍可确认与审核；已审行跳过不改'}`;
             banner.classList.remove('hidden');
         } else {
             banner.classList.add('hidden');
@@ -541,7 +541,7 @@ function openAuditDrawer(mode) {
     document.getElementById('poBatchAuditMode').value = mode;
     document.getElementById('poBatchAuditDrawerTitle').textContent = mode === 'approve' ? '批量审核' : '批量反审核';
     document.getElementById('poBatchAuditHint').textContent = mode === 'approve'
-        ? '按当前基地·项目·版本审核待审采购对象；检测未通过会拒绝。'
+        ? '按当前基地·项目·版本审核待审采购对象；已审跳过。检测未通过不拦。'
         : '按当前基地·项目·版本反审核已通过记录。';
     document.getElementById('poBatchAuditOperatorDisplay').textContent = sessionName() || '当前登录用户';
     document.getElementById('poBatchAuditRemarkLabel').innerHTML = mode === 'approve'

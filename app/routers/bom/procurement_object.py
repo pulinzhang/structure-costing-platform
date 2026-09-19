@@ -77,7 +77,7 @@ def generate(
     message = (
         f"已生成采购对象 {result.object_count} 条"
         if result.header.qa_passed
-        else "已生成（检测未通过，禁止确认与审核）"
+        else "已生成（检测未通过，可继续确认与审核）"
     )
     return ApiResponse.ok(data=result, message=message)
 
@@ -201,6 +201,10 @@ async def upload_suppliers(
         f"已更新 {result.updated_count} 条，清空 {result.cleared_count} 条，"
         f"未变 {result.unchanged_count} 条"
     )
+    if result.skipped_count:
+        message += f"；跳过 {result.skipped_count} 条"
+        if result.skipped_details:
+            message += "：" + "；".join(result.skipped_details)
     return ApiResponse.ok(data=result, message=message)
 
 

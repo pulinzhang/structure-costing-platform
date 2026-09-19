@@ -89,5 +89,5 @@ def export_filter_text(
     if view == "procurement":
         parts.append("采购")
     elif view == "finance":
-        parts.append("财务树根")
+        parts.append("财务（总成）")
     return " · ".join(parts) if parts else "全部筛选"

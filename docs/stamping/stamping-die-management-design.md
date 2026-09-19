@@ -1,11 +1,11 @@
 # 冲压件模具管理 — 设计说明
 
-> **状态：已落地（本期只入库，不算模具费金额）。**  
+> **状态：已落地（只入库布点几何与分摊比例；本切片不算金额）。**  
 > 样本：`excel_sample/T13J/副本②T13J项目冲压模具布点工艺清单-2024-01-22.xlsx`（Sheet「零件汇总」）。  
 > 业务列 A～AC；模板可在套数后插入「模具编号」列。AD 及以后（责任人、模具款、检具款等）一律忽略。检具费档案另表，见 [stamping-gauge-fee-design.md](stamping-gauge-fee-design.md)，**不读布点 AD+ 检具款列**。  
 > **导入顺序**：先布点后工艺、编号出自布点或缺号按 `DP-40-{项目}-流水` 补、布点不认供应商，见 [stamping-apqp-die-before-process-design.md](stamping-apqp-die-before-process-design.md)。  
 > 有效期现网改造（布点零件行生失效、停整项目覆盖）见 [bom-process-die-effective-period-design.md](../engineering-change/bom-process-die-effective-period-design.md)。  
-> **冲压模具费**是本表直接下一跳：`stamping_die_fees.source_die_part_id` → `stamping_die_parts.id`（`RESTRICT`）。有模具费则不能删布点，文案「仍被引用，不能删除」。各序 `source_die_process_id` 不加 FK（再导会删插工序）。  
+> **冲压模具费**是本表直接下一跳：`stamping_die_fees.source_die_part_id` → `stamping_die_parts.id`（`RESTRICT`）。有模具费则不能删布点，文案「仍被冲压模具费引用，请先删除对应模具费后再删」。各序 `source_die_process_id` 不加 FK（再导会删插工序）。金额在 [stamping-die-fee-design.md](stamping-die-fee-design.md)；引擎补算见 [costing-engine-design.md](../costing/costing-engine-design.md) §5.2。  
 > 关联：现网冲压工艺导入（`app/parsers/stamping/`、`cost_ratio_resolver.py`）、成品间接费 I7/I8 预留（[assembly-costing-design.md](../costing/assembly-costing-design.md)）。  
 > 硬约束：分层与切片见 [architecture.md](../architecture.md)。
 
@@ -16,11 +16,11 @@
 **本模块是计算模具费用的依据。** 把「冲压模具布点工艺清单」按零件主表 + 工序子表入库：重量、尺寸、共模比例，给后续模具费计算用。  
 对照现网：冲压工艺确认表是 **加工费** 与 **零件材料（含是否利废）** 的依据，见 [stamping-process-confirmation-design.md](stamping-process-confirmation-design.md)；本表是 **模具费** 的依据。两套不要混、也不把布点回写进 `stamping_parts`。家模副产品由工艺表四列全空判定，**禁止**用布点空板料改零件利废标，见 [stamping-family-die-byproduct-design.md](stamping-family-die-byproduct-design.md)。  
 上传形态对齐工艺导入（异步解析、覆盖写入），关注模具字段，**不管理零件简图**。  
-上传必须选择 **采购基地**，再选该月可引入项目（下拉，不是手填）。子表 **分摊比例**（左右共模对半，**不做级进 0.80**）。本期只落模具本身（重量、尺寸、工序、比例），**不算金额**，也 **不记寿命/是否还摊**。满 10 万件是否还摊由后续计算层判定，不进本表。单价政策见 [stamping-die-unit-price-design.md](stamping-die-unit-price-design.md)（另表，按基地+项目维护，不依赖工艺库）。冲压件检具费见 [stamping-gauge-fee-design.md](stamping-gauge-fee-design.md)（按零件另表上传，不进布点主表）。
+上传必须选择 **采购基地**，再选该月可引入项目（下拉，不是手填）。子表 **分摊比例**（左右共模对半，**不做级进 0.80**）。本切片只落模具本身（重量、尺寸、工序、比例），**不算金额**，也 **不记寿命/是否还摊**。金额由年度模具费计算 / 核价引擎读本表算出；满 10 万件是否还摊由费用切片判定，不进本表。单价政策见 [stamping-die-unit-price-design.md](stamping-die-unit-price-design.md)。冲压件检具费见 [stamping-gauge-fee-design.md](stamping-gauge-fee-design.md)。
 
 ---
 
-## 1. 本期只管模具本身
+## 1. 本切片只管模具本身
 
 本表存的是 **项目模具布点**（零件、工序、尺寸、共模比例），不是模具费生命周期。
 
@@ -31,9 +31,9 @@
 | | 子表 `alloc_ratio` | 寿命 / 是否还摊 |
 |--|-------------------|----------------|
 | 回答 | 共模时本件占几成 | 后续计算层决定；**不进本表** |
-| 典型 | 左右件各 0.50 | 跨项目累计 ≥ 10 万件则分摊额记 0（将来算费时处理） |
+| 典型 | 左右件各 0.50 | 跨项目累计 ≥ 10 万件则分摊额记 0（费用切片处理，不进本表） |
 
-本期 **不算金额、不自动累加多项目产量、主表无分摊状态列**。将来算费必须读本表的重量 / 尺寸 / `alloc_ratio`；满寿规则另开计算设计，禁止在布点主数据上挂生命周期状态。
+本切片 **不算金额、不自动累加多项目产量、主表无分摊状态列**。年度模具费 / 引擎必须读本表的重量 / 尺寸 / `alloc_ratio`；满寿规则写在费用切片，禁止在布点主数据上挂生命周期状态。
 
 ---
 
@@ -113,11 +113,11 @@
 - **不允许单件删除**（没有 `DELETE /{id}`）。
 - 子表默认 `alloc_ratio`；覆盖上传时沿用已改比例（按零件号 + 工序号）。
 
-### 4.2 不做（后续另开设计）
+### 4.2 不做（本切片边界）
 
-- **本期仍不算模具费金额、不进零件核价、不进成品 I7/I8。** 计算是下一期，但输入必须是本表，不能再解析布点 Excel。同目录 `副本②…-费用.xlsx` 的 AG 模具款等是单价/金额来源候选，不混进本期 Parser。
+- **本切片不算模具费金额。** 金额在 [stamping-die-fee-design.md](stamping-die-fee-design.md)；核价引擎可 `annual_die_fee` 补算。零件价按号 lookup 最终费（缺档 0）。成品 I7/I8 间接费路径另议，不在本表写金额。输入必须是本表，不能再解析布点 Excel 算费。同目录费用样例 Excel 的 AG 模具款等不混进本 Parser。
 - **不管理简图**：列 D 跳过；不抽嵌入图、不落 `sketch_url`、列表/详情不展示零件图。本模块是模具费依据，不是工艺卡出图。
-- **不自动统计多项目累计产量、主表不记是否还摊**（无产量接口；满 10 万留给计算层）。
+- **不自动统计多项目累计产量、主表不记是否还摊**（无产量接口；满 10 万留给费用切片）。
 - **Excel 不读版本列。** 表头 V0-01 丢掉。供应商、版本从冲压工艺回填，列表不筛这两维，上传表单仍只选基地+项目。
 - **不允许单件删除。** 只按基地+项目整包删。
 
@@ -168,7 +168,7 @@
 - 属 **stamping 切片**（上游）。Router：`app/routers/stamping/die.py`（需要的话再拆 upload）。
 - HTTP 前缀：**`/api/stamping/die`**。
 - 上传 Service **只读**本切片工艺零件/工序 Repository 校验基地/项目及模具编号。禁止依赖 `costing`。
-- 将来模具费计算只读本表。
+- 年度模具费计算 / 核价引擎只读本表（本切片不算金额）。
 
 ---
 
@@ -279,20 +279,26 @@ menu:stamping
 
 ---
 
-## 11. 模具费用怎么用本表（本期只落依据，不算金额）
+## 11. 模具费用怎么用本表（本切片只落依据，不算金额）
 
-本模块 **不是** 模具费结果表，而是计算的 **唯一上游依据**（对标：`stamping_processes` 之于冲压加工费）。单价公式、10 万件除法、是否进零件价 / 成品间接费，另开计算设计；**计算层必须读本表**，不要再解析布点 Excel，也不要用工艺确认表的吨位去冒充模具费。
+本模块 **不是** 模具费结果表，而是计算的 **唯一上游布点依据**（对标：`stamping_processes` 之于冲压加工费）。本切片 **不读** 费用样例 Excel 的 AD+「模具款」列、**不定义** 单价公式。
 
-费用样本已在 AD+ 出现「模具款 / 检具款 / 总费用」，与重量、掏空系数相关。本期 **不读这些列、不定义单价公式**。检具费维护走 `stamping_gauge_fees`，不要把布点 Excel 的检具款写进模具表。寿命基准 **10 万件** 留给计算层，**不要回写到本表状态列**。预留消费方式：
+金额路径已落地，一律读本表，不要再解析布点 Excel，也不要用工艺确认表吨位冒充模具费：
+
+| 入口 | 行为 | 文档 |
+|---|---|---|
+| 冲压模具费计算页 | 手算年度 `final_die_fee` | [stamping-die-fee-design.md](stamping-die-fee-design.md) |
+| 自动核价引擎 | 有布点且当年无结果 → `annual_die_fee` | [costing-engine-design.md](../costing/costing-engine-design.md) §5.2 / §13 |
+| 冲压零件价页 | 只 lookup；缺档记 0 | 同上双轨 |
 
 ```text
-各工序 estimated_weight_t ×（将来模具单价 / 10万件口径）× alloc_ratio
-  → 汇总到零件模具分摊额
-  → 下游 costing 再决定进零件价还是成品间接费
-  → 满寿 / 多项目共用是否还摊：计算层判定，不读本表 lifecycle 字段
+各工序 estimated_weight_t ×（模具单价档案 / 分摊万台）× alloc_ratio
+  → 汇总到零件最终模具费（元/件）
+  → 零件价直接成本含该项；成品 I7/I8 间接费另议，不 silently 写入 gauge_alloc_fee
+  → 满寿 / 多项目共用是否还摊：费用切片判定，不读本表 lifecycle 字段
 ```
 
-与 I7 检具 / I8 器具：**不是同一笔**。I7/I8 仍按 L0 预留；本表是 **冲压件模具**。若以后模具摊进成品，另开设计，不要 silently 写入 `gauge_alloc_fee`。
+与 I7 检具 / I8 器具：**不是同一笔**。I7/I8 仍按 L0 预留；本表是 **冲压件模具**。检具费维护走 `stamping_gauge_fees`。
 
 ---
 
@@ -321,6 +327,7 @@ menu:stamping
 
 | 日期 | 说明 |
 |------|------|
+| 2026-09-19 | 纠正「计算是下一期 / 不进零件核价」：本切片仍只入库几何；金额已在模具费切片与引擎落地，读本表 |
 | 2026-09-19 | 模具费 `source_die_part_id` RESTRICT：有模具费则不能删布点；工序 id 不加 FK |
 | 2026-09-03 | APQP 落地：先布点后工艺；编号补号；布点不认供应商 |
 | 2026-09-02 | 交叉引用家模副产品：布点空板料不覆盖工艺表 |

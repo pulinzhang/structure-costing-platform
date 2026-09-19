@@ -4,7 +4,7 @@ import {
     updateLacHud,
     updateLacFilterCapsules,
     updateLacTableHead,
-} from './template.js?v=27';
+} from './template.js?v=32';
 import {
     DEFAULT_PAGE_SIZE,
     bindPagination,
@@ -118,7 +118,7 @@ function syncViewButtons() {
     }
     if (exportBtn) {
         exportBtn.title = isProcurement
-            ? '导出零件成本（成本一览 + 材料明细 + 焊接费）'
+            ? '导出零件成本（成本一览 + 材料明细 + 焊接费）。须选定年/月/基地/项目；版本可不选。'
             : '导出成品核价（一览 + 材料明细 + 焊接费 + 间接费用；金额为系统快照）';
     }
     if (bundleBtn && listState.canExport) {
@@ -240,12 +240,20 @@ function bindEvents() {
     });
 
     document.getElementById('lacYearFilter')?.addEventListener('change', () => {
+        setSelectValue('lacBomVersionFilter', '');
         updateLacFilterCapsules();
-        loadList(1);
+        loadCascadeFilters().then(() => {
+            updateLacFilterCapsules();
+            loadList(1);
+        });
     });
     document.getElementById('lacMonthFilter')?.addEventListener('change', () => {
+        setSelectValue('lacBomVersionFilter', '');
         updateLacFilterCapsules();
-        loadList(1);
+        loadCascadeFilters().then(() => {
+            updateLacFilterCapsules();
+            loadList(1);
+        });
     });
     document.getElementById('lacLocationFilter')?.addEventListener('change', () => {
         setSelectValue('lacVehicleModelFilter', '');
@@ -381,6 +389,14 @@ async function loadYearOptions() {
 async function loadCascadeFilters() {
     try {
         const pending = listState.pendingFilters;
+        const yearRaw =
+            document.getElementById('lacYearFilter')?.value
+            || pending?.year
+            || '';
+        const monthRaw =
+            document.getElementById('lacMonthFilter')?.value
+            || pending?.month
+            || '';
         const params = {
             location:
                 document.getElementById('lacLocationFilter')?.value
@@ -391,6 +407,8 @@ async function loadCascadeFilters() {
                 || pending?.vehicle_model
                 || '',
         };
+        if (yearRaw) params.year = Number(yearRaw);
+        if (monthRaw) params.month = Number(monthRaw);
         const res = await HttpClient.get(CASCADE_API, { params });
         const filters = res.data || {};
         fillSelect(
@@ -455,8 +473,9 @@ function getFilters() {
 
 function requireScope(actionLabel = '批量操作') {
     const f = getFilters();
-    if (!f.year || !f.month || !f.location || !f.vehicle_model || !f.bom_version) {
-        showToast(`${actionLabel}须选定年度、月份、基地、项目、版本`, 'warning');
+    // 版本非约束：工程变更后同月可多版本字，空=该月全部。
+    if (!f.year || !f.month || !f.location || !f.vehicle_model) {
+        showToast(`${actionLabel}须选定年度、月份、基地、项目（版本可不选）`, 'warning');
         setAdvancedOpen(true);
         return null;
     }
@@ -465,7 +484,7 @@ function requireScope(actionLabel = '批量操作') {
         month: f.month,
         location: f.location,
         vehicle_model: f.vehicle_model,
-        bom_version: f.bom_version,
+        bom_version: f.bom_version || undefined,
         view: listState.view,
     };
 }
@@ -548,8 +567,8 @@ function openBatchAuditDrawer(mode) {
     if (titleEl) titleEl.textContent = isApprove ? '批量审核' : '批量反审核';
     if (hintEl) {
         hintEl.textContent = isApprove
-            ? '仅按年度、月份、基地、项目、版本处理待审记录；已通过记录会跳过。'
-            : '仅按年度、月份、基地、项目、版本处理已通过记录；其余状态会跳过。反审核意见必填。';
+            ? '仅按年度、月份、基地、项目处理待审记录（版本筛可选）；已通过记录会跳过。'
+            : '仅按年度、月份、基地、项目处理已通过记录（版本筛可选）；其余状态会跳过。反审核意见必填。';
     }
     if (operatorLabel) operatorLabel.textContent = isApprove ? '审核人' : '反审核人';
     if (operatorDisplay) {
@@ -565,8 +584,11 @@ function openBatchAuditDrawer(mode) {
         remarkEl.placeholder = isApprove ? '请填写审核意见（必填）' : '请填写反审核原因（必填）';
     }
     if (summaryEl) {
+        const versionPart = scope.bom_version
+            ? ` · 版本 ${scope.bom_version}`
+            : ' · 全部版本';
         summaryEl.textContent =
-            `${fmtPeriod(scope.year, scope.month)} · 基地 ${scope.location} · 项目 ${scope.vehicle_model} · 版本 ${scope.bom_version}`;
+            `${fmtPeriod(scope.year, scope.month)} · 基地 ${scope.location} · 项目 ${scope.vehicle_model}${versionPart}`;
     }
     if (confirmBtn) {
         confirmBtn.textContent = isApprove ? '确认审核通过' : '确认反审核';
@@ -717,16 +739,17 @@ async function exportBundleExcel() {
             `<div class="w-3 h-3 border border-[#ef5350] border-t-transparent rounded-full animate-spin"></div>月度核对导出中..`;
     }
     try {
+        const params = {
+            year: scope.year,
+            month: scope.month,
+            location: scope.location,
+            vehicle_model: scope.vehicle_model,
+        };
+        if (scope.bom_version) params.bom_version = scope.bom_version;
         const { blob, filename } = await HttpClient.download(
             '/api/costing/monthly-bundle/export-download',
             {
-                params: {
-                    year: scope.year,
-                    month: scope.month,
-                    location: scope.location,
-                    vehicle_model: scope.vehicle_model,
-                    bom_version: scope.bom_version,
-                },
+                params,
                 defaultFilename: '月度核对导出.xlsx',
                 timeout: 300000,
             },

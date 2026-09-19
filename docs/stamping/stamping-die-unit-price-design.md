@@ -8,9 +8,9 @@
 
 ## 0. 一句话
 
-按 **采购基地 + 项目** 维护钢板模 / 级进模单价、项目分摊数量、生效状态。这是核价档案，**不是**成本核算台账，**本期不算年度模具费、不进 costing**。
+按 **采购基地 + 项目** 维护钢板模 / 级进模单价、项目分摊数量、生效状态。这是核价**档案**（不是结果台账）：本表不写年度模具费金额。
 
-后续一年一算的中间表再读本表 + 布点重量/`alloc_ratio`。
+下游只读：年度模具费计算、核价引擎硬门 `die_unit_price`（有布点年交集的项目须有生效档且分摊万台有效）。见 [stamping-die-fee-design.md](stamping-die-fee-design.md)、[costing-engine-design.md](../costing/costing-engine-design.md) §5.1 / §5.2。
 
 ---
 
@@ -55,3 +55,12 @@
 唯一键只在 Service 校验（前端不预查）。冲突 HTTP 409，中文提示引导去改已有记录。
 
 页面：`#/stamping-die-unit-price`。权限：`menu:stamping-die-unit-price` + `view` / `create` / `update` / `delete`。
+
+---
+
+## 4. 修订
+
+| 日期 | 说明 |
+|---|---|
+| 2026-09-19 | 纠正「不进 costing」：档案只读；引擎硬门 `die_unit_price` + 年度模具费计算消费本表 |
+| 2026-08-30 | 初稿：基地+项目唯一键，钢板模/级进模单价与分摊万台 |

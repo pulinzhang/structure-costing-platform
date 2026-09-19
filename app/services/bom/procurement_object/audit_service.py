@@ -59,10 +59,8 @@ class BomProcurementObjectAuditService:
         header = self.repository.get_list_by_id(db, row.list_id)
         if header is None:
             raise NotFoundException("所属采购对象清单不存在")
-        if not header.qa_passed:
-            raise BusinessException("检测未通过，禁止确认")
         if row.audit_status == AUDIT_APPROVED:
-            raise BusinessException("已审核记录禁止改确认，请先批量反审核")
+            return row_to_vo(db, self.repository, row)
         operator = display_name(current_user)
         try:
             row.confirm_status = status
@@ -103,10 +101,8 @@ class BomProcurementObjectAuditService:
         header = self.repository.get_list_by_id(db, row.list_id)
         if header is None:
             raise NotFoundException("所属采购对象清单不存在")
-        if not header.qa_passed:
-            raise BusinessException("检测未通过，禁止改供应商")
         if row.audit_status == AUDIT_APPROVED:
-            raise BusinessException("已审核记录禁止改供应商，请先批量反审核")
+            return row_to_vo(db, self.repository, row)
         canonical = None if raw is None else SupplierService().require_enabled(db, raw)
         operator = display_name(current_user)
         try:
@@ -135,8 +131,6 @@ class BomProcurementObjectAuditService:
         current_user: UserVO,
     ) -> BomProcurementObjectBatchAuditResultVO:
         header = self._require_header(db, dto.location, dto.vehicle_model, dto.bom_version)
-        if not header.qa_passed:
-            raise BusinessException("检测未通过，禁止审核")
         operator = display_name(current_user)
         if not operator:
             raise BusinessException("无法识别当前登录用户")

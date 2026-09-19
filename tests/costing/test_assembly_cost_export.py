@@ -395,7 +395,7 @@ def test_procurement_items_sheet_merges_object_identity() -> None:
     assert sheet.cell(row=7, column=6).value == ""
 
 
-def test_procurement_export_requires_period_scope() -> None:
+def test_procurement_export_requires_period_scope_without_version() -> None:
     from app.exceptions.base import BusinessException
 
     service = AssemblyCostExportService()
@@ -405,15 +405,39 @@ def test_procurement_export_requires_period_scope() -> None:
             year=2025,
             month=12,
             location="青岛",
-            vehicle_model="T2AA",
+            vehicle_model=None,
             bom_version=None,
             view="procurement",
             current_user=MagicMock(),
         )
     except BusinessException as exc:
-        assert "年度" in str(exc) or "版本" in str(exc)
+        message = str(exc)
+        assert "项目" in message
+        assert "版本可不选" in message
     else:
         raise AssertionError("expected BusinessException")
+
+
+def test_procurement_export_allows_missing_bom_version() -> None:
+    service = AssemblyCostExportService()
+    service.write_to_workbook = MagicMock(return_value=(PROCUREMENT_LIST_SHEET, 1))
+    with patch(
+        "app.services.costing.assembly_cost.export.assembly_cost_export_service.workbook_to_xlsx_bytes",
+        return_value=b"xlsx",
+    ):
+        content, filename = service.export(
+            MagicMock(),
+            year=2025,
+            month=12,
+            location="青岛",
+            vehicle_model="T2AA",
+            bom_version=None,
+            view="procurement",
+            current_user=MagicMock(),
+        )
+    assert content == b"xlsx"
+    assert "零件成本" in filename or filename.endswith(".xlsx")
+    assert service.write_to_workbook.call_args.kwargs["bom_version"] is None
 
 
 def _write_procurement_workbook(records: list[SimpleNamespace]):
@@ -556,3 +580,78 @@ def test_finance_list_banner_and_formula_total() -> None:
     assert sheet.cell(row=6, column=13).value == "=SUM(M5:M5)"
     assert sheet.cell(row=6, column=14).value == "=SUM(N5:N5)"
     assert sheet.auto_filter.ref == "A4:P5"
+
+
+def test_finance_list_sheet_seq_uses_l0_seq_no() -> None:
+    from openpyxl import Workbook
+
+    from app.services.costing.assembly_cost.export.workbook.layout import SheetLayout
+    from app.services.costing.assembly_cost.export.workbook.list_sheet import (
+        write_list_sheet,
+    )
+
+    records = [
+        SimpleNamespace(
+            source_node_id=101,
+            year=2025,
+            month=5,
+            location="芜湖",
+            part_number="551003086AA",
+            part_name="总成甲",
+            level=0,
+            vehicle_model="T13J",
+            bom_version="D/09",
+            material_amount=Decimal("1"),
+            welding_amount=Decimal("0"),
+            total_amount=Decimal("1"),
+            indirect_amount=Decimal("0"),
+            grand_total=Decimal("1"),
+            calc_status="ok",
+            audit_status="pending",
+        ),
+        SimpleNamespace(
+            source_node_id=102,
+            year=2025,
+            month=5,
+            location="芜湖",
+            part_number="551003087AA",
+            part_name="总成乙",
+            level=0,
+            vehicle_model="T13J",
+            bom_version="D/09",
+            material_amount=Decimal("2"),
+            welding_amount=Decimal("0"),
+            total_amount=Decimal("2"),
+            indirect_amount=Decimal("0"),
+            grand_total=Decimal("2"),
+            calc_status="ok",
+            audit_status="pending",
+        ),
+    ]
+    ws = Workbook().active
+    write_list_sheet(
+        SheetLayout(),
+        ws,
+        records,
+        filter_text="测试",
+        view="finance",
+        confirm_map={},
+        seq_no_by_source_node_id={101: 7, 102: 3},
+    )
+    assert ws.cell(row=4, column=1).value == "序号"
+    assert ws.cell(row=5, column=1).value == 7
+    assert ws.cell(row=6, column=1).value == 3
+
+
+def test_finance_list_order_drops_bom_version_primary_key() -> None:
+    import inspect
+
+    from app.repositories.costing.assembly_cost.queries import AssemblyCostQueries
+
+    body = inspect.getsource(AssemblyCostQueries._order_like_bom_import)
+    assert "AssemblyCost.bom_version" not in body
+    assert "BomNode.seq_no" in body
+    assert "AssemblyCost.year" in body
+    assert "AssemblyCost.month" in body
+    assert "AssemblyCost.location" in body
+    assert "AssemblyCost.vehicle_model" in body

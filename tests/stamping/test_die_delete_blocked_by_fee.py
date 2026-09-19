@@ -140,7 +140,7 @@ def test_delete_scope_blocked_when_fee_exists(memory_db: Session) -> None:
     part_id = part.id
     fee = _add_fee(memory_db, part)
 
-    with pytest.raises(BusinessException, match="仍被引用，不能删除"):
+    with pytest.raises(BusinessException, match="仍被冲压模具费引用"):
         StampingDieService().delete_scope(
             memory_db,
             StampingDieScopeDTO(location=LOCATION, vehicle_model=VEHICLE),

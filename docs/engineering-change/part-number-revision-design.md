@@ -232,7 +232,33 @@ SOP 再导：只更新 **生效月 = 项目 SOP 开始月** 且仍有效的树�
 | 文件没有的旧号 | **不删、不到期**。只有一级/二级改图换号且旧号有布点时才让旧号到期 |
 | 旧号还挂在另一棵仍有效树上 | 只在旧号 **当月仍有工艺 as-of** 时 `EC_PROCESS_SHARED_OLD` 整份拒收。布点跟工艺共用 `revise_old_to_new`，不另开「有没有布点」的共享锁 |
 
-检具费另表、同样不是硬门禁（本期不展开公式）。
+#### 4.3.1 检具费：改图有则抄
+
+另表 `stamping_gauge_fees`，唯一键 `location` + `vehicle_model` + `part_number`。细则见 [stamping-gauge-fee-design.md](../stamping/stamping-gauge-fee-design.md)。
+
+| 变更单 | 系统做 |
+|------|--------|
+| **改图**（一级/二级） | 旧号有 `effective` 档，且新号尚无该唯一键 → 为新号 **插一行**：检具费（万元）、分摊万台、状态照抄；零件号改新号。旧号行 **不动**（历史月核价仍认旧号） |
+| 无旧档 / 新号已有 | **不插**、不覆盖。不是硬门禁 |
+| 完成停止 / 此件不装 / 增加零件 | **不抄** |
+
+`effect_link`：`EFFECT_GAUGE_FEE`；`before_id` = 旧行 id，`after_id` = 新行 id。  
+**回滚必须删除 `after_id` 新行**；旧行不动。只删本趟链接登记过的行，禁止按零件号扫库。
+
+#### 4.3.2 模具费结果：改图有则抄
+
+抄的是已落库年度结果 `stamping_die_fees`（含各序 `stamping_die_fee_items`），**不是**再跑一次模具费计算、不写 calc_log。细则见 [stamping-die-fee-design.md](../stamping/stamping-die-fee-design.md)。
+
+| 变更单 | 系统做 |
+|------|--------|
+| **改图**（一级/二级） | 旧号在 **`year >= 变更生效年`** 的结果行，且新号同年键不存在 → **整单抄**主表+各序。`source_die_part_id` 绑本趟新建布点；`source_die_process_id` 置空（软指针）。金额/调整/最终费照抄；审核重置 `pending`，审核人时点清空。版本/供应商优先用新布点快照。旧行 **不动** |
+| 无旧结果 / 新号同年已有 | **不插**、不覆盖。不是硬门禁 |
+| 完成停止 / 此件不装 / 增加零件 | **不抄** |
+
+`effect_link`：`EFFECT_DIE_FEE`；`before_id` = 旧主表 id，`after_id` = 新主表 id（明细随主表级联）。  
+**回滚必须删除 `after_id` 新主表（级联明细）**；旧行不动。链接 `sort_no` 排在布点之后，逆序回滚时 **先删模具费/检具费再滚布点**（避免 `source_die_part_id` `RESTRICT` 挡删布点）。
+
+与核价引擎互补：引擎 `annual_die_fee` 按「该年+基地+项目已有**任意**模具费行则整项跳过」判定（不做布点↔费用逐件对齐）。旧号已有结果时靠本条抄到新号；旧号无结果时仍靠引擎补算。见 [costing-engine-design.md](../costing/costing-engine-design.md) §5.2。
 
 ### 4.4 采购对象：设变导入后自动带出
 
@@ -260,7 +286,9 @@ SOP 再导：只更新 **生效月 = 项目 SOP 开始月** 且仍有效的树�
 
 ### 4.5 价表与核算
 
-工程变更不抄年度价 / 包装价。换了号的采购对象人补；没改号的不必出新价行。不装的零件不进该月核价。
+工程变更 **不抄** 年度零件价 / 包装价。换了号的采购对象人补；没改号的不必出新价行。不装的零件不进该月核价。
+
+**改图必须抄** 检具费档案与（若有）模具费结果，见 §4.3.1 / §4.3.2。零件价按月取号：检具按新号档案（万元÷万台→元/件），模具费按年+新号取 `final_die_fee`；缺档计 0（与现网 resolver 一致）。
 
 引擎：该月只收有效树根（按 SOP `seq_no` 序）；叶子冲压价抄该月有效工艺行。总成卡抄树根项目号、**节点**版本字；发现范围仍按 snapshot 头版本。完成停止不停工艺行：零件价月账仍可能算到旧总成下的冲压号；总成核价不收已失效的树。
 
@@ -297,6 +325,8 @@ BOM / 工艺 / 布点的 Parser、UNIQUE、引擎发现键、`create_node`、投
   → 每棵新树：本树采购对象插行、本树焊接拆解从旧树结果抄插（主表+全部明细；禁止按焊信重拆）
   → 工艺表按号增行一次（仅改图行才让旧号到期；不删行）
   → 布点：不读 Excel；改图换号若旧号有布点则逻辑建立新号（整行抄旧，含 alloc_ratio），旧布点到期；简图只看新号工艺行
+  → 检具费：改图旧号有生效档则抄到新号（EFFECT_GAUGE_FEE）
+  → 模具费：改图旧号有 year≥生效年结果则抄到新号（绑新布点；EFFECT_DIE_FEE）
   → 写变更单行 + 效果链接 → 回写上传头 success
 ```
 
@@ -376,7 +406,7 @@ app/
 
 全新切片：现网历史表直接 DROP，不迁数据。
 
-一次尝试一行上传头 `engineering_change_upload_logs`（`pending` / `success` / `failed`）。成功后按变更单行插入 `engineering_change_orders`（1 上传头 : N 变更单行；十列 + `excel_row` + 变更单实体 `id` + `before_assembly_node_id` → `bom_nodes` RESTRICT）。缺 `before_assembly_node_id` 的存量表启动时 DROP 三表重建（清孤儿，不迁数据、不调回滚 Service）。`engineering_change_effect_links` 存 `upload_log_id`、`change_order_id` 与前后实体 id：`assembly_l0` / `process_part` / `die_part` / `procurement_object` / `welding_breakdown` / `procurement_list`。缺链接 = 不可回滚，禁止标成功。
+一次尝试一行上传头 `engineering_change_upload_logs`（`pending` / `success` / `failed`）。成功后按变更单行插入 `engineering_change_orders`（1 上传头 : N 变更单行；十列 + `excel_row` + 变更单实体 `id` + `before_assembly_node_id` → `bom_nodes` RESTRICT）。缺 `before_assembly_node_id` 的存量表启动时 DROP 三表重建（清孤儿，不迁数据、不调回滚 Service）。`engineering_change_effect_links` 存 `upload_log_id`、`change_order_id` 与前后实体 id：`assembly_l0` / `process_part` / `die_part` / `gauge_fee` / `die_fee` / `procurement_object` / `welding_breakdown` / `procurement_list`。缺链接 = 不可回滚，禁止标成功。回滚按 `sort_no` **逆序**：先删本次新插的模具费/检具费，再滚布点/工艺/树（见 §4.3.1 / §4.3.2）。
 
 删除本次变更：上传头 `success`（失败记录可直接物理删除，进行中禁止删）；本本全部变更单 `active`；其后没有以本本任一 `after_assembly` 为变更前总成的未删除记录。按效果链接逆序恢复业务对象，同一事务里 **物理删除** 本本三张表。存档 Excel **保留**。已审采购对象须先反审。不留 `rolled_back` 行。
 
@@ -441,6 +471,7 @@ app/
 | `EC_GATE_FULL_GENERATE` | 409 | 设变后请走工程变更重传，勿整包生成（门禁 2） |
 | `EC_GATE_ENGINE_BREAKDOWN` | 409 | 缺新树拆解，请工程变更重传（门禁 3） |
 | `EC_ROLLBACK_BLOCKED` | 409 | 其后还有未回滚的变更，或对象已审未反审，不能删本次 |
+| `EC_ROLLBACK_REFERENCED` | 409 | 下游核算结果仍引用本次变更产生的零件或布点（如冲压加工费、模具费），请先删除对应结果后再回滚 |
 
 ---
 

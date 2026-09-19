@@ -39,21 +39,23 @@ def _part_identity_cells(
 ) -> dict[str, object]:
     return {
         "A": seq,
-        "B": assembly_supply_no,
-        "C": getattr(row, "part_number", None) or "",
-        "D": short_part_number_digits(getattr(row, "part_number", None)) or "",
-        "E": getattr(row, "part_name", None) or "",
-        "F": "",
-        "G": getattr(row, "material", None) or "",
+        "B": getattr(row, "stamping_supplier", None) or "",
+        "C": getattr(row, "version", None) or "",
+        "D": assembly_supply_no,
+        "E": getattr(row, "part_number", None) or "",
+        "F": short_part_number_digits(getattr(row, "part_number", None)) or "",
+        "G": getattr(row, "part_name", None) or "",
+        "H": "",
+        "I": getattr(row, "material", None) or "",
     }
 
 
 def _offal_and_swing_cells(row: object) -> dict[str, object]:
     return {
-        "AN": "是" if getattr(row, "is_offal_nested", False) else "否",
-        "AO": getattr(row, "offal_source", None) or "",
-        "AP": "是" if getattr(row, "has_swing_shear", False) else "否",
-        "AQ": _swing_shear_fee_cell(row),
+        "AP": "是" if getattr(row, "is_offal_nested", False) else "否",
+        "AQ": getattr(row, "offal_source", None) or "",
+        "AR": "是" if getattr(row, "has_swing_shear", False) else "否",
+        "AS": _swing_shear_fee_cell(row),
     }
 
 
@@ -79,18 +81,18 @@ def _finished_fee_formula_cells(
     费率须为系统配置 Decimal（禁止用费用÷直接成本反推，会出脏小数）。
     直接成本为 0 时单元格显示空（与加工费/模具费/检具费一致）。
     """
-    v = f"W{excel_row}"
-    direct = f"S{excel_row}+T{excel_row}+U{excel_row}+V{excel_row}"
+    v = f"Y{excel_row}"
+    direct = f"U{excel_row}+V{excel_row}+W{excel_row}+X{excel_row}"
     return {
-        "W": f'=IF(({direct})=0,"",{direct})',
-        "X": f'=IF({v}="","",{v}*{formula_number(warehouse_packaging_rate)})',
-        "Y": f'=IF({v}="","",{v}*{formula_number(management_rate)})',
-        "Z": f'=IF({v}="","",{v}*{formula_number(finance_rate)})',
-        "AA": f'=IF({v}="","",{v}*{formula_number(pretax_profit_rate)})',
-        "AB": (f'=IF({v}="","",{v}+X{excel_row}+Y{excel_row}' f"+Z{excel_row}+AA{excel_row})"),
+        "Y": f'=IF(({direct})=0,"",{direct})',
+        "Z": f'=IF({v}="","",{v}*{formula_number(warehouse_packaging_rate)})',
+        "AA": f'=IF({v}="","",{v}*{formula_number(management_rate)})',
+        "AB": f'=IF({v}="","",{v}*{formula_number(finance_rate)})',
+        "AC": f'=IF({v}="","",{v}*{formula_number(pretax_profit_rate)})',
+        "AD": (f'=IF({v}="","",{v}+Z{excel_row}+AA{excel_row}' f"+AB{excel_row}+AC{excel_row})"),
     }
 
 
 def _part_size_formula(material_row: int, thickness_row: int) -> str:
     """零件尺寸 = 材质-料厚；整数料厚用 TEXT 保留 1 位小数。"""
-    return f'=G{material_row}&"-"&TEXT(H{thickness_row},"0.0###")'
+    return f'=I{material_row}&"-"&TEXT(J{thickness_row},"0.0###")'

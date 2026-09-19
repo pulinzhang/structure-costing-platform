@@ -47,7 +47,12 @@ class StampingDieFeeCalcDTO(StampingDieFeeScopeDTO):
         return text or None
 
 
-class StampingDieFeeQuery(StampingDieFeeScopeDTO):
+class StampingDieFeeQuery(BaseModel):
+    """列表查询：年 / 基地 / 项目均可空；空=不限（默认全量）。"""
+
+    year: int | None = Field(None, description="年度")
+    location: str | None = Field(None, description="基地")
+    vehicle_model: str | None = Field(None, description="项目")
     stamping_supplier: str | None = None
     version: str | None = None
     part_number: str | None = None
@@ -56,13 +61,28 @@ class StampingDieFeeQuery(StampingDieFeeScopeDTO):
     page: int = Field(1, ge=1)
     size: int = Field(20, ge=1, le=500)
 
-    @field_validator("stamping_supplier", "version", "part_number", "audit_status", mode="before")
+    @field_validator(
+        "location",
+        "vehicle_model",
+        "stamping_supplier",
+        "version",
+        "part_number",
+        "audit_status",
+        mode="before",
+    )
     @classmethod
     def _strip_optional(cls, value: object) -> str | None:
         if value is None:
             return None
         text = str(value).strip()
         return text or None
+
+    @field_validator("vehicle_model")
+    @classmethod
+    def _normalize_vehicle(cls, value: str | None) -> str | None:
+        if value is None:
+            return None
+        return normalize_vehicle_model(value) or None
 
 
 class StampingDieFeeUpdateDTO(BaseModel):

@@ -165,7 +165,7 @@ L0 永不因 L2 带内部号而变成结构化总成：只看一级件。退化�
 
 ## 7. 检测：怎样才叫清单对了
 
-对 **一个 snapshot** 必须同时满足。7.1–7.3 决定清单头 `qa_passed`。失败仍落库（检测要看见哪漏了）。`qa_passed=false` 时 **禁止确认、禁止审核**；导出仍允许（标明未通过）。
+对 **一个 snapshot** 必须同时满足。7.1–7.3 决定清单头 `qa_passed`。失败仍落库（检测要看见哪漏了）。`qa_passed=false` 时 **仍允许确认、审核、改供应商**（黄条仅展示）；已审行跳过不改。导出仍允许（标明未通过）。
 
 ### 7.1 完备
 
@@ -305,7 +305,7 @@ bom_procurement_object_generate_logs  一次「开始生成」一条终态日志
 
 - 只改 `section=object` 的 `confirm_status`（待定 / 外发 / 自制）和确认备注。
 - 不改 `object_kind`、核对凭据、材料快照。
-- `qa_passed=false` 或 `approved` 时拒绝（已审须先批量反审核）。检测口径见 §14：列表档案不按月裁；核价侧才按账期月问命中树。
+- `qa_passed=false` **不拦**确认；`approved` 时 **跳过不改**（不抛错、不写入）。检测口径见 §14：列表档案不按月裁；核价侧才按账期月问命中树。
 - 确认允许 **单条**（操作列改外发/自制）：这是「这一件怎么买」，不是锁定。
 
 **删除 / 审核 / 反审核（只批量，按清单范围）**
@@ -692,4 +692,5 @@ HUD 把 AA/AB 并排计数是档案全貌，不要写成「本月待审」。计
 | 2026-09-18 | 抽出 `row_write.build_object_row_write`（generate/插行共用，禁止再调私有 `_row_write`）；补插行端到端（抄确认不抄审核）、`has_supplier`、列表 expand vs 导出精确、批量不过期筛回归测。 |
 | 2026-09-18 | 可维护性收口：`collect_subtree` 公开；`bulk_create_objects` 返回 id；插行一次 confirm map；mapping `_ObjectVoOverlay`；文首「改前必读」五条不变量。 |
 | 2026-09-18 | §13 按干净库收口：生成找 snapshot = `require_enabled` + `normalize_vehicle_model` + 精确匹配；**不做**别名 expand（列表读路径仍 expand）。 |
+| 2026-09-19 | 检测未通过不拦确认/审核/改供应商；已审行跳过不改。 |
 | 2026-09-18 | §13 可维护性：文首不变量第 6 条；prep/generate 共用 `_lookup_snapshot`；回归测 normalize 与空代号拒绝。 |

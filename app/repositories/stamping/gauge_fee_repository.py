@@ -55,6 +55,25 @@ class StampingGaugeFeeRepository:
             .first()
         )
 
+    def get_by_part(
+        self,
+        db: Session,
+        *,
+        location: str,
+        vehicle_model: str,
+        part_number: str,
+    ) -> StampingGaugeFee | None:
+        """唯一键查询（任意状态）。"""
+        return (
+            db.query(StampingGaugeFee)
+            .filter(
+                StampingGaugeFee.location == location,
+                StampingGaugeFee.vehicle_model == vehicle_model,
+                StampingGaugeFee.part_number == part_number,
+            )
+            .first()
+        )
+
     def map_effective_by_part_numbers(
         self,
         db: Session,

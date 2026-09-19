@@ -143,7 +143,7 @@ export function dieFeeListTemplate() {
                                 重置
                             </button>
                         </div>
-                        <p class="mt-2 text-[10px] text-[#555555]">查询 / 导出 / 批量删除 / 审核 / 反审核须选定年度、基地、项目。供应商、版本为附加筛。</p>
+                        <p class="mt-2 text-[10px] text-[#555555]">打开即查全量；年 / 基地 / 项目等为可选筛。导出须至少一筛。批量删除 / 审核 / 反审核须选定年度、基地、项目。</p>
                     </div>
                 </div>
 
@@ -187,7 +187,7 @@ export function dieFeeListTemplate() {
                         ${window.svgIcon('clipboard-list', 'w-4 h-4 text-[#555555]')}
                     </div>
                     <h5 class="text-[11px] font-medium text-[#8E8E93] mb-1">暂无模具费数据</h5>
-                    <p id="dieFeeEmptyHint" class="text-[10px] text-[#555555]">请先选定年度、基地、项目后查询，或先在「冲压模具费计算」中执行计算</p>
+                    <p id="dieFeeEmptyHint" class="text-[10px] text-[#555555]">当前筛选下暂无模具费数据；可到「冲压模具费计算」手算，或由自动核价引擎补算</p>
                 </div>
 
                 <div id="dieFeeLoading" class="hidden flex items-center justify-center py-14">

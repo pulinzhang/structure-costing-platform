@@ -3,7 +3,7 @@
  * 基准价格导出页面逻辑
  */
 
-import { basePriceDownloadTemplate } from './template.js?v=32';
+import { basePriceDownloadTemplate } from './template.js?v=35';
 import {
     DEFAULT_PREVIEW_PAGE_SIZE,
     PREVIEW_PAGE_SIZE_OPTIONS,
@@ -11,6 +11,10 @@ import {
     paintPagination,
 } from '../../../../page-size.js?v=3';
 import { setSearchBusy } from '../../../../search-busy.js?v=1';
+import {
+    requireExportYearMonth,
+    selectDefaultYear,
+} from '../../../common/period-ui.js?v=4';
 
 // 状态管理
 const basePriceDownloadState = {
@@ -44,7 +48,10 @@ function init() {
     });
     // DOM 重建后必须重新拉选项；先同步填月份，避免接口返回前下拉空白
     fillMonthOptions();
-    loadFilterOptions();
+    loadFilterOptions().then(() => {
+        updateConditionsDisplay();
+        previewData(1);
+    });
     applyPermissionUi();
 }
 
@@ -89,6 +96,7 @@ async function loadFilterOptions() {
 
         const data = response.data || {};
         fillSelect('basePriceDownloadYear', buildYearOptions(data.years));
+        selectDefaultYear('basePriceDownloadYear');
         fillMonthOptions();
         fillSelect('basePriceDownloadLocation', data.locations || []);
         fillSelect('basePriceDownloadMill', data.steel_mills || []);
@@ -103,6 +111,7 @@ async function loadFilterOptions() {
         if (token !== basePriceDownloadState.filterLoadToken) return;
         console.error('加载筛选选项失败:', error);
         fillSelect('basePriceDownloadYear', buildYearOptions());
+        selectDefaultYear('basePriceDownloadYear');
         fillMonthOptions();
     }
 }
@@ -166,8 +175,6 @@ function bindEvents() {
 
 function queryAfterFilterSelect() {
     updateConditionsDisplay();
-    const filters = collectFilters();
-    if (!hasAnyFilter(filters)) return;
     previewData(1);
 }
 
@@ -186,7 +193,7 @@ function updateConditionsDisplay() {
 
     const display = document.getElementById('selectedBasePriceConditions');
     if (display) {
-        display.textContent = conditions.length > 0 ? conditions.join(' | ') : '请选择筛选条件';
+        display.textContent = conditions.length > 0 ? conditions.join(' | ') : '全部';
     }
 }
 
@@ -205,17 +212,6 @@ function collectFilters() {
     };
 }
 
-function hasAnyFilter(filters) {
-    return !!(
-        filters.year ||
-        filters.month ||
-        filters.location ||
-        filters.steel_mill ||
-        filters.category_name ||
-        filters.grade
-    );
-}
-
 function applyFiltersToParams(params, filters) {
     if (filters.year) params.year = parseInt(filters.year, 10);
     if (filters.month) params.month = parseInt(filters.month, 10);
@@ -229,16 +225,11 @@ function applyFiltersToParams(params, filters) {
  * 预览数据
  */
 async function previewData(page = 1) {
-    const filters = collectFilters();
-
-    if (!hasAnyFilter(filters)) {
-        showToast('请至少选择一个筛选条件', 'warning');
-        return;
-    }
     if (basePriceDownloadState.isLoading) return;
     basePriceDownloadState.isLoading = true;
     setSearchBusy('btnPreviewBasePrice', true);
 
+    const filters = collectFilters();
     const tableBody = document.getElementById('basePricePreviewBody');
     if (tableBody) {
         tableBody.innerHTML = `
@@ -278,12 +269,21 @@ async function previewData(page = 1) {
         }
 
         if (tableBody) {
-            tableBody.innerHTML = renderBasePriceRows(records);
+            tableBody.innerHTML = records.length
+                ? renderBasePriceRows(records)
+                : `
+                <tr>
+                    <td colspan="16" class="px-4 py-8 text-center text-[#616161] text-xs">
+                        当前筛选下暂无数据
+                    </td>
+                </tr>
+            `;
         }
         paintPagination('basePricePagination', 
                 basePriceDownloadState.page,
                 basePriceDownloadState.totalPages,
             );
+        updateConditionsDisplay();
     } catch (error) {
         console.error('预览数据失败:', error);
         if (tableBody) {
@@ -317,8 +317,7 @@ async function exportExcel() {
     }
     const filters = collectFilters();
 
-    if (!hasAnyFilter(filters)) {
-        showToast('请至少选择一个筛选条件', 'warning');
+    if (!requireExportYearMonth(filters)) {
         return;
     }
 

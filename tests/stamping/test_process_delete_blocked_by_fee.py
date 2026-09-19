@@ -150,7 +150,7 @@ def test_delete_part_blocked_when_fee_exists(memory_db: Session) -> None:
     part = _add_part(memory_db)
     fee = _add_fee(memory_db, part)
 
-    with pytest.raises(BusinessException, match="仍被引用，不能删除"):
+    with pytest.raises(BusinessException, match="仍被冲压加工费引用"):
         StampingPartService().delete(memory_db, part.id)
 
     assert memory_db.get(StampingPart, part.id) is not None
@@ -164,7 +164,7 @@ def test_batch_delete_blocked_when_fee_exists(memory_db: Session) -> None:
     part = _add_part(memory_db)
     _add_fee(memory_db, part)
 
-    with pytest.raises(BusinessException, match="仍被引用，不能删除"):
+    with pytest.raises(BusinessException, match="仍被冲压加工费引用"):
         StampingPartService().batch_delete(
             memory_db,
             StampingPartBatchDeleteDTO(

@@ -150,6 +150,8 @@ def execute_annual(
         status = "succeeded" if ok else "failed"
         if not ok and item.code == "annual_process_fee":
             carry.failed_vehicles.add(item.scope_key)
+        if not ok and item.code == "annual_die_fee":
+            carry.failed_vehicles.add(item.scope_key)
         if not ok and item.code == "annual_procurement_object":
             carry.failed_l0.add(item.scope_key)
         if not ok and item.code == "annual_welding_breakdown":
@@ -233,7 +235,7 @@ def execute_part_cost(
                 stage="part_cost",
                 scope_key=vehicle_model,
                 status="skipped",
-                message="加工费补算失败，跳过零件价",
+                message="年度加工费/模具费补算失败，跳过零件价",
                 metrics=None,
             )
             carry.step_summaries.append(

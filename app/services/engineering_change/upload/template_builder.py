@@ -35,9 +35,30 @@ CUSTOMER_NAME = "奇瑞公司"
 PERIOD_LABEL = "2025年07月"
 CHANGE_VERSION = "EC-202507"
 STAMPING_SUPPLIER = "烟台海众汽车零部件有限公司"
+BOM_VERSION_LABEL = "D/00"
+HEADER_DATE = "2025-07-01"
+DOC_NO = "EC-T28-202507"
 SLASH = "/"
 ADD_PART_NUMBER = "501007040AA"
 _ASSEMBLY_CHANGE_ORDER_COLS = (3, 4, 5)
+
+
+@dataclass(frozen=True, slots=True)
+class TemplateMeta:
+    """表头/变更单项目与生效年月；默认青岛 T28，测试样本可换芜湖 T13J。"""
+
+    location: str = LOCATION
+    vehicle_model: str = VEHICLE_MODEL
+    customer_name: str = CUSTOMER_NAME
+    period_label: str = PERIOD_LABEL
+    change_version: str = CHANGE_VERSION
+    stamping_supplier: str = STAMPING_SUPPLIER
+    bom_version_label: str = BOM_VERSION_LABEL
+    header_date: str = HEADER_DATE
+    doc_no: str = DOC_NO
+
+
+DEFAULT_META = TemplateMeta()
 
 _THIN = Border(
     left=Side(style="thin", color="BFBFBF"),
@@ -89,14 +110,6 @@ class BomSample:
 
 
 @dataclass(frozen=True, slots=True)
-class TemplateBook:
-    change_orders: tuple[ChangeOrderSample, ...]
-    bom: tuple[BomSample, ...]
-    process: tuple[ProcessSample, ...]
-    change_order_note: str
-
-
-@dataclass(frozen=True, slots=True)
 class ProcessSample:
     part_number: str
     part_name: str
@@ -110,8 +123,17 @@ class ProcessSample:
     process_seq: str
     process_code: str
     die_sets: int
-    tonnage: int
+    tonnage: int | None
     die_type: str
+
+
+@dataclass(frozen=True, slots=True)
+class TemplateBook:
+    change_orders: tuple[ChangeOrderSample, ...]
+    bom: tuple[BomSample, ...]
+    process: tuple[ProcessSample, ...]
+    change_order_note: str
+    meta: TemplateMeta = DEFAULT_META
 
 
 def _grouped_process_parts(
@@ -414,6 +436,7 @@ def _book_for_change_order(sample: ChangeOrderSample) -> TemplateBook:
         bom=bom,
         process=process,
         change_order_note=_scenario_note(sample),
+        meta=DEFAULT_META,
     )
 
 
@@ -440,17 +463,18 @@ _ASSEMBLY_SKETCH_PNG = (
 def build_engineering_change_template(
     book: TemplateBook | None = None,
 ) -> tuple[bytes, str]:
-    """运行时拼工程变更导入样表：青岛 T28 五种改法，一本即可上传。"""
+    """运行时拼工程变更导入样表：默认青岛 T28；也可传入其它项目的 TemplateBook。"""
     samples = book or COMBINED_BOOK
+    meta = samples.meta
     dest_wb = Workbook()
     order_sheet = dest_wb.active
     assert order_sheet is not None
     order_sheet.title = "工程变更单"
-    _write_change_order(order_sheet, samples.change_orders, samples.change_order_note)
+    _write_change_order(order_sheet, samples.change_orders, samples.change_order_note, meta)
 
     bom_wb = load_workbook(BytesIO(build_bom_material_template()[0]))
     bom_sheet = _copy_sheet(bom_wb["车身件材料清单"], dest_wb, "车身件材料清单")
-    _write_bom_header(bom_sheet)
+    _write_bom_header(bom_sheet, meta)
     _clear_row_range(bom_sheet, 5, 200, 23)
     for offset, bom_sample in enumerate(samples.bom):
         _write_bom_row(bom_sheet, 5 + offset, bom_sample)
@@ -458,7 +482,7 @@ def build_engineering_change_template(
 
     process_wb = load_workbook(BytesIO(build_stamping_process_template()[0]))
     process_sheet = _copy_sheet(process_wb["冲压工艺确认表"], dest_wb, "冲压工艺确认表")
-    _strip_process_sample(process_sheet)
+    _strip_process_sample(process_sheet, meta)
     process_row = 7
     process_sketch_rows: list[int] = []
     for seq_no, process_group in _grouped_process_parts(samples.process):
@@ -494,6 +518,7 @@ def _write_change_order(
     sheet: Worksheet,
     change_orders: tuple[ChangeOrderSample, ...],
     change_order_note: str,
+    meta: TemplateMeta,
 ) -> None:
     title = Font(name="微软雅黑", size=14, bold=True)
     label = Font(name="微软雅黑", size=10)
@@ -516,8 +541,8 @@ def _write_change_order(
     for offset, sample in enumerate(change_orders):
         excel_row = 5 + offset
         values = (
-            VEHICLE_MODEL,
-            PERIOD_LABEL,
+            meta.vehicle_model,
+            meta.period_label,
             sample.before_assembly,
             sample.after_assembly or "",
             sample.assembly_name,
@@ -549,18 +574,19 @@ def _write_change_order(
     sheet.freeze_panes = "A5"
 
 
-def _write_bom_header(sheet: Worksheet) -> None:
-    sheet["A1"] = f"{VEHICLE_MODEL}项目产品材料清单"
+def _write_bom_header(sheet: Worksheet, meta: TemplateMeta) -> None:
+    sheet["A1"] = f"{meta.vehicle_model}项目产品材料清单"
     sheet["A2"] = (
         "编制部门： 技术中心                    "
-        f"编制日期：2025-07-01  版本： {CHANGE_VERSION}  编号：EC-T28-202507"
+        f"编制日期：{meta.header_date}  版本： {meta.change_version}  "
+        f"编号：{meta.doc_no}"
     )
-    sheet["A3"] = f"项目代号：  {VEHICLE_MODEL}"
+    sheet["A3"] = f"项目代号：  {meta.vehicle_model}"
     sheet["I3"] = "产品类别：  车身件"
-    sheet["N3"] = f"顾客名称：  {CUSTOMER_NAME}"
+    sheet["N3"] = f"顾客名称：  {meta.customer_name}"
     sheet["P3"] = "阶段标识： D"
     sheet["R3"] = "■批量生产清单"
-    sheet["V3"] = "修订日期：2025-07-01"
+    sheet["V3"] = f"修订日期：{meta.header_date}"
 
 
 def _write_bom_row(sheet: Worksheet, row: int, sample: BomSample) -> None:
@@ -644,10 +670,10 @@ def _embed_part_sketches(
         sheet.add_image(image, f"{anchor_column}{start_row}")
 
 
-def _strip_process_sample(sheet: Worksheet) -> None:
-    sheet["D2"] = f"{VEHICLE_MODEL}项目冲压工艺确认表-工程变更"
-    sheet["D3"] = STAMPING_SUPPLIER
-    sheet["S3"] = CHANGE_VERSION
+def _strip_process_sample(sheet: Worksheet, meta: TemplateMeta) -> None:
+    sheet["D2"] = f"{meta.vehicle_model}项目冲压工艺确认表-工程变更"
+    sheet["D3"] = meta.stamping_supplier
+    sheet["S3"] = meta.change_version
     sheet.column_dimensions["D"].width = 14
     max_row = sheet.max_row or 6
     _clear_row_range(sheet, 7, max(max_row, 7), 20)

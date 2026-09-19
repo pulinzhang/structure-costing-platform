@@ -3,11 +3,23 @@
  * 同步导入：基地 + 年度必选，仅 .xlsx
  */
 
-import { tonnageUploadTemplate } from './template.js?v=7';
+import { tonnageUploadTemplate } from './template.js?v=8';
 import { can } from '../../../../permissions.js?v=8';
+import { bindSyncUploadProgress } from '../../../../sync-upload-progress.js?v=1';
 
 const API_BASE = '/api/stamping/tonnage-price';
 const MAX_FILE_SIZE = 5 * 1024 * 1024;
+
+const uploadProgress = bindSyncUploadProgress({
+    zoneId: 'tonnageUploadZone',
+    idleId: 'tonnageUploadDropIdle',
+    panelId: 'tonnageUploadProgressPanel',
+    iconId: 'tonnageUploadProgressIcon',
+    titleId: 'tonnageUploadProgressTitle',
+    barId: 'tonnageUploadProgressBar',
+    msgId: 'tonnageUploadProgressMsg',
+    runningTitle: '正在导入冲次单价...',
+});
 
 const TonnageUploadPage = {
     selectedFile: null,
@@ -189,32 +201,20 @@ const TonnageUploadPage = {
     },
 
     showProgress(msg = '解析并写入数据库，请稍候') {
-        const idle = document.getElementById('tonnageUploadDropIdle');
-        const panel = document.getElementById('tonnageUploadProgressPanel');
-        const zone = document.getElementById('tonnageUploadZone');
-        const progressMsg = document.getElementById('tonnageUploadProgressMsg');
-        if (idle) idle.classList.add('hidden');
-        if (panel) panel.classList.remove('hidden');
-        if (zone) {
-            zone.classList.add('pointer-events-none');
-            zone.classList.remove('border-[#d32f2f]');
-        }
-        if (progressMsg) progressMsg.textContent = msg;
+        uploadProgress.setRunning(msg);
+        document.getElementById('tonnageUploadZone')?.classList.remove('border-[#d32f2f]');
+    },
+
+    showDoneOnPanel(message, opts = {}) {
+        uploadProgress.setDone(message, opts);
     },
 
     failOnPanel(message) {
-        const text = String(message || '操作失败').trim() || '操作失败';
-        this.showProgress(text);
-        document.getElementById('tonnageUploadZone')?.classList.remove('pointer-events-none');
+        uploadProgress.setFail(message);
     },
 
     hideProgress() {
-        const idle = document.getElementById('tonnageUploadDropIdle');
-        const panel = document.getElementById('tonnageUploadProgressPanel');
-        const zone = document.getElementById('tonnageUploadZone');
-        if (idle) idle.classList.remove('hidden');
-        if (panel) panel.classList.add('hidden');
-        if (zone) zone.classList.remove('pointer-events-none');
+        uploadProgress.hide();
     },
 
     setUploading(isUploading) {
@@ -287,8 +287,7 @@ const TonnageUploadPage = {
             const msg = res.message
                 || data.message
                 || `导入成功：新增 ${data.created_count ?? 0}，更新 ${data.updated_count ?? 0}`;
-            showToast(msg, 'success');
-            this.hideProgress();
+            this.showDoneOnPanel(msg);
             this.clearSelectedFile(true);
         } catch (err) {
             this.failOnPanel(err.message || '导入失败');

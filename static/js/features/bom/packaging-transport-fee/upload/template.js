@@ -99,11 +99,13 @@ export function pkgTransportFeeUploadTemplate() {
                                         </div>
                                         <div id="pkgTransportFeeUploadProgressPanel" class="hidden text-left w-full">
                                             <div class="flex items-center gap-2 mb-3">
-                                                ${window.svgIcon('spinner', 'w-4 h-4 text-[#d32f2f]')}
-                                                <h5 class="text-xs font-medium text-[#ffffff] truncate mb-0">正在导入包装运输费...</h5>
+                                                <span id="pkgTransportFeeUploadProgressIcon">${window.svgIcon('spinner', 'w-4 h-4 text-[#d32f2f]')}</span>
+                                                <h5 id="pkgTransportFeeUploadProgressTitle" class="text-xs font-medium text-[#ffffff] truncate mb-0">正在导入包装运输费...</h5>
                                             </div>
                                             <div class="h-1.5 w-full bg-[#0a0a0a] border border-[#2c2c2c] overflow-hidden mb-3">
-                                                <div class="h-full bg-[#d32f2f] shadow-[0_0_8px_rgba(211,47,47,0.5)] animate-pulse" style="width: 60%"></div>
+                                                <div id="pkgTransportFeeUploadProgressBar"
+                                                     class="h-full bg-[#d32f2f] shadow-[0_0_8px_rgba(211,47,47,0.5)] transition-all duration-300 animate-pulse"
+                                                     style="width: 60%"></div>
                                             </div>
                                             <p id="pkgTransportFeeUploadProgressMsg" class="text-[11px] text-[#9e9e9e] mb-0 whitespace-pre-wrap break-words max-h-48 overflow-y-auto">解析并写入数据库，请稍候</p>
                                         </div>
