@@ -1,8 +1,11 @@
-"""牌号分类档案路由。"""
+"""牌号分类档案路由。
+
+/template、/export、/upload 必须写在 /{record_id:int} 之前（api-type-safety.mdc §6）。
+"""
 
 from urllib.parse import quote
 
-from fastapi import APIRouter, Depends, Query, status
+from fastapi import APIRouter, Depends, File, Query, UploadFile, status
 from fastapi.responses import StreamingResponse
 from sqlalchemy.orm import Session
 
@@ -18,6 +21,7 @@ from app.schemas.dto.steel_grade_category_dto import (
 )
 from app.schemas.vo.steel_grade_category_vo import (
     SteelGradeCategoryOptionVO,
+    SteelGradeCategoryUploadResultVO,
     SteelGradeCategoryVO,
 )
 from app.schemas.vo.user_vo import UserVO
@@ -87,6 +91,22 @@ def list_steel_grade_categories(
 
 
 @router.get(
+    "/template",
+    response_model=None,
+)
+def download_import_template(
+    current_user: UserVO = Depends(require_perm(Perm.STEEL_GRADE_CATEGORY_VIEW)),
+) -> StreamingResponse:
+    """下载导入模板（列与导出核心列相同，可再导入）。"""
+    content, filename = _service.build_template()
+    return StreamingResponse(
+        iter([content]),
+        media_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+        headers={"Content-Disposition": f"attachment; filename*=UTF-8''{quote(filename)}"},
+    )
+
+
+@router.get(
     "/export",
     response_model=None,
 )
@@ -95,11 +115,30 @@ def export_steel_grade_categories(
     db: Session = Depends(get_db),
     current_user: UserVO = Depends(require_perm(Perm.STEEL_GRADE_CATEGORY_EXPORT)),
 ) -> StreamingResponse:
+    """按当前筛选导出（大类/牌号/备注可再导入；另含序号与审计列）。"""
     content, filename = _export_service.export(db, query, current_user)
     return StreamingResponse(
         iter([content]),
         media_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
         headers={"Content-Disposition": f"attachment; filename*=UTF-8''{quote(filename)}"},
+    )
+
+
+@router.post(
+    "/upload",
+    response_model=ApiResponse[SteelGradeCategoryUploadResultVO],
+)
+async def upload_steel_grade_categories(
+    file: UploadFile = File(...),
+    db: Session = Depends(get_db),
+    current_user: UserVO = Depends(require_perm(Perm.STEEL_GRADE_CATEGORY_CREATE)),
+) -> ApiResponse[SteelGradeCategoryUploadResultVO]:
+    """同步导入牌号分类；已有跳过，大类冲突整单拒绝。"""
+    content = await file.read()
+    result = _service.process_upload(db, content, current_user=current_user)
+    return ApiResponse.ok(
+        data=result,
+        message=f"导入完成：新增 {result.created_count}，跳过 {result.skipped_count}",
     )
 
 

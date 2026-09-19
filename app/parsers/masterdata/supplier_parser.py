@@ -16,6 +16,7 @@ HEADER_ABBREVIATION = "缩写"
 HEADER_FULL_NAME = "工商名称"
 HEADER_ERP_CODE = "ERP 代码"
 HEADER_ALIASES = "别名"
+HEADER_STATUS = "状态"
 
 _ALIAS_SEPARATORS = ("、", "，", ",", "\n", "\r", ";")
 
@@ -69,7 +70,7 @@ def _split_aliases(raw: str) -> list[str]:
 def _find_header_row(sheet: Any) -> tuple[int, dict[str, int]] | None:
     aliases = {
         HEADER_ABBREVIATION: {HEADER_ABBREVIATION},
-        HEADER_FULL_NAME: {HEADER_FULL_NAME},
+        HEADER_FULL_NAME: {HEADER_FULL_NAME, "全称"},
         HEADER_ERP_CODE: {HEADER_ERP_CODE, "ERP代码", "ERP"},
         HEADER_ALIASES: {HEADER_ALIASES},
     }

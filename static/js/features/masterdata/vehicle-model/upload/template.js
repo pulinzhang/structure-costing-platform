@@ -81,6 +81,7 @@ export function vehicleModelUploadTemplate() {
                         <div>
                             <h6 class="text-[10px] uppercase tracking-wider text-[#616161] mb-2">写入规则</h6>
                             <ul class="list-disc list-inside text-xs text-[#616161] space-y-1.5">
+                                <li>列表导出可直接再导入</li>
                                 <li>主键：基地 + 项目代号</li>
                                 <li>库里已有则跳过，不覆盖生效/失效/供货台数</li>
                                 <li>任一行失败则整单不写入</li>

@@ -6,7 +6,7 @@ import {
     steelGradeCategoryTemplate,
     renderTableRows,
     syncTabStyles,
-} from './template.js?v=6';
+} from './template.js?v=7';
 import {
     DEFAULT_PAGE_SIZE,
     bindPagination,
@@ -58,6 +58,10 @@ function closeDrawer(drawerId, backdropId) {
 function applyPermissionUi() {
     if (!canOp('op:steel-grade-category:create')) {
         document.getElementById('sgcAddBtn')?.classList.add('hidden');
+        document.getElementById('sgcImportBtn')?.classList.add('hidden');
+    }
+    if (!canOp('op:steel-grade-category:view')) {
+        document.getElementById('sgcTemplateBtn')?.classList.add('hidden');
     }
     if (!canOp('op:steel-grade-category:export')) {
         document.getElementById('sgcExportBtn')?.classList.add('hidden');
@@ -251,9 +255,61 @@ async function exportExcel() {
     }
 }
 
+async function downloadTemplate() {
+    if (!canOp('op:steel-grade-category:view')) {
+        showToast('无下载权限', 'warning');
+        return;
+    }
+    try {
+        const { blob, filename } = await HttpClient.download(`${API_BASE}/template`, {
+            defaultFilename: '牌号分类导入模板.xlsx',
+        });
+        const url = URL.createObjectURL(blob);
+        const anchor = document.createElement('a');
+        anchor.href = url;
+        anchor.download = filename;
+        document.body.appendChild(anchor);
+        anchor.click();
+        anchor.remove();
+        URL.revokeObjectURL(url);
+        showToast('模板已下载', 'success');
+    } catch (_) {
+        // toast 已由 HttpClient 处理
+    }
+}
+
+async function importExcel(file) {
+    if (!canOp('op:steel-grade-category:create')) {
+        showToast('无导入权限', 'warning');
+        return;
+    }
+    const formData = new FormData();
+    formData.append('file', file);
+    try {
+        const res = await HttpClient.post(`${API_BASE}/upload`, formData);
+        if (!res.ok) return;
+        const created = res.data?.created_count ?? 0;
+        const skipped = res.data?.skipped_count ?? 0;
+        showToast(res.message || `导入完成：新增 ${created}，跳过 ${skipped}`, 'success');
+        await loadData(1);
+    } catch (_) {
+        // toast 已由 HttpClient 处理
+    }
+}
+
 function bindEvents() {
     document.getElementById('sgcAddBtn')?.addEventListener('click', () => openCreateDrawer());
     document.getElementById('sgcExportBtn')?.addEventListener('click', () => exportExcel());
+    document.getElementById('sgcTemplateBtn')?.addEventListener('click', () => downloadTemplate());
+    document.getElementById('sgcImportBtn')?.addEventListener('click', () => {
+        document.getElementById('sgcImportFileInput')?.click();
+    });
+    document.getElementById('sgcImportFileInput')?.addEventListener('change', (event) => {
+        const input = event.target;
+        const file = input.files?.[0];
+        input.value = '';
+        if (file) importExcel(file);
+    });
 
     document.getElementById('sgcTabBar')?.addEventListener('click', (event) => {
         const tabBtn = event.target.closest('[data-action=tab]');

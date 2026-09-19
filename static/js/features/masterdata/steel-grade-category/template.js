@@ -35,9 +35,20 @@ export function steelGradeCategoryTemplate() {
                     <div class="flex items-start justify-between gap-4">
                         <div>
                             <h2 class="text-[13px] font-semibold text-[#F0F0F2] tracking-wide">牌号分类</h2>
-                            <p class="mt-1 text-[11px] text-[#555555]">一个牌号一行，挂冷轧 / 镀锌 / 酸洗</p>
+                            <p class="mt-1 text-[11px] text-[#555555]">一个牌号一行，挂冷轧 / 镀锌 / 酸洗；列表导出可直接再导入</p>
                         </div>
                         <div class="flex items-center gap-2 shrink-0">
+                            <button type="button" id="sgcTemplateBtn"
+                                    class="inline-flex items-center gap-1.5 bg-transparent text-[#8E8E93] border border-[#2A2A35] px-3 py-1.5 text-[11px] font-medium rounded hover:border-[#FF1E27]/50 hover:text-[#FF1E27] transition-all">
+                                ${window.svgIcon('download', 'w-3 h-3')}
+                                下载模板
+                            </button>
+                            <button type="button" id="sgcImportBtn"
+                                    class="inline-flex items-center gap-1.5 bg-transparent text-[#8E8E93] border border-[#2A2A35] px-3 py-1.5 text-[11px] font-medium rounded hover:border-[#FF1E27]/50 hover:text-[#FF1E27] transition-all">
+                                ${window.svgIcon('upload', 'w-3 h-3')}
+                                导入 Excel
+                            </button>
+                            <input type="file" id="sgcImportFileInput" class="hidden" accept=".xlsx,.xls">
                             <button type="button" id="sgcExportBtn"
                                     class="inline-flex items-center gap-1.5 bg-transparent text-[#8E8E93] border border-[#2A2A35] px-3 py-1.5 text-[11px] font-medium rounded hover:border-[#FF1E27]/50 hover:text-[#FF1E27] transition-all">
                                 ${window.svgIcon('download', 'w-3 h-3')}

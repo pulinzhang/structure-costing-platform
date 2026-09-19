@@ -80,6 +80,7 @@ export function supplierUploadTemplate() {
                         <div>
                             <h6 class="text-[10px] uppercase tracking-wider text-[#616161] mb-2">写入规则</h6>
                             <ul class="list-disc list-inside text-xs text-[#616161] space-y-1.5">
+                                <li>列表导出可直接再导入（含状态列时导入忽略）</li>
                                 <li>主键：工商名称。创建后三者不改</li>
                                 <li>库里已有工商名称则跳过，不覆盖</li>
                                 <li>任一行失败则整单不写入</li>

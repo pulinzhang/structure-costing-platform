@@ -366,7 +366,7 @@ op:settings-profile:password
 | steel-price-policy-download | `view` / `export` / `delete` | 预览；导出 Excel；批量删除 |
 | base-price-upload | `view` / `upload` | 进入页；导入基准价格 |
 | base-price-download | `view` / `export` / `delete` | 预览；导出；批量删除 |
-| steel-grade-category | `view` / `create` / `update` / `delete` / `export` | 查询；新增；编辑大类/备注；删除档案行；导出 Excel |
+| steel-grade-category | `view` / `create` / `update` / `delete` / `export` | 查询与下载模板；新增与导入 Excel；编辑大类/备注；删除档案行；导出 Excel（核心列可再导入） |
 | winning-thickness-download | `view` / `export` | 预览；导出 Excel |
 | bom-structure | `view` / `update` | 产品结构：基地/项目卡片浏览；总成卡改生失效 |
 | bom-viz（权限码同 `menu:bom-structure`） | `view` | Assembly Workspace |

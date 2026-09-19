@@ -213,7 +213,7 @@ suppliers.full_name
 
 ### 5.4 上传页模板（已落地）
 
-列：缩写、全称、ERP 代码、别名（可多条）。不要「启用」列。整单事务；已有主键跳过不覆盖。  
+列：缩写、工商名称、ERP 代码、别名（可多条）。不要「启用」列。一览导出另附「状态」列，导入忽略。整单事务；已有主键跳过不覆盖。  
 **同步上传**（HTTP 对齐 [vehicle-model-design.md](vehicle-model-design.md) §5.4；上传页无轮询见该文 §4.4）：请求 Session 内解析落库，返回 `ApiResponse[SupplierUploadResultVO]`（条数 VO），**无** `task_id`。建档 Excel 是名册量级，不是工艺大表。入口在宪法 §五同步 Excel 封闭名单；禁止改成 `start_upload`。  
 `GET …/template` · `POST …/upload` · `GET …/export` · 一览 `page` + `size`。  
 `PATCH /api/masterdata/suppliers/{full_name}`：可改 `full_name`（路径是旧全称，须 URL 编码）、`abbreviation`、`erp_code`、`is_enabled`。改全称仍被引用 → 400「仍被引用，不能修改」。  

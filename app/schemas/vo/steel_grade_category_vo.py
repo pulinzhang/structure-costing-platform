@@ -32,3 +32,10 @@ class SteelGradeCategoryOptionVO(BaseModel):
 
     category_seq: int
     category_name: str
+
+
+class SteelGradeCategoryUploadResultVO(BaseModel):
+    """同步上传结果。"""
+
+    created_count: int
+    skipped_count: int

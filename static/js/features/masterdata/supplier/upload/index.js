@@ -2,7 +2,7 @@
  * 供应商上传页 — 同步导入
  */
 
-import { supplierUploadTemplate } from './template.js?v=3';
+import { supplierUploadTemplate } from './template.js?v=4';
 
 const API_BASE = '/api/masterdata/suppliers';
 const MAX_FILE_SIZE = 5 * 1024 * 1024;

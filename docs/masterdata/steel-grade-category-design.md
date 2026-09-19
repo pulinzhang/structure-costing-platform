@@ -200,19 +200,14 @@ CANONICAL_CATEGORIES: tuple[tuple[int, str], ...] = (
 | 列表 | HUD 密表；默认 `ORDER BY category_seq, grade`；大类胶囊；牌号模糊搜；`page-size.js` |
 | 新增 / 编辑 | 抽屉；大类三选一；序号不手填 |
 | 删除 | 操作列按钮 |
-| 导出 Excel | 当前筛选 |
+| 导出 Excel | 当前筛选；核心列 **大类 / 牌号 / 备注**（可再导入），另附大类序号与审计列 |
+| 下载模板 / 导入 Excel | 同页；列与导出核心列相同；已有牌号跳过；大类冲突整单拒绝，不静默改大类 |
 | 空库种子 | 第一次启动、档案为空时写入现网牌号分类 |
-| 权限 | `menu:steel-grade-category` + `op:…:view/create/update/delete/export` |
+| 权限 | `menu:steel-grade-category` + `op:…:view/create/update/delete/export`（模板走 `view`，导入走 `create`） |
 
 侧栏：主数据内，供应商之后。菜单文案写 **牌号分类**。
 
-### 8.2 本期建议做、可薄
-
-| 能力 | 说明 |
-|------|------|
-| 导入 Excel | 两列 `category_name`、`grade`；大类必填；已有则跳过或报行号，不要静默改大类 |
-
-### 8.3 本期不做
+### 8.2 本期不做
 
 | 非目标 | 原因 |
 |--------|------|

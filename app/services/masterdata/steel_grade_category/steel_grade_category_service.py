@@ -18,6 +18,7 @@ from app.common.steel_grade_category import (
     seq_for_category,
 )
 from app.exceptions.base import BusinessException, NotFoundException
+from app.parsers.masterdata.steel_grade_category_parser import parse_steel_grade_category_excel
 from app.repositories.masterdata.steel_grade_category import SteelGradeCategoryRepository
 from app.schemas.dto.steel_grade_category_dto import (
     SteelGradeCategoryCreate,
@@ -28,19 +29,111 @@ from app.schemas.dto.steel_grade_category_dto import (
 )
 from app.schemas.vo.steel_grade_category_vo import (
     SteelGradeCategoryOptionVO,
+    SteelGradeCategoryUploadResultVO,
     SteelGradeCategoryVO,
 )
 from app.schemas.vo.user_vo import UserVO
+from app.services.masterdata.steel_grade_category.catalog import (
+    build_template as build_catalog_template,
+)
 from app.services.masterdata.steel_grade_category.seed import SEED_STEEL_GRADE_CATEGORIES
 
 logger = logging.getLogger("service.steel_grade_category")
 
 
 class SteelGradeCategoryService:
-    """牌号分类手工 CRUD 与只读查询。"""
+    """牌号分类手工 CRUD、同步 Excel 与只读查询。"""
 
     def __init__(self) -> None:
         self.repository = SteelGradeCategoryRepository()
+
+    def build_template(self) -> tuple[bytes, str]:
+        return build_catalog_template()
+
+    def process_upload(
+        self,
+        db: Session,
+        file_content: bytes,
+        current_user: UserVO,
+    ) -> SteelGradeCategoryUploadResultVO:
+        """同步导入：已有牌号跳过；大类不一致则整单拒绝，不静默改大类。"""
+        parsed = parse_steel_grade_category_excel(file_content)
+        if parsed.errors:
+            raise BusinessException("；".join(parsed.errors))
+        if not parsed.rows:
+            raise BusinessException("没有可导入的牌号行")
+
+        errors: list[str] = []
+        pending: list[SteelGradeCategoryInsert] = []
+        seen_keys: dict[str, str] = {}
+        skipped_count = 0
+        audit = audit_create(current_user)
+
+        for row in parsed.rows:
+            try:
+                category_name = self._require_canonical(row.category_name)
+            except BusinessException as exc:
+                errors.append(f"第 {row.row_number} 行：{exc.message}")
+                continue
+            grade = stored_grade(row.grade)
+            if not grade:
+                errors.append(f"第 {row.row_number} 行：牌号不能为空")
+                continue
+            key = grade_match_key(grade)
+            if not key:
+                errors.append(f"第 {row.row_number} 行：牌号无效")
+                continue
+            if key in seen_keys:
+                if seen_keys[key] == category_name:
+                    skipped_count += 1
+                    continue
+                errors.append(f"第 {row.row_number} 行：与文件内已有「{grade}」大类不一致")
+                continue
+            seen_keys[key] = category_name
+
+            existing = self.match_by_grade_key(db, grade)
+            if existing is not None:
+                if existing.category_name != category_name:
+                    errors.append(
+                        f"第 {row.row_number} 行：牌号「{existing.grade}」已在档案，"
+                        f"大类为「{existing.category_name}」，不能改成「{category_name}」"
+                    )
+                    continue
+                skipped_count += 1
+                continue
+
+            pending.append(
+                SteelGradeCategoryInsert(
+                    grade=grade,
+                    category_name=category_name,
+                    category_seq=self._seq_for_canonical(category_name),
+                    remark=row.remark,
+                    created_by=audit["created_by"],
+                    updated_by=audit["updated_by"],
+                )
+            )
+
+        if errors:
+            raise BusinessException("；".join(errors))
+
+        try:
+            for payload in pending:
+                self.repository.create(db, payload)
+            db.commit()
+        except IntegrityError:
+            db.rollback()
+            raise BusinessException("牌号已存在") from None
+        except BusinessException:
+            db.rollback()
+            raise
+        except Exception:
+            db.rollback()
+            logger.exception("导入牌号分类失败")
+            raise
+        return SteelGradeCategoryUploadResultVO(
+            created_count=len(pending),
+            skipped_count=skipped_count,
+        )
 
     def ensure_seed_if_empty(self, db: Session) -> None:
         """空库首次启动写入现网牌号分类；已有行则不覆盖。"""
