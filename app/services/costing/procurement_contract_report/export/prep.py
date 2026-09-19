@@ -29,7 +29,7 @@ def prepare_export(
 ) -> ExportPrepContext:
     settings = SettingsService().get_config(db)
     return ExportPrepContext(
-        bundle=query_service.build_report(db, query),
+        bundle=query_service.build_report(db, query, for_export=True),
         query=query,
         company_name=settings.company_name,
         remarks_template=settings.procurement_agreement_remarks,

@@ -21,7 +21,10 @@ class ProcurementObjectAuditSummary(TypedDict):
 
 
 class ProcurementObjectScopeFilters(TypedDict):
-    """列表 / HUD / 导出共用的对象行筛参。"""
+    """列表 / HUD / 导出共用的对象行筛参。
+
+    `bom_version` = 爬到的 L0 版本字浏览筛（可选），**不是**清单头键 / snapshot 键。
+    """
 
     location: str | None
     locations: list[str] | None

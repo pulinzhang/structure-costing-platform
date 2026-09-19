@@ -1,4 +1,8 @@
-"""采购对象清单 — 按范围下载窄表 / 上传改供应商。"""
+"""采购对象清单 — 按范围下载窄表 / 上传改供应商。
+
+范围与生成页同形：基地 + 项目 + snapshot 头版本 → `snapshot_scope.require_snapshot`
+→ `get_list_by_snapshot_id`。禁止 L0/EC 浏览、禁止「全部版本」凑合。
+"""
 
 from __future__ import annotations
 
@@ -12,6 +16,7 @@ from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
 
 from app.common.audit import AUDIT_APPROVED, display_name
+from app.common.vehicle_model import normalize_vehicle_model
 from app.config import settings
 from app.exceptions.base import BusinessException, NotFoundException
 from app.models.bom.procurement_object import BomProcurementObject, BomProcurementObjectList
@@ -23,6 +28,7 @@ from app.repositories.bom.procurement_object_repository import BomProcurementObj
 from app.schemas.vo.bom_procurement_object_vo import BomProcurementObjectSupplierUploadResultVO
 from app.schemas.vo.user_vo import UserVO
 from app.services.bom.procurement_object.classify import SECTION_OBJECT
+from app.services.bom.procurement_object.snapshot_scope import require_snapshot
 from app.services.bom.procurement_object.supplier_template import (
     unique_object_rows_by_part_number,
     write_notes_sheet,
@@ -161,18 +167,19 @@ class BomProcurementObjectSupplierUploadService:
         bom_version: str,
     ) -> tuple[BomProcurementObjectList, list[BomProcurementObject]]:
         location_text = LocationService().require_enabled(db, (location or "").strip())
-        model_text = (vehicle_model or "").strip()
+        model_text = normalize_vehicle_model(vehicle_model)
         version_text = (bom_version or "").strip()
         if not model_text:
             raise BusinessException("请选择项目")
         if not version_text:
             raise BusinessException("请选择版本")
-        header = self.repository.get_list_by_scope(
+        snapshot = require_snapshot(
             db,
             location=location_text,
             vehicle_model=model_text,
             bom_version=version_text,
         )
+        header = self.repository.get_list_by_snapshot_id(db, snapshot.id)
         if header is None:
             raise NotFoundException("尚未生成采购对象清单")
         rows = [

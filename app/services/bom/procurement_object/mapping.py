@@ -113,6 +113,7 @@ def _to_object_vo(
     update: _ObjectVoOverlay = {
         "location": header.location,
         "vehicle_model": header.vehicle_model,
+        # 清单头冗余 SOP 字（展示副本）；列表浏览筛真相是爬到的 L0，勿当 WHERE
         "bom_version": header.bom_version,
         "source_filename": header.source_filename,
         "qa_passed": header.qa_passed,

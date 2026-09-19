@@ -278,12 +278,12 @@ def test_batch_delete_includes_other_leaf_and_anomaly(db: Session) -> None:
     sections = {item.section for item in items}
     assert "other_leaf" in sections
     assert "anomaly" in sections
+    # 无版本且无已审 → 清该基地+项目全部清单头
     result = service.batch_delete(
         db,
         BomProcurementObjectBatchDeleteDTO(
             location="芜湖",
             vehicle_model="T13J",
-            bom_version="V3",
         ),
         current_user=SYSTEM_USER,
     )
@@ -291,15 +291,13 @@ def test_batch_delete_includes_other_leaf_and_anomaly(db: Session) -> None:
     assert result.skipped_approved_count == 0
     remaining, remaining_total, _ = service.paginate(
         db,
-        BomProcurementObjectQuery(location="芜湖", vehicle_model="T13J", bom_version="V3", size=50),
+        BomProcurementObjectQuery(location="芜湖", vehicle_model="T13J", size=50),
     )
     assert remaining_total == 0
     assert remaining == []
     assert (
-        service.repository.get_list_by_scope(
-            db, location="芜湖", vehicle_model="T13J", bom_version="V3"
-        )
-        is None
+        service.repository.list_lists_by_location_vehicle(db, location="芜湖", vehicle_model="T13J")
+        == []
     )
 
 
@@ -902,16 +900,13 @@ def test_batch_delete_ignores_include_expired_filter(db: Session) -> None:
         BomProcurementObjectBatchDeleteDTO(
             location="芜湖",
             vehicle_model="T13J",
-            bom_version="V3",
         ),
         current_user=SYSTEM_USER,
     )
     assert result.deleted_count == 1
     assert (
-        service.repository.get_list_by_scope(
-            db, location="芜湖", vehicle_model="T13J", bom_version="V3"
-        )
-        is None
+        service.repository.list_lists_by_location_vehicle(db, location="芜湖", vehicle_model="T13J")
+        == []
     )
 
 
@@ -955,3 +950,66 @@ def test_generate_rejects_vehicle_model_that_normalizes_empty(db: Session) -> No
             ),
             current_user=SYSTEM_USER,
         )
+
+
+def test_list_and_summary_by_location_vehicle_without_version(db: Session) -> None:
+    """列表/summary 取件 = 基地+项目；版本可选。"""
+    _seed_tree(db)
+    service = BomProcurementObjectService()
+    service.generate(db, _scope(), current_user=SYSTEM_USER)
+    items, total, filters = service.paginate(
+        db,
+        BomProcurementObjectQuery(location="芜湖", vehicle_model="T13J", size=50),
+    )
+    assert total >= 1
+    assert items
+    assert filters["summary"]["object_count"] >= 1
+    summary = service.get_summary(db, location="芜湖", vehicle_model="T13J")
+    assert summary.qa_passed is True
+
+
+def test_optional_bom_version_filters_climbed_l0_only(db: Session) -> None:
+    """有版本时只认爬到的 L0.bom_version，不是清单头键。"""
+    _seed_tree(db)
+    service = BomProcurementObjectService()
+    service.generate(db, _scope(), current_user=SYSTEM_USER)
+    header = service.repository.get_list_by_scope(
+        db, location="芜湖", vehicle_model="T13J", bom_version="V3"
+    )
+    assert header is not None
+    snapshot_id = header.snapshot_id
+    l0 = (
+        db.query(BomNode)
+        .filter(
+            BomNode.snapshot_id == snapshot_id,
+            BomNode.level == 0,
+            BomNode.part_number == "L0-A",
+        )
+        .one()
+    )
+    l0.bom_version = "EC-202505"
+    db.commit()
+
+    ec_items, ec_total, _ = service.paginate(
+        db,
+        BomProcurementObjectQuery(
+            location="芜湖",
+            vehicle_model="T13J",
+            bom_version="EC-202505",
+            size=50,
+        ),
+    )
+    assert ec_total >= 1
+    assert all(item.l0_part_number == "L0-A" for item in ec_items)
+
+    _, sop_total, _ = service.paginate(
+        db,
+        BomProcurementObjectQuery(
+            location="芜湖",
+            vehicle_model="T13J",
+            bom_version="V3",
+            size=50,
+        ),
+    )
+    assert sop_total == 0
+    assert header.bom_version == "V3"

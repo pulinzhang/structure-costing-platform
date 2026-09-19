@@ -67,7 +67,11 @@ def get_bom_cascade_filters(
     db: Session = Depends(get_db),
     current_user: UserVO = Depends(_bom_cascade_read),
 ) -> ApiResponse[BomCascadeFilterOptionsVO]:
-    """材料清单级联筛选：基地 → 项目 → 版本（L0 节点去重）"""
+    """材料清单级联筛选：基地 → 项目 → 版本。
+
+    默认版本源=L0 节点去重；`version_source=snapshot` 时只列 snapshot 头字
+    （生成采购对象 / 供应商批传等 SOP 取件页使用）。
+    """
     options = _bom_service.get_cascade_filter_options(db, query)
     return ApiResponse.ok(data=options, message="获取成功")
 

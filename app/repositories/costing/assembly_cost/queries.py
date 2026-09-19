@@ -399,12 +399,12 @@ class AssemblyCostQueries:
         *,
         location: str,
         vehicle_model: str,
-        bom_version: str,
         months: list[tuple[int, int]],
         source_node_ids: list[int],
         amount_field: SettlementAmountField = "total_amount",
+        bom_version: str | None = None,
     ) -> list[tuple[int, int, int, Decimal]]:
-        """窗口内节点结算价。采购对象抄总成本，总成抄总费用。"""
+        """窗口内节点结算价。采购对象抄总成本，总成抄总费用。不按版本滤卡（除非浏览筛）。"""
         if not months or not source_node_ids:
             return []
         amount_column = _SETTLEMENT_AMOUNT_COLUMNS[amount_field]
@@ -416,22 +416,20 @@ class AssemblyCostQueries:
         )
         rows: list[tuple[int, int, int, Decimal]] = []
         for chunk in _chunks(source_node_ids):
-            found = (
-                db.query(
-                    AssemblyCost.year,
-                    AssemblyCost.month,
-                    AssemblyCost.source_node_id,
-                    amount_column,
-                )
-                .filter(
-                    AssemblyCost.location == location,
-                    AssemblyCost.vehicle_model == vehicle_model,
-                    AssemblyCost.bom_version == bom_version,
-                    month_clause,
-                    AssemblyCost.source_node_id.in_(chunk),
-                )
-                .all()
+            query = db.query(
+                AssemblyCost.year,
+                AssemblyCost.month,
+                AssemblyCost.source_node_id,
+                amount_column,
+            ).filter(
+                AssemblyCost.location == location,
+                AssemblyCost.vehicle_model == vehicle_model,
+                month_clause,
+                AssemblyCost.source_node_id.in_(chunk),
             )
+            if bom_version:
+                query = query.filter(AssemblyCost.bom_version == bom_version)
+            found = query.all()
             rows.extend(
                 (int(year), int(month), int(node_id), _decimal(amount))
                 for year, month, node_id, amount in found

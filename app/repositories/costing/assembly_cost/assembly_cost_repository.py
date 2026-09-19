@@ -209,19 +209,19 @@ class AssemblyCostRepository:
         *,
         location: str,
         vehicle_model: str,
-        bom_version: str,
         months: list[tuple[int, int]],
         source_node_ids: list[int],
         amount_field: SettlementAmountField = "total_amount",
+        bom_version: str | None = None,
     ) -> list[tuple[int, int, int, Decimal]]:
         return self._queries.list_should_costs_for_nodes(
             db,
             location=location,
             vehicle_model=vehicle_model,
-            bom_version=bom_version,
             months=months,
             source_node_ids=source_node_ids,
             amount_field=amount_field,
+            bom_version=bom_version,
         )
 
     def list_distinct_years(self, db: Session) -> list[int]:

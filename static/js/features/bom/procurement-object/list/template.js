@@ -136,7 +136,7 @@ export function procurementObjectListTemplate() {
                                 重置
                             </button>
                         </div>
-                        <p class="mt-2 text-[10px] text-[#555555]">批量审核 / 反审核 / 删除须选定基地、项目、版本；不勾选行。</p>
+                        <p class="mt-2 text-[10px] text-[#555555]">批量审核 / 反审核 / 删除须选定基地、项目；版本可选（默认全部版本）；不勾选行。</p>
                     </div>
                 </div>
 

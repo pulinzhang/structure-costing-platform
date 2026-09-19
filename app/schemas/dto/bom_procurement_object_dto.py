@@ -8,15 +8,31 @@ from pydantic import BaseModel, Field, field_validator
 
 
 class BomProcurementObjectScopeDTO(BaseModel):
-    """范围：基地 + 车型 + BOM 版本。"""
+    """范围：基地 + 项目；版本可选（浏览=爬到的 L0 字，不是清单头键）。生成另见 GenerateDTO。"""
+
+    location: str = Field(..., min_length=1, max_length=50)
+    vehicle_model: str = Field(..., min_length=1, max_length=50)
+    bom_version: str | None = Field(
+        None,
+        max_length=20,
+        description="可选；有值时只裁爬到的 L0.bom_version，不是 snapshot/清单头键",
+    )
+
+    @field_validator("bom_version", mode="before")
+    @classmethod
+    def empty_version_to_none(cls, value: object) -> str | None:
+        if value is None:
+            return None
+        text = str(value).strip()
+        return text or None
+
+
+class BomProcurementObjectGenerateDTO(BaseModel):
+    """生成采购对象清单：必须带 snapshot 头版本（SOP）。"""
 
     location: str = Field(..., min_length=1, max_length=50)
     vehicle_model: str = Field(..., min_length=1, max_length=50)
     bom_version: str = Field(..., min_length=1, max_length=20)
-
-
-class BomProcurementObjectGenerateDTO(BomProcurementObjectScopeDTO):
-    """生成采购对象清单。"""
 
 
 class BomProcurementObjectBatchDeleteDTO(BomProcurementObjectScopeDTO):

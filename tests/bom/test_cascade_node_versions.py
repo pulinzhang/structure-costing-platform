@@ -133,3 +133,15 @@ def test_cascade_bom_versions_as_of_month_uses_l0_hit(
         as_of_month=5,
     )
     assert may["bom_versions"] == ["EC-202505"]
+
+
+def test_cascade_version_source_snapshot_excludes_l0_ec_words(memory_db: Session) -> None:
+    """生成页：version_source=snapshot 只列头字，不出 EC-*。"""
+    _seed_snapshot_with_ec_node(memory_db)
+    options = BomSnapshotRepository().get_cascade_filter_options(
+        memory_db,
+        location=LOCATION,
+        vehicle_model=VEHICLE_MODEL,
+        version_source="snapshot",
+    )
+    assert options["bom_versions"] == ["D/09"]

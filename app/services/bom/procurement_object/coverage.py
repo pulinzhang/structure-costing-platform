@@ -6,9 +6,10 @@ from typing import NamedTuple
 
 from sqlalchemy.orm import Session
 
-from app.repositories.bom.bom_repository import BomNodeRepository, BomSnapshotRepository
+from app.repositories.bom.bom_repository import BomNodeRepository
 from app.repositories.bom.procurement_object_repository import BomProcurementObjectRepository
 from app.services.bom.procurement_object.classify import SECTION_OBJECT, classify_nodes
+from app.services.bom.procurement_object.snapshot_scope import lookup_snapshot
 
 
 class ProcurementObjectCoverage(NamedTuple):
@@ -29,7 +30,9 @@ def evaluate_procurement_object_coverage(
     location = location.strip()
     vehicle_model = vehicle_model.strip()
     bom_version = bom_version.strip()
-    snapshot = BomSnapshotRepository().get_by_unique_key(db, location, vehicle_model, bom_version)
+    snapshot = lookup_snapshot(
+        db, location=location, vehicle_model=vehicle_model, bom_version=bom_version
+    )
     if snapshot is None:
         return ProcurementObjectCoverage(False, "未找到对应材料清单，请先上传 BOM", 0, 0)
 

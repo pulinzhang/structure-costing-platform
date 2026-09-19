@@ -13,7 +13,7 @@ import {
     cancelPcrHudCountUp,
     updatePcrViewButtons,
     updateRingIndicators,
-} from './template.js?v=38';
+} from './template.js?v=39';
 import {
     DEFAULT_PAGE_SIZE,
     bindPagination,
@@ -23,7 +23,8 @@ import {
 const API_BASE = '/api/costing/procurement-contract-report';
 const CASCADE_API = '/api/bom/filters/cascade';
 const MAX_WINDOW_MONTHS = 12;
-const SCOPE_REQUIRED_MESSAGE = '请选定基地、项目、BOM 版本';
+const SCOPE_REQUIRED_MESSAGE = '请选定基地、项目';
+const EXPORT_ALL_VERSIONS_MESSAGE = '导出协议须选全部版本';
 const PART_FILTER_DEBOUNCE_MS = 300;
 const CASCADE_LOCK_IDS = ['pcrVehicleModelFilter', 'pcrBomVersionFilter', 'pcrSupplierFilter'];
 
@@ -297,7 +298,8 @@ async function openWithData() {
             setSelectValue('pcrVehicleModelFilter', data.vehicle_model);
             const stepThree = await loadCascade(generation);
             if (!stepThree) return;
-            setSelectValue('pcrBomVersionFilter', data.bom_version);
+            // 版本默认全部版本（不填）
+            setSelectValue('pcrBomVersionFilter', '');
             applyCostWindow(data.start_year, data.start_month);
         } else {
             const ok = await loadCascade(generation);
@@ -362,7 +364,7 @@ async function loadCascade(generation) {
         const data = res.data || {};
         fillSelect('pcrLocationFilter', data.locations || []);
         fillSelect('pcrVehicleModelFilter', data.vehicle_models || []);
-        fillSelect('pcrBomVersionFilter', data.bom_versions || []);
+        fillSelect('pcrBomVersionFilter', data.bom_versions || [], true, null, '全部版本');
         return true;
     } catch (error) {
         console.error('加载级联筛选失败', error);
@@ -378,7 +380,7 @@ function readScope(showWarning = false) {
     const startMonth = Number.parseInt(val('pcrStartMonthFilter'), 10);
     const endYear = Number.parseInt(val('pcrEndYearFilter'), 10);
     const endMonth = Number.parseInt(val('pcrEndMonthFilter'), 10);
-    if (!location || !vehicleModel || !bomVersion) {
+    if (!location || !vehicleModel) {
         if (showWarning) showToast(SCOPE_REQUIRED_MESSAGE, 'warning');
         return null;
     }
@@ -397,10 +399,9 @@ function readScope(showWarning = false) {
         if (showWarning) showToast(`查询窗口最多 ${MAX_WINDOW_MONTHS} 个月，当前 ${count} 个月`, 'warning');
         return null;
     }
-    return {
+    const scope = {
         location,
         vehicle_model: vehicleModel,
-        bom_version: bomVersion,
         start_year: startYear,
         start_month: startMonth,
         end_year: endYear,
@@ -408,6 +409,8 @@ function readScope(showWarning = false) {
         supplier_name: isAssemblyView() ? undefined : (val('pcrSupplierFilter') || undefined),
         view: listState.view,
     };
+    if (bomVersion) scope.bom_version = bomVersion;
+    return scope;
 }
 
 function queryParams(scope, page, { includeKeyword = true } = {}) {
@@ -493,7 +496,7 @@ async function loadList(page = 1) {
     if (!body) return;
     if (listState.isLoading) return;
     updateRingIndicators();
-    if (!val('pcrLocationFilter') || !val('pcrVehicleModelFilter') || !val('pcrBomVersionFilter')) {
+    if (!val('pcrLocationFilter') || !val('pcrVehicleModelFilter')) {
         listState.items = [];
         listState.months = [];
         body.innerHTML = '';
@@ -501,7 +504,7 @@ async function loadList(page = 1) {
         updatePcrHud(null);
         setQaBanner(null);
         setListLoading(false);
-        setListEmpty(true, '请选择基地、项目、BOM 版本后查询');
+        setListEmpty(true, '请选择基地、项目后查询');
         const pageInfo = document.getElementById('pcrPageInfo');
         if (pageInfo) pageInfo.textContent = '—';
         const pagination = document.getElementById('pcrPagination');
@@ -574,6 +577,9 @@ async function exportExcel() {
     clearPartFilterTimer();
     const scope = readScope(true);
     if (!scope) return;
+    if (scope.bom_version) {
+        return showToast(EXPORT_ALL_VERSIONS_MESSAGE, 'warning');
+    }
     if (!isAssemblyView() && !scope.supplier_name) {
         return showToast('请先选定供应商再导出协议', 'warning');
     }

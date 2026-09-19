@@ -76,6 +76,35 @@ class BomProcurementObjectWrites:
         db.flush()
         return count
 
+    def approve_objects_by_ids(
+        self,
+        db: Session,
+        *,
+        object_ids: list[int],
+        audited_by: str,
+        audited_at: datetime,
+        audit_remark: str,
+        updated_by: str,
+    ) -> int:
+        if not object_ids:
+            return 0
+        count = query_update(
+            db.query(BomProcurementObject).filter(
+                BomProcurementObject.id.in_(object_ids),
+                BomProcurementObject.section == SECTION_OBJECT,
+                BomProcurementObject.audit_status == AUDIT_PENDING,
+            ),
+            {
+                "audit_status": AUDIT_APPROVED,
+                "audited_by": audited_by,
+                "audited_at": audited_at,
+                "audit_remark": audit_remark,
+                "updated_by": updated_by,
+            },
+        )
+        db.flush()
+        return count
+
     def reverse_objects_by_list_id(
         self,
         db: Session,
@@ -103,11 +132,54 @@ class BomProcurementObjectWrites:
         db.flush()
         return count
 
+    def reverse_objects_by_ids(
+        self,
+        db: Session,
+        *,
+        object_ids: list[int],
+        reverse_audited_by: str,
+        reverse_audited_at: datetime,
+        reverse_audit_remark: str,
+        updated_by: str,
+    ) -> int:
+        if not object_ids:
+            return 0
+        count = query_update(
+            db.query(BomProcurementObject).filter(
+                BomProcurementObject.id.in_(object_ids),
+                BomProcurementObject.section == SECTION_OBJECT,
+                BomProcurementObject.audit_status == AUDIT_APPROVED,
+            ),
+            {
+                "audit_status": AUDIT_PENDING,
+                "reverse_audited_by": reverse_audited_by,
+                "reverse_audited_at": reverse_audited_at,
+                "reverse_audit_remark": reverse_audit_remark,
+                "updated_by": updated_by,
+            },
+        )
+        db.flush()
+        return count
+
     def delete_pending_objects_by_list_id(self, db: Session, list_id: int) -> int:
         count = (
             db.query(BomProcurementObject)
             .filter(
                 BomProcurementObject.list_id == list_id,
+                BomProcurementObject.audit_status == AUDIT_PENDING,
+            )
+            .delete(synchronize_session=False)
+        )
+        db.flush()
+        return int(count)
+
+    def delete_pending_objects_by_ids(self, db: Session, object_ids: list[int]) -> int:
+        if not object_ids:
+            return 0
+        count = (
+            db.query(BomProcurementObject)
+            .filter(
+                BomProcurementObject.id.in_(object_ids),
                 BomProcurementObject.audit_status == AUDIT_PENDING,
             )
             .delete(synchronize_session=False)

@@ -5,7 +5,7 @@
 import {
     procurementObjectListTemplate,
     renderProcurementObjectRows,
-} from './template.js?v=25';
+} from './template.js?v=26';
 import {
     DEFAULT_PAGE_SIZE,
     bindPagination,
@@ -17,7 +17,7 @@ import { fmtPeriodRange } from '../../../common/period-ui.js?v=3';
 
 const API_BASE = '/api/bom/procurement-objects';
 const CASCADE_API = '/api/bom/filters/cascade';
-const SCOPE_REQUIRED_MESSAGE = '批量操作须选定基地、项目、版本';
+const SCOPE_REQUIRED_MESSAGE = '批量操作须选定基地、项目';
 
 const listState = {
     page: 1,
@@ -197,11 +197,13 @@ function requireScope() {
     const location = val('poLocationFilter');
     const vehicleModel = val('poModelFilter');
     const bomVersion = val('poVersionFilter');
-    if (!location || !vehicleModel || !bomVersion) {
+    if (!location || !vehicleModel) {
         showToast(SCOPE_REQUIRED_MESSAGE, 'warning');
         return null;
     }
-    return { location, vehicle_model: vehicleModel, bom_version: bomVersion };
+    const scope = { location, vehicle_model: vehicleModel };
+    if (bomVersion) scope.bom_version = bomVersion;
+    return scope;
 }
 
 async function loadCascade() {
@@ -213,17 +215,17 @@ async function loadCascade() {
         const data = res.data || {};
         fillSelectKeep('poLocationFilter', data.locations || []);
         fillSelectKeep('poModelFilter', data.vehicle_models || []);
-        fillSelectKeep('poVersionFilter', data.bom_versions || []);
+        fillSelectKeep('poVersionFilter', data.bom_versions || [], '全部版本');
     } catch (error) {
         console.error('加载级联筛选失败', error);
     }
 }
 
-function fillSelectKeep(id, values) {
+function fillSelectKeep(id, values, emptyLabel = '全部') {
     const el = document.getElementById(id);
     if (!el) return;
     const selected = el.value;
-    let html = '<option value="">全部</option>';
+    let html = `<option value="">${emptyLabel}</option>`;
     (values || []).forEach((item) => {
         html += `<option value="${esc(item)}">${esc(item)}</option>`;
     });
@@ -435,11 +437,10 @@ async function loadSummaryBanner() {
     const scope = {
         location: val('poLocationFilter'),
         vehicle_model: val('poModelFilter'),
-        bom_version: val('poVersionFilter'),
     };
     const banner = document.getElementById('poQaBanner');
     if (!banner) return;
-    if (!scope.location || !scope.vehicle_model || !scope.bom_version) {
+    if (!scope.location || !scope.vehicle_model) {
         banner.classList.add('hidden');
         return;
     }
@@ -541,15 +542,15 @@ function openAuditDrawer(mode) {
     document.getElementById('poBatchAuditMode').value = mode;
     document.getElementById('poBatchAuditDrawerTitle').textContent = mode === 'approve' ? '批量审核' : '批量反审核';
     document.getElementById('poBatchAuditHint').textContent = mode === 'approve'
-        ? '按当前基地·项目·版本审核待审采购对象；已审跳过。检测未通过不拦。'
-        : '按当前基地·项目·版本反审核已通过记录。';
+        ? '按当前基地·项目（可选版本）审核待审采购对象；已审跳过。检测未通过不拦。'
+        : '按当前基地·项目（可选版本）反审核已通过记录。';
     document.getElementById('poBatchAuditOperatorDisplay').textContent = sessionName() || '当前登录用户';
     document.getElementById('poBatchAuditRemarkLabel').innerHTML = mode === 'approve'
         ? '审核意见<span class="text-[#FF1E27]">*</span>'
         : '反审核原因<span class="text-[#FF1E27]">*</span>';
     document.getElementById('poBatchAuditRemark').value = '';
     document.getElementById('poBatchAuditFilterSummary').textContent =
-        `${scope.location} · ${scope.vehicle_model} · ${scope.bom_version}`;
+        `${scope.location} · ${scope.vehicle_model} · ${scope.bom_version || '全部版本'}`;
     openDrawer('poBatchAuditDrawer');
 }
 
@@ -589,7 +590,7 @@ function openDeleteDrawer() {
     const scope = requireScope();
     if (!scope) return;
     document.getElementById('poBatchDeleteSummary').textContent =
-        `${scope.location} · ${scope.vehicle_model} · ${scope.bom_version}`;
+        `${scope.location} · ${scope.vehicle_model} · ${scope.bom_version || '全部版本'}`;
     openDrawer('poBatchDeleteDrawer');
 }
 

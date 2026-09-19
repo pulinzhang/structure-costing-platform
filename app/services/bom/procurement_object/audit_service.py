@@ -10,7 +10,6 @@ from sqlalchemy.orm import Session
 from app.common.audit import AUDIT_APPROVED, AUDIT_PENDING, display_name
 from app.common.timezone import now
 from app.exceptions.base import BusinessException, NotFoundException
-from app.models.bom.procurement_object import BomProcurementObjectList
 from app.repositories.bom.procurement_object_repository import (
     BomProcurementObjectRepository,
     object_scope_filters,
@@ -35,6 +34,11 @@ from app.services.masterdata.supplier import SupplierService
 logger = logging.getLogger("service.bom.procurement_object.audit")
 
 _CONFIRM_STATUSES = frozenset({"pending", "outsourced", "in_house"})
+
+
+def _optional_bom_version(value: str | None) -> str | None:
+    text = (value or "").strip()
+    return text or None
 
 
 class BomProcurementObjectAuditService:
@@ -130,15 +134,27 @@ class BomProcurementObjectAuditService:
         dto: BomProcurementObjectBatchApproveDTO,
         current_user: UserVO,
     ) -> BomProcurementObjectBatchAuditResultVO:
-        header = self._require_header(db, dto.location, dto.vehicle_model, dto.bom_version)
+        location, vehicle_model, bom_version = self._require_location_vehicle(
+            db, dto.location, dto.vehicle_model, dto.bom_version
+        )
         operator = display_name(current_user)
         if not operator:
             raise BusinessException("无法识别当前登录用户")
+        object_rows = self.repository.list_objects_for_export(
+            db,
+            scope=object_scope_filters(
+                location=location,
+                vehicle_model=vehicle_model,
+                bom_version=bom_version,
+                section=SECTION_OBJECT,
+            ),
+        )
+        pending_ids = [row.id for row in object_rows if row.audit_status == AUDIT_PENDING]
+        skipped = sum(1 for row in object_rows if row.audit_status == AUDIT_APPROVED)
         try:
-            skipped = self.repository.count_approved_objects(db, header.id)
-            updated = self.repository.approve_objects_by_list_id(
+            updated = self.repository.approve_objects_by_ids(
                 db,
-                list_id=header.id,
+                object_ids=pending_ids,
                 audited_by=operator,
                 audited_at=now(),
                 audit_remark=dto.audit_remark.strip(),
@@ -152,9 +168,9 @@ class BomProcurementObjectAuditService:
         return BomProcurementObjectBatchAuditResultVO(
             updated_count=updated,
             skipped_count=skipped,
-            location=header.location,
-            vehicle_model=header.vehicle_model,
-            bom_version=header.bom_version,
+            location=location,
+            vehicle_model=vehicle_model,
+            bom_version=bom_version,
         )
 
     def batch_reverse_audit(
@@ -163,29 +179,32 @@ class BomProcurementObjectAuditService:
         dto: BomProcurementObjectBatchReverseAuditDTO,
         current_user: UserVO,
     ) -> BomProcurementObjectBatchAuditResultVO:
-        header = self._require_header(db, dto.location, dto.vehicle_model, dto.bom_version)
+        location, vehicle_model, bom_version = self._require_location_vehicle(
+            db, dto.location, dto.vehicle_model, dto.bom_version
+        )
         operator = display_name(current_user)
         if not operator:
             raise BusinessException("无法识别当前登录用户")
+        object_rows = self.repository.list_objects_for_export(
+            db,
+            scope=object_scope_filters(
+                location=location,
+                vehicle_model=vehicle_model,
+                bom_version=bom_version,
+                section=SECTION_OBJECT,
+            ),
+        )
+        approved_ids = [row.id for row in object_rows if row.audit_status == AUDIT_APPROVED]
+        skipped = sum(1 for row in object_rows if row.audit_status == AUDIT_PENDING)
         try:
-            updated = self.repository.reverse_objects_by_list_id(
+            updated = self.repository.reverse_objects_by_ids(
                 db,
-                list_id=header.id,
+                object_ids=approved_ids,
                 reverse_audited_by=operator,
                 reverse_audited_at=now(),
                 reverse_audit_remark=dto.reverse_audit_remark.strip(),
                 updated_by=operator,
             )
-            skipped = self.repository.summarize_objects(
-                db,
-                scope=object_scope_filters(
-                    location=header.location,
-                    vehicle_model=header.vehicle_model,
-                    bom_version=header.bom_version,
-                    section=SECTION_OBJECT,
-                    audit_status=AUDIT_PENDING,
-                ),
-            )["pending_count"]
             db.commit()
         except Exception:
             db.rollback()
@@ -194,9 +213,9 @@ class BomProcurementObjectAuditService:
         return BomProcurementObjectBatchAuditResultVO(
             updated_count=updated,
             skipped_count=skipped,
-            location=header.location,
-            vehicle_model=header.vehicle_model,
-            bom_version=header.bom_version,
+            location=location,
+            vehicle_model=vehicle_model,
+            bom_version=bom_version,
         )
 
     def batch_delete(
@@ -205,20 +224,45 @@ class BomProcurementObjectAuditService:
         dto: BomProcurementObjectBatchDeleteDTO,
         current_user: UserVO,
     ) -> BomProcurementObjectBatchDeleteResultVO:
-        """按范围整单删除；无已审时连清单头一起删（与生成覆盖 delete_list 一致）。"""
-        header = self._require_header(db, dto.location, dto.vehicle_model, dto.bom_version)
-        location = header.location
-        vehicle_model = header.vehicle_model
-        bom_version = header.bom_version
+        """按基地+项目删除；有版本或有已审时只删命中 pending。"""
+        location, vehicle_model, bom_version = self._require_location_vehicle(
+            db, dto.location, dto.vehicle_model, dto.bom_version
+        )
+        headers = self.repository.list_lists_by_location_vehicle(
+            db, location=location, vehicle_model=vehicle_model
+        )
         _ = current_user
         try:
-            skipped = self.repository.count_approved_objects(db, header.id)
-            if skipped:
-                deleted = self.repository.delete_pending_objects_by_list_id(db, header.id)
-                self.repository.recount_header_from_rows(db, header)
+            if bom_version:
+                rows = self.repository.list_objects_for_export(
+                    db,
+                    scope=object_scope_filters(
+                        location=location,
+                        vehicle_model=vehicle_model,
+                        bom_version=bom_version,
+                    ),
+                )
+                skipped = sum(1 for row in rows if row.audit_status == AUDIT_APPROVED)
+                pending_ids = [row.id for row in rows if row.audit_status == AUDIT_PENDING]
+                deleted = self.repository.delete_pending_objects_by_ids(db, pending_ids)
+                touched_list_ids = {row.list_id for row in rows}
+                for header in headers:
+                    if header.id in touched_list_ids:
+                        self.repository.recount_header_from_rows(db, header)
             else:
-                deleted = len(self.repository.list_objects_by_list_id(db, header.id))
-                self.repository.delete_list(db, header)
+                skipped = sum(
+                    self.repository.count_approved_objects(db, header.id) for header in headers
+                )
+                if skipped:
+                    deleted = 0
+                    for header in headers:
+                        deleted += self.repository.delete_pending_objects_by_list_id(db, header.id)
+                        self.repository.recount_header_from_rows(db, header)
+                else:
+                    deleted = 0
+                    for header in headers:
+                        deleted += len(self.repository.list_objects_by_list_id(db, header.id))
+                        self.repository.delete_list(db, header)
             db.commit()
         except Exception:
             db.rollback()
@@ -232,19 +276,19 @@ class BomProcurementObjectAuditService:
             bom_version=bom_version,
         )
 
-    def _require_header(
+    def _require_location_vehicle(
         self,
         db: Session,
         location: str,
         vehicle_model: str,
-        bom_version: str,
-    ) -> BomProcurementObjectList:
-        header = self.repository.get_list_by_scope(
-            db,
-            location=location.strip(),
-            vehicle_model=vehicle_model.strip(),
-            bom_version=bom_version.strip(),
+        bom_version: str | None,
+    ) -> tuple[str, str, str | None]:
+        location_text = location.strip()
+        model_text = vehicle_model.strip()
+        version_text = _optional_bom_version(bom_version)
+        headers = self.repository.list_lists_by_location_vehicle(
+            db, location=location_text, vehicle_model=model_text
         )
-        if header is None:
+        if not headers:
             raise NotFoundException("尚未生成采购对象清单")
-        return header
+        return location_text, model_text, version_text

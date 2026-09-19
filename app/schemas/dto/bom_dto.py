@@ -59,6 +59,10 @@ class BomCascadeFilterQuery(BaseModel):
         "active",
         description="清单状态，默认 active；传 __all__ 或 * 表示不限状态",
     )
+    version_source: str | None = Field(
+        None,
+        description="版本下拉源：空/l0=树根 L0 字（列表/协议）；snapshot=仅 snapshot 头字（生成页 SOP）",
+    )
 
 
 class BomNodeTreeQuery(BaseModel):

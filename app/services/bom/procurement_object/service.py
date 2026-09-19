@@ -64,7 +64,12 @@ from app.services.masterdata.vehicle_model import VehicleModelService
 
 
 class ProcurementObjectListFilters(TypedDict):
-    """列表筛选项（Service 组装）。供应商点选走独立检索，不塞进本结构。"""
+    """列表筛选项（Service 组装）。
+
+    `bom_versions` 恒为空：列表版本下拉由前端打 BOM cascade（默认 L0 浏览筛）。
+    禁止再 DISTINCT 清单头 `bom_version`（那是 SOP 冗余字，不是树根浏览真相）。
+    供应商点选走独立检索，不塞进本结构。
+    """
 
     locations: list[str]
     vehicle_models: list[str]
@@ -130,17 +135,30 @@ class BomProcurementObjectService:
         *,
         location: str,
         vehicle_model: str,
-        bom_version: str,
+        bom_version: str | None = None,
     ) -> BomProcurementObjectListVO:
-        header = self.repository.get_list_by_scope(
+        """基地+项目下清单头聚合（版本参数忽略，仅给 QA 横幅）。"""
+        _ = bom_version
+        headers = self.repository.list_lists_by_location_vehicle(
             db,
             location=location.strip(),
             vehicle_model=vehicle_model.strip(),
-            bom_version=bom_version.strip(),
         )
-        if header is None:
+        if not headers:
             raise NotFoundException("尚未生成采购对象清单")
-        return BomProcurementObjectListVO.model_validate(header)
+        base = BomProcurementObjectListVO.model_validate(headers[0])
+        qa_passed = all(bool(header.qa_passed) for header in headers)
+        error_parts = [
+            (header.qa_error_text or "").strip()
+            for header in headers
+            if not header.qa_passed and (header.qa_error_text or "").strip()
+        ]
+        return base.model_copy(
+            update={
+                "qa_passed": qa_passed,
+                "qa_error_text": "；".join(error_parts) if error_parts else None,
+            }
+        )
 
     def paginate(
         self, db: Session, query: BomProcurementObjectQuery
@@ -189,7 +207,7 @@ class BomProcurementObjectService:
         empty: bool,
         scope: ProcurementObjectScopeFilters | None = None,
     ) -> ProcurementObjectListFilters:
-        _unused, _models, versions = self.repository.get_filter_options(db)
+        # 列表版本下拉不走本表；前端默认 L0 cascade（浏览筛，可含 EC）。
         if empty:
             summary: ProcurementObjectAuditSummary = empty_procurement_object_summary()
         else:
@@ -198,7 +216,7 @@ class BomProcurementObjectService:
         return {
             "locations": location_service.list_registered(db),
             "vehicle_models": VehicleModelService().list_filter_codes(db, query.location),
-            "bom_versions": versions,
+            "bom_versions": [],
             "summary": summary,
         }
 

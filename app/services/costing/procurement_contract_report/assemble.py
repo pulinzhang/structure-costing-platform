@@ -8,6 +8,7 @@ from decimal import Decimal
 
 from app.common.bom.node_order import MISSING_SEQ_NO, bom_node_order_key
 from app.common.money import Q4, quantize_money
+from app.common.period import is_in_period
 from app.exceptions.base import BusinessException
 from app.models.bom.node import BomNode
 from app.models.bom.procurement_object import BomProcurementObject
@@ -99,8 +100,8 @@ class PriceRow:
 class ReportScope:
     location: str
     vehicle_model: str
-    bom_version: str
-    snapshot_id: int
+    bom_version: str | None = None
+    snapshot_id: int | None = None
     view: str = VIEW_PROCUREMENT
     qa_passed: bool = True
     qa_error_text: str | None = None
@@ -119,16 +120,37 @@ class ReportBundle:
     vehicle_total_skipped: int = 0
 
 
+def l0_hits_month(l0: BomNode | None, year: int, month: int) -> bool:
+    """签约账期只认所属 L0 树根四列；无 L0 则不出。"""
+    if l0 is None:
+        return False
+    return is_in_period(
+        effective_year=l0.effective_year,
+        effective_month=l0.effective_month,
+        expiry_year=l0.expiry_year,
+        expiry_month=l0.expiry_month,
+        as_of_year=year,
+        as_of_month=month,
+    )
+
+
+def l0_hits_any_month(l0: BomNode | None, months: list[tuple[int, int]]) -> bool:
+    return any(l0_hits_month(l0, year, month) for year, month in months)
+
+
 def build_prep_rows(
     objects: list[BomProcurementObject],
     nodes_by_id: dict[int, BomNode],
     months: list[tuple[int, int]],
     costs: dict[tuple[int, int, int], Decimal],
 ) -> list[PrepRow]:
+    """准备表：整窗都不命中所属 L0 的对象行不出；未命中月金额强制 /。"""
     rows: list[PrepRow] = []
     for item in objects:
         node = nodes_by_id.get(item.source_node_id)
         l0 = l0_node_of(item.source_node_id, nodes_by_id)
+        if not l0_hits_any_month(l0, months):
+            continue
         l0_node_id = l0.id if l0 is not None else item.source_node_id
         l0_seq_no = l0.seq_no if l0 is not None else None
         level, excel_row, sort_no = prep_fields_from_node(node, fallback_excel_row=item.excel_row)
@@ -147,7 +169,7 @@ def build_prep_rows(
                 excel_row=excel_row,
                 level=level,
                 vehicle_qty=vehicle_qty_from_l0(item.source_node_id, nodes_by_id),
-                month_amounts=_month_amounts(item.source_node_id, months, costs),
+                month_amounts=_month_amounts(item.source_node_id, months, costs, l0=l0),
             )
         )
     assign_seq_labels(rows)
@@ -159,9 +181,14 @@ def build_assembly_prep_rows(
     months: list[tuple[int, int]],
     costs: dict[tuple[int, int, int], Decimal],
 ) -> list[PrepRow]:
-    """树根一行：序号只写 seq_no，用量取根自身 qty，工装靠 object_kind 空 → /。"""
+    """树根一行：序号只写 seq_no，用量取根自身 qty，工装靠 object_kind 空 → /。
+
+    只收窗口内至少命中一个月的 L0；未命中月金额强制 /。
+    """
     rows: list[PrepRow] = []
     for node in roots:
+        if not l0_hits_any_month(node, months):
+            continue
         seq_no = node.seq_no
         level, excel_row, sort_no = prep_fields_from_node(node)
         rows.append(
@@ -179,7 +206,7 @@ def build_assembly_prep_rows(
                 excel_row=excel_row,
                 level=level,
                 vehicle_qty=node_qty(node),
-                month_amounts=_month_amounts(node.id, months, costs),
+                month_amounts=_month_amounts(node.id, months, costs, l0=node),
                 seq_label="" if seq_no is None else str(seq_no),
             )
         )
@@ -190,12 +217,16 @@ def _month_amounts(
     source_node_id: int,
     months: list[tuple[int, int]],
     costs: dict[tuple[int, int, int], Decimal],
+    *,
+    l0: BomNode | None,
 ) -> list[MonthAmount]:
     return [
         MonthAmount(
             year=year,
             month=month,
-            should_cost=costs.get((year, month, source_node_id)),
+            should_cost=(
+                costs.get((year, month, source_node_id)) if l0_hits_month(l0, year, month) else None
+            ),
         )
         for year, month in months
     ]
@@ -242,11 +273,10 @@ def seq_sort_key(seq_label: str) -> tuple[int, int]:
 def report_sort_key(
     location: str,
     vehicle_model: str,
-    bom_version: str,
     seq_label: str,
-) -> tuple[str, str, str, int, int]:
-    """基地 → 项目 → 版本 → 序号。"""
-    return (location, vehicle_model, bom_version, *seq_sort_key(seq_label))
+) -> tuple[str, str, int, int]:
+    """基地 → 项目 → 序号。"""
+    return (location, vehicle_model, *seq_sort_key(seq_label))
 
 
 def _parse_seq_part(raw: str) -> int:

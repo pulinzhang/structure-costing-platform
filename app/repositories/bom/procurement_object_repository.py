@@ -60,6 +60,7 @@ class BomProcurementObjectRepository:
         vehicle_model: str,
         bom_version: str,
     ) -> BomProcurementObjectList | None:
+        """见 Queries：仅已知 SOP 头键门禁；生成/批传走 snapshot_id，列表取件禁止。"""
         return self._queries.get_list_by_scope(
             db, location=location, vehicle_model=vehicle_model, bom_version=bom_version
         )
@@ -121,9 +122,6 @@ class BomProcurementObjectRepository:
         scope: ProcurementObjectScopeFilters,
     ) -> list[BomProcurementObject]:
         return self._queries.list_objects_for_export(db, scope=scope)
-
-    def get_filter_options(self, db: Session) -> tuple[list[str], list[str], list[str]]:
-        return self._queries.get_filter_options(db)
 
     def summarize_objects(
         self,
@@ -200,6 +198,25 @@ class BomProcurementObjectRepository:
             updated_by=updated_by,
         )
 
+    def approve_objects_by_ids(
+        self,
+        db: Session,
+        *,
+        object_ids: list[int],
+        audited_by: str,
+        audited_at: datetime,
+        audit_remark: str,
+        updated_by: str,
+    ) -> int:
+        return self._writes.approve_objects_by_ids(
+            db,
+            object_ids=object_ids,
+            audited_by=audited_by,
+            audited_at=audited_at,
+            audit_remark=audit_remark,
+            updated_by=updated_by,
+        )
+
     def reverse_objects_by_list_id(
         self,
         db: Session,
@@ -219,8 +236,30 @@ class BomProcurementObjectRepository:
             updated_by=updated_by,
         )
 
+    def reverse_objects_by_ids(
+        self,
+        db: Session,
+        *,
+        object_ids: list[int],
+        reverse_audited_by: str,
+        reverse_audited_at: datetime,
+        reverse_audit_remark: str,
+        updated_by: str,
+    ) -> int:
+        return self._writes.reverse_objects_by_ids(
+            db,
+            object_ids=object_ids,
+            reverse_audited_by=reverse_audited_by,
+            reverse_audited_at=reverse_audited_at,
+            reverse_audit_remark=reverse_audit_remark,
+            updated_by=updated_by,
+        )
+
     def delete_pending_objects_by_list_id(self, db: Session, list_id: int) -> int:
         return self._writes.delete_pending_objects_by_list_id(db, list_id)
+
+    def delete_pending_objects_by_ids(self, db: Session, object_ids: list[int]) -> int:
+        return self._writes.delete_pending_objects_by_ids(db, object_ids)
 
     def recount_header_from_rows(self, db: Session, header: BomProcurementObjectList) -> None:
         return self._writes.recount_header_from_rows(db, header)

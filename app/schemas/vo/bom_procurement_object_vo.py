@@ -87,7 +87,10 @@ class BomProcurementObjectVO(BaseModel):
     reverse_audit_remark: str | None = None
     location: str | None = None
     vehicle_model: str | None = None
-    bom_version: str | None = None
+    bom_version: str | None = Field(
+        None,
+        description="清单头冗余 SOP 字（展示）；浏览筛真相是爬到的 L0，勿当取件键",
+    )
     source_filename: str | None = None
     qa_passed: bool | None = None
     # 所属 L0 树根四列（mapping join 填入）；非本表列，禁止加到 ORM / 禁止当对象时段真相
@@ -146,13 +149,13 @@ class BomProcurementObjectPrepStatsVO(BaseModel):
 class BomProcurementObjectBatchAuditResultVO(BatchAuditCountsVO):
     location: str
     vehicle_model: str
-    bom_version: str
+    bom_version: str | None = None
 
 
 class BomProcurementObjectBatchDeleteResultVO(BatchDeleteCountsVO):
     location: str
     vehicle_model: str
-    bom_version: str
+    bom_version: str | None = None
 
 
 class BomProcurementObjectGenerateLogVO(DurationSecondsMixin):
