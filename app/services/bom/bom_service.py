@@ -324,6 +324,12 @@ class BomService:
         try:
             self.snapshot_repo.delete(db, row)
             db.commit()
+        except IntegrityError:
+            db.rollback()
+            raise BusinessException("仍被引用，不能删除") from None
+        except BusinessException:
+            db.rollback()
+            raise
         except Exception:
             db.rollback()
             logger.exception("删除 BOM snapshot 失败")
@@ -433,6 +439,12 @@ class BomService:
         try:
             self.node_repo.delete(db, row)
             db.commit()
+        except IntegrityError:
+            db.rollback()
+            raise BusinessException("仍被引用，不能删除") from None
+        except BusinessException:
+            db.rollback()
+            raise
         except Exception:
             db.rollback()
             logger.exception("删除 BOM node 失败")

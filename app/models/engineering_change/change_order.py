@@ -29,6 +29,13 @@ class EngineeringChangeOrder(AuditUserMixin, Base):
         index=True,
         comment="同头上存档",
     )
+    before_assembly_node_id: Mapped[int] = mapped_column(
+        Integer,
+        ForeignKey("bom_nodes.id", ondelete="RESTRICT", onupdate="RESTRICT"),
+        nullable=False,
+        index=True,
+        comment="变更前交货总成 L0；RESTRICT 防删 BOM 出孤儿，禁止改 SET NULL/CASCADE",
+    )
     excel_row: Mapped[int] = mapped_column(Integer, nullable=False, comment="变更单 Excel 行号")
     project_code: Mapped[str] = mapped_column(String(50), nullable=False, comment="项目")
     effective_period_text: Mapped[str] = mapped_column(

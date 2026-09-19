@@ -376,7 +376,7 @@ app/
 
 全新切片：现网历史表直接 DROP，不迁数据。
 
-一次尝试一行上传头 `engineering_change_upload_logs`（`pending` / `success` / `failed`）。成功后按变更单行插入 `engineering_change_orders`（1 上传头 : N 变更单行；十列 + `excel_row` + 变更单实体 `id`）。`engineering_change_effect_links` 存 `upload_log_id`、`change_order_id` 与前后实体 id：`assembly_l0` / `process_part` / `die_part` / `procurement_object` / `welding_breakdown` / `procurement_list`。缺链接 = 不可回滚，禁止标成功。
+一次尝试一行上传头 `engineering_change_upload_logs`（`pending` / `success` / `failed`）。成功后按变更单行插入 `engineering_change_orders`（1 上传头 : N 变更单行；十列 + `excel_row` + 变更单实体 `id` + `before_assembly_node_id` → `bom_nodes` RESTRICT）。缺 `before_assembly_node_id` 的存量表启动时 DROP 三表重建（清孤儿，不迁数据、不调回滚 Service）。`engineering_change_effect_links` 存 `upload_log_id`、`change_order_id` 与前后实体 id：`assembly_l0` / `process_part` / `die_part` / `procurement_object` / `welding_breakdown` / `procurement_list`。缺链接 = 不可回滚，禁止标成功。
 
 删除本次变更：上传头 `success`（失败记录可直接物理删除，进行中禁止删）；本本全部变更单 `active`；其后没有以本本任一 `after_assembly` 为变更前总成的未删除记录。按效果链接逆序恢复业务对象，同一事务里 **物理删除** 本本三张表。存档 Excel **保留**。已审采购对象须先反审。不留 `rolled_back` 行。
 

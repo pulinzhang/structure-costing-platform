@@ -18,7 +18,7 @@ _TABLE_LOGS = "engineering_change_upload_logs"
 
 
 def ensure_engineering_change_schema(engine: Engine) -> None:
-    """旧 cover 表 / cover_id 列一律丢掉，按 change_order 重建。"""
+    """缺列 / 旧 cover 一律 DROP 三表再建；不迁数据、不调业务 Service。"""
     from app.database import Base
     from app.models.engineering_change.change_order import EngineeringChangeOrder
     from app.models.engineering_change.effect_link import EngineeringChangeEffectLink
@@ -27,7 +27,7 @@ def ensure_engineering_change_schema(engine: Engine) -> None:
     with engine.begin() as connection:
         if not _needs_rebuild(connection):
             return
-        logger.warning("工程变更历史表 DROP（全新切片，不迁数据）")
+        logger.warning("工程变更历史表 DROP（清孤儿与无法挂 FK 的历史，不迁数据）")
         connection.execute(text("PRAGMA foreign_keys=OFF"))
         connection.execute(text(f"DROP TABLE IF EXISTS {_TABLE_LINKS}"))
         connection.execute(text(f"DROP TABLE IF EXISTS {_TABLE_COVERS_LEGACY}"))
@@ -42,11 +42,16 @@ def ensure_engineering_change_schema(engine: Engine) -> None:
             cast(Table, EngineeringChangeEffectLink.__table__),
         ],
     )
-    logger.info("工程变更三张表已按工程变更单实体重建")
+    logger.info("工程变更三张表已重建")
 
 
 def _needs_rebuild(connection: Connection) -> bool:
     if _table_exists(connection, _TABLE_COVERS_LEGACY):
+        return True
+    if not _table_exists(connection, _TABLE_ORDERS):
+        return False
+    order_cols = _column_names(connection, _TABLE_ORDERS)
+    if "before_assembly_node_id" not in order_cols:
         return True
     if _table_exists(connection, _TABLE_LINKS):
         link_cols = _column_names(connection, _TABLE_LINKS)
