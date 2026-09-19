@@ -1,4 +1,8 @@
-"""采购价格 — 只读查询（准备表 + 价目汇总）。"""
+"""采购价格 — 只读查询（准备表 + 价目汇总）。
+
+取件：基地 + 项目 + 账期月；问期/浏览先爬 L0（l0_node_of）；禁止 snapshot 定范围。
+导出：必须全部版本（bom_version 空）。
+"""
 
 from __future__ import annotations
 
@@ -7,14 +11,11 @@ from decimal import Decimal
 from sqlalchemy.orm import Session
 
 from app.common.bom.node_order import bom_node_order_from
-from app.exceptions.base import NotFoundException
+from app.exceptions.base import BusinessException, NotFoundException
 from app.models.bom.node import BomNode
-from app.models.bom.procurement_object import BomProcurementObjectList
-from app.repositories.bom.bom_repository import BomNodeRepository, BomSnapshotRepository
-from app.repositories.bom.procurement_object_repository import (
-    BomProcurementObjectRepository,
-    object_scope_filters,
-)
+from app.models.bom.procurement_object import BomProcurementObject, BomProcurementObjectList
+from app.repositories.bom.bom_repository import BomNodeRepository
+from app.repositories.bom.procurement_object_repository import BomProcurementObjectRepository
 from app.repositories.costing.assembly_cost.assembly_cost_repository import (
     AssemblyCostRepository,
     SettlementAmountField,
@@ -48,6 +49,7 @@ from app.services.costing.procurement_contract_report.assemble import (
     resolve_tooling,
     sum_vehicle_total,
 )
+from app.services.costing.procurement_contract_report.qty import l0_node_of
 from app.services.costing.procurement_contract_report.window import expand_months, month_header
 from app.services.masterdata.supplier.supplier_service import SupplierService
 
@@ -55,13 +57,12 @@ _SECTION_OBJECT = "object"
 _EMPTY_OBJECT_HINT = "当前范围没有采购对象行"
 _EMPTY_ASSEMBLY_HINT = "当前范围没有供货总成"
 _MISSING_OBJECT_LIST = "请先生成采购对象清单"
-_MISSING_SNAPSHOT = "未找到对应材料清单，请先在焊接工程上传"
+_EXPORT_ALL_VERSIONS = "导出协议须选全部版本"
 
 
 class ProcurementContractReportService:
     def __init__(self) -> None:
         self.object_repo = BomProcurementObjectRepository()
-        self.snapshot_repo = BomSnapshotRepository()
         self.node_repo = BomNodeRepository()
         self.cost_repo = AssemblyCostRepository()
         self.die_fee_repo = StampingDieFeeRepository()
@@ -120,13 +121,14 @@ class ProcurementContractReportService:
         )
 
     def get_open_defaults(self, db: Session) -> ProcurementContractOpenDefaultsVO:
+        """打开默认：基地 / 项目 / 年月；版本默认全部（不填）。"""
         latest = self.cost_repo.get_latest_scope_year_month(db)
         if latest is not None:
-            location, vehicle_model, bom_version, year, month = latest
+            location, vehicle_model, _bom_version, year, month = latest
             return ProcurementContractOpenDefaultsVO(
                 location=location,
                 vehicle_model=vehicle_model,
-                bom_version=bom_version,
+                bom_version=None,
                 start_year=year,
                 start_month=month,
                 end_year=year,
@@ -138,14 +140,18 @@ class ProcurementContractReportService:
         return ProcurementContractOpenDefaultsVO(
             location=header.location,
             vehicle_model=header.vehicle_model,
-            bom_version=header.bom_version,
+            bom_version=None,
         )
 
     def build_report(
         self,
         db: Session,
         query: ProcurementContractReportQuery,
+        *,
+        for_export: bool = False,
     ) -> ReportBundle:
+        if for_export and query.bom_version:
+            raise BusinessException(_EXPORT_ALL_VERSIONS)
         months = expand_months(
             start_year=query.start_year,
             start_month=query.start_month,
@@ -162,21 +168,28 @@ class ProcurementContractReportService:
         query: ProcurementContractReportQuery,
         months: list[tuple[int, int]],
     ) -> ReportBundle:
-        header = self._require_object_list(db, query)
-        supplier_name = self._resolve_supplier(db, query.supplier_name)
-        scope_objects = self.object_repo.list_objects_for_export(
-            db,
-            scope=object_scope_filters(
-                location=query.location,
-                vehicle_model=query.vehicle_model,
-                bom_version=query.bom_version,
-                section=_SECTION_OBJECT,
-            ),
+        headers = self.object_repo.list_lists_by_location_vehicle(
+            db, location=query.location, vehicle_model=query.vehicle_model
         )
+        if not headers:
+            raise NotFoundException(_MISSING_OBJECT_LIST)
+        supplier_name = self._resolve_supplier(db, query.supplier_name)
+        scope_objects = [
+            row
+            for row in self.object_repo.list_objects_by_location_vehicle(
+                db, location=query.location, vehicle_model=query.vehicle_model
+            )
+            if row.section == _SECTION_OBJECT
+        ]
         objects = [
             row for row in scope_objects if not supplier_name or row.supplier_name == supplier_name
         ]
-        nodes_by_id = _nodes_by_id(self.node_repo.list_by_snapshot(db, header.snapshot_id))
+        nodes_by_id = _nodes_by_id(
+            self.node_repo.list_by_location_vehicle(
+                db, location=query.location, vehicle_model=query.vehicle_model
+            )
+        )
+        objects = _filter_objects_by_climbed_l0_version(objects, nodes_by_id, query.bom_version)
         costs = self._load_costs(
             db,
             query=query,
@@ -188,7 +201,7 @@ class ProcurementContractReportService:
             db,
             query=query,
             months=months,
-            scope=_scope_from_list(header),
+            scope=_scope_from_lists(headers, query),
             prep_rows=prep_rows,
             supplier_name=supplier_name,
         )
@@ -199,17 +212,16 @@ class ProcurementContractReportService:
         query: ProcurementContractReportQuery,
         months: list[tuple[int, int]],
     ) -> ReportBundle:
-        snapshot = self.snapshot_repo.get_by_unique_key(
-            db,
-            query.location,
-            query.vehicle_model,
-            query.bom_version,
+        nodes = self.node_repo.list_by_location_vehicle(
+            db, location=query.location, vehicle_model=query.vehicle_model
         )
-        if snapshot is None:
-            raise NotFoundException(_MISSING_SNAPSHOT)
-        nodes = self.node_repo.list_by_snapshot(db, snapshot.id)
         roots = sorted(
-            [node for node in nodes if node.parent_id is None],
+            [
+                node
+                for node in nodes
+                if int(node.level) == 0
+                and (not query.bom_version or node.bom_version == query.bom_version)
+            ],
             key=bom_node_order_from,
         )
         costs = self._load_costs(
@@ -224,30 +236,14 @@ class ProcurementContractReportService:
             query=query,
             months=months,
             scope=ReportScope(
-                location=snapshot.location,
-                vehicle_model=snapshot.vehicle_model,
-                bom_version=snapshot.bom_version,
-                snapshot_id=snapshot.id,
+                location=query.location,
+                vehicle_model=query.vehicle_model,
+                bom_version=query.bom_version,
                 view=VIEW_ASSEMBLY,
             ),
             prep_rows=prep_rows,
             supplier_name=None,
         )
-
-    def _require_object_list(
-        self,
-        db: Session,
-        query: ProcurementContractReportQuery,
-    ) -> BomProcurementObjectList:
-        header = self.object_repo.get_list_by_scope(
-            db,
-            location=query.location,
-            vehicle_model=query.vehicle_model,
-            bom_version=query.bom_version,
-        )
-        if header is None:
-            raise NotFoundException(_MISSING_OBJECT_LIST)
-        return header
 
     def _finish_bundle(
         self,
@@ -261,16 +257,15 @@ class ProcurementContractReportService:
     ) -> ReportBundle:
         tooling = self._load_tooling(db, query, prep_rows)
         price_rows = aggregate_price_rows(prep_rows, months, tooling)
-        scope_key = (scope.location, scope.vehicle_model, scope.bom_version)
         prep_rows.sort(
             key=lambda row: (
-                *report_sort_key(*scope_key, row.seq_label),
+                *report_sort_key(scope.location, scope.vehicle_model, row.seq_label),
                 *prep_row_order_key(row),
             )
         )
         price_rows.sort(
             key=lambda row: (
-                *report_sort_key(*scope_key, row.seq_label),
+                *report_sort_key(scope.location, scope.vehicle_model, row.seq_label),
                 row.part_number,
             )
         )
@@ -307,14 +302,15 @@ class ProcurementContractReportService:
         amount_field: SettlementAmountField = (
             "grand_total" if query.view == VIEW_ASSEMBLY else "total_amount"
         )
+        # 读卡不按版本滤；列表浏览筛已在行集合上按爬到的 L0 字裁完
         rows = self.cost_repo.list_should_costs_for_nodes(
             db,
             location=query.location,
             vehicle_model=query.vehicle_model,
-            bom_version=query.bom_version,
             months=months,
             source_node_ids=source_node_ids,
             amount_field=amount_field,
+            bom_version=None,
         )
         return {(year, month, node_id): amount for year, month, node_id, amount in rows}
 
@@ -352,16 +348,38 @@ class ProcurementContractReportService:
         }
 
 
-def _scope_from_list(header: BomProcurementObjectList) -> ReportScope:
+def _scope_from_lists(
+    headers: list[BomProcurementObjectList],
+    query: ProcurementContractReportQuery,
+) -> ReportScope:
+    qa_passed = all(header.qa_passed for header in headers)
+    qa_errors = [header.qa_error_text for header in headers if header.qa_error_text]
     return ReportScope(
-        location=header.location,
-        vehicle_model=header.vehicle_model,
-        bom_version=header.bom_version,
-        snapshot_id=header.snapshot_id,
+        location=query.location,
+        vehicle_model=query.vehicle_model,
+        bom_version=query.bom_version,
         view=VIEW_PROCUREMENT,
-        qa_passed=header.qa_passed,
-        qa_error_text=header.qa_error_text,
+        qa_passed=qa_passed,
+        qa_error_text="；".join(qa_errors) if qa_errors else None,
     )
+
+
+def _filter_objects_by_climbed_l0_version(
+    objects: list[BomProcurementObject],
+    nodes_by_id: dict[int, BomNode],
+    bom_version: str | None,
+) -> list[BomProcurementObject]:
+    """列表浏览筛：先爬到所属 L0，再比树根 bom_version。禁止用 source 本行字。"""
+    if not bom_version:
+        return objects
+    kept: list[BomProcurementObject] = []
+    for item in objects:
+        tree_root = l0_node_of(item.source_node_id, nodes_by_id)
+        if tree_root is None or int(tree_root.level) != 0:
+            continue
+        if tree_root.bom_version == bom_version:
+            kept.append(item)
+    return kept
 
 
 def _nodes_by_id(nodes: list[BomNode]) -> dict[int, BomNode]:

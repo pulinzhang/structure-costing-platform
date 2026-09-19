@@ -65,7 +65,7 @@ class ProcurementContractReportRowVO(BaseModel):
 class ProcurementContractReportFiltersVO(BaseModel):
     location: str
     vehicle_model: str
-    bom_version: str
+    bom_version: str | None = None
     start_year: int
     start_month: int
     end_year: int

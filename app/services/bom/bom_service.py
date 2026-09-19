@@ -73,7 +73,10 @@ class BomService:
         bom_version: str,
         action: str,
     ) -> None:
-        """有直接下游（采购对象、焊接拆解）则禁止覆盖导入或删除材料清单/节点。"""
+        """有直接下游（采购对象、焊接拆解）则禁止覆盖导入或删除材料清单/节点。
+
+        此处 bom_version = snapshot 头 SOP 字，与清单头冗余键同形；不是列表浏览的 L0 字。
+        """
         found: list[str] = []
         if self._procurement_repo.get_list_by_scope(
             db,
@@ -228,6 +231,7 @@ class BomService:
             status=query.status,
             as_of_year=query.year if as_of else None,
             as_of_month=query.month if as_of else None,
+            version_source=query.version_source,
         )
         vehicle_svc = VehicleModelService()
         if location_raw and query.year is not None:

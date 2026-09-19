@@ -1,4 +1,5 @@
 import { paginationBarHtml } from '../../../../page-size.js?v=3';
+import { moreMenuItemHtml, moreMenuShellHtml } from '../../../../more-menu.js?v=1';
 
 export function dieListTemplate() {
     return `
@@ -11,23 +12,24 @@ export function dieListTemplate() {
                         <div class="grid grid-cols-2 gap-3 font-mono flex-1 min-w-0">
                             <div class="bg-[#0D0D11]/80 border border-[#1E1E26] p-3">
                                 <div class="text-[#555555] text-[10px] tracking-wider">查询范围</div>
-                                <div class="text-[14px] font-bold text-[#FFFFFF] mt-1 truncate" id="dieHudScope">请选择基地与项目</div>
+                                <div class="text-[14px] font-bold text-[#FFFFFF] mt-1 truncate" id="dieHudScope">全部</div>
                             </div>
                             <div class="bg-[#0D0D11]/80 border border-[#1E1E26] p-3">
                                 <div class="text-[#555555] text-[10px] tracking-wider">零件</div>
                                 <div class="text-[18px] font-bold text-[#FFFFFF] mt-1 tabular-nums" id="dieHudTotal">—</div>
                             </div>
                         </div>
-                        <div class="flex items-center gap-2 shrink-0 flex-wrap justify-end">
-                            <button id="dieBatchDeleteBtn" type="button"
-                                    class="inline-flex items-center gap-1.5 bg-transparent text-[#6E6E73] border border-[#2A2A35] px-3 py-1.5 text-[11px] font-medium rounded-md hover:border-[#c62828]/60 hover:text-[#ef5350] hover:bg-[#c62828]/15 transition-all">
-                                ${window.svgIcon('trash', 'w-3 h-3')}
-                                删除本范围
-                            </button>
+                        <div class="flex items-center gap-1.5 shrink-0">
+                            ${moreMenuShellHtml({
+                                wrapId: 'dieMoreWrap',
+                                btnId: 'dieMoreBtn',
+                                menuId: 'dieMoreMenu',
+                                itemsHtml: moreMenuItemHtml({ id: 'dieBatchDeleteBtn', label: '删除本范围', danger: true }),
+                            })}
                             <button id="dieExportBtn" type="button"
                                     class="inline-flex items-center gap-1.5 bg-transparent text-[#6E6E73] border border-[#2A2A35] px-3 py-1.5 text-[11px] font-medium rounded-md hover:border-[#FF1E27]/50 hover:text-[#FF1E27] hover:bg-[#FF1E27]/10 transition-all">
                                 ${window.svgIcon('download', 'w-3 h-3')}
-                                导出 Excel
+                                Excel
                             </button>
                         </div>
                     </div>
@@ -38,13 +40,13 @@ export function dieListTemplate() {
                         <label class="flex flex-col gap-1">
                             <span class="text-[10px] text-[#555555] tracking-wider">基地</span>
                             <select id="dieListLocation" class="h-9 min-w-[140px] px-3 text-xs bg-[#0a0a0a] border border-[#2c2c2c] text-[#9e9e9e] appearance-none cursor-pointer focus:outline-none focus:border-[#ff5252]">
-                                <option value="">请选择</option>
+                                <option value="">全部</option>
                             </select>
                         </label>
                         <label class="flex flex-col gap-1">
                             <span class="text-[10px] text-[#555555] tracking-wider">项目</span>
                             <select id="dieListVehicle" class="h-9 min-w-[140px] px-3 text-xs bg-[#0a0a0a] border border-[#2c2c2c] text-[#9e9e9e] appearance-none cursor-pointer focus:outline-none focus:border-[#ff5252]">
-                                <option value="">请先选择基地</option>
+                                <option value="">全部</option>
                             </select>
                         </label>
                         <label class="flex flex-col gap-1">
@@ -59,7 +61,7 @@ export function dieListTemplate() {
                             查询
                         </button>
                     </div>
-                    <p class="mt-2 text-[10px] text-[#555555]">须先选择基地和项目后再查询。删除本范围按基地+项目整包删除。</p>
+                    <p class="mt-2 text-[10px] text-[#555555]">进入即显示全部；基地/项目/零件号可选收窄。删除本范围、导出须选定基地+项目。</p>
                 </div>
                 <div class="overflow-x-auto brabus-bg-grid">
                     <table class="w-full table-fixed bg-transparent border-collapse" style="min-width: 880px;">
@@ -97,8 +99,8 @@ export function dieListTemplate() {
                     <div class="w-10 h-10 flex items-center justify-center mb-3 rounded-md bg-[#121218] border border-[#2A2A35]">
                         ${window.svgIcon('clipboard-list', 'w-4 h-4 text-[#555555]')}
                     </div>
-                    <h5 id="dieListEmptyTitle" class="text-[11px] font-medium text-[#8E8E93] mb-1">请先选择基地和项目</h5>
-                    <p id="dieListEmptyHint" class="text-[10px] text-[#555555]">未选齐范围时不会请求列表</p>
+                    <h5 id="dieListEmptyTitle" class="text-[11px] font-medium text-[#8E8E93] mb-1">暂无模具数据</h5>
+                    <p id="dieListEmptyHint" class="text-[10px] text-[#555555]">请先上传模具布点清单</p>
                 </div>
                 <div id="dieListLoading" class="hidden flex items-center justify-center py-14">
                     <div class="w-5 h-5 border-2 border-[#2A2A35] border-t-[#FF1E27] rounded-full animate-spin"></div>

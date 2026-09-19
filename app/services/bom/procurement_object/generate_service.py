@@ -20,9 +20,8 @@ from app.common.engineering_change_gates import (
 )
 from app.common.timezone import now
 from app.common.vehicle_model import normalize_vehicle_model
-from app.exceptions.base import BusinessException, NotFoundException
-from app.models.bom.node import BomSnapshot
-from app.repositories.bom.bom_repository import BomNodeRepository, BomSnapshotRepository
+from app.exceptions.base import BusinessException
+from app.repositories.bom.bom_repository import BomNodeRepository
 from app.repositories.bom.procurement_object_repository import BomProcurementObjectRepository
 from app.schemas.dto.bom_procurement_object_dto import (
     BomProcurementObjectGenerateDTO,
@@ -40,6 +39,7 @@ from app.services.bom.procurement_object.generate_log_service import (
     BomProcurementObjectGenerateLogService,
 )
 from app.services.bom.procurement_object.row_write import ConfirmByNode, build_object_row_write
+from app.services.bom.procurement_object.snapshot_scope import lookup_snapshot, require_snapshot
 from app.services.masterdata.location.location_service import LocationService
 from app.services.masterdata.vehicle_model import VehicleModelService
 
@@ -48,7 +48,6 @@ logger = logging.getLogger("service.bom.procurement_object.generate")
 
 class BomProcurementObjectGenerateService:
     def __init__(self) -> None:
-        self.snapshot_repo = BomSnapshotRepository()
         self.node_repo = BomNodeRepository()
         self.repository = BomProcurementObjectRepository()
         self.log_service = BomProcurementObjectGenerateLogService()
@@ -63,7 +62,7 @@ class BomProcurementObjectGenerateService:
             return BomProcurementObjectPrepStatsVO(
                 message="请选定基地 / 项目 / 版本",
             )
-        snapshot = self._lookup_snapshot(
+        snapshot = lookup_snapshot(
             db, location=location, vehicle_model=vehicle_model, bom_version=bom_version
         )
         if snapshot is None:
@@ -117,7 +116,9 @@ class BomProcurementObjectGenerateService:
         operator = display_name(current_user)
 
         try:
-            snapshot = self._require_snapshot(db, location, vehicle_model, bom_version)
+            snapshot = require_snapshot(
+                db, location=location, vehicle_model=vehicle_model, bom_version=bom_version
+            )
             snapshot_id = snapshot.id
             nodes = self.node_repo.list_by_snapshot(db, snapshot.id)
             node_count = len(nodes)
@@ -280,28 +281,3 @@ class BomProcurementObjectGenerateService:
             other_leaf_count=other_leaf_count,
             anomaly_count=anomaly_count,
         )
-
-    def _lookup_snapshot(
-        self,
-        db: Session,
-        *,
-        location: str,
-        vehicle_model: str,
-        bom_version: str,
-    ) -> BomSnapshot | None:
-        """精确匹配。调用方须已 normalize / 规范名；禁止在此 expand 别名。"""
-        return self.snapshot_repo.get_by_unique_key(db, location, vehicle_model, bom_version)
-
-    def _require_snapshot(
-        self,
-        db: Session,
-        location: str,
-        vehicle_model: str,
-        bom_version: str,
-    ) -> BomSnapshot:
-        snapshot = self._lookup_snapshot(
-            db, location=location, vehicle_model=vehicle_model, bom_version=bom_version
-        )
-        if snapshot is None:
-            raise NotFoundException("未找到对应材料清单")
-        return snapshot

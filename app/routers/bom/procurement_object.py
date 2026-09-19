@@ -119,7 +119,7 @@ def get_generate_log(
 def get_summary(
     location: str = Query(..., min_length=1),
     vehicle_model: str = Query(..., min_length=1),
-    bom_version: str = Query(..., min_length=1),
+    bom_version: str | None = Query(None),
     db: Session = Depends(get_db),
     current_user: UserVO = Depends(require_perm(Perm.BOM_PROCUREMENT_OBJECT_LIST_VIEW)),
 ) -> ApiResponse[BomProcurementObjectListVO]:

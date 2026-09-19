@@ -2,6 +2,8 @@
  * 项目一览 — HUD 密表，按基地分卡 / 分段
  */
 
+import { moreMenuItemHtml, moreMenuShellHtml } from '../../../../more-menu.js?v=1';
+
 function monthOptionsHtml(selected) {
     const items = [];
     for (let month = 1; month <= 12; month += 1) {
@@ -36,22 +38,12 @@ export function vehicleModelListTemplate() {
                     <div class="flex items-start justify-between gap-4 mb-3">
                         <div id="vmHudCards" class="flex flex-wrap gap-2 flex-1 min-w-0"></div>
                         <div class="flex items-center gap-1.5 shrink-0">
-                            <div class="relative" id="vmMoreWrap">
-                                <button type="button" id="vmMoreBtn"
-                                        class="w-8 h-8 flex items-center justify-center text-[#484848] hover:text-[#ffffff] transition-colors"
-                                        aria-label="更多操作" title="更多">
-                                    <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 24 24" aria-hidden="true">
-                                        <circle cx="5" cy="12" r="1.6"/><circle cx="12" cy="12" r="1.6"/><circle cx="19" cy="12" r="1.6"/>
-                                    </svg>
-                                </button>
-                                <div id="vmMoreMenu"
-                                     class="hidden absolute right-0 top-full mt-1 z-[40] min-w-[132px] py-1 bg-[#161616] border border-[#2c2c2c] shadow-[0_8px_24px_rgba(0,0,0,0.55)]">
-                                    <button type="button" id="vmBtnExport"
-                                            class="w-full px-3.5 py-2 text-left text-[12px] text-[#9e9e9e] hover:bg-[#1e1e1e] hover:text-[#ffffff] transition-colors">
-                                        导出
-                                    </button>
-                                </div>
-                            </div>
+                            ${moreMenuShellHtml({
+                                wrapId: 'vmMoreWrap',
+                                btnId: 'vmMoreBtn',
+                                menuId: 'vmMoreMenu',
+                                itemsHtml: moreMenuItemHtml({ id: 'vmBtnExport', label: '导出' }),
+                            })}
                             <button id="vmBtnCreate" type="button"
                                     class="inline-flex items-center gap-1.5 bg-[#FF1E27] hover:bg-[#d32f2f] text-white px-3 py-1.5 text-[11px] font-semibold rounded-md transition-all">
                                 ${window.svgIcon('plus', 'w-3.5 h-3.5')}

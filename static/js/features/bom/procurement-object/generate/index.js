@@ -15,9 +15,9 @@ import {
     formatDurationSeconds,
     formatTimingLine,
 } from '../../../../duration.js?v=1';
+import { loadSnapshotCascade } from '../snapshot-cascade.js?v=3';
 
 const API_BASE = '/api/bom/procurement-objects';
-const CASCADE_API = '/api/bom/filters/cascade';
 const GENERATE_API = `${API_BASE}/generate`;
 const PREP_STATS_API = `${API_BASE}/generate/prep-stats`;
 const LOGS_API = `${API_BASE}/generate/logs`;
@@ -104,22 +104,6 @@ function val(id) {
     return (document.getElementById(id)?.value || '').trim();
 }
 
-function fillSelect(id, values, selected, emptyLabel = '请选择') {
-    const el = document.getElementById(id);
-    if (!el) return;
-    let html = `<option value="">${emptyLabel}</option>`;
-    (values || []).forEach((item) => {
-        const mark = item === selected ? ' selected' : '';
-        html += `<option value="${esc(item)}"${mark}>${esc(item)}</option>`;
-    });
-    el.innerHTML = html;
-    if (selected && (values || []).includes(selected)) {
-        el.value = selected;
-    } else {
-        el.value = '';
-    }
-}
-
 function resetFilters() {
     if (genState.isGenerating) {
         showToast('生成进行中，请稍候再重置', 'warning');
@@ -132,46 +116,13 @@ function resetFilters() {
     loadCascadeFilters().then(() => loadPrepStats());
 }
 
-async function loadCascadeFilters() {
-    try {
-        const params = {};
-        if (genState.location) params.location = genState.location;
-        if (genState.vehicleModel) params.vehicle_model = genState.vehicleModel;
-        const res = await HttpClient.get(CASCADE_API, { params });
-        const data = res.data || {};
-        const locations = data.locations || [];
-        const vehicleModels = data.vehicle_models || [];
-        const bomVersions = data.bom_versions || [];
-
-        if (genState.location && !locations.includes(genState.location)) {
-            genState.location = '';
-            genState.vehicleModel = '';
-            genState.bomVersion = '';
-        }
-        if (genState.vehicleModel && !vehicleModels.includes(genState.vehicleModel)) {
-            genState.vehicleModel = '';
-            genState.bomVersion = '';
-        }
-        if (genState.bomVersion && !bomVersions.includes(genState.bomVersion)) {
-            genState.bomVersion = '';
-        }
-        if (!genState.location && locations.length === 1) {
-            genState.location = locations[0];
-            return loadCascadeFilters();
-        }
-        if (genState.location && !genState.vehicleModel && vehicleModels.length === 1) {
-            genState.vehicleModel = vehicleModels[0];
-            return loadCascadeFilters();
-        }
-        if (genState.location && genState.vehicleModel && !genState.bomVersion && bomVersions.length === 1) {
-            genState.bomVersion = bomVersions[0];
-        }
-        fillSelect('poGenLocation', locations, genState.location);
-        fillSelect('poGenModel', vehicleModels, genState.vehicleModel);
-        fillSelect('poGenVersion', bomVersions, genState.bomVersion);
-    } catch (error) {
-        console.error('加载 BOM 级联筛选失败', error);
-    }
+function loadCascadeFilters() {
+    return loadSnapshotCascade({
+        state: genState,
+        locationId: 'poGenLocation',
+        modelId: 'poGenModel',
+        versionId: 'poGenVersion',
+    });
 }
 
 async function loadPrepStats() {

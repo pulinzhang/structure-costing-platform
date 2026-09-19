@@ -84,16 +84,19 @@ class StampingDieService:
     def paginate(
         self, db: Session, query: StampingDiePartQuery
     ) -> tuple[list[StampingDiePartListVO], int]:
-        location, vehicle_model = self._require_scope(query.location, query.vehicle_model)
-        locations = LocationService().expand_for_query(db, location)
-        if not locations:
-            return [], 0
+        location_raw = (query.location or "").strip() or None
+        locations: list[str] | None = None
+        if location_raw:
+            locations = LocationService().expand_for_query(db, location_raw)
+            if not locations:
+                return [], 0
+        vehicle = normalize_vehicle_model(query.vehicle_model) if query.vehicle_model else None
         skip = (query.page - 1) * query.size
         as_of_year, as_of_month = resolve_as_of_month(query.year, query.month)
         parts, total = self.die_part_repo.paginate(
             db,
             locations=locations,
-            vehicle_model=vehicle_model,
+            vehicle_model=vehicle,
             part_number=query.part_number,
             skip=skip,
             limit=query.size,

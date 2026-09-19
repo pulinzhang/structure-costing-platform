@@ -1,7 +1,7 @@
 /**
  * Steel Price Policy Download Template
  * 钢价政策下载页面 — Brabus Carbon & Precision Dark
- * 用于测试部门核对数据，主子表联合查询导出 Excel
+ * 用于测试部门核对数据，主子表联合查询Excel
  */
 
 import {
@@ -9,6 +9,7 @@ import {
     PREVIEW_PAGE_SIZE_OPTIONS,
     paginationBarHtml,
 } from '../../../../page-size.js?v=3';
+import { moreMenuItemHtml, moreMenuShellHtml } from '../../../../more-menu.js?v=1';
 
 export function policyDownloadTemplate() {
     return `
@@ -25,18 +26,18 @@ export function policyDownloadTemplate() {
                         <div class="w-[2px] h-4 bg-[#d32f2f] rounded-[1px] shadow-[0_0_6px_rgba(211,47,47,0.3)]"></div>
                         <h2 class="text-[12px] font-semibold text-[#c8c8c8] tracking-wide">加减价政策导出</h2>
                     </div>
-                    <div class="flex items-center gap-2">
-                        <button id="btnDeletePolicy"
-                                class="inline-flex items-center gap-1.5 bg-transparent text-[#505050] border border-[#252525] px-3 py-1.5 text-[11px] font-medium rounded-sm hover:bg-[#c62828]/15 hover:border-[#c62828]/60 hover:text-[#d45858] hover:shadow-[0_0_8px_rgba(198,40,40,0.15)] transition-all duration-200"
-                                style="box-shadow: inset 0 1px 0 rgba(255,255,255,0.02);">
-                            ${window.svgIcon('trash', 'w-3 h-3')}
-                            删除
-                        </button>
+                    <div class="flex items-center gap-1.5">
+                        ${moreMenuShellHtml({
+                            wrapId: 'policyMoreWrap',
+                            btnId: 'policyMoreBtn',
+                            menuId: 'policyMoreMenu',
+                            itemsHtml: moreMenuItemHtml({ id: 'btnDeletePolicy', label: '删除', danger: true }),
+                        })}
                         <button id="btnExportPolicy"
                                 class="inline-flex items-center gap-1.5 bg-transparent text-[#505050] border border-[#252525] px-3 py-1.5 text-[11px] font-medium rounded-sm hover:bg-[#d32f2f]/10 hover:border-[#d32f2f]/60 hover:text-[#d32f2f] hover:shadow-[0_0_8px_rgba(211,47,47,0.15)] transition-all duration-200"
                                 style="box-shadow: inset 0 1px 0 rgba(255,255,255,0.02);">
                             ${window.svgIcon('download', 'w-3 h-3')}
-                            导出 Excel
+                            Excel
                         </button>
                     </div>
                 </div>

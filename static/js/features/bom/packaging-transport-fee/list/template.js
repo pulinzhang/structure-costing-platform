@@ -4,6 +4,7 @@
  */
 
 import { paginationBarHtml } from '../../../../page-size.js?v=3';
+import { moreMenuItemHtml, moreMenuShellHtml } from '../../../../more-menu.js?v=1';
 import { partShortCodeCellHtml, partNumberNameCellHtml } from '../../../../part-identity.js?v=3';
 
 export function formatFee4(value) {
@@ -61,22 +62,20 @@ export function pkgTransportFeeTemplate() {
                                 </div>
                             </div>
                         </div>
-                        <div class="flex items-center gap-2 shrink-0 flex-wrap justify-end">
-                            <button id="btnBatchApprovePkg" type="button"
-                                    class="inline-flex items-center gap-1.5 bg-transparent text-[#6E6E73] border border-[#2A2A35] px-3 py-1.5 text-[11px] font-medium rounded-md hover:border-[#FF1E27]/50 hover:text-[#FF1E27] transition-all">
-                                ${window.svgIcon('check-circle', 'w-3 h-3')} 批量审核
-                            </button>
-                            <button id="btnBatchReversePkg" type="button"
-                                    class="inline-flex items-center gap-1.5 bg-transparent text-[#6E6E73] border border-[#2A2A35] px-3 py-1.5 text-[11px] font-medium rounded-md hover:border-[#FF1E27]/50 hover:text-[#FF1E27] transition-all">
-                                ${window.svgIcon('refresh', 'w-3 h-3')} 批量反审核
-                            </button>
-                            <button id="btnBatchDeletePkg" type="button"
-                                    class="inline-flex items-center gap-1.5 bg-transparent text-[#6E6E73] border border-[#2A2A35] px-3 py-1.5 text-[11px] font-medium rounded-md hover:border-[#c62828]/60 hover:text-[#ef5350] transition-all">
-                                ${window.svgIcon('trash', 'w-3 h-3')} 批量删除
-                            </button>
+                        <div class="flex items-center gap-1.5 shrink-0">
+                            ${moreMenuShellHtml({
+                                wrapId: 'pkgMoreWrap',
+                                btnId: 'pkgMoreBtn',
+                                menuId: 'pkgMoreMenu',
+                                itemsHtml: [
+                                    moreMenuItemHtml({ id: 'btnBatchApprovePkg', label: '批量审核' }),
+                                    moreMenuItemHtml({ id: 'btnBatchReversePkg', label: '批量反审核' }),
+                                    moreMenuItemHtml({ id: 'btnBatchDeletePkg', label: '批量删除', danger: true }),
+                                ].join(''),
+                            })}
                             <button id="btnExportPkg" type="button"
                                     class="inline-flex items-center gap-1.5 bg-transparent text-[#6E6E73] border border-[#2A2A35] px-3 py-1.5 text-[11px] font-medium rounded-md hover:border-[#FF1E27]/50 hover:text-[#FF1E27] transition-all">
-                                ${window.svgIcon('download', 'w-3 h-3')} 导出 Excel
+                                ${window.svgIcon('download', 'w-3 h-3')} Excel
                             </button>
                         </div>
                     </div>

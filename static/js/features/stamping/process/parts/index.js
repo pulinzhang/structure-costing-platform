@@ -9,7 +9,8 @@ import {
     renderDetailContent,
     updatePartsFilterCapsules,
     updatePartsHud,
-} from './template.js?v=39';
+} from './template.js?v=41';
+import { bindMoreMenu } from '../../../../more-menu.js?v=1';
 import { fmtPeriodRange } from '../../../common/period-ui.js?v=2';
 import {
     BTN_SAVE_ACTIVE,
@@ -27,6 +28,9 @@ import {
 } from '../../../../page-size.js?v=3';
 import { setSearchBusy } from '../../../../search-busy.js?v=1';
 import { partShortCodeCellHtml, partNumberNameCellHtml } from '../../../../part-identity.js?v=3';
+
+/** @type {{ setOpen: (isOpen: boolean) => void, close: () => void, unbind: () => void } | null} */
+let moreMenu = null;
 
 function offalCell(part) {
     if (!part.is_offal_nested) {
@@ -132,6 +136,7 @@ export const PartsPage = {
         this.canExport = typeof can === 'function' ? can('op:stamping-parts:export') : true;
         if (!this.canDelete) {
             document.getElementById('partsBatchDeleteBtn')?.classList.add('hidden');
+            document.getElementById('partsMoreWrap')?.classList.add('hidden');
         }
         if (!this.canExport) {
             document.getElementById('partsExportBtn')?.classList.add('hidden');
@@ -170,7 +175,15 @@ export const PartsPage = {
         document.getElementById('partsToggleAdvancedFilter')?.addEventListener('click', () => {
             this.setAdvancedOpen(!partsState.advancedOpen);
         });
-        document.getElementById('partsBatchDeleteBtn')?.addEventListener('click', () => this.batchDelete());
+        document.getElementById('partsBatchDeleteBtn')?.addEventListener('click', () => {
+            moreMenu?.close();
+            this.batchDelete();
+        });
+        moreMenu = bindMoreMenu({
+            wrapId: 'partsMoreWrap',
+            btnId: 'partsMoreBtn',
+            menuId: 'partsMoreMenu',
+        });
         document.getElementById('partsExportBtn')?.addEventListener('click', () => this.exportExcel());
         document.getElementById('partsSteelPurchaseExportBtn')?.addEventListener('click', () => this.exportSteelPurchase());
 
@@ -852,4 +865,8 @@ export const PartsPage = {
 export const pageConfig = {
     render: partsTemplate,
     init: () => PartsPage.init(),
+    destroy() {
+        moreMenu?.unbind();
+        moreMenu = null;
+    },
 };

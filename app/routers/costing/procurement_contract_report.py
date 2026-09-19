@@ -41,7 +41,7 @@ def _query_from_params(
     *,
     location: str,
     vehicle_model: str,
-    bom_version: str,
+    bom_version: str | None,
     start_year: int,
     start_month: int,
     end_year: int,
@@ -75,7 +75,7 @@ def _query_from_params(
 def list_report(
     location: str = Query(..., min_length=1),
     vehicle_model: str = Query(..., min_length=1),
-    bom_version: str = Query(..., min_length=1),
+    bom_version: str | None = Query(None),
     start_year: int = Query(..., ge=2000, le=2100),
     start_month: int = Query(..., ge=1, le=12),
     end_year: int = Query(..., ge=2000, le=2100),
@@ -125,7 +125,7 @@ def list_open_defaults(
 def prep_report(
     location: str = Query(..., min_length=1),
     vehicle_model: str = Query(..., min_length=1),
-    bom_version: str = Query(..., min_length=1),
+    bom_version: str | None = Query(None),
     start_year: int = Query(..., ge=2000, le=2100),
     start_month: int = Query(..., ge=1, le=12),
     end_year: int = Query(..., ge=2000, le=2100),
@@ -155,7 +155,7 @@ def prep_report(
 def export_report(
     location: str = Query(..., min_length=1),
     vehicle_model: str = Query(..., min_length=1),
-    bom_version: str = Query(..., min_length=1),
+    bom_version: str | None = Query(None),
     start_year: int = Query(..., ge=2000, le=2100),
     start_month: int = Query(..., ge=1, le=12),
     end_year: int = Query(..., ge=2000, le=2100),

@@ -8,7 +8,8 @@ import {
     updateL0WeldingFeeHud,
     updateL0WeldingFeeFilterCapsules,
     renderFeeDetailItems,
-} from './template.js?v=26';
+} from './template.js?v=28';
+import { bindMoreMenu } from '../../../../more-menu.js?v=1';
 import {
     DEFAULT_PAGE_SIZE,
     bindPagination,
@@ -21,6 +22,9 @@ const API_BASE = '/api/bom/welding-fees';
 const DRAWER_ANIMATION_MS = 300;
 const SCOPE_REQUIRED_MESSAGE = '须选定年度、基地、项目';
 const FEE_DIGITS = 4;
+
+/** @type {{ setOpen: (isOpen: boolean) => void, close: () => void, unbind: () => void } | null} */
+let moreMenu = null;
 
 const feeState = {
     records: [],
@@ -84,6 +88,8 @@ function init() {
 }
 
 function destroy() {
+    moreMenu?.unbind();
+    moreMenu = null;
     closeDrawer('l0wfViewDrawer', 'l0wfViewBackdrop');
     closeDrawer('l0wfEditDrawer', 'l0wfEditBackdrop');
     closeDrawer('l0wfBatchAuditDrawer', 'l0wfBatchAuditBackdrop');
@@ -103,6 +109,12 @@ function applyPermissionUi() {
     }
     if (!canFn('op:bom-welding-fee-list:delete')) {
         document.getElementById('l0wfBatchDeleteBtn')?.classList.add('hidden');
+    }
+    const moreItems = ['l0wfBatchApproveBtn', 'l0wfBatchReverseBtn', 'l0wfBatchDeleteBtn']
+        .map((id) => document.getElementById(id))
+        .filter((el) => el && !el.classList.contains('hidden'));
+    if (!moreItems.length) {
+        document.getElementById('l0wfMoreWrap')?.classList.add('hidden');
     }
 }
 
@@ -351,9 +363,23 @@ function bindEvents() {
         openDetailDrawer(Number(detailBtn.dataset.id));
     });
 
-    document.getElementById('l0wfBatchApproveBtn')?.addEventListener('click', () => openBatchAudit('approve'));
-    document.getElementById('l0wfBatchReverseBtn')?.addEventListener('click', () => openBatchAudit('reverse'));
-    document.getElementById('l0wfBatchDeleteBtn')?.addEventListener('click', batchDelete);
+    moreMenu = bindMoreMenu({
+        wrapId: 'l0wfMoreWrap',
+        btnId: 'l0wfMoreBtn',
+        menuId: 'l0wfMoreMenu',
+    });
+    document.getElementById('l0wfBatchApproveBtn')?.addEventListener('click', () => {
+        moreMenu?.close();
+        openBatchAudit('approve');
+    });
+    document.getElementById('l0wfBatchReverseBtn')?.addEventListener('click', () => {
+        moreMenu?.close();
+        openBatchAudit('reverse');
+    });
+    document.getElementById('l0wfBatchDeleteBtn')?.addEventListener('click', () => {
+        moreMenu?.close();
+        batchDelete();
+    });
     document.getElementById('l0wfExportBtn')?.addEventListener('click', () => exportExcel());
     document.getElementById('l0wfBatchAuditClose')?.addEventListener('click', () => {
         closeDrawer('l0wfBatchAuditDrawer', 'l0wfBatchAuditBackdrop');

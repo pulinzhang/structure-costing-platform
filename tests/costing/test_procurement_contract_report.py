@@ -23,6 +23,7 @@ from app.models.masterdata.location import Location, LocationAlias
 from app.models.masterdata.supplier import Supplier, SupplierAlias
 from app.models.masterdata.vehicle_model import VehicleModel
 from app.models.settings.system_config import SystemConfig
+from app.models.stamping.die import StampingDiePart
 from app.models.stamping.die_fee import StampingDieFee
 from app.models.stamping.gauge_fee import StampingGaugeFee
 from app.repositories.bom.bom_repository import BomNodeRepository, BomSnapshotRepository
@@ -79,6 +80,7 @@ def db() -> Generator[Session, None, None]:
             BomProcurementObjectList.__table__,
             BomProcurementObject.__table__,
             AssemblyCost.__table__,
+            StampingDiePart.__table__,
             StampingDieFee.__table__,
             StampingGaugeFee.__table__,
             SystemConfig.__table__,
@@ -341,7 +343,6 @@ def _query(**overrides: object) -> ProcurementContractReportQuery:
     payload: dict[str, object] = {
         "location": "芜湖",
         "vehicle_model": "T13J",
-        "bom_version": "D/09",
         "start_year": 2026,
         "start_month": 1,
         "end_year": 2026,
@@ -472,7 +473,7 @@ def test_open_defaults_use_latest_list_and_cost_month(db: Session) -> None:
     defaults = ProcurementContractReportService().get_open_defaults(db)
     assert defaults.location == "芜湖"
     assert defaults.vehicle_model == "T13J"
-    assert defaults.bom_version == "D/09"
+    assert defaults.bom_version is None
     assert defaults.start_year == 2026
     assert defaults.start_month == 1
     assert defaults.end_year == 2026
@@ -861,10 +862,42 @@ def test_assembly_view_does_not_need_object_list(db: Session) -> None:
     assert rows[0].part_number == l0.part_number
 
 
-def test_assembly_missing_snapshot_is_not_found(db: Session) -> None:
+def test_assembly_without_nodes_is_empty(db: Session) -> None:
     _seed_masters(db)
-    with pytest.raises(NotFoundException, match="未找到对应材料清单"):
-        ProcurementContractReportService().paginate(db, _query(view="assembly"))
+    rows, total, filters = ProcurementContractReportService().paginate(db, _query(view="assembly"))
+    assert total == 0
+    assert rows == []
+    assert filters.empty_hint == "当前范围没有供货总成"
+
+
+def test_export_rejects_specific_bom_version(db: Session) -> None:
+    _seed_pack(db)
+    with pytest.raises(BusinessException, match="导出协议须选全部版本"):
+        ProcurementContractReportExportOrchestrator().export(
+            db,
+            _query(bom_version="D/09", supplier_name="烟台海众汽车部件有限公司"),
+        )
+
+
+def test_list_optional_bom_version_filters_climbed_l0_only(db: Session) -> None:
+    """浏览筛只认爬到的 L0 字；source 本行字不同也不改结果。"""
+    _seed_pack(db)
+    l0 = db.query(BomNode).filter(BomNode.level == 0).one()
+    assert l0.bom_version == "D/09"
+    for child in db.query(BomNode).filter(BomNode.parent_id == l0.id).all():
+        child.bom_version = "EC-202505"
+    db.commit()
+
+    rows, total, _filters = ProcurementContractReportService().paginate(
+        db, _query(bom_version="EC-202505")
+    )
+    assert total == 0
+    assert rows == []
+    kept, kept_total, _ = ProcurementContractReportService().paginate(
+        db, _query(bom_version="D/09")
+    )
+    assert kept_total == 2
+    assert {row.part_number for row in kept} == {"551003096AA", "551001137AA"}
 
 
 def test_assembly_export_blank_party_b_and_no_supplier_in_filename(db: Session) -> None:
@@ -886,3 +919,226 @@ def test_assembly_export_blank_party_b_and_no_supplier_in_filename(db: Session) 
     party_b = {str(sheet.cell(row, 8).value) for row in range(1, 50) if sheet.cell(row, 8).value}
     assert "乙   方：" in party_b
     assert not any("烟台海众" in item or "安徽振华" in item for item in party_b)
+
+
+def _seed_revision_aa_ab_subassemblies(db: Session) -> tuple[BomNode, BomNode]:
+    """390AA 到期到 4 月、390AB 5 月启用；对象各挂 710AA-1 / 710AB-1。"""
+    _seed_masters(db)
+    snapshot = BomSnapshotRepository().create(
+        db,
+        BomSnapshotWrite(
+            location="芜湖",
+            vehicle_model="T13J",
+            bom_version="D/09",
+            source_filename="ec.xlsx",
+            created_by="tester",
+            updated_by="tester",
+        ),
+    )
+    nodes = BomNodeRepository()
+    l0_aa = nodes.create(
+        db,
+        BomNodeWrite(
+            snapshot_id=snapshot.id,
+            level=0,
+            sort_no=1,
+            seq_no=13,
+            part_number="502007390AA",
+            part_name="左后尾灯安装板总成",
+            internal_number="ACA7710",
+            qty=Decimal("1"),
+            node_role="supply",
+            is_supply_unit=True,
+            effective_year=2025,
+            effective_month=1,
+            expiry_year=2025,
+            expiry_month=4,
+            created_by="tester",
+            updated_by="tester",
+        ),
+    )
+    sub_aa = nodes.create(
+        db,
+        BomNodeWrite(
+            snapshot_id=snapshot.id,
+            parent_id=l0_aa.id,
+            level=1,
+            sort_no=2,
+            part_number="502007710AA-1",
+            part_name="左后尾灯安装板分总成",
+            internal_number="ACA771001",
+            qty=Decimal("1"),
+            node_role="structure",
+            effective_year=2025,
+            effective_month=1,
+            expiry_year=2025,
+            expiry_month=4,
+            created_by="tester",
+            updated_by="tester",
+        ),
+    )
+    l0_ab = nodes.create(
+        db,
+        BomNodeWrite(
+            snapshot_id=snapshot.id,
+            level=0,
+            sort_no=3,
+            seq_no=13,
+            part_number="502007390AB",
+            part_name="左后尾灯安装板总成",
+            internal_number="ACA7710",
+            qty=Decimal("1"),
+            node_role="supply",
+            is_supply_unit=True,
+            effective_year=2025,
+            effective_month=5,
+            created_by="tester",
+            updated_by="tester",
+        ),
+    )
+    sub_ab = nodes.create(
+        db,
+        BomNodeWrite(
+            snapshot_id=snapshot.id,
+            parent_id=l0_ab.id,
+            level=1,
+            sort_no=4,
+            part_number="502007710AB-1",
+            part_name="左后尾灯安装板分总成",
+            internal_number="ACA771001",
+            qty=Decimal("1"),
+            node_role="structure",
+            effective_year=2025,
+            effective_month=5,
+            created_by="tester",
+            updated_by="tester",
+        ),
+    )
+    repo = BomProcurementObjectRepository()
+    header = repo.create_list(
+        db,
+        BomProcurementObjectListWrite(
+            snapshot_id=snapshot.id,
+            location="芜湖",
+            vehicle_model="T13J",
+            bom_version="D/09",
+            source_filename="ec.xlsx",
+            qa_passed=True,
+            qa_error_text=None,
+            l0_count=2,
+            l0_with_children_count=2,
+            l2_count=0,
+            subassembly_child_sum=0,
+            object_l0_degenerate_count=0,
+            object_l1_subassembly_count=2,
+            object_l1_stamping_count=0,
+            other_leaf_count=0,
+            anomaly_count=0,
+            generated_at=datetime(2025, 5, 1),
+            generated_by="tester",
+            created_by="tester",
+            updated_by="tester",
+        ),
+    )
+    repo.bulk_create_objects(
+        db,
+        [
+            _object_write(
+                list_id=header.id,
+                kind="l1_subassembly",
+                node=sub_aa,
+                l0=l0_aa,
+                supplier_name="安徽振华汽车部件有限公司",
+                excel_row=20,
+            ),
+            _object_write(
+                list_id=header.id,
+                kind="l1_subassembly",
+                node=sub_ab,
+                l0=l0_ab,
+                supplier_name="安徽振华汽车部件有限公司",
+                excel_row=21,
+            ),
+        ],
+    )
+    for node, amount in (
+        (sub_aa, Decimal("11.1100")),
+        (sub_ab, Decimal("22.2200")),
+    ):
+        db.add(
+            AssemblyCost(
+                year=2025,
+                month=5,
+                location="芜湖",
+                vehicle_model="T13J",
+                bom_version="D/09",
+                source_node_id=node.id,
+                part_number=node.part_number,
+                part_name=node.part_name,
+                should_cost=amount,
+                total_amount=amount,
+                grand_total=amount,
+            )
+        )
+    db.add(
+        AssemblyCost(
+            year=2025,
+            month=5,
+            location="芜湖",
+            vehicle_model="T13J",
+            bom_version="D/09",
+            source_node_id=l0_ab.id,
+            part_number=l0_ab.part_number,
+            part_name=l0_ab.part_name,
+            should_cost=Decimal("30.0000"),
+            total_amount=Decimal("30.0000"),
+            grand_total=Decimal("35.0000"),
+        )
+    )
+    db.flush()
+    return sub_aa, sub_ab
+
+
+def test_may_window_keeps_only_l0_hit_subassembly(db: Session) -> None:
+    _seed_revision_aa_ab_subassemblies(db)
+    rows, total, _filters = ProcurementContractReportService().paginate(
+        db,
+        _query(start_year=2025, start_month=5, end_year=2025, end_month=5),
+    )
+    assert total == 1
+    assert rows[0].part_number == "502007710AB-1"
+    assert rows[0].month_amounts[0].should_cost == Decimal("22.2200")
+
+
+def test_may_window_assembly_view_drops_expired_l0(db: Session) -> None:
+    _seed_revision_aa_ab_subassemblies(db)
+    rows, total, _filters = ProcurementContractReportService().paginate(
+        db,
+        _query(
+            view="assembly",
+            start_year=2025,
+            start_month=5,
+            end_year=2025,
+            end_month=5,
+        ),
+    )
+    assert total == 1
+    assert rows[0].part_number == "502007390AB"
+    assert rows[0].month_amounts[0].should_cost == Decimal("35.0000")
+
+
+def test_cross_month_window_masks_non_hit_month(db: Session) -> None:
+    _seed_revision_aa_ab_subassemblies(db)
+    rows, total, _filters = ProcurementContractReportService().paginate(
+        db,
+        _query(start_year=2025, start_month=4, end_year=2025, end_month=5),
+    )
+    by_part = {row.part_number: row for row in rows}
+    assert total == 2
+    assert set(by_part) == {"502007710AA-1", "502007710AB-1"}
+    aa = by_part["502007710AA-1"]
+    ab = by_part["502007710AB-1"]
+    assert aa.month_amounts[0].should_cost is None  # 4 月命中但无卡
+    assert aa.month_amounts[1].should_cost is None  # 5 月 L0 未命中，即使旧卡在也 /
+    assert ab.month_amounts[0].should_cost is None  # 4 月未启用
+    assert ab.month_amounts[1].should_cost == Decimal("22.2200")

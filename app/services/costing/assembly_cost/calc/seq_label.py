@@ -76,6 +76,7 @@ def attach_calc_card_seq_labels(db: Session, vo: AssemblyCostCalcLogVO) -> None:
             db, vo.location, vo.vehicle_model, vo.bom_version
         )
         nodes = BomNodeRepository().list_by_snapshot(db, snap.id) if snap is not None else []
+        # calc 日志 bom_version = snapshot SOP 字，与清单头键同形；不是列表浏览筛
         header = BomProcurementObjectRepository().get_list_by_scope(
             db,
             location=vo.location,

@@ -8,14 +8,18 @@ import {
     updatePartCostHud,
     updateCostFilterCapsules,
     syncOptionalColumnVisibility,
-} from './template.js?v=67';
+} from './template.js?v=69';
 import { shortPartNumber } from '../../../../part-identity.js?v=3';
 import {
     DEFAULT_PAGE_SIZE,
     bindPagination,
     paintPagination,
 } from '../../../../page-size.js?v=3';
+import { bindMoreMenu } from '../../../../more-menu.js?v=1';
 import { setSearchBusy } from '../../../../search-busy.js?v=1';
+
+/** @type {{ setOpen: (isOpen: boolean) => void, close: () => void, unbind: () => void } | null} */
+let moreMenu = null;
 
 const API_BASE = '/api/costing/stamping-part-cost';
 const CASCADE_API = '/api/stamping/filters/cascade';
@@ -112,6 +116,8 @@ function init() {
 }
 
 function destroy() {
+    moreMenu?.unbind();
+    moreMenu = null;
     closeDetailDrawer();
 }
 
@@ -126,6 +132,12 @@ function applyPermissionUi() {
     if (!listState.canReverse) document.getElementById('costBatchReverseBtn')?.classList.add('hidden');
     if (!listState.canExport) {
         document.getElementById('costExportBtn')?.classList.add('hidden');
+    }
+    const moreItems = ['costBatchApproveBtn', 'costBatchReverseBtn', 'costBatchDeleteBtn']
+        .map((id) => document.getElementById(id))
+        .filter((el) => el && !el.classList.contains('hidden'));
+    if (!moreItems.length) {
+        document.getElementById('costMoreWrap')?.classList.add('hidden');
     }
 }
 
@@ -281,9 +293,23 @@ function bindEvents() {
         loadList(1);
     });
 
-    document.getElementById('costBatchApproveBtn')?.addEventListener('click', () => openBatchAuditDrawer('approve'));
-    document.getElementById('costBatchReverseBtn')?.addEventListener('click', () => openBatchAuditDrawer('reverse'));
-    document.getElementById('costBatchDeleteBtn')?.addEventListener('click', () => batchDelete());
+    moreMenu = bindMoreMenu({
+        wrapId: 'costMoreWrap',
+        btnId: 'costMoreBtn',
+        menuId: 'costMoreMenu',
+    });
+    document.getElementById('costBatchApproveBtn')?.addEventListener('click', () => {
+        moreMenu?.close();
+        openBatchAuditDrawer('approve');
+    });
+    document.getElementById('costBatchReverseBtn')?.addEventListener('click', () => {
+        moreMenu?.close();
+        openBatchAuditDrawer('reverse');
+    });
+    document.getElementById('costBatchDeleteBtn')?.addEventListener('click', () => {
+        moreMenu?.close();
+        batchDelete();
+    });
     bindBatchAuditDrawerEvents();
     document.getElementById('costExportBtn')?.addEventListener('click', () => exportExcel());
 }

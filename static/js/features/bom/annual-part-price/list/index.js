@@ -12,13 +12,17 @@ import {
     parseConversionFactorInput,
     updateAnnualHud,
     updateAnnualFilterCapsules,
-} from './template.js?v=14';
+} from './template.js?v=16';
+import { bindMoreMenu } from '../../../../more-menu.js?v=1';
 import {
     DEFAULT_PAGE_SIZE,
     bindPagination,
     paintPagination,
 } from '../../../../page-size.js?v=3';
 import { setSearchBusy } from '../../../../search-busy.js?v=1';
+
+/** @type {{ setOpen: (isOpen: boolean) => void, close: () => void, unbind: () => void } | null} */
+let moreMenu = null;
 
 const annualPartPriceState = {
     records: [],
@@ -91,6 +95,12 @@ function applyPermissionUi() {
     if (!canDelete) document.getElementById('btnBatchDeleteAnnualPartPrice')?.classList.add('hidden');
     if (!canApprove) document.getElementById('btnBatchApproveAnnual')?.classList.add('hidden');
     if (!canReverse) document.getElementById('btnBatchReverseAnnual')?.classList.add('hidden');
+    const moreItems = ['btnBatchApproveAnnual', 'btnBatchReverseAnnual', 'btnBatchDeleteAnnualPartPrice']
+        .map((id) => document.getElementById(id))
+        .filter((el) => el && !el.classList.contains('hidden'));
+    if (!moreItems.length) {
+        document.getElementById('annualMoreWrap')?.classList.add('hidden');
+    }
 }
 
 function setAdvancedOpen(open) {
@@ -278,9 +288,23 @@ function bindTableRowEvents() {
 
 function bindEvents() {
     document.getElementById('btnExportAnnualPartPrice')?.addEventListener('click', () => exportExcel());
-    document.getElementById('btnBatchDeleteAnnualPartPrice')?.addEventListener('click', () => batchDeleteByFilters());
-    document.getElementById('btnBatchApproveAnnual')?.addEventListener('click', () => openBatchAuditDrawer('approve'));
-    document.getElementById('btnBatchReverseAnnual')?.addEventListener('click', () => openBatchAuditDrawer('reverse'));
+    moreMenu = bindMoreMenu({
+        wrapId: 'annualMoreWrap',
+        btnId: 'annualMoreBtn',
+        menuId: 'annualMoreMenu',
+    });
+    document.getElementById('btnBatchDeleteAnnualPartPrice')?.addEventListener('click', () => {
+        moreMenu?.close();
+        batchDeleteByFilters();
+    });
+    document.getElementById('btnBatchApproveAnnual')?.addEventListener('click', () => {
+        moreMenu?.close();
+        openBatchAuditDrawer('approve');
+    });
+    document.getElementById('btnBatchReverseAnnual')?.addEventListener('click', () => {
+        moreMenu?.close();
+        openBatchAuditDrawer('reverse');
+    });
     document.getElementById('btnFilter')?.addEventListener('click', () => {
         readFiltersFromDom();
         loadData(1);
@@ -638,4 +662,8 @@ async function deleteRecord(id) {
 export const pageConfig = {
     render: annualPartPriceTemplate,
     init: () => init(),
+    destroy() {
+        moreMenu?.unbind();
+        moreMenu = null;
+    },
 };

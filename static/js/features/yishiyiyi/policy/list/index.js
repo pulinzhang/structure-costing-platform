@@ -4,7 +4,8 @@
  * 用于测试部门核对数据，主子表联合查询导出 Excel
  */
 
-import { policyDownloadTemplate, renderPolicyRows } from './template.js?v=40';
+import { policyDownloadTemplate, renderPolicyRows } from './template.js?v=42';
+import { bindMoreMenu } from '../../../../more-menu.js?v=1';
 import {
     DEFAULT_PREVIEW_PAGE_SIZE,
     PREVIEW_PAGE_SIZE_OPTIONS,
@@ -16,6 +17,9 @@ import {
     requireExportYearMonth,
     selectDefaultYear,
 } from '../../../common/period-ui.js?v=4';
+
+/** @type {{ setOpen: (isOpen: boolean) => void, close: () => void, unbind: () => void } | null} */
+let moreMenu = null;
 
 // 状态管理
 const policyDownloadState = {
@@ -109,10 +113,10 @@ function applyPermissionUi() {
     if (typeof can !== 'function') return;
     if (!can('op:steel-price-policy-download:export')) {
         document.getElementById('btnExportPolicy')?.classList.add('hidden');
-        document.getElementById('btnExport')?.classList.add('hidden');
     }
     if (!can('op:steel-price-policy-download:delete')) {
         document.getElementById('btnDeletePolicy')?.classList.add('hidden');
+        document.getElementById('policyMoreWrap')?.classList.add('hidden');
     }
 }
 
@@ -250,22 +254,24 @@ function bindEvents() {
     }
 
     // 导出按钮
-    const btnExport = document.getElementById('btnExport');
-    if (btnExport) {
-        btnExport.addEventListener('click', () => exportExcel());
-    }
-
-    // 查找实际绑定的导出按钮
     const btnExportPolicy = document.getElementById('btnExportPolicy');
     if (btnExportPolicy) {
         btnExportPolicy.addEventListener('click', () => exportExcel());
     }
 
-    // 删除按钮
+    // 删除按钮（⋯ 菜单）
     const btnDelete = document.getElementById('btnDeletePolicy');
     if (btnDelete) {
-        btnDelete.addEventListener('click', () => batchDeletePolicies());
+        btnDelete.addEventListener('click', () => {
+            moreMenu?.close();
+            batchDeletePolicies();
+        });
     }
+    moreMenu = bindMoreMenu({
+        wrapId: 'policyMoreWrap',
+        btnId: 'policyMoreBtn',
+        menuId: 'policyMoreMenu',
+    });
 
     ['policyDownloadYear', 'policyDownloadMonth'].forEach(id => {
         const el = document.getElementById(id);
@@ -592,4 +598,8 @@ async function refreshPreview() {
 export const pageConfig = {
     render: policyDownloadTemplate,
     init: () => init(),
+    destroy() {
+        moreMenu?.unbind();
+        moreMenu = null;
+    },
 };

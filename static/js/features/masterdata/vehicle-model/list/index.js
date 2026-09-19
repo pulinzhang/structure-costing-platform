@@ -7,10 +7,14 @@ import {
     renderHudCards,
     renderTableBody,
     vehicleModelListTemplate,
-} from './template.js?v=6';
+} from './template.js?v=7';
+import { bindMoreMenu } from '../../../../more-menu.js?v=1';
 
 const API_BASE = '/api/masterdata/vehicle-models';
 const DRAWER_ANIMATION_MS = 300;
+
+/** @type {{ setOpen: (isOpen: boolean) => void, close: () => void, unbind: () => void } | null} */
+let moreMenu = null;
 
 const listState = {
     locations: [],
@@ -77,12 +81,6 @@ function applyPermissionUi() {
     if (!canOp('op:vehicle-model-list:export')) {
         document.getElementById('vmMoreWrap')?.classList.add('hidden');
     }
-}
-
-function setMoreMenuOpen(isOpen) {
-    const menu = document.getElementById('vmMoreMenu');
-    if (!menu) return;
-    menu.classList.toggle('hidden', !isOpen);
 }
 
 function setLoading(isLoading) {
@@ -399,20 +397,13 @@ function init() {
     bindEditDrawer();
     bindDeleteDrawer();
     bindTableActions();
-    document.getElementById('vmMoreBtn')?.addEventListener('click', (event) => {
-        event.stopPropagation();
-        const menu = document.getElementById('vmMoreMenu');
-        const isOpen = menu && !menu.classList.contains('hidden');
-        setMoreMenuOpen(!isOpen);
-    });
-    document.addEventListener('click', (event) => {
-        const moreWrap = document.getElementById('vmMoreWrap');
-        if (moreWrap && !moreWrap.contains(event.target)) {
-            setMoreMenuOpen(false);
-        }
+    moreMenu = bindMoreMenu({
+        wrapId: 'vmMoreWrap',
+        btnId: 'vmMoreBtn',
+        menuId: 'vmMoreMenu',
     });
     document.getElementById('vmBtnExport')?.addEventListener('click', () => {
-        setMoreMenuOpen(false);
+        moreMenu?.close();
         exportExcel();
     });
     loadData();
@@ -421,4 +412,8 @@ function init() {
 export const pageConfig = {
     render: vehicleModelListTemplate,
     init,
+    destroy() {
+        moreMenu?.unbind();
+        moreMenu = null;
+    },
 };

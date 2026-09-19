@@ -55,6 +55,13 @@ class BomProcurementObjectQueries:
         vehicle_model: str,
         bom_version: str,
     ) -> BomProcurementObjectList | None:
+        """按清单头三键找头（头上 SOP 字，与 snapshot 头同形）。
+
+        现网调用方：BOM 覆盖/删除门禁、总成 seq_label 等「已知 SOP 头键」场景。
+        **生成 / 供应商批传** 走 `get_list_by_snapshot_id`（经 `snapshot_scope`）。
+        列表 / 批量 / 导出 / 协议 **禁止**用本方法取件
+        （须 `list_lists_by_location_vehicle`；版本浏览裁爬到的 L0）。
+        """
         return (
             db.query(BomProcurementObjectList)
             .filter(
@@ -173,33 +180,6 @@ class BomProcurementObjectQueries:
         )
         return self._apply_check_order(query).all()
 
-    def get_filter_options(self, db: Session) -> tuple[list[str], list[str], list[str]]:
-        locations = [
-            row[0]
-            for row in db.query(BomProcurementObjectList.location)
-            .distinct()
-            .order_by(BomProcurementObjectList.location)
-            .all()
-            if row[0]
-        ]
-        models = [
-            row[0]
-            for row in db.query(BomProcurementObjectList.vehicle_model)
-            .distinct()
-            .order_by(BomProcurementObjectList.vehicle_model)
-            .all()
-            if row[0]
-        ]
-        versions = [
-            row[0]
-            for row in db.query(BomProcurementObjectList.bom_version)
-            .distinct()
-            .order_by(BomProcurementObjectList.bom_version)
-            .all()
-            if row[0]
-        ]
-        return locations, models, versions
-
     def summarize_objects(
         self,
         db: Session,
@@ -264,8 +244,6 @@ class BomProcurementObjectQueries:
             query = query.filter(BomProcurementObjectList.location == location)
         if vehicle_model:
             query = query.filter(BomProcurementObjectList.vehicle_model == vehicle_model)
-        if bom_version:
-            query = query.filter(BomProcurementObjectList.bom_version == bom_version)
         if section:
             query = query.filter(BomProcurementObject.section == section)
         if object_kind:
@@ -286,8 +264,9 @@ class BomProcurementObjectQueries:
             query = query.filter(BomProcurementObject.supplier_name.isnot(None))
         elif has_supplier is False:
             query = query.filter(BomProcurementObject.supplier_name.is_(None))
-        if as_of_year is not None and as_of_month is not None:
-            # 有效期只认所属 L0 树根，禁止用 source 节点自身四列。
+        if (as_of_year is not None and as_of_month is not None) or bom_version:
+            # 有效期 / 版本浏览只认所属 L0 树根（与 map_l0_periods 同钥：
+            # snapshot_id + l0_part_number + level=0 ≡ 爬到树根；禁止 source 本行 / 清单头字）。
             tree_root = aliased(BomNode)
             query = query.join(
                 tree_root,
@@ -296,16 +275,20 @@ class BomProcurementObjectQueries:
                     tree_root.part_number == BomProcurementObject.l0_part_number,
                     tree_root.level == 0,
                 ),
-            ).filter(
-                period_hit_clause(
-                    tree_root.effective_year,
-                    tree_root.effective_month,
-                    tree_root.expiry_year,
-                    tree_root.expiry_month,
-                    as_of_year,
-                    as_of_month,
-                )
             )
+            if as_of_year is not None and as_of_month is not None:
+                query = query.filter(
+                    period_hit_clause(
+                        tree_root.effective_year,
+                        tree_root.effective_month,
+                        tree_root.expiry_year,
+                        tree_root.expiry_month,
+                        as_of_year,
+                        as_of_month,
+                    )
+                )
+            if bom_version:
+                query = query.filter(tree_root.bom_version == bom_version)
         return query
 
     def map_l0_periods(

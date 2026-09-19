@@ -3,6 +3,7 @@
  */
 
 import { paginationBarHtml } from '../../../../page-size.js?v=3';
+import { moreMenuItemHtml, moreMenuShellHtml } from '../../../../more-menu.js?v=1';
 import { CONFIRM_LABELS, KIND_LABELS } from '../../../bom/procurement-object/labels.js?v=2';
 import {
     partShortCodeCellHtml,
@@ -80,43 +81,40 @@ export function assemblyCostListTemplate() {
                             </div>
                         </div>
                         <div class="flex flex-col items-end gap-2 shrink-0">
-                            <div class="flex items-center gap-1.5" role="group" aria-label="一览视图">
-                                <button id="lacViewFinanceBtn" type="button"
-                                        class="px-3 py-1.5 text-[11px] font-medium rounded-md bg-[#1A080A] border border-[#FF1E27]/50 text-[#FF1E27] transition-all">
-                                    财务（总成）
-                                </button>
-                                <button id="lacViewProcurementBtn" type="button"
-                                        class="px-3 py-1.5 text-[11px] font-medium rounded-md bg-transparent border border-[#2A2A35] text-[#6E6E73] hover:text-white transition-all">
-                                    采购
-                                </button>
+                            <div class="flex items-center gap-1.5">
+                                ${moreMenuShellHtml({
+                                    wrapId: 'lacMoreWrap',
+                                    btnId: 'lacMoreBtn',
+                                    menuId: 'lacMoreMenu',
+                                    itemsHtml: [
+                                        moreMenuItemHtml({ id: 'lacBatchApproveBtn', label: '批量审核' }),
+                                        moreMenuItemHtml({ id: 'lacBatchReverseBtn', label: '批量反审核' }),
+                                        moreMenuItemHtml({ id: 'lacBatchDeleteBtn', label: '批量删除', danger: true }),
+                                    ].join(''),
+                                })}
+                                <div class="flex items-center gap-1.5" role="group" aria-label="一览视图">
+                                    <button id="lacViewFinanceBtn" type="button"
+                                            class="px-3 py-1.5 text-[11px] font-medium rounded-md bg-[#1A080A] border border-[#FF1E27]/50 text-[#FF1E27] transition-all">
+                                        财务（总成）
+                                    </button>
+                                    <button id="lacViewProcurementBtn" type="button"
+                                            class="px-3 py-1.5 text-[11px] font-medium rounded-md bg-transparent border border-[#2A2A35] text-[#6E6E73] hover:text-white transition-all">
+                                        采购
+                                    </button>
+                                </div>
                             </div>
-                            <div class="flex items-center gap-2 flex-wrap justify-end">
-                            <button id="lacBatchApproveBtn" type="button"
-                                    class="inline-flex items-center gap-1.5 bg-transparent text-[#6E6E73] border border-[#2A2A35] px-3 py-1.5 text-[11px] font-medium rounded-md hover:border-[#FF1E27]/50 hover:text-[#FF1E27] hover:bg-[#FF1E27]/10 hover:shadow-[0_0_12px_rgba(255,30,39,0.2)] transition-all duration-200">
-                                ${window.svgIcon('check-circle', 'w-3 h-3')}
-                                批量审核
-                            </button>
-                            <button id="lacBatchReverseBtn" type="button"
-                                    class="inline-flex items-center gap-1.5 bg-transparent text-[#6E6E73] border border-[#2A2A35] px-3 py-1.5 text-[11px] font-medium rounded-md hover:border-[#FF1E27]/50 hover:text-[#FF1E27] hover:bg-[#FF1E27]/10 hover:shadow-[0_0_12px_rgba(255,30,39,0.2)] transition-all duration-200">
-                                ${window.svgIcon('refresh', 'w-3 h-3')}
-                                批量反审核
-                            </button>
-                            <button id="lacBatchDeleteBtn" type="button"
-                                    class="inline-flex items-center gap-1.5 bg-transparent text-[#6E6E73] border border-[#2A2A35] px-3 py-1.5 text-[11px] font-medium rounded-md hover:border-[#c62828]/60 hover:text-[#ef5350] hover:bg-[#c62828]/15 hover:shadow-[0_0_12px_rgba(198,40,40,0.2)] transition-all duration-200">
-                                ${window.svgIcon('trash', 'w-3 h-3')}
-                                批量删除
-                            </button>
+                            <div class="flex items-center gap-1.5 flex-wrap justify-end">
                             <button id="lacExportBtn" type="button"
                                     class="inline-flex items-center gap-1.5 bg-transparent text-[#6E6E73] border border-[#2A2A35] px-3 py-1.5 text-[11px] font-medium rounded-md hover:border-[#FF1E27]/50 hover:text-[#FF1E27] hover:bg-[#FF1E27]/10 hover:shadow-[0_0_12px_rgba(255,30,39,0.2)] transition-all duration-200"
                                     title="导出成品核价（一览 + 材料明细 + 焊接费 + 间接费用；金额为系统快照）">
                                 ${window.svgIcon('download', 'w-3 h-3')}
-                                <span id="lacExportBtnLabel">导出总成核价</span>
+                                <span id="lacExportBtnLabel">总成核价</span>
                             </button>
                             <button id="lacExportBundleBtn" type="button"
                                     class="inline-flex items-center gap-1.5 bg-transparent text-[#6E6E73] border border-[#2A2A35] px-3 py-1.5 text-[11px] font-medium rounded-md hover:border-[#FF1E27]/50 hover:text-[#FF1E27] hover:bg-[#FF1E27]/10 hover:shadow-[0_0_12px_rgba(255,30,39,0.2)] transition-all duration-200"
                                     title="导出月度核对：成品核价（总成）+ 冲压零件核价 + 焊接费 + 加工费 + 钢材联动等。须选定年/月/基地/项目；版本可不选（空=该月全部）。">
                                 ${window.svgIcon('download', 'w-3 h-3')}
-                                导出月度核对
+                                月度核对
                             </button>
                             </div>
                         </div>
@@ -167,7 +165,7 @@ export function assemblyCostListTemplate() {
                                 重置
                             </button>
                         </div>
-                        <p class="mt-2 text-[10px] text-[#555555]">批量删除 / 审核 / 反审核 / 导出零件成本 / 导出月度核对须选定年度、月份、基地、项目；版本可不选（同月可有多个工程变更字）。反审核后可重新计算覆盖。</p>
+                        <p class="mt-2 text-[10px] text-[#555555]">批量删除 / 审核 / 反审核 / 零件成本 / 月度核对须选定年度、月份、基地、项目；版本可不选（同月可有多个工程变更字）。反审核后可重新计算覆盖。</p>
                     </div>
                 </div>
 

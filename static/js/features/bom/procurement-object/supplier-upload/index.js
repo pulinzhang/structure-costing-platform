@@ -4,9 +4,9 @@
 
 import { procurementObjectSupplierUploadTemplate } from './template.js?v=8';
 import { bindSyncUploadProgress } from '../../../../sync-upload-progress.js?v=1';
+import { loadSnapshotCascade } from '../snapshot-cascade.js?v=3';
 
 const API_BASE = '/api/bom/procurement-objects';
-const CASCADE_API = '/api/bom/filters/cascade';
 const MAX_FILE_SIZE = 5 * 1024 * 1024;
 
 const uploadProgress = bindSyncUploadProgress({
@@ -33,71 +33,21 @@ function val(id) {
     return (document.getElementById(id)?.value || '').trim();
 }
 
-function fillSelect(id, values, selected, emptyLabel) {
-    const el = document.getElementById(id);
-    if (!el) return;
-    let html = `<option value="">${emptyLabel}</option>`;
-    (values || []).forEach((item) => {
-        html += `<option value="${esc(item)}">${esc(item)}</option>`;
+function loadCascade() {
+    return loadSnapshotCascade({
+        state: uploadState,
+        locationId: 'poSupplierUploadLocation',
+        modelId: 'poSupplierUploadModel',
+        versionId: 'poSupplierUploadVersion',
     });
-    el.innerHTML = html;
-    if (selected && (values || []).includes(selected)) el.value = selected;
-}
-
-async function loadCascade() {
-    const params = {};
-    if (uploadState.location) params.location = uploadState.location;
-    if (uploadState.vehicleModel) params.vehicle_model = uploadState.vehicleModel;
-    try {
-        const res = await HttpClient.get(CASCADE_API, { params });
-        const data = res.data || {};
-        const locations = data.locations || [];
-        const models = data.vehicle_models || [];
-        const versions = data.bom_versions || [];
-        if (uploadState.location && !locations.includes(uploadState.location)) {
-            uploadState.location = '';
-            uploadState.vehicleModel = '';
-            uploadState.bomVersion = '';
-        }
-        if (uploadState.vehicleModel && !models.includes(uploadState.vehicleModel)) {
-            uploadState.vehicleModel = '';
-            uploadState.bomVersion = '';
-        }
-        if (uploadState.bomVersion && !versions.includes(uploadState.bomVersion)) {
-            uploadState.bomVersion = '';
-        }
-        fillSelect('poSupplierUploadLocation', locations, uploadState.location, '请选择采购基地');
-        fillSelect(
-            'poSupplierUploadModel',
-            models,
-            uploadState.vehicleModel,
-            uploadState.location ? '请选择项目' : '请先选择采购基地',
-        );
-        fillSelect(
-            'poSupplierUploadVersion',
-            versions,
-            uploadState.bomVersion,
-            uploadState.vehicleModel ? '请选择版本' : '请先选择项目',
-        );
-    } catch (error) {
-        console.error('加载级联筛选失败', error);
-    }
 }
 
 function requireScope() {
     const location = val('poSupplierUploadLocation');
     const vehicleModel = val('poSupplierUploadModel');
     const bomVersion = val('poSupplierUploadVersion');
-    if (!location) {
-        showToast('请选择采购基地', 'warning');
-        return null;
-    }
-    if (!vehicleModel) {
-        showToast('请选择项目', 'warning');
-        return null;
-    }
-    if (!bomVersion) {
-        showToast('请选择版本', 'warning');
+    if (!location || !vehicleModel || !bomVersion) {
+        showToast('须选定基地、项目、版本', 'warning');
         return null;
     }
     return { location, vehicle_model: vehicleModel, bom_version: bomVersion };
@@ -256,7 +206,6 @@ async function loadQaBanner() {
             params: {
                 location,
                 vehicle_model: vehicleModel,
-                bom_version: bomVersion,
             },
             skipToast: true,
         });

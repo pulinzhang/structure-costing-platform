@@ -6,15 +6,19 @@ import {
     steelGradeCategoryTemplate,
     renderTableRows,
     syncTabStyles,
-} from './template.js?v=10';
+} from './template.js?v=11';
 import {
     DEFAULT_PAGE_SIZE,
     bindPagination,
     paintPagination,
 } from '../../../page-size.js?v=3';
+import { bindMoreMenu } from '../../../more-menu.js?v=1';
 
 const API_BASE = '/api/masterdata/steel-grade-category';
 const DRAWER_ANIMATION_MS = 300;
+
+/** @type {{ setOpen: (isOpen: boolean) => void, close: () => void, unbind: () => void } | null} */
+let moreMenu = null;
 
 const pageState = {
     tab: 'all',
@@ -72,12 +76,6 @@ function applyPermissionUi() {
     if (!moreItems.length) {
         document.getElementById('sgcMoreWrap')?.classList.add('hidden');
     }
-}
-
-function setMoreMenuOpen(isOpen) {
-    const menu = document.getElementById('sgcMoreMenu');
-    if (!menu) return;
-    menu.classList.toggle('hidden', !isOpen);
 }
 
 function buildFilterParams() {
@@ -311,28 +309,21 @@ async function importExcel(file) {
 
 function bindEvents() {
     document.getElementById('sgcAddBtn')?.addEventListener('click', () => openCreateDrawer());
-    document.getElementById('sgcMoreBtn')?.addEventListener('click', (event) => {
-        event.stopPropagation();
-        const menu = document.getElementById('sgcMoreMenu');
-        const isOpen = menu && !menu.classList.contains('hidden');
-        setMoreMenuOpen(!isOpen);
-    });
-    document.addEventListener('click', (event) => {
-        const moreWrap = document.getElementById('sgcMoreWrap');
-        if (moreWrap && !moreWrap.contains(event.target)) {
-            setMoreMenuOpen(false);
-        }
+    moreMenu = bindMoreMenu({
+        wrapId: 'sgcMoreWrap',
+        btnId: 'sgcMoreBtn',
+        menuId: 'sgcMoreMenu',
     });
     document.getElementById('sgcExportBtn')?.addEventListener('click', () => {
-        setMoreMenuOpen(false);
+        moreMenu?.close();
         exportExcel();
     });
     document.getElementById('sgcTemplateBtn')?.addEventListener('click', () => {
-        setMoreMenuOpen(false);
+        moreMenu?.close();
         downloadTemplate();
     });
     document.getElementById('sgcImportBtn')?.addEventListener('click', () => {
-        setMoreMenuOpen(false);
+        moreMenu?.close();
         document.getElementById('sgcImportFileInput')?.click();
     });
     document.getElementById('sgcImportFileInput')?.addEventListener('change', (event) => {
@@ -430,4 +421,8 @@ function init() {
 export const pageConfig = {
     render: steelGradeCategoryTemplate,
     init,
+    destroy() {
+        moreMenu?.unbind();
+        moreMenu = null;
+    },
 };
