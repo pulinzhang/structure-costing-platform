@@ -3,11 +3,12 @@
 from datetime import datetime
 from decimal import Decimal
 
-from pydantic import BaseModel, Field, field_serializer, field_validator
+from pydantic import BaseModel, ConfigDict, Field, field_serializer, field_validator
 
 from app.common.money import Q2, Q3, Q4, Q6, format_money, optional_format_money
 from app.common.timezone import datetime_to_iso
 from app.schemas.common.batch_result import BatchAuditCountsVO, BatchDeleteCountsVO
+from app.schemas.vo.timing import DurationSecondsMixin
 
 
 class StampingPartCostVO(BaseModel):
@@ -164,7 +165,7 @@ class StampingPartCostVO(BaseModel):
     def serialize_datetime(self, value: datetime | None) -> str | None:
         return datetime_to_iso(value)
 
-    model_config = {"from_attributes": True}
+    model_config = ConfigDict(from_attributes=True)
 
 
 class StampingPartCostFailedItemVO(BaseModel):
@@ -197,10 +198,8 @@ class StampingPartCostCalcResultVO(BaseModel):
     finished_at: str | None = None
 
 
-class StampingPartCostCalcLogVO(BaseModel):
+class StampingPartCostCalcLogVO(DurationSecondsMixin):
     """计算历史行。"""
-
-    model_config = {"from_attributes": True}
 
     id: int
     calc_batch_id: str

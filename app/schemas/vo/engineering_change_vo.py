@@ -2,7 +2,7 @@
 
 from datetime import datetime
 
-from pydantic import BaseModel, Field, field_serializer
+from pydantic import BaseModel, ConfigDict, Field, field_serializer
 
 from app.common.timezone import datetime_to_iso
 
@@ -18,7 +18,7 @@ class EngineeringChangeEffectLinkVO(BaseModel):
     after_id: int | None = None
     sort_no: int = 0
 
-    model_config = {"from_attributes": True}
+    model_config = ConfigDict(from_attributes=True)
 
 
 class EngineeringChangeOrderVO(BaseModel):
@@ -46,7 +46,7 @@ class EngineeringChangeOrderVO(BaseModel):
     def serialize_created_at(self, value: datetime | None) -> str | None:
         return datetime_to_iso(value)
 
-    model_config = {"from_attributes": True}
+    model_config = ConfigDict(from_attributes=True)
 
 
 class EngineeringChangeUploadLogVO(BaseModel):
@@ -76,7 +76,7 @@ class EngineeringChangeUploadLogVO(BaseModel):
     def serialize_created_at(self, value: datetime | None) -> str | None:
         return datetime_to_iso(value)
 
-    model_config = {"from_attributes": True}
+    model_config = ConfigDict(from_attributes=True)
 
 
 class EngineeringChangeListRowVO(BaseModel):

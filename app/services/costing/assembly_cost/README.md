@@ -19,7 +19,7 @@ Repository / Model / Router / Schema 不在这里。
 | 计算就绪 / 入队 / worker | `assembly_cost_service.py` → `calc/` | 锁 scope、异步任务、委托编排器 |
 | 逐卡 rollup | `calc/rollup.py` + `calc/orchestrator/` | 指挥家只编排，不算账 |
 | 计算日志 | `calc/calc_log_service.py` + `process_log.py` | 给人看的过程 + 可筛选核价卡 JSON |
-| 结果表 Excel | `export/` | 财务对账册 / 采购零件成本册；合册可叠 Sheet |
+| 结果表 Excel | `export/` | 财务对账册 / 采购零件成本册；月度核对导出可叠 Sheet |
 | 过程报告 Excel | `calc_report/` | 与浅色报告页同口径；数据来自计算日志，不是结果表 |
 
 **Router 入口（按职责拆文件，类名保持稳定）：**
@@ -41,7 +41,7 @@ from app.services.costing.assembly_cost.calc_report.report_export_service import
 | `POST …/calc`、日志 CRUD | `op:assembly-cost-calc:*` |
 | `GET …/calc/logs/{id}/export-download` | 计算日志附件，仍走 calc Router |
 
-合册：`GET /api/costing/monthly-bundle/export-download`（**无** `view`）调用  
+月度核对导出：`GET /api/costing/monthly-bundle/export-download`（**无** `view`）调用  
 `AssemblyCostExportService.write_to_workbook(..., view="finance")`，只叠树根成品块。
 
 ---
@@ -60,8 +60,8 @@ from app.services.costing.assembly_cost.calc_report.report_export_service import
 4. **指挥家宪法**  
    `calc/orchestrator/orchestrator.py` 主路径只有 `prepare → engine.run → persist`。循环、写库、拼过程文案不进该文件。
 
-5. **合册合同**  
-   保留 `write_to_workbook(wb, db, …)`，月度合册和其他切片同一套叠 Sheet。不要改成只返回 bytes。
+5. **月度核对导出合同**  
+   保留 `write_to_workbook(wb, db, …)`，月度核对导出和其他切片同一套叠 Sheet。不要改成只返回 bytes。
 
 ---
 
@@ -109,7 +109,7 @@ assembly_cost/
 | `calc/rollup.py` | 单卡公式 | Session、Excel |
 | `calc/orchestrator/` | 一次计算的编排与落库 | HTTP、xlsx 版式 |
 | `export/` | 结果表对账册 | 计算日志 |
-| `calc_report/` | 日志浅色报告 Excel | 结果表、合册 |
+| `calc_report/` | 日志浅色报告 Excel | 结果表、月度核对导出 |
 
 `export/` 与 `calc_report/` 各自有一套 `styles.py`：财务核对偏深色工业表，过程报告偏浅色阅读页。不要合成一份色板。
 
@@ -144,7 +144,7 @@ monthly_bundle_export
 - `export` / `calc_report` → `codes.py`
 - `calc_report` → `calc.calc_log_service`（读日志）
 - `export.workbook.builder` → 本切片 / 上游只读 Repository
-- 下游合册 → `export` 的 `write_to_workbook`
+- 下游月度核对导出 → `export` 的 `write_to_workbook`
 
 **禁止**
 
@@ -205,7 +205,7 @@ log_id + keyword/status/level/tree_root
 | `process_log.py` | 过程文案 / 核价卡 JSON |
 | `export/workbook/columns.py` | 结果表列、财务 vs 采购 Sheet 名 |
 | 对应 `*_sheet.py` + `codes.py` | 结果表取值、短码、焊费 ID |
-| `write_to_workbook` + `monthly_bundle_export` | 合册叠哪些成品 Sheet |
+| `write_to_workbook` + `monthly_bundle_export` | 月度核对导出叠哪些成品 Sheet |
 | `calc_report/match.py` | 报告筛选口径（与浅色页同一套） |
 | `calc_report/columns.py` / `labels.py` / `*_sheet.py` | 报告列 / 封面文案 |
 
@@ -221,7 +221,7 @@ log_id + keyword/status/level/tree_root
 | Repository | `app/repositories/costing/assembly_cost/` |
 | Model | `app/models/costing/assembly_cost*.py` |
 | DTO / VO | `app/schemas/dto/assembly_cost_dto.py`、`app/schemas/vo/assembly_cost_vo.py` |
-| 合册 | `app/services/costing/monthly_bundle_export/` |
+| 月度核对导出 | `app/services/costing/monthly_bundle_export/` |
 | 前端一览 / 计算 | `static/js/features/costing/assembly-cost/{list,calc}/` |
 | 前端过程页 | `static/js/features/costing/assembly-cost/calc-report/boot.js` |
 | 测试 | `tests/costing/test_assembly_cost_export.py`、`test_assembly_calc_report_export.py`、`test_monthly_bundle_export.py` |

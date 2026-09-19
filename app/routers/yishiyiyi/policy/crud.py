@@ -128,7 +128,7 @@ def match_ladder(
 
 
 @router.get(
-    "/{policy_id}",
+    "/{policy_id:int}",
     response_model=ApiResponse[PolicyDetailResponse],
 )
 def get_policy(
@@ -161,7 +161,7 @@ def create_policy(
 
 
 @router.put(
-    "/{policy_id}",
+    "/{policy_id:int}",
     response_model=ApiResponse[PolicyDetailResponse],
 )
 def update_policy(
@@ -176,7 +176,7 @@ def update_policy(
 
 
 @router.delete(
-    "/{policy_id}",
+    "/{policy_id:int}",
     response_model=ApiResponse[None],
 )
 def delete_policy(
@@ -190,7 +190,7 @@ def delete_policy(
 
 
 @router.post(
-    "/{policy_id}/items",
+    "/{policy_id:int}/items",
     response_model=ApiResponse[LadderItemResponse],
 )
 def add_ladder_item(
@@ -205,7 +205,7 @@ def add_ladder_item(
 
 
 @router.put(
-    "/{policy_id}/items/{item_id}",
+    "/{policy_id:int}/items/{item_id:int}",
     response_model=ApiResponse[LadderItemResponse],
 )
 def update_ladder_item(
@@ -221,7 +221,7 @@ def update_ladder_item(
 
 
 @router.delete(
-    "/{policy_id}/items/{item_id}",
+    "/{policy_id:int}/items/{item_id:int}",
     response_model=ApiResponse[None],
 )
 def delete_ladder_item(

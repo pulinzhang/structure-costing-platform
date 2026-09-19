@@ -1,4 +1,4 @@
-"""月度核价核对合册 — 导出 API。"""
+"""月度核对导出 — 导出 API。"""
 
 from __future__ import annotations
 
@@ -16,7 +16,7 @@ from app.services.costing.monthly_bundle_export import MonthlyBundleExportServic
 
 router = APIRouter(
     prefix="/api/costing/monthly-bundle",
-    tags=["月度核价核对合册"],
+    tags=["月度核对导出"],
 )
 
 _export_service = MonthlyBundleExportService()
@@ -33,7 +33,7 @@ def export_download(
     current_user: UserVO = Depends(require_perm(Perm.ASSEMBLY_COST_EXPORT)),
 ) -> StreamingResponse:
     """
-    导出月度核对合册：成品核价 + 冲压零件核价 + 焊接费 + 加工费 + 钢材联动等。
+    导出月度核对：成品核价 + 冲压零件核价 + 焊接费 + 加工费 + 钢材联动等。
 
     须选定年/月/基地/项目/BOM 版本；冲压侧按整车导出，不按工厂切分。
     """

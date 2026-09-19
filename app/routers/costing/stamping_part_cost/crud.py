@@ -97,7 +97,7 @@ def export_download(
 
 
 @router.get(
-    "/{cost_id}",
+    "/{cost_id:int}",
     response_model=ApiResponse[StampingPartCostVO],
 )
 def get_cost(
@@ -110,7 +110,7 @@ def get_cost(
 
 
 @router.patch(
-    "/{cost_id}",
+    "/{cost_id:int}",
     response_model=ApiResponse[StampingPartCostVO],
 )
 def update_manual_unit_cost(

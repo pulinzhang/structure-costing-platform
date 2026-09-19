@@ -3,7 +3,7 @@
 from datetime import datetime
 from decimal import Decimal
 
-from pydantic import BaseModel, computed_field, field_serializer
+from pydantic import BaseModel, ConfigDict, computed_field, field_serializer
 
 from app.common.money import Q0, Q4, format_money
 from app.common.timezone import datetime_to_iso
@@ -16,7 +16,7 @@ _STATUS_LABELS = {
 
 
 class StampingGaugeFeeVO(BaseModel):
-    model_config = {"from_attributes": True}
+    model_config = ConfigDict(from_attributes=True)
 
     id: int
     location: str

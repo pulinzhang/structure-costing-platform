@@ -346,6 +346,6 @@ class StampingExcelParser:
 
 
 def parse_stamping_excel(file_path: str, sheet_title: str | None = None) -> ParserResult:
-    """便捷函数。合册传入工作表名，避免误读工程变更单。"""
+    """便捷函数。工程变更传入工作表名，避免误读工程变更单。"""
     parser = StampingExcelParser()
     return parser.parse(file_path, sheet_title=sheet_title)

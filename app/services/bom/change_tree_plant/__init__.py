@@ -1,4 +1,4 @@
-"""合册种树。"""
+"""工程变更种树。"""
 
 from app.services.bom.change_tree_plant.plant import plant_change_tree
 from app.services.bom.change_tree_plant.types import BomChangePlantResult, BomChangePlantSpec

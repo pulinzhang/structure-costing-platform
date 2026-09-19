@@ -181,7 +181,7 @@ def list_calc_logs(
 
 
 @router.get(
-    "/calc/logs/{log_id}",
+    "/calc/logs/{log_id:int}",
     response_model=ApiResponse[BomWeldingFeeCalcLogVO],
 )
 def get_calc_log(
@@ -206,7 +206,7 @@ def delete_all_calc_logs(
 
 
 @router.delete(
-    "/calc/logs/{log_id}",
+    "/calc/logs/{log_id:int}",
     response_model=ApiResponse[None],
 )
 def delete_calc_log(
@@ -312,7 +312,7 @@ def export_download(
 
 
 @router.get(
-    "/{fee_id}",
+    "/{fee_id:int}",
     response_model=ApiResponse[BomWeldingFeeVO],
 )
 def get_fee(
@@ -325,7 +325,7 @@ def get_fee(
 
 
 @router.patch(
-    "/{fee_id}",
+    "/{fee_id:int}",
     response_model=ApiResponse[BomWeldingFeeVO],
 )
 def update_other_fee(

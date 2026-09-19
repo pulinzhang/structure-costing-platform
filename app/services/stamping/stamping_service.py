@@ -317,7 +317,7 @@ class StampingPartService:
         specs: list[EngineeringChangeProcessPartSpec],
         current_user: UserVO,
     ) -> list[EngineeringChangeProcessPartResult]:
-        """工程变更合册插工艺零件（不 commit）。"""
+        """工程变更插工艺零件（不 commit）。"""
         return insert_for_engineering_change_fn(
             self.repository,
             self.process_repository,

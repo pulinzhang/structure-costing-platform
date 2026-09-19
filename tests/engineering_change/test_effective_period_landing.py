@@ -508,7 +508,7 @@ def test_bom_align_keeps_missing_l0_and_patched_period(memory_db: Session) -> No
         level=0,
         part_number="ECTREEAB",
         seq_no=3,
-        part_name="合册树",
+        part_name="工程变更树",
         effective_year=2025,
         effective_month=7,
         expiry_year=None,
@@ -543,7 +543,7 @@ def test_bom_align_keeps_missing_l0_and_patched_period(memory_db: Session) -> No
     assert patched.effective_month == 1
     assert patched.expiry_year is None
     assert patched.seq_no == 2
-    assert ec_tree.part_name == "合册树"
+    assert ec_tree.part_name == "工程变更树"
 
 
 def test_expire_l0_tree_cascades_children_and_rejects_l1(memory_db: Session) -> None:

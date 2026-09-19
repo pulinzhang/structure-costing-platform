@@ -11,10 +11,10 @@
 分层：
   labels.py              对人展示文案（种类 / 分区）
   classify.py            树上分类（纯函数）
-  row_write.py           分类行 → Write（generate / 合册插行共用；始终 pending 审核）
+  row_write.py           分类行 → Write（generate / 工程变更插行共用；始终 pending 审核）
   generate_service.py    从材料清单生成
   generate_log_service.py  生成批次日志
-  insert_service.py      合册种树后本树插行（不 commit）
+  insert_service.py      工程变更种树后本树插行（不 commit）
   audit_service.py       确认 / 按范围审核、反审核、删除
   supplier_template.py   导入窄表第一页 / 填写说明
   supplier_upload_service.py  下载模板 + 上传改供应商

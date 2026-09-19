@@ -50,7 +50,9 @@ alwaysApply: false
 
 业务模块导出 **`router = APIRouter(...)`**。`prefix` 写在构造参数里，禁止空 prefix、禁止扫描后再 `include_router(..., prefix=)`。包 `__init__.py` 只作包标记，禁止 `from .crud import router`（扫描会当成重复）。扫描会 `import` 模块顶层：router 只向下 import schema / service（及 FastAPI/deps），禁止 import `main` 或入口 `app` 实例。
 
-`pkgutil.iter_modules` 按字母序，扫描不按路径优先级重排、也不靠文件名抢顺序。跨模块禁止路径覆盖（`/api/x/{id}` 会吃掉 `/api/x/special`）；必须并存时放进同一 `APIRouter`，静态路径写在参数路径之前。包 `__init__` 禁止 re-export `router`；扫描仍用 `id` 去重兜底。
+`pkgutil.iter_modules` 按字母序，扫描不按路径优先级重排、也不靠文件名抢顺序。包 `__init__` 禁止 re-export `router`；扫描仍用 `id` 去重兜底。
+
+路由匹配先 `FULL` 即停。装配**禁止**为抢顺序改文件名或改扫描。路径写法**零例外**遵守 **`api-type-safety.mdc` §6**。
 
 扫描必须看得见，不只是做对。启动日志（`bootstrap.routers`）要能核对：有 `扫描到 router` 才算挂上；`prefix=` 对不对；`跳过重复` 是 re-export 不是丢了；变量名不是 `router` 会 warning。没这行日志 = 没扫到。
 

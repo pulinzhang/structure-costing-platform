@@ -118,7 +118,7 @@ def list_die_parts(
     )
 
 
-@router.get("/parts/{part_id}", response_model=ApiResponse[StampingDiePartDetailVO])
+@router.get("/parts/{part_id:int}", response_model=ApiResponse[StampingDiePartDetailVO])
 def get_die_part(
     part_id: int,
     db: Session = Depends(get_db),
@@ -127,7 +127,7 @@ def get_die_part(
     return ApiResponse.ok(data=_die_service.get_part(db, part_id))
 
 
-@router.patch("/processes/{process_id}", response_model=ApiResponse[StampingDieProcessVO])
+@router.patch("/processes/{process_id:int}", response_model=ApiResponse[StampingDieProcessVO])
 def patch_die_process_alloc_ratio(
     process_id: int,
     body: StampingDieAllocRatioUpdate,

@@ -110,7 +110,7 @@ def export_l0_excel(
 
 
 @router.get(
-    "/nodes/{node_id}",
+    "/nodes/{node_id:int}",
     response_model=ApiResponse[BomWeldingProcessBreakdownNodeVO],
 )
 def get_node(
@@ -180,7 +180,7 @@ def list_generate_logs(
 
 
 @router.get(
-    "/generate/logs/{log_id}",
+    "/generate/logs/{log_id:int}",
     response_model=ApiResponse[BomWeldingProcessBreakdownGenerateLogVO],
 )
 def get_generate_log(
@@ -205,7 +205,7 @@ def delete_all_generate_logs(
 
 
 @router.delete(
-    "/generate/logs/{log_id}",
+    "/generate/logs/{log_id:int}",
     response_model=ApiResponse[None],
 )
 def delete_generate_log(
@@ -263,7 +263,7 @@ def generate_from_bom(
 
 
 @router.patch(
-    "/lines/{line_id}",
+    "/lines/{line_id:int}",
     response_model=ApiResponse[BomWeldingProcessBreakdownLineVO],
 )
 def update_line(
@@ -278,7 +278,7 @@ def update_line(
 
 
 @router.patch(
-    "/nodes/{node_id}/lines",
+    "/nodes/{node_id:int}/lines",
     response_model=ApiResponse[BomWeldingProcessBreakdownNodeVO],
 )
 def update_node_lines(

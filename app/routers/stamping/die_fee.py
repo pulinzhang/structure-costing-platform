@@ -133,7 +133,7 @@ def list_calc_logs(
 
 
 @router.get(
-    "/calc/logs/{log_id}",
+    "/calc/logs/{log_id:int}",
     response_model=ApiResponse[StampingDieFeeCalcLogVO],
 )
 def get_calc_log(
@@ -156,7 +156,7 @@ def delete_all_calc_logs(
     return ApiResponse.ok(data=result, message=f"已删除 {result.deleted_count} 条")
 
 
-@router.delete("/calc/logs/{log_id}", response_model=ApiResponse[None])
+@router.delete("/calc/logs/{log_id:int}", response_model=ApiResponse[None])
 def delete_calc_log(
     log_id: int,
     db: Session = Depends(get_db),
@@ -297,7 +297,7 @@ def batch_reverse_audit(
     return ApiResponse.ok(data=result, message=message)
 
 
-@router.get("/{fee_id}", response_model=ApiResponse[StampingDieFeeVO])
+@router.get("/{fee_id:int}", response_model=ApiResponse[StampingDieFeeVO])
 def get_fee(
     fee_id: int,
     db: Session = Depends(get_db),
@@ -306,7 +306,7 @@ def get_fee(
     return ApiResponse.ok(data=_service.get_by_id(db, fee_id))
 
 
-@router.put("/{fee_id}", response_model=ApiResponse[StampingDieFeeVO])
+@router.put("/{fee_id:int}", response_model=ApiResponse[StampingDieFeeVO])
 def update_adjustment(
     fee_id: int,
     dto: StampingDieFeeUpdateDTO,
@@ -317,7 +317,7 @@ def update_adjustment(
     return ApiResponse.updated(data=row, message="调整金额已保存")
 
 
-@router.delete("/{fee_id}", response_model=ApiResponse[None])
+@router.delete("/{fee_id:int}", response_model=ApiResponse[None])
 def delete_fee(
     fee_id: int,
     db: Session = Depends(get_db),

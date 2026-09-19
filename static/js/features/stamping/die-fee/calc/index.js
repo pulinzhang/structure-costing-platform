@@ -1,12 +1,16 @@
 import {
     dieFeeCalcTemplate,
     CALC_HISTORY_COLSPAN,
-} from './template.js?v=11';
+} from './template.js?v=12';
 import {
     DEFAULT_PAGE_SIZE,
     bindPagination,
     paintPagination,
 } from '../../../../page-size.js?v=3';
+import {
+    formatDurationSeconds,
+    formatTimingLine,
+} from '../../../../duration.js?v=1';
 
 const API_BASE = '/api/stamping/die-fees';
 const DIE_FILTERS_API = '/api/stamping/die/filters';
@@ -300,6 +304,8 @@ function renderHistoryRows(items) {
         return `
             <tr class="hover:bg-[#ffffff]/[0.02] text-[#999]">
                 <td class="py-2 px-2 font-mono text-[#666] whitespace-nowrap">${esc(formatDateTime(item.started_at))}</td>
+                <td class="py-2 px-2 font-mono text-[#666] whitespace-nowrap">${esc(formatDateTime(item.finished_at))}</td>
+                <td class="py-2 px-2 font-mono text-right tabular-nums text-[#777] whitespace-nowrap">${esc(formatDurationSeconds(item))}</td>
                 <td class="py-2 px-2 text-[#ccc] whitespace-nowrap">${esc(item.created_by || item.operator_name || '-')}</td>
                 <td class="py-2 px-2 font-mono text-[#ccc]">${esc(fmtYear(item.year))}</td>
                 <td class="py-2 px-2 text-[#ccc]">${esc(item.location || '-')}</td>
@@ -392,10 +398,13 @@ async function openProcessDrawer(logId) {
                 </div>
             </div>
             <div class="px-5 py-3 border-b border-[#222] text-[10px] text-[#777] shrink-0">
+                <div>${esc(formatTimingLine(log, formatDateTime) || '-')}</div>
+                <div class="mt-1">
                 入库 ${fmtInt(log.success_count)} · 跳过 ${fmtInt(log.skipped_no_die_count)}
                 ${String(log.detail_text || '').includes('有尺寸但无模具编号')
                     ? ' · <span class="text-[#ffb74d]">有长宽高无模具号（仅提示）</span>'
                     : ''}
+                </div>
             </div>
             <div class="flex-1 overflow-y-auto p-5">
                 <pre class="text-[11px] font-mono text-[#9e9e9e] whitespace-pre-wrap bg-[#111111] border border-[#262626] p-4">${esc(log.detail_text || '（无过程文本）')}</pre>

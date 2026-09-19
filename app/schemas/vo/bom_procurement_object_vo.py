@@ -3,11 +3,12 @@
 from datetime import datetime
 from decimal import Decimal
 
-from pydantic import BaseModel, Field, field_serializer
+from pydantic import BaseModel, ConfigDict, Field, field_serializer
 
 from app.common.money import Q4, optional_format_money
 from app.common.timezone import datetime_to_iso
 from app.schemas.common.batch_result import BatchAuditCountsVO, BatchDeleteCountsVO
+from app.schemas.vo.timing import DurationSecondsMixin
 
 
 class BomProcurementObjectListVO(BaseModel):
@@ -39,7 +40,7 @@ class BomProcurementObjectListVO(BaseModel):
     def serialize_datetime(self, value: datetime | None) -> str | None:
         return datetime_to_iso(value)
 
-    model_config = {"from_attributes": True}
+    model_config = ConfigDict(from_attributes=True)
 
 
 class BomProcurementObjectVO(BaseModel):
@@ -121,7 +122,7 @@ class BomProcurementObjectVO(BaseModel):
     def serialize_datetime(self, value: datetime | None) -> str | None:
         return datetime_to_iso(value)
 
-    model_config = {"from_attributes": True}
+    model_config = ConfigDict(from_attributes=True)
 
 
 class BomProcurementObjectGenerateResultVO(BaseModel):
@@ -154,7 +155,7 @@ class BomProcurementObjectBatchDeleteResultVO(BatchDeleteCountsVO):
     bom_version: str
 
 
-class BomProcurementObjectGenerateLogVO(BaseModel):
+class BomProcurementObjectGenerateLogVO(DurationSecondsMixin):
     id: int
     calc_batch_id: str
     location: str
@@ -178,8 +179,6 @@ class BomProcurementObjectGenerateLogVO(BaseModel):
     @field_serializer("started_at", "finished_at", "created_at")
     def serialize_datetime(self, value: datetime | None) -> str | None:
         return datetime_to_iso(value)
-
-    model_config = {"from_attributes": True}
 
 
 class BomProcurementObjectSupplierUploadResultVO(BaseModel):

@@ -321,7 +321,7 @@ def _record_prep(
         f"焊接费 {welding_count}  包装 {packaging_count}"
     )
     if procurement_missing:
-        log_builder.warn("采购对象清单未生成，只出装配∪树根")
+        log_builder.line("本趟无采购对象清单头（应列入为空时正常）")
     if conflicted:
         shown = sorted(conflicted)[:CONFLICT_LIMIT]
         extra = f" 等{len(conflicted)}个" if len(conflicted) > len(shown) else ""

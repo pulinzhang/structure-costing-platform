@@ -70,7 +70,7 @@ def create_die_unit_price(
 
 
 @router.put(
-    "/{record_id}",
+    "/{record_id:int}",
     response_model=ApiResponse[StampingDieUnitPriceVO],
 )
 def update_die_unit_price(
@@ -84,7 +84,7 @@ def update_die_unit_price(
 
 
 @router.delete(
-    "/{record_id}",
+    "/{record_id:int}",
     response_model=ApiResponse[None],
 )
 def delete_die_unit_price(

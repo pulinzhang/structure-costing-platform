@@ -9,6 +9,7 @@ from pydantic import BaseModel, ConfigDict, Field, field_serializer, model_valid
 
 from app.common.money import Q4
 from app.common.timezone import datetime_to_iso
+from app.schemas.vo.timing import DurationSecondsMixin
 
 
 def _money_str(value: Decimal | None) -> str | None:
@@ -242,9 +243,7 @@ class AssemblyCostCalcCardTraceVO(BaseModel):
         return _money_str(value)
 
 
-class AssemblyCostCalcLogVO(BaseModel):
-    model_config = ConfigDict(from_attributes=True)
-
+class AssemblyCostCalcLogVO(DurationSecondsMixin):
     id: int
     year: int
     month: int

@@ -1,4 +1,4 @@
-"""采购对象清单 — 合册种树后按新树插行（不走整包 generate）。"""
+"""采购对象清单 — 工程变更种树后按新树插行（不走整包 generate）。"""
 
 from __future__ import annotations
 
@@ -31,7 +31,7 @@ logger = logging.getLogger("service.bom.procurement_object.insert")
 
 
 class BomProcurementObjectInsertService:
-    """合册插行门面：无头建空头；同号或树上同一位置抄确认；不删旧行。"""
+    """工程变更插行门面：无头建空头；同号或树上同一位置抄确认；不删旧行。"""
 
     def __init__(self) -> None:
         self.snapshot_repo = BomSnapshotRepository()
@@ -84,7 +84,7 @@ class BomProcurementObjectInsertService:
         ]
         inserted_ids = self.repository.bulk_create_objects(db, payloads)
         logger.info(
-            "合册插采购对象 snapshot=%s l0=%s count=%s",
+            "工程变更插采购对象 snapshot=%s l0=%s count=%s",
             snapshot_id,
             new_l0_id,
             len(inserted_ids),

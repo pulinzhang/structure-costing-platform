@@ -219,6 +219,7 @@ ${engineMotionStyles}
   <div id="engineResultPanel" class="hidden mb-8">
     <div class="text-[10px] text-neutral-600">执行结果</div>
     <div id="engineResultStatus" class="text-sm font-medium text-white mt-0.5">—</div>
+    <div id="engineResultTiming" class="hidden text-[10px] font-mono text-neutral-600 mt-1 tabular-nums"></div>
     <p id="engineResultHeadline" class="text-[11px] text-neutral-400 mt-1 leading-relaxed"></p>
     <div id="engineResultSteps" class="mt-4"></div>
   </div>
@@ -269,15 +270,17 @@ ${engineMotionStyles}
     </div>
 
     <div class="overflow-x-auto">
-      <table class="w-full text-left border-collapse table-fixed" style="min-width: 820px;">
+      <table class="w-full text-left border-collapse table-fixed" style="min-width: 980px;">
         <colgroup>
-          <col style="width: 20%">
           <col style="width: 14%">
-          <col style="width: 12%">
-          <col style="width: 14%">
-          <col style="width: 12%">
-          <col style="width: 18%">
           <col style="width: 10%">
+          <col style="width: 9%">
+          <col style="width: 8%">
+          <col style="width: 9%">
+          <col style="width: 15%">
+          <col style="width: 15%">
+          <col style="width: 8%">
+          <col style="width: 12%">
         </colgroup>
         <thead>
           <tr class="border-b border-white/5">
@@ -286,13 +289,15 @@ ${engineMotionStyles}
             <th class="px-2 py-2.5 text-right text-[9px] font-normal tracking-wide text-neutral-600">核算账期</th>
             <th class="px-2 py-2.5 text-center text-[9px] font-normal tracking-wide text-neutral-600">状态</th>
             <th class="px-2 py-2.5 text-left text-[9px] font-normal tracking-wide text-neutral-600">操作人</th>
-            <th class="px-2 py-2.5 text-left text-[9px] font-normal tracking-wide text-neutral-600">启动时间</th>
+            <th class="px-2 py-2.5 text-left text-[9px] font-normal tracking-wide text-neutral-600">开始</th>
+            <th class="px-2 py-2.5 text-left text-[9px] font-normal tracking-wide text-neutral-600">结束</th>
+            <th class="px-2 py-2.5 text-right text-[9px] font-normal tracking-wide text-neutral-600">耗时</th>
             <th class="px-2 py-2.5 text-center text-[9px] font-normal tracking-wide text-neutral-600">操作</th>
           </tr>
         </thead>
         <tbody id="engineHistoryBody">
           <tr>
-            <td colspan="7" class="px-2 py-8 text-center text-[10px] text-neutral-700">加载历史中…</td>
+            <td colspan="9" class="px-2 py-8 text-center text-[10px] text-neutral-700">加载历史中…</td>
           </tr>
         </tbody>
       </table>

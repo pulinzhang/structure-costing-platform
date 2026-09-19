@@ -7,9 +7,9 @@ alwaysApply: false
 # 架构宪法
 
 > 导读（为什么）：`docs/architecture.md`。本文件只写**谁做什么、谁不能依赖谁**。  
-> JSON/`ApiResponse`/Decimal/`Any`/`Perm.*` → `api-type-safety.mdc`  
+> JSON/`ApiResponse`/Decimal/`Any`/`Perm.*`/路径 `/{name:int}`（零例外）→ `api-type-safety.mdc`  
 > Orchestrator 主方法行数与 `for` → `orchestrator-constitution.mdc`  
-> `main.py` 装配 → `main-structure.mdc`  
+> `main.py` 装配与扫描顺序 → `main-structure.mdc`  
 > 标识符 → `naming-convention.mdc`  
 > 领域文档旧编号：§4.3 = 本文 §3.3 引用保护；§5.2 = §四 异常通道；§5.3 = 本文 §五（长任务、同步 Excel、旁路 Session）。
 

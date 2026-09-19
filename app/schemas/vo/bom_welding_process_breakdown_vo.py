@@ -5,10 +5,11 @@ BOM 焊接工艺拆解 VO
 from datetime import datetime
 from decimal import Decimal
 
-from pydantic import BaseModel, field_serializer
+from pydantic import BaseModel, ConfigDict, field_serializer
 
 from app.common.timezone import datetime_to_iso
 from app.schemas.common.batch_result import BatchAuditCountsVO, BatchDeleteCountsVO
+from app.schemas.vo.timing import DurationSecondsMixin
 
 
 class BomWeldingProcessBreakdownLineVO(BaseModel):
@@ -48,7 +49,7 @@ class BomWeldingProcessBreakdownLineVO(BaseModel):
     def serialize_datetime(self, value: datetime | None) -> str | None:
         return datetime_to_iso(value)
 
-    model_config = {"from_attributes": True}
+    model_config = ConfigDict(from_attributes=True)
 
 
 class WeldingEvidenceContribVO(BaseModel):
@@ -164,7 +165,7 @@ class BomWeldingProcessBreakdownNodeVO(BaseModel):
     def serialize_datetime(self, value: datetime | None) -> str | None:
         return datetime_to_iso(value)
 
-    model_config = {"from_attributes": True}
+    model_config = ConfigDict(from_attributes=True)
 
 
 class BomWeldingProcessBreakdownGenerateResultVO(BaseModel):
@@ -186,10 +187,8 @@ class BomWeldingProcessBreakdownGenerateResultVO(BaseModel):
     finished_at: str | None = None
 
 
-class BomWeldingProcessBreakdownGenerateLogVO(BaseModel):
+class BomWeldingProcessBreakdownGenerateLogVO(DurationSecondsMixin):
     """拆解生成历史记录 VO"""
-
-    model_config = {"from_attributes": True}
 
     id: int
     calc_batch_id: str

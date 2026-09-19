@@ -169,7 +169,7 @@ def export_download(
 
 
 @router.get(
-    "/{record_id}",
+    "/{record_id:int}",
     response_model=ApiResponse[SteelPriceResponse],
 )
 def get_steel_price(
@@ -183,7 +183,7 @@ def get_steel_price(
 
 
 @router.put(
-    "/{record_id}",
+    "/{record_id:int}",
     response_model=ApiResponse[SteelPriceResponse],
 )
 def update_steel_price(
@@ -198,7 +198,7 @@ def update_steel_price(
 
 
 @router.delete(
-    "/{record_id}",
+    "/{record_id:int}",
     response_model=ApiResponse[None],
 )
 def delete_steel_price(
@@ -212,7 +212,7 @@ def delete_steel_price(
 
 
 @router.post(
-    "/{record_id}/approve",
+    "/{record_id:int}/approve",
     response_model=ApiResponse[SteelPriceResponse],
 )
 def approve_steel_price(
@@ -227,7 +227,7 @@ def approve_steel_price(
 
 
 @router.post(
-    "/{record_id}/reject",
+    "/{record_id:int}/reject",
     response_model=ApiResponse[SteelPriceResponse],
 )
 def reject_steel_price(
@@ -242,7 +242,7 @@ def reject_steel_price(
 
 
 @router.post(
-    "/{record_id}/reverse-audit",
+    "/{record_id:int}/reverse-audit",
     response_model=ApiResponse[SteelPriceResponse],
 )
 def reverse_audit_steel_price(

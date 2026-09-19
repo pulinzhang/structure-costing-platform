@@ -1,4 +1,4 @@
-"""从合册材料清单里切出一棵交货总成（不改 BOM Parser）。"""
+"""从工程变更材料清单里切出一棵交货总成（不改 BOM Parser）。"""
 
 from __future__ import annotations
 

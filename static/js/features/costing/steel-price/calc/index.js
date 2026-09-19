@@ -3,12 +3,16 @@
  * 钢价计算 —过滤条件 + 异步后台计算 + 进度轮询 + 历史过程日志
  */
 
-import { steelPriceCalcTemplate } from './template.js?v=12';
+import { steelPriceCalcTemplate } from './template.js?v=13';
 import {
     DEFAULT_PAGE_SIZE,
     bindPagination,
     paintPagination,
 } from '../../../../page-size.js?v=3';
+import {
+    formatDurationSeconds,
+    formatTimingLine,
+} from '../../../../duration.js?v=1';
 
 const STEEL_PRICE_CALC_STATS_API = '/api/dashboard/stats/steel-price-calc';
 const STEEL_PRICE_CALC_API = '/api/costing/steel-price/calc';
@@ -174,7 +178,7 @@ async function loadCalcHistory(page = calcState.history.page) {
         size: calcState.history.size,
     };
 
-    body.innerHTML = `<tr><td colspan="12" class="py-8 text-center text-[#555]">加载中..</td></tr>`;
+    body.innerHTML = `<tr><td colspan="14" class="py-8 text-center text-[#555]">加载中..</td></tr>`;
 
     try {
         const response = await HttpClient.get(STEEL_PRICE_CALC_LOGS_API, { params });
@@ -196,7 +200,7 @@ async function loadCalcHistory(page = calcState.history.page) {
             );
     } catch (error) {
         console.error('加载计算历史失败:', error);
-        body.innerHTML = `<tr><td colspan="12" class="py-8 text-center text-[#ef5350]">加载失败</td></tr>`;
+        body.innerHTML = `<tr><td colspan="14" class="py-8 text-center text-[#ef5350]">加载失败</td></tr>`;
     }
 }
 
@@ -205,20 +209,21 @@ function renderHistoryRows(items) {
     if (!body) return;
 
     if (!items.length) {
-        body.innerHTML = `<tr><td colspan="12" class="py-8 text-center text-[#555]">暂无计算记录</td></tr>`;
+        body.innerHTML = `<tr><td colspan="14" class="py-8 text-center text-[#555]">暂无计算记录</td></tr>`;
         return;
     }
 
     body.innerHTML = items.map(item => {
         const status = STATUS_META[item.status] || STATUS_META.failed;
         const period = fmtPeriod(item.year, item.month);
-        const started = formatDateTime(item.started_at);
         const createdBy = item.created_by || item.operator_name || '-';
         const isProcessing = item.status === 'processing';
 
         return `
             <tr class="hover:bg-[#ffffff]/[0.02] transition-colors text-[#999]" data-log-id="${esc(item.id)}">
-                <td class="py-2 px-2 font-mono text-[#666] whitespace-nowrap">${esc(started)}</td>
+                <td class="py-2 px-2 font-mono text-[#666] whitespace-nowrap">${esc(formatDateTime(item.started_at))}</td>
+                <td class="py-2 px-2 font-mono text-[#666] whitespace-nowrap">${esc(formatDateTime(item.finished_at))}</td>
+                <td class="py-2 px-2 font-mono text-right tabular-nums text-[#777] whitespace-nowrap">${esc(formatDurationSeconds(item))}</td>
                 <td class="py-2 px-2 text-[#ccc] whitespace-nowrap">${esc(createdBy)}</td>
                 <td class="py-2 px-2 font-mono text-[#ccc] whitespace-nowrap">${esc(period)}</td>
                 <td class="py-2 px-2 text-[#ccc] whitespace-nowrap">${esc(item.location || '-')}</td>
@@ -354,7 +359,7 @@ function showProcessDrawer(log) {
         </div>
         <div class="px-5 py-3 border-b border-[#222] text-[10px] text-[#777] space-y-1 shrink-0">
             <div>批次<span class="font-mono text-[#999]">${esc(log.calc_batch_id || '-')}</span></div>
-            <div>时间：${esc(formatDateTime(log.started_at))} → ${esc(formatDateTime(log.finished_at))}</div>
+            <div>${esc(formatTimingLine(log, formatDateTime) || '-')}</div>
             <div>汇总：材料 ${fmtInt(log.material_count)} · 命中 ${fmtInt(log.enriched_count)} · 无基价${fmtInt(log.no_base_count)} · 新增 ${fmtInt(log.created_count)} · 更新 ${fmtInt(log.updated_count)} · 失败 ${fmtInt(log.failed_count)}</div>
         </div>
         <div class="flex-1 overflow-y-auto overscroll-contain p-5">

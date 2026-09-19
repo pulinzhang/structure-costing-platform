@@ -34,8 +34,8 @@ def _collect_routers(package: ModuleType) -> list[APIRouter]:
 
 
 def _scan_package(package: ModuleType, seen: set[int], found: list[APIRouter]) -> None:
-    # pkgutil.iter_modules 按字母序。扫描不重排：跨模块禁止路径覆盖（/api/x/{id} vs /api/x/special）；
-    # 同类冲突放同一 APIRouter，静态路径写在参数路径之前。
+    # 字母序扫描、不重排。路径硬约束（/{id:int}）见 api-type-safety.mdc §6
+    # 与 scripts/check_route_path_params.py；此处不靠文件名抢优先级。
     for name, is_package in _iter_child_modules(package):
         # import_module 会执行模块顶层。扫描能成立的前提：router 顶层只 import schema / service
         # （及 FastAPI/deps），禁止 import main 或入口 app 实例，否则循环导入。

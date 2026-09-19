@@ -634,7 +634,7 @@ class BomService:
         current_user: UserVO,
         node_bom_version: str | None = None,
     ) -> BomChangePlantResult:
-        """工程变更门面：合册种新树。只 flush。"""
+        """工程变更门面：工程变更种新树。只 flush。"""
         return plant_change_tree_fn(
             self,
             db,

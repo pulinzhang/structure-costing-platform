@@ -121,7 +121,7 @@ def list_calc_logs(
 
 
 @router.get(
-    "/calc/logs/{log_id}",
+    "/calc/logs/{log_id:int}",
     response_model=ApiResponse[AssemblyCostCalcLogVO],
 )
 def get_calc_log(
@@ -133,7 +133,7 @@ def get_calc_log(
     return ApiResponse.ok(data=record)
 
 
-@router.get("/calc/logs/{log_id}/export-download")
+@router.get("/calc/logs/{log_id:int}/export-download")
 def export_calc_report(
     log_id: int,
     keyword: str | None = Query(None, description="零件号、名称、说明"),
@@ -176,7 +176,7 @@ def delete_all_calc_logs(
 
 
 @router.delete(
-    "/calc/logs/{log_id}",
+    "/calc/logs/{log_id:int}",
     response_model=ApiResponse[None],
 )
 def delete_calc_log(

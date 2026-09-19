@@ -8,7 +8,7 @@ from datetime import datetime
 from decimal import Decimal
 from typing import Any
 
-from pydantic import BaseModel, Field, field_serializer
+from pydantic import BaseModel, ConfigDict, Field, field_serializer
 
 from app.common.money import Q2, Q4, optional_format_money
 from app.common.timezone import datetime_to_iso
@@ -17,7 +17,7 @@ from app.common.timezone import datetime_to_iso
 class StampingTailorWeldBlankVO(BaseModel):
     """拼焊子片响应。"""
 
-    model_config = {"from_attributes": True}
+    model_config = ConfigDict(from_attributes=True)
 
     id: int
     part_id: int

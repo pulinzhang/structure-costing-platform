@@ -5,7 +5,7 @@
 from datetime import datetime
 from decimal import Decimal
 
-from pydantic import BaseModel, Field, field_serializer
+from pydantic import BaseModel, ConfigDict, Field, field_serializer
 
 from app.common.money import Q2, optional_format_money
 from app.common.timezone import datetime_to_iso
@@ -67,7 +67,7 @@ class LadderItemResponse(BaseModel):
     def serialize_decimal(self, value: Decimal | float | None) -> str | None:
         return optional_format_money(value, Q2, 2, allow_negative=True)
 
-    model_config = {"from_attributes": True}
+    model_config = ConfigDict(from_attributes=True)
 
 
 # ============================
@@ -101,7 +101,7 @@ class PolicyListResponse(BaseModel):
     def serialize_datetime(self, value: datetime | None) -> str | None:
         return datetime_to_iso(value)
 
-    model_config = {"from_attributes": True}
+    model_config = ConfigDict(from_attributes=True)
 
 
 class PolicyDetailResponse(BaseModel):
@@ -130,7 +130,7 @@ class PolicyDetailResponse(BaseModel):
     def serialize_datetime(self, value: datetime | None) -> str | None:
         return datetime_to_iso(value)
 
-    model_config = {"from_attributes": True}
+    model_config = ConfigDict(from_attributes=True)
 
 
 # ============================
@@ -174,7 +174,7 @@ class MatchedLadderItem(BaseModel):
     def serialize_decimal(self, value: Decimal | float | None) -> str | None:
         return optional_format_money(value, Q2, 2, allow_negative=True)
 
-    model_config = {"from_attributes": True}
+    model_config = ConfigDict(from_attributes=True)
 
 
 class PolicyMatchResponse(BaseModel):
@@ -203,7 +203,7 @@ class ImportResultResponse(BaseModel):
 class ExportRow(BaseModel):
     """导出数据行 VO（主子表扁平化结构）"""
 
-    model_config = {"from_attributes": True}
+    model_config = ConfigDict(from_attributes=True)
 
     # 政策主表字段
     policy_id: int

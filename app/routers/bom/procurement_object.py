@@ -101,7 +101,7 @@ def list_generate_logs(
 
 
 @router.get(
-    "/generate/logs/{log_id}",
+    "/generate/logs/{log_id:int}",
     response_model=ApiResponse[BomProcurementObjectGenerateLogVO],
 )
 def get_generate_log(
@@ -240,7 +240,7 @@ def export_excel(
 
 
 @router.get(
-    "/items/{object_id}",
+    "/items/{object_id:int}",
     response_model=ApiResponse[BomProcurementObjectVO],
 )
 def get_item(
@@ -252,7 +252,7 @@ def get_item(
 
 
 @router.patch(
-    "/items/{object_id}/confirm",
+    "/items/{object_id:int}/confirm",
     response_model=ApiResponse[BomProcurementObjectVO],
 )
 def confirm_item(
@@ -268,7 +268,7 @@ def confirm_item(
 
 
 @router.patch(
-    "/items/{object_id}/supplier",
+    "/items/{object_id:int}/supplier",
     response_model=ApiResponse[BomProcurementObjectVO],
 )
 def update_item_supplier(

@@ -4,12 +4,15 @@
 
 import {
     assemblyCostCalcTemplate,
-} from './template.js?v=9';
+} from './template.js?v=10';
 import {
     DEFAULT_PAGE_SIZE,
     bindPagination,
     paintPagination,
 } from '../../../../page-size.js?v=3';
+import {
+    formatDurationSeconds,
+} from '../../../../duration.js?v=1';
 
 const API_BASE = '/api/costing/assembly-costs';
 const CASCADE_API = '/api/bom/filters/cascade';
@@ -315,7 +318,7 @@ function setCountHtml(id, count, unit, isComplete) {
 async function loadCalcHistory(page = calcState.history.page) {
     const body = document.getElementById('lacCalcHistoryBody');
     if (!body) return;
-    body.innerHTML = `<tr><td colspan="13" class="py-8 text-center text-[#555]">加载中..</td></tr>`;
+    body.innerHTML = `<tr><td colspan="15" class="py-8 text-center text-[#555]">加载中..</td></tr>`;
     try {
         const res = await HttpClient.get(CALC_LOGS_API, {
             params: { page, size: calcState.history.size },
@@ -334,7 +337,7 @@ async function loadCalcHistory(page = calcState.history.page) {
                 calcState.history.totalPages,
             );
     } catch (error) {
-        body.innerHTML = `<tr><td colspan="13" class="py-8 text-center text-[#ef5350]">${esc(error.message || '加载失败')}</td></tr>`;
+        body.innerHTML = `<tr><td colspan="15" class="py-8 text-center text-[#ef5350]">${esc(error.message || '加载失败')}</td></tr>`;
     }
 }
 
@@ -342,17 +345,18 @@ function renderHistoryRows(items) {
     const body = document.getElementById('lacCalcHistoryBody');
     if (!body) return;
     if (!items.length) {
-        body.innerHTML = `<tr><td colspan="13" class="py-8 text-center text-[#555]">暂无计算历史</td></tr>`;
+        body.innerHTML = `<tr><td colspan="15" class="py-8 text-center text-[#555]">暂无计算历史</td></tr>`;
         return;
     }
     body.innerHTML = items.map((row) => {
         const meta = STATUS_META[row.status] || { label: row.status, className: 'text-[#9e9e9e]' };
-        const started = row.started_at ? String(row.started_at).replace('T', ' ').slice(0, 19) : '-';
         const query = `?year=${encodeURIComponent(row.year)}&month=${encodeURIComponent(row.month)}&location=${encodeURIComponent(row.location)}&vehicle_model=${encodeURIComponent(row.vehicle_model)}`;
         const versionLabel = row.bom_version ? String(row.bom_version) : '—';
         return `
             <tr class="hover:bg-[#1a1a1a]">
-                <td class="py-2 px-2 font-mono text-[#8E8E93] whitespace-nowrap">${esc(started)}</td>
+                <td class="py-2 px-2 font-mono text-[#666] whitespace-nowrap">${esc(formatDateTime(row.started_at))}</td>
+                <td class="py-2 px-2 font-mono text-[#666] whitespace-nowrap">${esc(formatDateTime(row.finished_at))}</td>
+                <td class="py-2 px-2 font-mono text-right tabular-nums text-[#777] whitespace-nowrap">${esc(formatDurationSeconds(row))}</td>
                 <td class="py-2 px-2 text-[#c0c0c0]">${esc(row.operator_name || '-')}</td>
                 <td class="py-2 px-2 font-mono">${esc(fmtPeriod(row.year, row.month))}</td>
                 <td class="py-2 px-2">${esc(row.location)}</td>
@@ -489,6 +493,15 @@ function showProgress(percent, message) {
 
 function hideProgress() {
     document.getElementById('lacCalcProgressPanel')?.classList.add('hidden');
+}
+
+function formatDateTime(value) {
+    if (!value) return '-';
+    try {
+        return String(value).replace('T', ' ').slice(0, 19);
+    } catch (_) {
+        return String(value);
+    }
 }
 
 export const pageConfig = {

@@ -2,12 +2,16 @@
  * 月度智能自动核价引擎 — 页面逻辑 (BRABUS Pure Industrial Spec)
  */
 
-import { costingTemplate } from './template.js?v=25';
+import { costingTemplate } from './template.js?v=26';
 import {
     DEFAULT_PAGE_SIZE,
     bindPagination,
     paintPagination,
 } from '../../../page-size.js?v=3';
+import {
+    formatDurationSeconds,
+    formatTimingLine,
+} from '../../../duration.js?v=1';
 
 const READY_API = '/api/costing/engine/ready';
 const RUNS_API = '/api/costing/engine/runs';
@@ -52,6 +56,7 @@ const PIPELINE_STAGES = [
         zh: '成本归集',
         gateCodes: [
             'annual_process_fee',
+            'annual_procurement_object',
             'annual_welding_breakdown',
             'annual_welding_fee',
         ],
@@ -76,6 +81,7 @@ const GATE_LABELS = {
     scrap_price: '废料价',
     system_rates: '系统费率',
     annual_process_fee: '冲压加工费',
+    annual_procurement_object: '采购对象清单',
     annual_welding_breakdown: '焊接工艺拆解',
     annual_welding_fee: '焊接费',
 };
@@ -97,6 +103,11 @@ const STEP_STAGE_META = {
         label: '冲压加工费',
         page: 'stamping-process-fee-calc',
         action: '去看加工费',
+    },
+    annual_procurement_object: {
+        label: '采购对象清单',
+        page: 'bom-procurement-object',
+        action: '去生成采购对象',
     },
     annual_welding_breakdown: {
         label: '焊接工艺拆解',
@@ -580,7 +591,21 @@ function setReadyButtonBusy(busy) {
 }
 
 function gateLabel(code) {
-    return GATE_LABELS[code] || code;
+    return GATE_LABELS[code] || '待补算项';
+}
+
+function formatAnnualScopeKey(scopeKey) {
+    const key = String(scopeKey || '').trim();
+    if (!key) return '';
+    if (key.includes('|')) {
+        const [vehicleModel, bomVersion] = key.split('|');
+        const project = String(vehicleModel || '').trim();
+        const version = String(bomVersion || '').trim();
+        if (project && version) return `项目 ${project} · 版本 ${version}`;
+        if (project) return `项目 ${project}`;
+        if (version) return `版本 ${version}`;
+    }
+    return `项目 ${key}`;
 }
 
 function summarizeGateMessage(item) {
@@ -644,7 +669,7 @@ function renderReady(ready) {
                 <div class="flex items-center justify-between gap-3 py-2 border-b border-white/5">
                     <div class="min-w-0">
                         <div class="text-[12px] text-amber-500/90">${esc(gateLabel(item.code))}</div>
-                        <div class="text-[10px] font-mono text-neutral-600 truncate mt-0.5">${esc(item.scope_key)}</div>
+                        <div class="text-[10px] text-neutral-600 truncate mt-0.5">${esc(formatAnnualScopeKey(item.scope_key))}</div>
                     </div>
                     <span class="text-[10px] text-amber-500/70 shrink-0">待补算</span>
                 </div>`
@@ -1375,6 +1400,17 @@ function showResult(result) {
         statusEl.textContent = meta.label;
         statusEl.className = `text-sm font-bold tracking-[0.06em] mt-0.5 ${meta.className}`;
     }
+    const timingEl = document.getElementById('engineResultTiming');
+    if (timingEl) {
+        const timingText = formatResultTiming(result);
+        if (timingText) {
+            timingEl.textContent = timingText;
+            timingEl.classList.remove('hidden');
+        } else {
+            timingEl.textContent = '';
+            timingEl.classList.add('hidden');
+        }
+    }
     if (result?.run_id) {
         engineState.activeRunId = result.run_id;
     }
@@ -1436,9 +1472,13 @@ function formatStepScope(step) {
     if (!key) return '';
     if (key.includes('|')) {
         const [vehicleModel, bomVersion] = key.split('|');
-        return `${vehicleModel} · ${bomVersion}`;
+        const project = String(vehicleModel || '').trim();
+        const version = String(bomVersion || '').trim();
+        if (project && version) return `项目 ${project} · 版本 ${version}`;
+        if (project) return `项目 ${project}`;
+        if (version) return `版本 ${version}`;
     }
-    return key;
+    return `项目 ${key}`;
 }
 
 function formatStepTitle(step) {
@@ -1456,7 +1496,8 @@ function stepNavQuery(result, step) {
     if (
         step.stage === 'assembly' ||
         step.stage === 'annual_welding_fee' ||
-        step.stage === 'annual_welding_breakdown'
+        step.stage === 'annual_welding_breakdown' ||
+        step.stage === 'annual_procurement_object'
     ) {
         const [vehicleModel, bomVersion] = key.split('|');
         if (vehicleModel) query.vehicle_model = vehicleModel;
@@ -1537,6 +1578,9 @@ async function openRun(runId) {
             year: run.year,
             month: run.month,
             run_id: run.id,
+            started_at: run.started_at,
+            finished_at: run.finished_at,
+            duration_seconds: run.duration_seconds,
             steps: (run.steps && run.steps.length ? run.steps : summary.steps) || [],
         });
         document.getElementById('engineResultPanel')?.scrollIntoView({
@@ -1616,7 +1660,7 @@ async function loadHistory(page) {
     } catch (_) {
         const body = document.getElementById('engineHistoryBody');
         if (body) {
-            body.innerHTML = `<tr><td colspan="7" class="px-2 py-8 text-center text-[10px] text-[#FF1E27]/80">历史加载失败</td></tr>`;
+            body.innerHTML = `<tr><td colspan="9" class="px-2 py-8 text-center text-[10px] text-[#FF1E27]/80">历史加载失败</td></tr>`;
         }
     }
 }
@@ -1629,7 +1673,7 @@ function renderHistory() {
 
     const items = engineState.history.items;
     if (!items.length) {
-        body.innerHTML = `<tr><td colspan="7" class="px-2 py-8 text-center text-[10px] text-neutral-700">暂无运行记录</td></tr>`;
+        body.innerHTML = `<tr><td colspan="9" class="px-2 py-8 text-center text-[10px] text-neutral-700">暂无运行记录</td></tr>`;
         renderPager();
         return;
     }
@@ -1661,6 +1705,8 @@ function renderHistory() {
                 <td class="px-2 py-2.5 text-center text-[10px] ${meta.className}">${esc(meta.label)}</td>
                 <td class="px-2 py-2.5 text-[10px] text-neutral-500 overflow-hidden truncate">${esc(row.created_by || '-')}</td>
                 <td class="px-2 py-2.5 text-[10px] text-neutral-600 tabular-nums">${esc(formatTs(row.started_at))}</td>
+                <td class="px-2 py-2.5 text-[10px] text-neutral-600 tabular-nums">${esc(formatTs(row.finished_at))}</td>
+                <td class="px-2 py-2.5 text-right text-[10px] text-neutral-400 tabular-nums">${esc(formatDurationSeconds(row))}</td>
                 <td class="px-2 py-2.5 text-center">${viewBtn}${deleteBtn}</td>
             </tr>`;
         })
@@ -1738,6 +1784,10 @@ function formatTs(value) {
     } catch (_) {
         return String(value);
     }
+}
+
+function formatResultTiming(result) {
+    return formatTimingLine(result, formatTs);
 }
 
 export const pageConfig = {

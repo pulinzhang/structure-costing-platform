@@ -15,6 +15,9 @@ from app.repositories.costing.engine.costing_engine_run_repository import (
 )
 from app.schemas.vo.costing_engine_vo import CostingEngineAnnualItemVO
 from app.schemas.vo.user_vo import UserVO
+from app.services.bom.procurement_object.generate_service import (
+    BomProcurementObjectGenerateService,
+)
 from app.services.bom.welding_fee.calc.orchestrator import BomWeldingFeeCalcOrchestrator
 from app.services.bom.welding_process_breakdown.generate_service import (
     BomWeldingProcessBreakdownGenerateService,
@@ -42,6 +45,7 @@ class RunOrchestrator:
     def __init__(self) -> None:
         self.run_repo = CostingEngineRunRepository()
         self.process_fee_orch = StampingProcessFeeCalcOrchestrator()
+        self.procurement_svc = BomProcurementObjectGenerateService()
         self.breakdown_svc = BomWeldingProcessBreakdownGenerateService()
         self.welding_orch = BomWeldingFeeCalcOrchestrator()
         self.steel_orch = SteelPriceCalcOrchestrator()

@@ -128,7 +128,7 @@ class BomWeldingProcessBreakdownService:
         source_id_remap: dict[int, int],
         current_user: UserVO,
     ) -> list[int]:
-        """合册种树后：从旧树拆解结果抄到新树（不 commit）。"""
+        """工程变更种树后：从旧树拆解结果抄到新树（不 commit）。"""
         return self._generate_service.copy_for_new_tree(
             db,
             snapshot_id=snapshot_id,

@@ -6,7 +6,7 @@ from datetime import datetime
 from decimal import Decimal
 from typing import TYPE_CHECKING
 
-from sqlalchemy import DateTime, Index, Integer, Numeric, String, Text, UniqueConstraint
+from sqlalchemy import DateTime, ForeignKey, Index, Integer, Numeric, String, Text, UniqueConstraint
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.database import Base
@@ -42,7 +42,10 @@ class StampingDieFee(AuditUserMixin, Base):
     part_number: Mapped[str] = mapped_column(String(50), nullable=False, comment="零件号")
 
     source_die_part_id: Mapped[int | None] = mapped_column(
-        Integer, nullable=True, comment="布点主表 id"
+        Integer,
+        ForeignKey("stamping_die_parts.id", ondelete="RESTRICT", onupdate="RESTRICT"),
+        nullable=True,
+        comment="来源布点主表 id",
     )
     seq_no: Mapped[int | None] = mapped_column(Integer, nullable=True, comment="序号")
     part_name: Mapped[str | None] = mapped_column(String(200), nullable=True, comment="零件名称")
@@ -104,4 +107,5 @@ class StampingDieFee(AuditUserMixin, Base):
         Index("ix_stamping_die_fee_location_vehicle", "location", "vehicle_model"),
         Index("ix_stamping_die_fee_part_number", "part_number"),
         Index("ix_stamping_die_fee_audit_status", "audit_status"),
+        Index("ix_stamping_die_fee_source_die_part_id", "source_die_part_id"),
     )

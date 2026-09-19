@@ -187,7 +187,7 @@ def _extra_faq_chunks() -> list[CorpusChunk]:
             text=(
                 "上传入口在侧栏各模块的「上传」页：冲压工艺文件、模具布点、冲次单价、检具费、"
                 "材料清单、焊接单价、包装运输、年度零件价、基准价与加减价政策等。"
-                "投产后改图换号请走「工程变更 → 上传工程变更」合册，不要在材料清单/工艺/布点页整包覆盖新号。"
+                "投产后改图换号请走「工程变更 → 上传工程变更」，不要在材料清单/工艺/布点页整包覆盖新号。"
                 "上传前确认基地、项目、清单版本、年月维度与本次核价一致；列表页只读核对，写入靠上传或计算页。"
             ),
             source_page="help.html",
@@ -402,7 +402,6 @@ def load_corpus_chunks() -> tuple[CorpusChunk, ...]:
                 "换号",
                 "设变",
                 "变更单",
-                "变更合册",
                 "零件汇总",
                 "材料清单换号",
             ),
@@ -461,7 +460,7 @@ def load_corpus_chunks() -> tuple[CorpusChunk, ...]:
             text=_extract_section(help_html, "export"),
             source_page="help.html",
             anchor="export",
-            keywords=("导出", "excel", "Excel", "核对合册", "导出 Excel", "导出协议"),
+            keywords=("导出", "excel", "Excel", "月度核对导出", "导出 Excel", "导出协议"),
         ),
         CorpusChunk(
             chunk_id="monthly",

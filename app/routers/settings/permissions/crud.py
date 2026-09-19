@@ -30,7 +30,7 @@ def get_permission_tree(
 
 
 @router.get(
-    "/users/{user_id}/permissions",
+    "/users/{user_id:int}/permissions",
     response_model=ApiResponse[list[str]],
 )
 def get_user_permissions(
@@ -44,7 +44,7 @@ def get_user_permissions(
 
 
 @router.put(
-    "/users/{user_id}/permissions",
+    "/users/{user_id:int}/permissions",
     response_model=ApiResponse[list[str]],
 )
 def set_user_permissions(

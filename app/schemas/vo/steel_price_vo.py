@@ -5,11 +5,12 @@
 from datetime import datetime
 from decimal import Decimal
 
-from pydantic import BaseModel, field_serializer
+from pydantic import BaseModel, ConfigDict, field_serializer
 
 from app.common.money import Q4, format_money, optional_format_money
 from app.common.timezone import datetime_to_iso
 from app.schemas.common.batch_result import BatchAuditCountsVO, BatchDeleteCountsVO
+from app.schemas.vo.timing import DurationSecondsMixin
 
 
 class SteelPriceListSummaryVO(BaseModel):
@@ -55,7 +56,7 @@ class SteelPriceBatchAuditResultVO(BatchAuditCountsVO):
 class SteelPriceResponse(BaseModel):
     """钢材价格响应 VO"""
 
-    model_config = {"from_attributes": True}
+    model_config = ConfigDict(from_attributes=True)
 
     id: int
     year: int
@@ -159,7 +160,7 @@ class SteelPriceResponse(BaseModel):
 class SteelPriceCalcResultVO(BaseModel):
     """钢价批量计算落库结果摘要 VO"""
 
-    model_config = {"from_attributes": True}
+    model_config = ConfigDict(from_attributes=True)
 
     calc_batch_id: str
     log_id: int | None = None
@@ -179,10 +180,8 @@ class SteelPriceCalcResultVO(BaseModel):
     finished_at: str | None = None
 
 
-class SteelPriceCalcLogVO(BaseModel):
+class SteelPriceCalcLogVO(DurationSecondsMixin):
     """钢价计算历史记录 VO（含 detail_text 全过程）"""
-
-    model_config = {"from_attributes": True}
 
     id: int
     calc_batch_id: str

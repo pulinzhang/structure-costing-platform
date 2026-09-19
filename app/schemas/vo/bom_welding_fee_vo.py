@@ -6,11 +6,12 @@ from datetime import datetime
 from decimal import Decimal
 from typing import TypedDict
 
-from pydantic import BaseModel, Field, field_serializer
+from pydantic import BaseModel, ConfigDict, Field, field_serializer
 
 from app.common.money import Q4, format_money, optional_format_money
 from app.common.timezone import datetime_to_iso
 from app.schemas.common.batch_result import BatchAuditCountsVO, BatchDeleteCountsVO
+from app.schemas.vo.timing import DurationSecondsMixin
 
 
 class BomWeldingFeeItemVO(BaseModel):
@@ -33,7 +34,7 @@ class BomWeldingFeeItemVO(BaseModel):
     def serialize_money(self, value: Decimal | None) -> str | None:
         return optional_format_money(value, Q4, 4)
 
-    model_config = {"from_attributes": True}
+    model_config = ConfigDict(from_attributes=True)
 
 
 class BomWeldingFeeVO(BaseModel):
@@ -86,7 +87,7 @@ class BomWeldingFeeVO(BaseModel):
     def serialize_datetime(self, value: datetime | None) -> str | None:
         return datetime_to_iso(value)
 
-    model_config = {"from_attributes": True}
+    model_config = ConfigDict(from_attributes=True)
 
 
 class WeldingFeeLevelReadyVO(BaseModel):
@@ -130,10 +131,8 @@ class BomWeldingFeeCalcResultVO(BaseModel):
     finished_at: str | None = None
 
 
-class BomWeldingFeeCalcLogVO(BaseModel):
+class BomWeldingFeeCalcLogVO(DurationSecondsMixin):
     """计算历史行"""
-
-    model_config = {"from_attributes": True}
 
     id: int
     calc_batch_id: str

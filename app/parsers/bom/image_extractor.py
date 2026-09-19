@@ -100,7 +100,7 @@ def extract_bom_images(
 
 
 def _drawing_paths_for_sheet(zip_file: ZipFile, sheet_name: str) -> set[str]:
-    """只收指定工作表挂上的 drawing，避免合册工艺表同行列抢总成图。"""
+    """只收指定工作表挂上的 drawing，避免工程变更工艺表同行列抢总成图。"""
     try:
         workbook_xml = zip_file.read("xl/workbook.xml")
         rels_xml = zip_file.read("xl/_rels/workbook.xml.rels")

@@ -909,3 +909,141 @@ def test_calc_step_message_uses_plain_chinese() -> None:
     assert _calc_step_message("总成核价", "success") == "总成核价已完成"
     assert "部分成功" in _calc_step_message("总成核价", "partial")
     assert _calc_step_message("零件核价", "failed") == "零件核价失败"
+
+
+def _annual_breakdown_fixture():
+    from app.services.costing.engine.orchestrator.runners import run_annual_item
+
+    orch = MagicMock()
+    db = MagicMock()
+    discovery = DiscoveryResult(
+        location="芜湖",
+        year=2025,
+        month=1,
+        location_aliases=["芜湖"],
+        vehicle_models=["T13J"],
+        stamping_vehicle_models=["T13J"],
+        l0_scopes=[L0Scope(location="芜湖", vehicle_model="T13J", bom_version="D-00")],
+    )
+    item = CostingEngineAnnualItemVO(
+        code="annual_welding_breakdown",
+        scope_key="T13J|D-00",
+        exists=False,
+        will_auto_calc=True,
+    )
+    user = SimpleNamespace(id=1, username="tester", real_name="测试", is_admin=True)
+    return orch, db, item, discovery, user, run_annual_item
+
+
+def test_run_annual_welding_breakdown_calls_generate() -> None:
+    orch, db, item, discovery, user, run_annual_item = _annual_breakdown_fixture()
+    orch.breakdown_svc.generate.return_value = SimpleNamespace(node_count=3, line_count=12)
+
+    ok, message, metrics = run_annual_item(
+        orch, db, discovery=discovery, item=item, current_user=user
+    )
+
+    assert ok is True
+    assert "nodes=3" in message
+    assert metrics == {"node_count": 3, "line_count": 12}
+    dto = orch.breakdown_svc.generate.call_args.args[1]
+    assert dto.location == "芜湖"
+    assert dto.vehicle_model == "T13J"
+    assert dto.bom_version == "D-00"
+
+
+def test_run_annual_welding_breakdown_maps_full_generate_gate() -> None:
+    from app.common.engineering_change_gates import (
+        EC_GATE_ENGINE_BREAKDOWN,
+        EC_GATE_FULL_GENERATE,
+    )
+    from app.exceptions.base import BusinessException
+
+    orch, db, item, discovery, user, run_annual_item = _annual_breakdown_fixture()
+    orch.breakdown_svc.generate.side_effect = BusinessException(EC_GATE_FULL_GENERATE, code=409)
+
+    ok, message, metrics = run_annual_item(
+        orch, db, discovery=discovery, item=item, current_user=user
+    )
+
+    assert ok is False
+    assert message == EC_GATE_ENGINE_BREAKDOWN
+    assert metrics is None
+    db.rollback.assert_called()
+
+
+def test_run_annual_welding_breakdown_keeps_other_business_message() -> None:
+    from app.exceptions.base import BusinessException
+
+    orch, db, item, discovery, user, run_annual_item = _annual_breakdown_fixture()
+    orch.breakdown_svc.generate.side_effect = BusinessException(
+        "该范围已有 2 条已审核拆解，请先反审核后再重新生成"
+    )
+
+    ok, message, metrics = run_annual_item(
+        orch, db, discovery=discovery, item=item, current_user=user
+    )
+
+    assert ok is False
+    assert "反审核" in message
+    assert metrics is None
+
+
+def _annual_procurement_fixture():
+    from app.services.costing.engine.orchestrator.runners import run_annual_item
+
+    orch = MagicMock()
+    db = MagicMock()
+    discovery = DiscoveryResult(
+        location="芜湖",
+        year=2025,
+        month=1,
+        location_aliases=["芜湖"],
+        vehicle_models=["T13J"],
+        stamping_vehicle_models=["T13J"],
+        l0_scopes=[L0Scope(location="芜湖", vehicle_model="T13J", bom_version="D-00")],
+    )
+    item = CostingEngineAnnualItemVO(
+        code="annual_procurement_object",
+        scope_key="T13J|D-00",
+        exists=False,
+        will_auto_calc=True,
+    )
+    user = SimpleNamespace(id=1, username="tester", real_name="测试", is_admin=True)
+    return orch, db, item, discovery, user, run_annual_item
+
+
+def test_run_annual_procurement_object_calls_generate() -> None:
+    orch, db, item, discovery, user, run_annual_item = _annual_procurement_fixture()
+    orch.procurement_svc.generate.return_value = SimpleNamespace(object_count=42)
+
+    ok, message, metrics = run_annual_item(
+        orch, db, discovery=discovery, item=item, current_user=user
+    )
+
+    assert ok is True
+    assert "objects=42" in message
+    assert metrics == {"object_count": 42}
+    dto = orch.procurement_svc.generate.call_args.args[1]
+    assert dto.location == "芜湖"
+    assert dto.vehicle_model == "T13J"
+    assert dto.bom_version == "D-00"
+
+
+def test_run_annual_procurement_object_maps_full_generate_gate() -> None:
+    from app.common.engineering_change_gates import (
+        EC_GATE_ENGINE_PROCUREMENT,
+        EC_GATE_FULL_GENERATE,
+    )
+    from app.exceptions.base import BusinessException
+
+    orch, db, item, discovery, user, run_annual_item = _annual_procurement_fixture()
+    orch.procurement_svc.generate.side_effect = BusinessException(EC_GATE_FULL_GENERATE, code=409)
+
+    ok, message, metrics = run_annual_item(
+        orch, db, discovery=discovery, item=item, current_user=user
+    )
+
+    assert ok is False
+    assert message == EC_GATE_ENGINE_PROCUREMENT
+    assert metrics is None

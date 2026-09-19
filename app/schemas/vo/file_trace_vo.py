@@ -5,7 +5,7 @@ from __future__ import annotations
 from datetime import datetime
 from typing import Self
 
-from pydantic import BaseModel, field_serializer, model_validator
+from pydantic import BaseModel, ConfigDict, field_serializer, model_validator
 
 from app.common.timezone import datetime_to_iso
 from app.services.file_trace.categories import category_label
@@ -52,7 +52,7 @@ def _build_scope_text(
 class UploadFileVO(BaseModel):
     """溯源文件列表 / 详情。"""
 
-    model_config = {"from_attributes": True}
+    model_config = ConfigDict(from_attributes=True)
 
     id: int
     file_category: str

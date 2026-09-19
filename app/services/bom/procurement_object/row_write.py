@@ -1,4 +1,4 @@
-"""采购对象行 Write 装配 — generate / 合册插行共用。"""
+"""采购对象行 Write 装配 — generate / 工程变更插行共用。"""
 
 from __future__ import annotations
 
@@ -27,7 +27,7 @@ def build_object_row_write(
 ) -> BomProcurementObjectWrite:
     """
     分类行 → 落库 Write。
-    始终 audit_status=pending（合册抄确认也不抄审核）。
+    始终 audit_status=pending（工程变更抄确认也不抄审核）。
     """
     confirm_status = "pending"
     confirmed_by = None

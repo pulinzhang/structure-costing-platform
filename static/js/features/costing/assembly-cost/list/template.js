@@ -114,9 +114,9 @@ export function assemblyCostListTemplate() {
                             </button>
                             <button id="lacExportBundleBtn" type="button"
                                     class="inline-flex items-center gap-1.5 bg-transparent text-[#6E6E73] border border-[#2A2A35] px-3 py-1.5 text-[11px] font-medium rounded-md hover:border-[#FF1E27]/50 hover:text-[#FF1E27] hover:bg-[#FF1E27]/10 hover:shadow-[0_0_12px_rgba(255,30,39,0.2)] transition-all duration-200"
-                                    title="导出核对合册：成品核价（树根）+ 冲压零件核价 + 焊接费 + 加工费 + 钢材联动等（须选定年/月/基地/项目/版本）">
+                                    title="导出月度核对：成品核价（树根）+ 冲压零件核价 + 焊接费 + 加工费 + 钢材联动等（须选定年/月/基地/项目/版本）">
                                 ${window.svgIcon('download', 'w-3 h-3')}
-                                导出核对合册
+                                导出月度核对
                             </button>
                             </div>
                         </div>

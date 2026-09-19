@@ -3,7 +3,7 @@
 用于 Repository 层返回结构化数据，避免使用字典
 """
 
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, ConfigDict, Field
 
 
 class PolicyFilterOptions(BaseModel):
@@ -24,7 +24,7 @@ class ExportRow(BaseModel):
     每行代表一个政策主表+阶梯明细组合
     """
 
-    model_config = {"from_attributes": True}
+    model_config = ConfigDict(from_attributes=True)
 
     # 政策主表字段
     policy_id: int

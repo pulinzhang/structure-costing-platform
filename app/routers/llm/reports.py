@@ -47,7 +47,7 @@ def create_report(
 
 
 @router.get(
-    "/reports/{report_id}",
+    "/reports/{report_id:int}",
     response_model=ApiResponse[LlmAnalysisReportVO],
 )
 def get_report(
@@ -97,7 +97,7 @@ def list_reports(
 
 
 @router.delete(
-    "/reports/{report_id}",
+    "/reports/{report_id:int}",
     response_model=ApiResponse[None],
 )
 def delete_report(

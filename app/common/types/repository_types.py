@@ -172,9 +172,15 @@ class StepMetricsJson(TypedDict, total=False):
     result: bool
     created_count: int | None
     updated_count: int | None
+    object_count: int
+    node_count: int
+    line_count: int
 
 
 class EngineWorkerResultJson(SummaryJson, total=False):
     """引擎 worker 写入异步任务 result 的载荷（summary + run_id）。"""
 
     run_id: int
+    started_at: str
+    finished_at: str
+    duration_seconds: int

@@ -6,7 +6,7 @@ from datetime import datetime
 from decimal import Decimal
 from typing import Any
 
-from pydantic import BaseModel, Field, field_serializer
+from pydantic import BaseModel, ConfigDict, Field, field_serializer
 
 from app.common.money import Q2, Q4, format_money, optional_format_money
 from app.common.timezone import datetime_to_iso
@@ -17,7 +17,7 @@ from app.common.timezone import datetime_to_iso
 class StampingPartResponse(BaseModel):
     """冲压零件响应 VO"""
 
-    model_config = {"from_attributes": True}
+    model_config = ConfigDict(from_attributes=True)
 
     id: int
     location: str
@@ -81,7 +81,7 @@ class StampingPartResponse(BaseModel):
 class StampingPartListResponse(BaseModel):
     """冲压零件列表项 VO（精简字段，含工序统计数）"""
 
-    model_config = {"from_attributes": True}
+    model_config = ConfigDict(from_attributes=True)
 
     id: int
     vehicle_model: str
@@ -118,7 +118,7 @@ class StampingPartListResponse(BaseModel):
 class StampingProcessResponse(BaseModel):
     """冲压工序响应 VO"""
 
-    model_config = {"from_attributes": True}
+    model_config = ConfigDict(from_attributes=True)
 
     id: int
     part_id: int
@@ -141,7 +141,7 @@ class StampingProcessResponse(BaseModel):
 class StampingPartWithProcessesResponse(BaseModel):
     """冲压零件（含工序列表）响应 VO"""
 
-    model_config = {"from_attributes": True}
+    model_config = ConfigDict(from_attributes=True)
 
     id: int
     location: str

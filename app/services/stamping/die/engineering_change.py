@@ -1,4 +1,4 @@
-"""模具布点：工程变更合册按号插行 / 回滚（只 flush，由调用方 commit）。"""
+"""模具布点：工程变更按号插行 / 回滚（只 flush，由调用方 commit）。"""
 
 from __future__ import annotations
 
@@ -39,7 +39,7 @@ class EngineeringChangeDieProcessSpec:
 
 @dataclass(slots=True)
 class EngineeringChangeDiePartSpec:
-    """合册待插的一件布点 + 工序。"""
+    """工程变更待插的一件布点 + 工序。"""
 
     part: StampingDiePartInsert
     processes: list[EngineeringChangeDieProcessSpec]
@@ -69,7 +69,7 @@ def list_parts_as_of(
     as_of_year: int,
     as_of_month: int,
 ) -> list[EngineeringChangeDieAsOfRow]:
-    """当月命中的布点零件号清单（合册找旧号 / 避重）。"""
+    """当月命中的布点零件号清单（工程变更找旧号 / 避重）。"""
     rows: list[EngineeringChangeDieAsOfRow] = []
     for row in die_part_repo.list_existing_in_scope(
         db, location=location, vehicle_model=vehicle_model
@@ -170,7 +170,7 @@ def insert_for_engineering_change(
     specs: list[EngineeringChangeDiePartSpec],
     current_user: UserVO,
 ) -> list[EngineeringChangeDiePartResult]:
-    """合册按号增行；可选失效前驱。只 flush。"""
+    """工程变更按号增行；可选失效前驱。只 flush。"""
     audit = audit_create(current_user)
     results: list[EngineeringChangeDiePartResult] = []
     for spec in specs:

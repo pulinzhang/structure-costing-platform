@@ -1,6 +1,6 @@
 """权限树节点 VO"""
 
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, ConfigDict, Field
 
 
 class PermissionNodeVO(BaseModel):
@@ -12,7 +12,7 @@ class PermissionNodeVO(BaseModel):
     mandatory: bool = False
     children: list["PermissionNodeVO"] = Field(default_factory=list)
 
-    model_config = {"from_attributes": True}
+    model_config = ConfigDict(from_attributes=True)
 
 
 PermissionNodeVO.model_rebuild()

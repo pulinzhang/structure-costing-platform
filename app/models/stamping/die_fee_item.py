@@ -19,7 +19,11 @@ class StampingDieFeeItem(Base):
         ForeignKey("stamping_die_fees.id", ondelete="CASCADE"),
         nullable=False,
     )
-    source_die_process_id: Mapped[int | None] = mapped_column(Integer, nullable=True)
+    source_die_process_id: Mapped[int | None] = mapped_column(
+        Integer,
+        nullable=True,
+        comment="来源布点工序 id（软指针；再导会删插工序，不加 FK）",
+    )
     process_seq: Mapped[str] = mapped_column(String(20), nullable=False)
     process_order: Mapped[int] = mapped_column(Integer, nullable=False, default=1)
     process_code: Mapped[str | None] = mapped_column(String(50), nullable=True)

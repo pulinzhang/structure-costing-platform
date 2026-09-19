@@ -19,6 +19,7 @@ from app.common.engineering_change_gates import (
     EC_CHANGE_ORDER_ROW_COUNT,
     EC_EFFECTIVE_MISMATCH,
     EC_GATE_ENGINE_BREAKDOWN,
+    EC_GATE_ENGINE_PROCUREMENT,
     EC_GATE_FULL_GENERATE,
     EC_PART_NOT_ON_TREE,
     EC_PROJECT_MISMATCH,
@@ -91,6 +92,7 @@ def test_snapshot_blocks_full_generate_on_ec_or_expired() -> None:
 def test_gate_message_constants() -> None:
     assert "工程变更" in EC_GATE_FULL_GENERATE
     assert "拆解" in EC_GATE_ENGINE_BREAKDOWN
+    assert "采购对象" in EC_GATE_ENGINE_PROCUREMENT
 
 
 def test_template_change_order_examples_and_parses_as_book() -> None:

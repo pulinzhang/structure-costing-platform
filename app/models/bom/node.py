@@ -245,7 +245,7 @@ class BomNode(AuditUserMixin, Base):
     bom_version: Mapped[str] = mapped_column(
         String(20),
         nullable=False,
-        comment="清单版本字（SOP 抄头；合册新树可写变更字）",
+        comment="清单版本字（SOP 抄头；工程变更新树可写变更字）",
     )
     effective_year: Mapped[int] = mapped_column(Integer, nullable=False, comment="生效年")
     effective_month: Mapped[int] = mapped_column(Integer, nullable=False, comment="生效月")

@@ -1,4 +1,4 @@
-"""工程变更单与合册校验。"""
+"""工程变更单与工程变更校验。"""
 
 from __future__ import annotations
 
@@ -397,7 +397,7 @@ def validate_before_assembly_active(
     """
     变更前总成须存在且在切点前一月仍有效；生效月须晚于旧总成生效月。
 
-    切点前一月须有效：合册生效月才「切」旧树，前一月旧月账仍要看见 AA。
+    切点前一月须有效：工程变更生效月才「切」旧树，前一月旧月账仍要看见 AA。
     切点当月若仍有效也可：导入瞬间旧树尚未被标失效。
     """
     as_of = format_period(effective_year, effective_month)

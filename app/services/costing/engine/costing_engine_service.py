@@ -3,12 +3,14 @@
 from __future__ import annotations
 
 import logging
+from datetime import datetime
 from typing import cast
 
 from sqlalchemy.orm import Session
 
 from app.common.audit import audit_create, display_name
-from app.common.timezone import now
+from app.common.duration import duration_seconds as calc_duration_seconds
+from app.common.timezone import datetime_to_iso, now
 from app.common.types.repository_types import (
     EngineWorkerResultJson,
     GateJson,
@@ -62,6 +64,24 @@ SOFT_UPLOAD_GATE_CODES = frozenset(
         "vehicle_model_period",
     }
 )
+
+
+def _run_timing_payload(
+    started_at: datetime | None,
+    finished_at: datetime | None,
+) -> EngineWorkerResultJson:
+    """从 Run 起止时间拼 worker result 的耗时字段。"""
+    payload: EngineWorkerResultJson = {}
+    started_iso = datetime_to_iso(started_at)
+    if started_iso is not None:
+        payload["started_at"] = started_iso
+    finished_iso = datetime_to_iso(finished_at)
+    if finished_iso is not None:
+        payload["finished_at"] = finished_iso
+    seconds = calc_duration_seconds(started_at, finished_at)
+    if seconds is not None:
+        payload["duration_seconds"] = seconds
+    return payload
 
 
 class CostingEngineHardStopError(BusinessException):
@@ -320,9 +340,14 @@ class CostingEngineService:
                     message="用户删除 Run",
                     result={"run_id": run_id, "status": "deleted"},
                 )
+            run = self.run_repo.get_by_id(db, run_id)
             result_payload: EngineWorkerResultJson = {
                 "run_id": run_id,
                 **summary,
+                **_run_timing_payload(
+                    run.started_at if run is not None else None,
+                    run.finished_at if run is not None else None,
+                ),
             }
             parent_status = STATUS_COMPLETED
             if summary.get("status") == "failed":
@@ -333,10 +358,14 @@ class CostingEngineService:
                 result=result_payload,
             )
 
+        crash_timing: EngineWorkerResultJson = {}
+
         def on_crash(db: Session, error: BaseException) -> None:
+            nonlocal crash_timing
             try:
                 run = self.run_repo.get_by_id(db, run_id)
                 if run is not None:
+                    finished_at = now()
                     crash_summary: SummaryJson = {
                         "status": "failed",
                         "location": location,
@@ -351,11 +380,21 @@ class CostingEngineService:
                         run,
                         status="failed",
                         summary_json=crash_summary,
-                        finished_at=now(),
+                        finished_at=finished_at,
                     )
                     db.commit()
+                    crash_timing = _run_timing_payload(run.started_at, finished_at)
             except Exception:
                 logger.exception("回写失败状态失败 run_id=%s", run_id)
+
+        def crash_result(error: BaseException) -> EngineWorkerResultJson:
+            payload: EngineWorkerResultJson = {
+                "run_id": run_id,
+                "status": "failed",
+                "error": str(error),
+                **crash_timing,
+            }
+            return payload
 
         self.async_task_service.submit_session_worker(
             task_id,
@@ -364,9 +403,5 @@ class CostingEngineService:
             on_crash=on_crash,
             crash_message=lambda error: f"引擎失败: {error}",
             crash_progress=100,
-            crash_result=lambda error: {
-                "run_id": run_id,
-                "status": "failed",
-                "error": str(error),
-            },
+            crash_result=crash_result,
         )

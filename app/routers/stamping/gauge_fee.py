@@ -142,7 +142,7 @@ def delete_gauge_fee_scope(
 
 
 @router.put(
-    "/{record_id}",
+    "/{record_id:int}",
     response_model=ApiResponse[StampingGaugeFeeVO],
 )
 def update_gauge_fee(
@@ -156,7 +156,7 @@ def update_gauge_fee(
 
 
 @router.delete(
-    "/{record_id}",
+    "/{record_id:int}",
     response_model=ApiResponse[None],
 )
 def delete_gauge_fee(

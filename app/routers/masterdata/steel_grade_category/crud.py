@@ -104,7 +104,7 @@ def export_steel_grade_categories(
 
 
 @router.get(
-    "/{record_id}",
+    "/{record_id:int}",
     response_model=ApiResponse[SteelGradeCategoryVO],
 )
 def get_steel_grade_category(
@@ -130,7 +130,7 @@ def create_steel_grade_category(
 
 
 @router.put(
-    "/{record_id}",
+    "/{record_id:int}",
     response_model=ApiResponse[SteelGradeCategoryVO],
 )
 def update_steel_grade_category(
@@ -144,7 +144,7 @@ def update_steel_grade_category(
 
 
 @router.delete(
-    "/{record_id}",
+    "/{record_id:int}",
     response_model=ApiResponse[None],
 )
 def delete_steel_grade_category(
