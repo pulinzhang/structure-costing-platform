@@ -1,9 +1,10 @@
-"""核价引擎门禁：项目、冲压工艺、冲次单价。"""
+"""核价引擎门禁：项目、冲压工艺、冲次单价、模具单价。"""
 
 from __future__ import annotations
 
 from sqlalchemy.orm import Session
 
+from app.repositories.stamping.die_unit_price_repository import StampingDieUnitPriceRepository
 from app.repositories.stamping.tonnage_price_repository import StampingTonnagePriceRepository
 from app.schemas.vo.costing_engine_vo import CostingEngineGateItemVO
 from app.services.costing.engine.gate.item import (
@@ -13,6 +14,10 @@ from app.services.costing.engine.gate.item import (
     skip_if_period_filtered,
 )
 from app.services.costing.engine.scope_discovery import DiscoveryResult
+from app.services.stamping.die_fee.calc.orchestrator.ready import (
+    evaluate_die_fee_coverage,
+)
+from app.services.stamping.die_fee.fee_math import ZERO
 
 
 def check_period_projects(
@@ -26,9 +31,7 @@ def check_period_projects(
             code="vehicle_model_period",
             ok=False,
             missing=["该月项目未生效或已失效"],
-            message=(
-                "该月命中的零件或 BOM 树所属项目未生效或已失效，" "请到项目一览表核对生效/失效"
-            ),
+            message=("该月命中的零件或 BOM 树所属项目未生效或已失效，" "请到项目一览核对生效/失效"),
             location=location,
             year=year,
             month=month,
@@ -145,6 +148,76 @@ def check_tonnage_price(
         ok=True,
         missing=[],
         message=f"冲次单价 {total} 条",
+        location=location,
+        year=year,
+        month=month,
+    )
+
+
+def check_die_unit_price(
+    unit_price_repo: StampingDieUnitPriceRepository,
+    db: Session,
+    discovery: DiscoveryResult,
+    location: str,
+    year: int,
+    month: int,
+) -> CostingEngineGateItemVO:
+    """有布点年交集的项目须有生效模具单价；有无布点问 evaluate_die_fee_coverage.has_dies。"""
+    skipped = skip_if_period_filtered(
+        discovery, code="die_unit_price", location=location, year=year, month=month
+    )
+    if skipped is not None:
+        return skipped
+    aliases = discovery.location_aliases
+    die_vehicles: list[str] = []
+    for vehicle_model in discovery.vehicle_models:
+        coverage = evaluate_die_fee_coverage(
+            db,
+            year=year,
+            aliases=aliases,
+            vehicle_model=vehicle_model,
+        )
+        if coverage.has_dies:
+            die_vehicles.append(vehicle_model)
+    if not die_vehicles:
+        return make_skipped(
+            code="die_unit_price",
+            message="无该年有效模具布点，跳过模具单价与模具费检查",
+            location=location,
+            year=year,
+            month=month,
+        )
+    missing: list[str] = []
+    for vehicle_model in die_vehicles:
+        found = False
+        for alias in aliases:
+            price = unit_price_repo.get_effective(db, location=alias, vehicle_model=vehicle_model)
+            if (
+                price is not None
+                and price.allocation_qty is not None
+                and price.allocation_qty > ZERO
+            ):
+                found = True
+                break
+        if not found:
+            missing.append(vehicle_model)
+    if missing:
+        preview = "、".join(missing[:8])
+        extra = f" 等 {len(missing)} 个" if len(missing) > 8 else ""
+        return make_item(
+            code="die_unit_price",
+            ok=False,
+            missing=missing[:20],
+            message=f"缺少生效模具单价或分摊万台无效：{preview}{extra}",
+            location=location,
+            year=year,
+            month=month,
+        )
+    return make_item(
+        code="die_unit_price",
+        ok=True,
+        missing=[],
+        message=f"模具单价已齐（{len(die_vehicles)} 个有布点项目）",
         location=location,
         year=year,
         month=month,

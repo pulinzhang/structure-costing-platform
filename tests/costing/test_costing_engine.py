@@ -20,6 +20,15 @@ def _plan_item(items: list[CostingEngineAnnualItemVO], code: str) -> CostingEngi
     return next(item for item in items if item.code == code)
 
 
+def _stub_no_dies(monkeypatch: pytest.MonkeyPatch) -> None:
+    from app.services.stamping.die_fee.calc.orchestrator.ready import DieFeeCoverage
+
+    monkeypatch.setattr(
+        "app.services.costing.engine.annual_calc_planner.evaluate_die_fee_coverage",
+        lambda *args, **kwargs: DieFeeCoverage(False, False, "无模具布点", 0, 0),
+    )
+
+
 def test_thickness_policy_is_hard_gate() -> None:
     assert "thickness_policy" not in SOFT_UPLOAD_GATE_CODES
     assert "packaging_transport" in SOFT_UPLOAD_GATE_CODES
@@ -33,6 +42,7 @@ def test_gate_navigate_hard_stop_codes_have_page() -> None:
         "vehicle_model_period",
         "stamping_process",
         "tonnage_price",
+        "die_unit_price",
         "welding_unit_price",
         "bom_snapshot",
         "annual_part_price",
@@ -56,7 +66,7 @@ def test_gate_navigate_hard_stop_codes_have_page() -> None:
         if code == "vehicle_model_period":
             assert nav.page == "vehicle-model-list"
             assert nav.query.get("location") == "青岛"
-            assert nav.label == "去项目一览表"
+            assert nav.label == "去项目一览"
         if code == "base_price":
             assert nav.query.get("year") == 2025
             assert nav.query.get("month") == 1
@@ -479,6 +489,7 @@ def test_annual_planner_welding_fee_auto_calc_when_coverage_incomplete(
 
     planner = AnnualCalcPlanner()
     db = MagicMock()
+    _stub_no_dies(monkeypatch)
     monkeypatch.setattr(
         "app.services.costing.engine.annual_calc_planner.evaluate_process_fee_coverage",
         lambda *args, **kwargs: ProcessFeeCoverage(True, "冲压加工费已完成", 1, 1),
@@ -522,6 +533,7 @@ def test_annual_planner_skips_welding_fee_when_coverage_complete(
 
     planner = AnnualCalcPlanner()
     db = MagicMock()
+    _stub_no_dies(monkeypatch)
     monkeypatch.setattr(
         "app.services.costing.engine.annual_calc_planner.evaluate_process_fee_coverage",
         lambda *args, **kwargs: ProcessFeeCoverage(True, "冲压加工费已完成", 1, 1),
@@ -558,6 +570,7 @@ def test_annual_planner_process_fee_auto_calc_when_coverage_incomplete(
 
     planner = AnnualCalcPlanner()
     db = MagicMock()
+    _stub_no_dies(monkeypatch)
     monkeypatch.setattr(
         "app.services.costing.engine.annual_calc_planner.evaluate_process_fee_coverage",
         lambda *args, **kwargs: ProcessFeeCoverage(
@@ -582,6 +595,116 @@ def test_annual_planner_process_fee_auto_calc_when_coverage_incomplete(
     assert process_fee.will_auto_calc is True
 
 
+def test_annual_planner_die_fee_auto_calc_when_dies_without_fee(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    from app.services.stamping.die_fee.calc.orchestrator.ready import DieFeeCoverage
+    from app.services.stamping.process_fee.calc.orchestrator.ready import ProcessFeeCoverage
+
+    planner = AnnualCalcPlanner()
+    db = MagicMock()
+    monkeypatch.setattr(
+        "app.services.costing.engine.annual_calc_planner.evaluate_process_fee_coverage",
+        lambda *args, **kwargs: ProcessFeeCoverage(True, "冲压加工费已完成", 1, 1),
+    )
+    monkeypatch.setattr(
+        "app.services.costing.engine.annual_calc_planner.evaluate_die_fee_coverage",
+        lambda *args, **kwargs: DieFeeCoverage(False, True, "有模具布点，当年无模具费结果", 5, 0),
+    )
+    discovery = DiscoveryResult(
+        location="青岛",
+        year=2026,
+        month=1,
+        location_aliases=["青岛"],
+        vehicle_models=["T28"],
+        stamping_vehicle_models=["T28"],
+        l0_scopes=[],
+    )
+    items = planner.plan(db, discovery)
+    die_fee = _plan_item(items, "annual_die_fee")
+    assert die_fee.exists is False
+    assert die_fee.will_auto_calc is True
+
+
+def test_annual_planner_skips_die_fee_when_fee_exists(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    from app.services.stamping.die_fee.calc.orchestrator.ready import DieFeeCoverage
+    from app.services.stamping.process_fee.calc.orchestrator.ready import ProcessFeeCoverage
+
+    planner = AnnualCalcPlanner()
+    db = MagicMock()
+    monkeypatch.setattr(
+        "app.services.costing.engine.annual_calc_planner.evaluate_process_fee_coverage",
+        lambda *args, **kwargs: ProcessFeeCoverage(True, "冲压加工费已完成", 1, 1),
+    )
+    monkeypatch.setattr(
+        "app.services.costing.engine.annual_calc_planner.evaluate_die_fee_coverage",
+        lambda *args, **kwargs: DieFeeCoverage(True, True, "冲压模具费已有结果", 5, 3),
+    )
+    discovery = DiscoveryResult(
+        location="青岛",
+        year=2026,
+        month=1,
+        location_aliases=["青岛"],
+        vehicle_models=["T28"],
+        stamping_vehicle_models=["T28"],
+        l0_scopes=[],
+    )
+    items = planner.plan(db, discovery)
+    die_fee = _plan_item(items, "annual_die_fee")
+    assert die_fee.exists is True
+    assert die_fee.will_auto_calc is False
+
+
+def test_annual_planner_omits_die_fee_without_dies(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    from app.services.stamping.process_fee.calc.orchestrator.ready import ProcessFeeCoverage
+
+    planner = AnnualCalcPlanner()
+    db = MagicMock()
+    _stub_no_dies(monkeypatch)
+    monkeypatch.setattr(
+        "app.services.costing.engine.annual_calc_planner.evaluate_process_fee_coverage",
+        lambda *args, **kwargs: ProcessFeeCoverage(True, "冲压加工费已完成", 1, 1),
+    )
+    discovery = DiscoveryResult(
+        location="青岛",
+        year=2026,
+        month=1,
+        location_aliases=["青岛"],
+        vehicle_models=["T28"],
+        stamping_vehicle_models=["T28"],
+        l0_scopes=[],
+    )
+    items = planner.plan(db, discovery)
+    assert all(item.code != "annual_die_fee" for item in items)
+
+
+def test_die_fee_coverage_has_dies_without_fee() -> None:
+    from app.services.stamping.die_fee.calc.orchestrator.ready import (
+        evaluate_die_fee_coverage,
+    )
+
+    die_repo = MagicMock()
+    die_repo.list_with_processes.return_value = [SimpleNamespace(id=1)]
+    fee_repo = MagicMock()
+    fee_repo.count_by_year_location.return_value = 0
+    coverage = evaluate_die_fee_coverage(
+        MagicMock(),
+        year=2026,
+        aliases=["青岛"],
+        vehicle_model="T28",
+        die_repo=die_repo,
+        fee_repo=fee_repo,
+    )
+    assert coverage.has_dies is True
+    assert coverage.complete is False
+    assert coverage.part_count == 1
+    assert coverage.fee_count == 0
+
+
 def test_annual_planner_welding_breakdown_auto_calc_when_tree_stale(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
@@ -591,6 +714,7 @@ def test_annual_planner_welding_breakdown_auto_calc_when_tree_stale(
 
     planner = AnnualCalcPlanner()
     db = MagicMock()
+    _stub_no_dies(monkeypatch)
     monkeypatch.setattr(
         "app.services.costing.engine.annual_calc_planner.evaluate_process_fee_coverage",
         lambda *args, **kwargs: ProcessFeeCoverage(True, "冲压加工费已完成", 1, 1),
@@ -670,6 +794,7 @@ def test_annual_planner_skips_process_fee_without_stamping_process(
 ) -> None:
     planner = AnnualCalcPlanner()
     db = MagicMock()
+    _stub_no_dies(monkeypatch)
     coverage_fn = MagicMock()
     monkeypatch.setattr(
         "app.services.costing.engine.annual_calc_planner.evaluate_process_fee_coverage",
@@ -698,6 +823,7 @@ def test_annual_planner_skips_welding_without_bom(
 
     planner = AnnualCalcPlanner()
     db = MagicMock()
+    _stub_no_dies(monkeypatch)
     monkeypatch.setattr(
         "app.services.costing.engine.annual_calc_planner.evaluate_process_fee_coverage",
         lambda *args, **kwargs: ProcessFeeCoverage(True, "冲压加工费已完成", 1, 1),
@@ -716,6 +842,39 @@ def test_annual_planner_skips_welding_without_bom(
 
     assert any(item.code == "annual_process_fee" for item in items)
     assert all(not item.code.startswith("annual_welding") for item in items)
+
+
+def test_gate_skips_die_unit_price_without_dies(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    from app.services.costing.engine.gate.stamping import check_die_unit_price
+    from app.services.stamping.die_fee.calc.orchestrator.ready import DieFeeCoverage
+
+    unit_price_repo = MagicMock()
+    monkeypatch.setattr(
+        "app.services.costing.engine.gate.stamping.evaluate_die_fee_coverage",
+        lambda *args, **kwargs: DieFeeCoverage(False, False, "无模具布点", 0, 0),
+    )
+    discovery = DiscoveryResult(
+        location="青岛",
+        year=2026,
+        month=1,
+        location_aliases=["青岛"],
+        vehicle_models=["T28"],
+        stamping_vehicle_models=["T28"],
+        l0_scopes=[],
+    )
+    item = check_die_unit_price(
+        unit_price_repo,
+        MagicMock(),
+        discovery,
+        "青岛",
+        2026,
+        1,
+    )
+    assert item.ok is True
+    assert item.code == "die_unit_price"
+    unit_price_repo.get_effective.assert_not_called()
 
 
 def test_gate_skips_tonnage_without_stamping_process() -> None:

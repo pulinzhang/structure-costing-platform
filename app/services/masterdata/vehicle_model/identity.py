@@ -20,7 +20,7 @@ from app.schemas.vo.vehicle_model_vo import (
 from app.services.masterdata.location import LocationService
 
 PLACEHOLDER_CODES = frozenset({"UNKNOWN"})
-PAGE_HINT = "请到项目一览表手工增加或上传（#/vehicle-model-list）"
+PAGE_HINT = "请到项目一览手工增加或上传（#/vehicle-model-list）"
 FILE_MISMATCH = "文件项目为 {parsed}，与填写的项目 {selected} 不一致"
 
 __all__ = [

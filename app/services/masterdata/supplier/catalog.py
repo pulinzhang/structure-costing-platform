@@ -17,6 +17,7 @@ from app.parsers.masterdata.supplier_parser import (
     HEADER_ALIASES,
     HEADER_ERP_CODE,
     HEADER_FULL_NAME,
+    HEADER_STATUS,
 )
 from app.repositories.masterdata.supplier import SupplierRepository
 from app.schemas.vo.user_vo import UserVO
@@ -28,10 +29,12 @@ IMPORT_HEADERS = (
     HEADER_ALIASES,
 )
 
+EXPORT_HEADERS = (*IMPORT_HEADERS, HEADER_STATUS)
+
 
 def catalog_sheet_styles() -> tuple[Font, Font, PatternFill, Alignment, Border]:
     header_font = Font(name="微软雅黑", size=10, bold=True, color="FFFFFF")
-    header_fill = PatternFill(start_color="4472C4", end_color="4472C4", fill_type="solid")
+    header_fill = PatternFill(start_color="1A1A22", end_color="1A1A22", fill_type="solid")
     header_alignment = Alignment(horizontal="center", vertical="center")
     data_font = Font(name="微软雅黑", size=9)
     thin_border = Border(
@@ -56,6 +59,23 @@ def attach_catalog_sheet(workbook: Workbook) -> tuple[Worksheet, Font, Border]:
     sheet.column_dimensions["B"].width = 40
     sheet.column_dimensions["C"].width = 16
     sheet.column_dimensions["D"].width = 36
+    return sheet, data_font, thin_border
+
+
+def attach_export_sheet(workbook: Workbook) -> tuple[Worksheet, Font, Border]:
+    sheet = resolve_worksheet(workbook, "供应商")
+    header_font, data_font, header_fill, header_alignment, thin_border = catalog_sheet_styles()
+    for col, title in enumerate(EXPORT_HEADERS, start=1):
+        cell = sheet.cell(row=1, column=col, value=title)
+        cell.font = header_font
+        cell.fill = header_fill
+        cell.alignment = header_alignment
+        cell.border = thin_border
+    sheet.column_dimensions["A"].width = 16
+    sheet.column_dimensions["B"].width = 40
+    sheet.column_dimensions["C"].width = 16
+    sheet.column_dimensions["D"].width = 36
+    sheet.column_dimensions["E"].width = 10
     return sheet, data_font, thin_border
 
 
@@ -85,13 +105,19 @@ def write_catalog_to_workbook(
         keyword=keyword,
         is_enabled=is_enabled,
     )
-    sheet, data_font, thin_border = attach_catalog_sheet(workbook)
+    sheet, data_font, thin_border = attach_export_sheet(workbook)
     for row_idx, record in enumerate(records, start=2):
         aliases = "、".join(item.alias for item in record.aliases)
         write_import_row(
             sheet,
             row_idx,
-            (record.abbreviation, record.full_name, record.erp_code, aliases or None),
+            (
+                record.abbreviation,
+                record.full_name,
+                record.erp_code,
+                aliases or None,
+                "已启用" if record.is_enabled else "已禁用",
+            ),
             data_font,
             thin_border,
         )

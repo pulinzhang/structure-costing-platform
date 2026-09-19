@@ -6,10 +6,10 @@ from typing import Any
 
 @dataclass
 class BaseColumnConfig:
-    """一座已命中 lookup 的基地列对。"""
+    """一座已命中 lookup 的基地列对。mill_col 为 None 表示仅价格列（钢厂在附页或承接）。"""
 
     location: str
-    mill_col: int
+    mill_col: int | None
     price_col: int
 
 
@@ -20,6 +20,9 @@ class ParsedContext:
     base_configs: list[BaseColumnConfig]
     spec_col: int
     sheet_name: str
+    sheet_mill_location: str | None = None
+    sheet_grade_mills: dict[str, str] | None = None
+    carry_mills: dict[tuple[str, str], str] | None = None
 
 
 @dataclass

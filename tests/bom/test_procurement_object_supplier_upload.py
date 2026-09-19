@@ -349,7 +349,24 @@ def test_empty_cell_clears_supplier(db: Session) -> None:
     assert _object_row(db, service).supplier_name is None
 
 
-def test_approved_change_rejected(db: Session) -> None:
+def test_qa_failed_upload_still_updates_pending(db: Session) -> None:
+    service = _generate(db)
+    header = service.repository.get_list_by_scope(
+        db, location="芜湖", vehicle_model="T13J", bom_version="V3"
+    )
+    assert header is not None
+    header.qa_passed = False
+    header.qa_error_text = "清单已被部分删除，须重新生成后才能审核"
+    db.commit()
+    content, _ = service.build_supplier_template(
+        db, location="芜湖", vehicle_model="T13J", bom_version="V3"
+    )
+    result = _upload(service, db, _set_supplier_cell(content, "常庆"))
+    assert result.updated_count == 1
+    assert _object_row(db, service).supplier_name == FULL_NAME
+
+
+def test_approved_change_skipped(db: Session) -> None:
     service = _generate(db)
     content, _ = service.build_supplier_template(
         db, location="芜湖", vehicle_model="T13J", bom_version="V3"
@@ -368,8 +385,9 @@ def test_approved_change_rejected(db: Session) -> None:
     content2, _ = service.build_supplier_template(
         db, location="芜湖", vehicle_model="T13J", bom_version="V3"
     )
-    with pytest.raises(BusinessException, match="已审核"):
-        _upload(service, db, _set_supplier_cell(content2, None))
+    result = _upload(service, db, _set_supplier_cell(content2, None))
+    assert result.cleared_count == 0
+    assert result.unchanged_count == 1
     assert _object_row(db, service).supplier_name == FULL_NAME
 
 
@@ -426,6 +444,30 @@ def test_same_part_number_fills_once_updates_all_rows(db: Session) -> None:
     matched = [row for row in _object_rows(db, service) if row.part_number == "L1-STAMP"]
     assert len(matched) == 2
     assert {row.supplier_name for row in matched} == {FULL_NAME}
+
+
+def test_out_of_scope_part_number_skipped_with_detail(db: Session) -> None:
+    service = _generate(db)
+    content, _ = service.build_supplier_template(
+        db, location="芜湖", vehicle_model="T13J", bom_version="V3"
+    )
+    workbook = load_workbook(BytesIO(content))
+    sheet = workbook.worksheets[0]
+    sheet.cell(2, 1).value = "NOT-IN-SCOPE"
+    for col in range(2, (sheet.max_column or 1) + 1):
+        if sheet.cell(1, col).value == HEADER_SUPPLIER:
+            sheet.cell(2, col).value = "常庆"
+            break
+    buffer = BytesIO()
+    workbook.save(buffer)
+    workbook.close()
+    result = _upload(service, db, buffer.getvalue())
+    assert result.updated_count == 0
+    assert result.skipped_count == 1
+    assert result.skipped_details
+    assert "NOT-IN-SCOPE" in result.skipped_details[0]
+    assert "第2行" in result.skipped_details[0]
+    assert _object_row(db, service).supplier_name is None
 
 
 def test_duplicate_part_number_in_file_rejected(db: Session) -> None:

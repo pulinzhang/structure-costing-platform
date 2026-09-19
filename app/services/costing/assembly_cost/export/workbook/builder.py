@@ -4,11 +4,13 @@ from openpyxl import Workbook
 from sqlalchemy.orm import Session
 
 from app.common.excel_workbook import resolve_worksheet
+from app.models.bom.node import BomNode
 from app.models.costing.assembly_cost import AssemblyCost
 from app.repositories.bom.procurement_object_repository import BomProcurementObjectRepository
 from app.repositories.costing.assembly_cost.assembly_cost_repository import (
     AssemblyCostRepository,
 )
+from app.repositories.costing.assembly_cost.payloads import _chunks
 from app.services.costing.assembly_cost.export.workbook.columns import (
     FINANCE_INDIRECTS_SHEET,
     FINANCE_ITEMS_SHEET,
@@ -25,6 +27,10 @@ from app.services.costing.assembly_cost.export.workbook.items_sheet import write
 from app.services.costing.assembly_cost.export.workbook.labels import export_filter_text
 from app.services.costing.assembly_cost.export.workbook.layout import SheetLayout
 from app.services.costing.assembly_cost.export.workbook.list_sheet import write_list_sheet
+from app.services.costing.assembly_cost.export.workbook.missing_l0_seq import (
+    find_missing_l0_seqs,
+    format_missing_l0_seq_note,
+)
 
 
 def collect_welding_fee_ids(records: list[AssemblyCost]) -> list[int]:
@@ -95,6 +101,26 @@ class AssemblyCostWorkbookBuilder:
             view=view,
         )
         confirm_map = _confirm_map_for_view(db, view, records)
+        seq_no_map = {} if is_procurement else _seq_no_by_source_node_id(db, records)
+        missing_l0_note = ""
+        if not is_procurement:
+            missing_rows, universe_max = find_missing_l0_seqs(
+                db,
+                records,
+                year=year,
+                month=month,
+                location=location,
+                vehicle_model=vehicle_model,
+                part_number=part_number,
+                audit_status=audit_status,
+                calc_status=calc_status,
+                export_seq_nos=seq_no_map,
+            )
+            missing_l0_note = format_missing_l0_seq_note(
+                missing_rows,
+                export_count=len(records),
+                universe_max_seq=universe_max,
+            )
         list_ws = resolve_worksheet(wb, list_sheet_title)
         write_list_sheet(
             self.layout,
@@ -103,6 +129,8 @@ class AssemblyCostWorkbookBuilder:
             filter_text=filter_text,
             view=view,
             confirm_map=confirm_map,
+            seq_no_by_source_node_id=seq_no_map,
+            missing_l0_note=missing_l0_note,
         )
         write_items_sheet(
             self.layout,
@@ -110,6 +138,7 @@ class AssemblyCostWorkbookBuilder:
             records,
             filter_text=filter_text,
             view=view,
+            seq_no_by_source_node_id=seq_no_map,
         )
         _write_welding_sheet(
             wb,
@@ -130,6 +159,28 @@ class AssemblyCostWorkbookBuilder:
                 filter_text=filter_text,
             )
         return list_ws.title, len(records)
+
+
+def _seq_no_by_source_node_id(
+    db: Session,
+    records: list[AssemblyCost],
+) -> dict[int, int | None]:
+    """财务树根 source_node_id = L0；导出序号列直接用节点 seq_no。"""
+    node_ids = sorted(
+        {
+            int(source_node_id)
+            for record in records
+            if (source_node_id := getattr(record, "source_node_id", None)) is not None
+        }
+    )
+    if not node_ids:
+        return {}
+    result: dict[int, int | None] = {}
+    for chunk in _chunks(node_ids):
+        rows = db.query(BomNode.id, BomNode.seq_no).filter(BomNode.id.in_(chunk)).all()
+        for node_id, seq_no in rows:
+            result[int(node_id)] = int(seq_no) if seq_no is not None else None
+    return result
 
 
 def _confirm_map_for_view(

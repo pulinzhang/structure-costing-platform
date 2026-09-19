@@ -123,14 +123,13 @@ export function annualPartPriceUploadTemplate() {
                                         </div>
 
                                         <div id="annualPartPriceUploadProgressPanel" class="hidden text-left w-full">
-                                            <div class="flex items-center justify-between gap-3 mb-3">
-                                                <div class="flex items-center gap-2 min-w-0">
-                                                    ${window.svgIcon('spinner', 'w-4 h-4 text-[#d32f2f]')}
-                                                    <h5 class="text-xs font-medium text-[#ffffff] truncate mb-0">正在导入年度零件价...</h5>
-                                                </div>
+                                            <div class="flex items-center gap-2 min-w-0 mb-3">
+                                                <span id="annualPartPriceUploadProgressIcon">${window.svgIcon('spinner', 'w-4 h-4 text-[#d32f2f]')}</span>
+                                                <h5 id="annualPartPriceUploadProgressTitle" class="text-xs font-medium text-[#ffffff] truncate mb-0">正在导入年度零件价...</h5>
                                             </div>
                                             <div class="h-1.5 w-full bg-[#0a0a0a] border border-[#2c2c2c] overflow-hidden mb-3">
-                                                <div class="h-full bg-[#d32f2f] shadow-[0_0_8px_rgba(211,47,47,0.5)] transition-all duration-300 animate-pulse"
+                                                <div id="annualPartPriceUploadProgressBar"
+                                                     class="h-full bg-[#d32f2f] shadow-[0_0_8px_rgba(211,47,47,0.5)] transition-all duration-300 animate-pulse"
                                                      style="width: 60%"></div>
                                             </div>
                                             <p id="annualPartPriceUploadProgressMsg" class="text-[11px] text-[#9e9e9e] leading-relaxed mb-0 whitespace-pre-wrap break-words max-h-48 overflow-y-auto">解析并写入数据库，请稍候</p>

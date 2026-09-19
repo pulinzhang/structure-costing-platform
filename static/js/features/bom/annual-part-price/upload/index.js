@@ -3,11 +3,22 @@
  * 下载模板：基地 + 项目 + 年度；导入：基地 + 年度
  */
 
-import { annualPartPriceUploadTemplate } from './template.js?v=15';
-
+import { annualPartPriceUploadTemplate } from './template.js?v=16';
+import { bindSyncUploadProgress } from '../../../../sync-upload-progress.js?v=1';
 
 const API_BASE = '/api/bom/annual-part-price';
 const CASCADE_API = '/api/bom/filters/cascade';
+
+const uploadProgress = bindSyncUploadProgress({
+    zoneId: 'annualPartPriceUploadZone',
+    idleId: 'annualPartPriceUploadDropIdle',
+    panelId: 'annualPartPriceUploadProgressPanel',
+    iconId: 'annualPartPriceUploadProgressIcon',
+    titleId: 'annualPartPriceUploadProgressTitle',
+    barId: 'annualPartPriceUploadProgressBar',
+    msgId: 'annualPartPriceUploadProgressMsg',
+    runningTitle: '正在导入年度零件价...',
+});
 const MAX_FILE_SIZE = 5 * 1024 * 1024;
 
 const AnnualPartPriceUploadPage = {
@@ -255,32 +266,20 @@ const AnnualPartPriceUploadPage = {
     },
 
     showProgress(msg = '解析并写入数据库，请稍候') {
-        const idle = document.getElementById('annualPartPriceUploadDropIdle');
-        const panel = document.getElementById('annualPartPriceUploadProgressPanel');
-        const zone = document.getElementById('annualPartPriceUploadZone');
-        const progressMsg = document.getElementById('annualPartPriceUploadProgressMsg');
-        if (idle) idle.classList.add('hidden');
-        if (panel) panel.classList.remove('hidden');
-        if (zone) {
-            zone.classList.add('pointer-events-none');
-            zone.classList.remove('border-[#d32f2f]');
-        }
-        if (progressMsg) progressMsg.textContent = msg;
+        uploadProgress.setRunning(msg);
+        document.getElementById('annualPartPriceUploadZone')?.classList.remove('border-[#d32f2f]');
+    },
+
+    showDoneOnPanel(message, opts = {}) {
+        uploadProgress.setDone(message, opts);
     },
 
     failOnPanel(message) {
-        const text = String(message || '操作失败').trim() || '操作失败';
-        this.showProgress(text);
-        document.getElementById('annualPartPriceUploadZone')?.classList.remove('pointer-events-none');
+        uploadProgress.setFail(message);
     },
 
     hideProgress() {
-        const idle = document.getElementById('annualPartPriceUploadDropIdle');
-        const panel = document.getElementById('annualPartPriceUploadProgressPanel');
-        const zone = document.getElementById('annualPartPriceUploadZone');
-        if (idle) idle.classList.remove('hidden');
-        if (panel) panel.classList.add('hidden');
-        if (zone) zone.classList.remove('pointer-events-none');
+        uploadProgress.hide();
     },
 
     setUploading(isUploading) {
@@ -378,12 +377,7 @@ const AnnualPartPriceUploadPage = {
             } else if (skippedApproved > 0) {
                 msg = `导入完成：新增 ${created} 条，更新 ${updated} 条；另有 ${skippedApproved} 条已审核未覆盖。`;
             }
-            if (skippedApproved > 0) {
-                this.showProgress(msg);
-            } else {
-                showToast(msg, 'success');
-                this.hideProgress();
-            }
+            this.showDoneOnPanel(msg, { hasSkip: skippedApproved > 0 });
             this.clearSelectedFile(true);
         } catch (err) {
             this.failOnPanel(err.message || '导入失败');

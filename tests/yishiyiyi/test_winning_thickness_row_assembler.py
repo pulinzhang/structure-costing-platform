@@ -131,12 +131,23 @@ def test_resolve_ladder_uses_category_not_grade():
     assembler = WinningThicknessRowAssembler()
     policy = _category_policy()
     cache: dict = {}
+    context = _BaseContext(
+        grade="DC01",
+        steel_mill="唐钢",
+        location="芜湖",
+        year=2026,
+        month=1,
+        base_price=Decimal("3800"),
+        processing_fee=Decimal("120"),
+        thick=Decimal("1.00"),
+        spec=None,
+        base_price_id=1,
+    )
 
     resolved_policy, items = assembler._resolve_thickness_ladder(
+        context,
         [policy],
-        steel_mill="唐钢",
         category_name="冷轧",
-        base_thickness=Decimal("1.00"),
         ladder_cache=cache,
     )
 

@@ -37,35 +37,39 @@ def extract_base_configs(
 ) -> tuple[list[BaseColumnConfig], list[str]]:
     """
     第4行基地名、第5行子标题。
-    有「钢厂」列时只走钢厂+价格对；没有钢厂列才按价格列认基地。
+    每列独立判断：钢厂列配右侧价格；仅价格列 mill_col=None。
+    混排（一座基地只有价格、另一座有钢厂）两套都认。
     lookup 未命中记入 skipped，不进 configs。
     """
     header_row = next(iter(sheet.iter_rows(min_row=4, max_row=4, values_only=True)))
     sub_row = next(iter(sheet.iter_rows(min_row=5, max_row=5, values_only=True)))
     configs: list[BaseColumnConfig] = []
     skipped: list[str] = []
-    saw_mill_col = False
+    covered_price_cols: set[int] = set()
 
-    def accept(base_name: str, mill_col: int, price_col: int) -> None:
+    def accept(base_name: str, mill_col: int | None, price_col: int) -> None:
         location = location_lookup.get(base_name.strip()) if base_name.strip() else None
         if location is None:
             if base_name not in _NON_LOCATION_HEADERS and base_name not in skipped:
                 skipped.append(base_name)
             return
+        if price_col in covered_price_cols:
+            return
+        covered_price_cols.add(price_col)
         configs.append(BaseColumnConfig(location=location, mill_col=mill_col, price_col=price_col))
 
     for idx in range(_DATA_START_COL, len(header_row)):
         base_name = cell_text(header_row[idx])
         sub_text = cell_text(sub_row[idx]) if idx < len(sub_row) else ""
-        if not base_name or not _is_mill_subtitle(sub_text):
+        if not base_name:
             continue
-        saw_mill_col = True
-        price_col = _look_ahead_price_col(header_row, sub_row, idx, base_name)
-        if price_col is not None:
-            accept(base_name, idx, price_col)
-
-    if not saw_mill_col:
-        _scan_price_only_columns(header_row, sub_row, accept)
+        if _is_mill_subtitle(sub_text):
+            price_col = _look_ahead_price_col(header_row, sub_row, idx, base_name)
+            if price_col is not None:
+                accept(base_name, idx, price_col)
+            continue
+        if _is_price_subtitle(sub_text):
+            accept(base_name, None, idx)
 
     return configs, skipped
 
@@ -99,7 +103,7 @@ def find_processing_fee_col(sheet: Any) -> int | None:
 
 
 def _is_mill_subtitle(sub_text: str) -> bool:
-    return bool(sub_text) and ("中标钢厂" in sub_text or "钢厂" in sub_text)
+    return bool(sub_text) and ("中标钢厂" in sub_text or sub_text.strip() == "钢厂")
 
 
 def _is_price_subtitle(sub_text: str) -> bool:
@@ -117,22 +121,6 @@ def _look_ahead_price_col(
         if next_base and next_base != base_name:
             return None
     return None
-
-
-def _scan_price_only_columns(header_row: Any, sub_row: Any, accept: Any) -> None:
-    for idx in range(_DATA_START_COL, len(header_row)):
-        base_name = cell_text(header_row[idx])
-        sub_text = cell_text(sub_row[idx]) if idx < len(sub_row) else ""
-        if not base_name:
-            continue
-        if _is_price_subtitle(sub_text):
-            accept(base_name, idx, idx)
-            continue
-        if sub_text or base_name in _NON_LOCATION_HEADERS:
-            continue
-        price_col = _look_ahead_price_col(header_row, sub_row, idx, base_name)
-        if price_col is not None:
-            accept(base_name, idx, price_col)
 
 
 def _sheet_has_steel_headers(sheet: Any) -> bool:

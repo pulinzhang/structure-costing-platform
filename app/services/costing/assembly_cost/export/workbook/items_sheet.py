@@ -37,6 +37,7 @@ def write_items_sheet(
     *,
     filter_text: str,
     view: str,
+    seq_no_by_source_node_id: dict[int, int | None] | None = None,
 ) -> None:
     is_procurement = view == "procurement"
     headers = PROCUREMENT_ITEM_HEADERS if is_procurement else FINANCE_ITEM_HEADERS
@@ -53,7 +54,10 @@ def write_items_sheet(
             "子件短码仅冲压零件价，标准件等只列完整零件号；"
             "一口价剪枝行仍列出但不计价；行金额为计算快照。"
             if is_procurement
-            else "说明：一口价剪枝行仍列出但不计价；行金额为计算快照。"
+            else (
+                "说明：一口价剪枝行仍列出但不计价；行金额为计算快照；"
+                "序号与所属交货总成在材料清单上的序号一致。"
+            )
         ),
         col_count=len(headers),
     )
@@ -65,17 +69,23 @@ def write_items_sheet(
         data_start = header_row + 1
 
     row_idx = data_start
-    seq = 0
+    stripe_seq = 0
     object_seq = 0
+    l0_seq_map = seq_no_by_source_node_id or {}
     for record in records:
         items = list(record.items or [])
         if not items:
             continue
         object_seq += 1
         group_start = row_idx
+        finance_seq: int | str = ""
+        if not is_procurement:
+            source_node_id = getattr(record, "source_node_id", None)
+            mapped_seq = l0_seq_map.get(int(source_node_id)) if source_node_id is not None else None
+            finance_seq = mapped_seq if mapped_seq is not None else ""
         for item in items:
-            # 财务按子件行号；采购序号列与样式都用 object_seq（同对象多行合并）。
-            seq += 1
+            # 采购：对象内序号；财务：L0 seq_no（同树根多行同号）。
+            stripe_seq += 1
             if is_procurement:
                 row_data = [
                     object_seq,
@@ -97,7 +107,7 @@ def write_items_sheet(
                 ]
             else:
                 row_data = [
-                    seq,
+                    finance_seq,
                     record.year,
                     record.month,
                     record.location or "",
@@ -123,7 +133,7 @@ def write_items_sheet(
                 row_idx,
                 row_data,
                 money_cols=money_cols,
-                seq=object_seq if is_procurement else seq,
+                seq=object_seq if is_procurement else stripe_seq,
                 center_cols=PROCUREMENT_ITEM_CENTER_COLS if is_procurement else {1},
             )
             row_idx += 1

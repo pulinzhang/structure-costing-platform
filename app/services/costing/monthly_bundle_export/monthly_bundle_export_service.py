@@ -33,9 +33,10 @@ logger = logging.getLogger("service.monthly_bundle_export")
 
 class MonthlyBundleExportService:
     """
-    按年/月/基地/车型/BOM 版本导出「月度核对导出」。
+    按年/月/基地/项目导出「月度核对导出」。
 
     编排归属 costing（下游组合上游导出）；各 sheet 仍由对应切片 ExportService 写入。
+    版本可选：工程变更后同月可有多个节点版本字，空=该月该项目全部成品卡。
     """
 
     def __init__(self) -> None:
@@ -55,21 +56,21 @@ class MonthlyBundleExportService:
         month: int,
         location: str,
         vehicle_model: str,
-        bom_version: str,
+        bom_version: str | None = None,
         current_user: UserVO,
     ) -> tuple[bytes, str]:
         """
-        生成工程变更 Excel。
+        生成月度核对 Excel。
 
-        bom_version 仅用于 BOM/成品侧（成品核价、焊接费）。
+        bom_version 可选；有则只导出该节点版本字的成品卡，空则该月全部。
         冲压零件核价与加工费不传版本：工艺版本与 BOM 版本本就不一致。
         冲压侧按整车导出，不按工厂切分。
         """
         location = (location or "").strip()
         vehicle_model = (vehicle_model or "").strip()
-        bom_version = (bom_version or "").strip()
-        if not location or not vehicle_model or not bom_version:
-            raise BusinessException("基地、项目、版本不能为空")
+        bom_version = (bom_version or "").strip() or None
+        if not location or not vehicle_model:
+            raise BusinessException("基地、项目不能为空")
 
         wb = Workbook()
         sheet_counts: dict[str, int] = {}
@@ -151,10 +152,13 @@ class MonthlyBundleExportService:
         sheet_counts[title] = count
 
         stamp = now().strftime("%Y%m%d_%H%M%S")
-        safe_version = bom_version.replace("/", "-").replace("\\", "-")
+        version_part = ""
+        if bom_version:
+            safe_version = bom_version.replace("/", "-").replace("\\", "-")
+            version_part = f"_{safe_version}"
         filename = (
             f"月度核对导出_{year}年{month}月_{location}_"
-            f"{vehicle_model}_{safe_version}_{stamp}.xlsx"
+            f"{vehicle_model}{version_part}_{stamp}.xlsx"
         )
         content = workbook_to_xlsx_bytes(wb, current_user)
         logger.info(

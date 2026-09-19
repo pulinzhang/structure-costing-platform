@@ -8,7 +8,7 @@
 
 ## 0. 一句话
 
-按 **采购基地 + 项目 + 零件号** 维护检具费（万元）与项目分摊数量（万台）。这是核价档案，**本期不算年度检具分摊、不进 costing、不写 L0 I7**（I7 仍是成品间接费，不是本件检具费）。
+按 **采购基地 + 项目 + 零件号** 维护检具费（万元）与项目分摊数量（万台）。这是核价档案：零件价按号 lookup（元/件 = 万元÷万台）；**不写 L0 I7**（I7 仍是成品间接费，不是本件检具费）；本期不做单独的年度检具分摊台账。
 
 筛选项与模具布点相同：来自 `stamping_parts` 级联（基地 → 项目），无版本、无冲压厂。模板零件来自 **模具布点** `stamping_die_parts`；没有模具布点则无需维护检具费。
 
@@ -22,7 +22,7 @@
 | 列表单条编辑（检具费 / 分摊 / 状态）与单条删除 | 改基地、项目、零件号 |
 | 唯一键 `location` + `vehicle_model` + `part_number` | 写入 `stamping_die_parts` / 模具单价表 |
 | 状态 `effective` / `invalid` | 异步 worker、进度轮询 |
-| 默认检具费 **0.8** 万、分摊 **10** 万台 | 年度分摊计算、costing、`gauge_alloc_fee` |
+| 默认检具费 **0.8** 万、分摊 **10** 万台 | 年度分摊台账、`gauge_alloc_fee`、写 L0 I7 |
 
 须该基地+项目已有模具布点。零件号必须在该范围 `stamping_die_parts` 中，否则整单拒绝并列缺失号。无模具的零件不进模板、也不算检具费。
 
@@ -70,7 +70,13 @@
 ## 4. 分层
 
 - Router：`app/routers/stamping/gauge_fee.py`
-- Service：`app/services/stamping/gauge_fee/`（列表 / 上传 / 模板 / 导出）
+- Service：`app/services/stamping/gauge_fee/`（列表 / 上传 / 模板 / 导出；工程变更抄写/回滚删除）
 - Parser：`app/parsers/stamping/gauge_fee_parser.py`
 - Repo：`app/repositories/stamping/gauge_fee_repository.py`
 - 模具零件：只读 `StampingDiePartRepository.list_parts_for_scope`（无模具则无需检具费）
+
+---
+
+## 5. 工程变更
+
+改图换号时，若旧号有 `effective` 档，工程变更管线调本切片 Service **抄到新号**；回滚调本切片 **按 id 删新行**。旧号行不动。实现在 `gauge_fee/engineering_change.py`（Service 只转发）。本切片 **不** import `engineering_change`。规则见 [part-number-revision-design.md](../engineering-change/part-number-revision-design.md) §4.3.1。

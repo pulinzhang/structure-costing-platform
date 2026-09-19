@@ -2,10 +2,22 @@
  * 供应商上传页 — 同步导入
  */
 
-import { supplierUploadTemplate } from './template.js?v=3';
+import { supplierUploadTemplate } from './template.js?v=6';
+import { bindSyncUploadProgress } from '../../../../sync-upload-progress.js?v=1';
 
 const API_BASE = '/api/masterdata/suppliers';
 const MAX_FILE_SIZE = 5 * 1024 * 1024;
+
+const uploadProgress = bindSyncUploadProgress({
+    zoneId: 'supplierUploadZone',
+    idleId: 'supplierUploadDropIdle',
+    panelId: 'supplierUploadProgressPanel',
+    iconId: 'supplierUploadProgressIcon',
+    titleId: 'supplierUploadProgressTitle',
+    barId: 'supplierUploadProgressBar',
+    msgId: 'supplierUploadProgressMsg',
+    runningTitle: '正在写入…',
+});
 
 const SupplierUploadPage = {
     selectedFile: null,
@@ -141,27 +153,20 @@ const SupplierUploadPage = {
     },
 
     showProgress(msg = '解析并写入数据库，请稍候') {
-        document.getElementById('supplierUploadDropIdle')?.classList.add('hidden');
-        document.getElementById('supplierUploadProgressPanel')?.classList.remove('hidden');
-        const zone = document.getElementById('supplierUploadZone');
-        if (zone) {
-            zone.classList.add('pointer-events-none');
-            zone.classList.remove('border-[#d32f2f]');
-        }
-        const progressMsg = document.getElementById('supplierUploadProgressMsg');
-        if (progressMsg) progressMsg.textContent = msg;
+        uploadProgress.setRunning(msg);
+        document.getElementById('supplierUploadZone')?.classList.remove('border-[#d32f2f]');
+    },
+
+    showDoneOnPanel(message, opts = {}) {
+        uploadProgress.setDone(message, opts);
     },
 
     failOnPanel(message) {
-        const text = String(message || '操作失败').trim() || '操作失败';
-        this.showProgress(text);
-        document.getElementById('supplierUploadZone')?.classList.remove('pointer-events-none');
+        uploadProgress.setFail(message);
     },
 
     hideProgress() {
-        document.getElementById('supplierUploadDropIdle')?.classList.remove('hidden');
-        document.getElementById('supplierUploadProgressPanel')?.classList.add('hidden');
-        document.getElementById('supplierUploadZone')?.classList.remove('pointer-events-none');
+        uploadProgress.hide();
     },
 
     setUploading(isUploading) {
@@ -212,8 +217,8 @@ const SupplierUploadPage = {
             const data = res.data || {};
             const msg = res.message
                 || `导入成功：新增 ${data.created_count ?? 0}，跳过 ${data.skipped_count ?? 0}`;
-            showToast(msg, 'success');
-            this.hideProgress();
+            const hasSkip = (data.skipped_count ?? 0) > 0;
+            this.showDoneOnPanel(msg, { hasSkip });
             this.clearSelectedFile(true);
         } catch (err) {
             this.failOnPanel(err.message || '导入失败');

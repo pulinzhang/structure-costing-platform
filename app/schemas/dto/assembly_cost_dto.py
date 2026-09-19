@@ -46,14 +46,26 @@ class AssemblyCostQuery(BaseModel):
 
 
 class AssemblyCostScopeDTO(BaseModel):
-    """批量操作范围（与计算范围一致）。"""
+    """批量操作范围：年+月+基地+项目；版本可选（工程变更后同月可多版本）。"""
 
     year: int = Field(..., ge=2000, le=2100)
     month: int = Field(..., ge=1, le=12)
     location: str = Field(..., min_length=1, max_length=50)
     vehicle_model: str = Field(..., min_length=1, max_length=50)
-    bom_version: str = Field(..., min_length=1, max_length=20)
+    bom_version: str | None = Field(
+        None,
+        max_length=20,
+        description="可选。空=该月该项目全部节点版本（含 EC 变更字）",
+    )
     view: AssemblyCostView = "finance"
+
+    @field_validator("bom_version", mode="before")
+    @classmethod
+    def _empty_bom_version_to_none(cls, value: object) -> str | None:
+        if value is None:
+            return None
+        text = str(value).strip()
+        return text or None
 
 
 class AssemblyCostBatchApproveDTO(AssemblyCostScopeDTO):

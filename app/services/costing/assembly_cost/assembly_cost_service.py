@@ -313,7 +313,7 @@ class AssemblyCostService:
     ) -> AssemblyCostBatchResultVO:
         location = dto.location.strip()
         vehicle_model = dto.vehicle_model.strip()
-        bom_version = dto.bom_version.strip()
+        bom_version = (dto.bom_version or "").strip() or None
         skipped = self.cost_repo.count_approved_by_scope(
             db,
             year=dto.year,
@@ -352,7 +352,7 @@ class AssemblyCostService:
     ) -> AssemblyCostBatchResultVO:
         location = dto.location.strip()
         vehicle_model = dto.vehicle_model.strip()
-        bom_version = dto.bom_version.strip()
+        bom_version = (dto.bom_version or "").strip() or None
         ids = self.cost_repo.list_ids_by_scope(
             db,
             year=dto.year,
@@ -385,7 +385,7 @@ class AssemblyCostService:
     ) -> AssemblyCostBatchResultVO:
         location = dto.location.strip()
         vehicle_model = dto.vehicle_model.strip()
-        bom_version = dto.bom_version.strip()
+        bom_version = (dto.bom_version or "").strip() or None
         ids = self.cost_repo.list_ids_by_scope(
             db,
             year=dto.year,

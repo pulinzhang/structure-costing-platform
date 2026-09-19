@@ -144,6 +144,7 @@ app/
 |------|----------|
 | 项目 `POST …/vehicle-models/upload` | 立项名册，百行级 |
 | 供应商 `POST …/suppliers/upload` | 建档名册，对齐项目 |
+| 牌号分类 `POST …/steel-grade-category/upload` | 档案名册，百行级 |
 | 检具费 `POST …/gauge-fees/upload` | 布点零件窄档案 |
 | 年度零件价 `POST …/annual-part-prices/upload` | 报价窄表 |
 | 采购对象供应商 `POST …/supplier-upload` | 一份清单对象行，对齐年度价 |

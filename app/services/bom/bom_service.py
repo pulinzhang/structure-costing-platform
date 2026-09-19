@@ -220,11 +220,14 @@ class BomService:
                     vehicle_models=[],
                     bom_versions=[],
                 )
+        as_of = query.year is not None and query.month is not None
         raw = self.snapshot_repo.get_cascade_filter_options(
             db,
             locations=locations,
             vehicle_model=query.vehicle_model,
             status=query.status,
+            as_of_year=query.year if as_of else None,
+            as_of_month=query.month if as_of else None,
         )
         vehicle_svc = VehicleModelService()
         if location_raw and query.year is not None:
@@ -326,7 +329,11 @@ class BomService:
             db.commit()
         except IntegrityError:
             db.rollback()
-            raise BusinessException("仍被引用，不能删除") from None
+            # 变更单 before_assembly_node_id → bom_nodes RESTRICT
+            raise BusinessException(
+                "仍被工程变更单引用，请先回滚相关变更后再删",
+                code=409,
+            ) from None
         except BusinessException:
             db.rollback()
             raise
@@ -441,7 +448,11 @@ class BomService:
             db.commit()
         except IntegrityError:
             db.rollback()
-            raise BusinessException("仍被引用，不能删除") from None
+            # 变更单 before_assembly_node_id → bom_nodes RESTRICT
+            raise BusinessException(
+                "仍被工程变更单引用，请先回滚相关变更后再删",
+                code=409,
+            ) from None
         except BusinessException:
             db.rollback()
             raise

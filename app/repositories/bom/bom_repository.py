@@ -327,12 +327,13 @@ class BomSnapshotRepository:
         locations: list[str] | None = None,
         vehicle_model: str | None = None,
         status: str | None = "active",
+        as_of_year: int | None = None,
+        as_of_month: int | None = None,
     ) -> BomCascadeFilterOptions:
         """
         材料清单级联：
-        - 基地：全量
-        - 项目：按基地过滤
-        - 版本：按基地 + 项目过滤
+        - 基地 / 项目：来自 snapshot
+        - 版本：只对 L0 节点 bom_version 去重（有年+月则按该月命中）
         """
         location = (location or "").strip() or None
         vehicle_model = (vehicle_model or "").strip() or None
@@ -358,17 +359,26 @@ class BomSnapshotRepository:
             row[0] for row in model_q.order_by(BomSnapshot.vehicle_model).all() if row[0]
         ]
 
-        version_q = db.query(BomSnapshot.bom_version).distinct()
-        if status is not None:
-            version_q = version_q.filter(BomSnapshot.status == status)
+        version_q = db.query(BomNode.bom_version).filter(BomNode.level == 0).distinct()
         if locations is not None:
-            version_q = version_q.filter(BomSnapshot.location.in_(locations))
+            version_q = version_q.filter(BomNode.location.in_(locations))
         elif location is not None:
-            version_q = version_q.filter(BomSnapshot.location == location)
+            version_q = version_q.filter(BomNode.location == location)
         if vehicle_model is not None:
-            version_q = version_q.filter(BomSnapshot.vehicle_model == vehicle_model)
+            version_q = version_q.filter(BomNode.vehicle_model == vehicle_model)
+        if as_of_year is not None and as_of_month is not None:
+            version_q = version_q.filter(
+                period_hit_clause(
+                    BomNode.effective_year,
+                    BomNode.effective_month,
+                    BomNode.expiry_year,
+                    BomNode.expiry_month,
+                    as_of_year,
+                    as_of_month,
+                )
+            )
         bom_versions = [
-            row[0] for row in version_q.order_by(BomSnapshot.bom_version.desc()).all() if row[0]
+            row[0] for row in version_q.order_by(BomNode.bom_version.desc()).all() if row[0]
         ]
 
         return {

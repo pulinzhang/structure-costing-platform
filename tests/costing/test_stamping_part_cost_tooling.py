@@ -2,6 +2,7 @@
 
 from decimal import Decimal
 from types import SimpleNamespace
+from unittest.mock import patch
 
 from app.services.costing.stamping_part_cost.calc.constants import compute_finished_cost_stack
 from app.services.costing.stamping_part_cost.calc.fees.die import DieFeeResolver
@@ -22,13 +23,17 @@ def test_die_fee_uses_final_yuan_per_part_without_reallocating() -> None:
     repo = SimpleNamespace(
         get_by_year_location_vehicle_part=lambda db, **kwargs: row,
     )
-    lookup = DieFeeResolver(die_fee_repo=repo).lookup(  # type: ignore[arg-type]
-        None,  # type: ignore[arg-type]
-        year=2026,
-        location="芜湖基地",
-        vehicle_model="T13J",
-        part_number="502008024AA",
-    )
+    with patch(
+        "app.services.costing.stamping_part_cost.calc.fees.die.LocationService"
+    ) as location_service:
+        location_service.return_value.expand_for_query.return_value = ["芜湖基地"]
+        lookup = DieFeeResolver(die_fee_repo=repo).lookup(  # type: ignore[arg-type]
+            None,  # type: ignore[arg-type]
+            year=2026,
+            location="芜湖基地",
+            vehicle_model="T13J",
+            part_number="502008024AA",
+        )
     assert lookup.die_fee_id == 11
     assert lookup.die_fee_amount == Decimal("1.234500")
 
@@ -42,13 +47,17 @@ def test_die_fee_matches_location_alias() -> None:
         return None
 
     repo = SimpleNamespace(get_by_year_location_vehicle_part=get_row)
-    lookup = DieFeeResolver(die_fee_repo=repo).lookup(  # type: ignore[arg-type]
-        None,  # type: ignore[arg-type]
-        year=2026,
-        location="芜湖基地",
-        vehicle_model="T13J",
-        part_number="502008024AA",
-    )
+    with patch(
+        "app.services.costing.stamping_part_cost.calc.fees.die.LocationService"
+    ) as location_service:
+        location_service.return_value.expand_for_query.return_value = ["芜湖基地", "芜湖"]
+        lookup = DieFeeResolver(die_fee_repo=repo).lookup(  # type: ignore[arg-type]
+            None,  # type: ignore[arg-type]
+            year=2026,
+            location="芜湖基地",
+            vehicle_model="T13J",
+            part_number="502008024AA",
+        )
     assert lookup.die_fee_id == 3
     assert lookup.die_fee_amount == Decimal("0.500000")
 
@@ -56,12 +65,16 @@ def test_die_fee_matches_location_alias() -> None:
 def test_gauge_fee_allocates_wan_over_wan_units() -> None:
     row = SimpleNamespace(id=7, gauge_fee=Decimal("0.8"), allocation_qty=Decimal("10"))
     repo = SimpleNamespace(get_effective_by_part=lambda db, **kwargs: row)
-    lookup = GaugeFeeResolver(gauge_fee_repo=repo).lookup(  # type: ignore[arg-type]
-        None,  # type: ignore[arg-type]
-        location="芜湖",
-        vehicle_model="T13J",
-        part_number="502008024AA",
-    )
+    with patch(
+        "app.services.costing.stamping_part_cost.calc.fees.gauge.LocationService"
+    ) as location_service:
+        location_service.return_value.expand_for_query.return_value = ["芜湖"]
+        lookup = GaugeFeeResolver(gauge_fee_repo=repo).lookup(  # type: ignore[arg-type]
+            None,  # type: ignore[arg-type]
+            location="芜湖",
+            vehicle_model="T13J",
+            part_number="502008024AA",
+        )
     assert lookup.gauge_fee_id == 7
     assert lookup.gauge_fee_amount == Decimal("0.080000")
 

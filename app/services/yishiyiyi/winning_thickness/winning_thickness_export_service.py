@@ -8,6 +8,7 @@ from __future__ import annotations
 
 from sqlalchemy.orm import Session
 
+from app.common.export_filters import require_year_month_export_filters
 from app.schemas.vo.user_vo import UserVO
 from app.schemas.vo.winning_thickness_vo import WinningThicknessRowVO
 from app.services.yishiyiyi.winning_thickness.assemble.row_assembler import (
@@ -27,6 +28,7 @@ class WinningThicknessExportService:
     以基价表为据：仅当期有中标基价的牌号才输出。
     预览/导出均为「扁平行」：每个牌号按 CATEGORY 厚度政策展开全部区间，
     一行对应一个厚度阶梯（前端据此做阶梯展示）。
+    年 / 月 / 基地均可空（空=不限）；导出须选定年度和月份。
     """
 
     def __init__(self) -> None:
@@ -41,9 +43,9 @@ class WinningThicknessExportService:
         self,
         db: Session,
         *,
-        year: int,
-        month: int,
-        location: str,
+        year: int | None = None,
+        month: int | None = None,
+        location: str | None = None,
         steel_mill: str | None = None,
         category_name: str | None = None,
         grade: str | None = None,
@@ -62,9 +64,9 @@ class WinningThicknessExportService:
         self,
         db: Session,
         *,
-        year: int,
-        month: int,
-        location: str,
+        year: int | None = None,
+        month: int | None = None,
+        location: str | None = None,
         steel_mill: str | None = None,
         category_name: str | None = None,
         grade: str | None = None,
@@ -91,23 +93,32 @@ class WinningThicknessExportService:
         self,
         db: Session,
         *,
-        year: int,
-        month: int,
-        location: str,
+        year: int | None = None,
+        month: int | None = None,
+        location: str | None = None,
         steel_mill: str | None = None,
         category_name: str | None = None,
         grade: str | None = None,
         current_user: UserVO,
     ) -> tuple[bytes, str]:
+        loc = (location or "").strip() or None
+        mill = (steel_mill or "").strip() or None
+        category = (category_name or "").strip() or None
+        grade_value = (grade or "").strip() or None
+        require_year_month_export_filters(year, month)
         rows = self.build_rows(
             db,
             year=year,
             month=month,
-            location=location,
-            steel_mill=steel_mill,
-            category_name=category_name,
-            grade=grade,
+            location=loc,
+            steel_mill=mill,
+            category_name=category,
+            grade=grade_value,
         )
         return self._exporter.generate(
-            rows, year=year, month=month, location=location, current_user=current_user
+            rows,
+            year=year,
+            month=month,
+            location=loc or "",
+            current_user=current_user,
         )

@@ -1,4 +1,4 @@
-"""冲压年度模具费 CRUD。"""
+"""冲压年度模具费 CRUD；工程变更入口转发。"""
 
 from __future__ import annotations
 
@@ -33,6 +33,15 @@ from app.schemas.vo.stamping_die_fee_vo import (
 from app.schemas.vo.user_vo import UserVO
 from app.services.masterdata.location.location_service import LocationService
 from app.services.masterdata.vehicle_model import VehicleModelService
+from app.services.stamping.die_fee.engineering_change import (
+    EngineeringChangeDieFeeCloneResult,
+)
+from app.services.stamping.die_fee.engineering_change import (
+    clone_revise_for_engineering_change as clone_revise_die_fee,
+)
+from app.services.stamping.die_fee.engineering_change import (
+    delete_for_engineering_change_rollback as delete_die_fee_for_rollback,
+)
 from app.services.stamping.die_fee.fee_math import ZERO, resolve_final_die_fee
 
 
@@ -315,3 +324,33 @@ class StampingDieFeeService:
             location=dto.location,
             vehicle_model=dto.vehicle_model,
         )
+
+    def clone_revise_for_engineering_change(
+        self,
+        db: Session,
+        *,
+        location: str,
+        vehicle_model: str,
+        old_part_number: str,
+        new_part_number: str,
+        from_year: int,
+        new_die_part_id: int | None,
+        current_user: UserVO,
+    ) -> list[EngineeringChangeDieFeeCloneResult]:
+        """改图抄模具费结果。只 flush。实现见 engineering_change。"""
+        return clone_revise_die_fee(
+            self.fee_repo,
+            self.die_repo,
+            db,
+            location=location,
+            vehicle_model=vehicle_model,
+            old_part_number=old_part_number,
+            new_part_number=new_part_number,
+            from_year=from_year,
+            new_die_part_id=new_die_part_id,
+            current_user=current_user,
+        )
+
+    def delete_for_engineering_change_rollback(self, db: Session, fee_id: int) -> None:
+        """回滚删新模具费主表。只 flush。"""
+        delete_die_fee_for_rollback(self.fee_repo, db, fee_id)

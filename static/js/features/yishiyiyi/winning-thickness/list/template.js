@@ -34,9 +34,9 @@ export function winningThicknessDownloadTemplate() {
                 <div class="flex items-center justify-between px-5 py-2.5 border-b border-[#1e1e1e]"
                      style="background: linear-gradient(180deg, #181818 0%, #161616 100%);">
                     <div class="flex items-end gap-3 flex-wrap">
-                        ${filterSelect('winningThicknessYear', '年度', true)}
-                        ${filterSelect('winningThicknessMonth', '月份', true)}
-                        ${filterSelect('winningThicknessLocation', '基地', true)}
+                        ${filterSelect('winningThicknessYear', '年度', false)}
+                        ${filterSelect('winningThicknessMonth', '月份', false)}
+                        ${filterSelect('winningThicknessLocation', '基地', false)}
                         ${filterSelect('winningThicknessMill', '钢厂', false)}
                         ${filterSelect('winningThicknessCategory', '分类', false)}
                         ${filterInputWithDatalist('winningThicknessGrade', '牌号', 'winningThicknessGradeOptions')}
@@ -55,8 +55,9 @@ export function winningThicknessDownloadTemplate() {
                     <div class="bg-[#0c0c0c] border border-[#1a1a1a] rounded p-3">
                         <p class="text-[11px] text-[#888888] leading-5">
                             <span class="text-[#9e9e9e] font-medium">说明：</span>
-                            必选基地、年度、月份。以当期中标基价为据，按档案大类匹配 CATEGORY 厚度政策；
-                            每个牌号展开全部厚度阶梯（一行一区间），最终价 = 基准价 + 厚度加减价 + 加工费。
+                            打开默认当年；年度、月份、基地等为可选筛（一事一议按月定价）。
+                            以中标基价为据，按档案大类匹配 CATEGORY 厚度政策；
+                            每个牌号展开全部厚度阶梯（一行一区间），最终价 = 基准价 + 厚度加减价 + 加工费。导出须选定年度和月份。
                         </p>
                     </div>
                 </div>
@@ -67,7 +68,7 @@ export function winningThicknessDownloadTemplate() {
                         <div class="absolute top-0 left-0 right-0 h-px" style="background: linear-gradient(90deg, transparent 0%, #2a2a2a 50%, transparent 100%);"></div>
                         <div class="flex items-center gap-2 text-[11px]">
                             <span class="text-[#484848]">已选条件：</span>
-                            <span id="selectedWinningThicknessConditions" class="text-[#888888] ml-2 font-medium tracking-wide">请选择基地、年度、月份</span>
+                            <span id="selectedWinningThicknessConditions" class="text-[#888888] ml-2 font-medium tracking-wide">全部</span>
                         </div>
                         <div class="absolute bottom-0 left-0 right-0 h-px" style="background: linear-gradient(90deg, transparent 0%, #151515 50%, transparent 100%);"></div>
                     </div>
@@ -93,7 +94,7 @@ export function winningThicknessDownloadTemplate() {
                                 <tbody id="winningThicknessPreviewBody" class="divide-y divide-[#1a1a1a]">
                                     <tr>
                                         <td colspan="10" class="px-4 py-8 text-center text-[#616161] text-xs">
-                                            请选择基地、年度、月份后点击「查询」
+                                            当前筛选下暂无数据；打开默认当年，筛选项只作收窄
                                         </td>
                                     </tr>
                                 </tbody>

@@ -10,6 +10,7 @@ from app.repositories.bom.packaging_transport_fee_repository import (
 )
 from app.repositories.bom.welding_unit_price_repository import BomWeldingUnitPriceRepository
 from app.repositories.settings.system.system_config_repository import SystemConfigRepository
+from app.repositories.stamping.die_unit_price_repository import StampingDieUnitPriceRepository
 from app.repositories.stamping.tonnage_price_repository import StampingTonnagePriceRepository
 from app.schemas.vo.costing_engine_vo import CostingEngineGateItemVO
 from app.services.costing.engine.gate.bom import (
@@ -20,6 +21,7 @@ from app.services.costing.engine.gate.bom import (
 from app.services.costing.engine.gate.rates import check_system_rates
 from app.services.costing.engine.gate.scrap import check_scrap_price
 from app.services.costing.engine.gate.stamping import (
+    check_die_unit_price,
     check_period_projects,
     check_stamping_process,
     check_tonnage_price,
@@ -35,6 +37,7 @@ class GateChecker:
 
     def __init__(self) -> None:
         self.tonnage_repo = StampingTonnagePriceRepository()
+        self.die_unit_price_repo = StampingDieUnitPriceRepository()
         self.welding_unit_repo = BomWeldingUnitPriceRepository()
         self.annual_part_repo = BomAnnualPartPriceRepository()
         self.packaging_repo = BomPackagingTransportFeeRepository()
@@ -53,6 +56,14 @@ class GateChecker:
             check_period_projects(discovery, location, year, month),
             check_stamping_process(discovery, location, year, month),
             check_tonnage_price(self.tonnage_repo, db, discovery, location, year, month),
+            check_die_unit_price(
+                self.die_unit_price_repo,
+                db,
+                discovery,
+                location,
+                year,
+                month,
+            ),
             check_welding_unit_price(self.welding_unit_repo, db, discovery, location, year, month),
             check_bom_snapshot(discovery, location, year, month),
             check_annual_part_price(self.annual_part_repo, db, discovery, location, year, month),

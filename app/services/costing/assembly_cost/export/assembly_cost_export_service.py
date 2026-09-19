@@ -52,7 +52,6 @@ class AssemblyCostExportService:
                 month,
                 location,
                 vehicle_model,
-                bom_version,
             )
         else:
             require_at_least_one_export_filter(

@@ -38,7 +38,7 @@ from app.utils.bom_procurement_object_supplier_archive import (
 
 logger = logging.getLogger("service.bom.procurement_object.supplier_upload")
 
-_PAGE_HINT = "请到供应商一览表手工增加或上传（#/supplier-list）"
+_PAGE_HINT = "请到供应商一览手工增加或上传（#/supplier-list）"
 
 
 class BomProcurementObjectSupplierUploadService:
@@ -78,8 +78,6 @@ class BomProcurementObjectSupplierUploadService:
         current_user: UserVO,
     ) -> BomProcurementObjectSupplierUploadResultVO:
         header, object_rows = self._load_object_rows(db, location, vehicle_model, bom_version)
-        if not header.qa_passed:
-            raise BusinessException("检测未通过，禁止改供应商")
         original_name = self._require_xlsx(filename, file_content)
         try:
             parsed_rows = parse_procurement_object_supplier_excel(file_content)
@@ -92,6 +90,7 @@ class BomProcurementObjectSupplierUploadService:
         updated_count = 0
         cleared_count = 0
         unchanged_count = 0
+        skipped_details: list[str] = []
         archive_path = save_procurement_object_supplier_upload(
             file_content=file_content,
             filename=original_name,
@@ -103,9 +102,10 @@ class BomProcurementObjectSupplierUploadService:
             for parsed in parsed_rows:
                 matches = by_part.get(parsed.part_number)
                 if not matches:
-                    raise BusinessException(
-                        f"Excel 第{parsed.row_number}行：零件号不属于本范围采购对象"
+                    skipped_details.append(
+                        f"Excel 第{parsed.row_number}行：零件号 {parsed.part_number} 不属于本范围采购对象"
                     )
+                    continue
                 for row in matches:
                     outcome = self._apply_supplier(
                         db,
@@ -149,6 +149,8 @@ class BomProcurementObjectSupplierUploadService:
             updated_count=updated_count,
             cleared_count=cleared_count,
             unchanged_count=unchanged_count,
+            skipped_count=len(skipped_details),
+            skipped_details=skipped_details,
         )
 
     def _load_object_rows(
@@ -231,7 +233,10 @@ class BomProcurementObjectSupplierUploadService:
         if incoming is None:
             if current is None:
                 return "unchanged"
-            self._assert_can_change(row, parsed)
+            if row.audit_status == AUDIT_APPROVED:
+                return "unchanged"
+            if row.section != SECTION_OBJECT:
+                raise BusinessException(f"Excel 第{parsed.row_number}行：核对区行禁止指定供应商")
             row.supplier_name = None
             row.updated_by = operator
             return "cleared"
@@ -240,22 +245,13 @@ class BomProcurementObjectSupplierUploadService:
         canonical = supplier_service.resolve_canonical(db, incoming)
         if canonical is not None and canonical == current:
             return "unchanged"
-        self._assert_can_change(row, parsed)
+        if row.audit_status == AUDIT_APPROVED:
+            return "unchanged"
+        if row.section != SECTION_OBJECT:
+            raise BusinessException(f"Excel 第{parsed.row_number}行：核对区行禁止指定供应商")
         if row.confirm_status == "in_house":
             raise BusinessException(f"Excel 第{parsed.row_number}行：自制禁止指定供应商")
         enabled = supplier_service.require_enabled(db, incoming)
         row.supplier_name = enabled
         row.updated_by = operator
         return "updated"
-
-    def _assert_can_change(
-        self,
-        row: BomProcurementObject,
-        parsed: ProcurementObjectSupplierParsedRow,
-    ) -> None:
-        if row.audit_status == AUDIT_APPROVED:
-            raise BusinessException(
-                f"Excel 第{parsed.row_number}行：已审核记录禁止改供应商，请先批量反审核"
-            )
-        if row.section != SECTION_OBJECT:
-            raise BusinessException(f"Excel 第{parsed.row_number}行：核对区行禁止指定供应商")

@@ -12,13 +12,16 @@ from app.services.costing.assembly_cost.calc.orchestrator.ready import (
     evaluate_welding_coverage,
 )
 from app.services.costing.engine.scope_discovery import DiscoveryResult
+from app.services.stamping.die_fee.calc.orchestrator.ready import (
+    evaluate_die_fee_coverage,
+)
 from app.services.stamping.process_fee.calc.orchestrator.ready import (
     evaluate_process_fee_coverage,
 )
 
 
 class AnnualCalcPlanner:
-    """§5.2：有工艺才判冲压加工费；有 BOM 才判采购对象 / 焊接。覆盖不全 → will_auto_calc。"""
+    """§5.2：有工艺才判冲压加工费；有布点才判模具费；有 BOM 才判采购对象 / 焊接。"""
 
     def plan(self, db: Session, discovery: DiscoveryResult) -> list[CostingEngineAnnualItemVO]:
         items: list[CostingEngineAnnualItemVO] = []
@@ -36,6 +39,24 @@ class AnnualCalcPlanner:
                     scope_key=vehicle_model,
                     exists=process_fee.complete,
                     will_auto_calc=not process_fee.complete,
+                )
+            )
+
+        for vehicle_model in discovery.vehicle_models:
+            die_fee = evaluate_die_fee_coverage(
+                db,
+                year=discovery.year,
+                aliases=discovery.location_aliases,
+                vehicle_model=vehicle_model,
+            )
+            if not die_fee.has_dies:
+                continue
+            items.append(
+                CostingEngineAnnualItemVO(
+                    code="annual_die_fee",
+                    scope_key=vehicle_model,
+                    exists=die_fee.complete,
+                    will_auto_calc=not die_fee.complete,
                 )
             )
 

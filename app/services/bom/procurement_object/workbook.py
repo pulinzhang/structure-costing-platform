@@ -192,7 +192,7 @@ def write_banner(
         column=1,
         value=(
             "打开原件按「Excel行号」对照；短码是零件号数字末四位，日常核对用。"
-            + ("" if qa_ok else " 检测未通过：仍可导出，禁止确认/审核。")
+            + ("" if qa_ok else " 检测未通过：仍可导出与确认/审核；已审行跳过不改。")
         ),
     )
     note.font = FONT_NOTE

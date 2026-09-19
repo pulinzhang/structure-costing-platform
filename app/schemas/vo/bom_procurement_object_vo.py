@@ -187,3 +187,5 @@ class BomProcurementObjectSupplierUploadResultVO(BaseModel):
     updated_count: int
     cleared_count: int
     unchanged_count: int
+    skipped_count: int = 0
+    skipped_details: list[str] = []

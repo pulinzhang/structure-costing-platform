@@ -52,20 +52,22 @@ def price_kind_label(kind: str | None) -> str:
 
 def filter_text(
     *,
-    year: int,
-    location: str,
-    vehicle_model: str,
+    year: int | None,
+    location: str | None,
+    vehicle_model: str | None,
     stamping_supplier: str | None,
     version: str | None,
     part_number: str | None,
     audit_status: str | None,
     only_zero: bool,
 ) -> str:
-    parts = [
-        f"年度={year}",
-        f"基地={location}",
-        f"项目={vehicle_model}",
-    ]
+    parts: list[str] = []
+    if year is not None:
+        parts.append(f"年度={year}")
+    if location:
+        parts.append(f"基地={location}")
+    if vehicle_model:
+        parts.append(f"项目={vehicle_model}")
     if stamping_supplier:
         parts.append(f"供应商={stamping_supplier}")
     if version:
@@ -76,24 +78,30 @@ def filter_text(
         parts.append(f"审核={audit_status_label(audit_status)}")
     if only_zero:
         parts.append("仅最终为零")
-    return " · ".join(parts)
+    return " · ".join(parts) if parts else "全部筛选"
 
 
 def build_filename(
     *,
-    year: int,
-    location: str,
-    vehicle_model: str,
+    year: int | None,
+    location: str | None,
+    vehicle_model: str | None,
     stamping_supplier: str | None,
     version: str | None,
 ) -> str:
     stamp = now().strftime("%Y%m%d_%H%M%S")
-    extra_bits = ""
+    parts = ["冲压模具费"]
+    if year is not None:
+        parts.append(str(year))
+    if location:
+        parts.append(location)
+    if vehicle_model:
+        parts.append(vehicle_model)
     if stamping_supplier:
-        extra_bits += f"_{stamping_supplier}"
+        parts.append(stamping_supplier)
     if version:
-        extra_bits += f"_{version}"
-    return f"冲压模具费_{year}_{location}_{vehicle_model}{extra_bits}_{stamp}.xlsx"
+        parts.append(version)
+    return "_".join(parts) + f"_{stamp}.xlsx"
 
 
 def row_height(item: StampingDieFeeItem) -> float:

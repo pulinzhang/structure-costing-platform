@@ -1,6 +1,6 @@
 """
 中标钢厂厚度价格一览表路由
-必填：基地、年度、月份；中标基价叠厚度加减价；钢厂匹配与算价一致。
+预览默认按当年收窄（年度可改/可清空）；年 / 月 / 基地 / 钢厂 / 分类 / 牌号可选。导出须选定年度和月份（一事一议按月定价）。
 """
 
 from urllib.parse import quote
@@ -53,9 +53,9 @@ def get_options(
     response_model=ApiResponse[PageResult[WinningThicknessRowVO]],
 )
 def export_preview(
-    year: int = Query(..., ge=2000, le=2100, description="年度"),
-    month: int = Query(..., ge=1, le=12, description="月份"),
-    location: str = Query(..., min_length=1, description="基地"),
+    year: int | None = Query(None, ge=2000, le=2100, description="年度"),
+    month: int | None = Query(None, ge=1, le=12, description="月份"),
+    location: str | None = Query(None, description="基地"),
     steel_mill: str | None = Query(None, description="钢厂"),
     category_name: str | None = Query(None, description="档案大类：冷轧/镀锌/酸洗"),
     grade: str | None = Query(None, description="牌号（档案模糊筛选）"),
@@ -69,7 +69,7 @@ def export_preview(
         db,
         year=year,
         month=month,
-        location=location,
+        location=location.strip() if location else None,
         steel_mill=steel_mill,
         category_name=category_name,
         grade=grade,
@@ -91,9 +91,9 @@ def export_preview(
     response_model=None,
 )
 def export_download(
-    year: int = Query(..., ge=2000, le=2100, description="年度"),
-    month: int = Query(..., ge=1, le=12, description="月份"),
-    location: str = Query(..., min_length=1, description="基地"),
+    year: int | None = Query(None, ge=2000, le=2100, description="年度"),
+    month: int | None = Query(None, ge=1, le=12, description="月份"),
+    location: str | None = Query(None, description="基地"),
     steel_mill: str | None = Query(None, description="钢厂"),
     category_name: str | None = Query(None, description="档案大类：冷轧/镀锌/酸洗"),
     grade: str | None = Query(None, description="牌号（档案模糊筛选）"),
@@ -105,7 +105,7 @@ def export_download(
         db,
         year=year,
         month=month,
-        location=location,
+        location=location.strip() if location else None,
         steel_mill=steel_mill,
         category_name=category_name,
         grade=grade,

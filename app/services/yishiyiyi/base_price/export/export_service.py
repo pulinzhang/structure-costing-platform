@@ -4,6 +4,7 @@ from __future__ import annotations
 
 from sqlalchemy.orm import Session
 
+from app.common.export_filters import require_year_month_export_filters
 from app.repositories.yishiyiyi.base_price import SteelBasePriceRepository
 from app.schemas.vo.steel_base_price_vo import SteelBasePriceExportRow
 from app.schemas.vo.user_vo import UserVO
@@ -86,14 +87,17 @@ class SteelBasePriceExportService:
         Returns:
             (文件字节数据, 文件名)
         """
+        category = category_name.strip() if category_name else None
+        grade_value = grade.strip() if grade else None
+        require_year_month_export_filters(year, month)
         records = self.repository.list_for_export(
             db,
             year=year,
             month=month,
             location=location,
             steel_mill=steel_mill,
-            category_name=category_name.strip() if category_name else None,
-            grade=grade.strip() if grade else None,
+            category_name=category,
+            grade=grade_value,
             spec=spec,
         )
         return self._exporter.generate(

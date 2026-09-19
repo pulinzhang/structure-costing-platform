@@ -14,7 +14,11 @@ import { setSearchBusy } from '../../../../search-busy.js?v=1';
 import {
     winningThicknessDownloadTemplate,
     renderWinningThicknessRows,
-} from './template.js?v=13';
+} from './template.js?v=16';
+import {
+    requireExportYearMonth,
+    selectDefaultYear,
+} from '../../../common/period-ui.js?v=4';
 
 const winningThicknessState = {
     records: [],
@@ -45,7 +49,10 @@ function init() {
         defaultSize: DEFAULT_PREVIEW_PAGE_SIZE,
     });
     fillMonthOptions();
-    loadFilterOptions();
+    loadFilterOptions().then(() => {
+        updateConditionsDisplay();
+        previewData();
+    });
     applyPermissionUi();
 }
 
@@ -73,7 +80,7 @@ function fillMonthOptions() {
         value: i + 1,
         label: fmtMonth(i + 1),
     }));
-    fillSelect('winningThicknessMonth', months, true);
+    fillSelect('winningThicknessMonth', months, false);
 }
 
 async function loadFilterOptions() {
@@ -88,9 +95,10 @@ async function loadFilterOptions() {
         const data = optionsRes.data || {};
         const categories = Array.isArray(categoryRes.data) ? categoryRes.data : [];
 
-        fillSelect('winningThicknessYear', buildYearOptions(data.years), true);
+        fillSelect('winningThicknessYear', buildYearOptions(data.years), false);
+        selectDefaultYear('winningThicknessYear');
         fillMonthOptions();
-        fillSelect('winningThicknessLocation', data.locations || [], true);
+        fillSelect('winningThicknessLocation', data.locations || [], false);
         fillSelect(
             'winningThicknessCategory',
             categories.map((item) => ({
@@ -103,7 +111,8 @@ async function loadFilterOptions() {
     } catch (error) {
         if (token !== winningThicknessState.filterLoadToken) return;
         console.error('加载筛选选项失败:', error);
-        fillSelect('winningThicknessYear', buildYearOptions(), true);
+        fillSelect('winningThicknessYear', buildYearOptions(), false);
+        selectDefaultYear('winningThicknessYear');
         fillMonthOptions();
     }
 }
@@ -199,8 +208,6 @@ function bindEvents() {
 
 function queryAfterFilterSelect() {
     updateConditionsDisplay();
-    const filters = collectFilters();
-    if (!filters.year || !filters.month || !filters.location) return;
     winningThicknessState.page = 1;
     previewData();
 }
@@ -217,7 +224,7 @@ function updateConditionsDisplay() {
 
     const display = document.getElementById('selectedWinningThicknessConditions');
     if (display) {
-        display.textContent = conditions.length > 0 ? conditions.join(' | ') : '请选择基地、年度、月份';
+        display.textContent = conditions.length > 0 ? conditions.join(' | ') : '全部';
     }
 }
 
@@ -236,34 +243,25 @@ function collectFilters() {
     };
 }
 
-function requireCoreFilters(filters) {
-    if (!filters.year || !filters.month || !filters.location) {
-        showToast('请先选择基地、年度、月份', 'warning');
-        return false;
-    }
-    return true;
-}
-
 /**
  * 组装一览表查询参数。
  * category_name / grade 传给后端，用于筛选牌号分类档案行（再与基价、大类政策组合）。
  */
 function applyFiltersToParams(params, filters) {
-    params.year = parseInt(filters.year, 10);
-    params.month = parseInt(filters.month, 10);
-    params.location = filters.location;
+    if (filters.year) params.year = parseInt(filters.year, 10);
+    if (filters.month) params.month = parseInt(filters.month, 10);
+    if (filters.location) params.location = filters.location;
     if (filters.steel_mill) params.steel_mill = filters.steel_mill;
     if (filters.category_name) params.category_name = filters.category_name;
     if (filters.grade) params.grade = filters.grade;
 }
 
 async function previewData() {
-    const filters = collectFilters();
-    if (!requireCoreFilters(filters)) return;
     if (winningThicknessState.isLoading) return;
     winningThicknessState.isLoading = true;
     setSearchBusy('btnPreviewWinningThickness', true);
 
+    const filters = collectFilters();
     const tableBody = document.getElementById('winningThicknessPreviewBody');
     if (tableBody) {
         tableBody.innerHTML = `
@@ -298,7 +296,15 @@ async function previewData() {
         if (recordCount) recordCount.textContent = total;
 
         if (tableBody) {
-            tableBody.innerHTML = renderWinningThicknessRows(records);
+            tableBody.innerHTML = records.length
+                ? renderWinningThicknessRows(records)
+                : `
+                <tr>
+                    <td colspan="10" class="px-4 py-8 text-center text-[#616161] text-xs">
+                        当前筛选下暂无数据
+                    </td>
+                </tr>
+            `;
         }
 
         const totalPages = Math.max(1, Math.ceil(total / pageSize));
@@ -328,7 +334,7 @@ async function exportExcel() {
     }
 
     const filters = collectFilters();
-    if (!requireCoreFilters(filters)) return;
+    if (!requireExportYearMonth(filters)) return;
 
     const loading = document.getElementById('winningThicknessDownloadLoading');
     loading?.classList.remove('hidden');
@@ -336,9 +342,15 @@ async function exportExcel() {
     try {
         const params = {};
         applyFiltersToParams(params, filters);
+        const period = fmtPeriod(filters.year, filters.month);
+        const defaultName = [
+            '中标钢厂厚度价格一览表',
+            period,
+            filters.location,
+        ].filter(Boolean).join('_') + '.xlsx';
         const { blob, filename } = await HttpClient.download(`${API_BASE}/export-download`, {
             params,
-            defaultFilename: `中标钢厂厚度价格一览表_${fmtPeriod(filters.year, filters.month)}_${filters.location}.xlsx`,
+            defaultFilename: defaultName,
         });
 
         const url = window.URL.createObjectURL(blob);

@@ -1,6 +1,6 @@
 """供应商主数据 Excel 解析器（纯函数，无副作用）。
 
-表头：缩写 | 工商名称 | ERP 代码 | 别名
+表头：缩写 | 全称/工商名称 | 对外代码 | 别名
 禁止调用 Service / Repository。
 """
 
@@ -13,9 +13,10 @@ from typing import Any
 from openpyxl import load_workbook
 
 HEADER_ABBREVIATION = "缩写"
-HEADER_FULL_NAME = "工商名称"
-HEADER_ERP_CODE = "ERP 代码"
+HEADER_FULL_NAME = "全称"
+HEADER_ERP_CODE = "对外代码"
 HEADER_ALIASES = "别名"
+HEADER_STATUS = "状态"
 
 _ALIAS_SEPARATORS = ("、", "，", ",", "\n", "\r", ";")
 
@@ -69,8 +70,8 @@ def _split_aliases(raw: str) -> list[str]:
 def _find_header_row(sheet: Any) -> tuple[int, dict[str, int]] | None:
     aliases = {
         HEADER_ABBREVIATION: {HEADER_ABBREVIATION},
-        HEADER_FULL_NAME: {HEADER_FULL_NAME},
-        HEADER_ERP_CODE: {HEADER_ERP_CODE, "ERP代码", "ERP"},
+        HEADER_FULL_NAME: {HEADER_FULL_NAME, "工商名称", "全称"},
+        HEADER_ERP_CODE: {HEADER_ERP_CODE, "ERP 代码", "ERP代码", "ERP"},
         HEADER_ALIASES: {HEADER_ALIASES},
     }
     required = {HEADER_ABBREVIATION, HEADER_FULL_NAME, HEADER_ERP_CODE}
@@ -103,7 +104,7 @@ def parse_supplier_excel(file_content: bytes) -> SupplierParseResult:
         workbook.close()
         return SupplierParseResult(
             rows=[],
-            errors=["未找到表头，需包含：缩写、工商名称、ERP 代码"],
+            errors=["未找到表头，需包含：缩写、全称、对外代码"],
         )
     header_row, mapping = found
     alias_col = mapping.get(HEADER_ALIASES)
@@ -124,13 +125,13 @@ def parse_supplier_excel(file_content: bytes) -> SupplierParseResult:
         elif len(abbreviation) > 50:
             row_errors.append("缩写最长 50 字")
         if not full_name:
-            row_errors.append("工商名称不能为空")
+            row_errors.append("全称不能为空")
         elif len(full_name) > 100:
-            row_errors.append("工商名称最长 100 字")
+            row_errors.append("全称最长 100 字")
         if not erp_code:
-            row_errors.append("ERP 代码不能为空")
+            row_errors.append("对外代码不能为空")
         elif len(erp_code) > 50:
-            row_errors.append("ERP 代码最长 50 字")
+            row_errors.append("对外代码最长 50 字")
 
         alias_items = _split_aliases(alias_raw)
         for alias in alias_items:

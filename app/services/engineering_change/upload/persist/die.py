@@ -35,10 +35,10 @@ def persist_die_parts(
     version: str | None = None,
     expiry_year: int | None = None,
     expiry_month: int | None = None,
-) -> tuple[list[EngineeringChangeEffectLinkInsert], int]:
-    """布点不读 Excel。返回 (效果链接, 新插入件数)。"""
+) -> tuple[list[EngineeringChangeEffectLinkInsert], int, dict[str, int]]:
+    """布点不读 Excel。返回 (效果链接, 新插入件数, 新零件号→布点 id)。"""
     if not revise_old_to_new:
-        return [], 0
+        return [], 0, {}
 
     die = StampingDieService()
     as_of_rows = die.list_parts_as_of_for_engineering_change(
@@ -79,12 +79,14 @@ def persist_die_parts(
         change_order_indexes.append(part_change_order_index.get(new_number, 0))
 
     if not specs:
-        return [], 0
+        return [], 0, {}
 
     results = die.insert_for_engineering_change(db, specs, current_user)
     links: list[EngineeringChangeEffectLinkInsert] = []
+    new_die_part_ids: dict[str, int] = {}
     sort_no = sort_no_start
     for result, change_order_index in zip(results, change_order_indexes, strict=True):
+        new_die_part_ids[result.part_number] = result.part_id
         links.append(
             EngineeringChangeEffectLinkInsert(
                 change_order_id=change_order_index,
@@ -95,4 +97,4 @@ def persist_die_parts(
             )
         )
         sort_no += 1
-    return links, len(results)
+    return links, len(results), new_die_part_ids

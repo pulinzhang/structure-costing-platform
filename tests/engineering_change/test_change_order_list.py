@@ -307,6 +307,38 @@ def test_delete_rolls_back_and_physically_deletes_whole_book(memory_db: Session)
     assert service.bom_service.clear_l0_expiry.called
 
 
+def test_rollback_integrity_error_becomes_business_exception(memory_db: Session) -> None:
+    """加工费等 RESTRICT 挡住删零件时，回滚应 409 业务文案，不是 500。"""
+    from unittest.mock import MagicMock
+
+    from sqlalchemy.exc import IntegrityError
+
+    from app.common.engineering_change_gates import EC_ROLLBACK_REFERENCED
+    from app.exceptions.base import BusinessException
+    from app.schemas.vo.user_vo import UserVO
+    from app.services.engineering_change.list.rollback_service import (
+        EngineeringChangeRollbackService,
+    )
+
+    log_id = _seed_book(memory_db)
+    service = EngineeringChangeRollbackService()
+    service.bom_service = MagicMock()
+    service.po_service = MagicMock()
+    service.breakdown_service = MagicMock()
+    service.stamping_service = MagicMock()
+    service.die_service = MagicMock()
+    service.bom_service.delete_engineering_change_tree.side_effect = IntegrityError(
+        "DELETE",
+        {},
+        Exception("FOREIGN KEY constraint failed"),
+    )
+
+    with pytest.raises(BusinessException, match=EC_ROLLBACK_REFERENCED) as raised:
+        service.rollback(memory_db, log_id, UserVO(id=1, username="tester", real_name="测试员"))
+    assert raised.value.code == 409
+    assert memory_db.query(EngineeringChangeUploadLog).count() == 1
+
+
 def test_effect_links_belong_to_whole_book(memory_db: Session) -> None:
     log_id = _seed_book(memory_db)
     links = EngineeringChangeEffectLinkRepository().list_by_upload_log_id_desc(memory_db, log_id)

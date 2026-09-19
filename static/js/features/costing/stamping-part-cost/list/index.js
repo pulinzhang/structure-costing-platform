@@ -7,8 +7,8 @@ import {
     renderCostRows,
     updatePartCostHud,
     updateCostFilterCapsules,
-    syncBreakdownColumnVisibility,
-} from './template.js?v=65';
+    syncOptionalColumnVisibility,
+} from './template.js?v=67';
 import { shortPartNumber } from '../../../../part-identity.js?v=3';
 import {
     DEFAULT_PAGE_SIZE,
@@ -44,13 +44,23 @@ const listState = {
     canReverse: true,
     canExport: true,
     canUpdate: true,
+    massColsOpen: false,
     breakdownColsOpen: false,
+    feeColsOpen: false,
     advancedOpen: false,
     pendingFilters: null,
     batchAuditSubmitting: false,
     isLoading: false,
     _onEscClose: null,
 };
+
+function optionalColumnFlags() {
+    return {
+        massOpen: listState.massColsOpen,
+        breakdownOpen: listState.breakdownColsOpen,
+        feeOpen: listState.feeColsOpen,
+    };
+}
 
 function openDrawer(drawerId, backdropId) {
     const drawer = document.getElementById(drawerId);
@@ -92,7 +102,7 @@ function init() {
     listState.pendingFilters = readHashFilters();
     if (listState.pendingFilters) setAdvancedOpen(true);
     updateCostFilterCapsules();
-    syncBreakdownColumnVisibility(false);
+    syncOptionalColumnVisibility(optionalColumnFlags());
     loadYearOptions().then(async () => {
         await loadCascadeFilters();
         applyPendingFiltersToSelects();
@@ -166,9 +176,9 @@ function applyPendingFiltersToSelects() {
     listState.pendingFilters = null;
 }
 
-function toggleBreakdownColumns() {
-    listState.breakdownColsOpen = !listState.breakdownColsOpen;
-    syncBreakdownColumnVisibility(listState.breakdownColsOpen);
+function toggleOptionalColumnGroup(stateKey) {
+    listState[stateKey] = !listState[stateKey];
+    syncOptionalColumnVisibility(optionalColumnFlags());
 }
 
 function setListLoading(isLoading) {
@@ -197,10 +207,16 @@ function bindEvents() {
     document.getElementById('costToggleAdvancedFilter')?.addEventListener('click', () => {
         setAdvancedOpen(!listState.advancedOpen);
     });
-    document.getElementById('costToggleBreakdownCols')?.addEventListener('click', (event) => {
-        event.preventDefault();
-        event.stopPropagation();
-        toggleBreakdownColumns();
+    [
+        ['costToggleMassCols', 'massColsOpen'],
+        ['costToggleBreakdownCols', 'breakdownColsOpen'],
+        ['costToggleFeeCols', 'feeColsOpen'],
+    ].forEach(([buttonId, stateKey]) => {
+        document.getElementById(buttonId)?.addEventListener('click', (event) => {
+            event.preventDefault();
+            event.stopPropagation();
+            toggleOptionalColumnGroup(stateKey);
+        });
     });
     document.getElementById('costResetBtn')?.addEventListener('click', () => resetFilters());
     document.getElementById('costPartNumberFilter')?.addEventListener('keydown', (event) => {
@@ -456,8 +472,8 @@ function renderRows(items) {
         return;
     }
     setListEmpty(false);
-    body.innerHTML = renderCostRows(items, listState.breakdownColsOpen);
-    syncBreakdownColumnVisibility(listState.breakdownColsOpen);
+    body.innerHTML = renderCostRows(items, optionalColumnFlags());
+    syncOptionalColumnVisibility(optionalColumnFlags());
     body.querySelectorAll('.btn-open-detail').forEach((btn) => {
         btn.addEventListener('click', (event) => {
             event.stopPropagation();

@@ -2,10 +2,22 @@
  * 项目上传页 — 同步导入，页面不选基地
  */
 
-import { vehicleModelUploadTemplate } from './template.js?v=3';
+import { vehicleModelUploadTemplate } from './template.js?v=6';
+import { bindSyncUploadProgress } from '../../../../sync-upload-progress.js?v=1';
 
 const API_BASE = '/api/masterdata/vehicle-models';
 const MAX_FILE_SIZE = 5 * 1024 * 1024;
+
+const uploadProgress = bindSyncUploadProgress({
+    zoneId: 'vmUploadZone',
+    idleId: 'vmUploadDropIdle',
+    panelId: 'vmUploadProgressPanel',
+    iconId: 'vmUploadProgressIcon',
+    titleId: 'vmUploadProgressTitle',
+    barId: 'vmUploadProgressBar',
+    msgId: 'vmUploadProgressMsg',
+    runningTitle: '正在写入…',
+});
 
 const VehicleModelUploadPage = {
     selectedFile: null,
@@ -141,27 +153,20 @@ const VehicleModelUploadPage = {
     },
 
     showProgress(msg = '解析并写入数据库，请稍候') {
-        document.getElementById('vmUploadDropIdle')?.classList.add('hidden');
-        document.getElementById('vmUploadProgressPanel')?.classList.remove('hidden');
-        const zone = document.getElementById('vmUploadZone');
-        if (zone) {
-            zone.classList.add('pointer-events-none');
-            zone.classList.remove('border-[#d32f2f]');
-        }
-        const progressMsg = document.getElementById('vmUploadProgressMsg');
-        if (progressMsg) progressMsg.textContent = msg;
+        uploadProgress.setRunning(msg);
+        document.getElementById('vmUploadZone')?.classList.remove('border-[#d32f2f]');
+    },
+
+    showDoneOnPanel(message, opts = {}) {
+        uploadProgress.setDone(message, opts);
     },
 
     failOnPanel(message) {
-        const text = String(message || '操作失败').trim() || '操作失败';
-        this.showProgress(text);
-        document.getElementById('vmUploadZone')?.classList.remove('pointer-events-none');
+        uploadProgress.setFail(message);
     },
 
     hideProgress() {
-        document.getElementById('vmUploadDropIdle')?.classList.remove('hidden');
-        document.getElementById('vmUploadProgressPanel')?.classList.add('hidden');
-        document.getElementById('vmUploadZone')?.classList.remove('pointer-events-none');
+        uploadProgress.hide();
     },
 
     setUploading(isUploading) {
@@ -212,8 +217,8 @@ const VehicleModelUploadPage = {
             const data = res.data || {};
             const msg = res.message
                 || `导入成功：新增 ${data.created_count ?? 0}，跳过 ${data.skipped_count ?? 0}`;
-            showToast(msg, 'success');
-            this.hideProgress();
+            const hasSkip = (data.skipped_count ?? 0) > 0;
+            this.showDoneOnPanel(msg, { hasSkip });
             this.clearSelectedFile(true);
         } catch (err) {
             this.failOnPanel(err.message || '导入失败');

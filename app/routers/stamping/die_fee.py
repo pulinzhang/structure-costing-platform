@@ -215,9 +215,9 @@ def list_fees(
 
 @router.get("/export")
 def export_download(
-    year: int = Query(..., ge=2000, le=2100),
-    location: str = Query(..., min_length=1),
-    vehicle_model: str = Query(..., min_length=1),
+    year: int | None = Query(None, ge=2000, le=2100),
+    location: str | None = Query(None),
+    vehicle_model: str | None = Query(None),
     stamping_supplier: str | None = Query(None),
     version: str | None = Query(None),
     part_number: str | None = Query(None),
@@ -229,8 +229,8 @@ def export_download(
     content, filename = _export_service.export(
         db,
         year=year,
-        location=location.strip(),
-        vehicle_model=vehicle_model.strip(),
+        location=location.strip() if location else None,
+        vehicle_model=vehicle_model.strip() if vehicle_model else None,
         stamping_supplier=stamping_supplier.strip() if stamping_supplier else None,
         version=version.strip() if version else None,
         part_number=part_number.strip() if part_number else None,

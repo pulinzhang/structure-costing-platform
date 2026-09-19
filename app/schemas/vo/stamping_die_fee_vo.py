@@ -187,9 +187,9 @@ class StampingDieFeeBatchAuditResultVO(BatchAuditCountsVO):
 
 
 class DieFeeListFilters(BaseModel):
-    year: int
-    location: str
-    vehicle_model: str
+    year: int | None = None
+    location: str | None = None
+    vehicle_model: str | None = None
     stamping_supplier: str | None = None
     version: str | None = None
     part_number: str | None = None

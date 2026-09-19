@@ -69,6 +69,7 @@ def test_ensure_seed_if_empty_writes_production_catalog(memory_db: Session) -> N
     assert "DC01 HC180YD+Z" not in grades
     assert not any(grade.startswith("POLICY_TEST_") for grade in grades)
     assert {"DC01", "DC03", "DC04", "DC51D+Z", "QSTE420TM"} <= grades
+    assert {"B180H1", "HC500/780DPD+Z", "QSTE460TM", "S355MC"} <= grades
     assert "DCO3" not in grades
     assert "DCO4" not in grades
     assert all(grade == stored_grade(grade) for grade in grades)
@@ -76,6 +77,9 @@ def test_ensure_seed_if_empty_writes_production_catalog(memory_db: Session) -> N
     assert by_grade["DC01"] == "冷轧"
     assert by_grade["DC51D+Z"] == "镀锌"
     assert by_grade["QSTE420TM"] == "酸洗"
+    assert by_grade["B180H1"] == "冷轧"
+    assert by_grade["HC500/780DPD+Z"] == "镀锌"
+    assert by_grade["QSTE460TM"] == "酸洗"
 
     service.ensure_seed_if_empty(memory_db)
     _, again = service.paginate(memory_db, SteelGradeCategoryQuery(page=1, size=100))

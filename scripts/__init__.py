@@ -8,6 +8,9 @@
 - ``seed_bom_annual_part_prices``：年度零件价种子（青岛 / 2025，与导入模板样例同源）
 - ``upload_stamping_die``：同步上传模具布点（默认芜湖 T13J 样本；校验失败不覆盖）
 - ``purge_steel_price_policies``：清空加减价政策（开发重导）
+- ``purge_steel_base_prices``：清空基准价（开发重导）
+- ``import_base_price_samples``：批量导入样例「发布价格」基准价
+- ``import_policy_thickness_samples``：批量导入样例「厚度加减价」政策
 - ``purge_bom_process_die_costing``：清空 BOM / 工艺 / 布点及下游核算（联调重导）
 - ``check_route_path_params``：守卫 Router 整数路径必须 ``/{id:int}``（见 api-type-safety §6）
 - ``check_model_config``：守卫 Pydantic ``model_config`` 必须 ``ConfigDict``（见 api-type-safety §7）

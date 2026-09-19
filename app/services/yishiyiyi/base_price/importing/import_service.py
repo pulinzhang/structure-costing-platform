@@ -178,11 +178,13 @@ class SteelBasePriceImportService:
         month: int,
         current_user: UserVO,
         progress_callback: ProgressCallback | None = None,
+        carry_mills: dict[tuple[str, str], str] | None = None,
     ) -> SteelBasePriceImportResultResponse:
         """
         解析 Excel 并执行 upsert。
         整个导入在单一事务中完成；进度写入辅助库。
         导入前先按年度/月份归档源文件，便于与政策文件成对核对。
+        carry_mills：仅价格列时按 (基地, 牌号) 承接上月中标钢厂。
         """
         create_audit = audit_create(current_user)
 
@@ -205,7 +207,11 @@ class SteelBasePriceImportService:
         lookup = location_service.enabled_name_lookup(db)
         if not lookup:
             raise BusinessException("没有已启用基地，请到基地页手工增加或启用（#/location）")
-        parse_result = parse_base_price_excel(file_content, location_lookup=lookup)
+        parse_result = parse_base_price_excel(
+            file_content,
+            location_lookup=lookup,
+            carry_mills=carry_mills,
+        )
         _assert_steel_mills_not_numeric(parse_result.records)
         # lookup 只过滤宽表列；落库仍走写入门禁。
         unique_locations = {

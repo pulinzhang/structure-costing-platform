@@ -2,11 +2,23 @@
  * 采购对象批量上传供应商
  */
 
-import { procurementObjectSupplierUploadTemplate } from './template.js?v=5';
+import { procurementObjectSupplierUploadTemplate } from './template.js?v=8';
+import { bindSyncUploadProgress } from '../../../../sync-upload-progress.js?v=1';
 
 const API_BASE = '/api/bom/procurement-objects';
 const CASCADE_API = '/api/bom/filters/cascade';
 const MAX_FILE_SIZE = 5 * 1024 * 1024;
+
+const uploadProgress = bindSyncUploadProgress({
+    zoneId: 'poSupplierUploadZone',
+    idleId: 'poSupplierUploadDropIdle',
+    panelId: 'poSupplierUploadProgressPanel',
+    iconId: 'poSupplierUploadProgressIcon',
+    titleId: 'poSupplierUploadProgressTitle',
+    barId: 'poSupplierUploadProgressBar',
+    msgId: 'poSupplierUploadProgressMsg',
+    runningTitle: '正在导入供应商指定...',
+});
 
 const uploadState = {
     selectedFile: null,
@@ -115,14 +127,17 @@ function bindEvents() {
         uploadState.vehicleModel = '';
         uploadState.bomVersion = '';
         loadCascade();
+        loadQaBanner();
     });
     document.getElementById('poSupplierUploadModel')?.addEventListener('change', () => {
         uploadState.vehicleModel = val('poSupplierUploadModel');
         uploadState.bomVersion = '';
         loadCascade();
+        loadQaBanner();
     });
     document.getElementById('poSupplierUploadVersion')?.addEventListener('change', () => {
         uploadState.bomVersion = val('poSupplierUploadVersion');
+        loadQaBanner();
     });
     const zone = document.getElementById('poSupplierUploadZone');
     const fileInput = document.getElementById('poSupplierUploadFileInput');
@@ -199,24 +214,19 @@ function resetForm() {
 }
 
 function showProgress(msg = '解析并写入数据库，请稍候') {
-    document.getElementById('poSupplierUploadDropIdle')?.classList.add('hidden');
-    document.getElementById('poSupplierUploadProgressPanel')?.classList.remove('hidden');
-    const zone = document.getElementById('poSupplierUploadZone');
-    if (zone) zone.classList.add('pointer-events-none');
-    const progressMsg = document.getElementById('poSupplierUploadProgressMsg');
-    if (progressMsg) progressMsg.textContent = msg;
+    uploadProgress.setRunning(msg);
+}
+
+function showDoneOnPanel(message, opts = {}) {
+    uploadProgress.setDone(message, opts);
 }
 
 function failOnPanel(message) {
-    const text = String(message || '操作失败').trim() || '操作失败';
-    showProgress(text);
-    document.getElementById('poSupplierUploadZone')?.classList.remove('pointer-events-none');
+    uploadProgress.setFail(message);
 }
 
 function hideProgress() {
-    document.getElementById('poSupplierUploadDropIdle')?.classList.remove('hidden');
-    document.getElementById('poSupplierUploadProgressPanel')?.classList.add('hidden');
-    document.getElementById('poSupplierUploadZone')?.classList.remove('pointer-events-none');
+    uploadProgress.hide();
 }
 
 function setUploading(isUploading) {
@@ -228,6 +238,41 @@ function setUploading(isUploading) {
             const el = document.getElementById(id);
             if (el && (uploadState.canUpload || id === 'poSupplierUploadResetBtn')) el.disabled = isUploading;
         });
+}
+
+async function loadQaBanner() {
+    const banner = document.getElementById('poSupplierUploadQaBanner');
+    if (!banner) return;
+    const location = uploadState.location || val('poSupplierUploadLocation');
+    const vehicleModel = uploadState.vehicleModel || val('poSupplierUploadModel');
+    const bomVersion = uploadState.bomVersion || val('poSupplierUploadVersion');
+    if (!location || !vehicleModel || !bomVersion) {
+        banner.classList.add('hidden');
+        banner.textContent = '';
+        return;
+    }
+    try {
+        const res = await HttpClient.get(`${API_BASE}/summary`, {
+            params: {
+                location,
+                vehicle_model: vehicleModel,
+                bom_version: bomVersion,
+            },
+            skipToast: true,
+        });
+        const header = res.data || {};
+        if (header.qa_passed === false) {
+            const detail = String(header.qa_error_text || '').trim() || '检测未通过';
+            banner.textContent = `检测未通过：${detail}。仍可上传改待审行；已审行跳过不改。`;
+            banner.classList.remove('hidden');
+            return;
+        }
+        banner.classList.add('hidden');
+        banner.textContent = '';
+    } catch (_) {
+        banner.classList.add('hidden');
+        banner.textContent = '';
+    }
 }
 
 async function downloadTemplate() {
@@ -247,6 +292,7 @@ async function downloadTemplate() {
         anchor.click();
         document.body.removeChild(anchor);
         window.URL.revokeObjectURL(url);
+        await loadQaBanner();
     } catch (error) {
         failOnPanel(error.message || '模板下载失败');
     }
@@ -271,13 +317,16 @@ async function submitUpload() {
     try {
         const res = await HttpClient.post(`${API_BASE}/supplier-upload`, formData, { skipToast: true });
         const data = res.data || {};
-        showToast(
-            res.message
-            || `已更新 ${data.updated_count ?? 0} 条，清空 ${data.cleared_count ?? 0} 条，未变 ${data.unchanged_count ?? 0} 条`,
-            'success',
-        );
+        const skipped = Array.isArray(data.skipped_details) ? data.skipped_details : [];
+        const lines = [
+            `已更新 ${data.updated_count ?? 0} 条，清空 ${data.cleared_count ?? 0} 条，未变 ${data.unchanged_count ?? 0} 条`,
+        ];
+        if (skipped.length) {
+            lines.push(`跳过 ${data.skipped_count ?? skipped.length} 条：`);
+            lines.push(...skipped);
+        }
+        showDoneOnPanel(lines.join('\n'), { hasSkip: skipped.length > 0 });
         clearSelectedFile();
-        hideProgress();
     } catch (error) {
         failOnPanel(error.message || '上传失败');
     } finally {

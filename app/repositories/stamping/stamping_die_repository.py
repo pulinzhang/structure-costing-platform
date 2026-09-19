@@ -138,6 +138,29 @@ class StampingDiePartRepository:
             .first()
         )
 
+    def get_identity_by_id(self, db: Session, part_id: int) -> StampingDiePart | None:
+        """只取主表行，不加载工序（工程变更抄模具费用）。"""
+        return db.query(StampingDiePart).filter(StampingDiePart.id == part_id).first()
+
+    def get_by_location_vehicle_part(
+        self,
+        db: Session,
+        *,
+        location: str,
+        vehicle_model: str,
+        part_number: str,
+    ) -> StampingDiePart | None:
+        """唯一键单查，不加载工序。"""
+        return (
+            db.query(StampingDiePart)
+            .filter(
+                StampingDiePart.location == location,
+                StampingDiePart.vehicle_model == vehicle_model,
+                StampingDiePart.part_number == part_number,
+            )
+            .first()
+        )
+
     def list_for_export(
         self,
         db: Session,

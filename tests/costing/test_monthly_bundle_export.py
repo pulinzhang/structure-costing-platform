@@ -36,9 +36,36 @@ def test_bundle_always_exports_finance_tree_roots() -> None:
             month=12,
             location="青岛",
             vehicle_model="T2AA",
-            bom_version="D/09",
             current_user=MagicMock(),
         )
     assert service.assembly.write_to_workbook.call_args.kwargs["view"] == "finance"
+    assert service.assembly.write_to_workbook.call_args.kwargs["bom_version"] is None
     assert "stamping_supplier" not in service.part_cost.write_to_workbook.call_args.kwargs
     assert "stamping_supplier" not in service.process_fee.write_to_workbook.call_args.kwargs
+
+
+def test_bundle_allows_optional_bom_version_filter() -> None:
+    service = MonthlyBundleExportService()
+    _stub_sheet_writers(service)
+    with (
+        patch(
+            "app.services.costing.monthly_bundle_export.monthly_bundle_export_service.write_cover_sheet",
+            return_value="封皮·核价说明",
+        ) as cover,
+        patch(
+            "app.services.costing.monthly_bundle_export.monthly_bundle_export_service.workbook_to_xlsx_bytes",
+            return_value=b"xlsx",
+        ),
+    ):
+        _content, filename = service.export(
+            MagicMock(),
+            year=2025,
+            month=5,
+            location="芜湖",
+            vehicle_model="T13J",
+            bom_version="EC-202505",
+            current_user=MagicMock(),
+        )
+    assert service.assembly.write_to_workbook.call_args.kwargs["bom_version"] == "EC-202505"
+    assert cover.call_args.kwargs["bom_version"] == "EC-202505"
+    assert "EC-202505" in filename.replace("_", "-") or "EC-202505" in filename

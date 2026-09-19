@@ -59,7 +59,7 @@ def process_upload(
                 skipped_count += 1
                 continue
             errors.append(
-                f"第 {row.row_number} 行：与文件内已有「{row.full_name}」缩写 / ERP / 别名不一致"
+                f"第 {row.row_number} 行：与文件内已有「{row.full_name}」缩写 / 对外代码 / 别名不一致"
             )
             continue
 
@@ -128,7 +128,7 @@ def process_upload(
         db.commit()
     except IntegrityError:
         db.rollback()
-        raise BusinessException("该工商名称已有供应商") from None
+        raise BusinessException("该全称已有供应商") from None
     except BusinessException:
         db.rollback()
         raise

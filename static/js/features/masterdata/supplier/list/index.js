@@ -8,12 +8,11 @@ import {
     DEFAULT_PAGE_SIZE,
     normalizePageSize,
 } from '../../../../page-size.js?v=3';
-import { setSearchBusy } from '../../../../search-busy.js?v=1';
 import {
     renderAliasItems,
     renderSupplierRows,
     supplierListTemplate,
-} from './template.js?v=4';
+} from './template.js?v=7';
 
 const API_BASE = '/api/masterdata/suppliers';
 const DRAWER_ANIMATION_MS = 300;
@@ -64,16 +63,21 @@ function applyPermissionUi() {
         document.getElementById('supplierBtnCreate')?.classList.add('hidden');
     }
     if (!canOp('op:supplier-list:export')) {
-        document.getElementById('supplierBtnExport')?.classList.add('hidden');
+        document.getElementById('supplierMoreWrap')?.classList.add('hidden');
     }
     if (!canOp('op:supplier-list:update')) {
         document.getElementById('submitSupplierEditBtn')?.classList.add('hidden');
     }
 }
 
+function setMoreMenuOpen(isOpen) {
+    const menu = document.getElementById('supplierMoreMenu');
+    if (!menu) return;
+    menu.classList.toggle('hidden', !isOpen);
+}
+
 function setLoading(isLoading) {
     listState.isLoading = isLoading;
-    setSearchBusy('supplierBtnSearch', isLoading);
     document.getElementById('supplierLoadingState')?.classList.toggle('hidden', !isLoading);
     if (isLoading) {
         document.getElementById('supplierEmptyState')?.classList.add('hidden');
@@ -87,8 +91,8 @@ function renderStatusCapsules() {
         const value = btn.getAttribute('data-enabled-filter') ?? '';
         const selected = value === listState.isEnabled;
         btn.className = selected
-            ? 'supplier-status-capsule px-2 py-0.5 text-[10px] font-mono rounded-md border border-[#d32f2f]/50 bg-[#1a080a] text-[#d32f2f]'
-            : 'supplier-status-capsule px-2 py-0.5 text-[10px] font-mono rounded-md border border-[#2c2c2c] text-[#616161] hover:text-[#9e9e9e]';
+            ? 'supplier-status-capsule px-2 py-0.5 text-[10px] font-mono rounded-md border border-[#FF1E27]/50 bg-[#1A080A] text-white'
+            : 'supplier-status-capsule px-2 py-0.5 text-[10px] font-mono rounded-md border border-[#2A2A35] text-[#8E8E93] hover:text-white';
     });
 }
 
@@ -104,7 +108,7 @@ function renderList() {
         const filtered = Boolean(listState.keyword) || listState.isEnabled !== '';
         hint.textContent = filtered
             ? '请调整关键字或状态筛选'
-            : '点右上角新增，或到上传页导入 Excel';
+            : '点右上角新增，或从上传页补档';
     }
     if (totalEl) totalEl.textContent = `共 ${listState.total} 条`;
     paintPagination('supplierPaginationBtns', listState.page, listState.totalPages);
@@ -177,11 +181,11 @@ function bindCreateDrawer() {
             return;
         }
         if (!fullName) {
-            showToast('请填写工商名称', 'warning');
+            showToast('请填写全称', 'warning');
             return;
         }
         if (!erpCode) {
-            showToast('请填写 ERP 代码', 'warning');
+            showToast('请填写对外代码', 'warning');
             return;
         }
         try {
@@ -254,7 +258,7 @@ function bindEditDrawer() {
         const fullName = document.getElementById('supplierEditFullName')?.value?.trim() || '';
         const erpCode = document.getElementById('supplierEditErpCode')?.value?.trim() || '';
         if (!abbreviation || !fullName || !erpCode) {
-            showToast('请填写缩写、工商名称和 ERP 代码', 'warning');
+            showToast('请填写缩写、全称和对外代码', 'warning');
             return;
         }
         try {
@@ -401,10 +405,16 @@ function bindFilters() {
         listState.page = 1;
         loadData();
     };
-    document.getElementById('supplierBtnSearch')?.addEventListener('click', search);
-    document.getElementById('supplierFilterKeyword')?.addEventListener('keydown', (event) => {
+    const keywordInput = document.getElementById('supplierFilterKeyword');
+    let searchTimer = 0;
+    keywordInput?.addEventListener('input', () => {
+        window.clearTimeout(searchTimer);
+        searchTimer = window.setTimeout(search, 280);
+    });
+    keywordInput?.addEventListener('keydown', (event) => {
         if (event.key === 'Enter') {
             event.preventDefault();
+            window.clearTimeout(searchTimer);
             search();
         }
     });
@@ -435,12 +445,8 @@ async function exportExcel() {
         return;
     }
     const btn = document.getElementById('supplierBtnExport');
-    const original = btn ? btn.innerHTML : '';
     try {
-        if (btn) {
-            btn.disabled = true;
-            btn.innerHTML = `<div class="w-3 h-3 border border-[#d32f2f] border-t-transparent rounded-full animate-spin"></div>导出中`;
-        }
+        if (btn) btn.disabled = true;
         const params = {};
         if (listState.keyword) params.q = listState.keyword;
         if (listState.isEnabled === 'true') params.is_enabled = true;
@@ -461,10 +467,7 @@ async function exportExcel() {
     } catch (error) {
         if (!error.status) showToast(error.message || '导出失败', 'error');
     } finally {
-        if (btn) {
-            btn.disabled = false;
-            btn.innerHTML = original;
-        }
+        if (btn) btn.disabled = false;
     }
 }
 
@@ -476,7 +479,22 @@ function init() {
     bindDeleteDrawer();
     bindTableActions();
     bindFilters();
-    document.getElementById('supplierBtnExport')?.addEventListener('click', () => exportExcel());
+    document.getElementById('supplierMoreBtn')?.addEventListener('click', (event) => {
+        event.stopPropagation();
+        const menu = document.getElementById('supplierMoreMenu');
+        const isOpen = menu && !menu.classList.contains('hidden');
+        setMoreMenuOpen(!isOpen);
+    });
+    document.addEventListener('click', (event) => {
+        const moreWrap = document.getElementById('supplierMoreWrap');
+        if (moreWrap && !moreWrap.contains(event.target)) {
+            setMoreMenuOpen(false);
+        }
+    });
+    document.getElementById('supplierBtnExport')?.addEventListener('click', () => {
+        setMoreMenuOpen(false);
+        exportExcel();
+    });
     loadData();
 }
 

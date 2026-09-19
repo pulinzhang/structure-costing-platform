@@ -63,7 +63,9 @@ export function procurementObjectSupplierUploadTemplate() {
                                         </select>
                                     </div>
                                 </div>
-                                <p class="ml-6 mt-1.5 text-[11px] text-[#616161]">须已生成该范围采购对象清单。模板按零件号去重；内部号给人看，方便到 ERP 联查。第二页目录只对照，导入不读。</p>
+                                <p class="ml-6 mt-1.5 text-[11px] text-[#616161]">须已生成该范围采购对象清单。模板按零件号去重；内部号给人看，方便到 ERP 联查。第二页目录只对照，导入不读。检测未通过仍可上传待审行；已审跳过。</p>
+                                <div id="poSupplierUploadQaBanner"
+                                     class="ml-6 mt-2 hidden text-[11px] text-[#FF1E27] bg-[#1A1214] border border-[#3A2226] px-3 py-2 leading-relaxed"></div>
                             </div>
                             <div class="h-px bg-[#1e1e1e] mx-6 mb-4"></div>
                             <div>
@@ -88,11 +90,12 @@ export function procurementObjectSupplierUploadTemplate() {
                                         </div>
                                         <div id="poSupplierUploadProgressPanel" class="hidden text-left w-full">
                                             <div class="flex items-center gap-2 min-w-0 mb-3">
-                                                ${window.svgIcon('spinner', 'w-4 h-4 text-[#d32f2f]')}
-                                                <h5 class="text-xs font-medium text-[#ffffff] truncate mb-0">正在导入供应商指定...</h5>
+                                                <span id="poSupplierUploadProgressIcon">${window.svgIcon('spinner', 'w-4 h-4 text-[#d32f2f]')}</span>
+                                                <h5 id="poSupplierUploadProgressTitle" class="text-xs font-medium text-[#ffffff] truncate mb-0">正在导入供应商指定...</h5>
                                             </div>
                                             <div class="h-1.5 w-full bg-[#0a0a0a] border border-[#2c2c2c] overflow-hidden mb-3">
-                                                <div class="h-full bg-[#d32f2f] shadow-[0_0_8px_rgba(211,47,47,0.5)] transition-all duration-300 animate-pulse"
+                                                <div id="poSupplierUploadProgressBar"
+                                                     class="h-full bg-[#d32f2f] shadow-[0_0_8px_rgba(211,47,47,0.5)] transition-all duration-300 animate-pulse"
                                                      style="width: 60%"></div>
                                             </div>
                                             <p id="poSupplierUploadProgressMsg" class="text-[11px] text-[#9e9e9e] leading-relaxed mb-0 whitespace-pre-wrap break-words max-h-48 overflow-y-auto">解析并写入数据库，请稍候</p>
@@ -118,7 +121,7 @@ export function procurementObjectSupplierUploadTemplate() {
                     <div class="p-4 space-y-3 text-xs text-[#616161]">
                         <p>只改第一页「供应商」。「内部号」给人看，方便到 ERP 联查，导入不读。相同零件号只出一行。空=清空。缩写 / 别名 / ERP 可解析为工商名称。</p>
                         <p>找不到的厂到 <span class="text-[#9e9e9e]">#/supplier-list</span> 补档，本页不建档。</p>
-                        <p>已审要改须先在清单页反审核。自制禁止填非空供应商。</p>
+                        <p>检测未通过仍可上传待审行。已审行跳过不改。自制禁止填非空供应商。</p>
                     </div>
                 </div>
             </div>

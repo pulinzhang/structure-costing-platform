@@ -46,7 +46,7 @@ def delete_part(repository: StampingPartRepository, db: Session, part_id: int) -
         db.commit()
     except IntegrityError:
         db.rollback()
-        raise BusinessException("仍被引用，不能删除") from None
+        raise BusinessException("仍被冲压加工费引用，请先删除对应加工费后再删") from None
 
 
 def create_part(
@@ -140,7 +140,7 @@ def batch_delete_parts(
 
     supplier_names = SupplierService().names_for_query(db, supplier)
     if supplier and supplier_names is not None and not supplier_names:
-        raise BusinessException("没有该供应商，请到供应商一览表手工增加或上传（#/supplier-list）")
+        raise BusinessException("没有该供应商，请到供应商一览手工增加或上传（#/supplier-list）")
 
     try:
         deleted = repository.delete_by_scope(
@@ -153,7 +153,7 @@ def batch_delete_parts(
         db.commit()
     except IntegrityError:
         db.rollback()
-        raise BusinessException("仍被引用，不能删除") from None
+        raise BusinessException("仍被冲压加工费引用，请先删除对应加工费后再删") from None
     return StampingPartBatchDeleteResultVO(
         location=location,
         stamping_supplier=supplier,

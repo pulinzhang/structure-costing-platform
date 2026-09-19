@@ -8,6 +8,7 @@ import logging
 
 from sqlalchemy.orm import Session
 
+from app.common.export_filters import require_year_month_export_filters
 from app.models.yishiyiyi import SteelPriceLadderItem, SteelPricePolicy
 from app.repositories.yishiyiyi.policy import SteelPricePolicyRepository
 from app.repositories.yishiyiyi.policy.dto import ExportRow
@@ -203,6 +204,7 @@ class SteelPricePolicyExportService:
         Returns:
             (文件字节数据, 文件名)
         """
+        require_year_month_export_filters(year, month)
         records = self.get_export_data(
             db,
             year=year,

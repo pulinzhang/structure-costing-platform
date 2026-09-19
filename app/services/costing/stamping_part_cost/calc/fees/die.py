@@ -1,4 +1,8 @@
-"""模具费：取年度模具费最终价（已是元/件），缺档记 0。"""
+"""模具费：取年度模具费最终价（已是元/件）。
+
+零件价页只 lookup：缺档记 0，本层不补算、不挡算。
+引擎补算见 costing-engine `annual_die_fee`（有布点且当年无结果才算）。
+"""
 
 from __future__ import annotations
 
@@ -38,18 +42,17 @@ class DieFeeResolver:
         location: str,
         vehicle_model: str | None,
     ) -> int:
-        best = 0
+        """基地别名下费用行合计（与 evaluate_die_fee_coverage 同口径：SUM，非 MAX）。"""
+        total = 0
         names = LocationService().expand_for_query(db, location)
         for candidate in names:
-            count = self.die_fee_repo.count_by_year_location(
+            total += self.die_fee_repo.count_by_year_location(
                 db,
                 year=year,
                 location=candidate,
                 vehicle_model=vehicle_model,
             )
-            if count > best:
-                best = count
-        return best
+        return total
 
     def lookup(
         self,

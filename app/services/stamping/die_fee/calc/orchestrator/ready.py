@@ -2,9 +2,13 @@
 
 from __future__ import annotations
 
+from typing import NamedTuple
+
 from sqlalchemy.orm import Session
 
 from app.exceptions.base import BusinessException
+from app.repositories.stamping.die_fee_repository import StampingDieFeeRepository
+from app.repositories.stamping.stamping_die_repository import StampingDiePartRepository
 from app.schemas.vo.stamping_die_fee_vo import StampingDieFeeCalcReadyVO
 from app.services.masterdata.vehicle_model import VehicleModelService
 from app.services.stamping.die_fee.calc.orchestrator.deps import DieFeeCalcDeps
@@ -15,6 +19,64 @@ from app.services.stamping.die_fee.calc.orchestrator.identity import (
 )
 from app.services.stamping.die_fee.calc.weight_resolver import PreviousWeightIndex
 from app.services.stamping.die_fee.fee_math import ZERO
+
+
+class DieFeeCoverage(NamedTuple):
+    """引擎年度补算：有布点且当年有任意模具费行 → complete。"""
+
+    complete: bool
+    has_dies: bool
+    message: str
+    part_count: int
+    fee_count: int
+
+
+def evaluate_die_fee_coverage(
+    db: Session,
+    *,
+    year: int,
+    aliases: list[str],
+    vehicle_model: str,
+    die_repo: StampingDiePartRepository | None = None,
+    fee_repo: StampingDieFeeRepository | None = None,
+) -> DieFeeCoverage:
+    """布点年交集有件且 fee 行 > 0 视为已齐；无布点 has_dies=False（引擎不列入计划）。"""
+    die_repo = die_repo or StampingDiePartRepository()
+    fee_repo = fee_repo or StampingDieFeeRepository()
+    part_count = 0
+    fee_count = 0
+    for alias in aliases:
+        parts = die_repo.list_with_processes(
+            db,
+            location=alias,
+            vehicle_model=vehicle_model,
+            overlap_year=year,
+        )
+        part_count += len(parts)
+        fee_count += fee_repo.count_by_year_location(
+            db,
+            year=year,
+            location=alias,
+            vehicle_model=vehicle_model,
+        )
+
+    if part_count <= 0:
+        return DieFeeCoverage(False, False, "无模具布点", 0, fee_count)
+    if fee_count <= 0:
+        return DieFeeCoverage(
+            False,
+            True,
+            f"有模具布点 {part_count} 件，当年无模具费结果，将自动补算",
+            part_count,
+            0,
+        )
+    return DieFeeCoverage(
+        True,
+        True,
+        f"冲压模具费已有结果（布点 {part_count}，费用行 {fee_count}）",
+        part_count,
+        fee_count,
+    )
 
 
 def collect_calc_ready(

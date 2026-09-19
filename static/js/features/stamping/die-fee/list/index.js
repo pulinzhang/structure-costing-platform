@@ -8,7 +8,7 @@ import {
     renderDieFeeRows,
     updateDieFeeHud,
     updateDieFeeFilterCapsules,
-} from './template.js?v=13';
+} from './template.js?v=15';
 import { shortPartNumber } from '../../../../part-identity.js?v=3';
 import {
     DEFAULT_PAGE_SIZE,
@@ -382,12 +382,13 @@ function hasScope(scope) {
 }
 
 function scopeLabel(scope) {
-    if (!hasScope(scope)) return '—';
-    if (scope.stamping_supplier || scope.version) {
-        const extra = [scope.stamping_supplier, scope.version].filter(Boolean).join(' · ');
-        return `${scope.location} · ${scope.vehicle_model} · ${extra}`;
-    }
-    return `${scope.location} · ${scope.vehicle_model}`;
+    const bits = [];
+    if (scope.year) bits.push(String(scope.year));
+    if (scope.location) bits.push(scope.location);
+    if (scope.vehicle_model) bits.push(scope.vehicle_model);
+    if (scope.stamping_supplier) bits.push(scope.stamping_supplier);
+    if (scope.version) bits.push(scope.version);
+    return bits.length ? bits.join(' · ') : '全部';
 }
 
 function showEmpty(message) {
@@ -407,16 +408,6 @@ async function loadData(page = 1) {
     updateDieFeeFilterCapsules();
 
     const filters = collectListFilters();
-    if (!hasScope(filters)) {
-        loading?.classList.add('hidden');
-        showEmpty('请先选定年度、基地、项目后查询，或先在「冲压模具费计算」中执行计算');
-        const totalLabel = document.getElementById('dieFeeTotalLabel');
-        if (totalLabel) totalLabel.textContent = '';
-        const pagination = document.getElementById('dieFeePagination');
-        if (pagination) pagination.innerHTML = '';
-        updateDieFeeHud(0, null, feeState.onlyZero, '—');
-        return;
-    }
 
     feeState.isLoading = true;
     setSearchBusy('dieFeeSearchBtn', true);
@@ -426,9 +417,9 @@ async function loadData(page = 1) {
         const params = {
             page,
             size: feeState.pageSize,
-            year: Number(filters.year),
-            location: filters.location,
-            vehicle_model: filters.vehicle_model,
+            year: filters.year ? Number(filters.year) : undefined,
+            location: filters.location || undefined,
+            vehicle_model: filters.vehicle_model || undefined,
             stamping_supplier: filters.stamping_supplier || undefined,
             version: filters.version || undefined,
             part_number: filters.part_number || undefined,
@@ -454,7 +445,7 @@ async function loadData(page = 1) {
         feeState.zeroCount = Number(summary?.zero_count ?? 0);
 
         if (!feeState.records.length) {
-            showEmpty('当前筛选下暂无模具费数据，请先在「冲压模具费计算」中执行计算');
+            showEmpty('当前筛选下暂无模具费数据；可到「冲压模具费计算」手算，或由自动核价引擎补算');
         } else if (body) {
             body.innerHTML = renderDieFeeRows(feeState.records);
             bindRowEvents();
@@ -728,9 +719,17 @@ async function saveEdit() {
 
 async function exportExcel() {
     const filters = collectListFilters();
-    if (!hasScope(filters)) {
-        setAdvancedOpen(true);
-        showToast(SCOPE_REQUIRED_MESSAGE, 'warning');
+    if (
+        !filters.year
+        && !filters.location
+        && !filters.vehicle_model
+        && !filters.stamping_supplier
+        && !filters.version
+        && !filters.audit_status
+        && !filters.part_number
+        && !filters.only_zero
+    ) {
+        showToast('请至少选择一个筛选条件后再导出', 'warning');
         return;
     }
 
@@ -747,9 +746,9 @@ async function exportExcel() {
     try {
         const { blob, filename } = await HttpClient.download(`${API_BASE}/export`, {
             params: {
-                year: Number(filters.year),
-                location: filters.location,
-                vehicle_model: filters.vehicle_model,
+                year: filters.year ? Number(filters.year) : undefined,
+                location: filters.location || undefined,
+                vehicle_model: filters.vehicle_model || undefined,
                 stamping_supplier: filters.stamping_supplier || undefined,
                 version: filters.version || undefined,
                 audit_status: filters.audit_status || undefined,

@@ -51,6 +51,29 @@ class StampingDieFeeQueries:
             .first()
         )
 
+    def list_by_part_from_year(
+        self,
+        db: Session,
+        *,
+        location: str,
+        vehicle_model: str,
+        part_number: str,
+        from_year: int,
+    ) -> list[StampingDieFee]:
+        """某零件 year >= from_year 的模具费结果（含各序）。"""
+        return (
+            db.query(StampingDieFee)
+            .options(joinedload(StampingDieFee.items))
+            .filter(
+                StampingDieFee.location == location,
+                StampingDieFee.vehicle_model == vehicle_model,
+                StampingDieFee.part_number == part_number,
+                StampingDieFee.year >= from_year,
+            )
+            .order_by(StampingDieFee.year.asc(), StampingDieFee.id.asc())
+            .all()
+        )
+
     def count_by_year_location(
         self,
         db: Session,
@@ -71,15 +94,16 @@ class StampingDieFeeQueries:
         self,
         db: Session,
         *,
-        year: int,
+        year: int | None = None,
         location: str | None = None,
         locations: list[str] | None = None,
-        vehicle_model: str,
+        vehicle_model: str | None = None,
     ) -> Query[StampingDieFee]:
-        query = db.query(StampingDieFee).filter(
-            StampingDieFee.year == year,
-            StampingDieFee.vehicle_model == vehicle_model,
-        )
+        query = db.query(StampingDieFee)
+        if year is not None:
+            query = query.filter(StampingDieFee.year == year)
+        if vehicle_model:
+            query = query.filter(StampingDieFee.vehicle_model == vehicle_model)
         if locations is not None:
             query = query.filter(StampingDieFee.location.in_(locations))
         elif location:
@@ -128,10 +152,10 @@ class StampingDieFeeQueries:
         self,
         db: Session,
         *,
-        year: int,
+        year: int | None = None,
         location: str | None = None,
         locations: list[str] | None = None,
-        vehicle_model: str,
+        vehicle_model: str | None = None,
         part_number: str | None,
         audit_status: str | None,
         only_zero: bool,
@@ -161,10 +185,10 @@ class StampingDieFeeQueries:
         self,
         db: Session,
         *,
-        year: int,
+        year: int | None = None,
         location: str | None = None,
         locations: list[str] | None = None,
-        vehicle_model: str,
+        vehicle_model: str | None = None,
         part_number: str | None,
         audit_status: str | None,
         only_zero: bool,
@@ -189,6 +213,7 @@ class StampingDieFeeQueries:
         rows = (
             query.options(noload(StampingDieFee.items))
             .order_by(
+                StampingDieFee.year.desc(),
                 StampingDieFee.location.asc(),
                 StampingDieFee.vehicle_model.asc(),
                 StampingDieFee.id.asc(),
@@ -203,10 +228,10 @@ class StampingDieFeeQueries:
         self,
         db: Session,
         *,
-        year: int,
+        year: int | None = None,
         location: str | None = None,
         locations: list[str] | None = None,
-        vehicle_model: str,
+        vehicle_model: str | None = None,
         part_number: str | None,
         audit_status: str | None,
         stamping_supplier: str | None = None,
@@ -251,10 +276,10 @@ class StampingDieFeeQueries:
         self,
         db: Session,
         *,
-        year: int,
+        year: int | None = None,
         location: str | None = None,
         locations: list[str] | None = None,
-        vehicle_model: str,
+        vehicle_model: str | None = None,
         part_number: str | None,
         audit_status: str | None,
         only_zero: bool,
@@ -276,6 +301,7 @@ class StampingDieFeeQueries:
         return (
             query.options(joinedload(StampingDieFee.items))
             .order_by(
+                StampingDieFee.year.desc(),
                 StampingDieFee.location.asc(),
                 StampingDieFee.vehicle_model.asc(),
                 StampingDieFee.id.asc(),

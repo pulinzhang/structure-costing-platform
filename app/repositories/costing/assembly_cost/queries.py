@@ -83,13 +83,15 @@ class AssemblyCostQueries:
 
     @staticmethod
     def _order_like_bom_import(q: Query[_T]) -> Query[_T]:
-        """与材料清单导入顺序一致：seq_no → level → L0 零件号 → excel_row。"""
+        """列表/导出序：年 → 月 → 基地 → 项目 → L0 seq_no。
+
+        财务树根的 source_node_id 即 L0；采购视图在同键后再按 level / excel_row 收束。
+        """
         return q.outerjoin(BomNode, BomNode.id == AssemblyCost.source_node_id).order_by(
             AssemblyCost.year.desc(),
             AssemblyCost.month.desc(),
             AssemblyCost.location.asc(),
             AssemblyCost.vehicle_model.asc(),
-            AssemblyCost.bom_version.asc(),
             func.coalesce(BomNode.seq_no, MISSING_SEQ_NO).asc(),
             BomNode.level.asc(),
             case((BomNode.level == 0, BomNode.part_number), else_="").asc(),
@@ -280,7 +282,7 @@ class AssemblyCostQueries:
         month: int,
         location: str,
         vehicle_model: str,
-        bom_version: str,
+        bom_version: str | None = None,
         only_pending: bool = False,
         view: str = "finance",
     ) -> list[int]:
@@ -289,8 +291,9 @@ class AssemblyCostQueries:
             AssemblyCost.month == month,
             AssemblyCost.location == location,
             AssemblyCost.vehicle_model == vehicle_model,
-            AssemblyCost.bom_version == bom_version,
         )
+        if bom_version:
+            q = q.filter(AssemblyCost.bom_version == bom_version)
         if view == "finance":
             q = q.filter(AssemblyCost.is_tree_root.is_(True))
         elif view == "procurement":
@@ -307,20 +310,18 @@ class AssemblyCostQueries:
         month: int,
         location: str,
         vehicle_model: str,
-        bom_version: str,
+        bom_version: str | None = None,
     ) -> int:
-        return (
-            db.query(AssemblyCost)
-            .filter(
-                AssemblyCost.year == year,
-                AssemblyCost.month == month,
-                AssemblyCost.location == location,
-                AssemblyCost.vehicle_model == vehicle_model,
-                AssemblyCost.bom_version == bom_version,
-                AssemblyCost.audit_status == AUDIT_APPROVED,
-            )
-            .count()
+        q = db.query(AssemblyCost).filter(
+            AssemblyCost.year == year,
+            AssemblyCost.month == month,
+            AssemblyCost.location == location,
+            AssemblyCost.vehicle_model == vehicle_model,
+            AssemblyCost.audit_status == AUDIT_APPROVED,
         )
+        if bom_version:
+            q = q.filter(AssemblyCost.bom_version == bom_version)
+        return q.count()
 
     def count_approved_by_ids(self, db: Session, ids: list[int]) -> int:
         if not ids:

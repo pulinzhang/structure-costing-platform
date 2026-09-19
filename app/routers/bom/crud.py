@@ -34,7 +34,8 @@ _bom_read = require_any_perm(
     Perm.BOM_UPLOAD_VIEW,
     Perm.BOM_MATERIAL_VIEW,
 )
-# 级联下拉：结构/上传/材料清单列表/焊接拆解/包装运输费/采购对象/年度零件价均可读取
+# 级联下拉：结构/上传/材料清单/焊接拆解/包装运输费/采购对象/年度零件价/
+# 总成核价一览与计算 / 工程变更均可读取
 _bom_cascade_read = require_any_perm(
     Perm.BOM_STRUCTURE_VIEW,
     Perm.BOM_UPLOAD_VIEW,
@@ -52,6 +53,8 @@ _bom_cascade_read = require_any_perm(
     Perm.BOM_WHERE_USED_VIEW,
     Perm.ENGINEERING_CHANGE_UPLOAD_VIEW,
     Perm.ENGINEERING_CHANGE_ORDER_LIST_VIEW,
+    Perm.ASSEMBLY_COST_VIEW,
+    Perm.ASSEMBLY_COST_CALC_VIEW,
 )
 
 
@@ -64,7 +67,7 @@ def get_bom_cascade_filters(
     db: Session = Depends(get_db),
     current_user: UserVO = Depends(_bom_cascade_read),
 ) -> ApiResponse[BomCascadeFilterOptionsVO]:
-    """材料清单级联筛选：基地 → 项目 → 版本"""
+    """材料清单级联筛选：基地 → 项目 → 版本（L0 节点去重）"""
     options = _bom_service.get_cascade_filter_options(db, query)
     return ApiResponse.ok(data=options, message="获取成功")
 

@@ -90,8 +90,8 @@ ForeignKey("suppliers.full_name", ondelete="RESTRICT", onupdate="RESTRICT")
 
 | 条件 | 指定 / 清空供应商 |
 |------|-------------------|
-| `qa_passed=false` | 拒绝（与确认相同） |
-| `audit_status=approved` | 拒绝；须先按范围批量反审核 |
+| `qa_passed=false` | 允许（黄条仅展示） |
+| `audit_status=approved` | **跳过不改**（不抛「请先反审核」） |
 | `section≠object` | 拒绝 |
 | `confirm_status=in_house` | **禁止非空**。改为自制时 **清空** `supplier_name` |
 | `confirm_status=pending` | 允许先指定（待定也可以写对方）；签约报表默认不出待定 |
@@ -99,7 +99,7 @@ ForeignKey("suppliers.full_name", ondelete="RESTRICT", onupdate="RESTRICT")
 
 不要求「必须先外发再指定」，也不要求「必须指定才能审核」。列表要能筛：未指定 / 已指定；过滤标签写 **是否指定供应商**，禁止写「对方」。外发且未指定是采购缺口。
 
-已审锁定：禁止改确认、禁止改供应商、禁止再生成覆盖（现网已审规则不变，只把供应商列入「行上业务勾选」一并锁）。
+已审锁定：已审行确认/供应商 **跳过不改**；仍禁止再生成覆盖（有已审须先反审）。
 
 供应商主数据禁用：不准 **新指定** 该对方；已写在行上的全称仍可查、导出。要改成别家：须该行待审，再点选已启用的供应商。
 
@@ -166,6 +166,7 @@ Router  → 现网 ProcurementObjectService（门面，可下沉 AuditService）
 
 | 日期 | 说明 |
 |------|------|
+| 2026-09-19 | 检测未通过不拦指定；已审跳过不改。 |
 | 2026-09-02 | 初稿：清单行 `supplier_name`；与确认/审核锁定对齐；签约报表只读本字段。 |
 | 2026-09-08 | 覆盖「一期自由文本」：点选供应商主数据，落库缩写；禁用后不准新指定、历史行可查。 |
 | 2026-09-08 | 写门禁锁死为供应商设计 `require_enabled`（S12）；深链 `#/supplier-list`。落库改为规范全称（与现网工艺确认一致），缩写只作点选旁注。 |

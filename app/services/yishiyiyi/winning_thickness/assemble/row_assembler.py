@@ -9,7 +9,6 @@ from decimal import Decimal
 
 from sqlalchemy.orm import Session
 
-from app.exceptions.base import BusinessException
 from app.models.yishiyiyi import SteelBasePrice, SteelPriceLadderItem, SteelPricePolicy
 from app.repositories.masterdata.steel_grade_category import SteelGradeCategoryRepository
 from app.repositories.yishiyiyi.base_price import SteelBasePriceRepository
@@ -25,7 +24,7 @@ from app.services.yishiyiyi.policy.match.adjustment_common import (
 
 logger = logging.getLogger("service.winning_thickness.assemble")
 
-LadderCacheKey = tuple[str, str, Decimal | None]
+LadderCacheKey = tuple[int, int, str, str, Decimal | None]
 
 
 def dedupe_bases_by_mill_grade(bases: Sequence[SteelBasePrice]) -> list[SteelBasePrice]:
@@ -85,10 +84,11 @@ class _BaseContext:
 
 class WinningThicknessRowAssembler:
     """
-    按基地/年/月组装厚度价格一览行。
+    组装厚度价格一览行。
 
     以基价表为据：未定基价的牌号不输出（无基价则厚度加减价无意义）。
     厚度政策按牌号分类档案的大类命中 CATEGORY 政策，同大类各牌号共用阶梯并逐牌号展开。
+    年 / 月 / 基地均可空：空=不限，按基价行自身账期匹配政策。
     """
 
     def __init__(self) -> None:
@@ -100,19 +100,19 @@ class WinningThicknessRowAssembler:
         self,
         db: Session,
         *,
-        year: int,
-        month: int,
-        location: str,
+        year: int | None = None,
+        month: int | None = None,
+        location: str | None = None,
         steel_mill: str | None = None,
         category_name: str | None = None,
         grade: str | None = None,
     ) -> list[WinningThicknessRowVO]:
-        location = (location or "").strip()
-        if not location:
-            raise BusinessException("基地不能为空")
-        locations = LocationService().expand_for_query(db, location)
-        if not locations:
-            return []
+        location_raw = (location or "").strip() or None
+        locations: list[str] | None = None
+        if location_raw:
+            locations = LocationService().expand_for_query(db, location_raw)
+            if not locations:
+                return []
 
         grade_filter = grade.strip() if grade else None
         category_filter = category_name.strip() if category_name else None
@@ -136,7 +136,7 @@ class WinningThicknessRowAssembler:
             steel_mill=steel_mill.strip() if steel_mill else None,
             grade=grade_filter,
         )
-        policies = self.policy_repository.list_for_period(db, year=year, month=month)
+        policies_by_period: dict[tuple[int, int], list[SteelPricePolicy]] = {}
         ladder_cache: dict[
             LadderCacheKey, tuple[SteelPricePolicy | None, list[SteelPriceLadderItem]]
         ] = {}
@@ -152,10 +152,15 @@ class WinningThicknessRowAssembler:
                 continue
 
             context = _BaseContext.from_orm(base)
+            period = (context.year, context.month)
+            if period not in policies_by_period:
+                policies_by_period[period] = self.policy_repository.list_for_period(
+                    db, year=period[0], month=period[1]
+                )
             rows.extend(
                 self._expand_grade_ladder(
                     context,
-                    policies,
+                    policies_by_period[period],
                     category_name=archive.category_name,
                     ladder_cache=ladder_cache,
                 )
@@ -163,6 +168,8 @@ class WinningThicknessRowAssembler:
 
         rows.sort(
             key=lambda r: (
+                r.year or 0,
+                r.month or 0,
                 r.location or "",
                 r.category_name or "",
                 r.grade or "",
@@ -176,7 +183,7 @@ class WinningThicknessRowAssembler:
             "bases=%d archive_grades=%d rows=%d",
             year,
             month,
-            location,
+            location_raw,
             len(bases),
             len(archive_by_grade),
             len(rows),
@@ -194,10 +201,9 @@ class WinningThicknessRowAssembler:
         ],
     ) -> list[WinningThicknessRowVO]:
         policy, items = self._resolve_thickness_ladder(
+            context,
             policies,
-            steel_mill=context.steel_mill,
             category_name=category_name,
-            base_thickness=context.thick,
             ladder_cache=ladder_cache,
         )
         return self._rows_from_ladder(
@@ -209,27 +215,28 @@ class WinningThicknessRowAssembler:
 
     def _resolve_thickness_ladder(
         self,
+        context: _BaseContext,
         policies: list[SteelPricePolicy],
         *,
-        steel_mill: str,
         category_name: str,
-        base_thickness: Decimal | None,
         ladder_cache: dict[
             LadderCacheKey, tuple[SteelPricePolicy | None, list[SteelPriceLadderItem]]
         ],
     ) -> tuple[SteelPricePolicy | None, list[SteelPriceLadderItem]]:
         cache_key: LadderCacheKey = (
-            normalize_steel_mill(steel_mill),
+            context.year,
+            context.month,
+            normalize_steel_mill(context.steel_mill),
             category_name,
-            base_thickness,
+            context.thick,
         )
         if cache_key in ladder_cache:
             return ladder_cache[cache_key]
 
         policy = self._find_best_thickness_policy(
-            steel_mill=steel_mill,
+            steel_mill=context.steel_mill,
             category_name=category_name,
-            base_thickness=base_thickness,
+            base_thickness=context.thick,
             policies=policies,
         )
         if policy is None:

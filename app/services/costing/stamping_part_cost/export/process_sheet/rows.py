@@ -38,6 +38,7 @@ from app.services.costing.stamping_part_cost.export.process_sheet.columns import
     _NUMBER_COLS,
     _PROCESS_COL_LETTERS,
     _RESULT_COLS,
+    _SCOPE_WEAK_COLS,
     _TAILOR_MERGED_COLS,
     _TEXT_LEFT_COLS,
 )
@@ -126,7 +127,8 @@ def write_process_data_rows(
                 cell.value = values[col_letter]
             is_trace = col_letter in trace_cols
             is_fee_rate = col_letter in fee_rate_cols
-            if is_trace:
+            is_scope_weak = col_letter in _SCOPE_WEAK_COLS
+            if is_trace or is_scope_weak:
                 cell.font = weak_data_font
             elif is_fee_rate:
                 cell.font = fee_rate_font
@@ -141,40 +143,40 @@ def write_process_data_rows(
                 cell.fill = fill_result
             elif is_fee_rate:
                 cell.fill = fill_fee_rate_zebra if zebra else fill_fee_rate
-            elif is_trace:
+            elif is_trace or is_scope_weak:
                 cell.fill = fill_zebra_trace if zebra else fill_plain
             elif zebra:
                 cell.fill = fill_zebra
             else:
                 cell.fill = fill_plain
 
-            if col_letter in {"AF", "AG", "AH"}:
+            if col_letter in {"AH", "AI", "AJ"}:
                 cell.alignment = Alignment(horizontal="left", vertical="center", wrap_text=True)
             elif col_letter in id_cols:
                 cell.alignment = center
-            elif col_letter in text_left_cols or col_letter == "AA":
+            elif col_letter in text_left_cols or col_letter == "AC":
                 cell.alignment = left
             elif col_letter in number_cols or col_letter == "A":
                 cell.alignment = right if col_letter != "A" else center
             else:
                 cell.alignment = center
 
-            if col_letter == "H":
+            if col_letter == "J":
                 cell.number_format = "0.0###"
-            elif col_letter in {"I", "Q", "R", "T", "U", "V"}:
+            elif col_letter in {"K", "S", "T", "V", "W", "X"}:
                 cell.number_format = "0.####"
-            elif col_letter in {"K", "L"}:
+            elif col_letter in {"M", "N"}:
                 cell.number_format = "0.##"
-            elif col_letter == "O":
+            elif col_letter == "Q":
                 cell.number_format = "0.00%"
-            elif col_letter in {"N", "P", "S", "W", "X", "Y", "Z", "AA", "AB"}:
+            elif col_letter in {"P", "R", "U", "Y", "Z", "AA", "AB", "AC", "AD"}:
                 cell.number_format = "0.0000"
-            elif col_letter == "M" or col_letter in id_cols:
+            elif col_letter == "O" or col_letter in id_cols:
                 cell.number_format = "0"
 
         multi_line = any(
             isinstance(values.get(col), str) and "\n" in str(values.get(col))
-            for col in ("AF", "AG", "AH")
+            for col in ("AH", "AI", "AJ")
         )
         sheet.row_dimensions[excel_row].height = 52 if multi_line else 18
 
@@ -254,19 +256,19 @@ def write_process_data_rows(
             for index, term in enumerate(terms):
                 blank_row = first_row + index
                 blank_values: dict[str, object] = {
-                    "H": (_num(term.thickness, 4) if term.thickness is not None else ""),
-                    "J": _part_size_formula(first_row, blank_row),
-                    "K": (_num(term.length, 2) if term.length is not None else ""),
-                    "L": (_num(term.width, 2) if term.width is not None else ""),
-                    "M": (term.parts_per_sheet if term.parts_per_sheet is not None else ""),
-                    "N": (
+                    "J": (_num(term.thickness, 4) if term.thickness is not None else ""),
+                    "L": _part_size_formula(first_row, blank_row),
+                    "M": (_num(term.length, 2) if term.length is not None else ""),
+                    "N": (_num(term.width, 2) if term.width is not None else ""),
+                    "O": (term.parts_per_sheet if term.parts_per_sheet is not None else ""),
+                    "P": (
                         build_blank_row_m_formula(blank_row, density)
                         if blank_term_has_mass_inputs(term)
                         else ""
                     ),
-                    "Q": excel_money_cell(term.steel_kg_price, Q4),
-                    "AF": format_steel_price_excel_trace(term.steel),
-                    "AI": term.steel.id if term.steel is not None else "",
+                    "S": excel_money_cell(term.steel_kg_price, Q4),
+                    "AH": format_steel_price_excel_trace(term.steel),
+                    "AK": term.steel.id if term.steel is not None else "",
                 }
                 if index == 0:
                     blank_values.update(
@@ -276,14 +278,14 @@ def write_process_data_rows(
                                 seq=seq,
                                 assembly_supply_no=assembly_supply_no,
                             ),
-                            "I": (_num(row.part_weight, 4) if row.part_weight is not None else ""),
-                            "O": group_n,
-                            "P": group_o,
-                            "R": excel_money_cell(scrap_kg, Q4),
-                            "S": group_r,
-                            "T": process_fee_cell,
-                            "U": die_fee_cell,
-                            "V": gauge_fee_cell,
+                            "K": (_num(row.part_weight, 4) if row.part_weight is not None else ""),
+                            "Q": group_n,
+                            "R": group_o,
+                            "T": excel_money_cell(scrap_kg, Q4),
+                            "U": group_r,
+                            "V": process_fee_cell,
+                            "W": die_fee_cell,
+                            "X": gauge_fee_cell,
                             **_finished_fee_formula_cells(
                                 first_row,
                                 warehouse_packaging_rate=warehouse_packaging_rate,
@@ -291,19 +293,19 @@ def write_process_data_rows(
                                 finance_rate=finance_rate,
                                 pretax_profit_rate=pretax_profit_rate,
                             ),
-                            "AC": row.excel_filename or "",
-                            "AD": row.excel_sheet_name or "",
-                            "AE": part_excel_row_col(row),
-                            "AG": scrap_trace,
-                            "AH": fee_trace,
-                            "AJ": (row.scrap_price_id if row.scrap_price_id is not None else ""),
-                            "AK": (row.process_fee_id if row.process_fee_id is not None else ""),
-                            "AL": (
+                            "AE": row.excel_filename or "",
+                            "AF": row.excel_sheet_name or "",
+                            "AG": part_excel_row_col(row),
+                            "AI": scrap_trace,
+                            "AJ": fee_trace,
+                            "AL": (row.scrap_price_id if row.scrap_price_id is not None else ""),
+                            "AM": (row.process_fee_id if row.process_fee_id is not None else ""),
+                            "AN": (
                                 row.die_fee_id
                                 if getattr(row, "die_fee_id", None) is not None
                                 else ""
                             ),
-                            "AM": (
+                            "AO": (
                                 row.gauge_fee_id
                                 if getattr(row, "gauge_fee_id", None) is not None
                                 else ""
@@ -320,26 +322,26 @@ def write_process_data_rows(
         is_offal_nested = bool(getattr(row, "is_offal_nested", False))
         if is_offal_nested:
             # 利废件没有新板边角废料，也没有材料利用率。
-            # O 列是百分比格式：写 100 会显示成 10000%；写 1 才是 100%。此处留空，不展示。
-            material_n = f"=I{excel_row}" if row.part_weight is not None else ""
+            # Q 列是百分比格式：写 100 会显示成 10000%；写 1 才是 100%。此处留空，不展示。
+            material_n = f"=K{excel_row}" if row.part_weight is not None else ""
             material_o = ""
             material_p = ""
             steel_q: Decimal | str = ""
-            material_s = f"=I{excel_row}*R{excel_row}" if row.part_weight is not None else ""
+            material_s = f"=K{excel_row}*T{excel_row}" if row.part_weight is not None else ""
             steel_trace = "利废：成品净重×废料单价（从废料里捡出的成品）"
         else:
             material_n = (
-                f"=K{excel_row}*L{excel_row}*H{excel_row}"
-                f"*{formula_number(density)}/1000000/M{excel_row}"
+                f"=M{excel_row}*N{excel_row}*J{excel_row}"
+                f"*{formula_number(density)}/1000000/O{excel_row}"
             )
-            material_o = f"=I{excel_row}/N{excel_row}"
-            material_p = f"=N{excel_row}-I{excel_row}"
+            material_o = f"=K{excel_row}/P{excel_row}"
+            material_p = f"=P{excel_row}-K{excel_row}"
             steel_q = excel_money_cell(steel_kg, Q4)
             material_s = (
-                f"=N{excel_row}*Q{excel_row}*(1+{formula_number(loss_rate)})"
-                f"-N{excel_row}*{formula_number(loss_rate)}"
-                f"*{formula_number(recovery)}*R{excel_row}"
-                f"-P{excel_row}*R{excel_row}*{formula_number(recovery)}"
+                f"=P{excel_row}*S{excel_row}*(1+{formula_number(loss_rate)})"
+                f"-P{excel_row}*{formula_number(loss_rate)}"
+                f"*{formula_number(recovery)}*T{excel_row}"
+                f"-R{excel_row}*T{excel_row}*{formula_number(recovery)}"
             )
             steel_trace = format_steel_price_excel_trace(
                 steel_by_id.get(row.steel_price_id) if row.steel_price_id is not None else None
@@ -350,21 +352,21 @@ def write_process_data_rows(
                 seq=seq,
                 assembly_supply_no=assembly_supply_no,
             ),
-            "H": _num(row.thickness, 4) if row.thickness is not None else "",
-            "I": _num(row.part_weight, 4) if row.part_weight is not None else "",
-            "J": _part_size_formula(excel_row, excel_row),
-            "K": _num(row.sheet_length, 2) if row.sheet_length is not None else "",
-            "L": _num(row.sheet_width, 2) if row.sheet_width is not None else "",
-            "M": row.parts_per_sheet if row.parts_per_sheet is not None else "",
-            "N": material_n,
-            "O": material_o,
-            "P": material_p,
-            "Q": steel_q,
-            "R": excel_money_cell(scrap_kg, Q4),
-            "S": material_s,
-            "T": process_fee_cell,
-            "U": die_fee_cell,
-            "V": gauge_fee_cell,
+            "J": _num(row.thickness, 4) if row.thickness is not None else "",
+            "K": _num(row.part_weight, 4) if row.part_weight is not None else "",
+            "L": _part_size_formula(excel_row, excel_row),
+            "M": _num(row.sheet_length, 2) if row.sheet_length is not None else "",
+            "N": _num(row.sheet_width, 2) if row.sheet_width is not None else "",
+            "O": row.parts_per_sheet if row.parts_per_sheet is not None else "",
+            "P": material_n,
+            "Q": material_o,
+            "R": material_p,
+            "S": steel_q,
+            "T": excel_money_cell(scrap_kg, Q4),
+            "U": material_s,
+            "V": process_fee_cell,
+            "W": die_fee_cell,
+            "X": gauge_fee_cell,
             **_finished_fee_formula_cells(
                 excel_row,
                 warehouse_packaging_rate=warehouse_packaging_rate,
@@ -372,17 +374,17 @@ def write_process_data_rows(
                 finance_rate=finance_rate,
                 pretax_profit_rate=pretax_profit_rate,
             ),
-            "AC": row.excel_filename or "",
-            "AD": row.excel_sheet_name or "",
-            "AE": part_excel_row_col(row),
-            "AF": steel_trace,
-            "AG": scrap_trace,
-            "AH": fee_trace,
-            "AI": row.steel_price_id if row.steel_price_id is not None else "",
-            "AJ": row.scrap_price_id if row.scrap_price_id is not None else "",
-            "AK": row.process_fee_id if row.process_fee_id is not None else "",
-            "AL": row.die_fee_id if getattr(row, "die_fee_id", None) is not None else "",
-            "AM": row.gauge_fee_id if getattr(row, "gauge_fee_id", None) is not None else "",
+            "AE": row.excel_filename or "",
+            "AF": row.excel_sheet_name or "",
+            "AG": part_excel_row_col(row),
+            "AH": steel_trace,
+            "AI": scrap_trace,
+            "AJ": fee_trace,
+            "AK": row.steel_price_id if row.steel_price_id is not None else "",
+            "AL": row.scrap_price_id if row.scrap_price_id is not None else "",
+            "AM": row.process_fee_id if row.process_fee_id is not None else "",
+            "AN": row.die_fee_id if getattr(row, "die_fee_id", None) is not None else "",
+            "AO": row.gauge_fee_id if getattr(row, "gauge_fee_id", None) is not None else "",
             **_offal_and_swing_cells(row),
         }
         paint_data_row(excel_row, values, zebra)

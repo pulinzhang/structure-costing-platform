@@ -184,19 +184,19 @@ def build_tailor_blank_terms(
 
 
 def build_blank_row_m_formula(excel_row: int, density: Decimal) -> str:
-    """子片行 N：与普通件相同，引用本行 H/K/L/M（料厚/长/宽/可制件数）。"""
+    """子片行 P：与普通件相同，引用本行 J/M/N/O（料厚/长/宽/可制件数）。"""
     return (
-        f"=K{excel_row}*L{excel_row}*H{excel_row}"
-        f"*{formula_number(density)}/1000000/M{excel_row}"
+        f"=M{excel_row}*N{excel_row}*J{excel_row}"
+        f"*{formula_number(density)}/1000000/O{excel_row}"
     )
 
 
 def build_tailor_group_n_formula(first_row: int, last_row: int) -> str:
-    return f"=I{first_row}/SUM(N{first_row}:N{last_row})"
+    return f"=K{first_row}/SUM(P{first_row}:P{last_row})"
 
 
 def build_tailor_group_o_formula(first_row: int, last_row: int) -> str:
-    return f"=SUM(N{first_row}:N{last_row})-I{first_row}"
+    return f"=SUM(P{first_row}:P{last_row})-K{first_row}"
 
 
 def build_tailor_group_r_formula(
@@ -207,14 +207,14 @@ def build_tailor_group_r_formula(
     loss_rate: Decimal,
     recovery: Decimal,
 ) -> str:
-    """S = Σ(Ni×Qi×(1+λ)) − ΣN×λ×η×R − P×η×R，Ni/Qi 引用各子片行。"""
+    """U = Σ(Pi×Si×(1+λ)) − ΣP×λ×η×T − R×η×T，Pi/Si 引用各子片行。"""
     loss = formula_number(loss_rate)
     eta = formula_number(recovery)
-    purchase = "+".join(f"N{row}*Q{row}*(1+{loss})" for row in blank_rows)
+    purchase = "+".join(f"P{row}*S{row}*(1+{loss})" for row in blank_rows)
     return (
         f"={purchase}"
-        f"-SUM(N{first_row}:N{last_row})*{loss}*{eta}*R{first_row}"
-        f"-P{first_row}*R{first_row}*{eta}"
+        f"-SUM(P{first_row}:P{last_row})*{loss}*{eta}*T{first_row}"
+        f"-R{first_row}*T{first_row}*{eta}"
     )
 
 

@@ -188,13 +188,20 @@ def sample_thickness(row: WinningThicknessRowVO) -> Decimal | None:
 
 def scoped_sheet_name(
     *,
-    year: int,
-    month: int,
-    location: str,
+    year: int | None,
+    month: int | None,
+    location: str | None,
     suffix: str,
 ) -> str:
     loc = "".join(ch for ch in (location or "").strip() if ch not in _SHEET_NAME_INVALID)
-    prefix = f"{year}年{month}月{loc}" if loc else f"{year}年{month}月"
+    bits: list[str] = []
+    if year is not None and month is not None:
+        bits.append(f"{year}年{month}月")
+    elif year is not None:
+        bits.append(f"{year}年")
+    if loc:
+        bits.append(loc)
+    prefix = "".join(bits) or "全部"
     name = f"{prefix}_{suffix}"
     return name[:_SHEET_NAME_MAX]
 
@@ -204,5 +211,23 @@ def excel_sheet_ref(sheet_name: str) -> str:
     return f"'{escaped}'"
 
 
-def build_filename(*, year: int, month: int, location: str) -> str:
-    return f"{DOC_TITLE}_{year}年_{month}月_{location}.xlsx"
+def build_filename(*, year: int | None, month: int | None, location: str | None) -> str:
+    parts = [DOC_TITLE]
+    if year is not None and month is not None:
+        parts.append(f"{year}年_{month}月")
+    elif year is not None:
+        parts.append(f"{year}年")
+    if location:
+        parts.append(location)
+    return "_".join(parts) + ".xlsx"
+
+
+def format_period_label(*, year: int | None, month: int | None, location: str | None = None) -> str:
+    bits: list[str] = []
+    if location:
+        bits.append(location)
+    if year is not None and month is not None:
+        bits.append(f"{year}年{month}月")
+    elif year is not None:
+        bits.append(f"{year}年")
+    return " ".join(bits) if bits else "全部"

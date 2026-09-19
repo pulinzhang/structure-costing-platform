@@ -121,6 +121,7 @@ class BomProcurementObjectWrites:
         db.flush()
 
     def recount_header_from_rows(self, db: Session, header: BomProcurementObjectList) -> None:
+        """有已审时批量删除 pending 后重算计数，并标记检测未通过。工程变更回滚禁止调用。"""
         rows = self._queries.list_objects_by_list_id(db, header.id)
         header.object_l0_degenerate_count = sum(
             1 for row in rows if row.object_kind == "l0_degenerate"

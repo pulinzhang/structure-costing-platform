@@ -29,21 +29,25 @@ def test_require_export_vehicle_model_rejects_blank(value: str | None) -> None:
 
 def test_process_sheet_short_code_after_part_number() -> None:
     titles = [title for _letter, title in PROCESS_SHEET_HEADERS]
-    assert titles[2] == "零件号"
-    assert titles[3] == "短码"
-    assert titles[4] == "零件名称"
-    assert PROCESS_SHEET_HEADERS[3][0] == "D"
-    assert PROCESS_SHEET_HEADERS[-1] == ("AQ", "摆剪加价(元/吨)")
-    assert PROCESS_SHEET_HEADERS[-2] == ("AP", "是否摆剪")
+    assert titles[0] == "序号"
+    assert titles[1] == "冲压工厂"
+    assert titles[2] == "版本"
+    assert titles[3] == "总成供货号"
+    assert titles[4] == "零件号"
+    assert titles[5] == "短码"
+    assert titles[6] == "零件名称"
+    assert PROCESS_SHEET_HEADERS[5][0] == "F"
+    assert PROCESS_SHEET_HEADERS[-1] == ("AS", "摆剪加价(元/吨)")
+    assert PROCESS_SHEET_HEADERS[-2] == ("AR", "是否摆剪")
     letters = [letter for letter, _title in PROCESS_SHEET_HEADERS]
     assert letters[0] == "A"
-    assert letters[-1] == "AQ"
+    assert letters[-1] == "AS"
     assert len(letters) == len(set(letters))
 
 
-def test_tailor_formulas_use_columns_after_short_code() -> None:
+def test_tailor_formulas_use_columns_after_scope() -> None:
     formula = build_blank_row_m_formula(5, Decimal("7.85"))
-    assert "K5*L5*H5" in formula
-    assert formula.endswith("/M5")
-    assert build_tailor_group_n_formula(5, 7) == "=I5/SUM(N5:N7)"
-    assert build_tailor_group_o_formula(5, 7) == "=SUM(N5:N7)-I5"
+    assert "M5*N5*J5" in formula
+    assert formula.endswith("/O5")
+    assert build_tailor_group_n_formula(5, 7) == "=K5/SUM(P5:P7)"
+    assert build_tailor_group_o_formula(5, 7) == "=SUM(P5:P7)-K5"

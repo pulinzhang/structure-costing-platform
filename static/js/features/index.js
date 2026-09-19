@@ -360,7 +360,7 @@ export const pageMeta = {
     'vehicle-model-list': {
         title: '项目一览',
         en: 'PROJECT',
-        breadcrumb: ['主数据', '项目', '一览表'],
+        breadcrumb: ['主数据', '项目', '一览'],
     },
     'supplier-upload': {
         title: '供应商上传',
@@ -370,7 +370,7 @@ export const pageMeta = {
     'supplier-list': {
         title: '供应商一览',
         en: 'SUPPLIER',
-        breadcrumb: ['主数据', '供应商', '一览表'],
+        breadcrumb: ['主数据', '供应商', '一览'],
     },
     settings: {
         title: '系统设置',

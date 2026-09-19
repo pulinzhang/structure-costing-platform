@@ -54,6 +54,23 @@ class StampingDieFeeRepository:
             part_number=part_number,
         )
 
+    def list_by_part_from_year(
+        self,
+        db: Session,
+        *,
+        location: str,
+        vehicle_model: str,
+        part_number: str,
+        from_year: int,
+    ) -> list[StampingDieFee]:
+        return self._queries.list_by_part_from_year(
+            db,
+            location=location,
+            vehicle_model=vehicle_model,
+            part_number=part_number,
+            from_year=from_year,
+        )
+
     def count_by_year_location(
         self,
         db: Session,
@@ -93,10 +110,10 @@ class StampingDieFeeRepository:
         self,
         db: Session,
         *,
-        year: int,
+        year: int | None = None,
         location: str | None = None,
         locations: list[str] | None = None,
-        vehicle_model: str,
+        vehicle_model: str | None = None,
         part_number: str | None,
         audit_status: str | None,
         only_zero: bool,
@@ -124,10 +141,10 @@ class StampingDieFeeRepository:
         self,
         db: Session,
         *,
-        year: int,
+        year: int | None = None,
         location: str | None = None,
         locations: list[str] | None = None,
-        vehicle_model: str,
+        vehicle_model: str | None = None,
         part_number: str | None,
         audit_status: str | None,
         stamping_supplier: str | None = None,
@@ -149,10 +166,10 @@ class StampingDieFeeRepository:
         self,
         db: Session,
         *,
-        year: int,
+        year: int | None = None,
         location: str | None = None,
         locations: list[str] | None = None,
-        vehicle_model: str,
+        vehicle_model: str | None = None,
         part_number: str | None,
         audit_status: str | None,
         only_zero: bool,

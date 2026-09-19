@@ -71,7 +71,7 @@ export function policyDownloadTemplate() {
                     <div class="bg-[#0c0c0c] border border-[#1a1a1a] rounded p-3">
                         <p class="text-[11px] text-[#888888] leading-5">
                             <span class="text-[#9e9e9e] font-medium">说明：</span>
-                            筛选条件为年度、月份、钢厂、钢种大类、牌号。按条件预览或导出厚度加减价主子表。删除须选择年度与月份，钢厂可选（不选则删除该年月全部钢厂数据）。
+                            打开默认当年；年度、月份、钢厂、钢种大类、牌号为可选筛（一事一议按月定价）。导出须选定年度和月份。删除须选择年度与月份，钢厂可选（不选则删除该年月全部钢厂数据）。
                         </p>
                     </div>
                 </div>
@@ -85,7 +85,7 @@ export function policyDownloadTemplate() {
                         <div class="absolute top-0 left-0 right-0 h-px" style="background: linear-gradient(90deg, transparent 0%, #2a2a2a 50%, transparent 100%);"></div>
                         <div class="flex items-center gap-2 text-[11px]">
                             <span class="text-[#484848]">已选条件：</span>
-                            <span id="selectedConditions" class="text-[#888888] ml-2 font-medium tracking-wide">请选择筛选条件</span>
+                            <span id="selectedConditions" class="text-[#888888] ml-2 font-medium tracking-wide">全部</span>
                         </div>
                         <!-- 底部暗线 -->
                         <div class="absolute bottom-0 left-0 right-0 h-px" style="background: linear-gradient(90deg, transparent 0%, #151515 50%, transparent 100%);"></div>
@@ -126,7 +126,7 @@ export function policyDownloadTemplate() {
                                 <tbody id="policyPreviewBody" class="divide-y divide-[#1a1a1a]">
                                     <tr>
                                         <td colspan="20" class="px-4 py-8 text-center text-[#616161] text-xs">
-                                            请选择条件后点击"查询"查看数据
+                                            当前筛选下暂无数据；打开默认当年，筛选项只作收窄
                                         </td>
                                     </tr>
                                 </tbody>

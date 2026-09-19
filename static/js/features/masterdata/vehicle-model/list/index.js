@@ -7,7 +7,7 @@ import {
     renderHudCards,
     renderTableBody,
     vehicleModelListTemplate,
-} from './template.js?v=4';
+} from './template.js?v=6';
 
 const API_BASE = '/api/masterdata/vehicle-models';
 const DRAWER_ANIMATION_MS = 300;
@@ -75,8 +75,14 @@ function applyPermissionUi() {
         document.getElementById('vmBtnCreate')?.classList.add('hidden');
     }
     if (!canOp('op:vehicle-model-list:export')) {
-        document.getElementById('vmBtnExport')?.classList.add('hidden');
+        document.getElementById('vmMoreWrap')?.classList.add('hidden');
     }
+}
+
+function setMoreMenuOpen(isOpen) {
+    const menu = document.getElementById('vmMoreMenu');
+    if (!menu) return;
+    menu.classList.toggle('hidden', !isOpen);
 }
 
 function setLoading(isLoading) {
@@ -362,12 +368,8 @@ async function exportExcel() {
         return;
     }
     const btn = document.getElementById('vmBtnExport');
-    const original = btn ? btn.innerHTML : '';
     try {
-        if (btn) {
-            btn.disabled = true;
-            btn.innerHTML = `<div class="w-3 h-3 border border-[#FF1E27] border-t-transparent rounded-full animate-spin"></div>导出中`;
-        }
+        if (btn) btn.disabled = true;
         const params = {};
         if (listState.filterLocation) params.location = listState.filterLocation;
         const { blob, filename } = await HttpClient.download(`${API_BASE}/export`, {
@@ -386,10 +388,7 @@ async function exportExcel() {
     } catch (error) {
         if (!error.status) showToast(error.message || '导出失败', 'error');
     } finally {
-        if (btn) {
-            btn.disabled = false;
-            btn.innerHTML = original;
-        }
+        if (btn) btn.disabled = false;
     }
 }
 
@@ -400,7 +399,22 @@ function init() {
     bindEditDrawer();
     bindDeleteDrawer();
     bindTableActions();
-    document.getElementById('vmBtnExport')?.addEventListener('click', () => exportExcel());
+    document.getElementById('vmMoreBtn')?.addEventListener('click', (event) => {
+        event.stopPropagation();
+        const menu = document.getElementById('vmMoreMenu');
+        const isOpen = menu && !menu.classList.contains('hidden');
+        setMoreMenuOpen(!isOpen);
+    });
+    document.addEventListener('click', (event) => {
+        const moreWrap = document.getElementById('vmMoreWrap');
+        if (moreWrap && !moreWrap.contains(event.target)) {
+            setMoreMenuOpen(false);
+        }
+    });
+    document.getElementById('vmBtnExport')?.addEventListener('click', () => {
+        setMoreMenuOpen(false);
+        exportExcel();
+    });
     loadData();
 }
 

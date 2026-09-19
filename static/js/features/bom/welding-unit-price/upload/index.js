@@ -3,10 +3,22 @@
  * 同步导入：基地 + 年度必选，仅 .xlsx
  */
 
-import { weldingUnitPriceUploadTemplate } from './template.js?v=7';
+import { weldingUnitPriceUploadTemplate } from './template.js?v=8';
+import { bindSyncUploadProgress } from '../../../../sync-upload-progress.js?v=1';
 
 const API_BASE = '/api/bom/welding-unit-price';
 const MAX_FILE_SIZE = 5 * 1024 * 1024;
+
+const uploadProgress = bindSyncUploadProgress({
+    zoneId: 'weldingUnitPriceUploadZone',
+    idleId: 'weldingUnitPriceUploadDropIdle',
+    panelId: 'weldingUnitPriceUploadProgressPanel',
+    iconId: 'weldingUnitPriceUploadProgressIcon',
+    titleId: 'weldingUnitPriceUploadProgressTitle',
+    barId: 'weldingUnitPriceUploadProgressBar',
+    msgId: 'weldingUnitPriceUploadProgressMsg',
+    runningTitle: '正在导入焊接单价...',
+});
 
 const WeldingUnitPriceUploadPage = {
     selectedFile: null,
@@ -303,26 +315,20 @@ const WeldingUnitPriceUploadPage = {
     },
 
     showProgress(msg = '解析并写入数据库，请稍候') {
-        const idle = document.getElementById('weldingUnitPriceUploadDropIdle');
-        const panel = document.getElementById('weldingUnitPriceUploadProgressPanel');
-        const zone = document.getElementById('weldingUnitPriceUploadZone');
-        const progressMsg = document.getElementById('weldingUnitPriceUploadProgressMsg');
-        if (idle) idle.classList.add('hidden');
-        if (panel) panel.classList.remove('hidden');
-        if (zone) {
-            zone.classList.add('pointer-events-none');
-            zone.classList.remove('border-[#d32f2f]');
-        }
-        if (progressMsg) progressMsg.textContent = msg;
+        uploadProgress.setRunning(msg);
+        document.getElementById('weldingUnitPriceUploadZone')?.classList.remove('border-[#d32f2f]');
+    },
+
+    showDoneOnPanel(message, opts = {}) {
+        uploadProgress.setDone(message, opts);
+    },
+
+    failOnPanel(message) {
+        uploadProgress.setFail(message);
     },
 
     hideProgress() {
-        const idle = document.getElementById('weldingUnitPriceUploadDropIdle');
-        const panel = document.getElementById('weldingUnitPriceUploadProgressPanel');
-        const zone = document.getElementById('weldingUnitPriceUploadZone');
-        if (idle) idle.classList.remove('hidden');
-        if (panel) panel.classList.add('hidden');
-        if (zone) zone.classList.remove('pointer-events-none');
+        uploadProgress.hide();
     },
 
     setUploading(isUploading) {
@@ -354,7 +360,7 @@ const WeldingUnitPriceUploadPage = {
             document.body.removeChild(anchor);
             window.URL.revokeObjectURL(url);
         } catch (error) {
-            this.showResult('error', error.message || '模板下载失败');
+            this.failOnPanel(error.message || '模板下载失败');
         }
     },
 
@@ -397,13 +403,14 @@ const WeldingUnitPriceUploadPage = {
                 || data.message
                 || `导入成功：新增 ${data.created_count ?? 0}，更新 ${data.updated_count ?? 0}`;
             const warnings = Array.isArray(data.warnings) ? data.warnings : [];
-            const resultType = warnings.length ? 'warning' : 'success';
-            this.showResult(resultType, msg, warnings);
-            if (!warnings.length) showToast(msg, 'success');
-            this.hideProgress();
+            const hasSkip = warnings.length > 0;
+            this.showDoneOnPanel(msg, { hasSkip });
+            if (warnings.length) {
+                this.showResult('warning', msg, warnings);
+            }
             this.clearSelectedFile(true);
         } catch (err) {
-            this.hideProgress();
+            this.failOnPanel(err.message || '导入失败');
             this.showResult('error', err.message || '导入失败');
         } finally {
             this.setUploading(false);
