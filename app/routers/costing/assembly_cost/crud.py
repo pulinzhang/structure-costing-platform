@@ -176,7 +176,7 @@ def get_restore_by_part(
 
 
 @router.get(
-    "/{cost_id}/restore",
+    "/{cost_id:int}/restore",
     response_model=ApiResponse[AssemblyCostRestoreVO],
 )
 def get_restore(
@@ -192,7 +192,7 @@ def get_restore(
 
 
 @router.get(
-    "/{cost_id}",
+    "/{cost_id:int}",
     response_model=ApiResponse[AssemblyCostVO],
 )
 def get_cost(

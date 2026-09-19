@@ -3,7 +3,7 @@
  * 同步导入：基地 + 年度必选，仅 .xlsx
  */
 
-import { tonnageUploadTemplate } from './template.js?v=5';
+import { tonnageUploadTemplate } from './template.js?v=7';
 import { can } from '../../../../permissions.js?v=8';
 
 const API_BASE = '/api/stamping/tonnage-price';

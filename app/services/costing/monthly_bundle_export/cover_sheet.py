@@ -1,4 +1,4 @@
-"""月度核对合册 · 封皮（核价流程说明）。
+"""月度核对导出 · 封皮（核价流程说明）。
 
 视觉约定：10 列等宽栅格；主色钛灰 + 冰蓝辅色 + 极少强调红；
 三级字号；流程箭头无底色；卡片浅底、弱边框。
@@ -187,7 +187,7 @@ def write_cover_sheet(
     vehicle_model: str,
     bom_version: str,
 ) -> str:
-    """写入合册首页封皮；返回 sheet 名。"""
+    """写入月度核对导出首页封皮；返回 sheet 名。"""
     ws = resolve_worksheet(wb, _SHEET_TITLE)
     ws.sheet_view.showGridLines = False
     ws.page_setup.orientation = "portrait"
@@ -204,7 +204,7 @@ def write_cover_sheet(
     _band(
         ws,
         row=1,
-        value="月度核价核对合册 · 成本计算说明",
+        value="月度核对导出 · 成本计算说明",
         fill=_FILL_NAVY,
         font=_font(size=16, bold=True, color=_WHITE),
         height=32,

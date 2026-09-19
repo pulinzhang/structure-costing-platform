@@ -65,7 +65,7 @@ def get_task_progress(
 
 
 @router.get(
-    "/runs/{run_id}",
+    "/runs/{run_id:int}",
     response_model=ApiResponse[CostingEngineRunVO],
 )
 def get_run(
@@ -123,7 +123,7 @@ def delete_all_runs(
 
 
 @router.delete(
-    "/runs/{run_id}",
+    "/runs/{run_id:int}",
     response_model=ApiResponse[None],
 )
 def delete_run(

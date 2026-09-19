@@ -55,7 +55,7 @@ def list_all(
     return ApiResponse.ok(data=data, message=f"查询到 {len(data)} 条记录")
 
 
-@router.get("/by-year/{year}", response_model=ApiResponse[list[StampingTonnagePriceResponse]])
+@router.get("/by-year/{year:int}", response_model=ApiResponse[list[StampingTonnagePriceResponse]])
 def list_by_year(
     year: int,
     location: str | None = None,
@@ -127,7 +127,7 @@ def export_excel(
     db: Session = Depends(get_db),
     current_user: UserVO = Depends(require_perm(Perm.STAMPING_TONNAGE_EXPORT)),
 ) -> StreamingResponse:
-    """按当前筛选条件导出冲次单价 Excel。"""
+    """按当前筛选条件导出冲次单价 Excel（含基地/年份/审核列；名称/单位/单价可再导入）。"""
     content, filename = _export_service.export(
         db,
         location=location.strip() if location else None,
@@ -281,7 +281,7 @@ def create(
     return ApiResponse.created(data=record, message="创建成功")
 
 
-@router.get("/{id}", response_model=ApiResponse[StampingTonnagePriceResponse])
+@router.get("/{id:int}", response_model=ApiResponse[StampingTonnagePriceResponse])
 def get_by_id(
     id: int,
     db: Session = Depends(get_db),
@@ -292,7 +292,7 @@ def get_by_id(
     return ApiResponse.ok(data=record, message="获取成功")
 
 
-@router.put("/{id}", response_model=ApiResponse[StampingTonnagePriceResponse])
+@router.put("/{id:int}", response_model=ApiResponse[StampingTonnagePriceResponse])
 def update(
     id: int,
     body: StampingTonnagePriceUpdate,
@@ -304,7 +304,7 @@ def update(
     return ApiResponse.updated(data=record, message="更新成功")
 
 
-@router.delete("/{id}", response_model=ApiResponse[None])
+@router.delete("/{id:int}", response_model=ApiResponse[None])
 def delete(
     id: int,
     db: Session = Depends(get_db),

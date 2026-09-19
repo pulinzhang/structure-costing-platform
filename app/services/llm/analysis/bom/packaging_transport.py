@@ -4,10 +4,16 @@ from __future__ import annotations
 
 from collections import defaultdict
 from decimal import ROUND_HALF_UP, Decimal
-from typing import Any
 
 from app.repositories.llm.packaging_transport_fee_analysis_repository import (
     PackagingTransportFeeRow,
+)
+from app.schemas.llm.analysis_payload import (
+    ComparisonPayload,
+    DrilldownPayload,
+    DriverItem,
+    DriversPayload,
+    SummaryPayload,
 )
 
 
@@ -24,7 +30,7 @@ def _row_key(row: PackagingTransportFeeRow) -> str:
 
 def build_packaging_transport_fee_summary(
     rows: list[PackagingTransportFeeRow],
-) -> dict[str, Any]:
+) -> SummaryPayload:
     if not rows:
         return {
             "subject": "packaging_transport_fee",
@@ -54,7 +60,7 @@ def build_packaging_transport_fee_comparison(
     rows: list[PackagingTransportFeeRow],
     *,
     location: str | None,
-) -> dict[str, Any]:
+) -> ComparisonPayload:
     if not rows:
         return {
             "kind": "comparison",
@@ -98,7 +104,7 @@ def build_packaging_transport_fee_comparison(
     compare_parts = by_year[compare_year]
     all_keys = sorted(set(base_parts) | set(compare_parts))
 
-    items: list[dict[str, Any]] = []
+    items: list[DriverItem] = []
     increased = 0
     decreased = 0
     unchanged = 0
@@ -167,7 +173,7 @@ def build_packaging_transport_fee_drilldown(
     *,
     part_token: str,
     head: PackagingTransportFeeRow | None = None,
-) -> dict[str, Any]:
+) -> DrilldownPayload:
     if not rows:
         return {
             "kind": "drilldown",
@@ -213,7 +219,7 @@ def build_packaging_transport_fee_drivers(
     rows: list[PackagingTransportFeeRow],
     *,
     top_n: int = 8,
-) -> dict[str, Any]:
+) -> DriversPayload:
     if not rows:
         return {"kind": "drivers", "items": [], "top_n": top_n}
 

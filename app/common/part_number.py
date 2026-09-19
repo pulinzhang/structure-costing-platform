@@ -19,6 +19,8 @@ _YEAR_TOKEN_RE = re.compile(r"^(?:19|20)\d{2}$")
 _YM_HYPHEN_RE = re.compile(r"^(?:19|20)\d{2}-(?:0[1-9]|1[0-2])$")
 _YM_COMPACT_RE = re.compile(r"^(?:19|20)\d{2}(?:0[1-9]|1[0-2])$")
 _YMD_COMPACT_RE = re.compile(r"^(?:19|20)\d{2}(?:0[1-9]|1[0-2])(?:0[1-9]|[12]\d|3[01])$")
+# 工艺确认表零件号格：字母数字起头，可含 -_/；拒页脚中文说明
+_PART_CELL_RE = re.compile(r"^[A-Za-z0-9][A-Za-z0-9\-_/]{3,79}$")
 
 T = TypeVar("T")
 
@@ -34,6 +36,18 @@ def part_number_like_pattern(fragment: str) -> str:
 
 def normalize_part_number_token(value: str) -> str:
     return (value or "").strip().upper()
+
+
+def looks_like_part_number_cell(value: object) -> bool:
+    """工艺确认表零件号列：真零件号为真；页脚说明 / 签字行等为假。"""
+    text = str(value).strip() if value is not None else ""
+    if not text or "零件号" in text or "件号" in text:
+        return False
+    if any("\u4e00" <= char <= "\u9fff" for char in text):
+        return False
+    if not any(char.isdigit() for char in text):
+        return False
+    return bool(_PART_CELL_RE.fullmatch(text))
 
 
 def is_temporal_part_number_token(value: str) -> bool:

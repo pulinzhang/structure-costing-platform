@@ -4,7 +4,7 @@
 
 import { paginationBarHtml } from '../../../../page-size.js?v=3';
 
-export const CALC_HISTORY_COLSPAN = 12;
+export const CALC_HISTORY_COLSPAN = 14;
 
 export function dieFeeCalcTemplate() {
     return `
@@ -80,7 +80,9 @@ export function dieFeeCalcTemplate() {
                         <table class="w-full text-left border-collapse">
                             <thead>
                                 <tr class="bg-[#0a0a0a] border-b border-[#2c2c2c] text-[9px] text-[#555] uppercase tracking-[0.08em]">
-                                    <th class="py-2 px-2 font-normal whitespace-nowrap">计算时间</th>
+                                    <th class="py-2 px-2 font-normal whitespace-nowrap">开始</th>
+                                    <th class="py-2 px-2 font-normal whitespace-nowrap">结束</th>
+                                    <th class="py-2 px-2 font-normal text-right whitespace-nowrap">耗时</th>
                                     <th class="py-2 px-2 font-normal whitespace-nowrap">创建人</th>
                                     <th class="py-2 px-2 font-normal whitespace-nowrap">年度</th>
                                     <th class="py-2 px-2 font-normal whitespace-nowrap">基地</th>

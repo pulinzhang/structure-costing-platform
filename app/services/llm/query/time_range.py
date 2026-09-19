@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import re
+from collections.abc import Mapping
 from dataclasses import dataclass
 
 from app.schemas.llm.analysis_query import TimeRange
@@ -180,7 +181,7 @@ def question_has_explicit_time(user_question: str) -> bool:
     return bool(_SINGLE_RE.search(text))
 
 
-def draft_has_time_range(draft: dict[str, object]) -> bool:
+def draft_has_time_range(draft: Mapping[str, object]) -> bool:
     raw = draft.get("time_range")
     if not isinstance(raw, dict):
         return False

@@ -4,9 +4,13 @@ from __future__ import annotations
 
 from collections import Counter
 from decimal import ROUND_HALF_UP, Decimal
-from typing import Any
 
 from app.repositories.llm.bom_material_analysis_repository import BomMaterialNodeRow
+from app.schemas.llm.analysis_payload import (
+    DrilldownPayload,
+    DriversPayload,
+    SummaryPayload,
+)
 
 
 def _qty_str(value: Decimal | None) -> str | None:
@@ -16,7 +20,7 @@ def _qty_str(value: Decimal | None) -> str | None:
     return f"{quantized:.4f}"
 
 
-def build_bom_material_summary(rows: list[BomMaterialNodeRow]) -> dict[str, Any]:
+def build_bom_material_summary(rows: list[BomMaterialNodeRow]) -> SummaryPayload:
     if not rows:
         return {
             "subject": "bom_material",
@@ -46,7 +50,7 @@ def build_bom_material_drilldown(
     *,
     part_token: str,
     head: BomMaterialNodeRow | None = None,
-) -> dict[str, Any]:
+) -> DrilldownPayload:
     if not rows:
         return {
             "kind": "drilldown",
@@ -90,7 +94,7 @@ def build_bom_material_drivers(
     rows: list[BomMaterialNodeRow],
     *,
     top_n: int = 8,
-) -> dict[str, Any]:
+) -> DriversPayload:
     if not rows:
         return {"kind": "drivers", "items": [], "top_n": top_n}
 

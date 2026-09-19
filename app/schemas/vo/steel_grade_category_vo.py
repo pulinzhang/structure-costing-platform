@@ -2,7 +2,7 @@
 
 from datetime import datetime
 
-from pydantic import BaseModel, field_serializer
+from pydantic import BaseModel, ConfigDict, field_serializer
 
 from app.common.timezone import datetime_to_iso
 
@@ -10,7 +10,7 @@ from app.common.timezone import datetime_to_iso
 class SteelGradeCategoryVO(BaseModel):
     """牌号分类一行。"""
 
-    model_config = {"from_attributes": True}
+    model_config = ConfigDict(from_attributes=True)
 
     id: int
     category_name: str

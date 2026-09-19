@@ -572,7 +572,7 @@ def test_insert_pair_by_sort_no_not_letter_stem() -> None:
 
 
 def test_insert_for_new_tree_copies_confirm_not_audit(db: Session) -> None:
-    """合册插行：按 sort_no 抄确认与厂家；新行待审；旧已审行仍在。"""
+    """工程变更插行：按 sort_no 抄确认与厂家；新行待审；旧已审行仍在。"""
     _seed_tree(db)
     service = BomProcurementObjectService()
     service.generate(db, _scope(), current_user=SYSTEM_USER)

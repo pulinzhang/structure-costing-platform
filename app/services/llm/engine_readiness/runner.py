@@ -2,11 +2,10 @@
 
 from __future__ import annotations
 
-from typing import Any
-
 from sqlalchemy.orm import Session
 
 from app.repositories.llm.scope_options_repository import ScopeOptionsRepository
+from app.schemas.llm.analysis_payload import EngineReadinessGate, EngineReadinessPayload
 from app.schemas.llm.analysis_query import AnalysisQuery
 from app.schemas.vo.costing_engine_vo import CostingEngineGateItemVO, CostingEngineReadyVO
 from app.services.costing.engine.costing_engine_service import (
@@ -30,7 +29,7 @@ GATE_LABEL_ZH: dict[str, str] = {
 }
 
 
-def _gate_to_dict(item: CostingEngineGateItemVO) -> dict[str, Any]:
+def _gate_to_dict(item: CostingEngineGateItemVO) -> EngineReadinessGate:
     return {
         "code": item.code,
         "label": GATE_LABEL_ZH.get(item.code, item.code),
@@ -44,17 +43,20 @@ def _gate_to_dict(item: CostingEngineGateItemVO) -> dict[str, Any]:
     }
 
 
-def _ready_to_summary(ready: CostingEngineReadyVO) -> dict[str, Any]:
+def _ready_to_summary(ready: CostingEngineReadyVO) -> EngineReadinessPayload:
     gates = ready.gates.upload_or_config
     hard_fails = [g for g in gates if (not g.ok) and g.code not in SOFT_UPLOAD_GATE_CODES]
     soft_hints = [g for g in gates if g.code in SOFT_UPLOAD_GATE_CODES and (not g.ok or g.missing)]
     ok_items = [g for g in gates if g.ok and g.code not in SOFT_UPLOAD_GATE_CODES]
     l0_labels = [f"{s.vehicle_model}/{s.bom_version}" for s in ready.plan.l0_scopes]
+    raw_location = ready.input.get("location")
+    raw_year = ready.input.get("year")
+    raw_month = ready.input.get("month")
     return {
         "kind": "engine_readiness",
-        "location": ready.input.get("location"),
-        "year": ready.input.get("year"),
-        "month": ready.input.get("month"),
+        "location": str(raw_location) if raw_location is not None else None,
+        "year": int(raw_year) if raw_year is not None else None,
+        "month": int(raw_month) if raw_month is not None else None,
         "can_start": ready.can_start,
         "hard_stop": ready.gates.hard_stop,
         "hard_fail_count": len(hard_fails),

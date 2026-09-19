@@ -90,7 +90,7 @@ def list_snapshots(
 
 
 @router.get(
-    "/snapshots/{snapshot_id}",
+    "/snapshots/{snapshot_id:int}",
     response_model=ApiResponse[BomSnapshotVO],
 )
 def get_snapshot(
@@ -117,7 +117,7 @@ def create_snapshot(
 
 
 @router.delete(
-    "/snapshots/{snapshot_id}",
+    "/snapshots/{snapshot_id:int}",
     response_model=ApiResponse[None],
 )
 def delete_snapshot(
@@ -130,7 +130,7 @@ def delete_snapshot(
 
 
 @router.get(
-    "/snapshots/{snapshot_id}/nodes",
+    "/snapshots/{snapshot_id:int}/nodes",
     response_model=ApiResponse[list[BomNodeVO]],
 )
 def list_nodes(
@@ -150,7 +150,7 @@ def list_nodes(
 
 
 @router.get(
-    "/snapshots/{snapshot_id}/tree",
+    "/snapshots/{snapshot_id:int}/tree",
     response_model=ApiResponse[list[BomNodeTreeVO]],
 )
 def get_tree(
@@ -170,7 +170,7 @@ def get_tree(
 
 
 @router.post(
-    "/snapshots/{snapshot_id}/nodes",
+    "/snapshots/{snapshot_id:int}/nodes",
     response_model=ApiResponse[BomNodeVO],
     status_code=201,
 )
@@ -185,7 +185,7 @@ def create_node(
 
 
 @router.delete(
-    "/nodes/{node_id}",
+    "/nodes/{node_id:int}",
     response_model=ApiResponse[None],
 )
 def delete_node(

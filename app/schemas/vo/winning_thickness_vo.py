@@ -2,7 +2,7 @@
 
 from decimal import Decimal
 
-from pydantic import BaseModel, field_serializer
+from pydantic import BaseModel, ConfigDict, field_serializer
 
 from app.common.money import Q2, Q4, format_money, optional_format_money
 
@@ -10,7 +10,7 @@ from app.common.money import Q2, Q4, format_money, optional_format_money
 class WinningThicknessRowVO(BaseModel):
     """中标钢材 × 厚度阶梯 导出/预览行。"""
 
-    model_config = {"from_attributes": True}
+    model_config = ConfigDict(from_attributes=True)
 
     # 价目
     base_price: Decimal

@@ -4,20 +4,32 @@ from __future__ import annotations
 
 import statistics
 from decimal import Decimal
-from typing import Any
+from typing import cast
 
+from app.schemas.llm.analysis_payload import (
+    DriverItem,
+    DriversPayload,
+    PeriodDiffComponent,
+    PeriodDiffPayload,
+    SpreadResult,
+    TrendPoint,
+)
 from app.services.llm._money import money_str, rate_str
+from app.services.llm.analysis.shared.row_protocols import (
+    HasAssemblyUnitPrice,
+    HasPeriodDiffAmounts,
+)
 
 ANOMALY_MIN_POINTS_FOR_STAT = 6
 ANOMALY_RATE_THRESHOLD = Decimal("0.15")
 
 
-def assembly_unit_price(row: Any) -> Decimal:
+def assembly_unit_price(row: HasAssemblyUnitPrice) -> Decimal:
     """总成核价「单价」= 应成本；缺字段时回退月总账。"""
-    should_cost = getattr(row, "should_cost", None)
+    should_cost = row.should_cost
     if should_cost is not None:
         return Decimal(str(should_cost))
-    return Decimal(str(getattr(row, "total_amount", 0) or 0))
+    return Decimal(str(row.total_amount or 0))
 
 
 def compute_mom_rate(prev: Decimal, current: Decimal) -> Decimal | None:
@@ -40,7 +52,7 @@ def compute_cumulative_rate(
 
 
 def detect_anomaly_months(
-    points: list[dict[str, Any]],
+    points: list[TrendPoint],
     *,
     rate_threshold: Decimal = ANOMALY_RATE_THRESHOLD,
 ) -> tuple[list[str], str | None]:
@@ -85,7 +97,7 @@ def detect_anomaly_months(
     return anomaly_months, note
 
 
-def _parse_change_decimal(item: dict[str, Any]) -> Decimal:
+def _parse_change_decimal(item: DriverItem) -> Decimal:
     raw = item.get("change")
     if raw is None:
         return Decimal("0")
@@ -93,10 +105,10 @@ def _parse_change_decimal(item: dict[str, Any]) -> Decimal:
 
 
 def build_drivers_payload(
-    drivers: list[dict[str, Any]],
+    drivers: list[DriverItem],
     *,
     top_n: int,
-) -> dict[str, Any]:
+) -> DriversPayload:
     """输出 top_items / up_contribution / down_drag（B.6.1）。"""
     ranked_top = sorted(
         drivers,
@@ -116,7 +128,7 @@ def build_drivers_payload(
         (_parse_change_decimal(item) for item in up_items),
         start=Decimal("0"),
     )
-    up_contribution: list[dict[str, Any]] = []
+    up_contribution: list[DriverItem] = []
     cumulative = Decimal("0")
     for index, item in enumerate(up_ranked, start=1):
         change = _parse_change_decimal(item)
@@ -124,14 +136,16 @@ def build_drivers_payload(
             (change / positive_sum).quantize(Decimal("0.01")) if positive_sum > 0 else Decimal("0")
         )
         cumulative += contribution
-        up_contribution.append(
+        enriched = cast(
+            DriverItem,
             {
                 **item,
                 "rank": index,
                 "contribution": rate_str(contribution),
                 "contribution_pct": f"{contribution * 100:.2f}%",
-            }
+            },
         )
+        up_contribution.append(enriched)
 
     down_drag = sorted(
         down_items,
@@ -166,7 +180,7 @@ def compute_change_rate(first: Decimal, last: Decimal) -> Decimal | None:
     return ((last - first) / first).quantize(Decimal("0.01"))
 
 
-def compute_spread(rate_a: Decimal | None, rate_b: Decimal | None) -> dict[str, Any]:
+def compute_spread(rate_a: Decimal | None, rate_b: Decimal | None) -> SpreadResult:
     if rate_a is None or rate_b is None:
         return {"spread": None, "status": "invalid"}
     spread = (rate_a - rate_b).quantize(Decimal("0.01"))
@@ -174,9 +188,9 @@ def compute_spread(rate_a: Decimal | None, rate_b: Decimal | None) -> dict[str, 
 
 
 def build_period_diff(
-    start_row: Any,
-    end_row: Any,
-) -> dict[str, Any]:
+    start_row: HasPeriodDiffAmounts,
+    end_row: HasPeriodDiffAmounts,
+) -> PeriodDiffPayload:
     """drilldown 区间差分：首末月 + 成本子项分解。"""
     components_spec = (
         ("processing", "加工", "stamping_amount"),
@@ -190,7 +204,7 @@ def build_period_diff(
     delta = end_total - start_total
     delta_rate = compute_change_rate(start_total, end_total)
 
-    component_rows: list[dict[str, Any]] = []
+    component_rows: list[PeriodDiffComponent] = []
     abs_sum = Decimal("0")
     for code, label, attr in components_spec:
         start_value = Decimal(str(getattr(start_row, attr, 0) or 0))

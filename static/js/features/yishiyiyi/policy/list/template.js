@@ -47,9 +47,14 @@ export function policyDownloadTemplate() {
                     <div class="flex items-end gap-3 flex-wrap">
                         ${filterSelect('policyDownloadYear', '年度')}
                         ${filterSelect('policyDownloadMonth', '月份')}
-                        ${filterSelect('policyDownloadMill', '钢厂')}
+                        ${filterInputWithDatalist('policyDownloadMill', '钢厂', 'policyMillOptions', {
+                            placeholder: '输入搜索或选择钢厂',
+                        })}
                         ${filterSelect('policyDownloadCategory', '钢种大类')}
-                        ${filterInputWithDatalist('policyDownloadGrade', '牌号', 'policyGradeOptions')}
+                        ${filterInputWithDatalist('policyDownloadGrade', '牌号', 'policyGradeOptions', {
+                            placeholder: '请先选择钢种大类',
+                            disabled: true,
+                        })}
                     </div>
                     <div class="flex items-center gap-2">
                         <button id="btnPreview"
@@ -157,25 +162,21 @@ function filterSelect(id, label) {
     </label>`;
 }
 
-function filterInput(id, label, placeholder) {
-    return `<label class="space-y-1">
-        <span class="block text-[9px] font-semibold text-[#484848] uppercase tracking-[0.12em] whitespace-nowrap">${label}</span>
-        <input id="${id}" placeholder="${placeholder}" class="h-7 w-32 px-2.5 text-[11px] bg-[#0d0d0d] border border-[#272727] text-[#ffffff] placeholder:text-[#616161] rounded-sm focus:outline-none focus:border-[#ff5252]">
-    </label>`;
-}
-
 /**
  * 带输入搜索的下拉选择器（使用 datalist 实现）
  * @param {string} id - 输入框 ID
  * @param {string} label - 标签文本
  * @param {string} datalistId - datalist 的 ID
+ * @param {{ placeholder?: string, disabled?: boolean }} [options]
  */
-function filterInputWithDatalist(id, label, datalistId) {
+function filterInputWithDatalist(id, label, datalistId, options = {}) {
+    const placeholder = options.placeholder || '输入搜索或选择';
+    const disabledAttr = options.disabled ? ' disabled' : '';
     return `<label class="space-y-1">
         <span class="block text-[9px] font-semibold text-[#484848] uppercase tracking-[0.12em] whitespace-nowrap">${label}</span>
-        <input type="text" id="${id}" list="${datalistId}" disabled
+        <input type="text" id="${id}" list="${datalistId}"${disabledAttr}
                class="w-44 h-7 pl-2.5 pr-3 text-[11px] bg-[#0d0d0d] border border-[#272727] text-[#909090] placeholder:text-[#505050] focus:outline-none focus:border-[#ff5252] focus:text-[#d0d0d0] transition-all rounded-sm disabled:opacity-50 disabled:cursor-not-allowed"
-               placeholder="请先选择钢种大类">
+               placeholder="${placeholder}">
         <datalist id="${datalistId}"></datalist>
     </label>`;
 }

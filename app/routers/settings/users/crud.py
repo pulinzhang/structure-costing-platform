@@ -58,7 +58,7 @@ def list_all_users(
 
 
 @router.get(
-    "/{user_id}",
+    "/{user_id:int}",
     response_model=ApiResponse[UserVO],
 )
 def get_user(
@@ -87,7 +87,7 @@ def create_user(
 
 
 @router.put(
-    "/{user_id}",
+    "/{user_id:int}",
     response_model=ApiResponse[UserVO],
 )
 def update_user(
@@ -109,7 +109,7 @@ def update_user(
 
 
 @router.put(
-    "/{user_id}/password",
+    "/{user_id:int}/password",
     response_model=ApiResponse[UserVO],
 )
 def update_password(
@@ -126,7 +126,7 @@ def update_password(
 
 
 @router.delete(
-    "/{user_id}",
+    "/{user_id:int}",
     response_model=ApiResponse[None],
 )
 def delete_user(

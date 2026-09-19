@@ -3,11 +3,12 @@
 from datetime import datetime
 from decimal import Decimal
 
-from pydantic import BaseModel, Field, field_serializer
+from pydantic import BaseModel, ConfigDict, Field, field_serializer
 
 from app.common.money import Q0, Q4, format_money, optional_format_money
 from app.common.timezone import datetime_to_iso
 from app.schemas.common.batch_result import BatchAuditCountsVO, BatchDeleteCountsVO
+from app.schemas.vo.timing import DurationSecondsMixin
 
 
 class StampingDieFeeItemVO(BaseModel):
@@ -38,7 +39,7 @@ class StampingDieFeeItemVO(BaseModel):
     def serialize_allocation_qty(self, value: Decimal) -> str:
         return format_money(value, Q0, 0)
 
-    model_config = {"from_attributes": True}
+    model_config = ConfigDict(from_attributes=True)
 
 
 class StampingDieFeeVO(BaseModel):
@@ -104,7 +105,7 @@ class StampingDieFeeVO(BaseModel):
     def serialize_datetime(self, value: datetime | None) -> str | None:
         return datetime_to_iso(value)
 
-    model_config = {"from_attributes": True}
+    model_config = ConfigDict(from_attributes=True)
 
 
 class StampingDieFeeCalcResultVO(BaseModel):
@@ -127,9 +128,7 @@ class StampingDieFeeCalcResultVO(BaseModel):
     finished_at: str | None = None
 
 
-class StampingDieFeeCalcLogVO(BaseModel):
-    model_config = {"from_attributes": True}
-
+class StampingDieFeeCalcLogVO(DurationSecondsMixin):
     id: int
     calc_batch_id: str
     year: int

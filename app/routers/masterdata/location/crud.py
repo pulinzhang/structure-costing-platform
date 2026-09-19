@@ -1,4 +1,8 @@
-"""基地主数据 CRUD。"""
+"""基地主数据 CRUD。
+
+路径（零例外）：主键字符串 location，禁止 :int；
+同前缀静态段必须全部写在 /{location} 之前（api-type-safety.mdc §6）。
+"""
 
 from fastapi import APIRouter, Depends, status
 from sqlalchemy.orm import Session

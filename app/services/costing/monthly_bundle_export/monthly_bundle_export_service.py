@@ -1,4 +1,4 @@
-"""月度核价合册导出：同一 Workbook 串联各切片 write_to_workbook。"""
+"""月度核对导出：同一 Workbook 串联各切片 write_to_workbook。"""
 
 from __future__ import annotations
 
@@ -33,7 +33,7 @@ logger = logging.getLogger("service.monthly_bundle_export")
 
 class MonthlyBundleExportService:
     """
-    按年/月/基地/车型/BOM 版本导出「核对合册」。
+    按年/月/基地/车型/BOM 版本导出「月度核对导出」。
 
     编排归属 costing（下游组合上游导出）；各 sheet 仍由对应切片 ExportService 写入。
     """
@@ -59,7 +59,7 @@ class MonthlyBundleExportService:
         current_user: UserVO,
     ) -> tuple[bytes, str]:
         """
-        生成合册 Excel。
+        生成工程变更 Excel。
 
         bom_version 仅用于 BOM/成品侧（成品核价、焊接费）。
         冲压零件核价与加工费不传版本：工艺版本与 BOM 版本本就不一致。
@@ -153,11 +153,12 @@ class MonthlyBundleExportService:
         stamp = now().strftime("%Y%m%d_%H%M%S")
         safe_version = bom_version.replace("/", "-").replace("\\", "-")
         filename = (
-            f"核对合册_{year}年{month}月_{location}_" f"{vehicle_model}_{safe_version}_{stamp}.xlsx"
+            f"月度核对导出_{year}年{month}月_{location}_"
+            f"{vehicle_model}_{safe_version}_{stamp}.xlsx"
         )
         content = workbook_to_xlsx_bytes(wb, current_user)
         logger.info(
-            "月度核对合册导出完成: filename=%s sheets=%s",
+            "月度核对导出完成: filename=%s sheets=%s",
             filename,
             sheet_counts,
         )

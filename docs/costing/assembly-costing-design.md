@@ -41,15 +41,15 @@ costing_assembly_costs.level     = 核价卡根 bom_nodes.level
 | P11 | 采购视图 = join 清单 `section=object` | costing 里再实现一套 `object_kind` 分类器 |
 | P12 | 计算默认 **全卡**；`levels` 可选过滤 | 引擎默认 `levels=[0]` 导致采购卡永远没有 |
 | P13 | 批量审核/删除/反审 **跟当前列表筛选走**（必须带 `view`） | 财务点「全部审核」把 200+ 采购卡一起审掉 |
-| P14 | 月度合册仍只出 **树根卡**（保持现网「成品账」含义）；合册 API **无** `view` | 合册把所有 level 加总；合册跟采购视图 |
+| P14 | 月度核对导出仍只出 **树根卡**（保持现网「成品账」含义）；月度核对导出 API **无** `view` | 月度核对导出把所有 level 加总；月度核对导出跟采购视图 |
 | P15 | 有子件的树根 **UI 不展示** 报价对比 | 对二级开总成合同 |
 | P16 | 不建 `costing_outsourced_assembly_*` | 委外第二套结果表 |
 | P17 | 权限一组改名，仍两页：计算 / 一览 | 财务、采购两套菜单码 |
 | P18 | BOM 重导后 `source_node_id` 可能失效 → 必须重算；迁移对不上则失败 | silently 丢历史行 |
 | P19 | **冲压、焊接只读上游结果表**（见 §1.1）。缺某一叶子/节点 → 卡内 `missing` 或焊接 0，不在本切片算 `unit_cost`、不拆焊 | `prepare` 里调用零件核价 / 焊接费 Orchestrator；拆解明细 × 单价临算 |
-| P20 | **计算类上游未完成 → 总成整趟不开始**（零件价、焊接费定义见 §1.2）。引擎补焊必须覆盖本趟要抄的 level，**禁止只补 `levels=[0]`** | 零件价还在 `processing` 就写卡；只补 L0 焊却按全卡抄 L1 工费 |
+| P20 | **计算类上游未完成 → 总成整趟不开始**（零件价、焊接费、采购对象清单）。引擎补焊必须覆盖本趟要抄的 level，**禁止只补 `levels=[0]`** | 零件价还在 `processing` 就写卡；只补 L0 焊却按全卡抄 L1 工费；无采购对象仍开算 |
 | P21 | **树根卡 ④⑤ 与现网成品账相同：只抄该树根自己的焊接费行，禁止把下级焊接费加进树根。** 手工表焊信写在供货总成上，已是整台总成（含总成自己焊、也含填表时从各处汇总进来的量），下级行不能拿来旁证或加总 | `welding_amount(树根) = Σ 子孙焊接费`；用 L1 工费去「修正」L0 |
-| P22 | **导出按角色分册。** 财务：成品核价册 + 核对合册（只树根）。采购：应成本册（对象卡 + 该卡材料/焊费，**无** I3～I8 Sheet、**无** 合册价表）。同一结果表，两套 Excel | 采购点合册；合册带 `view=procurement`；采购册带间接列 |
+| P22 | **导出按角色分册。** 财务：成品核价册 + 月度核对导出（只树根）。采购：应成本册（对象卡 + 该卡材料/焊费，**无** I3～I8 Sheet、**无** 月度核对导出价表）。同一结果表，两套 Excel | 采购点月度核对导出；月度核对导出带 `view=procurement`；采购册带间接列 |
 
 ### 1.1 谁算、谁抄（P19）
 
@@ -474,7 +474,7 @@ persist:
 
 Ready VO 增加：`subject_count`、`tree_root_count`、`procurement_object_count`、`welding_fee_count`（**当前树拆解对齐的费行**，不含旧 id / 孤儿行）、`welding_fee_level_counts`（同上口径）、`stamping_complete`、`stamping_incomplete_suppliers`、`welding_calc_complete`。保留 `l0_count` 一期别名 = `tree_root_count`（避免旧前端崩），随后删除。计算页芯片与 P20 同一套覆盖；未就绪黄条展示 `message`，禁止只数范围内存量行却把按钮关掉。
 
-缺清单：警告「采购对象未生成，本趟只出装配∪树根」（不挡计算）。年度价/包装为 0：黄灯，不挡。
+缺清单 / 未齐：硬停「请先生成采购对象清单」或「采购对象未齐…」（与零件价/焊接费同为 P20；引擎缺则自动 generate）。年度价/包装为 0：黄灯，不挡。
 
 ---
 
@@ -540,7 +540,7 @@ Ready VO 增加：`subject_count`、`tree_root_count`、`procurement_object_coun
 
 导出（P22，入口随视图，权限仍 `op:assembly-cost:export`）：
 
-- **财务视图：**「导出总成核价」→ `GET /api/costing/assembly-costs/export-download?view=finance`（一览 + 材料 + 焊费按卡 `welding_fee_id` + 间接）。成品核价一览表头写本表合计（条数、核算正常数、材料/焊接/月总账/间接/总费用）；末行 `SUM` 不进筛选。合计是当前导出范围内的树根。「导出核对合册」→ `GET /api/costing/monthly-bundle/export-download`（**无** `view`，成品块只树根，再叠冲压核价 / 加工费 / 钢材 / 年度价 / 包装 / 焊价）。
+- **财务视图：**「导出总成核价」→ `GET /api/costing/assembly-costs/export-download?view=finance`（一览 + 材料 + 焊费按卡 `welding_fee_id` + 间接）。成品核价一览表头写本表合计（条数、核算正常数、材料/焊接/月总账/间接/总费用）；末行 `SUM` 不进筛选。合计是当前导出范围内的树根。「导出月度核对」→ `GET /api/costing/monthly-bundle/export-download`（**无** `view`，成品块只树根，再叠冲压核价 / 加工费 / 钢材 / 年度价 / 包装 / 焊价）。
 - **采购视图：**只「导出零件成本」→ `export-download?view=procurement`。文件名 `零件成本_2025年12月_青岛_T2AA_…xlsx`。Sheet：成本一览 / 材料明细 / 焊接费。成本一览表头写本册对象合计（件数、核算正常数、材料/焊接/总成本）；末行 `SUM` 不进筛选、不随筛选变化。合计是对象卡全量，不是整车月总账。
 
 ---
@@ -552,8 +552,8 @@ Ready VO 增加：`subject_count`、`tree_root_count`、`procurement_object_coun
 | 包 | `app/services/costing/assembly_cost/**`、`app/routers/costing/assembly_cost/**`、`app/repositories/costing/assembly_cost/**` |
 | 模型 / schema | `AssemblyCost*`、`assembly_cost_{dto,vo}` |
 | 表 | `costing_assembly_costs` / `_items` / `_indirects` / `_calc_logs` |
-| 引擎 | 零件价完成且 **焊接费覆盖该月命中树全部要抄的 level** 才跑 assembly（P20）。同一项目当月 **算一次**（该月有效期内各版本树都进），不要按 BOM 版本拆多趟。补焊 **禁止** 只传 `levels=[0]`。阶段 id `assembly`；焊接费阶段 `annual_welding_fee`。本切片不得内部触发上游 |
-| 合册 | `monthly_bundle_export_service` → 树根过滤 |
+| 引擎 | 零件价完成且 **焊接费覆盖该月命中树全部要抄的 level**、**采购对象齐** 才跑 assembly（P20）。同一项目当月 **算一次**。补焊 **禁止** 只传 `levels=[0]`。阶段 id `assembly`；年度 `annual_procurement_object` / `annual_welding_fee`。本切片不得内部触发上游 |
+| 月度核对导出 | `monthly_bundle_export_service` → 树根过滤 |
 | LLM | `menu_catalog`、`field_labels`、`cost_analysis/`（查现表 `costing_assembly_costs`） |
 | 权限 / 种子 | `catalog.json` → `codes.py`（§10.3） |
 | 前端 | `index.html`、`app.js`、`features/index.js`、`static/js/features/costing/assembly-cost/` |
@@ -574,7 +574,7 @@ Ready VO 增加：`subject_count`、`tree_root_count`、`procurement_object_coun
 | 同号两支 | 两张卡或两行明细，金额相加；焊接按节点不撞号 |
 | T13J 芜湖 2026-01 `D/09` | 整理后：P20 可开算；卡数 **97**（无清单）或生成清单后 **229**；53 张分总成卡应对 53 行 L1 焊接费；14 张退化卡材料非 0；7 条年度价均为叶子，无一口价剪枝；包装 0 |
 | 恒等式 | persist 前每卡检查 |
-| 合册 | 行数 = 树根数，不是 229；API 无 `view` |
+| 月度核对导出 | 行数 = 树根数，不是 229；API 无 `view` |
 | 采购应成本册 | 行数 = 对象卡数；无间接 Sheet；焊费按卡 `welding_fee_id` |
 
 ---
@@ -586,7 +586,7 @@ D0  本文评审通过（§1 现为 P1～P20）
 D1  纯函数 rollup_assembly + 青岛/夹具/T13J 结构测试（先测后迁表）
 D2  表改名 + 迁移；切片/API/权限/前端去 l0
 D3  列表双视图；批量带 view；引擎阶段 assembly 默认全卡
-D4  合册只树根；LLM 目录；旧 URL 重定向
+D4  月度核对导出只树根；LLM 目录；旧 URL 重定向
 D5  退化树根财务专项签字
 ```
 
@@ -636,7 +636,7 @@ D5  退化树根财务专项签字
 | 2026-09-01 | 落地检查收口：P1 不改清单 `object_kind`；多工厂同号单价冲突；焊接完成=当前树每个拆解节点有费行；引擎补焊不得只 `levels=[0]`；工艺库 0 件视为未完成。 |
 | 2026-09-01 | **P21：** 树根卡焊接口径与现网 L0 相同，禁止下级焊接费上滚；焊信在总成格已是整台汇总，下级不能旁证。 |
 | 2026-09-01 | 计算过程：`detail_text`/`detail_json` 落库；独立浅色报告页可筛选。 |
-| 2026-09-05 | **P22：** 导出分册。合册只树根、API 无 `view`；采购单独应成本册（无间接、无合册价表）。 |
+| 2026-09-05 | **P22：** 导出分册。月度核对导出只树根、API 无 `view`；采购单独应成本册（无间接、无月度核对导出价表）。 |
 | 2026-09-05 | 采购导出须锁年度/月份/基地/项目/版本；表内去重这五列；材料明细佐证合并。 |
 | 2026-09-05 | 采购应成本一览不展示报价/价差：核算参考，不参与采购业务。 |
 | 2026-09-05 | 采购一览金额列：材料成本、焊接费/电泳黑漆等（数据=焊接费）、总成本（关注列）。 |
@@ -647,3 +647,4 @@ D5  退化树根财务专项签字
 | 2026-09-11 | 计算过程报告：分总成节点不得把兄弟卡焊装画进成品账材料行；协议页不改。见 restore-ledger-display。 |
 | 2026-09-14 | **P4：** 外购件总成（卡根有子件且命中年度价）本卡用年度价，子孙已含不报缺价，本卡不抄焊接。 |
 | 2026-09-16 | 参数年+月+基地+项目，不要 BOM 版本。UNIQUE / 计算锁去掉版本。取件问节点月命中；身份问账期 `require_introducible`。 |
+| 2026-09-19 | **P20：** 采购对象清单纳入硬门（应列入却未齐 → 不开始）；引擎 `annual_procurement_object` 缺则自动 generate。 |

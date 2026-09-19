@@ -3,7 +3,6 @@
 from __future__ import annotations
 
 from decimal import Decimal
-from typing import Any
 
 from sqlalchemy.orm import Session
 
@@ -19,6 +18,10 @@ from app.repositories.llm.stamping_cost_analysis_repository import (
 )
 from app.repositories.llm.stamping_process_analysis_repository import (
     StampingProcessAnalysisRepository,
+)
+from app.schemas.llm.analysis_payload import (
+    AnalysisResultLeafPayload,
+    DrilldownPayload,
 )
 from app.schemas.llm.analysis_query import AnalysisQuery
 from app.services.llm._money import shift_month
@@ -60,6 +63,12 @@ from app.services.llm.analysis.shared.summary import build_summary
 from app.services.llm.analysis.stamping.part_cost import build_stamping_cost_drilldown
 from app.services.llm.analysis.stamping.process import build_stamping_process_drilldown
 from app.services.llm.comparison_basis import resolve_comparability
+
+
+def _optional_str(value: object) -> str | None:
+    if value is None:
+        return None
+    return str(value)
 
 
 class AssemblyAnalysis:
@@ -178,7 +187,7 @@ class AssemblyAnalysis:
     def _part_price_result(
         self,
         query: AnalysisQuery,
-        drilldown: dict[str, Any],
+        drilldown: DrilldownPayload,
         *,
         has_data: bool,
         detail: str,
@@ -222,11 +231,12 @@ class AssemblyAnalysis:
         self,
         db: Session,
         query: AnalysisQuery,
-        drilldown: dict[str, Any],
-    ) -> dict[str, Any]:
-        latest = drilldown.get("latest") or {}
-        year = int(latest.get("year") or query.time_range.end_year)
-        month = int(latest.get("month_number") or query.time_range.end_month)
+        drilldown: DrilldownPayload,
+    ) -> AnalysisResultLeafPayload:
+        latest_raw = drilldown.get("latest") or {}
+        latest = latest_raw if isinstance(latest_raw, dict) else {}
+        year = int(str(latest.get("year") or query.time_range.end_year))
+        month = int(str(latest.get("month_number") or query.time_range.end_month))
         part_number = str(drilldown.get("part_number") or query.part_number() or "")
         items = (
             self._l0_repo.query_card_item_rows(
@@ -234,9 +244,9 @@ class AssemblyAnalysis:
                 year=year,
                 month=month,
                 part_number=part_number,
-                location=query.location() or latest.get("location"),
-                vehicle_model=query.vehicle_model() or latest.get("vehicle_model"),
-                bom_version=query.bom_version() or latest.get("bom_version"),
+                location=query.location() or _optional_str(latest.get("location")),
+                vehicle_model=query.vehicle_model() or _optional_str(latest.get("vehicle_model")),
+                bom_version=query.bom_version() or _optional_str(latest.get("bom_version")),
             )
             if part_number
             else []
@@ -246,9 +256,9 @@ class AssemblyAnalysis:
         if root_part_number:
             parent_rows = self._l0_repo.query_part_rows(
                 db,
-                location=query.location() or latest.get("location"),
-                vehicle_model=query.vehicle_model() or latest.get("vehicle_model"),
-                bom_version=query.bom_version() or latest.get("bom_version"),
+                location=query.location() or _optional_str(latest.get("location")),
+                vehicle_model=query.vehicle_model() or _optional_str(latest.get("vehicle_model")),
+                bom_version=query.bom_version() or _optional_str(latest.get("bom_version")),
                 start_year=year,
                 start_month=month,
                 end_year=year,
@@ -316,7 +326,7 @@ class AssemblyAnalysis:
         drilldown_only = "drilldown" in query.analyses and "summary" not in query.analyses
         skip_cross_existence = drilldown_only and profile.primary_source == "l0" and bool(l0_rows)
 
-        parts_result: dict[str, Any] = {}
+        parts_result: dict[str, AnalysisResultLeafPayload] = {}
         if not skip_cross_existence and (
             "drilldown" in query.analyses or "summary" in query.analyses
         ):
@@ -432,7 +442,7 @@ class AssemblyAnalysis:
             comparability_note=comparability_note,
             filtered_missing_price_count=filtered_missing,
         )
-        parts_result: dict[str, Any] = {}
+        parts_result: dict[str, AnalysisResultLeafPayload] = {}
         driver_top_n = query.top_n()
 
         if "summary" in query.analyses:

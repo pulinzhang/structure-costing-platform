@@ -2,7 +2,7 @@
 钢材基准价格 VO - 返回给前端的数据结构
 
 使用 Pydantic v2 官方推荐的 ORM 集成方式：
-- model_config = {"from_attributes": True}
+- model_config = ConfigDict(from_attributes=True)
 - model_validate() 从 ORM 对象转换
 - @field_serializer 序列化 Decimal/Datetime
 """
@@ -10,7 +10,7 @@
 from datetime import datetime
 from decimal import Decimal
 
-from pydantic import BaseModel, field_serializer
+from pydantic import BaseModel, ConfigDict, field_serializer
 
 from app.common.money import Q2, optional_format_money
 from app.common.timezone import datetime_to_iso
@@ -19,7 +19,7 @@ from app.common.timezone import datetime_to_iso
 class SteelBasePriceResponse(BaseModel):
     """钢材基准价格响应 VO"""
 
-    model_config = {"from_attributes": True}
+    model_config = ConfigDict(from_attributes=True)
 
     id: int
     year: int
@@ -70,7 +70,7 @@ class SteelBasePriceImportResultResponse(BaseModel):
 class SteelBasePriceExportRow(BaseModel):
     """导出预览行 VO"""
 
-    model_config = {"from_attributes": True}
+    model_config = ConfigDict(from_attributes=True)
 
     year: int
     month: int

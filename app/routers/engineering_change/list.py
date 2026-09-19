@@ -44,7 +44,7 @@ def list_change_orders(
 
 
 @router.get(
-    "/change-orders/{upload_log_id}",
+    "/change-orders/{upload_log_id:int}",
     response_model=ApiResponse[EngineeringChangeDetailVO],
 )
 def get_change_order_upload(
@@ -57,7 +57,7 @@ def get_change_order_upload(
 
 
 @router.delete(
-    "/change-orders/{upload_log_id}",
+    "/change-orders/{upload_log_id:int}",
     response_model=ApiResponse[None],
 )
 def delete_change_order_upload(

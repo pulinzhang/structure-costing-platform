@@ -1,4 +1,4 @@
-"""抄旧树字段：材料属性、内部号、增加件 excel_row。禁止写入合册行号。"""
+"""抄旧树字段：材料属性、内部号、增加件 excel_row。禁止写入工程变更行号。"""
 
 from __future__ import annotations
 
@@ -49,7 +49,7 @@ def copied_child_fields(
     has_add_part: bool,
     number_map: dict[str, str | None],
 ) -> CopiedChildFields | None:
-    """合册变化行覆盖属性；此件不装返回 None。"""
+    """工程变更变化行覆盖属性；此件不装返回 None。"""
     if file_row is not None and is_not_install_row(file_row.qty, file_row.remark):
         return None
     if (
@@ -94,7 +94,7 @@ def excel_row_for_added_part(
     parsed_nodes: list[BomParsedNode],
     excel_row_by_part: dict[str, int | None],
 ) -> int | None:
-    """增加件没有 SOP 行号：抄合册里前一个已种兄弟的旧树 excel_row。"""
+    """增加件没有 SOP 行号：抄工程变更里前一个已种兄弟的旧树 excel_row。"""
     siblings = [
         node
         for node in parsed_nodes

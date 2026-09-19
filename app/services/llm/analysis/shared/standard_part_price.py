@@ -2,9 +2,10 @@
 
 from __future__ import annotations
 
+from collections.abc import Sequence
 from decimal import Decimal
-from typing import Any
 
+from app.schemas.llm.analysis_payload import DomainAnomaliesPayload, RiskEntry
 from app.services.llm.analysis.shared.constants import (
     STANDARD_PART_NAME_KEYS,
     STANDARD_PART_SUPPLY_TYPES,
@@ -40,14 +41,14 @@ def is_piece_standard_part(
 
 
 def build_standard_part_price_anomalies(
-    rows: list[Any],
+    rows: Sequence[object],
     *,
     top_n: int = 20,
-) -> dict[str, Any]:
+) -> DomainAnomaliesPayload:
     """计件标准件 / 胶块核价单价过大。行对象需有 part_number、unit_price。"""
     threshold = Decimal(STANDARD_PART_UNIT_PRICE_MAX)
-    items: list[dict[str, Any]] = []
-    seen: set[tuple[Any, ...]] = set()
+    items: list[dict[str, object]] = []
+    seen: set[tuple[object, ...]] = set()
     for row in rows:
         unit_price = Decimal(str(getattr(row, "unit_price", 0) or 0))
         if unit_price < threshold:
@@ -97,7 +98,7 @@ def build_standard_part_price_anomalies(
     }
 
 
-def standard_part_price_risk_entry(payload: dict[str, Any]) -> dict[str, Any] | None:
+def standard_part_price_risk_entry(payload: DomainAnomaliesPayload) -> RiskEntry | None:
     items = list(payload.get("items") or [])
     if not items:
         return None
@@ -106,6 +107,8 @@ def standard_part_price_risk_entry(payload: dict[str, Any]) -> dict[str, Any] | 
         "severity": "high",
         "count": len(items),
         "message": "标准件/胶块（螺母、螺栓等）计件单价过大，通常应为几分钱",
-        "sample_part_numbers": [item["part_number"] for item in items[:8]],
+        "sample_part_numbers": [
+            item.get("part_number") if isinstance(item, dict) else None for item in items[:8]
+        ],
         "standard_part_items": items,
     }

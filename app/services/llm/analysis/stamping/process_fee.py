@@ -3,9 +3,12 @@
 from __future__ import annotations
 
 from decimal import ROUND_HALF_UP, Decimal
-from typing import Any
 
 from app.repositories.llm.process_fee_analysis_repository import ProcessFeeRow
+from app.schemas.llm.analysis_payload import (
+    DrilldownPayload,
+    SummaryPayload,
+)
 
 
 def _fee_str(value: Decimal | None) -> str | None:
@@ -15,7 +18,7 @@ def _fee_str(value: Decimal | None) -> str | None:
     return f"{quantized:.3f}"
 
 
-def build_process_fee_summary(rows: list[ProcessFeeRow]) -> dict[str, Any]:
+def build_process_fee_summary(rows: list[ProcessFeeRow]) -> SummaryPayload:
     if not rows:
         return {
             "subject": "stamping_process_fee",
@@ -49,7 +52,7 @@ def build_process_fee_drilldown(
     *,
     part_token: str,
     head: ProcessFeeRow | None = None,
-) -> dict[str, Any]:
+) -> DrilldownPayload:
     if not rows:
         return {
             "kind": "drilldown",

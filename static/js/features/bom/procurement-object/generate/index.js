@@ -4,13 +4,17 @@
 
 import {
     procurementObjectGenerateTemplate,
-} from './template.js?v=7';
+} from './template.js?v=8';
 import {
     DEFAULT_PAGE_SIZE,
     bindPagination,
     paintPagination,
 } from '../../../../page-size.js?v=3';
 import { SECTION_LABELS } from '../labels.js?v=2';
+import {
+    formatDurationSeconds,
+    formatTimingLine,
+} from '../../../../duration.js?v=1';
 
 const API_BASE = '/api/bom/procurement-objects';
 const CASCADE_API = '/api/bom/filters/cascade';
@@ -311,7 +315,7 @@ function hideProgress() {
 async function loadGenHistory(page = genState.history.page) {
     const body = document.getElementById('poGenHistoryBody');
     if (!body) return;
-    body.innerHTML = `<tr><td colspan="9" class="py-8 text-center text-[#555]">加载中..</td></tr>`;
+    body.innerHTML = `<tr><td colspan="11" class="py-8 text-center text-[#555]">加载中..</td></tr>`;
     try {
         const response = await HttpClient.get(LOGS_API, {
             params: { page, size: genState.history.size },
@@ -332,7 +336,7 @@ async function loadGenHistory(page = genState.history.page) {
             );
     } catch (error) {
         console.error('加载生成历史失败:', error);
-        body.innerHTML = `<tr><td colspan="9" class="py-8 text-center text-[#ef5350]">加载失败</td></tr>`;
+        body.innerHTML = `<tr><td colspan="11" class="py-8 text-center text-[#ef5350]">加载失败</td></tr>`;
     }
 }
 
@@ -340,17 +344,18 @@ function renderHistoryRows(items) {
     const body = document.getElementById('poGenHistoryBody');
     if (!body) return;
     if (!items.length) {
-        body.innerHTML = `<tr><td colspan="9" class="py-8 text-center text-[#555]">暂无生成记录</td></tr>`;
+        body.innerHTML = `<tr><td colspan="11" class="py-8 text-center text-[#555]">暂无生成记录</td></tr>`;
         return;
     }
 
     body.innerHTML = items.map((item) => {
         const status = STATUS_META[item.status] || STATUS_META.failed;
-        const started = formatDateTime(item.started_at);
         const createdBy = item.created_by || item.operator_name || '-';
         return `
             <tr class="hover:bg-[#ffffff]/[0.02] transition-colors text-[#999]">
-                <td class="py-2 px-2 font-mono text-[#666] whitespace-nowrap">${esc(started)}</td>
+                <td class="py-2 px-2 font-mono text-[#666] whitespace-nowrap">${esc(formatDateTime(item.started_at))}</td>
+                <td class="py-2 px-2 font-mono text-[#666] whitespace-nowrap">${esc(formatDateTime(item.finished_at))}</td>
+                <td class="py-2 px-2 font-mono text-right tabular-nums text-[#777] whitespace-nowrap">${esc(formatDurationSeconds(item))}</td>
                 <td class="py-2 px-2 text-[#ccc] whitespace-nowrap">${esc(createdBy)}</td>
                 <td class="py-2 px-2 text-[#ccc] whitespace-nowrap">${esc(item.location || '-')}</td>
                 <td class="py-2 px-2 text-[#ccc] whitespace-nowrap">${esc(item.vehicle_model || '-')}</td>
@@ -425,7 +430,7 @@ function showProcessDrawer(log) {
         </div>
         <div class="px-5 py-3 border-b border-[#222] text-[10px] text-[#777] space-y-1 shrink-0">
             <div>批次 <span class="font-mono text-[#999]">${esc(log.calc_batch_id || '-')}</span></div>
-            <div>时间：${esc(formatDateTime(log.started_at))} → ${esc(formatDateTime(log.finished_at))}</div>
+            <div>${esc(formatTimingLine(log, formatDateTime) || '-')}</div>
             <div>汇总：节点 ${fmtInt(log.node_count)} · ${SECTION_LABELS.object} ${fmtInt(log.object_count)} · ${SECTION_LABELS.other_leaf} ${fmtInt(log.other_leaf_count)} · ${SECTION_LABELS.anomaly} ${fmtInt(log.anomaly_count)}</div>
         </div>
         <div class="flex-1 overflow-y-auto overscroll-contain p-5">

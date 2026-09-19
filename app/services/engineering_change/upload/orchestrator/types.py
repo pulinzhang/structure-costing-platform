@@ -23,7 +23,7 @@ __all__ = [
 
 @dataclass(slots=True)
 class EngineeringChangeExecuteArgs:
-    """合册 execute 入参（避免指挥家主方法被 kwargs 撑破行数）。"""
+    """工程变更 execute 入参（避免指挥家主方法被 kwargs 撑破行数）。"""
 
     log_id: int
     upload_file_id: int

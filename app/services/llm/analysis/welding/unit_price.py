@@ -4,9 +4,14 @@ from __future__ import annotations
 
 from collections import defaultdict
 from decimal import ROUND_HALF_UP, Decimal
-from typing import Any
 
 from app.repositories.llm.welding_unit_price_analysis_repository import WeldingUnitPriceRow
+from app.schemas.llm.analysis_payload import (
+    ComparisonPayload,
+    DriverItem,
+    DriversPayload,
+    SummaryPayload,
+)
 
 
 def _unit_price_str(value: Decimal | None) -> str | None:
@@ -16,7 +21,7 @@ def _unit_price_str(value: Decimal | None) -> str | None:
     return f"{quantized:.4f}"
 
 
-def build_welding_unit_price_summary(rows: list[WeldingUnitPriceRow]) -> dict[str, Any]:
+def build_welding_unit_price_summary(rows: list[WeldingUnitPriceRow]) -> SummaryPayload:
     if not rows:
         return {
             "subject": "welding_unit_price",
@@ -43,7 +48,7 @@ def build_welding_unit_price_comparison(
     rows: list[WeldingUnitPriceRow],
     *,
     location: str | None,
-) -> dict[str, Any]:
+) -> ComparisonPayload:
     if not rows:
         return {
             "kind": "comparison",
@@ -83,7 +88,7 @@ def build_welding_unit_price_comparison(
     compare_items = by_year[compare_year]
     all_names = sorted(set(base_items) | set(compare_items))
 
-    items: list[dict[str, Any]] = []
+    items: list[DriverItem] = []
     increased = 0
     decreased = 0
     unchanged = 0
@@ -151,7 +156,7 @@ def build_welding_unit_price_drivers(
     rows: list[WeldingUnitPriceRow],
     *,
     top_n: int = 8,
-) -> dict[str, Any]:
+) -> DriversPayload:
     if not rows:
         return {"kind": "drivers", "items": [], "top_n": top_n}
 

@@ -1,4 +1,4 @@
-"""合册工艺硬门禁：缺新号、多余新号、旧号仍挂其它有效总成。"""
+"""工程变更工艺硬门禁：缺新号、多余新号、旧号仍挂其它有效总成。"""
 
 from __future__ import annotations
 
@@ -232,7 +232,7 @@ def _parse_process_part_numbers(process_sheet: bytes | None) -> set[str]:
 
 
 def parse_process_part_sketches(file_content: bytes | None) -> dict[str, bytes]:
-    """从合册原件抽冲压工艺确认表零件简图。必须读原 xlsx，抽表会丢掉 WMF。"""
+    """从工程变更原件抽冲压工艺确认表零件简图。必须读原 xlsx，抽表会丢掉 WMF。"""
     if not file_content:
         return {}
     with tempfile.NamedTemporaryFile(suffix=".xlsx", delete=False) as tmp:

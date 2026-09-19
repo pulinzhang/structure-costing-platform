@@ -3,9 +3,12 @@
 from __future__ import annotations
 
 from decimal import ROUND_HALF_UP, Decimal
-from typing import Any
 
 from app.repositories.llm.tonnage_price_analysis_repository import TonnagePriceRow
+from app.schemas.llm.analysis_payload import (
+    DrilldownPayload,
+    SummaryPayload,
+)
 
 
 def _price_str(value: Decimal) -> str:
@@ -13,7 +16,7 @@ def _price_str(value: Decimal) -> str:
     return f"{quantized:.3f}"
 
 
-def build_tonnage_price_summary(rows: list[TonnagePriceRow]) -> dict[str, Any]:
+def build_tonnage_price_summary(rows: list[TonnagePriceRow]) -> SummaryPayload:
     if not rows:
         return {
             "subject": "stamping_tonnage",
@@ -45,7 +48,7 @@ def build_tonnage_price_drilldown(
     rows: list[TonnagePriceRow],
     *,
     tonnage: int | None,
-) -> dict[str, Any]:
+) -> DrilldownPayload:
     matched = [row for row in rows if row.tonnage == tonnage] if tonnage is not None else list(rows)
 
     if not matched:

@@ -5,12 +5,16 @@
 
 import {
     processFeeCalcTemplate,
-} from './template.js?v=26';
+} from './template.js?v=27';
 import {
     DEFAULT_PAGE_SIZE,
     bindPagination,
     paintPagination,
 } from '../../../../page-size.js?v=3';
+import {
+    formatDurationSeconds,
+    formatTimingLine,
+} from '../../../../duration.js?v=1';
 
 const CASCADE_API = '/api/stamping/filters/cascade';
 const API_BASE = '/api/stamping/process-fees';
@@ -273,7 +277,7 @@ async function loadCalcHistory(page = calcState.history.page) {
     const body = document.getElementById('calcHistoryBody');
     if (!body) return;
 
-    body.innerHTML = `<tr><td colspan="13" class="py-8 text-center text-[#555]">加载中..</td></tr>`;
+    body.innerHTML = `<tr><td colspan="15" class="py-8 text-center text-[#555]">加载中..</td></tr>`;
 
     try {
         const res = await HttpClient.get(CALC_LOGS_API, {
@@ -300,7 +304,7 @@ async function loadCalcHistory(page = calcState.history.page) {
             );
     } catch (error) {
         console.error('加载计算历史失败:', error);
-        body.innerHTML = `<tr><td colspan="13" class="py-8 text-center text-[#ef5350]">加载失败</td></tr>`;
+        body.innerHTML = `<tr><td colspan="15" class="py-8 text-center text-[#ef5350]">加载失败</td></tr>`;
     }
 }
 
@@ -320,7 +324,7 @@ function renderHistoryRows(items) {
     if (!body) return;
 
     if (!items.length) {
-        body.innerHTML = `<tr><td colspan="13" class="py-8 text-center text-[#555]">暂无计算记录</td></tr>`;
+        body.innerHTML = `<tr><td colspan="15" class="py-8 text-center text-[#555]">暂无计算记录</td></tr>`;
         return;
     }
 
@@ -330,13 +334,14 @@ function renderHistoryRows(items) {
         if (item.vehicle_model) filterParts.push(item.vehicle_model);
         if (item.version) filterParts.push(item.version);
         const filterText = filterParts.length ? filterParts.join(' / ') : '全部';
-        const started = formatDateTime(item.started_at);
         const createdBy = item.created_by || item.operator_name || '-';
         const isProcessing = item.status === 'processing';
 
         return `
             <tr class="hover:bg-[#ffffff]/[0.02] transition-colors text-[#999]" data-log-id="${esc(item.id)}">
-                <td class="py-2 px-2 font-mono text-[#666] whitespace-nowrap">${esc(started)}</td>
+                <td class="py-2 px-2 font-mono text-[#666] whitespace-nowrap">${esc(formatDateTime(item.started_at))}</td>
+                <td class="py-2 px-2 font-mono text-[#666] whitespace-nowrap">${esc(formatDateTime(item.finished_at))}</td>
+                <td class="py-2 px-2 font-mono text-right tabular-nums text-[#777] whitespace-nowrap">${esc(formatDurationSeconds(item))}</td>
                 <td class="py-2 px-2 text-[#ccc] whitespace-nowrap">${esc(createdBy)}</td>
                 <td class="py-2 px-2 font-mono text-[#ccc] whitespace-nowrap">${esc(fmtYear(item.year))}</td>
                 <td class="py-2 px-2 text-[#ccc] whitespace-nowrap">${esc(item.location || '-')}</td>
@@ -495,7 +500,7 @@ function showProcessDrawer(log) {
         </div>
         <div class="px-5 py-3 border-b border-[#222] text-[10px] text-[#777] space-y-1 shrink-0">
             <div>批次<span class="font-mono text-[#999]">${esc(log.calc_batch_id || '-')}</span></div>
-            <div>时间：${esc(formatDateTime(log.started_at))} → ${esc(formatDateTime(log.finished_at))}</div>
+            <div>${esc(formatTimingLine(log, formatDateTime) || '-')}</div>
             <div>${esc(formatCalcSummary(log))}</div>
         </div>
         <div class="flex-1 overflow-y-auto overscroll-contain p-5">

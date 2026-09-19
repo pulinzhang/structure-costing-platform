@@ -47,7 +47,7 @@ def get_upload_file_filters(
     return ApiResponse.ok(data=filters)
 
 
-@router.get("/{file_id}", response_model=ApiResponse[UploadFileVO])
+@router.get("/{file_id:int}", response_model=ApiResponse[UploadFileVO])
 def get_upload_file(
     file_id: int,
     db: Session = Depends(get_db),
@@ -57,7 +57,7 @@ def get_upload_file(
     return ApiResponse.ok(data=vo)
 
 
-@router.get("/{file_id}/download")
+@router.get("/{file_id:int}/download")
 def download_upload_file(
     file_id: int,
     db: Session = Depends(get_db),

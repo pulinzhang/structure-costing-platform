@@ -150,6 +150,8 @@ def execute_annual(
         status = "succeeded" if ok else "failed"
         if not ok and item.code == "annual_process_fee":
             carry.failed_vehicles.add(item.scope_key)
+        if not ok and item.code == "annual_procurement_object":
+            carry.failed_l0.add(item.scope_key)
         if not ok and item.code == "annual_welding_breakdown":
             carry.failed_l0.add(item.scope_key)
         if not ok and item.code == "annual_welding_fee":
@@ -303,7 +305,7 @@ def execute_assembly(
             for item in discovery.l0_scopes
             if item.vehicle_model == scope.vehicle_model
         ):
-            skip_reason = "年度焊接拆解/焊接费补算失败，跳过总成核价"
+            skip_reason = "年度采购对象/焊接拆解/焊接费补算失败，跳过总成核价"
         if skip_reason:
             step = finish_step(
                 orch.run_repo,

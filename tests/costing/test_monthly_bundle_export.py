@@ -1,4 +1,4 @@
-"""月度核对合册：成品块只出树根。"""
+"""月度核对导出：成品块只出树根。"""
 
 from unittest.mock import MagicMock, patch
 

@@ -4,15 +4,22 @@ from __future__ import annotations
 
 from collections import defaultdict
 from decimal import Decimal
-from typing import Any
 
 from app.repositories.llm.policy_analysis_repository import PolicyLadderRow
+from app.schemas.llm.analysis_payload import (
+    DomainAnomaliesPayload,
+    DriverItem,
+    DriversPayload,
+    MomAnomalyItem,
+    SummaryPayload,
+    TrendPayload,
+)
 from app.schemas.llm.analysis_query import ComparisonBasis
 from app.services.llm._money import month_key
 from app.services.llm.analysis.shared.cost_trend import trend_from_series
 
 
-def build_policy_summary(rows: list[PolicyLadderRow]) -> dict[str, Any]:
+def build_policy_summary(rows: list[PolicyLadderRow]) -> SummaryPayload:
     if not rows:
         return {
             "subject": "steel_price_policy",
@@ -61,7 +68,7 @@ def build_policy_summary(rows: list[PolicyLadderRow]) -> dict[str, Any]:
     }
 
 
-def build_policy_drivers(rows: list[PolicyLadderRow], *, top_n: int = 15) -> dict[str, Any]:
+def build_policy_drivers(rows: list[PolicyLadderRow], *, top_n: int = 15) -> DriversPayload:
     """按钢厂汇总非零加减价条数，辅助看「哪家政策多」。"""
     by_mill: dict[str, list[PolicyLadderRow]] = defaultdict(list)
     for row in rows:
@@ -69,7 +76,7 @@ def build_policy_drivers(rows: list[PolicyLadderRow], *, top_n: int = 15) -> dic
             continue
         by_mill[row.steel_mill].append(row)
 
-    items: list[dict[str, Any]] = []
+    items: list[DriverItem] = []
     for mill, mill_rows in by_mill.items():
         adjustments = [row.price_adjustment for row in mill_rows]
         items.append(
@@ -82,7 +89,9 @@ def build_policy_drivers(rows: list[PolicyLadderRow], *, top_n: int = 15) -> dic
             }
         )
 
-    ranked = sorted(items, key=lambda item: item["adjustment_row_count"], reverse=True)[:top_n]
+    ranked = sorted(items, key=lambda item: int(str(item["adjustment_row_count"])), reverse=True)[
+        :top_n
+    ]
     for index, item in enumerate(ranked, start=1):
         item["rank"] = index
     return {"kind": "drivers", "items": ranked, "top_n": top_n}
@@ -92,7 +101,7 @@ def build_policy_trend(
     rows: list[PolicyLadderRow],
     *,
     basis: ComparisonBasis,
-) -> dict[str, Any]:
+) -> TrendPayload:
     """各月加减价阶梯「非零条数」序列（看政策量是否突变）。"""
     by_month: dict[str, int] = defaultdict(int)
     for row in rows:
@@ -134,7 +143,7 @@ def build_policy_mom_anomalies(
     *,
     top_n: int = 15,
     min_abs_change: int = 30,
-) -> dict[str, Any]:
+) -> DomainAnomaliesPayload:
     """同阶梯在各月间的加减价跳变（疑似传错政策/月份）。"""
     by_key: dict[str, dict[str, PolicyLadderRow]] = defaultdict(dict)
     for row in rows:
@@ -142,7 +151,7 @@ def build_policy_mom_anomalies(
         key = _policy_ladder_key(row)
         by_key[key][month] = row
 
-    spikes: list[dict[str, Any]] = []
+    spikes: list[MomAnomalyItem] = []
     for _key, month_map in by_key.items():
         ordered_months = sorted(month_map.keys())
         ordered_rows = [month_map[month] for month in ordered_months]
@@ -177,7 +186,10 @@ def build_policy_mom_anomalies(
 
     ranked = sorted(
         spikes,
-        key=lambda item: (abs(int(item["change"])), abs(Decimal(item["change_rate"] or "0"))),
+        key=lambda item: (
+            abs(int(item.get("change") or 0)),
+            abs(Decimal(str(item.get("change_rate") or "0"))),
+        ),
         reverse=True,
     )[:top_n]
     for index, item in enumerate(ranked, start=1):

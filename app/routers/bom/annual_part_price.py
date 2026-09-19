@@ -92,7 +92,7 @@ def export_excel(
     db: Session = Depends(get_db),
     current_user: UserVO = Depends(require_perm(Perm.BOM_ANNUAL_PART_PRICE_EXPORT)),
 ) -> StreamingResponse:
-    """按当前筛选条件导出年度零件价 Excel。"""
+    """按当前筛选条件导出年度零件价 Excel（含基地/年份/审核列；导入列可再导入）。"""
     content, filename = _export_service.export(
         db,
         location=location.strip() if location else None,
@@ -229,7 +229,7 @@ def create(
     return ApiResponse.created(data=record, message="创建成功")
 
 
-@router.get("/{id}", response_model=ApiResponse[BomAnnualPartPriceResponse])
+@router.get("/{id:int}", response_model=ApiResponse[BomAnnualPartPriceResponse])
 def get_by_id(
     id: int,
     db: Session = Depends(get_db),
@@ -240,7 +240,7 @@ def get_by_id(
     return ApiResponse.ok(data=record, message="获取成功")
 
 
-@router.put("/{id}", response_model=ApiResponse[BomAnnualPartPriceResponse])
+@router.put("/{id:int}", response_model=ApiResponse[BomAnnualPartPriceResponse])
 def update(
     id: int,
     body: BomAnnualPartPriceUpdate,
@@ -252,7 +252,7 @@ def update(
     return ApiResponse.updated(data=record, message="更新成功")
 
 
-@router.delete("/{id}", response_model=ApiResponse[None])
+@router.delete("/{id:int}", response_model=ApiResponse[None])
 def delete(
     id: int,
     db: Session = Depends(get_db),

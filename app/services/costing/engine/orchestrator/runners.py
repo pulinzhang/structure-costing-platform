@@ -7,10 +7,19 @@ from typing import TYPE_CHECKING
 
 from sqlalchemy.orm import Session
 
-from app.common.engineering_change_gates import EC_GATE_ENGINE_BREAKDOWN
+from app.common.engineering_change_gates import (
+    EC_GATE_ENGINE_BREAKDOWN,
+    EC_GATE_ENGINE_PROCUREMENT,
+    EC_GATE_FULL_GENERATE,
+)
 from app.common.types.repository_types import StepMetricsJson
+from app.exceptions.base import BusinessException
 from app.schemas.dto.assembly_cost_dto import AssemblyCostCalcDTO
+from app.schemas.dto.bom_procurement_object_dto import BomProcurementObjectGenerateDTO
 from app.schemas.dto.bom_welding_fee_dto import BomWeldingFeeCalcDTO
+from app.schemas.dto.bom_welding_process_breakdown_dto import (
+    BomWeldingProcessBreakdownGenerateDTO,
+)
 from app.schemas.dto.stamping_part_cost_dto import StampingPartCostCalcDTO
 from app.schemas.dto.stamping_process_fee_dto import StampingProcessFeeCalcDTO
 from app.schemas.vo.costing_engine_vo import CostingEngineAnnualItemVO
@@ -63,9 +72,49 @@ def run_annual_item(
                 {"status": process_fee_result.status},
             )
 
+        if item.code == "annual_procurement_object":
+            # 缺采购对象 → 同进程调现网 generate（与生成页同一把钥匙）。
+            # 门禁在 generate 内；禁止写死一律失败。
+            vehicle_model, bom_version = item.scope_key.split("|", 1)
+            scope = find_l0(discovery, vehicle_model, bom_version)
+            procurement_dto = BomProcurementObjectGenerateDTO(
+                location=scope.location if scope else discovery.location,
+                vehicle_model=vehicle_model,
+                bom_version=bom_version,
+            )
+            procurement_result = orch.procurement_svc.generate(
+                db, procurement_dto, current_user=current_user
+            )
+            return (
+                True,
+                f"采购对象补算完成 objects={procurement_result.object_count}",
+                {"object_count": procurement_result.object_count},
+            )
+
         if item.code == "annual_welding_breakdown":
-            # 门禁 3：缺新树拆解禁止整包 generate；须工程变更重传。
-            return False, EC_GATE_ENGINE_BREAKDOWN, None
+            # 缺拆解 → 同进程调现网 generate（与拆解页同一把钥匙）。
+            # 门禁在 generate 内：snapshot_blocks_full_generate；此处禁止写死一律失败。
+            vehicle_model, bom_version = item.scope_key.split("|", 1)
+            scope = find_l0(discovery, vehicle_model, bom_version)
+            breakdown_dto = BomWeldingProcessBreakdownGenerateDTO(
+                location=scope.location if scope else discovery.location,
+                vehicle_model=vehicle_model,
+                bom_version=bom_version,
+            )
+            breakdown_result = orch.breakdown_svc.generate(
+                db, breakdown_dto, current_user=current_user
+            )
+            return (
+                True,
+                (
+                    f"焊接工艺拆解补算完成 nodes={breakdown_result.node_count} "
+                    f"lines={breakdown_result.line_count}"
+                ),
+                {
+                    "node_count": breakdown_result.node_count,
+                    "line_count": breakdown_result.line_count,
+                },
+            )
 
         if item.code == "annual_welding_fee":
             vehicle_model, bom_version = item.scope_key.split("|", 1)
@@ -83,6 +132,14 @@ def run_annual_item(
             )
 
         return False, f"未知年度补算 code={item.code}", None
+    except BusinessException as exc:
+        db.rollback()
+        # 生成页文案 FULL_GENERATE → 引擎步骤文案（门禁 2/3）。
+        if exc.message == EC_GATE_FULL_GENERATE:
+            if item.code == "annual_procurement_object":
+                return False, EC_GATE_ENGINE_PROCUREMENT, None
+            return False, EC_GATE_ENGINE_BREAKDOWN, None
+        return False, exc.message, None
     except Exception as exc:
         logger.exception("年度补算失败: %s %s", item.code, item.scope_key)
         db.rollback()

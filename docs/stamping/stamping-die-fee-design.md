@@ -1,6 +1,7 @@
 # 冲压年度模具费
 
-> **状态：已落地。**
+> **状态：已落地。**  
+> **上游布点下一跳：** `source_die_part_id` → `stamping_die_parts.id`（`RESTRICT` / `RESTRICT`），对齐加工费 `source_part_id`。有模具费则不能删布点，文案「仍被引用，不能删除」。`source_die_process_id` 仍是软指针（再导会删插工序，不加 FK）。
 
 ---
 
@@ -96,7 +97,7 @@ final_die_fee        = die_fee + (adjustment_amount or 0)   # 最终模具费；
 | 字段 | 说明 |
 |---|---|
 | 作用域 | `year`、`location`、`vehicle_model`、`part_number` |
-| `source_die_part_id` | 布点主表 id，可空 |
+| `source_die_part_id` | 布点主表 id，可空；**FK** → `stamping_die_parts.id`（`ON DELETE RESTRICT` / `ON UPDATE RESTRICT`） |
 | 快照 | `stamping_supplier`、`version`（来自布点，布点从工艺回填）、`seq_no`、`part_name`、`material`、`thickness`、`part_weight`、`die_type`、`die_method`、`production_mode`、`part_grade`、`excel_filename` |
 | `price_kind` | `progressive` / `steel_plate` |
 | `unit_price` | 万元/吨 |
@@ -113,7 +114,7 @@ final_die_fee        = die_fee + (adjustment_amount or 0)   # 最终模具费；
 
 | 字段 | 说明 |
 |---|---|
-| `source_die_process_id` | 布点子表 id |
+| `source_die_process_id` | 布点子表 id（**软指针**，不加 FK；布点再导会删插工序） |
 | `process_seq` / `process_order` / `process_code` | 工序 |
 | `estimated_weight_t` / `alloc_ratio` / `die_sets` | 快照 |
 | `unit_price` / `allocation_qty` / `price_kind` | 与主表同批 |
@@ -231,6 +232,7 @@ app/routers/stamping/die_fee.py
 
 | 日期 | 说明 |
 |---|---|
+| 2026-09-19 | `source_die_part_id` 挂布点 `RESTRICT`（对齐加工费）；工序 id 仍软指针。存量库启动重建结果表补外键 |
 | 2026-09-16 | 取件按布点有效期与计算年做年交集；共模只扫该年有效期内布点。身份问账期 `require_overlaps_year`。计算页 `for_calc=1` 与年交集求交，结果一览默认路径不动。 |
 | 2026-09-05 | 家模副产品：模具费跳过已落地，去掉「设计未落地」 |
 | 2026-08-30 | 年度模具费：布点各序 × 模具单价；只算模具 |

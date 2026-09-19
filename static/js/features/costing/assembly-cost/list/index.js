@@ -707,14 +707,14 @@ async function exportExcel() {
 
 async function exportBundleExcel() {
     if (!listState.canExport) return showToast('无导出权限', 'warning');
-    const scope = requireScope('导出核对合册');
+    const scope = requireScope('导出月度核对');
     if (!scope) return;
     const btn = document.getElementById('lacExportBundleBtn');
     const originalHtml = btn ? btn.innerHTML : '';
     if (btn) {
         btn.disabled = true;
         btn.innerHTML =
-            `<div class="w-3 h-3 border border-[#ef5350] border-t-transparent rounded-full animate-spin"></div>合册导出中..`;
+            `<div class="w-3 h-3 border border-[#ef5350] border-t-transparent rounded-full animate-spin"></div>月度核对导出中..`;
     }
     try {
         const { blob, filename } = await HttpClient.download(
@@ -727,7 +727,7 @@ async function exportBundleExcel() {
                     vehicle_model: scope.vehicle_model,
                     bom_version: scope.bom_version,
                 },
-                defaultFilename: '核对合册.xlsx',
+                defaultFilename: '月度核对导出.xlsx',
                 timeout: 300000,
             },
         );
@@ -739,10 +739,10 @@ async function exportBundleExcel() {
         anchor.click();
         document.body.removeChild(anchor);
         URL.revokeObjectURL(url);
-        showToast(`核对合册已导出: ${filename}`, 'success');
+        showToast(`月度核对已导出: ${filename}`, 'success');
     } catch (error) {
         if (!error.status) {
-            showToast(error.message || '核对合册导出失败', 'error');
+            showToast(error.message || '月度核对导出失败', 'error');
         }
     } finally {
         if (btn) {

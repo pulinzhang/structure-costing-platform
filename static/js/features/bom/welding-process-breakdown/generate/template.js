@@ -97,7 +97,9 @@ export function weldingProcessBreakdownGenerateTemplate() {
                         <table id="calcHistoryTable" class="w-full text-left border-collapse">
                             <thead>
                                 <tr class="bg-[#0a0a0a] border-b border-[#2c2c2c] text-[9px] text-[#555] uppercase tracking-[0.08em]">
-                                    <th class="py-2 px-2 font-normal whitespace-nowrap">拆解时间</th>
+                                    <th class="py-2 px-2 font-normal whitespace-nowrap">开始</th>
+                                    <th class="py-2 px-2 font-normal whitespace-nowrap">结束</th>
+                                    <th class="py-2 px-2 font-normal text-right whitespace-nowrap">耗时</th>
                                     <th class="py-2 px-2 font-normal whitespace-nowrap">创建人</th>
                                     <th class="py-2 px-2 font-normal whitespace-nowrap">基地</th>
                                     <th class="py-2 px-2 font-normal whitespace-nowrap">项目</th>
@@ -110,7 +112,7 @@ export function weldingProcessBreakdownGenerateTemplate() {
                             </thead>
                             <tbody id="calcHistoryBody" class="text-[10px] divide-y divide-[#222222]">
                                 <tr>
-                                    <td colspan="9" class="py-8 text-center text-[#555]">加载中..</td>
+                                    <td colspan="11" class="py-8 text-center text-[#555]">加载中..</td>
                                 </tr>
                             </tbody>
                         </table>

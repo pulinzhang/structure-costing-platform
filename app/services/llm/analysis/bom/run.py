@@ -2,8 +2,6 @@
 
 from __future__ import annotations
 
-from typing import Any
-
 from sqlalchemy.orm import Session
 
 from app.repositories.llm.annual_part_price_analysis_repository import (
@@ -14,6 +12,10 @@ from app.repositories.llm.bom_material_analysis_repository import (
 )
 from app.repositories.llm.packaging_transport_fee_analysis_repository import (
     PackagingTransportFeeAnalysisRepository,
+)
+from app.schemas.llm.analysis_payload import (
+    AnalysisResultLeafPayload,
+    RiskPayload,
 )
 from app.schemas.llm.analysis_query import AnalysisQuery
 from app.services.llm.analysis.bom.annual_part_price import (
@@ -77,7 +79,7 @@ class BomAnalysis:
             has_data=bool(rows),
             data_message=(f"年度零件价行={len(rows)}" if rows else "当前范围无年度零件价数据"),
         )
-        parts_result: dict[str, Any] = {}
+        parts_result: dict[str, AnalysisResultLeafPayload] = {}
 
         if "summary" in query.analyses:
             out.summary = build_annual_part_price_summary(rows)
@@ -103,7 +105,7 @@ class BomAnalysis:
             standard = build_standard_part_price_anomalies(rows)
             parts_result["annual_price_anomalies"] = conversion
             parts_result["standard_part_anomalies"] = standard
-            risk_payload: dict[str, Any] = {"kind": "risk", "risks": []}
+            risk_payload: RiskPayload = {"kind": "risk", "risks": []}
             conversion_risk = annual_price_conversion_risk_entry(conversion)
             if conversion_risk is not None:
                 risk_payload["risks"].append(conversion_risk)
@@ -172,7 +174,7 @@ class BomAnalysis:
             has_data=bool(rows),
             data_message=(f"包装运输费行={len(rows)}" if rows else "当前范围无包装运输费数据"),
         )
-        parts_result: dict[str, Any] = {}
+        parts_result: dict[str, AnalysisResultLeafPayload] = {}
 
         if "summary" in query.analyses:
             out.summary = build_packaging_transport_fee_summary(rows)
@@ -234,7 +236,7 @@ class BomAnalysis:
             has_data=bool(rows),
             data_message=(f"材料清单节点={len(rows)}" if rows else "当前范围无材料清单数据"),
         )
-        parts_result: dict[str, Any] = {}
+        parts_result: dict[str, AnalysisResultLeafPayload] = {}
         if "summary" in query.analyses:
             out.summary = build_bom_material_summary(rows)
         if "drivers" in query.analyses:

@@ -105,7 +105,7 @@ class BomProcurementObjectService:
         old_l0_id: int | None,
         current_user: UserVO,
     ) -> list[int]:
-        """合册种树后插本树采购对象行（不 commit）。"""
+        """工程变更种树后插本树采购对象行（不 commit）。"""
         return self._insert_service.insert_for_new_tree(
             db,
             snapshot_id=snapshot_id,

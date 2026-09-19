@@ -116,7 +116,7 @@ class AssemblyCostExportService:
         indirects_sheet_title: str = FINANCE_INDIRECTS_SHEET,
         welding_sheet_title: str | None = None,
     ) -> tuple[str, int]:
-        """合册与单文件导出共用：往已有 Workbook 写 Sheet。"""
+        """月度核对导出与单文件导出共用：往已有 Workbook 写 Sheet。"""
         return self.builder.write(
             wb,
             db,

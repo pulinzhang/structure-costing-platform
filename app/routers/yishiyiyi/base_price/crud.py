@@ -215,7 +215,7 @@ def get_base_price_import_task_progress(
 
 
 @router.get(
-    "/{record_id}",
+    "/{record_id:int}",
     response_model=ApiResponse[SteelBasePriceResponse],
 )
 def get_base_price(
@@ -246,7 +246,7 @@ def create_base_price(
 
 
 @router.put(
-    "/{record_id}",
+    "/{record_id:int}",
     response_model=ApiResponse[SteelBasePriceResponse],
 )
 def update_base_price(
@@ -261,7 +261,7 @@ def update_base_price(
 
 
 @router.delete(
-    "/{record_id}",
+    "/{record_id:int}",
     response_model=ApiResponse[None],
 )
 def delete_base_price(

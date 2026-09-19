@@ -5,9 +5,10 @@ from __future__ import annotations
 from datetime import datetime
 from typing import Any
 
-from pydantic import BaseModel, ConfigDict, Field, field_serializer
+from pydantic import BaseModel, Field, field_serializer
 
 from app.common.timezone import datetime_to_iso
+from app.schemas.vo.timing import DurationSecondsMixin
 
 
 class CostingEngineNavigateVO(BaseModel):
@@ -69,9 +70,7 @@ class CostingEngineReadyVO(BaseModel):
     can_start: bool
 
 
-class CostingEngineRunStepVO(BaseModel):
-    model_config = ConfigDict(from_attributes=True)
-
+class CostingEngineRunStepVO(DurationSecondsMixin):
     id: int
     stage: str
     scope_key: str
@@ -88,9 +87,7 @@ class CostingEngineRunStepVO(BaseModel):
         return datetime_to_iso(value)
 
 
-class CostingEngineRunVO(BaseModel):
-    model_config = ConfigDict(from_attributes=True)
-
+class CostingEngineRunVO(DurationSecondsMixin):
     id: int
     location: str
     year: int
@@ -111,10 +108,8 @@ class CostingEngineRunVO(BaseModel):
         return datetime_to_iso(value)
 
 
-class CostingEngineRunListItemVO(BaseModel):
+class CostingEngineRunListItemVO(DurationSecondsMixin):
     """历史列表精简项。"""
-
-    model_config = ConfigDict(from_attributes=True)
 
     id: int
     location: str

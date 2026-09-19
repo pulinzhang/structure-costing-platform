@@ -3,14 +3,14 @@
 from datetime import datetime
 from decimal import Decimal
 
-from pydantic import BaseModel, field_serializer
+from pydantic import BaseModel, ConfigDict, field_serializer
 
 from app.common.money import Q2, Q4, format_money, optional_format_money
 from app.common.timezone import datetime_to_iso
 
 
 class StampingDieProcessVO(BaseModel):
-    model_config = {"from_attributes": True}
+    model_config = ConfigDict(from_attributes=True)
 
     id: int
     die_part_id: int
@@ -41,7 +41,7 @@ class StampingDieProcessVO(BaseModel):
 
 
 class StampingDiePartListVO(BaseModel):
-    model_config = {"from_attributes": True}
+    model_config = ConfigDict(from_attributes=True)
 
     id: int
     location: str
@@ -67,7 +67,7 @@ class StampingDiePartListVO(BaseModel):
 
 
 class StampingDiePartDetailVO(BaseModel):
-    model_config = {"from_attributes": True}
+    model_config = ConfigDict(from_attributes=True)
 
     id: int
     location: str

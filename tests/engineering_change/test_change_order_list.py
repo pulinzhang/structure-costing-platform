@@ -1,19 +1,26 @@
-"""工程变更单列表实体：变更单一行一条；效果链接挂整本 upload_log_id。"""
+"""工程变更单列表实体：变更单一行一条；效果链接挂整本 upload_log_id。
+
+删 BOM 被变更单 FK 拦住 → tests/bom/test_bom_downstream_gate.py
+"""
 
 from __future__ import annotations
 
 from collections.abc import Generator
 
 import pytest
-from sqlalchemy import create_engine, event
+from sqlalchemy import create_engine, event, text
 from sqlalchemy.orm import Session, sessionmaker
 from sqlalchemy.pool import StaticPool
 
+from app.bootstrap.engineering_change_schema import ensure_engineering_change_schema
 from app.database import Base
+from app.models.bom.node import BomNode, BomSnapshot
 from app.models.engineering_change.change_order import EngineeringChangeOrder
 from app.models.engineering_change.effect_link import EngineeringChangeEffectLink
 from app.models.engineering_change.upload_log import EngineeringChangeUploadLog
 from app.models.file_trace.upload_file import UploadFile
+from app.models.masterdata.location import Location
+from app.models.masterdata.vehicle_model import VehicleModel
 from app.parsers.engineering_change.change_order_parser import CHANGE_ORDER_HEADERS
 from app.repositories.engineering_change.change_order_repository import (
     EngineeringChangeOrderInsert,
@@ -43,6 +50,10 @@ CHANGE_ORDER_FIELD_NAMES = (
     "part_name",
 )
 
+LOCATION = "青岛"
+VEHICLE_MODEL = "T28"
+BOM_VERSION = "D/00"
+
 
 @pytest.fixture
 def memory_db() -> Generator[Session, None, None]:
@@ -61,7 +72,11 @@ def memory_db() -> Generator[Session, None, None]:
     Base.metadata.create_all(
         bind=engine,
         tables=[
+            Location.__table__,
+            VehicleModel.__table__,
             UploadFile.__table__,
+            BomSnapshot.__table__,
+            BomNode.__table__,
             EngineeringChangeUploadLog.__table__,
             EngineeringChangeOrder.__table__,
             EngineeringChangeEffectLink.__table__,
@@ -69,6 +84,26 @@ def memory_db() -> Generator[Session, None, None]:
     )
     session_factory = sessionmaker(bind=engine)
     session = session_factory()
+    session.add(
+        Location(
+            location=LOCATION,
+            is_enabled=True,
+            sort_order=1,
+            created_by="system",
+            updated_by="system",
+        )
+    )
+    session.add(
+        VehicleModel(
+            location=LOCATION,
+            vehicle_model=VEHICLE_MODEL,
+            effective_year=2020,
+            effective_month=1,
+            created_by="system",
+            updated_by="system",
+        )
+    )
+    session.commit()
     try:
         yield session
     finally:
@@ -80,6 +115,7 @@ def test_change_order_columns_match_sample_headers() -> None:
     names = {column.key for column in EngineeringChangeOrder.__table__.columns}
     assert "excel_row" in names
     assert "upload_log_id" in names
+    assert "before_assembly_node_id" in names
     for field_name in CHANGE_ORDER_FIELD_NAMES:
         assert field_name in names
     assert len(CHANGE_ORDER_HEADERS) == 10
@@ -94,6 +130,46 @@ def test_effect_link_stores_book_and_entity_ids() -> None:
 
 
 def _seed_book(db: Session) -> int:
+    snapshot = BomSnapshot(
+        location=LOCATION,
+        vehicle_model=VEHICLE_MODEL,
+        bom_version=BOM_VERSION,
+        stage="initial",
+        status="active",
+        source_filename="fixture-bom.xlsx",
+        created_by="system",
+        updated_by="system",
+    )
+    db.add(snapshot)
+    db.flush()
+    before_a = BomNode(
+        snapshot_id=snapshot.id,
+        level=0,
+        part_number="501006875AA",
+        node_role="supply",
+        location=LOCATION,
+        vehicle_model=VEHICLE_MODEL,
+        bom_version=BOM_VERSION,
+        effective_year=2020,
+        effective_month=1,
+        created_by="system",
+        updated_by="system",
+    )
+    before_b = BomNode(
+        snapshot_id=snapshot.id,
+        level=0,
+        part_number="501009122AA",
+        node_role="supply",
+        location=LOCATION,
+        vehicle_model=VEHICLE_MODEL,
+        bom_version=BOM_VERSION,
+        effective_year=2020,
+        effective_month=1,
+        created_by="system",
+        updated_by="system",
+    )
+    db.add_all([before_a, before_b])
+    db.flush()
     db.add(
         UploadFile(
             file_category="engineering_change",
@@ -112,8 +188,8 @@ def _seed_book(db: Session) -> int:
         db,
         EngineeringChangeUploadLogInsert(
             upload_file_id=upload_file_id,
-            location="青岛",
-            vehicle_model="T28",
+            location=LOCATION,
+            vehicle_model=VEHICLE_MODEL,
             customer_name="奇瑞",
             effective_year=2025,
             effective_month=7,
@@ -129,6 +205,7 @@ def _seed_book(db: Session) -> int:
         EngineeringChangeOrderInsert(
             upload_log_id=log_row.id,
             upload_file_id=upload_file_id,
+            before_assembly_node_id=before_a.id,
             excel_row=2,
             project_code="T28",
             effective_period_text="2025年07月",
@@ -150,6 +227,7 @@ def _seed_book(db: Session) -> int:
         EngineeringChangeOrderInsert(
             upload_log_id=log_row.id,
             upload_file_id=upload_file_id,
+            before_assembly_node_id=before_b.id,
             excel_row=3,
             project_code="T28",
             effective_period_text="2025年07月",
@@ -173,7 +251,7 @@ def _seed_book(db: Session) -> int:
                 upload_log_id=log_row.id,
                 change_order_id=first.id,
                 effect_kind="assembly_l0",
-                before_id=10,
+                before_id=before_a.id,
                 after_id=None,
                 sort_no=1,
             ),
@@ -181,8 +259,8 @@ def _seed_book(db: Session) -> int:
                 upload_log_id=log_row.id,
                 change_order_id=second.id,
                 effect_kind="assembly_l0",
-                before_id=11,
-                after_id=12,
+                before_id=before_b.id,
+                after_id=before_b.id + 100,
                 sort_no=2,
             ),
         ],
@@ -235,3 +313,57 @@ def test_effect_links_belong_to_whole_book(memory_db: Session) -> None:
     assert len(links) == 2
     assert {link.upload_log_id for link in links} == {log_id}
     assert [link.sort_no for link in links] == [2, 1]
+
+
+def test_bootstrap_rebuilds_when_before_assembly_node_id_missing() -> None:
+    """缺列则 DROP 三表（清孤儿），不调业务 Service。"""
+    engine = create_engine(
+        "sqlite://",
+        connect_args={"check_same_thread": False},
+        poolclass=StaticPool,
+    )
+
+    @event.listens_for(engine, "connect")
+    def _enable_fk(dbapi_connection: object, _connection_record: object) -> None:
+        cursor = dbapi_connection.cursor()  # type: ignore[attr-defined]
+        cursor.execute("PRAGMA foreign_keys=ON")
+        cursor.close()
+
+    with engine.begin() as connection:
+        connection.execute(
+            text(
+                "CREATE TABLE engineering_change_upload_logs ("
+                "id INTEGER PRIMARY KEY, upload_file_id INTEGER NOT NULL)"
+            )
+        )
+        connection.execute(
+            text(
+                "CREATE TABLE engineering_change_orders ("
+                "id INTEGER PRIMARY KEY, upload_log_id INTEGER NOT NULL, "
+                "before_assembly_part_number VARCHAR(50) NOT NULL)"
+            )
+        )
+        connection.execute(
+            text("INSERT INTO engineering_change_upload_logs (id, upload_file_id) VALUES (1, 1)")
+        )
+        connection.execute(
+            text(
+                "INSERT INTO engineering_change_orders "
+                "(id, upload_log_id, before_assembly_part_number) VALUES (1, 1, 'ORPHAN')"
+            )
+        )
+
+    ensure_engineering_change_schema(engine)
+
+    with engine.connect() as connection:
+        cols = {
+            str(row[1])
+            for row in connection.execute(
+                text("PRAGMA table_info(engineering_change_orders)")
+            ).all()
+        }
+        assert "before_assembly_node_id" in cols
+        assert (
+            connection.execute(text("SELECT COUNT(*) FROM engineering_change_orders")).scalar() == 0
+        )
+    engine.dispose()

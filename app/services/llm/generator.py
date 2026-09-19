@@ -229,12 +229,14 @@ class LlmReportGenerator:
                 lines.append(f"- 供货总成件数：{summary.get('l0_count')}")
             if summary.get("ok_count") is not None:
                 lines.append(f"- 已全部算清：{summary.get('ok_count')}")
-        risk = None
+        risk: object | None = None
         if snapshot.result.get("kind") == "risk":
             risk = snapshot.result
         elif snapshot.result.get("kind") == "composite":
-            risk = (snapshot.result.get("parts") or {}).get("risk")
-        if risk and int(risk.get("partial_count") or 0) > 0:
+            parts = snapshot.result.get("parts")
+            if isinstance(parts, dict):
+                risk = parts.get("risk")
+        if isinstance(risk, dict) and int(risk.get("partial_count") or 0) > 0:
             lines.append(f"- 核算不全件数：{risk.get('partial_count')}")
         return "\n".join(lines)
 
@@ -267,7 +269,8 @@ class LlmReportGenerator:
         snapshot: AnalysisSnapshot,
         error_hint: str,
     ) -> str:
-        chunks = snapshot.result.get("chunks") or []
+        chunks_raw = snapshot.result.get("chunks") or []
+        chunks = chunks_raw if isinstance(chunks_raw, list) else []
         lines = [
             "# 使用帮助（规则模板）",
             "",

@@ -5,10 +5,14 @@ from __future__ import annotations
 from collections import defaultdict
 from dataclasses import dataclass
 from decimal import Decimal
-from typing import Any
 
 from sqlalchemy.orm import Session
 
+from app.schemas.llm.analysis_payload import (
+    DriverItem,
+    DriversPayload,
+    SummaryPayload,
+)
 from app.services.llm._money import money_str, month_key
 from app.services.yishiyiyi.winning_thickness import WinningThicknessExportService
 
@@ -75,7 +79,7 @@ def load_winning_thickness_rows(
     return rows
 
 
-def build_winning_thickness_summary(rows: list[WinningThicknessAnalysisRow]) -> dict[str, Any]:
+def build_winning_thickness_summary(rows: list[WinningThicknessAnalysisRow]) -> SummaryPayload:
     if not rows:
         return {
             "subject": "winning_thickness",
@@ -111,13 +115,13 @@ def build_winning_thickness_drivers(
     rows: list[WinningThicknessAnalysisRow],
     *,
     top_n: int = 15,
-) -> dict[str, Any]:
+) -> DriversPayload:
     """按钢厂汇总厚度阶梯行数。"""
     by_mill: dict[str, list[WinningThicknessAnalysisRow]] = defaultdict(list)
     for row in rows:
         by_mill[row.steel_mill].append(row)
 
-    items: list[dict[str, Any]] = []
+    items: list[DriverItem] = []
     for mill, mill_rows in by_mill.items():
         finals = [row.final_price for row in mill_rows]
         items.append(
@@ -130,7 +134,7 @@ def build_winning_thickness_drivers(
             }
         )
 
-    ranked = sorted(items, key=lambda item: item["row_count"], reverse=True)[:top_n]
+    ranked = sorted(items, key=lambda item: int(str(item["row_count"])), reverse=True)[:top_n]
     for index, item in enumerate(ranked, start=1):
         item["rank"] = index
     return {"kind": "drivers", "items": ranked, "top_n": top_n}

@@ -4,9 +4,13 @@ from __future__ import annotations
 
 from collections import defaultdict
 from decimal import ROUND_HALF_UP, Decimal
-from typing import Any
 
 from app.repositories.llm.scrap_price_analysis_repository import ScrapPricePeriodRow
+from app.schemas.llm.analysis_payload import (
+    DriverItem,
+    DriversPayload,
+    SummaryPayload,
+)
 from app.services.llm._money import month_key
 
 
@@ -15,7 +19,7 @@ def _scrap_price_str(value: Decimal) -> str:
     return f"{quantized:.2f}"
 
 
-def build_scrap_price_summary(rows: list[ScrapPricePeriodRow]) -> dict[str, Any]:
+def build_scrap_price_summary(rows: list[ScrapPricePeriodRow]) -> SummaryPayload:
     if not rows:
         return {
             "subject": "scrap_price",
@@ -55,13 +59,13 @@ def build_scrap_price_drivers(
     rows: list[ScrapPricePeriodRow],
     *,
     top_n: int = 6,
-) -> dict[str, Any]:
+) -> DriversPayload:
     """按基地汇总钢材净价（top_n 为排名上限，不是矩阵行数）。"""
     by_location: dict[str, list[ScrapPricePeriodRow]] = defaultdict(list)
     for row in rows:
         by_location[row.location].append(row)
 
-    items: list[dict[str, Any]] = []
+    items: list[DriverItem] = []
     for location, location_rows in by_location.items():
         latest = sorted(location_rows, key=lambda row: (row.year, row.month))[-1]
         items.append(
@@ -75,7 +79,7 @@ def build_scrap_price_drivers(
             }
         )
 
-    ranked = sorted(items, key=lambda item: item["location"])[:top_n]
+    ranked = sorted(items, key=lambda item: str(item["location"]))[:top_n]
     for index, item in enumerate(ranked, start=1):
         item["rank"] = index
     return {"kind": "drivers", "items": ranked, "top_n": top_n}

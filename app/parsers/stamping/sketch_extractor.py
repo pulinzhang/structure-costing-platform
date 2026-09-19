@@ -34,7 +34,7 @@ def extract_stamping_sketches(
     *,
     sheet_name: str | None = None,
 ) -> list[SketchAnchor]:
-    """抽取简图列（及左邻列）上的嵌入图，统一成 PNG。合册可限定工作表，避免材料清单的图抢行。"""
+    """抽取简图列（及左邻列）上的嵌入图，统一成 PNG。工程变更可限定工作表，避免材料清单的图抢行。"""
     if not file_path.lower().endswith(".xlsx") or not allowed_cols_0idx:
         return []
     try:

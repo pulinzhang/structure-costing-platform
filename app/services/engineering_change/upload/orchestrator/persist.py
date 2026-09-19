@@ -61,6 +61,7 @@ def persist_engineering_change_result(
                     EngineeringChangeOrderInsert(
                         upload_log_id=prepared.log_id,
                         upload_file_id=prepared.upload_file_id,
+                        before_assembly_node_id=item.before_root_id,
                         excel_row=change_order.excel_row,
                         project_code=change_order.project_code,
                         effective_period_text=change_order.effective_period_text,

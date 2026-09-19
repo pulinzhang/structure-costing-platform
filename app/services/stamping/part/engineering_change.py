@@ -1,4 +1,4 @@
-"""冲压零件：工程变更合册插行 / 回滚（只 flush，由调用方 commit）。"""
+"""冲压零件：工程变更插行 / 回滚（只 flush，由调用方 commit）。"""
 
 from __future__ import annotations
 
@@ -25,7 +25,7 @@ from app.schemas.vo.user_vo import UserVO
 
 @dataclass(slots=True)
 class EngineeringChangeProcessPartSpec:
-    """合册待插的一件工艺 + 工序。"""
+    """工程变更待插的一件工艺 + 工序。"""
 
     part_data: PartData
     processes: list[ProcessData]
@@ -56,7 +56,7 @@ def list_parts_as_of(
     as_of_year: int,
     as_of_month: int,
 ) -> list[EngineeringChangePartAsOfRow]:
-    """当月命中的零件号清单（合册找旧号 / 避重）。"""
+    """当月命中的零件号清单（工程变更找旧号 / 避重）。"""
     rows: list[EngineeringChangePartAsOfRow] = []
     for row in part_repo.list_by_location_and_vehicle(
         db, location=location, vehicle_model=vehicle_model
@@ -93,7 +93,7 @@ def clone_revise_part_payload(
     created_by: str | None,
     updated_by: str | None,
 ) -> tuple[PartData, list[ProcessData]]:
-    """改图换号：除零件号、版本、生失效、简图外整行抄旧号；工序整表相同。excel_row 抄旧零件，不用合册。"""
+    """改图换号：除零件号、版本、生失效、简图外整行抄旧号；工序整表相同。excel_row 抄旧零件，不用工程变更表。"""
     die_sets_default = 1
     part_data = PartData(
         location=str(old_part.location),
@@ -193,7 +193,7 @@ def insert_for_engineering_change(
     specs: list[EngineeringChangeProcessPartSpec],
     current_user: UserVO,
 ) -> list[EngineeringChangeProcessPartResult]:
-    """合册按号增行；可选失效前驱。只 flush。"""
+    """工程变更按号增行；可选失效前驱。只 flush。"""
     audit = audit_create(current_user)
     results: list[EngineeringChangeProcessPartResult] = []
     for spec in specs:

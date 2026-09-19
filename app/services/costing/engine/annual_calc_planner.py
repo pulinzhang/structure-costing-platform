@@ -5,6 +5,9 @@ from __future__ import annotations
 from sqlalchemy.orm import Session
 
 from app.schemas.vo.costing_engine_vo import CostingEngineAnnualItemVO
+from app.services.bom.procurement_object.coverage import (
+    evaluate_procurement_object_coverage,
+)
 from app.services.costing.assembly_cost.calc.orchestrator.ready import (
     evaluate_welding_coverage,
 )
@@ -15,7 +18,7 @@ from app.services.stamping.process_fee.calc.orchestrator.ready import (
 
 
 class AnnualCalcPlanner:
-    """§5.2：有工艺才判冲压加工费；有 BOM 才判焊接费。覆盖不全 → will_auto_calc。"""
+    """§5.2：有工艺才判冲压加工费；有 BOM 才判采购对象 / 焊接。覆盖不全 → will_auto_calc。"""
 
     def plan(self, db: Session, discovery: DiscoveryResult) -> list[CostingEngineAnnualItemVO]:
         items: list[CostingEngineAnnualItemVO] = []
@@ -38,6 +41,20 @@ class AnnualCalcPlanner:
 
         for scope in discovery.l0_scopes:
             scope_key = f"{scope.vehicle_model}|{scope.bom_version}"
+            procurement = evaluate_procurement_object_coverage(
+                db,
+                location=scope.location,
+                vehicle_model=scope.vehicle_model,
+                bom_version=scope.bom_version,
+            )
+            items.append(
+                CostingEngineAnnualItemVO(
+                    code="annual_procurement_object",
+                    scope_key=scope_key,
+                    exists=procurement.complete,
+                    will_auto_calc=not procurement.complete,
+                )
+            )
             welding = evaluate_welding_coverage(
                 db,
                 year=discovery.year,

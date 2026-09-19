@@ -1,4 +1,8 @@
-"""供应商主数据：列表 / 手工创建 / 改启用 / 别名 / 模板 / 上传 / 导出。"""
+"""供应商主数据：列表 / 手工创建 / 改启用 / 别名 / 模板 / 上传 / 导出。
+
+路径（零例外）：主键字符串 full_name，禁止 :int；
+/template、/export、/upload 必须全部写在 /{full_name} 之前（api-type-safety.mdc §6）。
+"""
 
 from urllib.parse import quote
 

@@ -1,4 +1,8 @@
-"""项目主数据：列表 / 手工创建 / 改期与供货台数 / 删除 / 模板 / 上传 / 导出。"""
+"""项目主数据：列表 / 手工创建 / 改期与供货台数 / 删除 / 模板 / 上传 / 导出。
+
+路径（零例外）：复合字符串键 /{location}/{vehicle_model}，禁止 :int；
+/template、/export、/upload 必须全部写在该参数路径之前（api-type-safety.mdc §6）。
+"""
 
 from urllib.parse import quote
 

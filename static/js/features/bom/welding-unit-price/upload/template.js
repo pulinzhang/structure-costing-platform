@@ -220,6 +220,7 @@ export function weldingUnitPriceUploadTemplate() {
                             <ul class="list-disc list-inside text-xs text-[#616161] space-y-1.5">
                                 <li>唯一键：基地 + 年度 + 名称</li>
                                 <li>已存在则更新费用/单位/备注，不存在则新增</li>
+                                <li>列表导出含基地/年份/审核列；导入只读名称/单位/费用/备注（基地/年度以本页选择为准）</li>
                                 <li>非目录名称 / 单位不匹配 → 整批中止</li>
                                 <li>仅支持 .xlsx，同步导入无需等待队列</li>
                             </ul>

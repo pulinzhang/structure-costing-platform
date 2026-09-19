@@ -140,7 +140,7 @@ def batch_delete_parts(
     )
 
 
-@router.get("/parts/{part_id}", response_model=ApiResponse[StampingPartWithProcessesResponse])
+@router.get("/parts/{part_id:int}", response_model=ApiResponse[StampingPartWithProcessesResponse])
 def get_part(
     part_id: int,
     db: Session = Depends(get_db),
@@ -152,7 +152,7 @@ def get_part(
 
 
 @router.patch(
-    "/parts/{part_id}/offal",
+    "/parts/{part_id:int}/offal",
     response_model=ApiResponse[StampingPartResponse],
 )
 def update_part_offal(
@@ -166,7 +166,7 @@ def update_part_offal(
     return ApiResponse.updated(data=vo, message="利废设置已保存")
 
 
-@router.delete("/parts/{part_id}", response_model=ApiResponse[None])
+@router.delete("/parts/{part_id:int}", response_model=ApiResponse[None])
 def delete_part(
     part_id: int,
     db: Session = Depends(get_db),
@@ -220,7 +220,7 @@ def get_cascade_filters(
     return ApiResponse.ok(data=options, message="获取成功")
 
 
-@router.patch("/processes/{process_id}", response_model=ApiResponse[StampingProcessResponse])
+@router.patch("/processes/{process_id:int}", response_model=ApiResponse[StampingProcessResponse])
 def update_process(
     process_id: int,
     body: StampingProcessUpdate,
@@ -232,7 +232,7 @@ def update_process(
     return ApiResponse.ok(data=result, message="工序更新成功")
 
 
-@router.put("/parts/{part_id}/processes", response_model=ApiResponse[BatchUpdateResponse])
+@router.put("/parts/{part_id:int}/processes", response_model=ApiResponse[BatchUpdateResponse])
 def batch_update_processes(
     part_id: int,
     body: list[StampingProcessItemUpdate],

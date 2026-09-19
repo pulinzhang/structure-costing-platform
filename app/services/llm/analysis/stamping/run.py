@@ -2,8 +2,6 @@
 
 from __future__ import annotations
 
-from typing import Any
-
 from sqlalchemy.orm import Session
 
 from app.repositories.llm.process_fee_analysis_repository import ProcessFeeAnalysisRepository
@@ -15,6 +13,9 @@ from app.repositories.llm.stamping_process_analysis_repository import (
 )
 from app.repositories.llm.tonnage_price_analysis_repository import (
     TonnagePriceAnalysisRepository,
+)
+from app.schemas.llm.analysis_payload import (
+    AnalysisResultLeafPayload,
 )
 from app.schemas.llm.analysis_query import AnalysisQuery
 from app.services.llm._money import shift_month
@@ -65,7 +66,7 @@ class StampingAnalysis:
             has_data=bool(rows),
             data_message=(f"冲压工艺零件={len(rows)}" if rows else "当前范围无冲压工艺数据"),
         )
-        parts_result: dict[str, Any] = {}
+        parts_result: dict[str, AnalysisResultLeafPayload] = {}
 
         if "summary" in query.analyses:
             out.summary = build_stamping_process_summary(rows)
@@ -119,7 +120,7 @@ class StampingAnalysis:
             has_data=bool(rows),
             data_message=(f"冲次单价行={len(rows)}" if rows else "当前范围无冲次单价数据"),
         )
-        parts_result: dict[str, Any] = {}
+        parts_result: dict[str, AnalysisResultLeafPayload] = {}
 
         if "summary" in query.analyses:
             out.summary = build_tonnage_price_summary(rows)
@@ -163,7 +164,7 @@ class StampingAnalysis:
             has_data=bool(rows),
             data_message=(f"冲压加工费行={len(rows)}" if rows else "当前范围无冲压加工费数据"),
         )
-        parts_result: dict[str, Any] = {}
+        parts_result: dict[str, AnalysisResultLeafPayload] = {}
 
         if "summary" in query.analyses:
             out.summary = build_process_fee_summary(rows)
@@ -227,7 +228,7 @@ class StampingAnalysis:
                 f"冲压零件行={len(focus_rows)}" if focus_rows else "当前范围无冲压零件价格数据"
             ),
         )
-        parts_result: dict[str, Any] = {}
+        parts_result: dict[str, AnalysisResultLeafPayload] = {}
 
         if "summary" in query.analyses:
             out.summary = build_stamping_summary(focus_rows)

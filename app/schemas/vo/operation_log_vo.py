@@ -2,7 +2,7 @@
 
 from datetime import datetime
 
-from pydantic import BaseModel, Field, field_serializer
+from pydantic import BaseModel, ConfigDict, Field, field_serializer
 
 from app.common.timezone import datetime_to_iso
 
@@ -33,7 +33,7 @@ class OperationLogVO(BaseModel):
     def serialize_datetime(self, value: datetime | None) -> str | None:
         return datetime_to_iso(value)
 
-    model_config = {"from_attributes": True}
+    model_config = ConfigDict(from_attributes=True)
 
 
 class OperationLogCatalogOptionVO(BaseModel):

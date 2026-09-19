@@ -4,11 +4,11 @@ from __future__ import annotations
 
 from collections import defaultdict
 from decimal import Decimal
-from typing import Any
 
 from app.repositories.llm.cost_analysis import L0MonthlyTotalRow, L0PartPeriodRow
 from app.repositories.llm.stamping_cost_analysis_repository import StampingPartPeriodRow
 from app.repositories.llm.steel_price_analysis_repository import SteelMonthlyAvgRow
+from app.schemas.llm.analysis_payload import SummaryPayload
 from app.services.llm._money import money_str, month_key
 
 
@@ -31,7 +31,7 @@ def build_summary(
     rows: list[L0MonthlyTotalRow],
     *,
     part_rows: list[L0PartPeriodRow] | None = None,
-) -> dict[str, Any]:
+) -> SummaryPayload:
     if not rows:
         return {
             "l0_count": 0,
@@ -97,7 +97,7 @@ def build_summary(
     }
 
 
-def build_stamping_summary(rows: list[StampingPartPeriodRow]) -> dict[str, Any]:
+def build_stamping_summary(rows: list[StampingPartPeriodRow]) -> SummaryPayload:
     """冲压零件价格一览口径的 summary（对齐 #/stamping-part-cost）。"""
     if not rows:
         return {
@@ -154,7 +154,7 @@ def build_stamping_summary(rows: list[StampingPartPeriodRow]) -> dict[str, Any]:
     }
 
 
-def build_steel_summary(rows: list[SteelMonthlyAvgRow]) -> dict[str, Any]:
+def build_steel_summary(rows: list[SteelMonthlyAvgRow]) -> SummaryPayload:
     """钢材联动价一览口径的 summary（对齐 #/steel-price-list）。"""
     if not rows:
         return {

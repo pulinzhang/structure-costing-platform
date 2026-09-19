@@ -4,9 +4,17 @@ from __future__ import annotations
 
 from collections import defaultdict
 from decimal import ROUND_HALF_UP, Decimal
-from typing import Any
 
 from app.repositories.llm.annual_part_price_analysis_repository import AnnualPartPriceRow
+from app.schemas.llm.analysis_payload import (
+    ComparisonPayload,
+    DomainAnomaliesPayload,
+    DrilldownPayload,
+    DriverItem,
+    DriversPayload,
+    RiskEntry,
+    SummaryPayload,
+)
 from app.services.llm.analysis.shared.constants import (
     ANNUAL_PRICE_CONVERSION_FACTOR_MIN,
     ANNUAL_PRICE_CONVERSION_TOLERANCE,
@@ -30,7 +38,7 @@ def _round4(value: Decimal) -> Decimal:
 
 def build_annual_part_price_summary(
     rows: list[AnnualPartPriceRow],
-) -> dict[str, Any]:
+) -> SummaryPayload:
     if not rows:
         return {
             "subject": "annual_part_price",
@@ -60,7 +68,7 @@ def build_annual_part_price_comparison(
     rows: list[AnnualPartPriceRow],
     *,
     location: str | None,
-) -> dict[str, Any]:
+) -> ComparisonPayload:
     if not rows:
         return {
             "kind": "comparison",
@@ -104,7 +112,7 @@ def build_annual_part_price_comparison(
     compare_parts = by_year[compare_year]
     all_numbers = sorted(set(base_parts) | set(compare_parts))
 
-    items: list[dict[str, Any]] = []
+    items: list[DriverItem] = []
     increased = 0
     decreased = 0
     unchanged = 0
@@ -174,7 +182,7 @@ def build_annual_part_price_drilldown(
     *,
     part_token: str,
     head: AnnualPartPriceRow | None = None,
-) -> dict[str, Any]:
+) -> DrilldownPayload:
     if not rows:
         return {
             "kind": "drilldown",
@@ -224,7 +232,7 @@ def build_annual_part_price_drivers(
     rows: list[AnnualPartPriceRow],
     *,
     top_n: int = 8,
-) -> dict[str, Any]:
+) -> DriversPayload:
     if not rows:
         return {"kind": "drivers", "items": [], "top_n": top_n}
 
@@ -251,11 +259,11 @@ def build_annual_part_price_conversion_anomalies(
     rows: list[AnnualPartPriceRow],
     *,
     top_n: int = 20,
-) -> dict[str, Any]:
+) -> DomainAnomaliesPayload:
     """核价单价应 = 采购单价 ÷ 转换系数。未除系数会把桶价当成毫米价。"""
     factor_min = Decimal(ANNUAL_PRICE_CONVERSION_FACTOR_MIN)
     tolerance = Decimal(ANNUAL_PRICE_CONVERSION_TOLERANCE)
-    items: list[dict[str, Any]] = []
+    items: list[DriverItem] = []
     seen: set[tuple[int, str, str]] = set()
     for row in rows:
         flags = _conversion_flags(row, factor_min=factor_min, tolerance=tolerance)
@@ -295,7 +303,7 @@ def build_annual_part_price_conversion_anomalies(
     }
 
 
-def annual_price_conversion_risk_entry(payload: dict[str, Any]) -> dict[str, Any] | None:
+def annual_price_conversion_risk_entry(payload: DomainAnomaliesPayload) -> RiskEntry | None:
     items = list(payload.get("items") or [])
     if not items:
         return None
@@ -304,7 +312,9 @@ def annual_price_conversion_risk_entry(payload: dict[str, Any]) -> dict[str, Any
         "severity": "high",
         "count": len(items),
         "message": "年度零件价存在未按转换系数换算的核价单价（桶/瓶价可能被当成毫米单价）",
-        "sample_part_numbers": [item["part_number"] for item in items[:8]],
+        "sample_part_numbers": [
+            item.get("part_number") if isinstance(item, dict) else None for item in items[:8]
+        ],
         "conversion_items": items,
     }
 

@@ -21,7 +21,7 @@ from app.repositories.costing.stamping_part_cost.stamping_part_cost_calc_log_rep
 )
 from app.repositories.stamping.stamping_part_repository import StampingPartRepository
 from app.schemas.vo.assembly_cost_vo import AssemblyCostCalcReadyVO
-from app.services.bom.procurement_object.classify import SECTION_OBJECT
+from app.services.bom.procurement_object.classify import SECTION_OBJECT, classify_nodes
 from app.services.costing.assembly_cost.calc.orchestrator.deps import AssemblyCalcDeps
 from app.services.costing.stamping_part_cost.calc.constants import ALL_SUPPLIERS_LOCK
 from app.services.masterdata.vehicle_model import VehicleModelService
@@ -159,8 +159,20 @@ def collect_calc_ready(
     elif not welding.complete:
         ready = False
         message = welding.message
-    elif procurement_object_count == 0:
-        message = "采购对象未生成，本趟只出装配∪树根"
+    else:
+        expected_ids = {
+            int(row.source_node_id)
+            for row in classify_nodes(orm_nodes).rows
+            if row.section == SECTION_OBJECT
+        }
+        if expected_ids and not expected_ids.issubset(set_c):
+            ready = False
+            missing_n = len(expected_ids - set_c)
+            message = (
+                "请先生成采购对象清单"
+                if not set_c
+                else f"采购对象未齐（缺 {missing_n}），请重新生成"
+            )
 
     return AssemblyCostCalcReadyVO(
         tree_root_count=tree_root_count,

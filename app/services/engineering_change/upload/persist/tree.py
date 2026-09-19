@@ -1,4 +1,4 @@
-"""合册种树 / 失效：仅调上游 BomService（算法在 bom/change_tree_plant）。"""
+"""工程变更种树 / 失效：仅调上游 BomService（算法在 bom/change_tree_plant）。"""
 
 from __future__ import annotations
 
@@ -35,7 +35,7 @@ def expire_l0_tree(
     expiry_month: int,
     current_user: UserVO,
 ) -> None:
-    """级联写失效月，不 commit（合册事务用）。"""
+    """级联写失效月，不 commit（工程变更事务用）。"""
     BomService().expire_l0_tree(
         db,
         root_id=l0_id,

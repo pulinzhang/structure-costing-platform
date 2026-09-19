@@ -80,7 +80,7 @@ if __name__ == "__main__":
     # 3. Node 可用性 + 前端 JS 语法检查
     run_node_check()
 
-    # 4. 拦截全部通过，拉起服务
+    # 4. 拦截全部通过，拉起服务（仅监控 app/）
     print("🚀 校验 100% 通过！正在启动 FastAPI 开发服务...\n")
     subprocess.run(
         [

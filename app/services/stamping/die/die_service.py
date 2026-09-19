@@ -1,5 +1,6 @@
 """冲压模具查询、更新、按作用域删除。"""
 
+from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
 
 from app.common.audit import audit_update
@@ -143,6 +144,9 @@ class StampingDieService:
                 db, locations=locations, vehicle_model=vehicle_model
             )
             db.commit()
+        except IntegrityError:
+            db.rollback()
+            raise BusinessException("仍被引用，不能删除") from None
         except Exception:
             db.rollback()
             raise
@@ -218,7 +222,7 @@ class StampingDieService:
         specs: list[EngineeringChangeDiePartSpec],
         current_user: UserVO,
     ) -> list[EngineeringChangeDiePartResult]:
-        """工程变更合册按号插布点零件（不 commit）。"""
+        """工程变更按号插布点零件（不 commit）。"""
         return insert_for_engineering_change_fn(
             self.die_part_repo,
             self.die_process_repo,

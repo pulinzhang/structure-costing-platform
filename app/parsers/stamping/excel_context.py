@@ -11,6 +11,7 @@ from typing import Any
 
 import openpyxl
 
+from app.common.part_number import looks_like_part_number_cell
 from app.parsers.stamping.models.part_no_range import PartNoRange
 from app.utils.logging_config import get_logger
 
@@ -87,7 +88,7 @@ class ExcelContext:
         建立零件号列的范围缓存。
 
         先收录零件号列上的纵向合并；再把未合并、非表头的单格零件号做成一行一段
-        （工程变更合册常只写一道工序，不像 SOP 样表那样整段合并）。
+        （工程变更常只写一道工序，不像 SOP 样表那样整段合并）。
         """
         if self.sheet is None:
             return
@@ -104,6 +105,8 @@ class ExcelContext:
             min_r = merged_range.min_row
             max_r = merged_range.max_row
             value = self.sheet.cell(min_r, min_c).value
+            if not looks_like_part_number_cell(value):
+                continue
 
             self._part_no_ranges.append(
                 PartNoRange(
@@ -122,8 +125,7 @@ class ExcelContext:
             if row in covered_rows:
                 continue
             value = self.sheet.cell(row, part_no_col).value
-            text = str(value).strip() if value is not None else ""
-            if not text or "零件号" in text or "件号" in text:
+            if not looks_like_part_number_cell(value):
                 continue
             self._part_no_ranges.append(PartNoRange(value=value, start_row=row, end_row=row))
 

@@ -1,18 +1,22 @@
-"""冲次单价 Excel 导出服务。"""
+"""冲次单价 Excel 导出：核心列对齐导入 Parser；另含基地/年份/审核审计列。"""
 
 from __future__ import annotations
 
 import logging
+from datetime import datetime
 from decimal import Decimal
 from typing import Any
 
 from openpyxl import Workbook
 from openpyxl.styles import Alignment, Border, Font, PatternFill, Side
+from openpyxl.utils import get_column_letter
 from sqlalchemy.orm import Session
 
+from app.common.audit import audit_status_label
 from app.common.export_watermark import workbook_to_xlsx_bytes
 from app.common.money import Q3, excel_money_cell
 from app.common.timezone import now
+from app.parsers.stamping.tonnage_price_parser import HEADER_NAME, HEADER_PRICE, HEADER_UNIT
 from app.repositories.stamping.tonnage_price_repository import StampingTonnagePriceRepository
 from app.schemas.vo.user_vo import UserVO
 
@@ -24,14 +28,14 @@ def _price_cell(value: Any) -> Decimal | str:
     return excel_money_cell(value, Q3)
 
 
-def _dt(value: Any) -> Any:
+def _dt(value: datetime | None) -> str:
     if value is None:
         return ""
-    return value.strftime("%Y-%m-%d %H:%M:%S") if hasattr(value, "strftime") else str(value)
+    return f"{value:%Y-%m-%d %H:%M:%S}"
 
 
 class StampingTonnagePriceExportService:
-    """冲次单价 Excel 导出。"""
+    """冲次单价 Excel 导出（可再导入）。"""
 
     def __init__(self) -> None:
         self.repository = StampingTonnagePriceRepository()
@@ -71,8 +75,10 @@ class StampingTonnagePriceExportService:
         headers = [
             "基地",
             "年份",
-            "压机吨位(T)",
-            "单冲次价格(元)",
+            HEADER_NAME,
+            HEADER_UNIT,
+            HEADER_PRICE,
+            "审核状态",
             "创建人",
             "创建时间",
             "更新人",
@@ -86,11 +92,13 @@ class StampingTonnagePriceExportService:
             cell.border = thin_border
 
         for row_idx, record in enumerate(records, start=2):
-            values = [
+            values: list[Any] = [
                 record.location,
                 record.year,
-                record.tonnage,
+                f"{record.tonnage}T",
+                "次",
                 _price_cell(record.price_per_stroke),
+                audit_status_label(record.audit_status),
                 record.created_by or "",
                 _dt(record.created_at),
                 record.updated_by or "",
@@ -100,20 +108,21 @@ class StampingTonnagePriceExportService:
                 cell = ws.cell(row=row_idx, column=col, value=value)
                 cell.font = data_font
                 cell.border = thin_border
-                if col in (2, 3):
+                if col in (2, 3, 4, 6):
                     cell.alignment = align_center
-                elif col == 4:
+                elif col == 5:
                     cell.alignment = align_right
                     cell.number_format = "0.000"
                 else:
                     cell.alignment = align_left
 
-        widths = [12, 10, 14, 16, 12, 20, 12, 20]
+        widths = [12, 10, 12, 10, 12, 10, 12, 20, 12, 20]
         for idx, width in enumerate(widths, start=1):
-            ws.column_dimensions[chr(64 + idx)].width = width
+            ws.column_dimensions[get_column_letter(idx)].width = width
 
         ws.freeze_panes = "A2"
-        ws.auto_filter.ref = f"A1:H{max(1, len(records) + 1)}"
+        last_col = get_column_letter(len(headers))
+        ws.auto_filter.ref = f"A1:{last_col}{max(1, len(records) + 1)}"
 
         content = workbook_to_xlsx_bytes(wb, current_user)
 

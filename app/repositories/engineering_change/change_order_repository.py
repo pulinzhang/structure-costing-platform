@@ -15,6 +15,7 @@ from app.repositories.persist import model_from_payload
 class EngineeringChangeOrderInsert:
     upload_log_id: int
     upload_file_id: int
+    before_assembly_node_id: int
     excel_row: int
     project_code: str
     effective_period_text: str

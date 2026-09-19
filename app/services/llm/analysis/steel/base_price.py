@@ -4,15 +4,22 @@ from __future__ import annotations
 
 from collections import defaultdict
 from decimal import Decimal
-from typing import Any
 
 from app.repositories.llm.base_price_analysis_repository import BasePricePeriodRow
+from app.schemas.llm.analysis_payload import (
+    DomainAnomaliesPayload,
+    DriverItem,
+    DriversPayload,
+    MomAnomalyItem,
+    SummaryPayload,
+    TrendPayload,
+)
 from app.schemas.llm.analysis_query import ComparisonBasis
 from app.services.llm._money import money_str, month_key
 from app.services.llm.analysis.shared.cost_trend import trend_from_series
 
 
-def build_base_price_summary(rows: list[BasePricePeriodRow]) -> dict[str, Any]:
+def build_base_price_summary(rows: list[BasePricePeriodRow]) -> SummaryPayload:
     if not rows:
         return {
             "subject": "steel_base_price",
@@ -47,12 +54,12 @@ def build_base_price_summary(rows: list[BasePricePeriodRow]) -> dict[str, Any]:
     }
 
 
-def build_base_price_drivers(rows: list[BasePricePeriodRow], *, top_n: int = 15) -> dict[str, Any]:
+def build_base_price_drivers(rows: list[BasePricePeriodRow], *, top_n: int = 15) -> DriversPayload:
     by_mill: dict[str, list[BasePricePeriodRow]] = defaultdict(list)
     for row in rows:
         by_mill[row.steel_mill].append(row)
 
-    items: list[dict[str, Any]] = []
+    items: list[DriverItem] = []
     for mill, mill_rows in by_mill.items():
         prices = [row.base_price for row in mill_rows]
         avg = sum(prices, start=Decimal("0")) / Decimal(len(prices))
@@ -66,7 +73,9 @@ def build_base_price_drivers(rows: list[BasePricePeriodRow], *, top_n: int = 15)
             }
         )
 
-    ranked = sorted(items, key=lambda item: Decimal(item["avg_base_price"]), reverse=True)[:top_n]
+    ranked = sorted(items, key=lambda item: Decimal(str(item["avg_base_price"])), reverse=True)[
+        :top_n
+    ]
     for index, item in enumerate(ranked, start=1):
         item["rank"] = index
     return {"kind": "drivers", "items": ranked, "top_n": top_n}
@@ -76,7 +85,7 @@ def build_base_price_trend(
     rows: list[BasePricePeriodRow],
     *,
     basis: ComparisonBasis,
-) -> dict[str, Any]:
+) -> TrendPayload:
     """各月基准价均值序列（看整体上下波动）。"""
     by_month: dict[str, list[Decimal]] = defaultdict(list)
     for row in rows:
@@ -104,7 +113,7 @@ def build_base_price_mom_anomalies(
     top_n: int = 15,
     min_abs_change: Decimal = Decimal("50"),
     min_rate: Decimal = Decimal("0.03"),
-) -> dict[str, Any]:
+) -> DomainAnomaliesPayload:
     """同钢厂/牌号/规格在各月间的基准价跳变（疑似传错价）。"""
     by_key: dict[str, dict[str, BasePricePeriodRow]] = defaultdict(dict)
     for row in rows:
@@ -127,7 +136,7 @@ def build_base_price_mom_anomalies(
             processing_fee=(existing.processing_fee + row.processing_fee) / Decimal("2"),
         )
 
-    spikes: list[dict[str, Any]] = []
+    spikes: list[MomAnomalyItem] = []
     for _key, month_map in by_key.items():
         ordered_months = sorted(month_map.keys())
         ordered_rows = [month_map[month] for month in ordered_months]

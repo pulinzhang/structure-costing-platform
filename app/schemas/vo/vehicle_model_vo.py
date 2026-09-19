@@ -1,6 +1,6 @@
 """项目主数据 VO。"""
 
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, ConfigDict, Field
 
 PERIOD_PENDING = "未生效"
 PERIOD_INTRODUCIBLE = "可引入"
@@ -10,7 +10,7 @@ PERIOD_EXPIRED = "已失效"
 class VehicleModelVO(BaseModel):
     """项目一行（含相对墙钟月的期状态）。"""
 
-    model_config = {"from_attributes": True}
+    model_config = ConfigDict(from_attributes=True)
 
     location: str
     vehicle_model: str

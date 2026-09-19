@@ -1,5 +1,5 @@
 ---
-description: ApiResponse/PageResult、Decimal JSON、Any 不进签名、VO/DTO、Perm.* Depends、model_dump 边界。分层归属见架构宪法。
+description: ApiResponse/PageResult、Decimal JSON、Any 不进签名、VO/DTO、Perm.* Depends、路径 /{id:int}、model_dump 边界。分层归属见架构宪法。
 globs: app/**/*.py,tests/**/*.py
 alwaysApply: false
 ---
@@ -7,7 +7,8 @@ alwaysApply: false
 # Backend Type Safety
 
 > 实现：`app/utils/response.py`、`app/schemas/common/`。权限树：`docs/permission-design.md`。  
-> 谁调谁、事务、异常**通道** → 架构宪法（本文件只写类型与 HTTP 形态）。
+> 谁调谁、事务、异常**通道** → 架构宪法（本文件只写类型与 HTTP 形态）。  
+> Router 扫描/装配 → `main-structure.mdc`（只在改 main/bootstrap 时加载）。
 
 ## 1. 响应契约
 
@@ -74,17 +75,60 @@ JSON 业务接口必须 `response_model=ApiResponse[T]` 且 `-> ApiResponse[T]`�
 
 不要为每个动词复制一整段 Router 示例；照上表套现网相邻路由即可。
 
-## 6. DTO / VO / 序列化
+## 6. 路径参数与静态路由（零例外）
+
+Starlette / FastAPI 按注册顺序匹配：先 `Match.FULL` 即停，不回退。  
+本仓库 Router 由 `app/bootstrap/routers.py` **字母序**扫描注册，**禁止**靠文件名抢顺序。
+
+| 写法 | 行为 | 判定 |
+|------|------|------|
+| `/{name}` + 注解 `name: int` | 任意单段先匹配；`int` 只在匹配后校验 | **违规** |
+| `/{name:int}` | 只匹配数字段 | **唯一合法**（整数路径） |
+
+**强制：**
+
+1. 凡函数注解为 `int` 的路径参数，路径**必须**写成 `/{name:int}`（含嵌套 `/{a:int}/…/{b:int}`）。**禁止**裸 `/{name}`。
+2. 字符串路径参数（`task_id`、`full_name`、`location`、`vehicle_model`、`alias`）：
+   - **必须**与同前缀全部静态路由处于**同一** `APIRouter`；
+   - **必须**先声明全部静态路径（`/template`、`/export`、`/upload`、`/options`、`/list` 等），再声明参数路径；
+   - **禁止**跨模块用首段 `{str}` 与静态段共享同一 prefix。
+3. **禁止**用改文件名、改扫描顺序、或「先注册静态模块」代替上述写法。
+4. **必须**通过守卫：`python -X utf8 -m scripts.check_route_path_params`；`tests/test_route_path_params.py`。不通过即违规，不准合并。
+
+```python
+# 禁止
+@router.get("/{record_id}")
+def get_one(record_id: int): ...
+
+# 必须
+@router.get("/{record_id:int}")
+def get_one(record_id: int): ...
+
+# 字符串键：同一 router，静态全部在前
+@router.get("/template")
+def template(): ...
+@router.get("/{full_name}")
+def get_by_name(full_name: str): ...
+```
+
+## 7. DTO / VO / 序列化
 
 - DTO 只入参；可用 `dto.model_dump(exclude_unset=True)` 给更新/Repo。Query / Update / Scope 只放 `dto/`。
-- VO 只出参；`model_config = {"from_attributes": True}`；`UserVO.model_validate(row)`；禁止 `__dict__`。
+- VO 只出参；`UserVO.model_validate(row)`；禁止 `__dict__`。
+- **`model_config`（零例外）**：凡类体声明 `model_config`（VO / Repo DTO / Mixin），**必须**
+  `model_config = ConfigDict(...)`（ORM 出参常见 `ConfigDict(from_attributes=True)`）。
+  **禁止** `model_config = {"from_attributes": True}` 等可变 `dict` 字面量。
+  原因：全库一种写法，四年后还能全库搜改；`ConfigDict` 不可变。**不要指望 Ruff `RUF012`**——它对 pydantic 的 `model_config` 赋值**不报**。
+  **必须**通过守卫：`python -X utf8 -m scripts.check_model_config`；`tests/test_model_config.py`。不通过即违规，不准合并。
+  继承 `DurationSecondsMixin` 的运行历史 VO：**禁止**再声明一份 `model_config`（Mixin 已带 `ConfigDict`）。
 - 批量审核/删除结果 VO 继承 `BatchAuditCountsVO` / `BatchDeleteCountsVO`，范围字段留切片；字段名不同的结果不要硬套。
 - 禁止裸类名 `FilterOptions`；跨 DTO/VO 的 Enum 只定义一次（VO 引用 DTO 或 `common`）。
 - datetime / Decimal / Enum 的 **JSON 形态**只写在 VO `@field_serializer`。datetime 必须 `app.common.timezone.datetime_to_iso`。Excel 文件名可用 `strftime`。
+- **运行历史耗时**：Model 存 `started_at` + `finished_at`；VO 继承 `app.schemas.vo.timing.DurationSecondsMixin`（统一 `duration_seconds` 整秒或 null）；新 CalcLog / GenerateLog / Engine Run 必须登记进 `calc_history_timing_vo_types()`。前端历史表用 `static/js/duration.js`，列「开始 / 结束 / 耗时」。禁止各切片自写秒数公式；禁止页面内估秒——仅允许 `duration.js` 在缺 `duration_seconds` 时用起止时间兜底。
 - 金额：Model `Numeric`+`Mapped[Decimal]`；DTO `mode="before"` 经 `Decimal(str(value))` 再 quantize；VO 输出固定小数位**字符串**；计算禁止 `float`。物理量同样 JSON 字符串（`optional_format_money`）。
 - `model_dump`：DTO 与异步任务 `result` JSON（切片 Service）允许。Router `ApiResponse.ok(data=vo)` 禁止 dump。进度查询：`parse_result_json` + `VO.model_validate` 再进 `ApiResponse`。
 
-## 7. 检查清单（仅本文件）
+## 8. 检查清单（仅本文件）
 
-禁止：业务签名 `Any`/`dict[str, Any]`；业务 Router `JSONResponse`；Router 输出 `model_dump`；金额 `float`；`cast` 跳过 `model_validate`。  
-必须：JSON `ApiResponse[T]`；业务路由 `Perm.*`；写操作传 `current_user`。
+必须：JSON `ApiResponse[T]`；业务路由 `Perm.*`；写操作传 `current_user`；整数路径 `/{name:int}`；字符串键同 router 且静态全部在前；`check_route_path_params` 通过；`model_config` 只用 `ConfigDict` 且 `check_model_config` 通过；运行历史 VO 走 `DurationSecondsMixin` + `calc_history_timing_vo_types` 登记。
+禁止：业务签名 `Any`/`dict[str, Any]`；业务 Router `JSONResponse`；Router 输出 `model_dump`；金额 `float`；`cast` 跳过 `model_validate`；裸 `/{name}` 注解 `int`；跨模块首段 `{str}` 抢静态段；靠文件名抢路由顺序；`model_config = {...}` 可变 dict；各切片自写 `duration_seconds` 公式。

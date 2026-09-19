@@ -4,7 +4,7 @@
  * 用于测试部门核对数据，主子表联合查询导出 Excel
  */
 
-import { policyDownloadTemplate, renderPolicyRows } from './template.js?v=35';
+import { policyDownloadTemplate, renderPolicyRows } from './template.js?v=37';
 import {
     DEFAULT_PREVIEW_PAGE_SIZE,
     PREVIEW_PAGE_SIZE_OPTIONS,
@@ -92,8 +92,11 @@ function applyPendingFiltersToSelects() {
     if (!pending) return;
     setSelectValue('policyDownloadYear', pending.year);
     setSelectValue('policyDownloadMonth', pending.month);
-    setSelectValue('policyDownloadMill', pending.steel_mill);
     setSelectValue('policyDownloadCategory', pending.category_name);
+    const millInput = document.getElementById('policyDownloadMill');
+    if (millInput && pending.steel_mill) {
+        millInput.value = pending.steel_mill;
+    }
     const gradeInput = document.getElementById('policyDownloadGrade');
     if (gradeInput && pending.grade_value) {
         gradeInput.value = pending.grade_value;
@@ -155,10 +158,7 @@ async function loadFilterOptions() {
             })),
         );
 
-        fillSelect(
-            'policyDownloadMill',
-            (data.steel_mills || []).map((mill) => ({ value: mill, label: mill })),
-        );
+        fillDatalist('policyMillOptions', data.steel_mills || []);
 
         policyDownloadState.filtersLoaded = true;
     } catch (error) {
@@ -180,13 +180,10 @@ async function loadFilterOptions() {
 }
 
 async function loadGradesForCategory(categoryName) {
-    const datalist = document.getElementById('policyGradeOptions');
     const gradeInput = document.getElementById('policyDownloadGrade');
-    if (!datalist) return;
-
     const category = (categoryName || '').trim();
     if (!category) {
-        datalist.innerHTML = '';
+        fillDatalist('policyGradeOptions', []);
         if (gradeInput) {
             gradeInput.value = '';
             gradeInput.placeholder = '请先选择钢种大类';
@@ -204,11 +201,13 @@ async function loadGradesForCategory(categoryName) {
         const response = await HttpClient.get(`${GRADE_CATEGORY_API}/grades`, {
             params: { category_name: category },
         });
-        const grades = Array.isArray(response.data) ? response.data : [];
-        datalist.innerHTML = grades.map((g) => `<option value="${esc(g)}">`).join('');
+        fillDatalist(
+            'policyGradeOptions',
+            Array.isArray(response.data) ? response.data : [],
+        );
     } catch (error) {
         console.error('加载牌号列表失败:', error);
-        datalist.innerHTML = '';
+        fillDatalist('policyGradeOptions', []);
     }
 }
 
@@ -222,6 +221,14 @@ function fillSelect(id, options = []) {
             const label = typeof opt === 'object' ? opt.label : opt;
             return `<option value="${esc(value)}">${esc(label)}</option>`;
         }).join('');
+}
+
+function fillDatalist(id, values = []) {
+    const datalist = document.getElementById(id);
+    if (!datalist) return;
+    datalist.innerHTML = values
+        .map((value) => `<option value="${esc(value)}">`)
+        .join('');
 }
 
 /**
@@ -252,7 +259,7 @@ function bindEvents() {
         btnDelete.addEventListener('click', () => batchDeletePolicies());
     }
 
-    ['policyDownloadYear', 'policyDownloadMonth', 'policyDownloadMill'].forEach(id => {
+    ['policyDownloadYear', 'policyDownloadMonth'].forEach(id => {
         const el = document.getElementById(id);
         if (el) el.addEventListener('change', () => queryAfterFilterSelect());
     });
@@ -267,17 +274,29 @@ function bindEvents() {
         });
     }
 
-    const gradeInput = document.getElementById('policyDownloadGrade');
-    if (gradeInput) {
-        gradeInput.addEventListener('input', () => updateConditionsDisplay());
-        gradeInput.addEventListener('keydown', event => {
-            if (event.key === 'Enter') {
-                event.preventDefault();
-                previewData(1);
-            }
-        });
-    }
+    bindDatalistFilterInput('policyDownloadMill', {
+        onChange: () => queryAfterFilterSelect(),
+    });
+    bindDatalistFilterInput('policyDownloadGrade');
+}
 
+/**
+ * datalist 输入框：输入时刷新已选条件；回车查询；选中建议项后按 onChange 触发。
+ */
+function bindDatalistFilterInput(id, { onChange } = {}) {
+    const input = document.getElementById(id);
+    if (!input) return;
+    input.addEventListener('input', () => updateConditionsDisplay());
+    input.addEventListener('change', () => {
+        updateConditionsDisplay();
+        if (typeof onChange === 'function') onChange();
+    });
+    input.addEventListener('keydown', (event) => {
+        if (event.key === 'Enter') {
+            event.preventDefault();
+            previewData(1);
+        }
+    });
 }
 
 function queryAfterFilterSelect() {
@@ -309,14 +328,18 @@ function getFilterValue(id) {
     return document.getElementById(id)?.value || '';
 }
 
+function getTrimmedFilterValue(id) {
+    return document.getElementById(id)?.value.trim() || '';
+}
+
 function collectFilters() {
     const pending = policyDownloadState.pendingFilters;
     return {
         year: getFilterValue('policyDownloadYear') || pending?.year || '',
         month: getFilterValue('policyDownloadMonth') || pending?.month || '',
-        steel_mill: getFilterValue('policyDownloadMill') || pending?.steel_mill || '',
+        steel_mill: getTrimmedFilterValue('policyDownloadMill') || pending?.steel_mill || '',
         category_name: getFilterValue('policyDownloadCategory') || pending?.category_name || '',
-        grade_value: document.getElementById('policyDownloadGrade')?.value.trim() || pending?.grade_value || '',
+        grade_value: getTrimmedFilterValue('policyDownloadGrade') || pending?.grade_value || '',
     };
 }
 
@@ -482,7 +505,7 @@ async function batchDeletePolicies() {
     }
     const year = getFilterValue('policyDownloadYear');
     const month = getFilterValue('policyDownloadMonth');
-    const steelMill = getFilterValue('policyDownloadMill');
+    const steelMill = getTrimmedFilterValue('policyDownloadMill');
 
     // 年度、月份必填；钢厂可选
     if (!year || !month) {

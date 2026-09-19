@@ -9,6 +9,7 @@ import pytest
 from app.common.part_number import (
     extract_part_number_from_text,
     is_temporal_part_number_token,
+    looks_like_part_number_cell,
     sanitize_part_number_token,
 )
 from app.services.llm.query.entity_aligner import EntityAligner
@@ -70,6 +71,36 @@ def test_sanitize_part_number_token() -> None:
     assert sanitize_part_number_token("2025") is None
     assert sanitize_part_number_token("2025-01") is None
     assert sanitize_part_number_token("501006875aa") == "501006875AA"
+
+
+@pytest.mark.parametrize(
+    "value",
+    [
+        "502008024AA",
+        "552000978AA",
+        "501006875AA",
+        "T28-BL-001",
+    ],
+)
+def test_looks_like_part_number_cell_accepts_codes(value: str) -> None:
+    assert looks_like_part_number_cell(value)
+
+
+@pytest.mark.parametrize(
+    "value",
+    [
+        None,
+        "",
+        "零件号",
+        "注：“需要使用的冲压设备”的计算方式为：……",
+        "     非条料的需附料片照片和详细尺寸信息",
+        "普威（签字）：",
+        "ABCD",
+        "注",
+    ],
+)
+def test_looks_like_part_number_cell_rejects_footer(value: object) -> None:
+    assert not looks_like_part_number_cell(value)
 
 
 def _mock_parser(parser: QueryParser) -> None:

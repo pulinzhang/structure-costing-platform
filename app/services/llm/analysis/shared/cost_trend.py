@@ -3,11 +3,12 @@
 from __future__ import annotations
 
 from decimal import Decimal
-from typing import Any
+from typing import cast
 
 from app.repositories.llm.cost_analysis import L0MonthlyTotalRow
 from app.repositories.llm.stamping_cost_analysis_repository import StampingPartPeriodRow
 from app.repositories.llm.steel_price_analysis_repository import SteelMonthlyAvgRow
+from app.schemas.llm.analysis_payload import TrendPayload, TrendPoint
 from app.schemas.llm.analysis_query import ComparisonBasis
 from app.services.llm._money import money_str, month_key, rate_str
 from app.services.llm.analysis.shared.formulas import (
@@ -23,7 +24,7 @@ def build_cost_trend(
     *,
     basis: ComparisonBasis,
     single_month: bool = False,
-) -> dict[str, Any]:
+) -> TrendPayload:
     by_month: dict[str, Decimal] = {}
     for row in rows:
         key = month_key(row.year, row.month)
@@ -42,7 +43,7 @@ def build_steel_trend(
     *,
     basis: ComparisonBasis,
     single_month: bool = False,
-) -> dict[str, Any]:
+) -> TrendPayload:
     series = [
         (month_key(row.year, row.month), row.avg_final_price)
         for row in sorted(rows, key=lambda item: (item.year, item.month))
@@ -60,7 +61,7 @@ def build_stamping_trend(
     *,
     basis: ComparisonBasis,
     single_month: bool = False,
-) -> dict[str, Any]:
+) -> TrendPayload:
     by_month: dict[str, Decimal] = {}
     for row in rows:
         key = month_key(row.year, row.month)
@@ -79,7 +80,7 @@ def trend_from_series(
     value_label: str,
     basis: ComparisonBasis,
     single_month: bool = False,
-) -> dict[str, Any]:
+) -> TrendPayload:
     if not series:
         return {
             "kind": "trend",
@@ -90,7 +91,7 @@ def trend_from_series(
             "anomaly_note": None,
         }
 
-    points: list[dict[str, Any]] = []
+    points: list[TrendPoint] = []
     prev: Decimal | None = None
     for month, value in series:
         mom_delta = None
@@ -98,14 +99,16 @@ def trend_from_series(
         if prev is not None:
             mom_delta = value - prev
             mom_rate = compute_mom_rate(prev, value)
-        points.append(
+        point = cast(
+            TrendPoint,
             {
                 "month": month,
                 value_label: money_str(value),
                 "mom_delta": money_str(mom_delta) if mom_delta is not None else None,
                 "mom_rate": rate_str(mom_rate) if mom_rate is not None else None,
-            }
+            },
         )
+        points.append(point)
         prev = value
 
     values = [item[1] for item in series]

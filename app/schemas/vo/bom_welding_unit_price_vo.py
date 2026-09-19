@@ -6,7 +6,7 @@ from datetime import datetime
 from decimal import Decimal
 from typing import Any
 
-from pydantic import BaseModel, field_serializer
+from pydantic import BaseModel, ConfigDict, field_serializer
 
 from app.common.money import Q4, format_money
 from app.common.timezone import datetime_to_iso
@@ -48,7 +48,7 @@ class BomWeldingUnitPriceResponse(BaseModel):
     def serialize_datetime(self, value: datetime | None) -> str | None:
         return datetime_to_iso(value)
 
-    model_config = {"from_attributes": True}
+    model_config = ConfigDict(from_attributes=True)
 
 
 class BomWeldingUnitPriceBulkUpsertResponse(BaseModel):

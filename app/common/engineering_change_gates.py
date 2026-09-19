@@ -1,4 +1,4 @@
-"""工程变更门禁与拒收文案常量（供 bom / 拆解 / 引擎 / 合册共用）。"""
+"""工程变更门禁与拒收文案常量（供 bom / 拆解 / 引擎 / 工程变更上传共用）。"""
 
 from __future__ import annotations
 
@@ -12,6 +12,7 @@ from app.common.timezone import now
 # --- 三条现网门禁 ---
 EC_GATE_FULL_GENERATE = "设变后请走工程变更重传，勿整包生成"
 EC_GATE_ENGINE_BREAKDOWN = "缺新树拆解，请工程变更重传"
+EC_GATE_ENGINE_PROCUREMENT = "缺新树采购对象，请工程变更重传"
 
 
 @dataclass(frozen=True, slots=True)
@@ -76,7 +77,7 @@ def snapshot_blocks_full_generate(
     return False
 
 
-# --- 合册校验拒收 ---
+# --- 工程变更校验拒收 ---
 EC_CHANGE_ORDER_ROW_COUNT = "工程变更单至少一行"
 EC_CHANGE_ORDER_TYPE_INVALID = "变更类型只准四句：完成停止、改图、增加零件、此件不装"
 EC_CHANGE_ORDER_COLUMNS = "工程变更单这一行填法不对"

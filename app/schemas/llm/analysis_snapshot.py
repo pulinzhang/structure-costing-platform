@@ -2,10 +2,15 @@
 
 from __future__ import annotations
 
-from typing import Any, Literal
+from typing import Annotated, Literal
 
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, SkipValidation
 
+from app.schemas.llm.analysis_payload import (
+    AnalysisResultPayload,
+    AnalysisSummaryBag,
+    EvidencePayload,
+)
 from app.schemas.llm.analysis_query import AnalysisQuery
 
 ANALYSIS_VERSION = "v1.0"
@@ -42,11 +47,12 @@ class SnapshotMeta(BaseModel):
 class AnalysisSnapshot(BaseModel):
     query: AnalysisQuery
     meta: SnapshotMeta
-    summary: dict[str, Any] | None = None
-    result: dict[str, Any] = Field(default_factory=dict)
-    evidence: dict[str, Any] = Field(default_factory=dict)
+    # TypedDict 联合由签名约束；Pydantic 深校验会误剥 composite.parts 等键。
+    summary: Annotated[AnalysisSummaryBag | None, SkipValidation] = None
+    result: Annotated[AnalysisResultPayload, SkipValidation] = Field(default_factory=dict)
+    evidence: Annotated[EvidencePayload, SkipValidation] = Field(default_factory=dict)
 
-    def to_prompt_dict(self) -> dict[str, Any]:
+    def to_prompt_dict(self) -> dict[str, object]:
         payload = self.model_dump(mode="json")
         scope = payload.get("meta", {}).get("scope")
         if scope:

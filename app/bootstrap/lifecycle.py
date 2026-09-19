@@ -25,6 +25,9 @@ def on_startup() -> None:
     from app.bootstrap.llm_report_schema import ensure_llm_report_schema
 
     ensure_llm_report_schema(DatabaseConfig.get_engine())
+    from app.bootstrap.die_fee_source_fk_schema import ensure_die_fee_source_fk_schema
+
+    ensure_die_fee_source_fk_schema(DatabaseConfig.get_engine())
     _seed_if_empty()
     _log_startup()
 

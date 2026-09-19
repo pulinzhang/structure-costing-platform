@@ -1,7 +1,7 @@
 """
 指挥家：只挥棒，不拉琴。违反指挥家宪法（orchestrator-constitution）即不合格。
 
-工程变更合册编排（预备 → 管线 → 落库）
+工程变更编排（预备 → 管线 → 落库）
 """
 
 from __future__ import annotations
@@ -27,7 +27,7 @@ from app.services.engineering_change.upload.orchestrator.types import (
 
 
 class EngineeringChangeOrchestrator:
-    """合册写入指挥家。"""
+    """工程变更写入指挥家。"""
 
     def execute(
         self,

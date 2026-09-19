@@ -3,11 +3,11 @@
 from __future__ import annotations
 
 from datetime import datetime
-from typing import Any
 
 from pydantic import BaseModel, ConfigDict, Field, field_serializer
 
 from app.common.timezone import datetime_to_iso
+from app.models.llm import LlmAnalysisReport
 
 
 class LlmAnalysisScopeVO(BaseModel):
@@ -78,7 +78,7 @@ class LlmAnalysisReportListItemVO(BaseModel):
     metadata: LlmAnalysisReportListMetadataVO
 
     @classmethod
-    def from_orm_row(cls, row: Any) -> LlmAnalysisReportListItemVO:
+    def from_orm_row(cls, row: LlmAnalysisReport) -> LlmAnalysisReportListItemVO:
         return cls(
             report_id=int(row.id),
             status=str(row.status),
@@ -135,7 +135,7 @@ class LlmAnalysisReportVO(BaseModel):
     @classmethod
     def from_orm_row(
         cls,
-        row: Any,
+        row: LlmAnalysisReport,
         *,
         from_cache: bool = False,
         pack_ids: list[str] | None = None,

@@ -5,7 +5,7 @@
 from datetime import datetime
 from decimal import Decimal
 
-from pydantic import BaseModel, Field, field_serializer
+from pydantic import BaseModel, ConfigDict, Field, field_serializer
 
 from app.common.money import Q2, optional_format_money
 from app.common.scrap_categories import SCRAP_CATEGORY_STEEL
@@ -35,7 +35,7 @@ class StampingScrapPriceMonthRowVO(BaseModel):
     def serialize_datetime(self, value: datetime | None) -> str | None:
         return datetime_to_iso(value)
 
-    model_config = {"from_attributes": True}
+    model_config = ConfigDict(from_attributes=True)
 
 
 class StampingScrapPriceMonthSheetVO(BaseModel):

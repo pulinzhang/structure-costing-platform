@@ -109,7 +109,7 @@ def list_calc_logs(
 
 
 @router.get(
-    "/calc/logs/{log_id}",
+    "/calc/logs/{log_id:int}",
     response_model=ApiResponse[StampingPartCostCalcLogVO],
 )
 def get_calc_log(
@@ -134,7 +134,7 @@ def delete_all_calc_logs(
 
 
 @router.delete(
-    "/calc/logs/{log_id}",
+    "/calc/logs/{log_id:int}",
     response_model=ApiResponse[None],
 )
 def delete_calc_log(

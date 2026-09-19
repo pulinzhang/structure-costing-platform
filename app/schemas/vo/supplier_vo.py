@@ -2,7 +2,7 @@
 
 from datetime import datetime
 
-from pydantic import BaseModel, field_serializer
+from pydantic import BaseModel, ConfigDict, field_serializer
 
 from app.common.timezone import datetime_to_iso
 
@@ -17,7 +17,7 @@ class SupplierChoiceVO(BaseModel):
 class SupplierVO(BaseModel):
     """供应商一行（含别名列表）。"""
 
-    model_config = {"from_attributes": True}
+    model_config = ConfigDict(from_attributes=True)
 
     full_name: str
     abbreviation: str

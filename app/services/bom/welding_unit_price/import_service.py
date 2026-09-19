@@ -15,7 +15,13 @@ from app.common.audit import audit_create, audit_update
 from app.common.bom.welding_standard_process import list_welding_standard_catalog
 from app.config import settings
 from app.exceptions.base import BusinessException
-from app.parsers.bom.welding_unit_price_parser import parse_welding_unit_price_excel
+from app.parsers.bom.welding_unit_price_parser import (
+    HEADER_NAME,
+    HEADER_REMARK,
+    HEADER_UNIT,
+    HEADER_UNIT_PRICE,
+    parse_welding_unit_price_excel,
+)
 from app.repositories.bom.welding_unit_price_repository import BomWeldingUnitPriceRepository
 from app.schemas.dto.bom_welding_unit_price_dto import (
     BomWeldingUnitPriceCreate,
@@ -82,7 +88,7 @@ class BomWeldingUnitPriceImportService:
             bottom=Side(style="thin", color="BFBFBF"),
         )
 
-        headers = ["名称", "单位", "费用", "备注"]
+        headers = [HEADER_NAME, HEADER_UNIT, HEADER_UNIT_PRICE, HEADER_REMARK]
         for col, title in enumerate(headers, start=1):
             cell = data_sheet.cell(row=1, column=col, value=title)
             cell.font = header_font
@@ -123,7 +129,7 @@ class BomWeldingUnitPriceImportService:
         note_cell.alignment = Alignment(vertical="center", wrap_text=True)
         catalog_sheet.row_dimensions[1].height = 22
 
-        catalog_headers = ["名称", "单位"]
+        catalog_headers = [HEADER_NAME, HEADER_UNIT]
         for col, title in enumerate(catalog_headers, start=1):
             cell = catalog_sheet.cell(row=2, column=col, value=title)
             cell.font = header_font

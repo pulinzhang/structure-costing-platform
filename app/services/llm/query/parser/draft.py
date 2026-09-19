@@ -2,15 +2,14 @@
 
 from __future__ import annotations
 
-from typing import Any
-
 from app.common.part_number import extract_part_number_from_text
 from app.schemas.llm.analysis_query import TimeRange
+from app.schemas.llm.parser_draft import ParserDraft
 from app.services.llm.query.time_range import DefaultScopeMonth, normalize_time_range
 
 
 def parse_time_range_from_draft(
-    draft: dict[str, Any],
+    draft: ParserDraft,
     *,
     question: str,
     default: DefaultScopeMonth,
@@ -32,10 +31,10 @@ def parse_time_range_from_draft(
 def rule_fallback_draft(
     question: str,
     default: DefaultScopeMonth,
-) -> dict[str, Any]:
+) -> ParserDraft:
     """LLM 不可用：仅抽 time_range + filters。"""
     tr = normalize_time_range(user_question=question, default=default)
-    filters: dict[str, str] = {}
+    filters: dict[str, object] = {}
     for known in ("青岛", "芜湖", "大连", "鄂尔多斯"):
         if known in question:
             filters["location"] = known

@@ -6,6 +6,7 @@ from datetime import datetime
 
 from sqlalchemy.orm import Session
 
+from app.common.duration import duration_seconds
 from app.common.timezone import now
 from app.services.costing.steel_price.calc.models import SteelPriceCalcResult
 from app.services.costing.steel_price.calc.orchestrator.deps import SteelPriceCalcDeps
@@ -27,7 +28,8 @@ def persist_calc_result(
     result.finished_at = finished_at.isoformat(timespec="seconds")
     if result.status != STATUS_FAILED:
         ctx.log_builder.line(f"结束时间: {result.finished_at}")
-        ctx.log_builder.line(f"耗时: {(finished_at - ctx.started_at).total_seconds():.2f}s")
+        elapsed = duration_seconds(ctx.started_at, finished_at)
+        ctx.log_builder.line(f"耗时: {elapsed} 秒" if elapsed is not None else "耗时: -")
     result.detail_text = ctx.log_builder.build()
     result.log_id = _persist_log(
         db,

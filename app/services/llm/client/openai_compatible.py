@@ -3,7 +3,6 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
-from typing import Any
 
 import httpx
 
@@ -20,7 +19,7 @@ class LlmChatResult:
     prompt_tokens: int | None
     completion_tokens: int | None
     total_tokens: int | None
-    raw: dict[str, Any]
+    raw: dict[str, object]
 
 
 class LlmClientError(Exception):
@@ -60,7 +59,7 @@ class OpenAiCompatibleClient:
             raise LlmClientError("未配置 LLM_MODEL")
 
         url = f"{self.base_url}/chat/completions"
-        payload: dict[str, Any] = {
+        payload: dict[str, object] = {
             "model": self.model,
             "temperature": temperature,
             "max_tokens": max_tokens,
@@ -116,7 +115,7 @@ class OpenAiCompatibleClient:
             prompt_tokens=prompt_tokens,
             completion_tokens=completion_tokens,
             total_tokens=total_tokens,
-            raw=body if isinstance(body, dict) else {},
+            raw=body if isinstance(body, dict) else {},  # narrowed from response.json()
         )
 
 

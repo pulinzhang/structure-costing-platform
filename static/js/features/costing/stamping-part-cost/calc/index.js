@@ -4,12 +4,16 @@
 
 import {
     partCostCalcTemplate,
-} from './template.js?v=13';
+} from './template.js?v=14';
 import {
     DEFAULT_PAGE_SIZE,
     bindPagination,
     paintPagination,
 } from '../../../../page-size.js?v=3';
+import {
+    formatDurationSeconds,
+    formatTimingLine,
+} from '../../../../duration.js?v=1';
 
 const CASCADE_API = '/api/stamping/filters/cascade';
 const API_BASE = '/api/costing/stamping-part-cost';
@@ -313,7 +317,7 @@ function setCountHtml(id, count, unit) {
 async function loadCalcHistory(page = calcState.history.page) {
     const body = document.getElementById('calcHistoryBody');
     if (!body) return;
-    body.innerHTML = `<tr><td colspan="12" class="py-8 text-center text-[#555]">加载中..</td></tr>`;
+    body.innerHTML = `<tr><td colspan="14" class="py-8 text-center text-[#555]">加载中..</td></tr>`;
     try {
         const res = await HttpClient.get(CALC_LOGS_API, {
             params: { page, size: calcState.history.size },
@@ -333,7 +337,7 @@ async function loadCalcHistory(page = calcState.history.page) {
             );
     } catch (error) {
         console.error('加载计算历史失败:', error);
-        body.innerHTML = `<tr><td colspan="12" class="py-8 text-center text-[#ef5350]">加载失败</td></tr>`;
+        body.innerHTML = `<tr><td colspan="14" class="py-8 text-center text-[#ef5350]">加载失败</td></tr>`;
     }
 }
 
@@ -352,7 +356,7 @@ function renderHistoryRows(items) {
     const body = document.getElementById('calcHistoryBody');
     if (!body) return;
     if (!items.length) {
-        body.innerHTML = `<tr><td colspan="12" class="py-8 text-center text-[#555]">暂无计算记录</td></tr>`;
+        body.innerHTML = `<tr><td colspan="14" class="py-8 text-center text-[#555]">暂无计算记录</td></tr>`;
         return;
     }
 
@@ -367,6 +371,8 @@ function renderHistoryRows(items) {
         return `
             <tr class="hover:bg-[#ffffff]/[0.02] transition-colors text-[#999]" data-log-id="${esc(item.id)}">
                 <td class="py-2 px-2 font-mono text-[#666] whitespace-nowrap">${esc(formatDateTime(item.started_at))}</td>
+                <td class="py-2 px-2 font-mono text-[#666] whitespace-nowrap">${esc(formatDateTime(item.finished_at))}</td>
+                <td class="py-2 px-2 font-mono text-right tabular-nums text-[#777] whitespace-nowrap">${esc(formatDurationSeconds(item))}</td>
                 <td class="py-2 px-2 text-[#ccc] whitespace-nowrap">${esc(item.created_by || item.operator_name || '-')}</td>
                 <td class="py-2 px-2 font-mono text-[#ccc] whitespace-nowrap">${esc(ym)}</td>
                 <td class="py-2 px-2 text-[#ccc] whitespace-nowrap">${esc(item.location || '-')}</td>
@@ -489,7 +495,7 @@ function showProcessDrawer(log) {
         </div>
         <div class="px-5 py-3 border-b border-[#222] text-[10px] text-[#777] space-y-1 shrink-0">
             <div>批次<span class="font-mono text-[#999]">${esc(log.calc_batch_id || '-')}</span></div>
-            <div>时间：${esc(formatDateTime(log.started_at))} → ${esc(formatDateTime(log.finished_at))}</div>
+            <div>${esc(formatTimingLine(log, formatDateTime) || '-')}</div>
             <div>汇总：零件 ${fmtInt(log.total_parts)} · 成功 ${fmtInt(log.success_count)} · 失败 ${fmtInt(log.failed_count)} · 跳过 ${fmtInt(log.skipped_approved_count)}</div>
         </div>
         <div class="flex-1 overflow-y-auto overscroll-contain p-5">

@@ -324,6 +324,12 @@ class BomService:
         try:
             self.snapshot_repo.delete(db, row)
             db.commit()
+        except IntegrityError:
+            db.rollback()
+            raise BusinessException("仍被引用，不能删除") from None
+        except BusinessException:
+            db.rollback()
+            raise
         except Exception:
             db.rollback()
             logger.exception("删除 BOM snapshot 失败")
@@ -433,6 +439,12 @@ class BomService:
         try:
             self.node_repo.delete(db, row)
             db.commit()
+        except IntegrityError:
+            db.rollback()
+            raise BusinessException("仍被引用，不能删除") from None
+        except BusinessException:
+            db.rollback()
+            raise
         except Exception:
             db.rollback()
             logger.exception("删除 BOM node 失败")
@@ -622,7 +634,7 @@ class BomService:
         current_user: UserVO,
         node_bom_version: str | None = None,
     ) -> BomChangePlantResult:
-        """工程变更门面：合册种新树。只 flush。"""
+        """工程变更门面：工程变更种新树。只 flush。"""
         return plant_change_tree_fn(
             self,
             db,

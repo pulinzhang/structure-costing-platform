@@ -4,9 +4,15 @@ from __future__ import annotations
 
 from collections import defaultdict
 from decimal import ROUND_HALF_UP, Decimal
-from typing import Any
 
 from app.repositories.llm.l0_welding_fee_analysis_repository import L0WeldingFeeRow
+from app.schemas.llm.analysis_payload import (
+    ComparisonPayload,
+    DrilldownPayload,
+    DriverItem,
+    DriversPayload,
+    SummaryPayload,
+)
 
 
 def _fee_str(value: Decimal | None) -> str | None:
@@ -20,7 +26,7 @@ def _row_key(row: L0WeldingFeeRow) -> str:
     return f"{row.vehicle_model}|{row.bom_version}|{row.part_number}"
 
 
-def build_l0_welding_fee_summary(rows: list[L0WeldingFeeRow]) -> dict[str, Any]:
+def build_l0_welding_fee_summary(rows: list[L0WeldingFeeRow]) -> SummaryPayload:
     if not rows:
         return {
             "subject": "l0_welding_fee",
@@ -45,7 +51,7 @@ def build_l0_welding_fee_comparison(
     rows: list[L0WeldingFeeRow],
     *,
     location: str | None,
-) -> dict[str, Any]:
+) -> ComparisonPayload:
     if not rows:
         return {
             "kind": "comparison",
@@ -90,7 +96,7 @@ def build_l0_welding_fee_comparison(
     compare_parts = by_year[compare_year]
     all_keys = sorted(set(base_parts) | set(compare_parts))
 
-    items: list[dict[str, Any]] = []
+    items: list[DriverItem] = []
     for key in all_keys:
         base_row = base_parts.get(key)
         compare_row = compare_parts.get(key)
@@ -141,7 +147,7 @@ def build_l0_welding_fee_drilldown(
     *,
     part_token: str,
     head: L0WeldingFeeRow | None = None,
-) -> dict[str, Any]:
+) -> DrilldownPayload:
     if not rows:
         return {
             "kind": "drilldown",
@@ -184,7 +190,7 @@ def build_l0_welding_fee_drivers(
     rows: list[L0WeldingFeeRow],
     *,
     top_n: int = 8,
-) -> dict[str, Any]:
+) -> DriversPayload:
     if not rows:
         return {"kind": "drivers", "items": [], "top_n": top_n}
 

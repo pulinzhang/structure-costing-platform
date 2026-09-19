@@ -7,6 +7,10 @@
 - ``seed_stamping_scrap_prices``：废料价种子（前端暂无 Excel 导入，仅有录入/导出）
 - ``seed_bom_annual_part_prices``：年度零件价种子（青岛 / 2025，与导入模板样例同源）
 - ``upload_stamping_die``：同步上传模具布点（默认芜湖 T13J 样本；校验失败不覆盖）
+- ``purge_steel_price_policies``：清空加减价政策（开发重导）
+- ``purge_bom_process_die_costing``：清空 BOM / 工艺 / 布点及下游核算（联调重导）
+- ``check_route_path_params``：守卫 Router 整数路径必须 ``/{id:int}``（见 api-type-safety §6）
+- ``check_model_config``：守卫 Pydantic ``model_config`` 必须 ``ConfigDict``（见 api-type-safety §7）
 
 不放：一次性 SQLite ALTER、临时冒烟/联调脚本（新库走 ``create_all``）。
 
@@ -17,4 +21,8 @@
     python -X utf8 -m scripts.seed_stamping_scrap_prices
     python -X utf8 -m scripts.seed_bom_annual_part_prices
     python -X utf8 -m scripts.upload_stamping_die
+    python -X utf8 -m scripts.purge_bom_process_die_costing --dry-run
+    python -X utf8 -m scripts.purge_bom_process_die_costing
+    python -X utf8 -m scripts.check_route_path_params
+    python -X utf8 -m scripts.check_model_config
 """
