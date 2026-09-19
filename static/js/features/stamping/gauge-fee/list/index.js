@@ -7,7 +7,8 @@ import {
     renderTableRows,
     updateGaugeFeeHud,
     updateGaugeFeeFilterCapsules,
-} from './template.js?v=13';
+} from './template.js?v=15';
+import { bindMoreMenu } from '../../../../more-menu.js?v=1';
 import {
     DEFAULT_PAGE_SIZE,
     bindPagination,
@@ -18,6 +19,9 @@ import { setSearchBusy } from '../../../../search-busy.js?v=1';
 
 const API_BASE = '/api/stamping/gauge-fees';
 const STORAGE_KEY = 'gaugeFeePageSize';
+
+/** @type {{ setOpen: (isOpen: boolean) => void, close: () => void, unbind: () => void } | null} */
+let moreMenu = null;
 const DRAWER_MS = 300;
 
 const pageState = {
@@ -376,7 +380,17 @@ function bindEvents() {
         }
     });
     document.getElementById('gflExportBtn')?.addEventListener('click', () => exportExcel());
-    document.getElementById('gflDeleteScopeBtn')?.addEventListener('click', () => openScopeDeleteDrawer());
+    if (document.getElementById('gflMoreBtn')) {
+        moreMenu = bindMoreMenu({
+            wrapId: 'gflMoreWrap',
+            btnId: 'gflMoreBtn',
+            menuId: 'gflMoreMenu',
+        });
+    }
+    document.getElementById('gflDeleteScopeBtn')?.addEventListener('click', () => {
+        moreMenu?.close();
+        openScopeDeleteDrawer();
+    });
     document.getElementById('gflCloseEdit')?.addEventListener('click', () => {
         closeDrawer('gflEditDrawer', 'gflEditBackdrop');
     });
@@ -419,4 +433,8 @@ function init() {
 export const pageConfig = {
     render: gaugeFeeListTemplate,
     init,
+    destroy() {
+        moreMenu?.unbind();
+        moreMenu = null;
+    },
 };

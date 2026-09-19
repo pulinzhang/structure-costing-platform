@@ -3,7 +3,8 @@
  * 基准价格导出页面逻辑
  */
 
-import { basePriceDownloadTemplate } from './template.js?v=35';
+import { basePriceDownloadTemplate } from './template.js?v=37';
+import { bindMoreMenu } from '../../../../more-menu.js?v=1';
 import {
     DEFAULT_PREVIEW_PAGE_SIZE,
     PREVIEW_PAGE_SIZE_OPTIONS,
@@ -15,6 +16,9 @@ import {
     requireExportYearMonth,
     selectDefaultYear,
 } from '../../../common/period-ui.js?v=4';
+
+/** @type {{ setOpen: (isOpen: boolean) => void, close: () => void, unbind: () => void } | null} */
+let moreMenu = null;
 
 // 状态管理
 const basePriceDownloadState = {
@@ -62,6 +66,7 @@ function applyPermissionUi() {
     }
     if (!can('op:base-price-download:delete')) {
         document.getElementById('btnDeleteBasePrice')?.classList.add('hidden');
+        document.getElementById('basePriceMoreWrap')?.classList.add('hidden');
     }
 }
 
@@ -148,11 +153,19 @@ function bindEvents() {
         btnExport.addEventListener('click', () => exportExcel());
     }
 
-    // 删除按钮
+    // 删除按钮（⋯ 菜单）
     const btnDelete = document.getElementById('btnDeleteBasePrice');
     if (btnDelete) {
-        btnDelete.addEventListener('click', () => batchDeleteBasePrices());
+        btnDelete.addEventListener('click', () => {
+            moreMenu?.close();
+            batchDeleteBasePrices();
+        });
     }
+    moreMenu = bindMoreMenu({
+        wrapId: 'basePriceMoreWrap',
+        btnId: 'basePriceMoreBtn',
+        menuId: 'basePriceMoreMenu',
+    });
 
     ['basePriceDownloadYear', 'basePriceDownloadMonth', 'basePriceDownloadLocation', 'basePriceDownloadMill', 'basePriceDownloadCategory']
         .forEach(id => {
@@ -448,6 +461,10 @@ async function refreshPreview() {
 export const pageConfig = {
     render: basePriceDownloadTemplate,
     init: () => init(),
+    destroy() {
+        moreMenu?.unbind();
+        moreMenu = null;
+    },
 };
 
 // ===== 本地渲染辅助函数 =====

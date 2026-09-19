@@ -10,13 +10,17 @@ import {
     parseUnitPriceInput,
     updateWeldingHud,
     updateWeldingFilterCapsules,
-} from './template.js?v=15';
+} from './template.js?v=17';
+import { bindMoreMenu } from '../../../../more-menu.js?v=1';
 import {
     DEFAULT_PAGE_SIZE,
     bindPagination,
     paintPagination,
 } from '../../../../page-size.js?v=3';
 import { setSearchBusy } from '../../../../search-busy.js?v=1';
+
+/** @type {{ setOpen: (isOpen: boolean) => void, close: () => void, unbind: () => void } | null} */
+let moreMenu = null;
 
 const weldingUnitPriceState = {
     records: [],
@@ -87,6 +91,12 @@ function applyPermissionUi() {
     if (!canDelete) document.getElementById('btnBatchDeleteWeldingUnitPrice')?.classList.add('hidden');
     if (!canApprove) document.getElementById('btnBatchApproveWelding')?.classList.add('hidden');
     if (!canReverse) document.getElementById('btnBatchReverseWelding')?.classList.add('hidden');
+    const moreItems = ['btnBatchApproveWelding', 'btnBatchReverseWelding', 'btnBatchDeleteWeldingUnitPrice']
+        .map((id) => document.getElementById(id))
+        .filter((el) => el && !el.classList.contains('hidden'));
+    if (!moreItems.length) {
+        document.getElementById('weldingMoreWrap')?.classList.add('hidden');
+    }
 }
 
 function setAdvancedOpen(open) {
@@ -266,9 +276,23 @@ function bindTableRowEvents() {
 
 function bindEvents() {
     document.getElementById('btnExportWeldingUnitPrice')?.addEventListener('click', () => exportExcel());
-    document.getElementById('btnBatchDeleteWeldingUnitPrice')?.addEventListener('click', () => batchDeleteByFilters());
-    document.getElementById('btnBatchApproveWelding')?.addEventListener('click', () => openBatchAuditDrawer('approve'));
-    document.getElementById('btnBatchReverseWelding')?.addEventListener('click', () => openBatchAuditDrawer('reverse'));
+    moreMenu = bindMoreMenu({
+        wrapId: 'weldingMoreWrap',
+        btnId: 'weldingMoreBtn',
+        menuId: 'weldingMoreMenu',
+    });
+    document.getElementById('btnBatchDeleteWeldingUnitPrice')?.addEventListener('click', () => {
+        moreMenu?.close();
+        batchDeleteByFilters();
+    });
+    document.getElementById('btnBatchApproveWelding')?.addEventListener('click', () => {
+        moreMenu?.close();
+        openBatchAuditDrawer('approve');
+    });
+    document.getElementById('btnBatchReverseWelding')?.addEventListener('click', () => {
+        moreMenu?.close();
+        openBatchAuditDrawer('reverse');
+    });
     document.getElementById('btnFilter')?.addEventListener('click', () => {
         readFiltersFromDom();
         loadData(1);
@@ -560,4 +584,8 @@ async function deleteRecord(id) {
 export const pageConfig = {
     render: weldingUnitPriceTemplate,
     init: () => init(),
+    destroy() {
+        moreMenu?.unbind();
+        moreMenu = null;
+    },
 };

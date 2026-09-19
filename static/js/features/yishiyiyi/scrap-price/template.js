@@ -4,6 +4,8 @@
  * DOM ID / 字段 / 事件契约保持不变
  */
 
+import { moreMenuItemHtml, moreMenuShellHtml } from '../../../more-menu.js?v=1';
+
 /** 金额展示：固定 2 位小数 + 千分位（输入框用，空值返回 ''） */
 export function fmtPrice(value) {
     if (value === null || value === undefined || value === '') return '';
@@ -100,30 +102,16 @@ export function scrapPriceTemplate() {
                     <span id="scrapMonthStatus" class="text-[11px] text-[#484848]"></span>
                 </div>
                 <div class="flex items-center gap-2 shrink-0 pt-0.5">
-                    <div class="relative" id="scrapMoreWrap">
-                        <button type="button" id="btnScrapMore"
-                                class="w-8 h-8 flex items-center justify-center text-[#484848] hover:text-[#ffffff] transition-colors"
-                                aria-label="更多操作" title="更多">
-                            <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 24 24" aria-hidden="true">
-                                <circle cx="5" cy="12" r="1.6"/><circle cx="12" cy="12" r="1.6"/><circle cx="19" cy="12" r="1.6"/>
-                            </svg>
-                        </button>
-                        <div id="scrapMoreMenu"
-                             class="hidden absolute right-0 top-full mt-1 z-[40] min-w-[132px] py-1 bg-[#161616] border border-[#2c2c2c] shadow-[0_8px_24px_rgba(0,0,0,0.55)]">
-                            <button type="button" id="btnScrapExport"
-                                    class="w-full px-3.5 py-2 text-left text-[12px] text-[#9e9e9e] hover:bg-[#1e1e1e] hover:text-[#ffffff] transition-colors">
-                                导出
-                            </button>
-                            <button type="button" id="btnScrapCopy"
-                                    class="w-full px-3.5 py-2 text-left text-[12px] text-[#9e9e9e] hover:bg-[#1e1e1e] hover:text-[#ffffff] transition-colors">
-                                复制月度
-                            </button>
-                            <button type="button" id="btnScrapDelete"
-                                    class="w-full px-3.5 py-2 text-left text-[12px] text-[#9e9e9e] hover:bg-[#1e1e1e] hover:text-[#ef5350] transition-colors">
-                                删除本月
-                            </button>
-                        </div>
-                    </div>
+                    ${moreMenuShellHtml({
+                        wrapId: 'scrapMoreWrap',
+                        btnId: 'btnScrapMore',
+                        menuId: 'scrapMoreMenu',
+                        itemsHtml: [
+                            moreMenuItemHtml({ id: 'btnScrapExport', label: '导出' }),
+                            moreMenuItemHtml({ id: 'btnScrapCopy', label: '复制月度' }),
+                            moreMenuItemHtml({ id: 'btnScrapDelete', label: '删除本月', danger: true }),
+                        ].join(''),
+                    })}
                     <button id="btnScrapSave"
                             class="inline-flex items-center h-8 px-4 text-[12px] font-semibold bg-[#d32f2f] text-white hover:bg-[#b71c1c] transition-colors">
                         保存

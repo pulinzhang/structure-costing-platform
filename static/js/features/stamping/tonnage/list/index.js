@@ -10,13 +10,17 @@ import {
     parsePricePerStrokeInput,
     updateTonnageHud,
     updateTonnageFilterCapsules,
-} from './template.js?v=23';
+} from './template.js?v=25';
+import { bindMoreMenu } from '../../../../more-menu.js?v=1';
 import {
     DEFAULT_PAGE_SIZE,
     bindPagination,
     paintPagination,
 } from '../../../../page-size.js?v=3';
 import { setSearchBusy } from '../../../../search-busy.js?v=1';
+
+/** @type {{ setOpen: (isOpen: boolean) => void, close: () => void, unbind: () => void } | null} */
+let moreMenu = null;
 
 const tonnagePriceState = {
     records: [],
@@ -87,6 +91,12 @@ function applyPermissionUi() {
     if (!canDelete) document.getElementById('btnBatchDeleteTonnagePrice')?.classList.add('hidden');
     if (!canApprove) document.getElementById('btnBatchApproveTonnage')?.classList.add('hidden');
     if (!canReverse) document.getElementById('btnBatchReverseTonnage')?.classList.add('hidden');
+    const moreItems = ['btnBatchApproveTonnage', 'btnBatchReverseTonnage', 'btnBatchDeleteTonnagePrice']
+        .map((id) => document.getElementById(id))
+        .filter((el) => el && !el.classList.contains('hidden'));
+    if (!moreItems.length) {
+        document.getElementById('tonnageMoreWrap')?.classList.add('hidden');
+    }
 }
 
 function setAdvancedOpen(open) {
@@ -266,9 +276,23 @@ function bindTableRowEvents() {
 
 function bindEvents() {
     document.getElementById('btnExportTonnagePrice')?.addEventListener('click', () => exportExcel());
-    document.getElementById('btnBatchDeleteTonnagePrice')?.addEventListener('click', () => batchDeleteByFilters());
-    document.getElementById('btnBatchApproveTonnage')?.addEventListener('click', () => openBatchAuditDrawer('approve'));
-    document.getElementById('btnBatchReverseTonnage')?.addEventListener('click', () => openBatchAuditDrawer('reverse'));
+    moreMenu = bindMoreMenu({
+        wrapId: 'tonnageMoreWrap',
+        btnId: 'tonnageMoreBtn',
+        menuId: 'tonnageMoreMenu',
+    });
+    document.getElementById('btnBatchDeleteTonnagePrice')?.addEventListener('click', () => {
+        moreMenu?.close();
+        batchDeleteByFilters();
+    });
+    document.getElementById('btnBatchApproveTonnage')?.addEventListener('click', () => {
+        moreMenu?.close();
+        openBatchAuditDrawer('approve');
+    });
+    document.getElementById('btnBatchReverseTonnage')?.addEventListener('click', () => {
+        moreMenu?.close();
+        openBatchAuditDrawer('reverse');
+    });
     document.getElementById('btnFilter')?.addEventListener('click', () => {
         readFiltersFromDom();
         loadData(1);
@@ -552,4 +576,8 @@ async function deleteRecord(id) {
 export const pageConfig = {
     render: tonnagePriceTemplate,
     init: () => init(),
+    destroy() {
+        moreMenu?.unbind();
+        moreMenu = null;
+    },
 };

@@ -59,7 +59,7 @@ class StampingDiePartRepository:
         self,
         db: Session,
         *,
-        vehicle_model: str,
+        vehicle_model: str | None = None,
         location: str | None = None,
         locations: list[str] | None = None,
         stamping_supplier: str | None = None,
@@ -69,7 +69,9 @@ class StampingDiePartRepository:
         as_of_month: int | None = None,
         include_expired: bool = False,
     ) -> Query[StampingDiePart]:
-        query = db.query(StampingDiePart).filter(StampingDiePart.vehicle_model == vehicle_model)
+        query = db.query(StampingDiePart)
+        if vehicle_model:
+            query = query.filter(StampingDiePart.vehicle_model == vehicle_model)
         if locations is not None:
             query = query.filter(StampingDiePart.location.in_(locations))
         elif location:
@@ -97,10 +99,10 @@ class StampingDiePartRepository:
         self,
         db: Session,
         *,
-        vehicle_model: str,
         part_number: str | None,
         skip: int,
         limit: int,
+        vehicle_model: str | None = None,
         location: str | None = None,
         locations: list[str] | None = None,
         stamping_supplier: str | None = None,

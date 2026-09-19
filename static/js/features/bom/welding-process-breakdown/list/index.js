@@ -9,7 +9,8 @@ import {
     updateWpbHud,
     updateWpbCapsules,
     refreshWpbLineDerived,
-} from './template.js?v=43';
+} from './template.js?v=44';
+import { bindMoreMenu } from '../../../../more-menu.js?v=1';
 import {
     DEFAULT_PAGE_SIZE,
     bindPagination,
@@ -19,6 +20,9 @@ import { setSearchBusy } from '../../../../search-busy.js?v=1';
 
 const API_BASE = '/api/bom/welding-process-breakdown';
 const DRAWER_MS = 300;
+
+/** @type {{ setOpen: (isOpen: boolean) => void, close: () => void, unbind: () => void } | null} */
+let moreMenu = null;
 
 const wpbState = {
     records: [],
@@ -114,6 +118,8 @@ function mountDrawersToBody() {
 }
 
 function destroy() {
+    moreMenu?.unbind();
+    moreMenu = null;
     wpbState.currentNodeId = null;
     for (const id of [
         'wpbDetailBackdrop',
@@ -149,6 +155,12 @@ function applyPermissionUi() {
     hide('btnWpbBatchReverse', canFn('op:bom-welding-process-breakdown:reverse'));
     hide('btnWpbBatchDelete', canFn('op:bom-welding-process-breakdown:delete'));
     hide('btnWpbExport', canFn('op:bom-welding-process-breakdown:export'));
+    const moreItems = ['btnWpbBatchApprove', 'btnWpbBatchReverse', 'btnWpbBatchDelete']
+        .map((id) => document.getElementById(id))
+        .filter((el) => el && !el.classList.contains('hidden'));
+    if (!moreItems.length) {
+        document.getElementById('wpbMoreWrap')?.classList.add('hidden');
+    }
 }
 
 function bindEvents() {
@@ -202,9 +214,23 @@ function bindEvents() {
     document.getElementById('wpbDetailBackdrop')?.addEventListener('click', () => closeDrawer('wpbDetailDrawer', 'wpbDetailBackdrop'));
 
     document.getElementById('btnWpbExport')?.addEventListener('click', () => exportL0Excel());
-    document.getElementById('btnWpbBatchApprove')?.addEventListener('click', () => openBatchDrawer('approve'));
-    document.getElementById('btnWpbBatchReverse')?.addEventListener('click', () => openBatchDrawer('reverse'));
-    document.getElementById('btnWpbBatchDelete')?.addEventListener('click', () => openBatchDrawer('delete'));
+    moreMenu = bindMoreMenu({
+        wrapId: 'wpbMoreWrap',
+        btnId: 'wpbMoreBtn',
+        menuId: 'wpbMoreMenu',
+    });
+    document.getElementById('btnWpbBatchApprove')?.addEventListener('click', () => {
+        moreMenu?.close();
+        openBatchDrawer('approve');
+    });
+    document.getElementById('btnWpbBatchReverse')?.addEventListener('click', () => {
+        moreMenu?.close();
+        openBatchDrawer('reverse');
+    });
+    document.getElementById('btnWpbBatchDelete')?.addEventListener('click', () => {
+        moreMenu?.close();
+        openBatchDrawer('delete');
+    });
     document.getElementById('wpbCloseBatchDrawer')?.addEventListener('click', () => closeDrawer('wpbBatchDrawer', 'wpbBatchBackdrop'));
     document.getElementById('wpbCancelBatch')?.addEventListener('click', () => closeDrawer('wpbBatchDrawer', 'wpbBatchBackdrop'));
     document.getElementById('wpbBatchBackdrop')?.addEventListener('click', () => closeDrawer('wpbBatchDrawer', 'wpbBatchBackdrop'));

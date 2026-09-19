@@ -12,12 +12,16 @@ import {
     parsePriceInput,
     comparePriceStrings,
     subtractPriceStrings,
-} from './template.js?v=20';
+} from './template.js?v=21';
+import { bindMoreMenu } from '../../../more-menu.js?v=1';
 
 const API_BASE = '/api/yishiyiyi/scrap-price';
 const DRAWER_ANIMATION_MS = 300;
 const SCRAP_CATEGORY_STEEL = '钢材';
 const SCRAP_CATEGORY_ALUMINUM = '铝板';
+
+/** @type {{ setOpen: (isOpen: boolean) => void, close: () => void, unbind: () => void } | null} */
+let moreMenu = null;
 const SCRAP_CATEGORY_LABELS = {
     [SCRAP_CATEGORY_STEEL]: '钢材料',
     [SCRAP_CATEGORY_ALUMINUM]: '铝材',
@@ -139,12 +143,6 @@ async function openCopyDrawer() {
     await refreshCopyPanelState();
 }
 
-function setMoreMenuOpen(isOpen) {
-    const menu = document.getElementById('scrapMoreMenu');
-    if (!menu) return;
-    menu.classList.toggle('hidden', !isOpen);
-}
-
 function setYearMenuOpen(isOpen) {
     const menu = document.getElementById('scrapYearMenu');
     const trigger = document.getElementById('scrapYearTrigger');
@@ -191,7 +189,7 @@ function applyPermissionUi() {
     if (!canExport) document.getElementById('btnScrapExport')?.classList.add('hidden');
 
     const hasMore = canCopy || canDelete || canExport;
-    if (!hasMore) document.getElementById('btnScrapMore')?.classList.add('hidden');
+    if (!hasMore) document.getElementById('scrapMoreWrap')?.classList.add('hidden');
 }
 
 function syncCategoryButtons() {
@@ -657,7 +655,7 @@ function bindEvents() {
 
     document.getElementById('scrapYearTrigger')?.addEventListener('click', (e) => {
         e.stopPropagation();
-        setMoreMenuOpen(false);
+        moreMenu?.close();
         const menu = document.getElementById('scrapYearMenu');
         const isOpen = menu && !menu.classList.contains('hidden');
         setYearMenuOpen(!isOpen);
@@ -696,19 +694,14 @@ function bindEvents() {
         renderChips();
     });
 
-    document.getElementById('btnScrapMore')?.addEventListener('click', (e) => {
-        e.stopPropagation();
-        setYearMenuOpen(false);
-        const menu = document.getElementById('scrapMoreMenu');
-        const isOpen = menu && !menu.classList.contains('hidden');
-        setMoreMenuOpen(!isOpen);
+    moreMenu = bindMoreMenu({
+        wrapId: 'scrapMoreWrap',
+        btnId: 'btnScrapMore',
+        menuId: 'scrapMoreMenu',
+        onToggle: () => setYearMenuOpen(false),
     });
 
     document.addEventListener('click', (e) => {
-        const moreWrap = document.getElementById('scrapMoreWrap');
-        if (moreWrap && !moreWrap.contains(e.target)) {
-            setMoreMenuOpen(false);
-        }
         const yearPicker = document.getElementById('scrapYearPicker');
         if (yearPicker && !yearPicker.contains(e.target)) {
             setYearMenuOpen(false);
@@ -719,15 +712,15 @@ function bindEvents() {
         saveMonth();
     });
     document.getElementById('btnScrapExport')?.addEventListener('click', () => {
-        setMoreMenuOpen(false);
+        moreMenu?.close();
         exportExcel();
     });
     document.getElementById('btnScrapDelete')?.addEventListener('click', () => {
-        setMoreMenuOpen(false);
+        moreMenu?.close();
         deleteMonth();
     });
     document.getElementById('btnScrapCopy')?.addEventListener('click', () => {
-        setMoreMenuOpen(false);
+        moreMenu?.close();
         openCopyDrawer();
     });
     document.getElementById('copyTargetYear')?.addEventListener('input', () => {
@@ -772,4 +765,8 @@ async function init() {
 export const pageConfig = {
     render: scrapPriceTemplate,
     init,
+    destroy() {
+        moreMenu?.unbind();
+        moreMenu = null;
+    },
 };

@@ -4,13 +4,17 @@ import {
     updateLacHud,
     updateLacFilterCapsules,
     updateLacTableHead,
-} from './template.js?v=32';
+} from './template.js?v=36';
 import {
     DEFAULT_PAGE_SIZE,
     bindPagination,
     paintPagination,
 } from '../../../../page-size.js?v=3';
+import { bindMoreMenu } from '../../../../more-menu.js?v=1';
 import { setSearchBusy } from '../../../../search-busy.js?v=1';
+
+/** @type {{ setOpen: (isOpen: boolean) => void, close: () => void, unbind: () => void } | null} */
+let moreMenu = null;
 
 const API_BASE = '/api/costing/assembly-costs';
 const CASCADE_API = '/api/bom/filters/cascade';
@@ -95,6 +99,8 @@ function init() {
 }
 
 function destroy() {
+    moreMenu?.unbind();
+    moreMenu = null;
     closeDetailDrawer();
 }
 
@@ -114,7 +120,7 @@ function syncViewButtons() {
     const bundleBtn = document.getElementById('lacExportBundleBtn');
     const isProcurement = listState.view === 'procurement';
     if (exportLabel) {
-        exportLabel.textContent = isProcurement ? '导出零件成本' : '导出总成核价';
+        exportLabel.textContent = isProcurement ? '零件成本' : '总成核价';
     }
     if (exportBtn) {
         exportBtn.title = isProcurement
@@ -145,6 +151,12 @@ function applyPermissionUi() {
     if (!listState.canExport) {
         document.getElementById('lacExportBtn')?.classList.add('hidden');
         document.getElementById('lacExportBundleBtn')?.classList.add('hidden');
+    }
+    const moreItems = ['lacBatchApproveBtn', 'lacBatchReverseBtn', 'lacBatchDeleteBtn']
+        .map((id) => document.getElementById(id))
+        .filter((el) => el && !el.classList.contains('hidden'));
+    if (!moreItems.length) {
+        document.getElementById('lacMoreWrap')?.classList.add('hidden');
     }
 }
 
@@ -285,9 +297,23 @@ function bindEvents() {
         loadList(1);
     });
 
-    document.getElementById('lacBatchApproveBtn')?.addEventListener('click', () => openBatchAuditDrawer('approve'));
-    document.getElementById('lacBatchReverseBtn')?.addEventListener('click', () => openBatchAuditDrawer('reverse'));
-    document.getElementById('lacBatchDeleteBtn')?.addEventListener('click', () => batchDelete());
+    moreMenu = bindMoreMenu({
+        wrapId: 'lacMoreWrap',
+        btnId: 'lacMoreBtn',
+        menuId: 'lacMoreMenu',
+    });
+    document.getElementById('lacBatchApproveBtn')?.addEventListener('click', () => {
+        moreMenu?.close();
+        openBatchAuditDrawer('approve');
+    });
+    document.getElementById('lacBatchReverseBtn')?.addEventListener('click', () => {
+        moreMenu?.close();
+        openBatchAuditDrawer('reverse');
+    });
+    document.getElementById('lacBatchDeleteBtn')?.addEventListener('click', () => {
+        moreMenu?.close();
+        batchDelete();
+    });
     bindBatchAuditDrawerEvents();
     document.getElementById('lacExportBtn')?.addEventListener('click', () => exportExcel());
     document.getElementById('lacExportBundleBtn')?.addEventListener('click', () => exportBundleExcel());

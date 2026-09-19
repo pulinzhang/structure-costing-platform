@@ -8,13 +8,17 @@ import {
     renderSteelPriceRows,
     updateSteelPriceHud,
     updateActiveFilterCapsules,
-} from './template.js?v=50';
+} from './template.js?v=52';
 import {
     DEFAULT_PAGE_SIZE,
     bindPagination,
     paintPagination,
 } from '../../../../page-size.js?v=3';
+import { bindMoreMenu } from '../../../../more-menu.js?v=1';
 import { setSearchBusy } from '../../../../search-busy.js?v=1';
+
+/** @type {{ setOpen: (isOpen: boolean) => void, close: () => void, unbind: () => void } | null} */
+let moreMenu = null;
 
 const steelPriceState = {
     records: [],
@@ -87,6 +91,16 @@ function applyPermissionUi() {
     }
     if (!can('op:steel-price-list:export')) {
         document.getElementById('steelPriceExportButton')?.classList.add('hidden');
+    }
+    const moreItems = [
+        'steelPriceBatchApproveButton',
+        'steelPriceBatchReverseButton',
+        'steelPriceBatchDeleteButton',
+    ]
+        .map((id) => document.getElementById(id))
+        .filter((el) => el && !el.classList.contains('hidden'));
+    if (!moreItems.length) {
+        document.getElementById('steelPriceMoreWrap')?.classList.add('hidden');
     }
 }
 
@@ -306,9 +320,23 @@ function bindEvents() {
         });
     });
     document.getElementById('steelPriceResetFilterButton')?.addEventListener('click', () => resetFilters());
-    document.getElementById('steelPriceBatchDeleteButton')?.addEventListener('click', () => batchDeleteByFilters());
-    document.getElementById('steelPriceBatchApproveButton')?.addEventListener('click', () => openBatchAuditDrawer('approve'));
-    document.getElementById('steelPriceBatchReverseButton')?.addEventListener('click', () => openBatchAuditDrawer('reverse'));
+    moreMenu = bindMoreMenu({
+        wrapId: 'steelPriceMoreWrap',
+        btnId: 'steelPriceMoreBtn',
+        menuId: 'steelPriceMoreMenu',
+    });
+    document.getElementById('steelPriceBatchDeleteButton')?.addEventListener('click', () => {
+        moreMenu?.close();
+        batchDeleteByFilters();
+    });
+    document.getElementById('steelPriceBatchApproveButton')?.addEventListener('click', () => {
+        moreMenu?.close();
+        openBatchAuditDrawer('approve');
+    });
+    document.getElementById('steelPriceBatchReverseButton')?.addEventListener('click', () => {
+        moreMenu?.close();
+        openBatchAuditDrawer('reverse');
+    });
     document.getElementById('steelPriceExportButton')?.addEventListener('click', () => exportExcel());
 
     bindEditDrawerEvents();
@@ -1012,4 +1040,8 @@ function formatDateTime(value) {
 export const pageConfig = {
     render: steelPriceListTemplate,
     init: () => init(),
+    destroy() {
+        moreMenu?.unbind();
+        moreMenu = null;
+    },
 };

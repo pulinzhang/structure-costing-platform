@@ -10,13 +10,17 @@ import {
     updatePkgHud,
     updatePkgFilterCapsules,
     renderDetailBody,
-} from './template.js?v=8';
+} from './template.js?v=10';
+import { bindMoreMenu } from '../../../../more-menu.js?v=1';
 import {
     DEFAULT_PAGE_SIZE,
     bindPagination,
     paintPagination,
 } from '../../../../page-size.js?v=3';
 import { setSearchBusy } from '../../../../search-busy.js?v=1';
+
+/** @type {{ setOpen: (isOpen: boolean) => void, close: () => void, unbind: () => void } | null} */
+let moreMenu = null;
 
 const pkgState = {
     records: [],
@@ -90,6 +94,12 @@ function applyPermissionUi() {
     if (!canDelete) document.getElementById('btnBatchDeletePkg')?.classList.add('hidden');
     if (!canApprove) document.getElementById('btnBatchApprovePkg')?.classList.add('hidden');
     if (!canReverse) document.getElementById('btnBatchReversePkg')?.classList.add('hidden');
+    const moreItems = ['btnBatchApprovePkg', 'btnBatchReversePkg', 'btnBatchDeletePkg']
+        .map((id) => document.getElementById(id))
+        .filter((el) => el && !el.classList.contains('hidden'));
+    if (!moreItems.length) {
+        document.getElementById('pkgMoreWrap')?.classList.add('hidden');
+    }
 }
 
 function setAdvancedOpen(open) {
@@ -280,9 +290,23 @@ function bindEvents() {
     });
 
     document.getElementById('btnExportPkg')?.addEventListener('click', exportExcel);
-    document.getElementById('btnBatchDeletePkg')?.addEventListener('click', batchDelete);
-    document.getElementById('btnBatchApprovePkg')?.addEventListener('click', () => openBatchAudit('approve'));
-    document.getElementById('btnBatchReversePkg')?.addEventListener('click', () => openBatchAudit('reverse'));
+    moreMenu = bindMoreMenu({
+        wrapId: 'pkgMoreWrap',
+        btnId: 'pkgMoreBtn',
+        menuId: 'pkgMoreMenu',
+    });
+    document.getElementById('btnBatchDeletePkg')?.addEventListener('click', () => {
+        moreMenu?.close();
+        batchDelete();
+    });
+    document.getElementById('btnBatchApprovePkg')?.addEventListener('click', () => {
+        moreMenu?.close();
+        openBatchAudit('approve');
+    });
+    document.getElementById('btnBatchReversePkg')?.addEventListener('click', () => {
+        moreMenu?.close();
+        openBatchAudit('reverse');
+    });
 
     document.getElementById('closePkgBatchAuditDrawer')?.addEventListener('click', () => closeDrawer('pkgBatchAuditDrawer', 'pkgBatchAuditDrawerBackdrop'));
     document.getElementById('cancelPkgBatchAuditBtn')?.addEventListener('click', () => closeDrawer('pkgBatchAuditDrawer', 'pkgBatchAuditDrawerBackdrop'));
@@ -507,4 +531,8 @@ async function submitBatchAudit() {
 export const pageConfig = {
     render: pkgTransportFeeTemplate,
     init: () => init(),
+    destroy() {
+        moreMenu?.unbind();
+        moreMenu = null;
+    },
 };

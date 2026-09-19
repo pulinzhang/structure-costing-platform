@@ -4,6 +4,7 @@
  */
 
 import { paginationBarHtml } from '../../../../page-size.js?v=3';
+import { moreMenuItemHtml, moreMenuShellHtml } from '../../../../more-menu.js?v=1';
 import { partShortCodeCellHtml, partNumberNameCellHtml } from '../../../../part-identity.js?v=3';
 
 export function processFeeListTemplate() {
@@ -79,26 +80,21 @@ export function processFeeListTemplate() {
                                 </div>
                             </div>
                         </div>
-                        <div class="flex items-center gap-2 shrink-0 flex-wrap justify-end">
-                            <button id="feeBatchApproveBtn" type="button"
-                                    class="inline-flex items-center gap-1.5 bg-transparent text-[#6E6E73] border border-[#2A2A35] px-3 py-1.5 text-[11px] font-medium rounded-md hover:border-[#FF1E27]/50 hover:text-[#FF1E27] hover:bg-[#FF1E27]/10 hover:shadow-[0_0_12px_rgba(255,30,39,0.2)] transition-all duration-200">
-                                ${window.svgIcon('check-circle', 'w-3 h-3')}
-                                批量审核
-                            </button>
-                            <button id="feeBatchReverseBtn" type="button"
-                                    class="inline-flex items-center gap-1.5 bg-transparent text-[#6E6E73] border border-[#2A2A35] px-3 py-1.5 text-[11px] font-medium rounded-md hover:border-[#FF1E27]/50 hover:text-[#FF1E27] hover:bg-[#FF1E27]/10 hover:shadow-[0_0_12px_rgba(255,30,39,0.2)] transition-all duration-200">
-                                ${window.svgIcon('refresh', 'w-3 h-3')}
-                                批量反审核
-                            </button>
-                            <button id="feeBatchDeleteBtn" type="button"
-                                    class="inline-flex items-center gap-1.5 bg-transparent text-[#6E6E73] border border-[#2A2A35] px-3 py-1.5 text-[11px] font-medium rounded-md hover:border-[#c62828]/60 hover:text-[#ef5350] hover:bg-[#c62828]/15 hover:shadow-[0_0_12px_rgba(198,40,40,0.2)] transition-all duration-200">
-                                ${window.svgIcon('trash', 'w-3 h-3')}
-                                批量删除
-                            </button>
+                        <div class="flex items-center gap-1.5 shrink-0">
+                            ${moreMenuShellHtml({
+                                wrapId: 'feeMoreWrap',
+                                btnId: 'feeMoreBtn',
+                                menuId: 'feeMoreMenu',
+                                itemsHtml: [
+                                    moreMenuItemHtml({ id: 'feeBatchApproveBtn', label: '批量审核' }),
+                                    moreMenuItemHtml({ id: 'feeBatchReverseBtn', label: '批量反审核' }),
+                                    moreMenuItemHtml({ id: 'feeBatchDeleteBtn', label: '批量删除', danger: true }),
+                                ].join(''),
+                            })}
                             <button id="feeExportBtn" type="button"
                                     class="inline-flex items-center gap-1.5 bg-transparent text-[#6E6E73] border border-[#2A2A35] px-3 py-1.5 text-[11px] font-medium rounded-md hover:border-[#FF1E27]/50 hover:text-[#FF1E27] hover:bg-[#FF1E27]/10 hover:shadow-[0_0_12px_rgba(255,30,39,0.2)] transition-all duration-200">
                                 ${window.svgIcon('download', 'w-3 h-3')}
-                                导出 Excel
+                                Excel
                             </button>
                         </div>
                     </div>

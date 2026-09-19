@@ -8,7 +8,8 @@ import {
     renderDieFeeRows,
     updateDieFeeHud,
     updateDieFeeFilterCapsules,
-} from './template.js?v=15';
+} from './template.js?v=17';
+import { bindMoreMenu } from '../../../../more-menu.js?v=1';
 import { shortPartNumber } from '../../../../part-identity.js?v=3';
 import {
     DEFAULT_PAGE_SIZE,
@@ -20,6 +21,9 @@ import { setSearchBusy } from '../../../../search-busy.js?v=1';
 const API_BASE = '/api/stamping/die-fees';
 const DRAWER_ANIMATION_MS = 300;
 const SCOPE_REQUIRED_MESSAGE = '须选定年度、基地、项目';
+
+/** @type {{ setOpen: (isOpen: boolean) => void, close: () => void, unbind: () => void } | null} */
+let moreMenu = null;
 
 const feeState = {
     records: [],
@@ -90,6 +94,12 @@ function applyPermissionUi() {
     if (!canApprove) document.getElementById('dieFeeBatchApproveBtn')?.classList.add('hidden');
     if (!canReverse) document.getElementById('dieFeeBatchReverseBtn')?.classList.add('hidden');
     if (!canExport) document.getElementById('dieFeeExportBtn')?.classList.add('hidden');
+    const moreItems = ['dieFeeBatchApproveBtn', 'dieFeeBatchReverseBtn', 'dieFeeBatchDeleteBtn']
+        .map((id) => document.getElementById(id))
+        .filter((el) => el && !el.classList.contains('hidden'));
+    if (!moreItems.length) {
+        document.getElementById('dieFeeMoreWrap')?.classList.add('hidden');
+    }
 }
 
 function applyHashFilters() {
@@ -165,9 +175,23 @@ function bindEvents() {
         loadData(1);
     });
     document.getElementById('dieFeeExportBtn')?.addEventListener('click', () => exportExcel());
-    document.getElementById('dieFeeBatchDeleteBtn')?.addEventListener('click', batchDelete);
-    document.getElementById('dieFeeBatchApproveBtn')?.addEventListener('click', () => openBatchAuditDrawer('approve'));
-    document.getElementById('dieFeeBatchReverseBtn')?.addEventListener('click', () => openBatchAuditDrawer('reverse'));
+    moreMenu = bindMoreMenu({
+        wrapId: 'dieFeeMoreWrap',
+        btnId: 'dieFeeMoreBtn',
+        menuId: 'dieFeeMoreMenu',
+    });
+    document.getElementById('dieFeeBatchDeleteBtn')?.addEventListener('click', () => {
+        moreMenu?.close();
+        batchDelete();
+    });
+    document.getElementById('dieFeeBatchApproveBtn')?.addEventListener('click', () => {
+        moreMenu?.close();
+        openBatchAuditDrawer('approve');
+    });
+    document.getElementById('dieFeeBatchReverseBtn')?.addEventListener('click', () => {
+        moreMenu?.close();
+        openBatchAuditDrawer('reverse');
+    });
 
     document.getElementById('dieFeeYearFilter')?.addEventListener('change', () => {
         loadIdentityOptions().then(() => {
@@ -944,6 +968,8 @@ async function submitBatchAudit() {
 }
 
 function destroy() {
+    moreMenu?.unbind();
+    moreMenu = null;
     closeDrawer('dieFeeViewDrawer', 'dieFeeViewDrawerBackdrop');
     closeDrawer('dieFeeEditDrawer', 'dieFeeEditDrawerBackdrop');
     closeDrawer('dieFeeBatchAuditDrawer', 'dieFeeBatchAuditDrawerBackdrop');

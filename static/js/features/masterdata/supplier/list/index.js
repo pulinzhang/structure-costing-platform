@@ -8,14 +8,18 @@ import {
     DEFAULT_PAGE_SIZE,
     normalizePageSize,
 } from '../../../../page-size.js?v=3';
+import { bindMoreMenu } from '../../../../more-menu.js?v=1';
 import {
     renderAliasItems,
     renderSupplierRows,
     supplierListTemplate,
-} from './template.js?v=7';
+} from './template.js?v=8';
 
 const API_BASE = '/api/masterdata/suppliers';
 const DRAWER_ANIMATION_MS = 300;
+
+/** @type {{ setOpen: (isOpen: boolean) => void, close: () => void, unbind: () => void } | null} */
+let moreMenu = null;
 
 const listState = {
     records: [],
@@ -68,12 +72,6 @@ function applyPermissionUi() {
     if (!canOp('op:supplier-list:update')) {
         document.getElementById('submitSupplierEditBtn')?.classList.add('hidden');
     }
-}
-
-function setMoreMenuOpen(isOpen) {
-    const menu = document.getElementById('supplierMoreMenu');
-    if (!menu) return;
-    menu.classList.toggle('hidden', !isOpen);
 }
 
 function setLoading(isLoading) {
@@ -479,20 +477,13 @@ function init() {
     bindDeleteDrawer();
     bindTableActions();
     bindFilters();
-    document.getElementById('supplierMoreBtn')?.addEventListener('click', (event) => {
-        event.stopPropagation();
-        const menu = document.getElementById('supplierMoreMenu');
-        const isOpen = menu && !menu.classList.contains('hidden');
-        setMoreMenuOpen(!isOpen);
-    });
-    document.addEventListener('click', (event) => {
-        const moreWrap = document.getElementById('supplierMoreWrap');
-        if (moreWrap && !moreWrap.contains(event.target)) {
-            setMoreMenuOpen(false);
-        }
+    moreMenu = bindMoreMenu({
+        wrapId: 'supplierMoreWrap',
+        btnId: 'supplierMoreBtn',
+        menuId: 'supplierMoreMenu',
     });
     document.getElementById('supplierBtnExport')?.addEventListener('click', () => {
-        setMoreMenuOpen(false);
+        moreMenu?.close();
         exportExcel();
     });
     loadData();
@@ -501,4 +492,8 @@ function init() {
 export const pageConfig = {
     render: supplierListTemplate,
     init,
+    destroy() {
+        moreMenu?.unbind();
+        moreMenu = null;
+    },
 };

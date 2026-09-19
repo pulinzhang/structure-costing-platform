@@ -26,7 +26,7 @@ export function winningThicknessDownloadTemplate() {
                                 class="inline-flex items-center gap-1.5 bg-transparent text-[#505050] border border-[#252525] px-3 py-1.5 text-[11px] font-medium rounded-sm hover:bg-[#d32f2f]/10 hover:border-[#d32f2f]/60 hover:text-[#d32f2f] hover:shadow-[0_0_8px_rgba(211,47,47,0.15)] transition-all duration-200"
                                 style="box-shadow: inset 0 1px 0 rgba(255,255,255,0.02);">
                             ${window.svgIcon('download', 'w-3 h-3')}
-                            导出 Excel
+                            Excel
                         </button>
                     </div>
                 </div>

@@ -5,12 +5,13 @@
 import {
     procurementObjectListTemplate,
     renderProcurementObjectRows,
-} from './template.js?v=26';
+} from './template.js?v=28';
 import {
     DEFAULT_PAGE_SIZE,
     bindPagination,
     paintPagination,
 } from '../../../../page-size.js?v=3';
+import { bindMoreMenu } from '../../../../more-menu.js?v=1';
 import { setSearchBusy } from '../../../../search-busy.js?v=1';
 import { AUDIT_LABELS, CONFIRM_LABELS, KIND_LABELS, SECTION_LABELS } from '../labels.js?v=2';
 import { fmtPeriodRange } from '../../../common/period-ui.js?v=3';
@@ -18,6 +19,9 @@ import { fmtPeriodRange } from '../../../common/period-ui.js?v=3';
 const API_BASE = '/api/bom/procurement-objects';
 const CASCADE_API = '/api/bom/filters/cascade';
 const SCOPE_REQUIRED_MESSAGE = '批量操作须选定基地、项目';
+
+/** @type {{ setOpen: (isOpen: boolean) => void, close: () => void, unbind: () => void } | null} */
+let moreMenu = null;
 
 const listState = {
     page: 1,
@@ -72,6 +76,12 @@ function applyPermissionUi() {
     if (!listState.canReverse) document.getElementById('poBatchReverseBtn')?.classList.add('hidden');
     if (!listState.canDelete) document.getElementById('poBatchDeleteBtn')?.classList.add('hidden');
     if (!listState.canExport) document.getElementById('poExportBtn')?.classList.add('hidden');
+    const moreItems = ['poBatchApproveBtn', 'poBatchReverseBtn', 'poBatchDeleteBtn']
+        .map((id) => document.getElementById(id))
+        .filter((el) => el && !el.classList.contains('hidden'));
+    if (!moreItems.length) {
+        document.getElementById('poMoreWrap')?.classList.add('hidden');
+    }
 }
 
 function bindEvents() {
@@ -116,9 +126,23 @@ function bindEvents() {
         });
     });
     document.getElementById('poTableBody')?.addEventListener('click', onTableClick);
-    document.getElementById('poBatchApproveBtn')?.addEventListener('click', () => openAuditDrawer('approve'));
-    document.getElementById('poBatchReverseBtn')?.addEventListener('click', () => openAuditDrawer('reverse'));
-    document.getElementById('poBatchDeleteBtn')?.addEventListener('click', openDeleteDrawer);
+    moreMenu = bindMoreMenu({
+        wrapId: 'poMoreWrap',
+        btnId: 'poMoreBtn',
+        menuId: 'poMoreMenu',
+    });
+    document.getElementById('poBatchApproveBtn')?.addEventListener('click', () => {
+        moreMenu?.close();
+        openAuditDrawer('approve');
+    });
+    document.getElementById('poBatchReverseBtn')?.addEventListener('click', () => {
+        moreMenu?.close();
+        openAuditDrawer('reverse');
+    });
+    document.getElementById('poBatchDeleteBtn')?.addEventListener('click', () => {
+        moreMenu?.close();
+        openDeleteDrawer();
+    });
     document.getElementById('poExportBtn')?.addEventListener('click', exportExcel);
     document.getElementById('poBatchAuditCloseBtn')?.addEventListener('click', closeAuditDrawer);
     document.getElementById('poBatchAuditCancelBtn')?.addEventListener('click', closeAuditDrawer);
@@ -730,4 +754,8 @@ async function exportExcel() {
 export const pageConfig = {
     render: procurementObjectListTemplate,
     init,
+    destroy() {
+        moreMenu?.unbind();
+        moreMenu = null;
+    },
 };

@@ -8,7 +8,8 @@ import {
     renderFeeRows,
     updateFeeHud,
     updateFeeFilterCapsules,
-} from './template.js?v=48';
+} from './template.js?v=50';
+import { bindMoreMenu } from '../../../../more-menu.js?v=1';
 import { shortPartNumber } from '../../../../part-identity.js?v=3';
 import {
     DEFAULT_PAGE_SIZE,
@@ -21,6 +22,9 @@ const API_BASE = '/api/stamping/process-fees';
 const DRAWER_ANIMATION_MS = 300;
 /** 操作页固定要项目；后端允许「项目或工厂」以便引擎按厂补算。 */
 const SCOPE_REQUIRED_MESSAGE = '须选定年度、基地、项目。';
+
+/** @type {{ setOpen: (isOpen: boolean) => void, close: () => void, unbind: () => void } | null} */
+let moreMenu = null;
 
 const TONNAGE_SOURCE_LABEL = {
     self: '自有',
@@ -98,6 +102,12 @@ function applyPermissionUi() {
     if (!canApprove) document.getElementById('feeBatchApproveBtn')?.classList.add('hidden');
     if (!canReverse) document.getElementById('feeBatchReverseBtn')?.classList.add('hidden');
     if (!canExport) document.getElementById('feeExportBtn')?.classList.add('hidden');
+    const moreItems = ['feeBatchApproveBtn', 'feeBatchReverseBtn', 'feeBatchDeleteBtn']
+        .map((id) => document.getElementById(id))
+        .filter((el) => el && !el.classList.contains('hidden'));
+    if (!moreItems.length) {
+        document.getElementById('feeMoreWrap')?.classList.add('hidden');
+    }
 }
 
 function applyHashFilters() {
@@ -173,9 +183,23 @@ function bindEvents() {
         loadData(1);
     });
     document.getElementById('feeExportBtn')?.addEventListener('click', () => exportExcel());
-    document.getElementById('feeBatchDeleteBtn')?.addEventListener('click', batchDelete);
-    document.getElementById('feeBatchApproveBtn')?.addEventListener('click', () => openBatchAuditDrawer('approve'));
-    document.getElementById('feeBatchReverseBtn')?.addEventListener('click', () => openBatchAuditDrawer('reverse'));
+    moreMenu = bindMoreMenu({
+        wrapId: 'feeMoreWrap',
+        btnId: 'feeMoreBtn',
+        menuId: 'feeMoreMenu',
+    });
+    document.getElementById('feeBatchDeleteBtn')?.addEventListener('click', () => {
+        moreMenu?.close();
+        batchDelete();
+    });
+    document.getElementById('feeBatchApproveBtn')?.addEventListener('click', () => {
+        moreMenu?.close();
+        openBatchAuditDrawer('approve');
+    });
+    document.getElementById('feeBatchReverseBtn')?.addEventListener('click', () => {
+        moreMenu?.close();
+        openBatchAuditDrawer('reverse');
+    });
 
     document.getElementById('feeYearFilter')?.addEventListener('change', () => {
         resetDependentFilters(['feeLocationFilter', 'feeVehicleFilter', 'feeVersionFilter', 'feeSupplierFilter']);
@@ -1067,4 +1091,8 @@ async function submitBatchAudit() {
 export const pageConfig = {
     render: processFeeListTemplate,
     init: () => init(),
+    destroy() {
+        moreMenu?.unbind();
+        moreMenu = null;
+    },
 };

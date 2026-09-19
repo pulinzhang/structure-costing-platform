@@ -3,6 +3,7 @@
  */
 
 import { paginationBarHtml } from '../../../../page-size.js?v=3';
+import { moreMenuItemHtml, moreMenuShellHtml } from '../../../../more-menu.js?v=1';
 import {
     partShortCodeCellHtml,
     partNumberNameCellHtml,
@@ -76,26 +77,21 @@ export function l0WeldingFeeListTemplate() {
                                 </div>
                             </div>
                         </div>
-                        <div class="flex items-center gap-2 shrink-0 flex-wrap justify-end">
-                            <button id="l0wfBatchApproveBtn" type="button"
-                                    class="inline-flex items-center gap-1.5 bg-transparent text-[#6E6E73] border border-[#2A2A35] px-3 py-1.5 text-[11px] font-medium rounded-md hover:border-[#FF1E27]/50 hover:text-[#FF1E27] transition-all">
-                                ${window.svgIcon('check-circle', 'w-3 h-3')}
-                                批量审核
-                            </button>
-                            <button id="l0wfBatchReverseBtn" type="button"
-                                    class="inline-flex items-center gap-1.5 bg-transparent text-[#6E6E73] border border-[#2A2A35] px-3 py-1.5 text-[11px] font-medium rounded-md hover:border-[#FF1E27]/50 hover:text-[#FF1E27] transition-all">
-                                ${window.svgIcon('refresh', 'w-3 h-3')}
-                                批量反审核
-                            </button>
-                            <button id="l0wfBatchDeleteBtn" type="button"
-                                    class="inline-flex items-center gap-1.5 bg-transparent text-[#6E6E73] border border-[#2A2A35] px-3 py-1.5 text-[11px] font-medium rounded-md hover:border-[#c62828]/60 hover:text-[#ef5350] transition-all">
-                                ${window.svgIcon('trash', 'w-3 h-3')}
-                                批量删除
-                            </button>
+                        <div class="flex items-center gap-1.5 shrink-0">
+                            ${moreMenuShellHtml({
+                                wrapId: 'l0wfMoreWrap',
+                                btnId: 'l0wfMoreBtn',
+                                menuId: 'l0wfMoreMenu',
+                                itemsHtml: [
+                                    moreMenuItemHtml({ id: 'l0wfBatchApproveBtn', label: '批量审核' }),
+                                    moreMenuItemHtml({ id: 'l0wfBatchReverseBtn', label: '批量反审核' }),
+                                    moreMenuItemHtml({ id: 'l0wfBatchDeleteBtn', label: '批量删除', danger: true }),
+                                ].join(''),
+                            })}
                             <button id="l0wfExportBtn" type="button" title="按当前筛选导出"
                                     class="inline-flex items-center gap-1.5 bg-transparent text-[#6E6E73] border border-[#2A2A35] px-3 py-1.5 text-[11px] font-medium rounded-md hover:border-[#FF1E27]/50 hover:text-[#FF1E27] transition-all">
                                 ${window.svgIcon('download', 'w-3 h-3')}
-                                导出 Excel
+                                Excel
                             </button>
                         </div>
                     </div>

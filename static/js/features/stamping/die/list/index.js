@@ -1,4 +1,5 @@
-import { dieListTemplate } from './template.js?v=11';
+import { dieListTemplate } from './template.js?v=14';
+import { bindMoreMenu } from '../../../../more-menu.js?v=1';
 import {
     DEFAULT_PAGE_SIZE,
     bindPagination,
@@ -10,6 +11,9 @@ import { partShortCodeCellHtml, partNumberNameCellHtml, shortPartNumber } from '
 import { fmtPeriodRange } from '../../../common/period-ui.js?v=2';
 
 const STORAGE_KEY = 'dieListPageSize';
+
+/** @type {{ setOpen: (isOpen: boolean) => void, close: () => void, unbind: () => void } | null} */
+let moreMenu = null;
 
 const dieState = {
     page: 1,
@@ -36,7 +40,10 @@ export const DieListPage = {
         this.canDelete = typeof can === 'function' ? can('op:stamping-die-list:delete') : true;
         this.canExport = typeof can === 'function' ? can('op:stamping-die-list:export') : true;
         dieState.pageSize = normalizePageSize(localStorage.getItem(STORAGE_KEY));
-        if (!this.canDelete) document.getElementById('dieBatchDeleteBtn')?.classList.add('hidden');
+        if (!this.canDelete) {
+            document.getElementById('dieBatchDeleteBtn')?.classList.add('hidden');
+            document.getElementById('dieMoreWrap')?.classList.add('hidden');
+        }
         if (!this.canExport) document.getElementById('dieExportBtn')?.classList.add('hidden');
         this.bindEvents();
         bindPagination({
@@ -49,8 +56,7 @@ export const DieListPage = {
             },
             onPage: (page) => this.loadList(page),
         });
-        this.loadFilters();
-        this.renderEmpty('请先选择基地和项目', '未选齐范围时不会请求列表');
+        this.loadFilters().then(() => this.loadList(1));
     },
 
     bindEvents() {
@@ -68,7 +74,15 @@ export const DieListPage = {
                 this.loadList(1);
             }
         });
-        document.getElementById('dieBatchDeleteBtn')?.addEventListener('click', () => this.batchDelete());
+        document.getElementById('dieBatchDeleteBtn')?.addEventListener('click', () => {
+            moreMenu?.close();
+            this.batchDelete();
+        });
+        moreMenu = bindMoreMenu({
+            wrapId: 'dieMoreWrap',
+            btnId: 'dieMoreBtn',
+            menuId: 'dieMoreMenu',
+        });
         document.getElementById('dieExportBtn')?.addEventListener('click', () => this.exportExcel());
         document.getElementById('dieDrawerCloseBtn')?.addEventListener('click', () => this.closeDrawer());
         document.getElementById('dieDrawerBackdrop')?.addEventListener('click', () => this.closeDrawer());
@@ -107,16 +121,12 @@ export const DieListPage = {
                 params: location ? { location } : {},
             });
             const data = res.data || {};
-            this.fillSelect('dieListLocation', data.locations || [], '请选择');
+            this.fillSelect('dieListLocation', data.locations || [], '全部');
             if (location) {
                 const locEl = document.getElementById('dieListLocation');
                 if (locEl) locEl.value = location;
             }
-            this.fillSelect(
-                'dieListVehicle',
-                data.vehicle_models || [],
-                location ? '请选择项目' : '请先选择基地'
-            );
+            this.fillSelect('dieListVehicle', data.vehicle_models || [], '全部');
         } catch (error) {
             showToast(error.message || '加载筛选项失败', 'error');
         }
@@ -146,7 +156,7 @@ export const DieListPage = {
         return scope;
     },
 
-    renderEmpty(title, hint) {
+    renderEmpty(title, hint, { clearHud = true } = {}) {
         const empty = document.getElementById('dieListEmpty');
         const body = document.getElementById('dieListTableBody');
         if (body) body.innerHTML = '';
@@ -155,18 +165,23 @@ export const DieListPage = {
         const h = document.getElementById('dieListEmptyHint');
         if (t) t.textContent = title;
         if (h) h.textContent = hint;
-        document.getElementById('dieListTotalLabel').textContent = '';
-        document.getElementById('dieListPagination').innerHTML = '';
-        document.getElementById('dieHudTotal').textContent = '—';
-        document.getElementById('dieHudScope').textContent = '请选择基地与项目';
+        if (clearHud) {
+            document.getElementById('dieListTotalLabel').textContent = '';
+            document.getElementById('dieListPagination').innerHTML = '';
+            document.getElementById('dieHudTotal').textContent = '—';
+            document.getElementById('dieHudScope').textContent = '全部';
+        }
+    },
+
+    scopeLabel(filters) {
+        const bits = [];
+        if (filters.location) bits.push(filters.location);
+        if (filters.vehicle_model) bits.push(filters.vehicle_model);
+        if (filters.part_number) bits.push(filters.part_number);
+        return bits.length ? bits.join(' / ') : '全部';
     },
 
     async loadList(page) {
-        const scope = this.collectScope();
-        if (!scope.location || !scope.vehicle_model) {
-            this.renderEmpty('请先选择基地和项目', '未选齐范围时不会请求列表');
-            return;
-        }
         if (dieState.isLoading) return;
         const filters = this.collectListFilters();
         dieState.page = page || 1;
@@ -179,8 +194,8 @@ export const DieListPage = {
         try {
             const res = await HttpClient.get('/api/stamping/die/parts', {
                 params: {
-                    location: filters.location,
-                    vehicle_model: filters.vehicle_model,
+                    location: filters.location || undefined,
+                    vehicle_model: filters.vehicle_model || undefined,
                     part_number: filters.part_number || undefined,
                     include_expired: true,
                     page: dieState.page,
@@ -190,8 +205,7 @@ export const DieListPage = {
             const data = res.data || {};
             dieState.items = data.items || [];
             dieState.total = data.total || 0;
-            document.getElementById('dieHudScope').textContent =
-                `${filters.location} / ${filters.vehicle_model}`;
+            document.getElementById('dieHudScope').textContent = this.scopeLabel(filters);
             document.getElementById('dieHudTotal').textContent = String(dieState.total);
             this.renderRows();
             document.getElementById('dieListTotalLabel').textContent = `共 ${dieState.total} 条`;
@@ -201,7 +215,9 @@ export const DieListPage = {
                 dieState.total > 0 ? Math.ceil(dieState.total / dieState.pageSize) : 0,
             );
             if (!dieState.items.length) {
-                this.renderEmpty('本范围暂无模具数据', '请先上传模具布点清单');
+                this.renderEmpty('暂无模具数据', '请先上传模具布点清单，或放宽筛选', {
+                    clearHud: false,
+                });
             } else {
                 empty?.classList.add('hidden');
             }
@@ -419,4 +435,8 @@ export const DieListPage = {
 export const pageConfig = {
     render: dieListTemplate,
     init: () => DieListPage.init(),
+    destroy() {
+        moreMenu?.unbind();
+        moreMenu = null;
+    },
 };
