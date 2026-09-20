@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>知识库 · 核价方案 · 自动核价平台</title>
+  <title>知识库 · 核价方案 · 核价平台</title>
   <link rel="icon" type="image/x-icon" href="/static/assets/favicon.ico">
   <link href="/static/css/fonts.css?v=1" rel="stylesheet">
   <link rel="stylesheet" href="helper.css?v=2">
@@ -47,8 +47,10 @@
         <div class="eyebrow">Knowledge Base</div>
         <h1>② 知识库 · 核价方案</h1>
         <p>
-          一句话：按<strong>材料清单</strong>核算每个<strong>成品（供货总成）</strong>的月度总费用。
-          系统菜单叫「总成核价」。材料清单、冲压工艺、焊接工艺拆解为<strong>前置底盘</strong>；
+          一句话：<strong>结构件自动核价平台</strong>按<strong>材料清单</strong>核<strong>总成、分总成、冲压件</strong>；
+          顶栏 <strong>AI 助理</strong>解读动因，不算价。
+          系统菜单「总成核价」出各级核价卡，「冲压零件价」出冲压件月价。
+          材料清单、冲压工艺、焊接工艺拆解为<strong>前置底盘</strong>；
           投产后改图换号走<strong>工程变更</strong>（换树，不是再拍全量快照）；
           <strong>冲次单价、焊接单价一年传一次</strong>；模具布点 / 检具 / 采购对象按改版维护；再做每月钢价与总成核价。
         </p>
@@ -62,8 +64,8 @@
       <section id="what">
         <h2>核的是什么</h2>
         <p class="lead">
-          核的是交到客户手里的<strong>成品</strong>（树上的根），不是零散的一个螺栓或一张钢板。
-          真正算账：从根走到最末叶子 → 叶子先有价 → 再 rollup 回根。
+          平台核的是结构件三类对象：<strong>总成、分总成、冲压件</strong>，不是只核一张钢板，也不是只出成品账。
+          成品月总账仍从根走到最末叶子 → 叶子先有价 → 再 rollup 回根；分总成、冲压件各自也有核价卡。
         </p>
 
         <h3>核价怎么走（概念流程）</h3>
@@ -92,8 +94,8 @@
                   <div class="ht-head">
                     <span class="ht-lv">L0</span>
                     <div class="ht-body">
-                      <strong>成品（供货总成）· 根</strong>
-                      <div class="ht-meta">核价对象 · 下面必须按真实父子关系展开</div>
+                      <strong>供货总成（成品）· 根</strong>
+                      <div class="ht-meta">财务成品账 · 分总成 / 冲压件同样出核价卡</div>
                     </div>
                   </div>
                   <div class="ht-children">
@@ -164,19 +166,19 @@
 
         <div class="grid-2">
           <div class="mini">
-            <h4>成品 = 完工产品</h4>
-            <p>材料清单最顶层的供货总成。系统为每个成品出月总账和总费用。</p>
+            <h4>总成 / 分总成</h4>
+            <p>供货总成是财务成品账的根；分总成同样出核价卡。采购对象清单与之一致。</p>
           </div>
           <div class="mini">
-            <h4>不是只核冲压件</h4>
-            <p>成品下面既有自制冲压件，也有外购件、分总成。全部挂到同一棵树上再汇总。</p>
+            <h4>冲压件也核</h4>
+            <p>自制叶子走「冲压零件价」；也可列入采购对象。不是「只核冲压件」，也不是「不核冲压件」。</p>
           </div>
         </div>
       </section>
 
       <section id="bom">
         <h2>材料清单是主线</h2>
-        <p class="lead">先有树，再挂价。没有材料清单，就无法确定核价对象。清单属于<strong>前置底盘</strong>：同一基地 / 项目 / 版本投产传好后长期复用；结构换号、此件不装、增加零件、完成停止走<strong>工程变更</strong>工程变更，不要当「再传一遍全量清单」。</p>
+        <p class="lead">先有树，再挂价。没有材料清单，就无法确定核价对象。清单属于<strong>前置底盘</strong>：同一基地 / 项目 / 版本投产传好后长期复用；结构换号、此件不装、增加零件、完成停止走<strong>工程变更</strong>，不要当「再传一遍全量清单」。</p>
 
         <div class="flow-col">
           <div class="flow-step">
@@ -198,7 +200,7 @@
 
         <h3>树长什么样</h3>
         <div class="tree">
-          <div class="root">成品（供货总成）── 核价对象</div>
+          <div class="root">供货总成（成品）── 财务成品账；分总成 / 冲压件同样核</div>
           <div class="mid">　├── 分总成（下面还有零件）</div>
           <div class="leaf">　│　　├── 自制冲压件</div>
           <div class="leaf">　│　　└── 外购件（螺母、标准件…）</div>

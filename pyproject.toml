@@ -1,7 +1,7 @@
 [project]
 name = "stamping-costing-platform"
 version = "1.0.0"
-description = "汽车冲压件自动核价平台 - Stamping Costing Platform"
+description = "结构件自动核价平台 — Structural Parts Automated Costing Platform"
 authors = [
     {name = "Development Team"}
 ]

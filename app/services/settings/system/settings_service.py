@@ -19,7 +19,13 @@ from app.schemas.dto.settings_dto import (
 from app.schemas.vo.settings_vo import ConfigVO
 from app.schemas.vo.user_vo import UserVO
 
-DEFAULT_APP_NAME = "汽车冲压件自动核价平台"
+DEFAULT_APP_NAME = "结构件自动核价平台"
+LEGACY_APP_NAMES = frozenset(
+    {
+        "汽车冲压件自动核价平台",
+        "冲压件自动核价平台",
+    }
+)
 DEFAULT_STEEL_DENSITY = Decimal("7.85")
 DEFAULT_MATERIAL_LOSS_RATE = Decimal("0.003")  # 千分之 3
 DEFAULT_SCRAP_RECOVERY_RATE = Decimal("0.97")  # 97%
@@ -70,11 +76,20 @@ class SettingsService:
     def __init__(self) -> None:
         self.repository = SystemConfigRepository()
 
+    @staticmethod
+    def _display_app_name(raw: str | None) -> str:
+        name = (raw or "").strip()
+        if not name or name in LEGACY_APP_NAMES:
+            return DEFAULT_APP_NAME
+        return name
+
     def get_config(self, db: Session) -> ConfigVO:
         row = self.repository.get_singleton(db)
         if row is None:
             return ConfigVO(
-                app_name=app_settings.APP_NAME or DEFAULT_APP_NAME,
+                app_name=SettingsService._display_app_name(
+                    app_settings.APP_NAME or DEFAULT_APP_NAME
+                ),
                 company_name="",
                 procurement_agreement_remarks="",
                 procurement_agreement_remarks_sample=SAMPLE_PROCUREMENT_AGREEMENT_REMARKS,
@@ -90,7 +105,7 @@ class SettingsService:
                 swing_shear_process_fee_per_ton=DEFAULT_SWING_SHEAR_PROCESS_FEE_PER_TON,
             )
         return ConfigVO(
-            app_name=row.app_name or DEFAULT_APP_NAME,
+            app_name=SettingsService._display_app_name(row.app_name),
             company_name=self._strip_text(getattr(row, "company_name", None)),
             procurement_agreement_remarks=self._strip_text(
                 getattr(row, "procurement_agreement_remarks", None)
@@ -134,7 +149,7 @@ class SettingsService:
         dto: SystemConfigUpdateDTO,
         current_user: UserVO,
     ) -> ConfigVO:
-        app_name = dto.app_name.strip() or DEFAULT_APP_NAME
+        app_name = SettingsService._display_app_name(dto.app_name)
         company_name = dto.company_name
         remarks = dto.procurement_agreement_remarks
         audit = audit_create(current_user)

@@ -1,5 +1,5 @@
 /**
- * 汽车冲压件自动核价平台
+ * 结构件自动核价平台
  * 主 JavaScript 文件 — 全局工具层
  *
  * 前后端分离架构：纯 JavaScript SPA + Tailwind，无 HTMX。

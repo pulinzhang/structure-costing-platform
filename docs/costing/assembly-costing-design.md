@@ -1,6 +1,6 @@
 # 总成月核价（级别无关）— 详细设计
 
-> **状态：已落地。** 本文是实施唯一口径。  
+> **状态：已落地。** 本文是实施唯一口径。产品：**结构件自动核价平台**（小名：核价平台）；卡根可以是总成、分总成或冲压件叶子。  
 > **必须统一：** 财务成品账与采购应成本同一切片、同一公式、同一结果表；`level` 只过滤。  
 > 对标：[welding-fee-design.md](../bom/welding-fee-design.md)。硬约束：[architecture.md](../architecture.md)、[orchestrator-constitution.mdc](../orchestrator-constitution.mdc)。  
 > 历史（冻结、勿再分叉）：[l0-assembly-costing-design.md](l0-assembly-costing-design.md)、[l1-assembly-costing-design.md](l1-assembly-costing-design.md)。  

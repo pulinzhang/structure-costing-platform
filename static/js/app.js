@@ -1,5 +1,5 @@
 /**
- * 汽车冲压件自动核价平台 - SPA 主应用
+ * 结构件自动核价平台 - SPA 主应用
  *
  * 架构说明：
  * - 采用关注点分离（SoC）原则
@@ -22,7 +22,7 @@ import {
     canAccessPage,
     fallbackPageName,
 } from './permissions.js?v=12';
-import { bootLlmAssistant } from './llm-assistant/boot.js?v=36';
+import { bootLlmAssistant } from './llm-assistant/boot.js?v=37';
 import { pageConfig as dashboardPage }      from './features/dashboard/index.js?v=12';
 import { pageConfig as stampingUploadPage } from './features/stamping/process/upload/index.js?v=64';
 import { pageConfig as stampingPartsPage }  from './features/stamping/process/parts/index.js?v=67';
@@ -78,7 +78,7 @@ import { pageConfig as vehicleModelUploadPage } from './features/masterdata/vehi
 import { pageConfig as vehicleModelListPage } from './features/masterdata/vehicle-model/list/index.js?v=16';
 import { pageConfig as supplierUploadPage } from './features/masterdata/supplier/upload/index.js?v=7';
 import { pageConfig as supplierListPage } from './features/masterdata/supplier/list/index.js?v=19';
-import { pageConfig as settingsPage }       from './features/settings/system/index.js?v=24';
+import { pageConfig as settingsPage }       from './features/settings/system/index.js?v=25';
 import { pageConfig as settingsUsersPage }  from './features/settings/users/index.js?v=19';
 import { pageConfig as settingsLogsPage }   from './features/settings/logs/index.js?v=17';
 import { pageConfig as settingsProfilePage } from './features/settings/profile/index.js?v=9';
