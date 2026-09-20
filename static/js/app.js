@@ -71,7 +71,7 @@ import { pageConfig as bomWeldingFeeCalcPage } from './features/bom/welding-fee/
 import { pageConfig as bomWeldingFeeListPage } from './features/bom/welding-fee/list/index.js?v=25';
 import { pageConfig as engineeringChangeUploadPage } from './features/engineering-change/upload/index.js?v=15';
 import { pageConfig as engineeringChangeListPage } from './features/engineering-change/list/index.js?v=27';
-import { pageConfig as costingPage }        from './features/costing/engine/index.js?v=40';
+import { pageConfig as costingPage }        from './features/costing/engine/index.js?v=42';
 import { pageConfig as fileTracePage }       from './features/file-trace/index.js?v=17';
 import { pageConfig as locationPage }        from './features/masterdata/location/index.js?v=16';
 import { pageConfig as vehicleModelUploadPage } from './features/masterdata/vehicle-model/upload/index.js?v=7';

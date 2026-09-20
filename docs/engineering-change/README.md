@@ -44,7 +44,7 @@
 |----|------|
 | 硬门禁 | 变更单 + 材料清单 + 工艺确认表。材料清单总成列必须等于变更后总成；改图层必须等于变更后零件。缺新号 / 多新号 / 旧号仍挂其它有效总成 → 拒收 |
 | 工程变更不读布点表 | 不要「零件汇总」。模具 **逻辑建立**：改图有旧布点则从库里变更前零件整行抄到变更后零件。新号布点简图从冲压工艺确认表抄，不从旧布点、不从 Excel 抽 |
-| 改图抄检具/模具费 | 旧号有检具费生效档或 `year≥生效年` 模具费结果 → **必须抄到新号**（旧号保留）；无则跳过；不读 Excel、非硬门禁。回滚删本次新行（先费后布点） |
+| 抄检具/模具费/包装/年度价 | 改图：旧号有检具费生效档或 `year≥生效年` 模具费结果 → 抄到新号。种新树：旧交货总成 `year≥生效年` 包装整行抄到新总成；种树 remap 换号则年度价 `year≥生效年` 抄到新号。无则跳过；不读 Excel、非硬门禁。回滚删本次新行（先年度价/包装/模具费/检具费，再布点）；旧行保留 |
 | 种树 | 只经 `persist/tree.py` → BomService；到期经 `expire_l0_tree`（写失效月，不删行）。改图以旧树为底 **启用**新树，**整条链**换号：总成/改图层用变更单，中间分总成用材料清单已写出的号，**禁止自己进一位**；没改的零件原号带走 |
 | `change_order_id` 占位 | 管线里 `change_order_id` 是变更单行下标；persist 插变更单后再回填真实 id。勿提前 flush |
 | SOP 不改 | Parser / UNIQUE / 引擎发现键 / 投产整包覆盖路径不为本切片去改 |
@@ -87,7 +87,8 @@ flowchart TB
     T --> PO[采购对象 / 拆解]
     PO --> PR[persist/process]
     PR --> DI[persist/die 抄旧]
-    DI --> L[effect_links change_order_id=下标]
+    DI --> FEE[persist 检具/模具/包装/年度价]
+    FEE --> L[effect_links change_order_id=下标]
   end
 
   subgraph persist_box [persist：档案 + commit]
@@ -106,7 +107,7 @@ flowchart TB
   RB --> MF[mark_log_failed]
 ```
 
-回滚：删除列表任意一条 = `list/rollback_service.py` 按 `effect_links` **逆序**恢复业务对象，再 **物理删除** 本本上传头 / 变更单 / 效果链接。未知 `effect_kind` 拒收。存档 Excel 保留。逆序时先删本次新插的模具费/检具费，再滚布点（避免布点 RESTRICT）。
+回滚：删除列表任意一条 = `list/rollback_service.py` 按 `effect_links` **逆序**恢复业务对象，再 **物理删除** 本本上传头 / 变更单 / 效果链接。未知 `effect_kind` 拒收。存档 Excel 保留。逆序时先删本次新插的年度价/包装/模具费/检具费，再滚布点（避免布点 RESTRICT）。只删链接 `after_id`，禁止按零件号扫库。
 
 ---
 
@@ -174,9 +175,9 @@ Router → EngineeringChangeUploadService.start_upload
 | `upload/template_builder.py` | 下载模板（与导入执行无关） |
 | `upload/orchestrator/` | 指挥家：prep / pipeline / persist |
 | `upload/gates/` | 校验帮手：变更单 / 树 / 工艺 / 切清单 |
-| `upload/persist/` | 写入适配（树 / 对象 / 拆解 / 工艺 / 布点 / 检具费 / 模具费）；只 flush |
+| `upload/persist/` | 写入适配（树 / 对象 / 拆解 / 工艺 / 布点 / 检具费 / 模具费 / 包装 / 年度价）；只 flush |
 | `list/query_service.py` | 工程变更单列表 / 详情 |
-| `list/rollback_service.py` | `EFFECT_*` 回滚（含 `gauge_fee` / `die_fee`） |
+| `list/rollback_service.py` | `EFFECT_*` 回滚（含 `gauge_fee` / `die_fee` / `packaging_fee` / `annual_part_price`） |
 | `app/common/engineering_change_gates.py` | 文案常量 + 整包门禁谓词（新旧号整号比较，不 bump） |
 
 上游内核（勿把业务搬回 EC）：
@@ -186,6 +187,8 @@ Router → EngineeringChangeUploadService.start_upload
 - `app/services/stamping/die/engineering_change.py`
 - `app/services/stamping/gauge_fee/engineering_change.py`
 - `app/services/stamping/die_fee/engineering_change.py`
+- `app/services/bom/packaging_transport_fee/engineering_change.py`
+- `app/services/bom/annual_part_price/engineering_change.py`
 
 ---
 

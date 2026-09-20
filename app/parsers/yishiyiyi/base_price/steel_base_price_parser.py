@@ -1,7 +1,7 @@
 """
 钢材基准价格 Excel 解析入口。
 宽表列 = 基地；location_lookup 必传；年月由上传表单决定。
-仅价格列时：附页牌号→钢厂，或上月 (基地,牌号)→钢厂 承接。
+仅价格列时：附页牌号→钢厂（套到主表全部基地列），或上月 (基地,牌号)→钢厂 承接。
 """
 
 from __future__ import annotations
@@ -61,10 +61,11 @@ def parse_base_price_excel(
             result.errors.append("未能识别任何基地列，请检查表头格式")
         return result
 
-    sheet_mill_location, sheet_grade_mills = extract_grade_mill_map(workbook)
+    _, sheet_grade_mills = extract_grade_mill_map(workbook)
     if sheet_grade_mills:
-        hint = sheet_mill_location or "未标明基地"
-        result.warnings.append(f"附页钢厂映射 {len(sheet_grade_mills)} 个牌号（{hint}）")
+        result.warnings.append(
+            f"附页钢厂映射 {len(sheet_grade_mills)} 个牌号（基地以主表列头为准）"
+        )
 
     price_only = any(config.mill_col is None for config in base_configs)
     if price_only and not sheet_grade_mills and not carry_mills:
@@ -88,7 +89,6 @@ def parse_base_price_excel(
         base_configs=base_configs,
         spec_col=spec_col,
         sheet_name=sheet.title,
-        sheet_mill_location=sheet_mill_location,
         sheet_grade_mills=sheet_grade_mills or None,
         carry_mills=carry_mills,
     )
@@ -221,8 +221,7 @@ def _resolve_mill(
 
     sheet_mills = context.sheet_grade_mills or {}
     sheet_mill = sheet_mills.get(grade)
-    hint = context.sheet_mill_location
-    if sheet_mill and (not hint or hint in location):
+    if sheet_mill:
         return sheet_mill
 
     carry = context.carry_mills or {}

@@ -2,7 +2,7 @@
  * 月度智能自动核价引擎 — 页面逻辑 (BRABUS Pure Industrial Spec)
  */
 
-import { costingTemplate } from './template.js?v=26';
+import { costingTemplate } from './template.js?v=28';
 import {
     DEFAULT_PAGE_SIZE,
     bindPagination,
@@ -391,6 +391,14 @@ function bindEvents() {
             renderGateHardList(engineState.ready);
             return;
         }
+        const copyBtn = event.target.closest('[data-action="copy-gate-reason"]');
+        if (copyBtn) {
+            const row = copyBtn.closest('[data-gate-role]');
+            const title = row?.querySelector('[data-gate-title]')?.textContent?.trim() || '';
+            const reason = row?.querySelector('[data-gate-reason]')?.textContent?.trim() || '';
+            copyVisibleText([title, reason].filter(Boolean).join('\n'), copyBtn);
+            return;
+        }
         const navBtn = event.target.closest('[data-action="navigate"]');
         if (!navBtn) return;
         const page = navBtn.getAttribute('data-page');
@@ -633,6 +641,29 @@ function summarizeGateMessage(item) {
         .replace(/含 L0 的 BOM\s*(\d+)\s*版/, 'L0 BOM ×$1');
 }
 
+function gateReasonBody(item) {
+    const message = (item.message || '').trim();
+    const missing = (item.missing || [])
+        .map((row) => String(row || '').trim())
+        .filter(Boolean);
+    if (message && missing.length) return `${message}\n${missing.join('\n')}`;
+    return message || missing.join('\n') || summarizeGateMessage(item);
+}
+
+async function copyVisibleText(text, button) {
+    if (!text) return;
+    try {
+        await navigator.clipboard.writeText(text);
+        if (!button) return;
+        button.title = '已复制';
+        window.setTimeout(() => {
+            if (button.isConnected) button.title = '复制原因';
+        }, 1600);
+    } catch (_) {
+        /* 划选正文仍可复制 */
+    }
+}
+
 function renderReady(ready) {
     const hardStop = !!ready?.gates?.hard_stop;
     const softTipCount = (ready?.gates?.upload_or_config || []).filter(isSoftTip).length;
@@ -803,8 +834,7 @@ function renderGateRow(item) {
         : false;
     const zhTitle = gateLabel(item.code);
     const summary = summarizeGateMessage(item);
-    const missingHint = (item.missing || [])[0] || '';
-    const line = missingHint ? `${summary} · ${missingHint}` : summary;
+    const reason = hardFail || soft ? gateReasonBody(item) : summary;
     const role = hardFail ? 'hard-fail' : soft ? 'soft-tip' : 'ok';
 
     let actionHtml = '';
@@ -823,38 +853,39 @@ function renderGateRow(item) {
         }
     }
 
-    if (hardFail) {
+    if (!hardFail && !soft) {
         return `
-        <div data-gate-role="${role}" data-gate-code="${esc(item.code)}"
-             class="flex items-start justify-between gap-3 py-2.5 border-b border-white/5 border-l-2 border-l-[#FF1E27] pl-3 -ml-0.5">
-            <div class="min-w-0 flex-1">
-                <div class="text-[12px] text-white">${esc(zhTitle)}</div>
-                <p class="text-[10px] text-neutral-500 truncate mt-0.5" title="${esc(line)}">${esc(line)}</p>
-            </div>
-            ${actionHtml}
-        </div>`;
-    }
-
-    if (soft) {
-        return `
-        <div data-gate-role="${role}" data-gate-code="${esc(item.code)}"
-             class="flex items-start justify-between gap-3 py-2.5 border-b border-white/5 border-l-2 border-l-amber-500/60 pl-3 -ml-0.5">
-            <div class="min-w-0 flex-1">
-                <div class="text-[12px] text-neutral-200">${esc(zhTitle)}</div>
-                <p class="text-[10px] text-neutral-500 truncate mt-0.5" title="${esc(line)}">${esc(line)}</p>
-            </div>
-            ${actionHtml}
-        </div>`;
-    }
-
-    // 通过项：仅在展开明细中出现，无绿色徽章
-    return `
         <div data-gate-role="${role}" data-gate-code="${esc(item.code)}"
              class="flex items-center justify-between gap-3 py-1.5 border-b border-white/5">
             <div class="min-w-0 flex-1">
                 <span class="text-[11px] text-neutral-500">${esc(zhTitle)}</span>
-                <span class="text-[10px] text-neutral-700 ml-2 truncate">${esc(line)}</span>
+                <span class="text-[10px] text-neutral-700 ml-2 truncate">${esc(reason)}</span>
             </div>
+        </div>`;
+    }
+
+    const accent = hardFail ? 'border-l-[#FF1E27]' : 'border-l-amber-500/60';
+    const titleClass = hardFail ? 'text-white' : 'text-neutral-200';
+    const badge = hardFail
+        ? '<span class="inline-flex items-center px-1.5 py-px text-[9px] tracking-wide text-[#FF1E27] border border-[#FF1E27]/45">需处理</span>'
+        : '<span class="inline-flex items-center px-1.5 py-px text-[9px] tracking-wide text-amber-500/90 border border-amber-500/40">提示</span>';
+    const copyIcon =
+        typeof window.svgIcon === 'function' ? window.svgIcon('copy', 'w-3.5 h-3.5') : '复制';
+
+    return `
+        <div data-gate-role="${role}" data-gate-code="${esc(item.code)}"
+             class="flex items-start justify-between gap-3 py-2.5 border-b border-white/5 border-l-2 ${accent} pl-3 -ml-0.5">
+            <div class="min-w-0 flex-1">
+                <div class="flex items-center gap-1.5 flex-wrap">
+                    <span data-gate-title class="text-[12px] ${titleClass}">${esc(zhTitle)}</span>
+                    ${badge}
+                    <button type="button" data-action="copy-gate-reason"
+                            class="shrink-0 w-6 h-6 inline-flex items-center justify-center text-neutral-500 hover:text-white transition-colors"
+                            title="复制原因" aria-label="复制原因">${copyIcon}</button>
+                </div>
+                <p data-gate-reason class="text-[10px] text-neutral-400 mt-1 leading-relaxed whitespace-pre-wrap break-all select-text">${esc(reason)}</p>
+            </div>
+            ${actionHtml}
         </div>`;
 }
 

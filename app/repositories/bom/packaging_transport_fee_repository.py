@@ -62,6 +62,29 @@ class BomPackagingTransportFeeRepository:
             .first()
         )
 
+    def list_by_part_from_year(
+        self,
+        db: Session,
+        *,
+        location: str,
+        vehicle_model: str,
+        part_number: str,
+        from_year: int,
+    ) -> list[BomPackagingTransportFee]:
+        return (
+            db.query(BomPackagingTransportFee)
+            .filter(
+                and_(
+                    BomPackagingTransportFee.location == location,
+                    BomPackagingTransportFee.vehicle_model == vehicle_model,
+                    BomPackagingTransportFee.part_number == part_number,
+                    BomPackagingTransportFee.year >= from_year,
+                )
+            )
+            .order_by(BomPackagingTransportFee.year.asc(), BomPackagingTransportFee.id.asc())
+            .all()
+        )
+
     def list_by_scope(
         self,
         db: Session,

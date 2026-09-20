@@ -20,7 +20,6 @@ class ParsedContext:
     base_configs: list[BaseColumnConfig]
     spec_col: int
     sheet_name: str
-    sheet_mill_location: str | None = None
     sheet_grade_mills: dict[str, str] | None = None
     carry_mills: dict[tuple[str, str], str] | None = None
 

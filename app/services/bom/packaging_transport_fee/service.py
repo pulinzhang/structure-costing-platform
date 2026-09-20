@@ -26,6 +26,15 @@ from app.schemas.vo.bom_packaging_transport_fee_vo import (
     BomPackagingTransportFeeResponse,
 )
 from app.schemas.vo.user_vo import UserVO
+from app.services.bom.packaging_transport_fee.engineering_change import (
+    EngineeringChangePackagingFeeCloneResult,
+)
+from app.services.bom.packaging_transport_fee.engineering_change import (
+    clone_revise_for_engineering_change as clone_revise_packaging_fee,
+)
+from app.services.bom.packaging_transport_fee.engineering_change import (
+    delete_for_engineering_change_rollback as delete_packaging_fee_for_rollback,
+)
 from app.services.masterdata.location.location_service import LocationService
 from app.services.masterdata.vehicle_model import VehicleModelService
 
@@ -336,3 +345,30 @@ class BomPackagingTransportFeeService:
 
     def get_vehicle_models(self, db: Session) -> list[str]:
         return VehicleModelService().list_filter_codes(db)
+
+    def clone_revise_for_engineering_change(
+        self,
+        db: Session,
+        *,
+        location: str,
+        vehicle_model: str,
+        old_part_number: str,
+        new_part_number: str,
+        from_year: int,
+        current_user: UserVO,
+    ) -> list[EngineeringChangePackagingFeeCloneResult]:
+        """种新树抄包装运输费。只 flush。实现见 engineering_change。"""
+        return clone_revise_packaging_fee(
+            self.repository,
+            db,
+            location=location,
+            vehicle_model=vehicle_model,
+            old_part_number=old_part_number,
+            new_part_number=new_part_number,
+            from_year=from_year,
+            current_user=current_user,
+        )
+
+    def delete_for_engineering_change_rollback(self, db: Session, fee_id: int) -> None:
+        """回滚删新包装运输费行。只 flush。"""
+        delete_packaging_fee_for_rollback(self.repository, db, fee_id)

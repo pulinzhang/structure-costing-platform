@@ -626,6 +626,10 @@ class BomService:
         """工程变更门面：按 id 取节点行（可空）。"""
         return self.node_repo.get_by_id(db, node_id)
 
+    def list_node_rows_by_ids(self, db: Session, node_ids: list[int]) -> list[BomNode]:
+        """工程变更门面：按 id 批量取节点行。"""
+        return self.node_repo.list_by_ids(db, node_ids)
+
     def create_engineering_change_node(self, db: Session, data: BomNodeWrite) -> BomNode:
         """工程变更门面：插节点（不走 SOP 期校验）。只 flush。"""
         return self.node_repo.create(db, data)
