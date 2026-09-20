@@ -8,7 +8,7 @@ from app.common.money import Q2, quantize_money
 from app.schemas.vo.winning_thickness_vo import WinningThicknessRowVO
 
 DOC_TITLE = "中标钢厂厚度价格一览表"
-DOC_ORG = "汽车冲压件自动核价平台"
+DOC_ORG = "结构件自动核价平台"
 PRICE_UNIT = "元/吨"
 
 OVERVIEW_SHEET_SUFFIX = "厚度价格一览"

@@ -3,7 +3,7 @@ chcp 65001 >nul
 setlocal EnableExtensions
 
 REM ============================================================
-REM  汽车冲压件自动核价平台 - Windows 一键安装（可无 Python 环境）
+REM  结构件自动核价平台 - Windows 一键安装（可无 Python 环境）
 REM  双击或「以管理员身份运行」本文件即可
 REM ============================================================
 
@@ -18,7 +18,7 @@ if not exist "%PS1%" (
 
 echo.
 echo ============================================================
-echo   Stamping Costing Platform - Setup
+echo   Structural Parts Automated Costing Platform - Setup
 echo ============================================================
 echo.
 

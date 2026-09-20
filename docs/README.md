@@ -1,5 +1,9 @@
 # 文档目录
 
+**大名** [结构件自动核价平台](architecture.md) · **小名** 核价平台。  
+English: **Structural Parts Automated Costing Platform** / short **Costing Platform**.  
+核价对象：总成、分总成、冲压件。AI 只解释、不算价。领域词「冲压件」仍指自制叶子，不要当成产品名。
+
 平台规范放在本目录根下。领域设计按垂直切片分文件夹，与 `app/` / `static/js/features/` 对齐。工程变更跨切片，单独放 [engineering-change/](engineering-change/README.md)。
 
 ## 平台（根）

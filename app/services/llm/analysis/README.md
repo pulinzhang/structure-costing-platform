@@ -14,7 +14,7 @@ AnalysisRunner          # 薄分发，只看 query.subject
   SteelAnalysis         # 联动价 / 政策 / 基价 / 中标厚度 / 废料
   WeldingAnalysis       # 焊接单价 / 拆解 / 成品焊接费
   BomAnalysis           # 年价 / 包装运输 / 材料清单
-  AssemblyAnalysis      # 成品核价 / 零件存在性 / 单件问价
+  AssemblyAnalysis      # 总成核价 / 零件存在性 / 单件问价
 ```
 
 公式与口径在 `shared/`，不进主题 runner。

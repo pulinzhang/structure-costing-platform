@@ -10,7 +10,7 @@ import {
     buildAssistantDocumentHtml,
     buildExportFilename,
     canExportAssistantMessage,
-} from '../export/document.js?v=6';
+} from '../export/document.js?v=7';
 
 const state = {
     reportId: 0,

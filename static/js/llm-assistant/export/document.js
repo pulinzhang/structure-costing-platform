@@ -74,7 +74,7 @@ ${documentStyles()}
 <article class="doc">
   <header class="doc-header">
     <h1 class="doc-title">AI 分析报告</h1>
-    <p class="doc-subtitle">汽车冲压件自动核价平台 · AI 助手整理，便于参阅，请以系统核算为准</p>
+    <p class="doc-subtitle">结构件自动核价平台 · AI 助手整理，便于参阅，请以系统核算为准</p>
   </header>
   <table class="meta-table" role="presentation">
     ${metaRow('提问', question || '—')}

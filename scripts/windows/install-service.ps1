@@ -21,7 +21,7 @@ $repoRoot = (Resolve-Path (Join-Path $PSScriptRoot "..\..")).Path
 Set-Location $repoRoot
 
 $serviceName = "StampingCostingPlatform"
-$displayName = "汽车冲压件自动核价平台"
+$displayName = "结构件自动核价平台"
 $venvPython = Join-Path $repoRoot ".venv\Scripts\python.exe"
 $envFile = Join-Path $repoRoot ".env"
 
@@ -99,7 +99,7 @@ $appParams = "run_prod.py"
 & $nssmExe set $serviceName AppDirectory $repoRoot
 & $nssmExe set $serviceName AppParameters $appParams
 & $nssmExe set $serviceName DisplayName $displayName
-& $nssmExe set $serviceName Description "Stamping Costing Platform (run_prod.py → uvicorn workers)"
+& $nssmExe set $serviceName Description "Structural Parts Automated Costing Platform (run_prod.py → uvicorn workers)"
 & $nssmExe set $serviceName Start SERVICE_AUTO_START
 & $nssmExe set $serviceName AppStdout (Join-Path $repoRoot "logs\service-stdout.log")
 & $nssmExe set $serviceName AppStderr (Join-Path $repoRoot "logs\service-stderr.log")

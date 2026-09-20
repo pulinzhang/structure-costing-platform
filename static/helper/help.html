@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>帮助 · 操作说明 · 自动核价平台</title>
+  <title>帮助 · 操作说明 · 核价平台</title>
   <link rel="icon" type="image/x-icon" href="/static/assets/favicon.ico">
   <link href="/static/css/fonts.css?v=1" rel="stylesheet">
   <link rel="stylesheet" href="helper.css?v=2">
@@ -51,7 +51,7 @@
       <header class="hero">
         <div class="eyebrow">Operations Guide</div>
         <h1>① 帮助 · 怎么操作系统</h1>
-        <p>本块只讲「按钮点哪里、任务怎么跑」。概念与算账见知识库；真实数字见样例（2025·01·青岛·T28；工程变更另见 2025·07）。侧栏现网顺序：仪表盘 → 冲压工程 → 焊接工程 → 工程变更 → 一事一议 → 核价 → 采购价格协议 → 文件溯源 → 主数据 → 设置。</p>
+        <p><strong>结构件自动核价平台</strong>（侧栏小名：<strong>核价平台</strong>）。本块只讲「按钮点哪里、任务怎么跑」。概念与算账见知识库（总成 / 分总成 / 冲压件）；真实数字见样例（2025·01·青岛·T28；工程变更另见 2025·07）。侧栏现网顺序：仪表盘 → 冲压工程 → 焊接工程 → 工程变更 → 一事一议 → 核价 → 采购价格协议 → 文件溯源 → 主数据 → 设置。</p>
         <div class="hero-actions">
           <a class="back-link" href="index.html">← 帮助入口</a>
           <a class="btn-print" href="print-all.html" style="text-decoration:none;">整本打印 / PDF</a>
@@ -109,7 +109,7 @@
             <tr><td>焊接工程</td><td>材料清单（核价主线）、焊接单价、包装运输、采购对象、年度零件价、焊接拆解与焊接费。投产后结构换号走工程变更。</td></tr>
             <tr><td>工程变更</td><td>工程变更上传（变更单 + 材料清单 + 工艺确认表）；列表核对与整本回滚。路径 <code>#/engineering-change-upload</code>、<code>#/engineering-change-order-list</code>。</td></tr>
             <tr><td>一事一议</td><td>加减价政策、基准价、中标钢厂厚度价、废料月度价</td></tr>
-            <tr><td>核价</td><td>钢材联动 → 冲压零件价 → <strong>总成核价</strong>（成品月总账）；自动核价引擎；月度核对导出</td></tr>
+            <tr><td>核价</td><td>钢材联动 → 冲压零件价 → <strong>总成核价</strong>（总成 / 分总成各级卡）；自动核价引擎；月度核对导出</td></tr>
             <tr><td>采购价格协议</td><td>签二级厂的《批量零部件价格协议》；只读、不算价；一级菜单</td></tr>
             <tr><td>文件溯源</td><td>查历史上传的原件（分类、基地、年月、项目、上传人）</td></tr>
             <tr><td>主数据</td><td>基地、项目、供应商、牌号分类</td></tr>
@@ -322,7 +322,7 @@
       <section id="llm-assistant">
         <h2>AI 助理（核价智能分析）</h2>
         <p class="lead">
-          顶栏右侧 <strong>AI 助手</strong> 按钮打开浮窗。数字由核价库计算，AI 只负责用自然语言解释——问什么答什么，不铺固定报告模板。
+          顶栏右侧 <strong>AI 助手</strong> 按钮打开浮窗。本平台核总成、分总成、冲压件；数字由核价库计算，AI 只负责用自然语言解释——问什么答什么，不铺固定报告模板。
         </p>
         <ol class="steps">
           <li>

@@ -1,5 +1,6 @@
 # Windows 生产环境安装说明
 
+> 产品：**结构件自动核价平台**（小名：核价平台）。  
 > 适用于内网 / 单机 Windows 服务器部署。  
 > 开发环境见根目录 [README.md](../README.md)；云主机 Docker 发版见仓库根目录 `deploy.sh`。
 
@@ -201,7 +202,7 @@ net stop StampingCostingPlatform
 sc query StampingCostingPlatform
 ```
 
-或：`Win + R` → `services.msc` → 找到「汽车冲压件自动核价平台」。
+或：`Win + R` → `services.msc` → 找到「结构件自动核价平台」。
 
 **离线 NSSM：**  
 无外网时，从 https://nssm.cc/download 下载，解压后把 `win64\nssm.exe` 放到：

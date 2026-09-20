@@ -1,4 +1,4 @@
-# 汽车冲压件自动核价平台 - 架构说明
+# 结构件自动核价平台 - 架构说明
 
 > 面向开发者的架构导读。  
 > **硬约束以 Cursor Rules / docs 规范为准**（见文末「规范索引」）；本文解释「为什么」与「长什么样」。  
@@ -10,10 +10,11 @@
 
 | 项目 | 说明 |
 |------|------|
-| 名称 | 汽车冲压件自动核价平台 |
+| 名称 | 结构件自动核价平台（小名：核价平台） |
+| English | Structural Parts Automated Costing Platform（short: Costing Platform） |
 | 后端 | FastAPI + SQLAlchemy + SQLite |
 | 前端 | `static/` SPA（无 Webpack/Vite：原生 ES Module + 入库的 `tailwind.css`） |
-| 做什么 | 工艺/政策/BOM 等数据入库 → 钢材联动与零件核价 → 查询、审核、导出 |
+| 做什么 | 总成 / 分总成 / 冲压件按月自动核价；工艺/政策/BOM/工程变更入库 → 钢材联动与零件、总成核价 → 查询、审核、导出；AI 解读动因 |
 | 典型流程 | 上传 Excel → Parser 解析 → Service 落库 → 下游 costing 组合计算 |
 
 ---

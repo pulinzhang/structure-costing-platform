@@ -8,7 +8,7 @@
 import { settingsTemplate } from './template.js?v=22';
 
 const API = '/api/settings/system/config';
-const DEFAULT_APP_NAME = '汽车冲压件自动核价平台';
+const DEFAULT_APP_NAME = '结构件自动核价平台';
 const DEFAULT_DENSITY = '7.8500';
 const DEFAULT_LOSS_PERMILLE = '3.00';
 const DEFAULT_RECOVERY_PERCENT = '97.00';

@@ -27,9 +27,9 @@ class Settings(BaseSettings):
     """
 
     # 应用基本信息
-    APP_NAME: str = "汽车冲压件自动核价平台"
+    APP_NAME: str = "结构件自动核价平台"
     APP_VERSION: str = "1.0.0"
-    APP_DESCRIPTION: str = "Stamping Costing Platform"
+    APP_DESCRIPTION: str = "Structural Parts Automated Costing Platform"
     IS_DEBUG: bool = Field(default=True, validation_alias=_IS_DEBUG_ALIAS)
     ENV: str = "development"
 
