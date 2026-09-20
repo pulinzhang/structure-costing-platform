@@ -8,7 +8,7 @@ import {
     renderDieFeeRows,
     updateDieFeeHud,
     updateDieFeeFilterCapsules,
-} from './template.js?v=17';
+} from './template.js?v=23';
 import { bindMoreMenu } from '../../../../more-menu.js?v=1';
 import { shortPartNumber } from '../../../../part-identity.js?v=3';
 import {

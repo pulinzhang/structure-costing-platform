@@ -7,7 +7,7 @@ import {
     renderEcDetailBody,
     renderEcListRows,
     updateEcFilterCapsules,
-} from './template.js?v=22';
+} from './template.js?v=27';
 import {
     DEFAULT_PAGE_SIZE,
     bindPagination,

@@ -8,7 +8,7 @@ import {
     updatePartCostHud,
     updateCostFilterCapsules,
     syncOptionalColumnVisibility,
-} from './template.js?v=69';
+} from './template.js?v=76';
 import { shortPartNumber } from '../../../../part-identity.js?v=3';
 import {
     DEFAULT_PAGE_SIZE,

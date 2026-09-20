@@ -648,13 +648,14 @@ textarea:-webkit-autofill:active {
     }
 }
 
-/* 表区网格底（HUD 密表共用，规范允许留在壳层） */
+/* 表区网格底（HUD 密表共用；fixed 让冻结列与表区格子同原点） */
 .brabus-bg-grid {
     background-color: #0B0B0D;
     background-image:
         linear-gradient(to right, rgba(255, 255, 255, 0.03) 1px, transparent 1px),
         linear-gradient(to bottom, rgba(255, 255, 255, 0.03) 1px, transparent 1px);
     background-size: 24px 24px;
+    background-attachment: fixed;
 }
 
 /* 进度条动画 */

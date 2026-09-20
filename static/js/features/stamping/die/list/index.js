@@ -1,4 +1,4 @@
-import { dieListTemplate } from './template.js?v=14';
+import { dieListTemplate } from './template.js?v=20';
 import { bindMoreMenu } from '../../../../more-menu.js?v=1';
 import {
     DEFAULT_PAGE_SIZE,
@@ -252,7 +252,7 @@ export const DieListPage = {
                     <td class="px-2 py-2 text-[#8E8E93] truncate">${esc(row.production_mode)}</td>
                     <td class="px-2 py-2 text-[#8E8E93] whitespace-nowrap">${esc(fmtPeriodRange(row.effective_year, row.effective_month, row.expiry_year, row.expiry_month))}</td>
                     <td class="${numCell}">${esc(row.process_count)}</td>
-                    <td class="px-1 py-2 text-center">
+                    <td class="px-1 py-2 text-center sticky right-0 z-[2] brabus-bg-grid group-hover:bg-[#161620]">
                         <button type="button"
                                 class="inline-flex items-center justify-center w-7 h-7 rounded-sm text-[#555555] hover:text-[#C8C8D0] hover:bg-[#161620] opacity-0 group-hover:opacity-100 focus:opacity-100 transition-all"
                                 data-action="detail" data-id="${row.id}" title="查看详情" aria-label="查看详情">

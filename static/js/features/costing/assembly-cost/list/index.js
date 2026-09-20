@@ -4,7 +4,7 @@ import {
     updateLacHud,
     updateLacFilterCapsules,
     updateLacTableHead,
-} from './template.js?v=36';
+} from './template.js?v=43';
 import {
     DEFAULT_PAGE_SIZE,
     bindPagination,

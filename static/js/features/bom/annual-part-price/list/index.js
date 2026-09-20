@@ -12,7 +12,7 @@ import {
     parseConversionFactorInput,
     updateAnnualHud,
     updateAnnualFilterCapsules,
-} from './template.js?v=16';
+} from './template.js?v=22';
 import { bindMoreMenu } from '../../../../more-menu.js?v=1';
 import {
     DEFAULT_PAGE_SIZE,

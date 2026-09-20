@@ -9,7 +9,7 @@ import {
     updateWpbHud,
     updateWpbCapsules,
     refreshWpbLineDerived,
-} from './template.js?v=44';
+} from './template.js?v=50';
 import { bindMoreMenu } from '../../../../more-menu.js?v=1';
 import {
     DEFAULT_PAGE_SIZE,

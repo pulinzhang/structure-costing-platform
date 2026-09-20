@@ -141,7 +141,7 @@ export function gaugeFeeListTemplate() {
                 </div>
 
                 <div class="overflow-x-auto brabus-bg-grid">
-                    <table class="w-full table-fixed bg-transparent border-collapse" style="min-width: 1000px;">
+                    <table class="w-full table-fixed bg-transparent border-separate border-spacing-0" style="min-width: 1000px;">
                         <colgroup>
                             <col style="width: 8px;">
                             <col style="width: 80px;">
@@ -163,7 +163,7 @@ export function gaugeFeeListTemplate() {
                                 <th class="px-2 py-2 text-right text-[9px] font-semibold tracking-[0.06em] text-[#FF1E27]/90 bg-[#1A080A]">检具费（万）</th>
                                 <th class="px-2 py-2 text-right text-[9px] font-medium tracking-[0.06em] text-[#555555]">分摊（万台）</th>
                                 <th class="px-1 py-2 text-center text-[9px] font-medium tracking-[0.06em] text-[#555555]">状态</th>
-                                <th class="p-0 w-9" aria-label="操作"></th>
+                                <th class="p-0 w-9 sticky right-0 z-[3] bg-[#0B0B0D]" aria-label="操作"></th>
                             </tr>
                         </thead>
                         <tbody id="gflTableBody"></tbody>
@@ -273,7 +273,7 @@ export function renderTableRows(records) {
             <td class="px-2 py-1.5 text-right font-mono font-black tabular-nums text-[12px] text-[#FF1E27] bg-[#1A080A] border-x border-[#FF1E27]/20">${esc(fmtNum(record.gauge_fee, 4))}</td>
             <td class="${numCell}">${esc(fmtNum(record.allocation_qty, 0))}</td>
             <td class="px-1 py-2 text-center"><span class="text-[9px] font-medium ${statusClass}">${esc(record.status_label || record.status)}</span></td>
-            <td class="px-1 py-2 text-center">
+            <td class="px-1 py-2 text-center sticky right-0 z-[2] brabus-bg-grid group-hover:bg-[#161620]">
                 <div class="inline-flex items-center justify-center gap-0.5 opacity-0 pointer-events-none group-hover:opacity-100 group-hover:pointer-events-auto focus-within:opacity-100 focus-within:pointer-events-auto transition-opacity duration-100">
                     ${canUpdate ? `
                     <button type="button" data-action="edit" data-id="${esc(record.id)}"

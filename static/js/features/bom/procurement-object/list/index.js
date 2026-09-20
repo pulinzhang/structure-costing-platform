@@ -5,7 +5,7 @@
 import {
     procurementObjectListTemplate,
     renderProcurementObjectRows,
-} from './template.js?v=30';
+} from './template.js?v=37';
 import {
     DEFAULT_PAGE_SIZE,
     bindPagination,

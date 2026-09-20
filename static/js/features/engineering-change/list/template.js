@@ -129,7 +129,7 @@ export function engineeringChangeListTemplate() {
                                 <th class="px-2 py-2 text-left text-[9px] font-medium tracking-[0.08em] text-[#555555]">上传人</th>
                                 <th class="px-2 py-2 text-left text-[9px] font-medium tracking-[0.08em] text-[#555555]">上传时间</th>
                                 <th class="px-2 py-2 text-center text-[9px] font-medium tracking-[0.06em] text-[#555555]">状态</th>
-                                <th class="px-1 py-2 text-center text-[9px] font-medium tracking-[0.06em] text-[#555555] sticky right-0 z-[3] bg-[#0B0B0D] shadow-[-8px_0_12px_rgba(0,0,0,0.55)]">操作</th>
+                                <th class="p-0 w-9 sticky right-0 z-[3] bg-[#0B0B0D]" aria-label="操作"></th>
                             </tr>
                         </thead>
                         <tbody id="ecListTableBody" class="bg-transparent"></tbody>
@@ -237,7 +237,7 @@ export function renderEcListRows(records, { canDelete }) {
                 <td class="px-2 py-2 text-[#8E8E93] truncate">${esc(row.created_by || '—')}</td>
                 <td class="px-2 py-2 text-[9px] text-[#3a3a3a] whitespace-nowrap overflow-hidden">${esc(formatUploadTime(row.created_at))}</td>
                 <td class="px-2 py-2 text-center">${statusBadge(row.status)}</td>
-                <td class="px-1 py-2 text-center whitespace-nowrap sticky right-0 z-[2] bg-[#0A0A0C] group-hover:bg-[#161620] shadow-[-8px_0_12px_rgba(0,0,0,0.45)]">${viewBtn}${deleteBtn}</td>
+                <td class="px-1 py-2 text-center whitespace-nowrap sticky right-0 z-[2] brabus-bg-grid group-hover:bg-[#161620]">${viewBtn}${deleteBtn}</td>
             </tr>
         `;
     }).join('');

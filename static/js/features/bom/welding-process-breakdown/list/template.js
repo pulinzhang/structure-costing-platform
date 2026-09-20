@@ -144,7 +144,7 @@ export function weldingProcessBreakdownListTemplate() {
                 </div>
 
                 <div class="overflow-x-auto brabus-bg-grid">
-                    <table class="w-full min-w-[1280px] bg-transparent table-fixed border-collapse">
+                    <table class="w-full min-w-[1280px] bg-transparent table-fixed border-separate border-spacing-0">
                         <colgroup>
                             <col style="width:2px">
                             <col style="width:7%">
@@ -174,7 +174,7 @@ export function weldingProcessBreakdownListTemplate() {
                                 <th class="px-2 py-2 text-center text-[9px] font-semibold tracking-[0.06em] text-[#FF1E27]/90 bg-[#1A080A]" title="有效工艺明细行数">工艺数</th>
                                 <th class="px-2 py-2 text-center text-[9px] font-medium tracking-[0.06em] text-[#555555]">解析</th>
                                 <th class="px-2 py-2 text-center text-[9px] font-medium tracking-[0.06em] text-[#555555]">审核</th>
-                                <th class="px-1 py-2 text-center text-[9px] font-medium tracking-[0.06em] text-[#555555]">操作</th>
+                                <th class="p-0 w-9 sticky right-0 z-[3] bg-[#0B0B0D]" aria-label="操作"></th>
                             </tr>
                         </thead>
                         <tbody id="wpbTableBody" class="bg-transparent"></tbody>
@@ -428,7 +428,7 @@ export function renderWpbTableRows(records, options = {}) {
                 <td class="px-2 py-2 text-center">
                     <span class="inline-flex px-1.5 py-0.5 text-[9px] rounded-sm ${audit.cls}">${audit.text}</span>
                 </td>
-                <td class="px-1 py-2 text-center">${ops}</td>
+                <td class="px-1 py-2 text-center sticky right-0 z-[2] brabus-bg-grid group-hover:bg-[#161620]">${ops}</td>
             </tr>
         `;
     }).join('');

@@ -8,7 +8,7 @@ import {
     renderFeeRows,
     updateFeeHud,
     updateFeeFilterCapsules,
-} from './template.js?v=50';
+} from './template.js?v=56';
 import { bindMoreMenu } from '../../../../more-menu.js?v=1';
 import { shortPartNumber } from '../../../../part-identity.js?v=3';
 import {

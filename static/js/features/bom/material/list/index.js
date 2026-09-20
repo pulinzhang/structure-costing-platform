@@ -7,7 +7,7 @@ import {
     renderBomMatTableRows,
     updateBomMatHud,
     updateBomMatCapsules,
-} from './template.js?v=4';
+} from './template.js?v=10';
 import {
     DEFAULT_PAGE_SIZE,
     bindPagination,

@@ -149,7 +149,7 @@ export function partsTemplate() {
                 </div>
 
                 <div class="overflow-x-auto brabus-bg-grid">
-                    <table class="w-full min-w-[1460px] bg-transparent" id="partsTable">
+                    <table class="w-full min-w-[1460px] bg-transparent border-separate border-spacing-0" id="partsTable">
                         <thead>
                             <tr class="border-b border-[#17171C] bg-[#0B0B0D]/95">
                                 <th class="p-0 w-0"></th>
@@ -169,7 +169,7 @@ export function partsTemplate() {
                                 <th class="px-3 py-3 text-right text-[10px] font-semibold uppercase tracking-[0.18em] text-[#6E6E73] whitespace-nowrap">工序</th>
                                 <th class="px-3 py-3 text-left text-[10px] font-semibold uppercase tracking-[0.18em] text-[#6E6E73] whitespace-nowrap">生失效</th>
                                 <th class="px-3 py-3 text-left text-[10px] font-semibold uppercase tracking-[0.18em] text-[#6E6E73] whitespace-nowrap">来源文件</th>
-                                <th class="p-0 w-9" aria-label="操作"></th>
+                                <th class="p-0 w-9 sticky right-0 z-[3] bg-[#0B0B0D]" aria-label="操作"></th>
                             </tr>
                         </thead>
                         <tbody id="partsTableBody" class="bg-transparent"></tbody>

@@ -5,7 +5,7 @@
 import {
     dieUnitPriceTemplate,
     renderTableRows,
-} from './template.js?v=7';
+} from './template.js?v=14';
 import {
     DEFAULT_PAGE_SIZE,
     bindPagination,

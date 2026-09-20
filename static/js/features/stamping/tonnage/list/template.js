@@ -119,7 +119,7 @@ export function tonnagePriceTemplate() {
                 </div>
 
                 <div class="overflow-x-auto brabus-bg-grid">
-                    <table class="w-full min-w-[1100px] bg-transparent table-fixed border-collapse">
+                    <table class="w-full min-w-[1100px] bg-transparent table-fixed border-separate border-spacing-0">
                         <colgroup>
                             <col style="width:2px">
                             <col style="width:16%">
@@ -140,10 +140,10 @@ export function tonnagePriceTemplate() {
                                 <th class="px-2 py-2 text-right text-[9px] font-medium tracking-[0.06em] text-[#555555]">压机吨位 (T)</th>
                                 <th class="px-2 py-2 text-right text-[9px] font-semibold tracking-[0.06em] text-[#FF1E27]/90 bg-[#1A080A]">单冲次价格</th>
                                 <th class="px-2 py-2 text-center text-[9px] font-medium tracking-[0.06em] text-[#555555]">审核</th>
-                                <th class="p-0 w-9" aria-label="操作"></th>
                                 <th class="px-2 py-2 text-left text-[9px] font-normal tracking-[0.08em] text-[#3a3a3a]">创建人</th>
                                 <th class="px-2 py-2 text-left text-[9px] font-normal tracking-[0.08em] text-[#3a3a3a]">创建时间</th>
                                 <th class="px-2 py-2 text-left text-[9px] font-normal tracking-[0.08em] text-[#3a3a3a]">修改人</th>
+                                <th class="p-0 w-9 sticky right-0 z-[3] bg-[#0B0B0D]" aria-label="操作"></th>
                             </tr>
                         </thead>
                         <tbody id="tonnagePriceTableBody" class="bg-transparent"></tbody>
@@ -380,7 +380,10 @@ export function renderTableRows(records) {
                 ${esc(formatPricePerStroke3(record.price_per_stroke))}
             </td>
             <td class="px-2 py-2 text-center">${auditBadge(record.audit_status)}</td>
-            <td class="px-1 py-2 text-center">
+            <td class="px-2 py-2 text-[9px] text-[#484848] whitespace-nowrap overflow-hidden">${esc(record.created_by)}</td>
+            <td class="px-2 py-2 text-[9px] text-[#3a3a3a] whitespace-nowrap overflow-hidden">${esc(formatAuditDateTime(record.created_at))}</td>
+            <td class="px-2 py-2 text-[9px] text-[#484848] whitespace-nowrap overflow-hidden">${esc(record.updated_by)}</td>
+            <td class="px-1 py-2 text-center sticky right-0 z-[2] brabus-bg-grid group-hover:bg-[#161620]">
                 <div class="inline-flex items-center justify-center gap-0.5 opacity-0 pointer-events-none group-hover:opacity-100 group-hover:pointer-events-auto focus-within:opacity-100 focus-within:pointer-events-auto transition-opacity duration-100">
                     ${canUpdate ? `
                     <button type="button" class="edit-btn inline-flex items-center justify-center w-7 h-7 rounded-sm text-[#555555] hover:text-[#C8C8D0] hover:bg-[#161620] transition-all ${approved ? 'opacity-30 pointer-events-none' : ''}"
@@ -394,9 +397,6 @@ export function renderTableRows(records) {
                     </button>` : ''}
                 </div>
             </td>
-            <td class="px-2 py-2 text-[9px] text-[#484848] whitespace-nowrap overflow-hidden">${esc(record.created_by)}</td>
-            <td class="px-2 py-2 text-[9px] text-[#3a3a3a] whitespace-nowrap overflow-hidden">${esc(formatAuditDateTime(record.created_at))}</td>
-            <td class="px-2 py-2 text-[9px] text-[#484848] whitespace-nowrap overflow-hidden">${esc(record.updated_by)}</td>
         </tr>`;
     }).join('');
 }

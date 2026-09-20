@@ -9,7 +9,7 @@ import {
     renderDetailContent,
     updatePartsFilterCapsules,
     updatePartsHud,
-} from './template.js?v=41';
+} from './template.js?v=48';
 import { bindMoreMenu } from '../../../../more-menu.js?v=1';
 import { fmtPeriodRange } from '../../../common/period-ui.js?v=2';
 import {
@@ -438,7 +438,7 @@ export const PartsPage = {
                 <td class="${cell} text-right tabular-nums ${muted}">${processCount}</td>
                 <td class="${cell} ${muted} whitespace-nowrap">${esc(fmtPeriodRange(part.effective_year, part.effective_month, part.expiry_year, part.expiry_month))}</td>
                 <td class="${cell} text-[10px] text-[#555555] max-w-[160px] truncate" title="${esc(part.excel_filename || '')}">${esc(part.excel_filename) || '—'}</td>
-                <td class="px-1 py-2 text-center align-middle">
+                <td class="px-1 py-2 text-center align-middle sticky right-0 z-[2] brabus-bg-grid group-hover:bg-[#161620]">
                     <div class="inline-flex items-center justify-center gap-0.5 opacity-0 pointer-events-none group-hover:opacity-100 group-hover:pointer-events-auto focus-within:opacity-100 focus-within:pointer-events-auto transition-opacity duration-100">
                         <button type="button" class="inline-flex items-center justify-center w-7 h-7 rounded-sm text-[#555555] hover:text-[#C8C8D0] hover:bg-[#161620] transition-all" data-action="detail" data-id="${part.id}" title="查看详情" aria-label="查看详情">
                             ${window.svgIcon('eye', 'w-3.5 h-3.5')}

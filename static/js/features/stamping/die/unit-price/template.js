@@ -59,8 +59,8 @@ export function dieUnitPriceTemplate() {
                     </div>
                 </div>
 
-                <div class="overflow-x-auto bg-[#0A0A0E] brabus-bg-grid">
-                    <table class="w-full table-fixed bg-transparent border-collapse" style="min-width: 920px;">
+                <div class="overflow-x-auto brabus-bg-grid">
+                    <table class="w-full table-fixed bg-transparent border-separate border-spacing-0" style="min-width: 920px;">
                         <colgroup>
                             <col style="width: 8px;">
                             <col style="width: 88px;">
@@ -82,7 +82,7 @@ export function dieUnitPriceTemplate() {
                                 <th class="px-2 py-2 text-right text-[9px] font-medium tracking-[0.06em] text-[#555555]">分摊（万台）</th>
                                 <th class="px-1 py-2 text-center text-[9px] font-medium tracking-[0.06em] text-[#555555]">状态</th>
                                 <th class="px-2 py-2 text-left text-[9px] font-medium tracking-[0.06em] text-[#555555]">更新</th>
-                                <th class="px-1 py-2 text-center text-[9px] font-medium tracking-[0.06em] text-[#555555]">操作</th>
+                                <th class="p-0 w-9 sticky right-0 z-[3] bg-[#0B0B0D]" aria-label="操作"></th>
                             </tr>
                         </thead>
                         <tbody id="dupTableBody"></tbody>
@@ -229,7 +229,7 @@ export function renderTableRows(records) {
                 <div>${esc(record.updated_by || '—')}</div>
                 <div>${esc(updated)}</div>
             </td>
-            <td class="px-1 py-2 text-center">
+            <td class="px-1 py-2 text-center sticky right-0 z-[2] brabus-bg-grid group-hover:bg-[#161620]">
                 <div class="inline-flex items-center justify-center gap-0.5 opacity-0 pointer-events-none group-hover:opacity-100 group-hover:pointer-events-auto focus-within:opacity-100 focus-within:pointer-events-auto transition-opacity duration-100">
                     ${canUpdate ? `
                     <button type="button" data-action="edit" data-id="${esc(record.id)}"

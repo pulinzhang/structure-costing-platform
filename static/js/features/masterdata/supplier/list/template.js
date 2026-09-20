@@ -47,8 +47,8 @@ export function supplierListTemplate() {
                     </div>
                 </div>
 
-                <div class="overflow-x-auto bg-[#0A0A0E] brabus-bg-grid">
-                    <table class="w-full table-fixed bg-transparent border-collapse" style="min-width: 860px;">
+                <div class="overflow-x-auto brabus-bg-grid">
+                    <table class="w-full table-fixed bg-transparent border-separate border-spacing-0" style="min-width: 860px;">
                         <colgroup>
                             <col style="width: 8px;">
                             <col style="width: 12%;">
@@ -66,7 +66,7 @@ export function supplierListTemplate() {
                                 <th class="px-2 py-2 text-left text-[9px] font-medium tracking-[0.06em] text-[#555555]">对外代码</th>
                                 <th class="px-2 py-2 text-left text-[9px] font-medium tracking-[0.06em] text-[#555555]">别名</th>
                                 <th class="px-2 py-2 text-center text-[9px] font-medium tracking-[0.06em] text-[#555555]">状态</th>
-                                <th class="px-1 py-2 text-center text-[9px] font-medium tracking-[0.06em] text-[#555555]">操作</th>
+                                <th class="p-0 w-9 sticky right-0 z-[3] bg-[#0B0B0D]" aria-label="操作"></th>
                             </tr>
                         </thead>
                         <tbody id="supplierTableBody"></tbody>
@@ -265,7 +265,7 @@ export function renderSupplierRows(records) {
             </td>
             <td class="px-2 py-2 overflow-hidden truncate">${aliasText}</td>
             <td class="px-2 py-2 text-center whitespace-nowrap">${statusBadge}</td>
-            <td class="px-1 py-2 text-center whitespace-nowrap">${editBtn}${toggleBtn}${deleteBtn}</td>
+            <td class="px-1 py-2 text-center whitespace-nowrap sticky right-0 z-[2] brabus-bg-grid group-hover:bg-[#161620]">${editBtn}${toggleBtn}${deleteBtn}</td>
         </tr>`;
     }).join('');
 }
