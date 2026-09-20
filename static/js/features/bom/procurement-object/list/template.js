@@ -136,8 +136,8 @@ export function procurementObjectListTemplate() {
                     </div>
                 </div>
 
-                <div class="overflow-x-auto bg-[#0A0A0E] brabus-bg-grid">
-                    <table class="w-full table-fixed bg-transparent border-collapse" style="min-width: 1560px;">
+                <div class="overflow-x-auto brabus-bg-grid">
+                    <table class="w-full table-fixed bg-transparent border-separate border-spacing-0" style="min-width: 1560px;">
                         <colgroup>
                             <col style="width:3px">
                             <col style="width:88px">
@@ -168,8 +168,8 @@ export function procurementObjectListTemplate() {
                                 <th class="px-2 py-2 text-left text-[9px] font-medium tracking-[0.06em] text-[#555555]">供应商</th>
                                 <th class="px-2 py-2 text-left text-[9px] font-medium tracking-[0.06em] text-[#555555]">审核</th>
                                 <th class="px-2 py-2 text-left text-[9px] font-medium tracking-[0.06em] text-[#555555]">生失效</th>
-                                <th class="px-2 py-2 text-center text-[9px] font-medium tracking-[0.06em] text-[#555555]">操作</th>
                                 <th class="px-2 py-2 text-left text-[9px] font-medium tracking-[0.06em] text-[#555555]">范围</th>
+                                <th class="p-0 w-9 sticky right-0 z-[3] bg-[#0B0B0D]" aria-label="操作"></th>
                             </tr>
                         </thead>
                         <tbody id="poTableBody" class="font-mono text-[11px]"></tbody>
@@ -408,13 +408,13 @@ export function renderProcurementObjectRows(records) {
             </td>
             <td class="px-2 py-2 text-[10px] text-[#8E8E93]">${esc(AUDIT_LABELS[row.audit_status] || row.audit_status)}</td>
             ${periodTd}
-            <td class="px-1 py-2 text-center">
+            <td class="px-2 py-2 text-[9px] text-[#555555] truncate">${esc(row.location)} · ${esc(row.vehicle_model)} · ${esc(row.bom_version)}</td>
+            <td class="px-1 py-2 text-center sticky right-0 z-[2] brabus-bg-grid group-hover:bg-[#161620]">
                 ${confirmBtn}
                 <button type="button" data-action="detail" data-id="${esc(row.id)}"
                         class="inline-flex items-center justify-center w-7 h-7 rounded-sm opacity-0 group-hover:opacity-100 focus:opacity-100 text-[#555555] hover:text-[#C8C8D0] hover:bg-[#161620]"
                         title="详情" aria-label="详情">${window.svgIcon('eye', 'w-3.5 h-3.5')}</button>
             </td>
-            <td class="px-2 py-2 text-[9px] text-[#555555] truncate">${esc(row.location)} · ${esc(row.vehicle_model)} · ${esc(row.bom_version)}</td>
         </tr>`;
     }).join('');
 }

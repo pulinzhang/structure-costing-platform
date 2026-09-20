@@ -57,8 +57,8 @@ export function vehicleModelListTemplate() {
                     </div>
                 </div>
 
-                <div class="overflow-x-auto bg-[#0A0A0E] brabus-bg-grid">
-                    <table class="w-full table-fixed bg-transparent border-collapse" style="min-width: 820px;">
+                <div class="overflow-x-auto brabus-bg-grid">
+                    <table class="w-full table-fixed bg-transparent border-separate border-spacing-0" style="min-width: 820px;">
                         <colgroup>
                             <col style="width: 8px;">
                             <col>
@@ -76,7 +76,7 @@ export function vehicleModelListTemplate() {
                                 <th class="px-2 py-2 text-right text-[9px] font-medium tracking-[0.06em] text-[#555555]">失效年月</th>
                                 <th class="px-2 py-2 text-right text-[9px] font-medium tracking-[0.06em] text-[#555555]">当前供货台数</th>
                                 <th class="px-2 py-2 text-center text-[9px] font-medium tracking-[0.06em] text-[#555555]">该月状态</th>
-                                <th class="px-1 py-2 text-center text-[9px] font-medium tracking-[0.06em] text-[#555555]">操作</th>
+                                <th class="p-0 w-9 sticky right-0 z-[3] bg-[#0B0B0D]" aria-label="操作"></th>
                             </tr>
                         </thead>
                         <tbody id="vmTableBody"></tbody>
@@ -329,7 +329,7 @@ export function renderTableBody(locations, items, filterLocation, canUpdate, can
                     <td class="${numCell}">${esc(expiry)}</td>
                     <td class="${numCell}">${esc(supplied)}<span class="text-[9px] text-[#3A3A42] ml-1">台</span></td>
                     <td class="px-2 py-2 text-center text-[9px] font-medium tracking-[0.08em] text-[#555555]">${esc(row.period_status)}</td>
-                    <td class="px-1 py-2 text-center whitespace-nowrap">${editBtn}${deleteBtn}</td>
+                    <td class="px-1 py-2 text-center whitespace-nowrap sticky right-0 z-[2] brabus-bg-grid group-hover:bg-[#161620]">${editBtn}${deleteBtn}</td>
                 </tr>
             `);
         });

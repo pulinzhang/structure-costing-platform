@@ -10,7 +10,7 @@ import {
     parsePricePerStrokeInput,
     updateTonnageHud,
     updateTonnageFilterCapsules,
-} from './template.js?v=25';
+} from './template.js?v=31';
 import { bindMoreMenu } from '../../../../more-menu.js?v=1';
 import {
     DEFAULT_PAGE_SIZE,

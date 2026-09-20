@@ -10,7 +10,7 @@ import {
     updatePkgHud,
     updatePkgFilterCapsules,
     renderDetailBody,
-} from './template.js?v=10';
+} from './template.js?v=16';
 import { bindMoreMenu } from '../../../../more-menu.js?v=1';
 import {
     DEFAULT_PAGE_SIZE,

@@ -8,7 +8,7 @@ import {
     updateL0WeldingFeeHud,
     updateL0WeldingFeeFilterCapsules,
     renderFeeDetailItems,
-} from './template.js?v=28';
+} from './template.js?v=35';
 import { bindMoreMenu } from '../../../../more-menu.js?v=1';
 import {
     DEFAULT_PAGE_SIZE,

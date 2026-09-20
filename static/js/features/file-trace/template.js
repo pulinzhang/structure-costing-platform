@@ -65,8 +65,8 @@ export function fileTraceTemplate() {
                     <div class="text-[#555555] text-xs">请联系管理员授权对应业务菜单后再查看溯源文件</div>
                 </div>
 
-                <div id="ftTableWrap" class="overflow-x-auto bg-[#0A0A0E]">
-                    <table class="w-full table-fixed bg-transparent border-collapse" style="min-width: 980px;">
+                <div id="ftTableWrap" class="overflow-x-auto brabus-bg-grid">
+                    <table class="w-full table-fixed bg-transparent border-separate border-spacing-0" style="min-width: 980px;">
                         <colgroup>
                             <col style="width: 4px;">
                             <col style="width: 110px;">
@@ -86,7 +86,7 @@ export function fileTraceTemplate() {
                                 <th class="px-2 py-2 text-right text-[9px] font-medium tracking-[0.06em] text-[#555555]">大小</th>
                                 <th class="px-2 py-2 text-left text-[9px] font-medium tracking-[0.06em] text-[#555555]">上传人</th>
                                 <th class="px-2 py-2 text-left text-[9px] font-medium tracking-[0.06em] text-[#555555]">上传时间</th>
-                                <th class="px-1 py-2 text-center text-[9px] font-medium tracking-[0.06em] text-[#555555]">操作</th>
+                                <th class="p-0 w-9 sticky right-0 z-[3] bg-[#0B0B0D]" aria-label="操作"></th>
                             </tr>
                         </thead>
                         <tbody id="ftTableBody"></tbody>
@@ -145,7 +145,7 @@ export function renderTableRows(items) {
             <td class="${numCell}">${esc(item.file_size_text || fmtNum(item.file_size, 0))}</td>
             <td class="px-2 py-2 text-[10px] text-[#8E8E93] truncate">${esc(item.created_by)}</td>
             <td class="px-2 py-2 text-[10px] text-[#8E8E93]">${esc(formatDateTime(item.created_at))}</td>
-            <td class="px-1 py-2 text-center">
+            <td class="px-1 py-2 text-center sticky right-0 z-[2] brabus-bg-grid group-hover:bg-[#161620]">
                 <div class="inline-flex items-center gap-1">
                     <button type="button" data-action="detail" data-id="${item.id}"
                             class="w-7 h-7 inline-flex items-center justify-center text-[#8E8E93] hover:text-[#FF1E27] border border-transparent hover:border-[#FF1E27]/30 rounded opacity-0 group-hover:opacity-100 focus:opacity-100 transition-all"

@@ -64,7 +64,7 @@ export function dieListTemplate() {
                     <p class="mt-2 text-[10px] text-[#555555]">进入即显示全部；基地/项目/零件号可选收窄。删除本范围、导出须选定基地+项目。</p>
                 </div>
                 <div class="overflow-x-auto brabus-bg-grid">
-                    <table class="w-full table-fixed bg-transparent border-collapse" style="min-width: 880px;">
+                    <table class="w-full table-fixed bg-transparent border-separate border-spacing-0" style="min-width: 880px;">
                         <colgroup>
                             <col style="width: 8px">
                             <col style="width: 56px">
@@ -88,7 +88,7 @@ export function dieListTemplate() {
                                 <th class="px-2 py-2 text-left text-[9px] font-medium tracking-[0.08em] text-[#555555]">生产方式</th>
                                 <th class="px-2 py-2 text-left text-[9px] font-medium tracking-[0.08em] text-[#555555]">生失效</th>
                                 <th class="px-2 py-2 text-right text-[9px] font-medium tracking-[0.06em] text-[#555555]">工序</th>
-                                <th class="px-1 py-2 text-center text-[9px] font-medium tracking-[0.06em] text-[#555555]">操作</th>
+                                <th class="p-0 w-9 sticky right-0 z-[3] bg-[#0B0B0D]" aria-label="操作"></th>
                             </tr>
                         </thead>
                         <tbody id="dieListTableBody" class="bg-transparent"></tbody>

@@ -81,7 +81,7 @@ export function usersTemplate() {
                 </div>
 
                 <div class="overflow-x-auto">
-                    <table class="w-full text-left text-xs border-collapse">
+                    <table class="w-full text-left text-xs border-separate border-spacing-0">
                         <thead>
                             <tr class="bg-[#0e0e11] border-b border-[#2c2c2c] text-[#9e9e9e]">
                                 <th class="px-4 py-3 text-[10px] font-semibold tracking-wider">用户信息</th>
@@ -89,7 +89,7 @@ export function usersTemplate() {
                                 <th class="px-4 py-3 text-[10px] font-semibold tracking-wider">联系方式</th>
                                 <th class="px-4 py-3 text-[10px] font-semibold tracking-wider text-center">状态</th>
                                 <th class="px-4 py-3 text-[10px] font-semibold tracking-wider">创建时间</th>
-                                <th class="p-0 w-9" aria-label="操作"></th>
+                                <th class="p-0 w-9 sticky right-0 z-[3] bg-[#0e0e11]" aria-label="操作"></th>
                             </tr>
                         </thead>
                         <tbody id="usersTableBody" class="divide-y divide-[#222222]">
@@ -336,7 +336,7 @@ export function renderTableRows(records) {
             <td class="px-4 py-2.5 whitespace-nowrap">${contactDisplay}</td>
             <td class="px-4 py-2.5 text-center whitespace-nowrap">${statusBadge}</td>
             <td class="px-4 py-2.5 text-[11px] text-[#616161] font-mono whitespace-nowrap">${esc(createdAt)}</td>
-            <td class="px-4 py-2.5 text-right whitespace-nowrap pr-5">
+            <td class="px-4 py-2.5 text-right whitespace-nowrap pr-5 sticky right-0 z-[2] bg-[#0e0e11] group-hover:bg-[#ffffff]/[0.02]">
                 <div class="inline-flex items-center gap-0.5 bg-[#0a0a0c] border border-[#2c2c2c] p-0.5 opacity-0 pointer-events-none group-hover:opacity-100 group-hover:pointer-events-auto transition-opacity">
                     ${canEdit ? `<button class="edit-btn p-1.5 text-[#9e9e9e] hover:text-white hover:bg-[#262626] transition-all" title="编辑">
                         ${window.svgIcon('pencil', 'w-3.5 h-3.5')}

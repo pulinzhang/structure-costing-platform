@@ -169,8 +169,8 @@ export function assemblyCostListTemplate() {
                     </div>
                 </div>
 
-                <div class="overflow-x-auto bg-[#0A0A0E] brabus-bg-grid">
-                    <table id="lacDataTable" class="w-full table-fixed bg-transparent border-collapse" style="min-width: 1252px;">
+                <div class="overflow-x-auto brabus-bg-grid">
+                    <table id="lacDataTable" class="w-full table-fixed bg-transparent border-separate border-spacing-0" style="min-width: 1252px;">
                         <colgroup id="lacColgroup">
                             <col style="width:3px">
                             <col style="width:96px">
@@ -200,7 +200,7 @@ export function assemblyCostListTemplate() {
                                 <th class="px-2 py-2 text-right text-[9px] font-semibold tracking-[0.06em] text-[#FF1E27]/90 bg-[#1A080A]">总费用</th>
                                 <th class="px-1 py-2 text-center text-[9px] font-medium tracking-[0.06em] text-[#555555]">核算</th>
                                 <th class="px-1 py-2 text-center text-[9px] font-medium tracking-[0.06em] text-[#555555]">审核</th>
-                                <th class="p-0 w-9" aria-label="操作"></th>
+                                <th class="p-0 w-9 sticky right-0 z-[3] bg-[#0B0B0D]" aria-label="操作"></th>
                             </tr>
                         </thead>
                         <tbody id="lacTableBody" class="bg-transparent"></tbody>
@@ -326,7 +326,7 @@ export function renderLacRows(records, view = 'finance') {
         const ym = esc(fmtPeriod(row.year, row.month));
         const location = esc(row.location) || '—';
         const actionCell = `
-            <td class="px-1 py-2 text-center align-middle">
+            <td class="px-1 py-2 text-center align-middle sticky right-0 z-[2] brabus-bg-grid group-hover:bg-[#161620]">
                 <button type="button"
                         class="btn-open-detail inline-flex items-center justify-center w-7 h-7 rounded-sm
                                opacity-0 group-hover:opacity-100 focus:opacity-100
@@ -442,7 +442,7 @@ export function updateLacTableHead(view = 'finance') {
                 ${th('确认', 'text-center')}
                 ${th('核算', 'text-center')}
                 ${th('审核', 'text-center')}
-                <th class="p-0 w-9" aria-label="操作"></th>
+                <th class="p-0 w-9 sticky right-0 z-[3] bg-[#0B0B0D]" aria-label="操作"></th>
             </tr>`;
         return;
     }
@@ -476,7 +476,7 @@ export function updateLacTableHead(view = 'finance') {
                 <th class="px-2 py-2 text-right text-[9px] font-semibold tracking-[0.06em] text-[#FF1E27]/90 bg-[#1A080A]">总费用</th>
                 ${th('核算', 'text-center')}
                 ${th('审核', 'text-center')}
-                <th class="p-0 w-9" aria-label="操作"></th>
+                <th class="p-0 w-9 sticky right-0 z-[3] bg-[#0B0B0D]" aria-label="操作"></th>
             </tr>`;
 }
 

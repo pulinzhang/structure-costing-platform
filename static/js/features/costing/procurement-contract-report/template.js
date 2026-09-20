@@ -168,7 +168,7 @@ export function procurementContractReportTemplate() {
                     <div id="pcrLoading" class="hidden absolute inset-0 z-10 flex items-center justify-center bg-[#0A0A0C]/70">
                         <div class="w-6 h-6 border-2 border-[#FF1E27] border-t-transparent rounded-full animate-spin"></div>
                     </div>
-                    <div class="overflow-x-auto bg-[#0A0A0E] brabus-bg-grid pr-4">
+                    <div class="overflow-x-auto brabus-bg-grid pr-4">
                         <table id="pcrTable" class="w-full table-fixed text-left border-collapse bg-transparent tabular-nums"
                                style="min-width: 1100px;">
                             <colgroup id="pcrColgroup"></colgroup>

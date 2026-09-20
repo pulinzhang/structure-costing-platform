@@ -8,7 +8,7 @@ import {
     renderSteelPriceRows,
     updateSteelPriceHud,
     updateActiveFilterCapsules,
-} from './template.js?v=52';
+} from './template.js?v=58';
 import {
     DEFAULT_PAGE_SIZE,
     bindPagination,

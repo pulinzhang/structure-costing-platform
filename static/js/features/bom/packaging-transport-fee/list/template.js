@@ -127,7 +127,7 @@ export function pkgTransportFeeTemplate() {
                 </div>
 
                 <div class="overflow-x-auto brabus-bg-grid">
-                    <table class="w-full min-w-[1400px] bg-transparent table-fixed border-collapse">
+                    <table class="w-full min-w-[1400px] bg-transparent table-fixed border-separate border-spacing-0">
                         <colgroup>
                             <col style="width:2px">
                             <col style="width:7%">
@@ -160,8 +160,8 @@ export function pkgTransportFeeTemplate() {
                                 <th class="px-2 py-2 text-right text-[9px] font-medium tracking-[0.06em] text-[#555555]">其它</th>
                                 <th class="px-2 py-2 text-right text-[9px] font-semibold tracking-[0.06em] text-[#FF1E27]/90 bg-[#1A080A]">合计</th>
                                 <th class="px-2 py-2 text-center text-[9px] font-medium tracking-[0.06em] text-[#555555]">审核</th>
-                                <th class="p-0 w-9" aria-label="操作"></th>
                                 <th class="px-2 py-2 text-left text-[9px] font-normal tracking-[0.08em] text-[#3a3a3a]">创建人</th>
+                                <th class="p-0 w-9 sticky right-0 z-[3] bg-[#0B0B0D]" aria-label="操作"></th>
                             </tr>
                         </thead>
                         <tbody id="pkgTransportFeeTableBody" class="bg-transparent"></tbody>
@@ -402,8 +402,8 @@ export function renderTableRows(records) {
                 ${esc(formatFee4(record.packaging_transport_total))}
             </td>
             <td class="px-1 py-2 text-center">${auditBadge(record.audit_status)}</td>
-            <td class="px-1 py-2 text-center whitespace-nowrap">${detailBtn}${editBtn}${delBtn}</td>
             <td class="px-2 py-2 text-[9px] text-[#3a3a3a] truncate">${esc(record.created_by || '—')}</td>
+            <td class="px-1 py-2 text-center whitespace-nowrap sticky right-0 z-[2] brabus-bg-grid group-hover:bg-[#161620]">${detailBtn}${editBtn}${delBtn}</td>
         </tr>`;
     }).join('');
 }

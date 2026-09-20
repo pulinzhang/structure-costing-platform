@@ -7,7 +7,7 @@ import {
     renderTableRows,
     updateGaugeFeeHud,
     updateGaugeFeeFilterCapsules,
-} from './template.js?v=15';
+} from './template.js?v=21';
 import { bindMoreMenu } from '../../../../more-menu.js?v=1';
 import {
     DEFAULT_PAGE_SIZE,

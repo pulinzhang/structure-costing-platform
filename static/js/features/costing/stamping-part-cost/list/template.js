@@ -149,8 +149,8 @@ export function partCostListTemplate() {
                     </div>
                 </div>
 
-                <div class="overflow-x-auto bg-[#0A0A0E] brabus-bg-grid">
-                    <table id="costDataTable" class="w-full table-fixed bg-transparent border-collapse" style="min-width: 1215px;">
+                <div class="overflow-x-auto brabus-bg-grid">
+                    <table id="costDataTable" class="w-full table-fixed bg-transparent border-separate border-spacing-0" style="min-width: 1215px;">
                         <colgroup id="costColgroup">
                             <col style="width:3px">
                             <col style="width:72px">
@@ -229,7 +229,7 @@ export function partCostListTemplate() {
                                 </th>
                                 <th class="px-1 py-2 text-center text-[9px] font-medium tracking-[0.06em] text-[#555555]">核算</th>
                                 <th class="px-1 py-2 text-center text-[9px] font-medium tracking-[0.06em] text-[#555555]">审核</th>
-                                <th class="p-0 w-9" aria-label="操作"></th>
+                                <th class="p-0 w-9 sticky right-0 z-[3] bg-[#0B0B0D]" aria-label="操作"></th>
                             </tr>
                         </thead>
                         <tbody id="costTableBody" class="bg-transparent"></tbody>
@@ -399,7 +399,7 @@ export function renderCostRows(records, columnFlags = {}) {
             </td>
             <td class="px-1 py-2 text-center">${calcStatusBadge(fail)}</td>
             <td class="px-1 py-2 text-center">${auditBadge(row.audit_status)}</td>
-            <td class="px-1 py-2 text-center align-middle">${actionBtn}</td>
+            <td class="px-1 py-2 text-center align-middle sticky right-0 z-[2] brabus-bg-grid group-hover:bg-[#161620]">${actionBtn}</td>
         </tr>`;
     }).join('');
 }

@@ -10,7 +10,7 @@ import {
     parseUnitPriceInput,
     updateWeldingHud,
     updateWeldingFilterCapsules,
-} from './template.js?v=17';
+} from './template.js?v=23';
 import { bindMoreMenu } from '../../../../more-menu.js?v=1';
 import {
     DEFAULT_PAGE_SIZE,

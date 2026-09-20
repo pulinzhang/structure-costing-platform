@@ -144,7 +144,7 @@ export function dieFeeListTemplate() {
                 </div>
 
                 <div class="overflow-x-auto brabus-bg-grid">
-                    <table class="w-full min-w-[1960px] bg-transparent">
+                    <table class="w-full min-w-[1960px] bg-transparent border-separate border-spacing-0">
                         <thead>
                             <tr class="border-b border-[#17171C] bg-[#0B0B0D]/95">
                                 <th class="p-0 w-0"></th>
@@ -165,11 +165,11 @@ export function dieFeeListTemplate() {
                                 <th class="px-3 py-3 text-left text-[10px] font-semibold uppercase tracking-[0.18em] text-[#6E6E73] whitespace-nowrap">模具类型</th>
                                 <th class="px-3 py-3 text-left text-[10px] font-semibold uppercase tracking-[0.18em] text-[#6E6E73] whitespace-nowrap">备注</th>
                                 <th class="px-3 py-3 text-left text-[10px] font-semibold uppercase tracking-[0.18em] text-[#6E6E73] whitespace-nowrap">审核</th>
-                                <th class="p-0 w-9" aria-label="操作"></th>
                                 <th class="px-3 py-3 text-left text-[9px] font-normal tracking-[0.08em] text-[#3a3a3a] whitespace-nowrap">创建人</th>
                                 <th class="px-3 py-3 text-left text-[9px] font-normal tracking-[0.08em] text-[#3a3a3a] whitespace-nowrap">创建时间</th>
                                 <th class="px-3 py-3 text-left text-[9px] font-normal tracking-[0.08em] text-[#3a3a3a] whitespace-nowrap">最后修改人</th>
                                 <th class="px-3 py-3 text-left text-[9px] font-normal tracking-[0.08em] text-[#3a3a3a] whitespace-nowrap">最后修改时间</th>
+                                <th class="p-0 w-9 sticky right-0 z-[3] bg-[#0B0B0D]" aria-label="操作"></th>
                             </tr>
                         </thead>
                         <tbody id="dieFeeTableBody" class="bg-transparent"></tbody>
@@ -484,17 +484,17 @@ export function renderDieFeeRows(records) {
             <td class="${cell} ${muted} font-sans">${esc(row.die_type)}</td>
             <td class="${cell} text-[10px] text-[#555555] max-w-[160px] truncate" title="${esc(row.remark || '')}">${esc(row.remark)}</td>
             <td class="${cell}">${auditBadge(row.audit_status)}</td>
-            <td class="px-1 py-2 text-center align-middle">
+            <td class="${cell} text-[9px] text-[#484848] whitespace-nowrap">${esc(row.created_by)}</td>
+            <td class="${cell} text-[9px] text-[#3a3a3a] font-mono whitespace-nowrap">${esc(formatAuditDateTime(row.created_at))}</td>
+            <td class="${cell} text-[9px] text-[#484848] whitespace-nowrap">${esc(row.updated_by)}</td>
+            <td class="${cell} text-[9px] text-[#3a3a3a] font-mono whitespace-nowrap">${esc(formatAuditDateTime(row.updated_at))}</td>
+            <td class="px-1 py-2 text-center align-middle sticky right-0 z-[2] brabus-bg-grid group-hover:bg-[#121218]">
                 <div class="inline-flex items-center justify-center gap-0.5 opacity-0 pointer-events-none group-hover:opacity-100 group-hover:pointer-events-auto focus-within:opacity-100 focus-within:pointer-events-auto transition-opacity duration-100">
                     <button type="button" class="view-btn inline-flex items-center justify-center w-7 h-7 rounded-sm text-[#555555] hover:text-[#C8C8D0] hover:bg-[#161620] transition-all" title="查看详情" aria-label="查看详情">${window.svgIcon('eye', 'w-3.5 h-3.5')}</button>
                     ${canUpdate ? `
                     <button type="button" class="edit-btn inline-flex items-center justify-center w-7 h-7 rounded-sm text-[#555555] hover:text-[#C8C8D0] hover:bg-[#161620] transition-all ${approved ? 'opacity-30 pointer-events-none' : ''}" title="${approved ? '已审核，不可编辑' : '编辑'}" aria-label="${approved ? '已审核，不可编辑' : '编辑'}">${window.svgIcon('pencil', 'w-3.5 h-3.5')}</button>` : ''}
                 </div>
             </td>
-            <td class="${cell} text-[9px] text-[#484848] whitespace-nowrap">${esc(row.created_by)}</td>
-            <td class="${cell} text-[9px] text-[#3a3a3a] font-mono whitespace-nowrap">${esc(formatAuditDateTime(row.created_at))}</td>
-            <td class="${cell} text-[9px] text-[#484848] whitespace-nowrap">${esc(row.updated_by)}</td>
-            <td class="${cell} text-[9px] text-[#3a3a3a] font-mono whitespace-nowrap">${esc(formatAuditDateTime(row.updated_at))}</td>
         </tr>`;
     }).join('');
 }
