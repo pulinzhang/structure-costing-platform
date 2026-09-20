@@ -106,7 +106,7 @@ class EngineeringChangeRollbackService:
             raise
         except IntegrityError:
             db.rollback()
-            # 加工费/模具费等对零件、布点 RESTRICT；转业务异常给前端 Toast，勿 500
+            # 加工费/模具费/焊接费等对零件、布点、拆解 RESTRICT；转业务异常给前端 Toast，勿 500
             raise BusinessException(EC_ROLLBACK_REFERENCED, code=409) from None
         except Exception:
             db.rollback()

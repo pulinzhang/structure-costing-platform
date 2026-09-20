@@ -14,6 +14,7 @@ from typing import TYPE_CHECKING
 
 from sqlalchemy import (
     DateTime,
+    ForeignKey,
     Index,
     Integer,
     Numeric,
@@ -58,6 +59,11 @@ class BomWeldingFee(AuditUserMixin, Base):
 
     source_breakdown_node_id: Mapped[int | None] = mapped_column(
         Integer,
+        ForeignKey(
+            "bom_welding_process_breakdown_node.id",
+            ondelete="RESTRICT",
+            onupdate="RESTRICT",
+        ),
         nullable=True,
         comment="来源焊接工艺拆解主表 id",
     )

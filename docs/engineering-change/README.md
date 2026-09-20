@@ -132,7 +132,7 @@ flowchart TB
 | `EC_PROJECT_MISMATCH` | 工程变更单项目和上传页不一致 | 对照上传页、工程变更单、材料清单项目代号 |
 | `EC_CHANGE_ORDER_*` | 变更单行数、类型、填法、同一个总成写了多次 | 类型只准四句：完成停止、改图、增加零件、此件不装；一个总成改了好几处请把总成格子上下合并 |
 | `EC_ROLLBACK_BLOCKED` | 不能删本次 | 其后还有未回滚变更，或采购对象已审未反审 |
-| `EC_ROLLBACK_REFERENCED` | 不能删本次 | 加工费/模具费等仍引用本次变更产生的零件或布点 |
+| `EC_ROLLBACK_REFERENCED` | 不能删本次 | 加工费/模具费/焊接费等仍引用本次变更产生的零件或布点 |
 | `EC_GATE_FULL_GENERATE` | 禁止整包 generate | 已有设变树（或失效 L0）；请走工程变更重传 |
 | `EC_GATE_ENGINE_BREAKDOWN` | 引擎拆解补算被同一把钥匙拦住 | 引擎已调 generate；`FULL_GENERATE` 映射为此文案。查是否工程变更未抄齐拆解 |
 | `EC_GATE_ENGINE_PROCUREMENT` | 引擎采购对象补算被同一把钥匙拦住 | 引擎已调 generate；查是否工程变更未插齐本树对象行 |
