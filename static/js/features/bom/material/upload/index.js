@@ -10,7 +10,7 @@ import {
     loadProjectPeriod,
     renderSopBanner,
     sopBannerHtml,
-} from '../../../common/period-ui.js?v=2';
+} from '../../../common/period-ui.js?v=5';
 
 const MAX_FILE_SIZE = 50 * 1024 * 1024;
 const POLL_INTERVAL_MS = 2000;

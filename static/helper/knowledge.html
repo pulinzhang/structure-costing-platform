@@ -49,7 +49,7 @@
         <p>
           一句话：按<strong>材料清单</strong>核算每个<strong>成品（供货总成）</strong>的月度总费用。
           系统菜单叫「总成核价」。材料清单、冲压工艺、焊接工艺拆解为<strong>前置底盘</strong>；
-          投产后改图换号走<strong>工程变更</strong>（时间轴切点，不是再拍全量快照）；
+          投产后改图换号走<strong>工程变更</strong>（换树，不是再拍全量快照）；
           <strong>冲次单价、焊接单价一年传一次</strong>；模具布点 / 检具 / 采购对象按改版维护；再做每月钢价与总成核价。
         </p>
         <div class="hero-actions">
@@ -295,9 +295,9 @@
       </section>
 
       <section id="engineering-change">
-        <h2>工程变更（时间轴切点）</h2>
+        <h2>工程变更（换树）</h2>
         <p class="lead">
-          <strong>工程变更不是在树上「改几个零件」，而是在槽位里决定：这棵树不动、停止，还是换成一棵新树。</strong>
+          <strong>工程变更不是在树上「改几个零件」，而是在树坑里决定：这棵树不动、停止，还是换成一棵新树。</strong>
           一棵树就是一个交货总成。顾客改图后它是另一件存货：旧树到期、新树启用。核价按「某年某月仍有效」取树。
         </p>
         <p class="ec-chain">
@@ -367,7 +367,7 @@
         </div>
 
         <div class="ec-fig" aria-label="三层数字">
-          <h4>③ 先换树，再盖章，最后数枝叶</h4>
+          <h4>③ 先换树，再盖章，最后数采购件</h4>
           <div class="ec-flow">
             <div class="ec-flow-box"><span class="k">变更单</span>5 条变化记录</div>
             <div class="ec-flow-arrow">↓ 判断受影响树坑</div>
@@ -377,15 +377,15 @@
               <div class="ec-flow-box">4 棵换新树</div>
             </div>
             <div class="ec-flow-arrow">↓ 整棵归属 EC-202507</div>
-            <div class="ec-flow-box">筛该版本采购对象</div>
+            <div class="ec-flow-box">数采购件</div>
             <div class="ec-flow-arrow">↓</div>
             <div class="ec-flow-box"><strong>17</strong></div>
           </div>
           <div class="ec-leaves">
-            <div>树 1<strong>4</strong>个采购对象</div>
-            <div>树 2<strong>5</strong>个采购对象</div>
-            <div>树 3<strong>3</strong>个采购对象</div>
-            <div>树 4<strong>5</strong>个采购对象</div>
+            <div>树 1<strong>4</strong>个采购件</div>
+            <div>树 2<strong>5</strong>个采购件</div>
+            <div>树 3<strong>3</strong>个采购件</div>
+            <div>树 4<strong>5</strong>个采购件</div>
           </div>
           <div class="ec-triple">
             <div>
@@ -401,18 +401,18 @@
             <div>
               <div class="n">17</div>
               <div class="l">树里面</div>
-              <p>采购对象数量</p>
+              <p>数采购件</p>
             </div>
           </div>
-          <p><strong>4 是树的数量。17 是树里面采购对象的数量。</strong>两者本来就不应该相等。</p>
+          <p><strong>4 是树的数量。17 是数采购件的结果。</strong>两者本来就不应该相等。</p>
           <div class="ec-dont">
             <div class="box no">
               <div class="mark">不要这样理解</div>
-              <p>变更单 5 行 → 所以应该有 5 个采购对象。也不要：1 行变更单 = 1 个树坑；也不要把改过的零件当成新版本采购对象的全部。</p>
+              <p>变更单 5 行 → 所以应该有 5 个采购对象。也不要：1 行变更单 = 1 个树坑；也不要把改过的零件当成新版本采购件的全部。</p>
             </div>
             <div class="box ok">
               <div class="mark">应该这样理解</div>
-              <p>5 条变化 → 判断树坑 → 1 棵停止 + 4 棵换新树 → 新树完整建立并盖章 → 新树里一共 17 个采购对象。</p>
+              <p>5 条变化 → 判断树坑 → 1 棵停止 + 4 棵换新树 → 新树完整建立并盖章 → 数采购件一共 17。</p>
             </div>
           </div>
         </div>
@@ -424,7 +424,7 @@
           </div>
           <div class="mini">
             <h4>为什么用生效月</h4>
-            <p>生效月 = 新树 / 新工艺从这月启用；旧树 / 旧工艺写失效到生效月的前一月（不删行）。前一月旧账仍看见旧号。不要说「作废」；不要为一次换号新建清单版本当切点。</p>
+            <p>生效月 = 新树 / 新工艺从这月启用；旧树 / 旧工艺写失效到生效月的前一月（不删行）。前一月旧账仍看见旧号。不要说「作废」；不要为一次换号再传一份全量清单版本。有人口语里把生效月叫「切点」，只指从哪个月开始用新树，不是换树本身。</p>
           </div>
         </div>
 
@@ -643,7 +643,7 @@
         <p>
           有子件的 L0 <strong>永不列入</strong>。L2 不单独列入。L1 上的螺母、胶等进核对区「标准件/胶等」。
           列表上确认外发/自制、指定供应商。给二级厂签字的月度价目在「采购价格协议」，不是本页；金额读总成核价已算的应成本，本页不另算一遍。
-          筛 <code>EC-*</code> 版本，问的是「这棵树属于哪个版本」，不是「这次改了几个件」。
+          筛 <code>EC-*</code> 版本，是在数采购件：问「这棵树属于哪个版本」，不是「这次改了几个件」。
         </p>
       </section>
 
@@ -653,7 +653,7 @@
           <div class="flow-step">
             <div class="n">前置 · 结构工艺</div>
             <strong>材料清单 + 冲压工艺 → 焊接工艺拆解</strong>
-            <p>投产传一次；投产后换号走工程变更切点</p>
+            <p>投产传一次；投产后换号走工程变更（换树）</p>
           </div>
           <div class="flow-step">
             <div class="n">年度 · 一年一传 / 一算</div>

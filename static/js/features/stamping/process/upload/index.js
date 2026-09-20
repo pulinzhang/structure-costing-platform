@@ -8,7 +8,7 @@ import {
     setDropzoneDragActive,
     setDropzoneFileSelected,
 } from '../../../../upload-dropzone.js?v=1';
-import { SOP_INTRO, sopBannerHtml } from '../../../common/period-ui.js?v=2';
+import { SOP_INTRO, sopBannerHtml } from '../../../common/period-ui.js?v=5';
 
 const MAX_RECENT_UPLOADS = 8;
 const POLL_INTERVAL_MS = 2000;

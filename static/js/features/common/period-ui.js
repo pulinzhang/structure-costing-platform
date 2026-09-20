@@ -3,10 +3,10 @@
  */
 
 export const SOP_INTRO =
-    '本页只导入 SOP（该项目第一次标准化投产）。投产使用后换号、切点、新旧并存，必须走工程变更，不要在本页操作。';
+    '本页只导入 SOP（该项目第一次标准化投产）。投产使用后换号、新旧并存，必须走工程变更，不要在本页操作。';
 
 export const SOP_EXISTING =
-    '该项目已有 SOP。再导只更新文件里已有对象的属性，不会删除未出现的行。文件里出现新号将整单拒绝。换号与切点请走工程变更。';
+    '该项目已有 SOP。再导只更新文件里已有对象的属性，不会删除未出现的行。文件里出现新号将整单拒绝。换号请走工程变更。';
 
 export function fmtPeriodRange(effectiveYear, effectiveMonth, expiryYear, expiryMonth) {
     const start = typeof fmtPeriod === 'function'
@@ -19,7 +19,7 @@ export function fmtPeriodRange(effectiveYear, effectiveMonth, expiryYear, expiry
     return `${start} – ${end}`;
 }
 
-/** 开始月、到期月都有 = 已被工程变更切过，列表用红字。 */
+/** 开始月、到期月都有 = 该树已被后续工程变更截到失效月，列表用红字。 */
 export function hasClosedPeriod(effectiveYear, effectiveMonth, expiryYear, expiryMonth) {
     return Boolean(effectiveYear && effectiveMonth && expiryYear && expiryMonth);
 }

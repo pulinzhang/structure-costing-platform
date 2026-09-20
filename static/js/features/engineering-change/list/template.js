@@ -25,7 +25,7 @@ export function engineeringChangeListTemplate() {
                         <div class="bg-[#0D0D11]/80 border border-[#1E1E26] p-3">
                                 <div class="text-[#555555] text-[10px] tracking-wider">变更单行</div>
                                 <div class="text-[18px] font-bold text-[#FFFFFF] mt-1 tabular-nums" id="ecListHudTotal">—</div>
-                                <div class="text-[9px] text-[#6E6E73] mt-2 leading-snug">变化记录条数，不是换树数量，也不是采购对象件数</div>
+                                <div class="text-[9px] text-[#6E6E73] mt-2 leading-snug">变化记录条数，不是换树数量，也不是采购件数量</div>
                         </div>
                     </div>
                     <p class="mt-3 text-[10px] text-[#6E6E73] leading-snug tracking-wide">

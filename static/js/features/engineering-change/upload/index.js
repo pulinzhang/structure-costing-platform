@@ -2,13 +2,13 @@
  * 工程变更上传页 — 异步 task_id + 拖拽区原位进度（对齐布点 / 工艺上传）
  */
 
-import { engineeringChangeUploadTemplate } from './template.js?v=11';
+import { engineeringChangeUploadTemplate } from './template.js?v=13';
 import { can } from '../../../permissions.js?v=6';
 import {
     setDropzoneDragActive,
     setDropzoneFileSelected,
 } from '../../../upload-dropzone.js?v=1';
-import { fillAsOfSelects } from '../../common/period-ui.js?v=2';
+import { fillAsOfSelects } from '../../common/period-ui.js?v=5';
 
 const POLL_INTERVAL_MS = 2000;
 const MAX_RECENT_UPLOADS = 8;

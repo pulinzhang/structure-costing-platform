@@ -60,6 +60,18 @@ def _extract_section(html: str, section_id: str) -> str:
     return _strip_html(match.group(1))
 
 
+def _extract_faq_qa(html: str, heading: str) -> str:
+    """帮助 FAQ 唯一正文：h3 + 紧随的 p，禁止另写一份。"""
+    pattern = re.compile(
+        rf"<h3>\s*{re.escape(heading)}\s*</h3>\s*<p>(.*?)</p>",
+        re.DOTALL | re.IGNORECASE,
+    )
+    match = pattern.search(html)
+    if not match:
+        return ""
+    return _strip_html(f"{heading} {match.group(1)}")
+
+
 def _read_helper_page(name: str) -> str:
     path = _helper_dir() / name
     return path.read_text(encoding="utf-8")
@@ -157,8 +169,19 @@ def _faq_chunks(faq_text: str) -> list[CorpusChunk]:
     return chunks
 
 
-def _extra_faq_chunks() -> list[CorpusChunk]:
-    """P1a 高频 FAQ：无独立 help 章节时补短答。"""
+def _extra_faq_chunks(help_html: str) -> list[CorpusChunk]:
+    """P1a 高频 FAQ：无独立 help 章节时补短答。工程变更采购件 FAQ 只抽 help.html，禁止另写。"""
+    tree_heading = "为什么新版本采购对象有 17 个，而变更单只有 5 条？"
+    tree_faq = _extract_faq_qa(help_html, tree_heading)
+    if not tree_faq:
+        raise ValueError("help.html 缺少工程变更数采购件 FAQ")
+    effect_heading = "设变后哪个月用新号？这个月核价用旧号还是新号？"
+    effect_faq = _extract_faq_qa(help_html, effect_heading)
+    if not effect_faq:
+        raise ValueError("help.html 缺少工程变更生效月 FAQ")
+    add_part_heading = "增加零件进采购对象后，厂家要不要自己填？"
+    add_part_faq = _extract_faq_qa(help_html, add_part_heading)
+    effect_faq = f"{effect_faq} {add_part_faq}".strip()
     return [
         CorpusChunk(
             chunk_id="faq_procurement_fee",
@@ -187,15 +210,7 @@ def _extra_faq_chunks() -> list[CorpusChunk]:
         CorpusChunk(
             chunk_id="faq_ec_costing_effect_month",
             title="设变后哪个月用新号",
-            text=(
-                "设变从哪个月开始算新零件 / 新总成：看变更单上的**生效月**。"
-                "生效月及以后按新号核价；生效前一个月及更早仍按旧号。"
-                "这个月核价用旧号还是新号：把账期和生效月比一下即可。"
-                "设变当月新旧零件可以各有一张卡：旧号用到生效前一月，新号从生效月起。"
-                "旧零件过期了还能不能出协议 / 签约：协议按账期只带仍有效的件，已到期旧号不进签约清单。"
-                "设变回滚了 / 删了变更：整本删除后当没做过，核价只认当前账期仍有效的件。"
-                "增加零件进采购对象后：厂家要自己填；系统不自动抄供应商，外发须确认并指定厂家。"
-            ),
+            text=effect_faq,
             source_page="help.html",
             anchor="faq",
             keywords=(
@@ -217,24 +232,7 @@ def _extra_faq_chunks() -> list[CorpusChunk]:
         CorpusChunk(
             chunk_id="faq_ec_tree_vs_procurement",
             title="为什么新版本采购对象比变更单多",
-            text=(
-                "为什么新版本采购对象有 17 个，而变更单只有 5 条？"
-                "因为这两个数字统计的不是同一件事。"
-                "变更单记录的是本次工程变更的变化条数；本例有 5 条，"
-                "系统再判断哪些树坑需要换树或停止。"
-                "本例 1 棵交货总成完成停止（旧树到期，不再种新树，历史仍在），"
-                "4 棵交货总成换成了新树。"
-                "换树是在材料清单序号这个树坑上拿掉旧交货总成、种入完整新树，"
-                "不是只改 Excel 写到的零件。没有改变的零件继续用原零件号，"
-                "变化或新增的零件用新号，但它们现在都在同一棵新树上。"
-                "新树整体属于材料清单版本，例如 EC-202507。"
-                "版本章说明这棵树属于哪个版本，不是说明哪些零件被改过。"
-                "所以筛选 EC-202507 时，列出的是这 4 棵新树里全部采购对象，"
-                "包括没有换号、只是从旧树继承过来的采购件。"
-                "4 是树的数量。17 是这 4 棵新树里面采购对象的数量。"
-                "数字不同是正常的。17 不是「这次新增或修改了 17 个零件」，"
-                "而是「这 4 棵新树当前共有 17 个采购对象」。"
-            ),
+            text=tree_faq,
             source_page="help.html",
             anchor="faq",
             keywords=(
@@ -593,6 +591,6 @@ def load_corpus_chunks() -> tuple[CorpusChunk, ...]:
 
     faq_text = _extract_section(help_html, "faq")
     chunks.extend(_faq_chunks(faq_text))
-    chunks.extend(_extra_faq_chunks())
+    chunks.extend(_extra_faq_chunks(help_html))
 
     return tuple(chunk for chunk in chunks if chunk.text.strip())

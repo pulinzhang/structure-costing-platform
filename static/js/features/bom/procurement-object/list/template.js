@@ -132,7 +132,7 @@ export function procurementObjectListTemplate() {
                                 重置
                             </button>
                         </div>
-                        <p class="mt-2 text-[10px] text-[#555555]">版本 = 这棵树属于哪个版本；选 EC 版本看的是新树全貌，不是这次改了几个件。批量审核 / 反审核 / 删除须选定基地、项目；版本可选（默认全部版本）；不勾选行。</p>
+                        <p class="mt-2 text-[10px] text-[#555555]">版本 = 这棵树属于哪个版本；选 EC 版本是在数采购件，不是这次改了几个件。批量审核 / 反审核 / 删除须选定基地、项目；版本可选（默认全部版本）；不勾选行。</p>
                     </div>
                 </div>
 

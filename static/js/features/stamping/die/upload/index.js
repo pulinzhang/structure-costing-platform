@@ -8,7 +8,7 @@ import {
     loadProjectPeriod,
     renderSopBanner,
     sopBannerHtml,
-} from '../../../common/period-ui.js?v=2';
+} from '../../../common/period-ui.js?v=5';
 
 const MAX_RECENT_UPLOADS = 8;
 const POLL_INTERVAL_MS = 2000;
