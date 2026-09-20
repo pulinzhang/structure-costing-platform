@@ -45,7 +45,7 @@
 | 硬门禁 | 变更单 + 材料清单 + 工艺确认表。材料清单总成列必须等于变更后总成；改图层必须等于变更后零件。缺新号 / 多新号 / 旧号仍挂其它有效总成 → 拒收 |
 | 工程变更不读布点表 | 不要「零件汇总」。模具 **逻辑建立**：改图有旧布点则从库里变更前零件整行抄到变更后零件。新号布点简图从冲压工艺确认表抄，不从旧布点、不从 Excel 抽 |
 | 抄检具/模具费/包装/年度价 | 改图：旧号有检具费生效档或 `year≥生效年` 模具费结果 → 抄到新号。种新树：旧交货总成 `year≥生效年` 包装整行抄到新总成；种树 remap 换号则年度价 `year≥生效年` 抄到新号。无则跳过；不读 Excel、非硬门禁。回滚删本次新行（先年度价/包装/模具费/检具费，再布点）；旧行保留 |
-| 种树 | 只经 `persist/tree.py` → BomService；到期经 `expire_l0_tree`（写失效月，不删行）。改图以旧树为底 **启用**新树，**整条链**换号：总成/改图层用变更单，中间分总成用材料清单已写出的号，**禁止自己进一位**；没改的零件原号带走 |
+| 种树 | 只经 `persist/tree.py` → BomEngineeringService；到期经 `expire_l0_tree`（写失效月，不删行）。改图以旧树为底 **启用**新树，**整条链**换号：总成/改图层用变更单，中间分总成用材料清单已写出的号，**禁止自己进一位**；没改的零件原号带走 |
 | `change_order_id` 占位 | 管线里 `change_order_id` 是变更单行下标；persist 插变更单后再回填真实 id。勿提前 flush |
 | SOP 不改 | Parser / UNIQUE / 引擎发现键 / 投产整包覆盖路径不为本切片去改 |
 | 依赖方向 | EC → 上游 Service；上游不得 import EC |
@@ -98,7 +98,7 @@ flowchart TB
   end
 
   subgraph upstream [上游领域 · EC 只适配]
-    T -.-> BomSvc[BomService / change_tree_plant]
+    T -.-> BomSvc[BomEngineeringService / change_tree_plant]
     PR -.-> StPart[stamping part EC]
     DI -.-> StDie[stamping die EC]
   end
@@ -182,7 +182,7 @@ Router → EngineeringChangeUploadService.start_upload
 
 上游内核（勿把业务搬回 EC）：
 
-- `app/services/bom/change_tree_plant.py`
+- `app/services/bom/bom/change_tree_plant/`
 - `app/services/stamping/part/engineering_change.py`
 - `app/services/stamping/die/engineering_change.py`
 - `app/services/stamping/gauge_fee/engineering_change.py`

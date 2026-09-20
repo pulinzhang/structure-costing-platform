@@ -11,7 +11,7 @@ from app.common.engineering_change_gates import (
 )
 from app.models.bom import BomNode
 from app.parsers.bom.bom_parser import BomParsedNode
-from app.services.bom.change_tree_plant.types import BomChangePlantSpec
+from app.services.bom.bom.change_tree_plant.types import BomChangePlantSpec
 
 
 def build_number_map(

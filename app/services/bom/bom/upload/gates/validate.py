@@ -13,13 +13,17 @@ from app.config import settings
 from app.exceptions.base import BusinessException
 from app.models.bom import BomNode, BomSnapshot
 from app.parsers.bom.models import BomParsedNode
-from app.services.bom.internal_number_uniqueness import validate_internal_number_uniqueness
-from app.services.bom.l0_seq_validator import (
+from app.services.bom.bom.rules.internal_number_uniqueness import (
+    validate_internal_number_uniqueness,
+)
+from app.services.bom.bom.rules.l0_seq_validator import (
     format_l0_seq_issues,
     inspect_l0_seq_nos,
     l0_seq_occurrences,
 )
-from app.services.bom.subassembly_consistency import validate_subassembly_consistency
+from app.services.bom.bom.rules.subassembly_consistency import (
+    validate_subassembly_consistency,
+)
 from app.services.masterdata.vehicle_model import VehicleModelService
 
 

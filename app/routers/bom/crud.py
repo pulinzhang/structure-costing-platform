@@ -21,12 +21,14 @@ from app.schemas.vo.bom_vo import (
     BomSnapshotVO,
 )
 from app.schemas.vo.user_vo import UserVO
-from app.services.bom.bom_service import BomService
+from app.services.bom.bom.node import BomNodeService
+from app.services.bom.bom.snapshot import BomSnapshotService
 from app.utils.response import ApiResponse
 
 router = APIRouter(prefix="/api/bom", tags=["BOM API"])
 
-_bom_service = BomService()
+_snapshot_service = BomSnapshotService()
+_node_service = BomNodeService()
 
 # 产品结构页、上传页、材料清单列表共享只读接口
 _bom_read = require_any_perm(
@@ -72,7 +74,7 @@ def get_bom_cascade_filters(
     默认版本源=L0 节点去重；`version_source=snapshot` 时只列 snapshot 头字
     （生成采购对象 / 供应商批传等 SOP 取件页使用）。
     """
-    options = _bom_service.get_cascade_filter_options(db, query)
+    options = _snapshot_service.get_cascade_filter_options(db, query)
     return ApiResponse.ok(data=options, message="获取成功")
 
 
@@ -85,7 +87,7 @@ def list_snapshots(
     db: Session = Depends(get_db),
     current_user: UserVO = Depends(_bom_read),
 ) -> ApiResponse[PageResult[BomSnapshotVO]]:
-    items, total, filters = _bom_service.paginate_snapshots(db, query)
+    items, total, filters = _snapshot_service.paginate_snapshots(db, query)
     return ApiResponse.list_(
         items=items,
         total=total,
@@ -105,7 +107,7 @@ def get_snapshot(
     db: Session = Depends(get_db),
     current_user: UserVO = Depends(_bom_read),
 ) -> ApiResponse[BomSnapshotVO]:
-    row = _bom_service.get_snapshot(db, snapshot_id)
+    row = _snapshot_service.get_snapshot(db, snapshot_id)
     return ApiResponse.ok(data=row)
 
 
@@ -119,7 +121,7 @@ def create_snapshot(
     db: Session = Depends(get_db),
     current_user: UserVO = Depends(require_perm(Perm.BOM_UPLOAD_UPLOAD)),
 ) -> ApiResponse[BomSnapshotVO]:
-    row = _bom_service.create_snapshot(db, body, current_user=current_user)
+    row = _snapshot_service.create_snapshot(db, body, current_user=current_user)
     return ApiResponse.created(data=row, message="创建成功")
 
 
@@ -132,7 +134,7 @@ def delete_snapshot(
     db: Session = Depends(get_db),
     current_user: UserVO = Depends(require_perm(Perm.BOM_MATERIAL_DELETE)),
 ) -> ApiResponse[None]:
-    _bom_service.delete_snapshot(db, snapshot_id)
+    _snapshot_service.delete_snapshot(db, snapshot_id)
     return ApiResponse.deleted(message="删除成功")
 
 
@@ -146,7 +148,7 @@ def list_nodes(
     db: Session = Depends(get_db),
     current_user: UserVO = Depends(_bom_read),
 ) -> ApiResponse[list[BomNodeVO]]:
-    rows = _bom_service.list_nodes_flat(
+    rows = _node_service.list_nodes_flat(
         db,
         snapshot_id,
         year=query.year,
@@ -166,7 +168,7 @@ def get_tree(
     db: Session = Depends(get_db),
     current_user: UserVO = Depends(_bom_read),
 ) -> ApiResponse[list[BomNodeTreeVO]]:
-    tree = _bom_service.list_nodes_tree(
+    tree = _node_service.list_nodes_tree(
         db,
         snapshot_id,
         year=query.year,
@@ -187,7 +189,7 @@ def create_node(
     db: Session = Depends(get_db),
     current_user: UserVO = Depends(require_perm(Perm.BOM_UPLOAD_UPLOAD)),
 ) -> ApiResponse[BomNodeVO]:
-    row = _bom_service.create_node(db, snapshot_id, body, current_user=current_user)
+    row = _node_service.create_node(db, snapshot_id, body, current_user=current_user)
     return ApiResponse.created(data=row, message="节点创建成功")
 
 
@@ -200,5 +202,5 @@ def delete_node(
     db: Session = Depends(get_db),
     current_user: UserVO = Depends(require_perm(Perm.BOM_UPLOAD_UPLOAD)),
 ) -> ApiResponse[None]:
-    _bom_service.delete_node(db, node_id)
+    _node_service.delete_node(db, node_id)
     return ApiResponse.deleted(message="节点删除成功")

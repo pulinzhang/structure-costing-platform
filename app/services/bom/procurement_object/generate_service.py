@@ -21,7 +21,7 @@ from app.common.engineering_change_gates import (
 from app.common.timezone import now
 from app.common.vehicle_model import normalize_vehicle_model
 from app.exceptions.base import BusinessException
-from app.repositories.bom.bom_repository import BomNodeRepository
+from app.repositories.bom.bom.node import BomNodeRepository
 from app.repositories.bom.procurement_object_repository import BomProcurementObjectRepository
 from app.schemas.dto.bom_procurement_object_dto import (
     BomProcurementObjectGenerateDTO,

@@ -17,7 +17,8 @@ from app.parsers.bom.annual_part_price_parser import (
 from app.repositories.bom.annual_part_price_repository import (
     BomAnnualPartPriceRepository,
 )
-from app.repositories.bom.bom_repository import BomNodeRepository, BomSnapshotRepository
+from app.repositories.bom.bom.node import BomNodeRepository
+from app.repositories.bom.bom.snapshot import BomSnapshotRepository
 from app.repositories.bom.procurement_object_repository import (
     BomProcurementObjectRepository,
     object_scope_filters,

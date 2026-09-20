@@ -40,7 +40,7 @@ from app.repositories.engineering_change.upload_log_repository import (
 )
 from app.schemas.vo.user_vo import UserVO
 from app.services.bom.annual_part_price.service import BomAnnualPartPriceService
-from app.services.bom.bom_service import BomService
+from app.services.bom.bom.engineering import BomEngineeringService
 from app.services.bom.packaging_transport_fee.service import BomPackagingTransportFeeService
 from app.services.bom.procurement_object.service import BomProcurementObjectService
 from app.services.bom.welding_process_breakdown.service import BomWeldingProcessBreakdownService
@@ -57,7 +57,7 @@ class EngineeringChangeRollbackService:
         self.log_repo = EngineeringChangeUploadLogRepository()
         self.change_order_repo = EngineeringChangeOrderRepository()
         self.link_repo = EngineeringChangeEffectLinkRepository()
-        self.bom_service = BomService()
+        self.bom_service = BomEngineeringService()
         self.po_service = BomProcurementObjectService()
         self.breakdown_service = BomWeldingProcessBreakdownService()
         self.stamping_service = StampingPartService()

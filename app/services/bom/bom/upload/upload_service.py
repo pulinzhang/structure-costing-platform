@@ -4,8 +4,8 @@ from __future__ import annotations
 
 from app.schemas.vo.async_task_vo import AsyncTaskAcceptedVO
 from app.schemas.vo.user_vo import UserVO
-from app.services.bom.upload.start_upload import start_upload as start_upload_fn
-from app.services.bom.upload.template_builder import build_bom_material_template
+from app.services.bom.bom.upload.start_upload import start_upload as start_upload_fn
+from app.services.bom.bom.upload.template_builder import build_bom_material_template
 
 
 class BomUploadService:

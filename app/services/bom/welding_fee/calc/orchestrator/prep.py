@@ -11,8 +11,9 @@ from app.common.timezone import now
 from app.exceptions.base import BusinessException
 from app.models.bom import BomWeldingProcessBreakdownNode
 from app.models.bom.welding_unit_price import BomWeldingUnitPrice
-from app.repositories.bom.bom_repository import BomSnapshotRepository
+from app.repositories.bom.bom.snapshot import BomSnapshotRepository
 from app.schemas.dto.bom_welding_fee_dto import BomWeldingFeeCalcDTO
+from app.services.bom.bom.period import BomPeriodService
 from app.services.bom.welding_fee.calc.orchestrator.deps import WeldingFeeCalcDeps
 from app.services.bom.welding_fee.calc.orchestrator.progress import ProgressNotifier
 from app.services.masterdata.vehicle_model import VehicleModelService
@@ -59,11 +60,13 @@ def prepare_calc_run(
             f"基地「{location}」项目「{vehicle_model}」尚未生成焊接工艺拆解，"
             "请先到焊接工艺拆解页生成"
         )
-    all_nodes = deps.breakdown_repo.list_overlapping_year(
+    all_nodes = deps.breakdown_repo.list_by_source_node_ids(
         db,
-        location=location,
-        vehicle_model=vehicle_model,
-        year=year,
+        list(
+            BomPeriodService().node_ids_overlapping_year(
+                db, location=location, vehicle_model=vehicle_model, year=year
+            )
+        ),
     )
     if not all_nodes:
         raise BusinessException(

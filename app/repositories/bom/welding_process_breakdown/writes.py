@@ -5,7 +5,6 @@ from __future__ import annotations
 import logging
 from datetime import datetime
 
-from sqlalchemy import and_
 from sqlalchemy.orm import Session
 
 from app.common.audit import AUDIT_APPROVED, AUDIT_PENDING
@@ -81,26 +80,39 @@ class WeldingBreakdownWrites:
         db.refresh(row)
         return row
 
+    def delete_unaudited_by_snapshot_id(self, db: Session, snapshot_id: int) -> int:
+        count = (
+            db.query(BomWeldingProcessBreakdownNode)
+            .filter(
+                BomWeldingProcessBreakdownNode.snapshot_id == snapshot_id,
+                BomWeldingProcessBreakdownNode.audit_status != AUDIT_APPROVED,
+            )
+            .delete(synchronize_session=False)
+        )
+        db.flush()
+        logger.info("删除未审核焊接工艺拆解 snapshot_id=%s count=%s", snapshot_id, count)
+        return count
+
     def delete_unaudited_by_scope(
         self,
         db: Session,
         *,
         location: str,
         vehicle_model: str,
-        bom_version: str,
+        source_node_ids: set[int],
     ) -> int:
+        ids = self._queries.list_ids_matching(
+            db,
+            location=location,
+            vehicle_model=vehicle_model,
+            source_node_ids=source_node_ids,
+            exclude_audit_status=AUDIT_APPROVED,
+        )
+        if not ids:
+            return 0
         count = (
             db.query(BomWeldingProcessBreakdownNode)
-            .filter(
-                and_(
-                    *self._queries._scope_filter(
-                        location=location,
-                        vehicle_model=vehicle_model,
-                        bom_version=bom_version,
-                    )
-                ),
-                BomWeldingProcessBreakdownNode.audit_status != AUDIT_APPROVED,
-            )
+            .filter(BomWeldingProcessBreakdownNode.id.in_(ids))
             .delete(synchronize_session=False)
         )
         db.flush()
@@ -108,7 +120,7 @@ class WeldingBreakdownWrites:
             "删除未审核焊接工艺拆解: %s/%s/%s count=%s",
             location,
             vehicle_model,
-            bom_version,
+            len(source_node_ids),
             count,
         )
         return count
@@ -128,7 +140,7 @@ class WeldingBreakdownWrites:
         *,
         location: str,
         vehicle_model: str,
-        bom_version: str,
+        source_node_ids: set[int],
         audited_by: str,
         audited_at: datetime,
         audit_remark: str | None,
@@ -141,16 +153,18 @@ class WeldingBreakdownWrites:
             "audit_remark": audit_remark,
             "updated_by": updated_by or audited_by,
         }
+        ids = self._queries.list_ids_matching(
+            db,
+            location=location,
+            vehicle_model=vehicle_model,
+            source_node_ids=source_node_ids,
+            exclude_audit_status=AUDIT_APPROVED,
+        )
+        if not ids:
+            return 0
         count = query_update(
             db.query(BomWeldingProcessBreakdownNode).filter(
-                and_(
-                    *self._queries._scope_filter(
-                        location=location,
-                        vehicle_model=vehicle_model,
-                        bom_version=bom_version,
-                    )
-                ),
-                BomWeldingProcessBreakdownNode.audit_status != AUDIT_APPROVED,
+                BomWeldingProcessBreakdownNode.id.in_(ids)
             ),
             values,
         )
@@ -163,7 +177,7 @@ class WeldingBreakdownWrites:
         *,
         location: str,
         vehicle_model: str,
-        bom_version: str,
+        source_node_ids: set[int],
         reverse_audited_by: str,
         reverse_audited_at: datetime,
         reverse_audit_remark: str,
@@ -176,16 +190,18 @@ class WeldingBreakdownWrites:
             "reverse_audit_remark": reverse_audit_remark,
             "updated_by": updated_by or reverse_audited_by,
         }
+        ids = self._queries.list_ids_matching(
+            db,
+            location=location,
+            vehicle_model=vehicle_model,
+            source_node_ids=source_node_ids,
+            audit_statuses=[AUDIT_APPROVED],
+        )
+        if not ids:
+            return 0
         count = query_update(
             db.query(BomWeldingProcessBreakdownNode).filter(
-                and_(
-                    *self._queries._scope_filter(
-                        location=location,
-                        vehicle_model=vehicle_model,
-                        bom_version=bom_version,
-                    )
-                ),
-                BomWeldingProcessBreakdownNode.audit_status == AUDIT_APPROVED,
+                BomWeldingProcessBreakdownNode.id.in_(ids)
             ),
             values,
         )

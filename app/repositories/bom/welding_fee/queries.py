@@ -4,11 +4,11 @@ from __future__ import annotations
 
 from decimal import Decimal
 
-from sqlalchemy import case, func
+from sqlalchemy import case, false, func
 from sqlalchemy.orm import Query, Session, joinedload, noload
 
 from app.common.audit import AUDIT_APPROVED, AUDIT_PENDING
-from app.common.bom.node_order import MISSING_SEQ_NO
+from app.common.bom.node_order import bom_node_sql_order
 from app.models.bom import BomNode, BomWeldingFee, BomWeldingProcessBreakdownNode
 from app.repositories.bom.welding_fee.types import WeldingFeeFilterSummary
 from app.schemas.dto.bom_welding_fee_dto import resolve_welding_fee_levels
@@ -50,7 +50,7 @@ class BomWeldingFeeQueries:
         year: int,
         location: str,
         vehicle_model: str,
-        bom_version: str | None = None,
+        source_node_ids: set[int] | None = None,
         level: int | None = None,
         levels: list[int] | None = None,
     ) -> Query[BomWeldingFee]:
@@ -59,9 +59,36 @@ class BomWeldingFeeQueries:
             BomWeldingFee.location == location,
             BomWeldingFee.vehicle_model == vehicle_model,
         )
-        if bom_version:
-            q = q.filter(BomWeldingFee.bom_version == bom_version)
+        q = self._filter_by_source_node_ids(q, source_node_ids)
         return self._filter_levels(q, level=level, levels=levels)
+
+    def _filter_by_source_node_ids(
+        self,
+        q: Query[BomWeldingFee],
+        source_node_ids: set[int] | None,
+    ) -> Query[BomWeldingFee]:
+        if source_node_ids is None:
+            return q
+        q = self._join_breakdown(q, inner=True)
+        if not source_node_ids:
+            return q.filter(false())
+        return q.filter(BomWeldingProcessBreakdownNode.source_node_id.in_(source_node_ids))
+
+    @staticmethod
+    def _join_breakdown(q: Query[BomWeldingFee], *, inner: bool) -> Query[BomWeldingFee]:
+        if inner:
+            return q.join(
+                BomWeldingProcessBreakdownNode,
+                BomWeldingFee.source_breakdown_node_id == BomWeldingProcessBreakdownNode.id,
+            )
+        return q.outerjoin(
+            BomWeldingProcessBreakdownNode,
+            BomWeldingFee.source_breakdown_node_id == BomWeldingProcessBreakdownNode.id,
+        )
+
+    @staticmethod
+    def _count_distinct(q: Query[BomWeldingFee]) -> int:
+        return int(q.with_entities(func.count(func.distinct(BomWeldingFee.id))).scalar() or 0)
 
     def count_by_calc_scope(
         self,
@@ -70,18 +97,18 @@ class BomWeldingFeeQueries:
         year: int,
         location: str,
         vehicle_model: str,
-        bom_version: str | None = None,
+        source_node_ids: set[int] | None = None,
         level: int | None = None,
     ) -> int:
-        return int(
+        return self._count_distinct(
             self._scope_query(
                 db,
                 year=year,
                 location=location,
                 vehicle_model=vehicle_model,
-                bom_version=bom_version,
+                source_node_ids=source_node_ids,
                 level=level,
-            ).count()
+            )
         )
 
     def list_by_calc_scope(
@@ -91,21 +118,20 @@ class BomWeldingFeeQueries:
         year: int,
         location: str,
         vehicle_model: str,
-        bom_version: str | None = None,
+        source_node_ids: set[int] | None = None,
         level: int | None = None,
     ) -> list[BomWeldingFee]:
-        return (
-            self._scope_query(
-                db,
-                year=year,
-                location=location,
-                vehicle_model=vehicle_model,
-                bom_version=bom_version,
-                level=level,
-            )
-            .order_by(BomWeldingFee.part_number, BomWeldingFee.id.asc())
-            .all()
+        q = self._scope_query(
+            db,
+            year=year,
+            location=location,
+            vehicle_model=vehicle_model,
+            source_node_ids=source_node_ids,
+            level=level,
         )
+        return self._order_like_bom_nodes(
+            self._with_source_order_joins(q, source_filtered=source_node_ids is not None)
+        ).all()
 
     def _build_list_query(
         self,
@@ -115,7 +141,7 @@ class BomWeldingFeeQueries:
         location: str | None = None,
         locations: list[str] | None = None,
         vehicle_model: str | None = None,
-        bom_version: str | None = None,
+        source_node_ids: set[int] | None = None,
         part_number: str | None = None,
         audit_status: str | None = None,
         calc_status: str | None = None,
@@ -131,15 +157,29 @@ class BomWeldingFeeQueries:
             q = q.filter(BomWeldingFee.location == location)
         if vehicle_model is not None:
             q = q.filter(BomWeldingFee.vehicle_model == vehicle_model)
-        if bom_version is not None:
-            q = q.filter(BomWeldingFee.bom_version == bom_version)
         if part_number:
             q = q.filter(BomWeldingFee.part_number.like(f"%{part_number}%"))
         if audit_status:
             q = q.filter(BomWeldingFee.audit_status == audit_status)
         if calc_status:
             q = q.filter(BomWeldingFee.calc_status == calc_status)
+        q = self._filter_by_source_node_ids(q, source_node_ids)
+        q = self._with_source_order_joins(q, source_filtered=source_node_ids is not None)
         return self._filter_levels(q, level=level, levels=levels)
+
+    def _with_source_order_joins(
+        self, q: Query[BomWeldingFee], *, source_filtered: bool
+    ) -> Query[BomWeldingFee]:
+        if not source_filtered:
+            q = self._join_breakdown(q, inner=False)
+        return self._join_source_node(q)
+
+    @staticmethod
+    def _join_source_node(q: Query[BomWeldingFee]) -> Query[BomWeldingFee]:
+        return q.outerjoin(
+            BomNode,
+            BomWeldingProcessBreakdownNode.source_node_id == BomNode.id,
+        )
 
     @staticmethod
     def _filter_levels(
@@ -157,31 +197,8 @@ class BomWeldingFeeQueries:
 
     @staticmethod
     def _order_like_bom_nodes(q: Query[BomWeldingFee]) -> Query[BomWeldingFee]:
-        """与材料清单 ``list_by_snapshot`` 一致：seq_no → level → L0 零件号 → excel_row。"""
-        return (
-            q.outerjoin(
-                BomWeldingProcessBreakdownNode,
-                BomWeldingFee.source_breakdown_node_id == BomWeldingProcessBreakdownNode.id,
-            )
-            .outerjoin(
-                BomNode,
-                BomWeldingProcessBreakdownNode.source_node_id == BomNode.id,
-            )
-            .order_by(
-                func.coalesce(BomNode.seq_no, MISSING_SEQ_NO).asc(),
-                BomWeldingFee.level.asc(),
-                case((BomNode.level == 0, BomNode.part_number), else_="").asc(),
-                func.coalesce(
-                    BomNode.excel_row,
-                    BomNode.sort_no,
-                    BomWeldingProcessBreakdownNode.excel_row,
-                    0,
-                ).asc(),
-                BomNode.part_number.asc(),
-                func.coalesce(BomNode.sort_no, 0).asc(),
-                BomWeldingFee.id.asc(),
-            )
-        )
+        """与材料清单 ``list_by_snapshot`` 同一套 ``bom_node_sql_order``。"""
+        return q.order_by(*bom_node_sql_order(BomNode), BomWeldingFee.id.asc())
 
     def paginate(
         self,
@@ -191,7 +208,7 @@ class BomWeldingFeeQueries:
         location: str | None = None,
         locations: list[str] | None = None,
         vehicle_model: str | None = None,
-        bom_version: str | None = None,
+        source_node_ids: set[int] | None = None,
         part_number: str | None = None,
         audit_status: str | None = None,
         calc_status: str | None = None,
@@ -206,14 +223,14 @@ class BomWeldingFeeQueries:
             location=location,
             locations=locations,
             vehicle_model=vehicle_model,
-            bom_version=bom_version,
+            source_node_ids=source_node_ids,
             part_number=part_number,
             audit_status=audit_status,
             calc_status=calc_status,
             level=level,
             levels=levels,
         )
-        total = q.count()
+        total = self._count_distinct(q)
         rows = (
             self._order_like_bom_nodes(q.options(noload(BomWeldingFee.items)))
             .offset(skip)
@@ -230,7 +247,7 @@ class BomWeldingFeeQueries:
         location: str | None = None,
         locations: list[str] | None = None,
         vehicle_model: str | None = None,
-        bom_version: str | None = None,
+        source_node_ids: set[int] | None = None,
         part_number: str | None = None,
         audit_status: str | None = None,
         calc_status: str | None = None,
@@ -246,7 +263,7 @@ class BomWeldingFeeQueries:
             location=location,
             locations=locations,
             vehicle_model=vehicle_model,
-            bom_version=bom_version,
+            source_node_ids=source_node_ids,
             part_number=part_number,
             audit_status=audit_status,
             calc_status=calc_status,
@@ -278,7 +295,7 @@ class BomWeldingFeeQueries:
         location: str | None = None,
         locations: list[str] | None = None,
         vehicle_model: str | None = None,
-        bom_version: str | None = None,
+        source_node_ids: set[int] | None = None,
         part_number: str | None = None,
         audit_status: str | None = None,
         calc_status: str | None = None,
@@ -291,7 +308,7 @@ class BomWeldingFeeQueries:
             location=location,
             locations=locations,
             vehicle_model=vehicle_model,
-            bom_version=bom_version,
+            source_node_ids=source_node_ids,
             part_number=part_number,
             audit_status=audit_status,
             calc_status=calc_status,
@@ -299,7 +316,7 @@ class BomWeldingFeeQueries:
             levels=levels,
         )
         row = q.with_entities(
-            func.count(BomWeldingFee.id).label("total_count"),
+            func.count(func.distinct(BomWeldingFee.id)).label("total_count"),
             func.coalesce(func.sum(BomWeldingFee.final_welding_fee), 0).label("total_fee"),
             func.sum(case((BomWeldingFee.audit_status == AUDIT_PENDING, 1), else_=0)).label(
                 "pending_count"
@@ -333,24 +350,51 @@ class BomWeldingFeeQueries:
         year: int,
         location: str,
         vehicle_model: str,
-        bom_version: str | None = None,
+        source_node_ids: set[int] | None = None,
         statuses: list[str],
         level: int | None = None,
         levels: list[int] | None = None,
     ) -> int:
-        return int(
+        return self._count_distinct(
             self._scope_query(
                 db,
                 year=year,
                 location=location,
                 vehicle_model=vehicle_model,
-                bom_version=bom_version,
+                source_node_ids=source_node_ids,
                 level=level,
                 levels=levels,
-            )
-            .filter(BomWeldingFee.audit_status.in_(statuses))
-            .count()
+            ).filter(BomWeldingFee.audit_status.in_(statuses))
         )
+
+    def list_ids_matching(
+        self,
+        db: Session,
+        *,
+        year: int,
+        location: str,
+        vehicle_model: str,
+        source_node_ids: set[int] | None = None,
+        audit_statuses: list[str] | None = None,
+        exclude_audit_status: str | None = None,
+        level: int | None = None,
+        levels: list[int] | None = None,
+    ) -> list[int]:
+        q = self._scope_query(
+            db,
+            year=year,
+            location=location,
+            vehicle_model=vehicle_model,
+            source_node_ids=source_node_ids,
+            level=level,
+            levels=levels,
+        )
+        if audit_statuses:
+            q = q.filter(BomWeldingFee.audit_status.in_(audit_statuses))
+        if exclude_audit_status:
+            q = q.filter(BomWeldingFee.audit_status != exclude_audit_status)
+        rows = q.with_entities(BomWeldingFee.id).distinct().all()
+        return [int(row[0]) for row in rows]
 
     def get_distinct_years(self, db: Session) -> list[int]:
         results = db.query(BomWeldingFee.year).distinct().order_by(BomWeldingFee.year.desc()).all()
@@ -361,25 +405,4 @@ class BomWeldingFeeQueries:
         if year is not None:
             q = q.filter(BomWeldingFee.year == year)
         results = q.order_by(BomWeldingFee.location).all()
-        return [r[0] for r in results if r[0]]
-
-    def get_distinct_bom_versions(
-        self,
-        db: Session,
-        *,
-        year: int | None = None,
-        location: str | None = None,
-        locations: list[str] | None = None,
-        vehicle_model: str | None = None,
-    ) -> list[str]:
-        q = db.query(BomWeldingFee.bom_version).distinct()
-        if year is not None:
-            q = q.filter(BomWeldingFee.year == year)
-        if locations is not None:
-            q = q.filter(BomWeldingFee.location.in_(locations))
-        elif location is not None:
-            q = q.filter(BomWeldingFee.location == location)
-        if vehicle_model is not None:
-            q = q.filter(BomWeldingFee.vehicle_model == vehicle_model)
-        results = q.order_by(BomWeldingFee.bom_version).all()
         return [r[0] for r in results if r[0]]

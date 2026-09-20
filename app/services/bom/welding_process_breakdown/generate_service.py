@@ -25,7 +25,9 @@ from app.common.timezone import now
 from app.exceptions.base import BusinessException, NotFoundException
 from app.models.bom import BomNode, BomSnapshot, BomWeldingProcessBreakdownNode
 from app.parsers.bom.welding_process_breakdown_parser import parse_welding_info_text
-from app.repositories.bom.bom_repository import BomNodeRepository, BomSnapshotRepository
+from app.repositories.bom.bom.node import BomNodeRepository
+from app.repositories.bom.bom.snapshot import BomSnapshotRepository
+from app.repositories.bom.period_trees import tree_root_of
 from app.repositories.bom.welding_process_breakdown_repository import (
     BomWeldingProcessBreakdownRepository,
 )
@@ -62,6 +64,15 @@ logger = logging.getLogger("service.bom.welding_process_breakdown.generate")
 ProgressCallback = Callable[[int, str], None]
 
 
+def _require_tree_root_bom_version(node: BomNode, by_id: dict[int, BomNode]) -> str:
+    root = tree_root_of(node, by_id)
+    version = (getattr(root, "bom_version", None) or "").strip()
+    if not version:
+        part = (getattr(root, "part_number", None) or "").strip() or str(root.id)
+        raise BusinessException(f"树根「{part}」没有版本字，禁止回退清单头")
+    return version
+
+
 class BomWeldingProcessBreakdownGenerateService:
     """焊接工艺拆解 — 生成编排"""
 
@@ -96,17 +107,10 @@ class BomWeldingProcessBreakdownGenerateService:
 
         bom_nodes = self.node_repository.list_by_snapshot(db, snapshot.id)
         weld_node_count = sum(1 for n in bom_nodes if (n.weld_info or "").strip())
-        breakdown_node_count = self.repository.count_by_scope(
+        breakdown_node_count = self.repository.count_by_snapshot_id(db, snapshot.id)
+        approved_count = self.repository.count_by_snapshot_and_statuses(
             db,
-            location=location,
-            vehicle_model=vehicle_model,
-            bom_version=bom_version,
-        )
-        approved_count = self.repository.count_by_scope_and_statuses(
-            db,
-            location=location,
-            vehicle_model=vehicle_model,
-            bom_version=bom_version,
+            snapshot_id=snapshot.id,
             statuses=[AUDIT_APPROVED],
         )
         ready = weld_node_count > 0 and approved_count == 0
@@ -171,11 +175,9 @@ class BomWeldingProcessBreakdownGenerateService:
             process_log.line(f"snapshot_id={snapshot.id} 顾客={snapshot.customer_name or '—'}")
             report(12, "检查已审核数据...")
 
-            approved_count = self.repository.count_by_scope_and_statuses(
+            approved_count = self.repository.count_by_snapshot_and_statuses(
                 db,
-                location=location,
-                vehicle_model=vehicle_model,
-                bom_version=bom_version,
+                snapshot_id=snapshot.id,
                 statuses=[AUDIT_APPROVED],
             )
             if approved_count > 0:
@@ -221,9 +223,7 @@ class BomWeldingProcessBreakdownGenerateService:
 
             report(20, "清理未审核旧拆解...")
             process_log.section("清理")
-            deleted = self.repository.delete_unaudited_by_scope(
-                db, location=location, vehicle_model=vehicle_model, bom_version=bom_version
-            )
+            deleted = self.repository.delete_unaudited_by_snapshot_id(db, snapshot.id)
             process_log.line(f"删除未审核旧数据：{deleted} 条主表")
 
             created_nodes: list[BomWeldingProcessBreakdownNode] = []
@@ -401,7 +401,7 @@ class BomWeldingProcessBreakdownGenerateService:
                 location=snapshot.location,
                 customer_name=snapshot.customer_name,
                 vehicle_model=snapshot.vehicle_model,
-                bom_version=snapshot.bom_version,
+                bom_version=_require_tree_root_bom_version(new_bom_node, by_id),
                 snapshot_id=snapshot.id,
                 source_node_id=new_bom_node.id,
                 part_number=new_bom_node.part_number,
@@ -526,7 +526,7 @@ class BomWeldingProcessBreakdownGenerateService:
                 location=snapshot.location,
                 customer_name=snapshot.customer_name,
                 vehicle_model=snapshot.vehicle_model,
-                bom_version=snapshot.bom_version,
+                bom_version=_require_tree_root_bom_version(bom_node, by_id),
                 snapshot_id=snapshot.id,
                 source_node_id=bom_node.id,
                 part_number=bom_node.part_number,

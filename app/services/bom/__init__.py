@@ -1,5 +1,1 @@
-"""BOM services package."""
-
-from app.services.bom.bom_service import BomService
-
-__all__ = ["BomService"]
+"""BOM 业务切片（材料清单、焊接、采购对象等）。从子包导入，不要在本文件汇总。"""

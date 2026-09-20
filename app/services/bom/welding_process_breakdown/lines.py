@@ -11,7 +11,7 @@ from app.common.bom.welding_standard_process import (
     resolve_standard_process_unit,
 )
 from app.exceptions.base import BusinessException, NotFoundException
-from app.repositories.bom.bom_repository import BomNodeRepository
+from app.repositories.bom.bom.node import BomNodeRepository
 from app.repositories.bom.welding_process_breakdown_repository import (
     BomWeldingProcessBreakdownRepository,
 )
@@ -27,7 +27,10 @@ from app.schemas.vo.bom_welding_process_breakdown_vo import (
     BomWeldingProcessBreakdownNodeVO,
 )
 from app.schemas.vo.user_vo import UserVO
-from app.services.bom.welding_process_breakdown.query import get_node
+from app.services.bom.welding_process_breakdown.query import (
+    get_node,
+    resolve_breakdown_tree_root_version,
+)
 from app.services.bom.welding_process_breakdown.recompute import (
     recompute_scope_derived_fields,
 )
@@ -115,7 +118,7 @@ def update_line(
                 repository=repository,
                 location=node.location,
                 vehicle_model=node.vehicle_model,
-                bom_version=node.bom_version,
+                bom_version=resolve_breakdown_tree_root_version(db, node),
                 snapshot_id=node.snapshot_id,
             )
 
@@ -186,7 +189,7 @@ def update_node_lines(
                 repository=repository,
                 location=node.location,
                 vehicle_model=node.vehicle_model,
-                bom_version=node.bom_version,
+                bom_version=resolve_breakdown_tree_root_version(db, node),
                 snapshot_id=node.snapshot_id,
             )
 

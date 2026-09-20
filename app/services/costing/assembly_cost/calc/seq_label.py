@@ -9,7 +9,8 @@ from sqlalchemy.orm import Session
 
 from app.models.bom.node import BomNode
 from app.models.bom.procurement_object import BomProcurementObject
-from app.repositories.bom.bom_repository import BomNodeRepository, BomSnapshotRepository
+from app.repositories.bom.bom.node import BomNodeRepository
+from app.repositories.bom.bom.snapshot import BomSnapshotRepository
 from app.repositories.bom.procurement_object_repository import BomProcurementObjectRepository
 from app.schemas.vo.assembly_cost_vo import AssemblyCostCalcCardTraceVO, AssemblyCostCalcLogVO
 from app.services.bom.procurement_object.classify import SECTION_OBJECT

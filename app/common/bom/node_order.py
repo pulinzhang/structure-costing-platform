@@ -6,6 +6,11 @@
 
 from __future__ import annotations
 
+from typing import Any
+
+from sqlalchemy import case, func
+from sqlalchemy.sql.elements import ColumnElement
+
 MISSING_SEQ_NO = 10**9
 
 
@@ -31,6 +36,25 @@ def bom_node_order_key(
         ordered_part_number,
         int(sort_no or 0),
         int(node_id),
+    )
+
+
+def bom_node_sql_order(node: Any) -> tuple[ColumnElement[object], ...]:
+    """与 list_by_snapshot 同一套：seq_no 槽 → level → L0 零件号 → excel_row。"""
+    seq_no = node.seq_no
+    level = node.level
+    part_number = node.part_number
+    excel_row = node.excel_row
+    sort_no = node.sort_no
+    node_id = node.id
+    return (
+        func.coalesce(seq_no, MISSING_SEQ_NO),
+        level,
+        case((level == 0, part_number), else_=""),
+        func.coalesce(excel_row, sort_no, 0),
+        part_number,
+        sort_no,
+        node_id,
     )
 
 

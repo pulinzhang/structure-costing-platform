@@ -6,7 +6,7 @@ from typing import NamedTuple
 
 from sqlalchemy.orm import Session
 
-from app.repositories.bom.bom_repository import BomNodeRepository
+from app.repositories.bom.bom.node import BomNodeRepository
 from app.repositories.bom.procurement_object_repository import BomProcurementObjectRepository
 from app.services.bom.procurement_object.classify import SECTION_OBJECT, classify_nodes
 from app.services.bom.procurement_object.snapshot_scope import lookup_snapshot

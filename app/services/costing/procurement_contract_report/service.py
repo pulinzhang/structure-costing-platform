@@ -14,7 +14,7 @@ from app.common.bom.node_order import bom_node_order_from
 from app.exceptions.base import BusinessException, NotFoundException
 from app.models.bom.node import BomNode
 from app.models.bom.procurement_object import BomProcurementObject, BomProcurementObjectList
-from app.repositories.bom.bom_repository import BomNodeRepository
+from app.repositories.bom.bom.node import BomNodeRepository
 from app.repositories.bom.procurement_object_repository import BomProcurementObjectRepository
 from app.repositories.costing.assembly_cost.assembly_cost_repository import (
     AssemblyCostRepository,

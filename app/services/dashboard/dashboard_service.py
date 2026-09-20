@@ -7,7 +7,7 @@ from __future__ import annotations
 
 from sqlalchemy.orm import Session
 
-from app.repositories.bom.bom_repository import BomSnapshotRepository
+from app.repositories.bom.bom.snapshot import BomSnapshotRepository
 from app.repositories.costing.stamping_part_cost.stamping_part_cost_repository import (
     StampingPartCostRepository,
 )

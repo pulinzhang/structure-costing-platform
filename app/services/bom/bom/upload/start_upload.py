@@ -18,9 +18,9 @@ from app.services.async_task import (
     WorkerTaskOutcome,
 )
 from app.services.async_task.worker_runner import ProgressCallback
-from app.services.bom.upload.gates.validate import validate_upload_file
-from app.services.bom.upload.orchestrator import BomUploadOrchestrator
-from app.services.bom.upload.orchestrator.types import BomUploadExecuteArgs
+from app.services.bom.bom.upload.gates.validate import validate_upload_file
+from app.services.bom.bom.upload.orchestrator import BomUploadOrchestrator
+from app.services.bom.bom.upload.orchestrator.types import BomUploadExecuteArgs
 
 logger = logging.getLogger("service.bom.upload")
 

@@ -28,18 +28,8 @@ def _dto() -> AssemblyCostCalcDTO:
     )
 
 
-@patch("app.services.costing.assembly_cost.calc.orchestrator.prep.VehicleModelService")
-@patch(
-    "app.services.costing.assembly_cost.calc.orchestrator.prep.assert_calc_ready",
-    return_value=_ready(),
-)
-def test_prep_lists_as_of_trees_without_version(
-    _ready_mock: MagicMock,
-    vehicle_cls: MagicMock,
-) -> None:
-    vehicle_cls.return_value.require_introducible.return_value = ("青岛", "T13J")
-    deps = MagicMock()
-    node = SimpleNamespace(
+def _l0_node() -> SimpleNamespace:
+    return SimpleNamespace(
         id=1,
         parent_id=None,
         level=0,
@@ -53,9 +43,25 @@ def test_prep_lists_as_of_trees_without_version(
         sketch_url=None,
         snapshot_id=9,
         bom_version="D/09",
+        excel_row=1,
         weld_info=None,
     )
-    deps.bom_node_repo.list_as_of_trees.return_value = [node]
+
+
+@patch("app.services.costing.assembly_cost.calc.orchestrator.prep.BomPeriodService")
+@patch("app.services.costing.assembly_cost.calc.orchestrator.prep.VehicleModelService")
+@patch(
+    "app.services.costing.assembly_cost.calc.orchestrator.prep.assert_calc_ready",
+    return_value=_ready(),
+)
+def test_prep_lists_as_of_trees_without_version(
+    _ready_mock: MagicMock,
+    vehicle_cls: MagicMock,
+    bom_cls: MagicMock,
+) -> None:
+    vehicle_cls.return_value.require_introducible.return_value = ("青岛", "T13J")
+    bom_cls.return_value.list_as_of_trees.return_value = [_l0_node()]
+    deps = MagicMock()
     deps.stamping_cost_repo.list_calc_success_with_unit_cost.return_value = []
     deps.annual_price_repo.list_with_unit_price.return_value = []
     deps.welding_fee_repo.list_by_calc_scope.return_value = []
@@ -75,19 +81,23 @@ def test_prep_lists_as_of_trees_without_version(
     ):
         proc_cls.return_value.list_lists_by_location_vehicle.return_value = []
         proc_cls.return_value.list_objects_by_list_id.return_value = []
-        bd_cls.return_value.list_by_scope.return_value = []
+        bd_cls.return_value.list_by_source_node_ids.return_value = []
         prepare_calc_run(MagicMock(), deps, _dto(), ProgressNotifier())
 
-    kwargs = deps.bom_node_repo.list_as_of_trees.call_args.kwargs
+    kwargs = bom_cls.return_value.list_as_of_trees.call_args.kwargs
     assert kwargs["location"] == "青岛"
     assert kwargs["vehicle_model"] == "T13J"
     assert kwargs["as_of_year"] == 2026
     assert kwargs["as_of_month"] == 7
     assert "bom_version" not in kwargs
     fee_kwargs = deps.welding_fee_repo.list_by_calc_scope.call_args.kwargs
-    assert fee_kwargs["bom_version"] is None
+    assert "bom_version" not in fee_kwargs
+    assert fee_kwargs["source_node_ids"] == {1}
+    bd_cls.return_value.list_by_source_node_ids.assert_called_once()
+    assert bd_cls.return_value.list_by_source_node_ids.call_args.args[1] == [1]
 
 
+@patch("app.services.costing.assembly_cost.calc.orchestrator.prep.BomPeriodService")
 @patch("app.services.costing.assembly_cost.calc.orchestrator.prep.VehicleModelService")
 @patch(
     "app.services.costing.assembly_cost.calc.orchestrator.prep.assert_calc_ready",
@@ -96,10 +106,11 @@ def test_prep_lists_as_of_trees_without_version(
 def test_prep_empty_as_of_month_raises(
     _ready_mock: MagicMock,
     vehicle_cls: MagicMock,
+    bom_cls: MagicMock,
 ) -> None:
     vehicle_cls.return_value.require_introducible.return_value = ("青岛", "T13J")
+    bom_cls.return_value.list_as_of_trees.return_value = []
     deps = MagicMock()
-    deps.bom_node_repo.list_as_of_trees.return_value = []
 
     with pytest.raises(BusinessException, match="2026 年 07 月没有有效期内的 BOM 树"):
         prepare_calc_run(MagicMock(), deps, _dto(), ProgressNotifier())
@@ -107,7 +118,6 @@ def test_prep_empty_as_of_month_raises(
 
 def test_collect_calc_ready_uses_as_of_trees() -> None:
     deps = MagicMock()
-    deps.bom_node_repo.list_as_of_trees.return_value = []
     deps.stamping_cost_repo.count_calc_success_with_unit_cost.return_value = 0
     deps.annual_price_repo.count_with_unit_price.return_value = 0
     deps.packaging_fee_repo.count_by_location_year.return_value = 0
@@ -116,6 +126,9 @@ def test_collect_calc_ready_uses_as_of_trees() -> None:
         patch(
             "app.services.costing.assembly_cost.calc.orchestrator.ready.VehicleModelService"
         ) as vehicle_cls,
+        patch(
+            "app.services.costing.assembly_cost.calc.orchestrator.ready.BomPeriodService"
+        ) as bom_cls,
         patch(
             "app.services.costing.assembly_cost.calc.orchestrator.ready.BomProcurementObjectRepository"
         ) as proc_cls,
@@ -129,6 +142,7 @@ def test_collect_calc_ready_uses_as_of_trees() -> None:
         ),
     ):
         vehicle_cls.return_value.require_introducible.return_value = ("青岛", "T13J")
+        bom_cls.return_value.list_as_of_trees.return_value = []
         proc_cls.return_value.list_objects_by_location_vehicle.return_value = []
         vo = collect_calc_ready(
             MagicMock(),
@@ -139,7 +153,7 @@ def test_collect_calc_ready_uses_as_of_trees() -> None:
             vehicle_model="T13J",
         )
 
-    kwargs = deps.bom_node_repo.list_as_of_trees.call_args.kwargs
+    kwargs = bom_cls.return_value.list_as_of_trees.call_args.kwargs
     assert kwargs["as_of_year"] == 2026
     assert kwargs["as_of_month"] == 7
     assert vo.ready is False

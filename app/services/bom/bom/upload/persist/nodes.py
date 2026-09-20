@@ -9,11 +9,12 @@ from app.common.engineering_change_gates import PeriodRoot, is_sop_alignable_roo
 from app.exceptions.base import BusinessException
 from app.models.bom import BomNode, BomSnapshot
 from app.parsers.bom.models import BomParsedNode, BomParseResult
-from app.repositories.bom.bom_repository import BomNodeRepository, BomSnapshotRepository
+from app.repositories.bom.bom.node import BomNodeRepository
+from app.repositories.bom.bom.snapshot import BomSnapshotRepository
 from app.repositories.persist import apply_payload_fields
 from app.schemas.dto.bom_dto import BomNodeWrite, BomSnapshotWrite
 from app.schemas.vo.user_vo import UserVO
-from app.services.bom.upload.gates.validate import (
+from app.services.bom.bom.upload.gates.validate import (
     require_file_l0_already_on_snapshot,
     require_matching_snapshot_version,
 )

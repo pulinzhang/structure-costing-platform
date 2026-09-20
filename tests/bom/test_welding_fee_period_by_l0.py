@@ -22,6 +22,7 @@ from app.models.masterdata.vehicle_model import VehicleModel
 from app.repositories.bom.welding_process_breakdown_repository import (
     BomWeldingProcessBreakdownRepository,
 )
+from app.services.bom.bom.period import BomPeriodService
 
 LOCATION = "青岛"
 VEHICLE_MODEL = "T28"
@@ -193,12 +194,10 @@ def test_list_overlapping_year_uses_l0_not_l1_open_expiry(memory_db: Session) ->
     _breakdown(memory_db, source=l0, level=0, part_number="ROOT-AA")
     _breakdown(memory_db, source=l1, level=1, part_number="CHILD-AA")
 
-    rows = BomWeldingProcessBreakdownRepository().list_overlapping_year(
-        memory_db,
-        location=LOCATION,
-        vehicle_model=VEHICLE_MODEL,
-        year=2026,
+    ids = BomPeriodService().node_ids_overlapping_year(
+        memory_db, location=LOCATION, vehicle_model=VEHICLE_MODEL, year=2026
     )
+    rows = BomWeldingProcessBreakdownRepository().list_by_source_node_ids(memory_db, list(ids))
     assert rows == []
 
 
@@ -228,10 +227,8 @@ def test_list_overlapping_year_includes_tree_when_l0_overlaps(memory_db: Session
     root_bd = _breakdown(memory_db, source=l0, level=0, part_number="ROOT-AB")
     child_bd = _breakdown(memory_db, source=l1, level=1, part_number="CHILD-AB")
 
-    rows = BomWeldingProcessBreakdownRepository().list_overlapping_year(
-        memory_db,
-        location=LOCATION,
-        vehicle_model=VEHICLE_MODEL,
-        year=2026,
+    ids = BomPeriodService().node_ids_overlapping_year(
+        memory_db, location=LOCATION, vehicle_model=VEHICLE_MODEL, year=2026
     )
+    rows = BomWeldingProcessBreakdownRepository().list_by_source_node_ids(memory_db, list(ids))
     assert {row.id for row in rows} == {root_bd.id, child_bd.id}

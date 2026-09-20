@@ -12,7 +12,7 @@ from app.repositories.engineering_change.effect_link_repository import (
     EngineeringChangeEffectLinkInsert,
 )
 from app.schemas.vo.user_vo import UserVO
-from app.services.bom.bom_service import BomService
+from app.services.bom.bom.engineering import BomEngineeringService
 from app.services.bom.welding_process_breakdown.service import BomWeldingProcessBreakdownService
 
 
@@ -36,7 +36,7 @@ def persist_breakdown(
     if change_order.change_type == CHANGE_TYPE_STOP or after_root_id is None:
         return BreakdownPersistResult(inserted_count=0)
 
-    node = BomService().get_node_row(db, after_root_id)
+    node = BomEngineeringService().get_node_row(db, after_root_id)
     if node is None:
         return BreakdownPersistResult(
             inserted_count=0,

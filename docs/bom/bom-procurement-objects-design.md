@@ -31,7 +31,7 @@
 2. **列表是档案。** 默认 `include_expired=true`；禁止给列表 API 加 `year`/`month`。不含已过期 = 墙钟本月问**爬到的 L0**。批量审核/反审/删除 **不过期筛**。  
 3. **列表 expand vs 导出精确。** 列表 `locations`=`expand_for_query`；导出 `location` 精确匹配。  
 4. **设变插行。** `insert_for_new_tree` 不删旧行；抄确认/厂家、**不抄** `audit_status`（`row_write` 始终 pending）；配对同号或 `sort_no`，**禁止**字母版本同茎。  
-5. **写路径共用。** 生成与插行只经 `row_write.build_object_row_write`；子树用 `bom_service.collect_subtree`（公开符号）。  
+5. **写路径共用。** 生成与插行只经 `row_write.build_object_row_write`；子树用 `app.services.bom.bom.trees.collect_subtree`（公开符号）。  
 6. **生成页只读 snapshot（SOP）。** 写：`require_enabled` + `normalize_vehicle_model` + `get_by_unique_key`，版本 = **`bom_snapshots.bom_version` 头字**（如 `D/09`）。只读该 snapshot 下节点做整包分类覆盖。**后续全部走工程变更**（`insert_for_new_tree`）；种树后 `snapshot_blocks_full_generate` → 409，生成页不再补树。**禁止**生成页用 L0/`EC-*` cascade、禁止按节点版本字找树、禁止「只补该月」。prep 同 normalize，不强制 `require_enabled`。**禁止**生成路径 `expand_for_query`。  
 7. **列表 / 批量 / 导出取件 = 基地 + 项目。** 用 `list_objects_by_location_vehicle` / `list_lists_by_location_vehicle`。**对象行凡问期、问版本字：必须先爬到所属 L0**（沿 `parent_id` 上溯到 `level=0`；爬不到不出 / 不进筛）。`bom_version` **可选**：有值时只筛 **爬到的 L0** 的 `bom_version` 字，**不是** source 本行、不是清单头键、不是 snapshot 键。**禁止** `get_list_by_scope(基地,项目,版本)` / 用 cascade 的 EC 字去找清单头。与[协议](../costing/procurement-contract-report-design.md) §0.1 同形。  
 8. **供应商批传与生成页同一把钥匙、同一套级联：** 前端共用 `snapshot-cascade.js` → BOM 上级域 `GET /api/bom/filters/cascade?version_source=snapshot`；取件共用 `snapshot_scope.require_snapshot` → `get_list_by_snapshot_id`。**禁止**在采购对象域再挂 cascade 路由 / 默认 L0（会露出 EC）。  
@@ -580,7 +580,7 @@ HUD：**采购对象**是霓虹强调格；标准件/胶等、待审、已审为
 | `app/parsers/bom/node_parser.py` | 树怎么进库；L0 材料是否落地 |
 | `app/common/bom/manufacturing_category.py` | L1 叶子是否 `stamping` |
 | [welding-process-breakdown-design.md](welding-process-breakdown-design.md) | 拆解；生成清单时不读 |
-| `app/services/bom/upload/` | 再导按树对齐，不删 snapshot。真删头仍走 `assert_bom_scope_unused`。落库前拦一物一码 |
+| `app/services/bom/bom/upload/` | 再导按树对齐，不删 snapshot。真删头仍走 `assert_bom_scope_unused`。落库前拦一物一码 |
 | [bom-annual-part-prices-design.md](bom-annual-part-prices-design.md) | 价表；本文不读 |
 | [location-design.md](../masterdata/location-design.md) | 基地；生成写门禁、列表筛 |
 | [vehicle-model-design.md](../masterdata/vehicle-model-design.md) | 项目；列表筛；本文不是下一跳 |

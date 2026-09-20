@@ -17,10 +17,12 @@ from app.repositories.bom.welding_process_breakdown_repository import (
 )
 from app.schemas.dto.bom_welding_fee_dto import resolve_welding_fee_levels
 from app.schemas.vo.user_vo import UserVO
+from app.services.bom.bom.period import BomPeriodService
 from app.services.bom.welding_fee.export.columns import WeldingSheetLayout
 from app.services.bom.welding_fee.export.styles import build_sheet_style
 from app.services.bom.welding_fee.export.values import build_filename, filter_text
 from app.services.bom.welding_fee.export.workbook import fill_sheet
+from app.services.bom.welding_fee.service import _fee_tree_root_versions
 
 logger = logging.getLogger("service.bom.welding_fee.export")
 
@@ -59,7 +61,12 @@ class BomWeldingFeeExportService:
             year=year,
             location=location,
             vehicle_model=vehicle_model,
-            bom_version=bom_version,
+            source_node_ids=BomPeriodService().node_ids_for_l0_version(
+                db,
+                bom_version=bom_version,
+                location=location,
+                vehicle_model=vehicle_model,
+            ),
             part_number=part_number,
             audit_status=audit_status,
             calc_status=calc_status,
@@ -86,6 +93,7 @@ class BomWeldingFeeExportService:
             layout=self._layout,
             style=self._style,
             filter_text=summary,
+            bom_version_by_id=_fee_tree_root_versions(db, records),
         )
         return ws.title, len(records)
 

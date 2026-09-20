@@ -17,7 +17,7 @@ from app.exceptions.base import BusinessException
 from app.parsers.bom.packaging_transport_fee_parser import (
     parse_packaging_transport_fee_excel,
 )
-from app.repositories.bom.bom_repository import BomSnapshotRepository
+from app.repositories.bom.bom.snapshot import BomSnapshotRepository
 from app.repositories.bom.packaging_transport_fee_repository import (
     BomPackagingTransportFeeRepository,
 )

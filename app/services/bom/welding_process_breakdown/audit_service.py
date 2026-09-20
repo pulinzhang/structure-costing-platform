@@ -1,7 +1,7 @@
 """
 焊接工艺拆解 — 范围审核 / 反审核 / 批量删除
 
-范围键：location + vehicle_model + bom_version
+范围键：location + vehicle_model + 树根版本字（节点范围由 BOM 服务给出）。
 """
 
 from __future__ import annotations
@@ -24,6 +24,7 @@ from app.schemas.vo.bom_welding_process_breakdown_vo import (
     BomWeldingProcessBreakdownBatchDeleteResultVO,
 )
 from app.schemas.vo.user_vo import UserVO
+from app.services.bom.bom.period import BomPeriodService
 
 WELDING_FEE_REFERENCED = "仍被焊接费引用，请先删除对应焊接费后再删"
 
@@ -57,12 +58,21 @@ class BomWeldingProcessBreakdownAuditService:
         if not scope:
             raise BusinessException("基地、项目、版本均必填")
         location, vehicle_model, bom_version = scope
+        source_node_ids = (
+            BomPeriodService().node_ids_for_l0_version(
+                db,
+                bom_version=bom_version,
+                location=location,
+                vehicle_model=vehicle_model,
+            )
+            or set()
+        )
 
         existing_count = self.repository.count_by_scope(
             db,
             location=location,
             vehicle_model=vehicle_model,
-            bom_version=bom_version,
+            source_node_ids=source_node_ids,
         )
         if existing_count <= 0:
             raise BusinessException(
@@ -73,7 +83,7 @@ class BomWeldingProcessBreakdownAuditService:
             db,
             location=location,
             vehicle_model=vehicle_model,
-            bom_version=bom_version,
+            source_node_ids=source_node_ids,
             statuses=[AUDIT_APPROVED],
         )
         try:
@@ -81,7 +91,7 @@ class BomWeldingProcessBreakdownAuditService:
                 db,
                 location=location,
                 vehicle_model=vehicle_model,
-                bom_version=bom_version,
+                source_node_ids=source_node_ids,
             )
             db.commit()
         except IntegrityError:
@@ -111,19 +121,28 @@ class BomWeldingProcessBreakdownAuditService:
         operator = display_name(current_user)
         if not operator:
             raise BusinessException("无法识别当前登录用户")
+        source_node_ids = (
+            BomPeriodService().node_ids_for_l0_version(
+                db,
+                bom_version=bom_version,
+                location=location,
+                vehicle_model=vehicle_model,
+            )
+            or set()
+        )
 
         skipped = self.repository.count_by_scope_and_statuses(
             db,
             location=location,
             vehicle_model=vehicle_model,
-            bom_version=bom_version,
+            source_node_ids=source_node_ids,
             statuses=[AUDIT_APPROVED],
         )
         updated = self.repository.approve_by_scope(
             db,
             location=location,
             vehicle_model=vehicle_model,
-            bom_version=bom_version,
+            source_node_ids=source_node_ids,
             audited_by=operator,
             audited_at=now(),
             audit_remark=(dto.audit_remark or "").strip() or None,
@@ -154,19 +173,28 @@ class BomWeldingProcessBreakdownAuditService:
         operator = display_name(current_user)
         if not operator:
             raise BusinessException("无法识别当前登录用户")
+        source_node_ids = (
+            BomPeriodService().node_ids_for_l0_version(
+                db,
+                bom_version=bom_version,
+                location=location,
+                vehicle_model=vehicle_model,
+            )
+            or set()
+        )
 
         skipped = self.repository.count_by_scope_and_statuses(
             db,
             location=location,
             vehicle_model=vehicle_model,
-            bom_version=bom_version,
+            source_node_ids=source_node_ids,
             statuses=[AUDIT_PENDING],
         )
         updated = self.repository.reverse_by_scope(
             db,
             location=location,
             vehicle_model=vehicle_model,
-            bom_version=bom_version,
+            source_node_ids=source_node_ids,
             reverse_audited_by=operator,
             reverse_audited_at=now(),
             reverse_audit_remark=remark,

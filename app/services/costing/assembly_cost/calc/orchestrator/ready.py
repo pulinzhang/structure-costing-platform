@@ -8,8 +8,6 @@ from typing import NamedTuple
 from sqlalchemy.orm import Session
 
 from app.exceptions.base import BusinessException
-from app.repositories.bom.bom_repository import BomNodeRepository, BomSnapshotRepository
-from app.repositories.bom.period_trees import nodes_in_year_overlap_trees
 from app.repositories.bom.procurement_object_repository import BomProcurementObjectRepository
 from app.repositories.bom.welding_fee_calc_log_repository import BomWeldingFeeCalcLogRepository
 from app.repositories.bom.welding_fee_repository import BomWeldingFeeRepository
@@ -21,6 +19,7 @@ from app.repositories.costing.stamping_part_cost.stamping_part_cost_calc_log_rep
 )
 from app.repositories.stamping.stamping_part_repository import StampingPartRepository
 from app.schemas.vo.assembly_cost_vo import AssemblyCostCalcReadyVO
+from app.services.bom.bom.period import BomPeriodService
 from app.services.bom.procurement_object.classify import SECTION_OBJECT, classify_nodes
 from app.services.costing.assembly_cost.calc.orchestrator.deps import AssemblyCalcDeps
 from app.services.costing.stamping_part_cost.calc.constants import ALL_SUPPLIERS_LOCK
@@ -41,19 +40,15 @@ def evaluate_welding_coverage(
     year: int,
     location: str,
     vehicle_model: str,
-    bom_version: str,
     welding_fee_repo: BomWeldingFeeRepository | None = None,
 ) -> WeldingCoverage:
     """该年有效期内树上拆解是否齐、拆解节点是否都有焊接费行。
 
-    年交集只问 L0 树根，再收子树；不问项目档案起止，不用 L1/L2 本行期。
+    年 + 基地 + 项目；年交集只问 L0 树根再收子树。不认 snapshot 头字。
     """
-    snap = BomSnapshotRepository().get_by_unique_key(db, location, vehicle_model, bom_version)
-    if snap is None:
-        return WeldingCoverage(False, "未找到对应 BOM 快照", 0, {}, False)
-    all_nodes = BomNodeRepository().list_by_snapshot(db, snap.id)
-    snapshot_ids = {int(n.id) for n in all_nodes}
-    period_nodes = nodes_in_year_overlap_trees(all_nodes, year=year)
+    period_nodes = BomPeriodService().list_year_overlap_trees(
+        db, location=location, vehicle_model=vehicle_model, year=year
+    )
     current_ids = {int(n.id) for n in period_nodes}
     weld_info_count = sum(1 for n in period_nodes if (n.weld_info or "").strip())
     return _welding_coverage(
@@ -61,9 +56,7 @@ def evaluate_welding_coverage(
         year=year,
         location=location,
         vehicle_model=vehicle_model,
-        bom_version=bom_version,
         current_ids=current_ids,
-        snapshot_ids=snapshot_ids,
         weld_info_count=weld_info_count,
         welding_fee_repo=welding_fee_repo,
     )
@@ -96,7 +89,7 @@ def collect_calc_ready(
             ready=False,
             message=str(exc),
         )
-    orm_nodes = deps.bom_node_repo.list_as_of_trees(
+    orm_nodes = BomPeriodService().list_as_of_trees(
         db,
         location=location,
         vehicle_model=vehicle_model,
@@ -295,26 +288,17 @@ def _welding_coverage(
     current_ids: set[int],
     weld_info_count: int,
     welding_fee_repo: BomWeldingFeeRepository | None = None,
-    bom_version: str | None = None,
-    snapshot_ids: set[int] | None = None,
 ) -> WeldingCoverage:
     fee_repo = welding_fee_repo or BomWeldingFeeRepository()
-    tree_ids = snapshot_ids if snapshot_ids is not None else current_ids
-    breakdowns = BomWeldingProcessBreakdownRepository().list_by_scope(
-        db, location=location, vehicle_model=vehicle_model, bom_version=bom_version
+    breakdowns = BomWeldingProcessBreakdownRepository().list_by_source_node_ids(
+        db, list(current_ids)
     )
-    live_breakdowns = [
-        bd
-        for bd in breakdowns
-        if bd.source_node_id is not None and int(bd.source_node_id) in current_ids
-    ]
-    live_breakdown_ids = {int(bd.id) for bd in live_breakdowns}
+    live_breakdown_ids = {int(bd.id) for bd in breakdowns}
     fees = fee_repo.list_by_calc_scope(
         db,
         year=year,
         location=location,
         vehicle_model=vehicle_model,
-        bom_version=bom_version,
         level=None,
     )
     aligned_fees = [
@@ -333,12 +317,8 @@ def _welding_coverage(
         for fee in aligned_fees
         if (breakdown_id := fee.source_breakdown_node_id) is not None
     }
-    missing_weld_info = weld_info_count > 0 and len(live_breakdowns) < weld_info_count
-    stale_tree = bool(bom_version) and any(
-        bd.source_node_id is not None and int(bd.source_node_id) not in tree_ids
-        for bd in breakdowns
-    )
-    breakdown_complete = bool(live_breakdowns) and not missing_weld_info and not stale_tree
+    missing_weld_info = weld_info_count > 0 and len(breakdowns) < weld_info_count
+    breakdown_complete = bool(breakdowns) and not missing_weld_info
 
     latest = BomWeldingFeeCalcLogRepository().get_latest(
         db,
@@ -370,20 +350,12 @@ def _welding_coverage(
             level_counts,
             False,
         )
-    if stale_tree:
-        return WeldingCoverage(
-            False,
-            f"焊接拆解/费行未对齐当前 BOM 树（当前树对齐 {fee_count} 条），请重导后重算焊接费",
-            fee_count,
-            level_counts,
-            False,
-        )
-    if any(bd.id not in covered_ids for bd in live_breakdowns):
+    if any(bd.id not in covered_ids for bd in breakdowns):
         return WeldingCoverage(
             False,
             (
                 f"拆解节点没有对应的焊接费行"
-                f"（当前树拆解 {len(live_breakdowns)} 条，对齐 {fee_count} 条），"
+                f"（当前树拆解 {len(breakdowns)} 条，对齐 {fee_count} 条），"
                 "请先完成焊接费计算"
             ),
             fee_count,

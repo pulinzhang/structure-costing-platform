@@ -6,7 +6,8 @@ from openpyxl import Workbook
 from sqlalchemy.orm import Session
 
 from app.exceptions.base import BusinessException
-from app.repositories.bom.bom_repository import BomNodeRepository, BomSnapshotRepository
+from app.repositories.bom.bom.node import BomNodeRepository
+from app.repositories.bom.bom.snapshot import BomSnapshotRepository
 from app.repositories.costing.stamping_part_cost.stamping_part_cost_repository import (
     StampingPartCostRepository,
 )

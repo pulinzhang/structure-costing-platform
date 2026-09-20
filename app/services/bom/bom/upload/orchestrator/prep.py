@@ -8,13 +8,13 @@ from pathlib import Path
 from sqlalchemy.orm import Session
 
 from app.parsers.bom.bom_parser import parse_bom_excel
-from app.services.bom.upload.gates.validate import (
+from app.services.bom.bom.upload.gates.validate import (
     require_introducible_project,
     require_l0_part_numbers,
     resolve_upload_scope,
     validate_parsed_nodes,
 )
-from app.services.bom.upload.orchestrator.types import (
+from app.services.bom.bom.upload.orchestrator.types import (
     BomUploadExecuteArgs,
     PreparedBundle,
     ProgressCallback,

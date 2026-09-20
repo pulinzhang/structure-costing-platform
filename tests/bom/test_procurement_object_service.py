@@ -27,7 +27,8 @@ from app.models.bom.procurement_object_generate_log import (  # noqa: F401
 from app.models.masterdata.location import Location, LocationAlias  # noqa: F401
 from app.models.masterdata.supplier import Supplier, SupplierAlias  # noqa: F401
 from app.models.masterdata.vehicle_model import VehicleModel
-from app.repositories.bom.bom_repository import BomNodeRepository, BomSnapshotRepository
+from app.repositories.bom.bom.node import BomNodeRepository
+from app.repositories.bom.bom.snapshot import BomSnapshotRepository
 from app.repositories.masterdata.location.location_repository import LocationRepository
 from app.schemas.dto.bom_dto import BomNodeWrite, BomSnapshotWrite
 from app.schemas.dto.bom_procurement_object_dto import (

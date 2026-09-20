@@ -5,14 +5,14 @@ from __future__ import annotations
 from sqlalchemy.orm import Session
 
 from app.schemas.vo.user_vo import UserVO
-from app.services.bom.upload.orchestrator.types import (
+from app.services.bom.bom.upload.orchestrator.types import (
     PipelineBundle,
     PreparedBundle,
     ProgressCallback,
     report_progress,
 )
-from app.services.bom.upload.persist.files import save_excel_file, save_node_sketches
-from app.services.bom.upload.persist.nodes import flush_bom_upload
+from app.services.bom.bom.upload.persist.files import save_excel_file, save_node_sketches
+from app.services.bom.bom.upload.persist.nodes import flush_bom_upload
 
 
 def run_bom_upload_pipeline(

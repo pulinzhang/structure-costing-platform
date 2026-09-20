@@ -10,10 +10,10 @@ from sqlalchemy.orm import Session
 
 from app.schemas.vo.bom_vo import BomImportResultVO
 from app.schemas.vo.user_vo import UserVO
-from app.services.bom.upload.orchestrator.persist import persist_bom_upload_result
-from app.services.bom.upload.orchestrator.pipeline import run_bom_upload_pipeline
-from app.services.bom.upload.orchestrator.prep import prepare_bom_upload_run
-from app.services.bom.upload.orchestrator.types import (
+from app.services.bom.bom.upload.orchestrator.persist import persist_bom_upload_result
+from app.services.bom.bom.upload.orchestrator.pipeline import run_bom_upload_pipeline
+from app.services.bom.bom.upload.orchestrator.prep import prepare_bom_upload_run
+from app.services.bom.bom.upload.orchestrator.types import (
     BomUploadExecuteArgs,
     ProgressCallback,
 )

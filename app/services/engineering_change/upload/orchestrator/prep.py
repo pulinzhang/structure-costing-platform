@@ -34,7 +34,7 @@ from app.parsers.engineering_change.sheet_extract import (
 from app.repositories.engineering_change.upload_log_repository import (
     EngineeringChangeUploadLogRepository,
 )
-from app.services.bom.bom_service import BomService
+from app.services.bom.bom.engineering import BomEngineeringService
 from app.services.engineering_change.upload.gates.bom_slice import slice_bom_nodes_for_l0
 from app.services.engineering_change.upload.gates.process_gates import (
     ProcessGateItem,
@@ -69,7 +69,7 @@ def prepare_engineering_change_run(
     on_progress: ProgressCallback | None = None,
 ) -> PreparedBundle:
     log_repo = EngineeringChangeUploadLogRepository()
-    bom_service = BomService()
+    bom_service = BomEngineeringService()
     location = args.location
     vehicle_model = args.vehicle_model
     effective_year = args.effective_year
@@ -250,7 +250,7 @@ def _assert_after_assemblies_idle(
 def _locate_before_root(
     db: Session,
     *,
-    bom_service: BomService,
+    bom_service: BomEngineeringService,
     location: str,
     vehicle_model: str,
     change_order: ChangeOrderRowParsed,

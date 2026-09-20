@@ -6,6 +6,9 @@ from decimal import Decimal
 from types import SimpleNamespace
 from unittest.mock import MagicMock, patch
 
+import pytest
+
+from app.exceptions.base import BusinessException
 from app.services.bom.welding_process_breakdown.generate_service import (
     BomWeldingProcessBreakdownGenerateService,
 )
@@ -42,6 +45,7 @@ def test_copy_for_new_tree_copies_all_lines_without_reparse() -> None:
         excel_row=3,
         snapshot_id=10,
         weld_info="焊点：99",
+        bom_version="D/00",
     )
     new_l0 = SimpleNamespace(
         id=101,
@@ -55,6 +59,7 @@ def test_copy_for_new_tree_copies_all_lines_without_reparse() -> None:
         excel_row=3,
         snapshot_id=10,
         weld_info="焊点：99",
+        bom_version="EC-202505",
     )
     service.node_repository.list_by_snapshot.return_value = [old_l0, new_l0]
 
@@ -121,6 +126,7 @@ def test_copy_for_new_tree_copies_all_lines_without_reparse() -> None:
     assert node_write.source_node_id == 101
     assert node_write.part_number == "144AB"
     assert node_write.weld_info_raw == "焊点：99 凸焊：7"
+    assert node_write.bom_version == "EC-202505"
     assert node_write.process_line_count == 2
     assert service.repository.create_line.call_count == 2
     first_line = service.repository.create_line.call_args_list[0].args[1]
@@ -130,6 +136,56 @@ def test_copy_for_new_tree_copies_all_lines_without_reparse() -> None:
     assert first_line.rollup_flag == "own"
     assert second_line.process_token == "凸焊"
     assert second_line.line_no == 2
+
+
+def test_copy_for_new_tree_rejects_blank_tree_root_version() -> None:
+    service = BomWeldingProcessBreakdownGenerateService()
+    service.snapshot_repository = MagicMock()
+    service.node_repository = MagicMock()
+    service.repository = MagicMock()
+    snapshot = SimpleNamespace(
+        id=10,
+        location="青岛",
+        customer_name="奇瑞",
+        vehicle_model="T28",
+        bom_version="D/00",
+    )
+    service.snapshot_repository.get_by_id.return_value = snapshot
+    new_l0 = SimpleNamespace(
+        id=101,
+        parent_id=None,
+        part_number="144AB",
+        part_name="新总成",
+        level=0,
+        node_role="supply",
+        qty=Decimal("1"),
+        qty_unit="pcs",
+        excel_row=3,
+        snapshot_id=10,
+        weld_info="焊点：99",
+        bom_version="  ",
+    )
+    service.node_repository.list_by_snapshot.return_value = [new_l0]
+    service.repository.list_by_source_node_ids.return_value = [
+        SimpleNamespace(
+            source_node_id=1,
+            weld_info_raw="焊点：99",
+            parse_status="ok",
+            process_line_count=1,
+            qa_note=None,
+            lines=[],
+        )
+    ]
+
+    with pytest.raises(BusinessException, match="没有版本字，禁止回退清单头"):
+        service.copy_for_new_tree(
+            MagicMock(),
+            snapshot_id=10,
+            source_id_remap={1: 101},
+            current_user=_user(),  # type: ignore[arg-type]
+        )
+
+    service.repository.create_node.assert_not_called()
 
 
 def test_copy_for_new_tree_skips_when_remap_empty() -> None:

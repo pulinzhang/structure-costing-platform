@@ -25,24 +25,24 @@ from app.models.bom import BomNode
 from app.parsers.bom.bom_parser import BomParsedNode
 from app.schemas.dto.bom_dto import BomNodeWrite
 from app.schemas.vo.user_vo import UserVO
-from app.services.bom.change_tree_plant.copy import (
+from app.services.bom.bom.change_tree_plant.copy import (
     copied_child_fields,
     excel_row_for_added_part,
     internal_from_file,
 )
-from app.services.bom.change_tree_plant.number_map import build_number_map
-from app.services.bom.change_tree_plant.sketches import copied_sketch_url
-from app.services.bom.change_tree_plant.types import BomChangePlantResult, BomChangePlantSpec
+from app.services.bom.bom.change_tree_plant.number_map import build_number_map
+from app.services.bom.bom.change_tree_plant.sketches import copied_sketch_url
+from app.services.bom.bom.change_tree_plant.types import BomChangePlantResult, BomChangePlantSpec
 
 if TYPE_CHECKING:
-    from app.services.bom.bom_service import BomService
+    from app.services.bom.bom.engineering import BomEngineeringService
 
 _EXCEL_PART_COL_BY_LEVEL = {0: 3, 1: 9, 2: 14}
 
 
 @dataclass(slots=True)
 class _PlantSession:
-    bom_service: BomService
+    bom_service: BomEngineeringService
     db: Session
     snapshot_id: int
     location: str
@@ -57,7 +57,7 @@ class _PlantSession:
 
 
 def plant_change_tree(
-    bom_service: BomService,
+    bom_service: BomEngineeringService,
     db: Session,
     *,
     snapshot_id: int,

@@ -284,7 +284,6 @@ def test_ready_expired_period_is_not_http_error(memory_db: Session) -> None:
     )
     assert assembly.ready is False
     assert ARCHIVE in (assembly.message or "")
-    deps.bom_node_repo.list_as_of_trees.assert_not_called()
 
     process = process_ready(
         memory_db,
@@ -320,4 +319,4 @@ def test_ready_expired_period_is_not_http_error(memory_db: Session) -> None:
     assert welding.unit_price_count == 0
     assert welding.levels == []
     assert ARCHIVE in (welding.message or "")
-    deps.breakdown_repo.list_overlapping_year.assert_not_called()
+    deps.breakdown_repo.list_by_source_node_ids.assert_not_called()

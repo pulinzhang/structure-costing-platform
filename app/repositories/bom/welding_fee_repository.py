@@ -59,7 +59,7 @@ class BomWeldingFeeRepository:
         year: int,
         location: str,
         vehicle_model: str,
-        bom_version: str | None = None,
+        source_node_ids: set[int] | None = None,
         level: int | None = None,
     ) -> int:
         return self._queries.count_by_calc_scope(
@@ -67,7 +67,7 @@ class BomWeldingFeeRepository:
             year=year,
             location=location,
             vehicle_model=vehicle_model,
-            bom_version=bom_version,
+            source_node_ids=source_node_ids,
             level=level,
         )
 
@@ -78,7 +78,7 @@ class BomWeldingFeeRepository:
         year: int,
         location: str,
         vehicle_model: str,
-        bom_version: str | None = None,
+        source_node_ids: set[int] | None = None,
         level: int | None = None,
     ) -> list[BomWeldingFee]:
         return self._queries.list_by_calc_scope(
@@ -86,7 +86,7 @@ class BomWeldingFeeRepository:
             year=year,
             location=location,
             vehicle_model=vehicle_model,
-            bom_version=bom_version,
+            source_node_ids=source_node_ids,
             level=level,
         )
 
@@ -98,7 +98,7 @@ class BomWeldingFeeRepository:
         location: str | None = None,
         locations: list[str] | None = None,
         vehicle_model: str | None = None,
-        bom_version: str | None = None,
+        source_node_ids: set[int] | None = None,
         part_number: str | None = None,
         audit_status: str | None = None,
         calc_status: str | None = None,
@@ -113,7 +113,7 @@ class BomWeldingFeeRepository:
             location=location,
             locations=locations,
             vehicle_model=vehicle_model,
-            bom_version=bom_version,
+            source_node_ids=source_node_ids,
             part_number=part_number,
             audit_status=audit_status,
             calc_status=calc_status,
@@ -131,7 +131,7 @@ class BomWeldingFeeRepository:
         location: str | None = None,
         locations: list[str] | None = None,
         vehicle_model: str | None = None,
-        bom_version: str | None = None,
+        source_node_ids: set[int] | None = None,
         part_number: str | None = None,
         audit_status: str | None = None,
         calc_status: str | None = None,
@@ -145,7 +145,7 @@ class BomWeldingFeeRepository:
             location=location,
             locations=locations,
             vehicle_model=vehicle_model,
-            bom_version=bom_version,
+            source_node_ids=source_node_ids,
             part_number=part_number,
             audit_status=audit_status,
             calc_status=calc_status,
@@ -162,7 +162,7 @@ class BomWeldingFeeRepository:
         location: str | None = None,
         locations: list[str] | None = None,
         vehicle_model: str | None = None,
-        bom_version: str | None = None,
+        source_node_ids: set[int] | None = None,
         part_number: str | None = None,
         audit_status: str | None = None,
         calc_status: str | None = None,
@@ -175,7 +175,7 @@ class BomWeldingFeeRepository:
             location=location,
             locations=locations,
             vehicle_model=vehicle_model,
-            bom_version=bom_version,
+            source_node_ids=source_node_ids,
             part_number=part_number,
             audit_status=audit_status,
             calc_status=calc_status,
@@ -190,7 +190,7 @@ class BomWeldingFeeRepository:
         year: int,
         location: str,
         vehicle_model: str,
-        bom_version: str | None = None,
+        source_node_ids: set[int] | None = None,
         statuses: list[str],
         level: int | None = None,
         levels: list[int] | None = None,
@@ -200,7 +200,7 @@ class BomWeldingFeeRepository:
             year=year,
             location=location,
             vehicle_model=vehicle_model,
-            bom_version=bom_version,
+            source_node_ids=source_node_ids,
             statuses=statuses,
             level=level,
             levels=levels,
@@ -211,19 +211,6 @@ class BomWeldingFeeRepository:
 
     def get_distinct_locations(self, db: Session, year: int | None = None) -> list[str]:
         return self._queries.get_distinct_locations(db, year)
-
-    def get_distinct_bom_versions(
-        self,
-        db: Session,
-        *,
-        year: int | None = None,
-        location: str | None = None,
-        locations: list[str] | None = None,
-        vehicle_model: str | None = None,
-    ) -> list[str]:
-        return self._queries.get_distinct_bom_versions(
-            db, year=year, location=location, locations=locations, vehicle_model=vehicle_model
-        )
 
     def replace_items(
         self,
@@ -253,7 +240,7 @@ class BomWeldingFeeRepository:
         year: int,
         location: str,
         vehicle_model: str,
-        bom_version: str | None = None,
+        source_node_ids: set[int] | None = None,
         level: int | None = None,
         levels: list[int] | None = None,
     ) -> int:
@@ -262,7 +249,7 @@ class BomWeldingFeeRepository:
             year=year,
             location=location,
             vehicle_model=vehicle_model,
-            bom_version=bom_version,
+            source_node_ids=source_node_ids,
             level=level,
             levels=levels,
         )
@@ -274,7 +261,7 @@ class BomWeldingFeeRepository:
         year: int,
         location: str,
         vehicle_model: str,
-        bom_version: str | None = None,
+        source_node_ids: set[int] | None = None,
         audited_by: str,
         audited_at: datetime,
         audit_remark: str | None,
@@ -287,7 +274,7 @@ class BomWeldingFeeRepository:
             year=year,
             location=location,
             vehicle_model=vehicle_model,
-            bom_version=bom_version,
+            source_node_ids=source_node_ids,
             audited_by=audited_by,
             audited_at=audited_at,
             audit_remark=audit_remark,
@@ -303,7 +290,7 @@ class BomWeldingFeeRepository:
         year: int,
         location: str,
         vehicle_model: str,
-        bom_version: str | None = None,
+        source_node_ids: set[int] | None = None,
         reverse_audited_by: str,
         reverse_audited_at: datetime,
         reverse_audit_remark: str,
@@ -316,7 +303,7 @@ class BomWeldingFeeRepository:
             year=year,
             location=location,
             vehicle_model=vehicle_model,
-            bom_version=bom_version,
+            source_node_ids=source_node_ids,
             reverse_audited_by=reverse_audited_by,
             reverse_audited_at=reverse_audited_at,
             reverse_audit_remark=reverse_audit_remark,

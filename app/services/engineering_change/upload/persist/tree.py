@@ -1,4 +1,4 @@
-"""工程变更种树 / 失效：仅调上游 BomService（算法在 bom/change_tree_plant）。"""
+"""工程变更种树 / 失效：仅调上游 BomEngineeringService（算法在 bom/bom/change_tree_plant）。"""
 
 from __future__ import annotations
 
@@ -9,8 +9,11 @@ from sqlalchemy.orm import Session
 from app.parsers.bom.bom_parser import BomParsedNode
 from app.parsers.engineering_change.change_order_parser import ChangeOrderRowParsed
 from app.schemas.vo.user_vo import UserVO
-from app.services.bom.bom_service import BomService
-from app.services.bom.change_tree_plant import BomChangePlantResult, BomChangePlantSpec
+from app.services.bom.bom.engineering import (
+    BomChangePlantResult,
+    BomChangePlantSpec,
+    BomEngineeringService,
+)
 
 
 def change_order_to_plant_spec(change_order: ChangeOrderRowParsed) -> BomChangePlantSpec:
@@ -36,7 +39,7 @@ def expire_l0_tree(
     current_user: UserVO,
 ) -> None:
     """级联写失效月，不 commit（工程变更事务用）。"""
-    BomService().expire_l0_tree(
+    BomEngineeringService().expire_l0_tree(
         db,
         root_id=l0_id,
         expiry_year=expiry_year,
@@ -64,7 +67,7 @@ def plant_change_tree(
     node_bom_version: str | None = None,
 ) -> BomChangePlantResult:
     """EC 适配：变更单 → BomChangePlantSpec，再调上游种树。"""
-    return BomService().plant_change_tree(
+    return BomEngineeringService().plant_change_tree(
         db,
         snapshot_id=snapshot_id,
         location=location,

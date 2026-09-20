@@ -14,7 +14,7 @@ from app.repositories.engineering_change.effect_link_repository import (
 )
 from app.schemas.vo.user_vo import UserVO
 from app.services.bom.annual_part_price.service import BomAnnualPartPriceService
-from app.services.bom.bom_service import BomService
+from app.services.bom.bom.engineering import BomEngineeringService
 
 
 def persist_annual_part_prices(
@@ -63,7 +63,7 @@ def _changed_part_numbers(
 ) -> tuple[dict[str, str], dict[str, int]]:
     revise_old_to_new: dict[str, str] = {}
     part_change_order_index: dict[str, int] = {}
-    bom = BomService()
+    bom = BomEngineeringService()
     for source_id_remap, change_order_index in source_id_remaps:
         if not source_id_remap:
             continue

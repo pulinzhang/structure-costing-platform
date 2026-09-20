@@ -81,7 +81,6 @@ class AnnualCalcPlanner:
                 year=discovery.year,
                 location=scope.location,
                 vehicle_model=scope.vehicle_model,
-                bom_version=scope.bom_version,
             )
             items.append(
                 CostingEngineAnnualItemVO(

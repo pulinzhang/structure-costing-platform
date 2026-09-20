@@ -7,7 +7,7 @@ import logging
 from sqlalchemy.orm import Session
 
 from app.schemas.vo.bom_vo import BomImportResultVO, BomSnapshotVO
-from app.services.bom.upload.orchestrator.types import (
+from app.services.bom.bom.upload.orchestrator.types import (
     PipelineBundle,
     PreparedBundle,
     ProgressCallback,

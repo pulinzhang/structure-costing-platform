@@ -163,6 +163,7 @@ def write_data_row(
     write_main: bool,
     line_index: int,
     main_fill: PatternFill,
+    display_bom_version: str | None = None,
 ) -> None:
     col_index = layout.col
     main_cols = layout.main_cols
@@ -172,7 +173,11 @@ def write_data_row(
     match_status = match_status_of(item)
 
     if write_main:
-        values = [value for name, value in main_pairs(record, seq_no=seq_no) if name in col_index]
+        values = [
+            value
+            for name, value in main_pairs(record, seq_no=seq_no, bom_version=display_bom_version)
+            if name in col_index
+        ]
         for col, value in enumerate(values, start=1):
             cell = ws.cell(row=row_idx, column=col, value=excel_write_value(value))
             cell.fill = main_fill
@@ -355,6 +360,7 @@ def fill_sheet(
     layout: WeldingSheetLayout,
     style: SheetStyle,
     filter_text: str,
+    bom_version_by_id: dict[int, str] | None = None,
 ) -> int:
     write_banner(ws, layout=layout, filter_text=filter_text, records=records)
     header_row = write_headers(ws, layout=layout, style=style)
@@ -366,6 +372,10 @@ def fill_sheet(
             key=lambda item: (item.line_no or 0, item.id or 0),
         )
         main_fill = fill("ECEFF1") if seq_no % 2 else fill("F5F7FA")
+        display_bom_version = None
+        record_id = getattr(record, "id", None)
+        if record_id is not None:
+            display_bom_version = (bom_version_by_id or {}).get(int(record_id))
         if not items:
             write_data_row(
                 ws,
@@ -378,6 +388,7 @@ def fill_sheet(
                 write_main=True,
                 line_index=0,
                 main_fill=main_fill,
+                display_bom_version=display_bom_version,
             )
             ws.row_dimensions[row_idx].height = row_height(record)
             row_idx += 1
@@ -396,6 +407,7 @@ def fill_sheet(
                 write_main=(index == 0),
                 line_index=index,
                 main_fill=main_fill,
+                display_bom_version=display_bom_version,
             )
             ws.row_dimensions[row_idx].height = row_height(record)
             row_idx += 1

@@ -14,7 +14,7 @@ from app.common.bom.node_order import bom_node_order_from
 from app.models.bom.node import BomNode
 from app.models.costing.assembly_cost import AssemblyCost
 from app.models.costing.assembly_cost_item import AssemblyCostItem
-from app.repositories.bom.bom_repository import BomNodeRepository
+from app.repositories.bom.bom.node import BomNodeRepository
 from app.schemas.vo.assembly_cost_restore_vo import RestoreExceptionVO, RestoreMaterialNodeVO
 from app.services.costing.assembly_cost.codes import card_short_code
 from app.services.costing.assembly_cost.restore.labels import cost_source_label

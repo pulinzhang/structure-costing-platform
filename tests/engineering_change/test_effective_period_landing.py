@@ -33,10 +33,11 @@ from app.repositories.stamping.stamping_part_repository import StampingPartRepos
 from app.schemas.dto.stamping_die_fee_dto import StampingDieFeeCalcDTO
 from app.schemas.dto.stamping_upload_dto import FileInfo
 from app.schemas.vo.user_vo import UserVO
-from app.services.bom.bom_service import BomService
-from app.services.bom.upload.orchestrator import BomUploadOrchestrator
-from app.services.bom.upload.orchestrator.types import BomUploadExecuteArgs
-from app.services.bom.upload.persist.nodes import align_existing_trees
+from app.services.bom.bom.engineering import BomEngineeringService
+from app.services.bom.bom.node import BomNodeService
+from app.services.bom.bom.upload.orchestrator import BomUploadOrchestrator
+from app.services.bom.bom.upload.orchestrator.types import BomUploadExecuteArgs
+from app.services.bom.bom.upload.persist.nodes import align_existing_trees
 from app.services.stamping.die.die_number_assigner import assign_die_numbers
 from app.services.stamping.die.export_service import StampingDieExportService
 from app.services.stamping.die_fee.calc.orchestrator.prep import prepare_calc_run
@@ -229,27 +230,27 @@ def _stub_bom_upload(
         sheet_name="Sheet1",
     )
     monkeypatch.setattr(
-        "app.services.bom.upload.orchestrator.prep.parse_bom_excel",
+        "app.services.bom.bom.upload.orchestrator.prep.parse_bom_excel",
         lambda *_args, **_kwargs: result,
     )
     monkeypatch.setattr(
-        "app.services.bom.upload.gates.validate.validate_internal_number_uniqueness",
+        "app.services.bom.bom.upload.gates.validate.validate_internal_number_uniqueness",
         lambda *_args, **_kwargs: None,
     )
     monkeypatch.setattr(
-        "app.services.bom.upload.gates.validate.validate_subassembly_consistency",
+        "app.services.bom.bom.upload.gates.validate.validate_subassembly_consistency",
         lambda *_args, **_kwargs: None,
     )
     monkeypatch.setattr(
-        "app.services.bom.upload.orchestrator.pipeline.save_excel_file",
+        "app.services.bom.bom.upload.orchestrator.pipeline.save_excel_file",
         lambda *_args, **_kwargs: "bom/x.xlsx",
     )
     monkeypatch.setattr(
-        "app.services.bom.upload.orchestrator.pipeline.save_node_sketches",
+        "app.services.bom.bom.upload.orchestrator.pipeline.save_node_sketches",
         lambda *_args, **_kwargs: {},
     )
     monkeypatch.setattr(
-        "app.services.bom.upload.persist.nodes.register_existing",
+        "app.services.bom.bom.upload.persist.nodes.register_existing",
         lambda *_args, **_kwargs: None,
     )
 
@@ -550,7 +551,7 @@ def test_expire_l0_tree_cascades_children_and_rejects_l1(memory_db: Session) -> 
     snapshot = _snapshot(memory_db)
     l0 = _node(memory_db, snapshot, level=0, part_number="L0001AA", seq_no=1)
     child = _node(memory_db, snapshot, level=1, part_number="L1001AA", parent_id=l0.id)
-    service = BomService()
+    service = BomEngineeringService()
     service.expire_l0_tree(
         memory_db,
         root_id=l0.id,
@@ -596,10 +597,10 @@ def test_tree_as_of_hides_expired_l0(memory_db: Session) -> None:
         expiry_year=2025,
         expiry_month=12,
     )
-    tree = BomService().list_nodes_tree(memory_db, snapshot.id, year=2026, month=9)
+    tree = BomNodeService().list_nodes_tree(memory_db, snapshot.id, year=2026, month=9)
     numbers = {node.part_number for node in tree}
     assert numbers == {"LIVEAA"}
-    full = BomService().list_nodes_tree(
+    full = BomNodeService().list_nodes_tree(
         memory_db, snapshot.id, year=2026, month=9, include_expired=True
     )
     assert {node.part_number for node in full} == {"LIVEAA", "OLDAA"}

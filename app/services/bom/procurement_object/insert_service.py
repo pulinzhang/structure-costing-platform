@@ -11,11 +11,12 @@ from app.common.timezone import now
 from app.exceptions.base import BusinessException, NotFoundException
 from app.models.bom.node import BomNode, BomSnapshot
 from app.models.bom.procurement_object import BomProcurementObject, BomProcurementObjectList
-from app.repositories.bom.bom_repository import BomNodeRepository, BomSnapshotRepository
+from app.repositories.bom.bom.node import BomNodeRepository
+from app.repositories.bom.bom.snapshot import BomSnapshotRepository
 from app.repositories.bom.procurement_object_repository import BomProcurementObjectRepository
 from app.schemas.dto.bom_procurement_object_dto import BomProcurementObjectListWrite
 from app.schemas.vo.user_vo import UserVO
-from app.services.bom.bom_service import collect_subtree
+from app.services.bom.bom.trees import collect_subtree
 from app.services.bom.procurement_object.classify import (
     SECTION_OBJECT,
     ClassifiedRow,

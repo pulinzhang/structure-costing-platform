@@ -6,7 +6,7 @@ from dataclasses import dataclass, field
 
 from sqlalchemy.orm import Session
 
-from app.repositories.bom.bom_repository import BomSnapshotRepository
+from app.repositories.bom.bom.snapshot import BomSnapshotRepository
 from app.repositories.stamping.stamping_part_repository import StampingPartRepository
 from app.services.masterdata.location.location_service import LocationService
 from app.services.masterdata.vehicle_model import VehicleModelService

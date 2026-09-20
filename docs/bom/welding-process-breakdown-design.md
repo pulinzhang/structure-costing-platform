@@ -5,6 +5,7 @@
 > **API：** `/api/bom/welding-process-breakdown`。  
 > 切片：**`bom`**。从材料清单 `weld_info` 生成过程量；**不算钱**。  
 > **生失效不落拆解表**：取期 join source `bom_nodes`（`source_node_id`）。现网主表已有基地/项目/版本。  
+> **口径（写死）：** snapshot **只约束拆解生成**（SOP 那一包：`get_by_unique_key` / `version_source=snapshot`）。焊接费计算和拆解列表一样 **认树根，不认 SOP 头**。行上 `bom_version` 抄所属 L0；列表/批量/排序认树根字与投产槽 `seq_no`。  
 > 硬约束：分层见 [architecture.md](../architecture.md)。Parser 只能被 Service 调用。
 
 ---
@@ -134,7 +135,7 @@ bom_welding_process_breakdown_generate_logs  一次「开始拆解」一条（�
 
 | 分组 | 字段 | 说明 |
 |------|------|------|
-| 范围 | `location`, `vehicle_model`, `bom_version` | `location` / `vehicle_model` 从 source 节点抄。`bom_version` **抄 snapshot 头**（工程变更新树节点可以写变更字；UNIQUE 与引擎 L0Scope 仍按头 D/09）。不要抄节点变更字 |
+| 范围 | `location`, `vehicle_model`, `bom_version` | `location` / `vehicle_model` 从 source 节点抄。`bom_version` **抄所属 L0 树根字**（设变后是 `EC-*`，不是 snapshot 头）。生成页找包仍用 SOP 头；列表/UNIQUE 认树根 |
 | 时段 | （不落表） | `source_node_id` INNER JOIN `bom_nodes` 读四列 |
 | 溯源 | `snapshot_id`, `source_node_id`, `excel_row` | `source_node_id` 是取期钥匙；`snapshot_id` 不是身份 |
 | 零件 | `part_number`, `level`, `parent_*`, `supply_*` | L0 的 `supply_*` 为自身 |
@@ -166,7 +167,7 @@ start_generate
   → processing 日志当范围锁
   → 已审行存在则拒绝（须先批量反审核）
   → 删该范围未审核旧拆解
-  → 对每个有 weld_info 的节点：从该 `bom_nodes` 抄范围三列（`bom_version` 抄 snapshot 头，不抄生失效）→ Parser → 落主表+明细 → 紧固件校验
+  → 对每个有 weld_info 的节点：从该 `bom_nodes` 抄范围三列（`bom_version` 抄所属 L0 树根，不抄生失效、不抄 snapshot 头；树根空字报业务错误）→ Parser → 落主表+明细 → 紧固件校验
   → apply_rollup_flags
   → 日志终态
 ```
@@ -183,7 +184,7 @@ start_generate
 
 **工程变更写入后**才收窄本页「开始生成」：该 snapshot 一旦有已失效树根、**或** 存在生效月不是项目 SOP 开始月的树根 → 拒绝（即使没有已审）。与采购对象同一把钥匙 `snapshot_blocks_full_generate`。缺新树拆解走 [工程变更](../engineering-change/part-number-revision-design.md) 重传，本页不提供「只补该树」。工程变更写入前本页保持整包 generate。
 
-工程变更同一事务：按新旧 BOM 节点对照，把旧树 **已有拆解结果** 抄到新树再插一套（主表身份对齐新节点；`weld_info_raw` / 解析态 / 过程量等与 **全部明细行**——可多行——从旧结果照抄）。**禁止**按新节点 `weld_info` 重新自动拆（保留手工改量）。不删旧树拆解。无旧拆解可对的新节点不插。行上 `bom_version` 抄头。核价引擎缺拆解时 **仍调** 本页同进程 `generate`；若本钥匙拦住，由引擎映射为 `EC_GATE_ENGINE_BREAKDOWN`（工程变更 §4.6 门禁之 3）——不是「引擎从不调 generate」。工程变更上传是长任务，不走本页。
+工程变更同一事务：按新旧 BOM 节点对照，把旧树 **已有拆解结果** 抄到新树再插一套（主表身份对齐新节点；`weld_info_raw` / 解析态 / 过程量等与 **全部明细行**——可多行——从旧结果照抄）。**禁止**按新节点 `weld_info` 重新自动拆（保留手工改量）。不删旧树拆解。无旧拆解可对的新节点不插。行上 `bom_version` **抄新树根字**，不抄 snapshot 头。核价引擎缺拆解时 **仍调** 本页同进程 `generate`（找包仍用 SOP 头）；若本钥匙拦住，由引擎映射为 `EC_GATE_ENGINE_BREAKDOWN`（工程变更 §4.6 门禁之 3）——不是「引擎从不调 generate」。工程变更上传是长任务，不走本页。
 
 ---
 
@@ -249,7 +250,7 @@ Parser  仅 generate / 改量映射 经 Service 调用
 | [assembly-costing-design.md](../costing/assembly-costing-design.md) | 成品账读焊接费 **level=0** |
 | [l1-assembly-costing-design.md](../costing/l1-assembly-costing-design.md) | 应成本工艺量来自 L1 拆解行 |
 | [costing-engine-design.md](../costing/costing-engine-design.md) | 年度步骤可补算拆解；引擎调 generate，门禁在 `snapshot_blocks_full_generate` |
-| [part-number-revision-design.md](../engineering-change/part-number-revision-design.md) | 工程变更从旧树拆解结果抄到新树（主表+全部明细，禁止按焊信重拆）；`bom_version` 抄头 |
+| [part-number-revision-design.md](../engineering-change/part-number-revision-design.md) | 工程变更从旧树拆解结果抄到新树（主表+全部明细，禁止按焊信重拆）；行上 `bom_version` 抄树根 |
 | [bom-procurement-objects-design.md](bom-procurement-objects-design.md) | 认人不读拆解 |
 
 ---
@@ -266,3 +267,4 @@ Parser  仅 generate / 改量映射 经 Service 调用
 | 2026-09-17 | 收口：禁止整包 generate 的钥匙在 `snapshot_blocks_full_generate`；引擎同进程调 generate，拦住则映射引擎文案。Parser 不改。 |
 | 2026-09-18 | 工程变更改为从旧树拆解结果抄到新树（主表+全部明细，可多行）；禁止按新节点焊信重拆。 |
 | 2026-09-20 | 焊接费对拆解主表 `RESTRICT`；批量删除 / 重生成清旧行被引用则拒绝，文案见上。 |
+| 2026-09-20 | **口径写死：** snapshot 只约束拆解生成（SOP 那一包）；焊接费计算和列表一样认树根，不认 SOP 头。行上版本抄 L0；废止抄 snapshot 头。 |

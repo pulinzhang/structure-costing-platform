@@ -144,4 +144,4 @@ def test_batch_delete_does_not_require_bom_version() -> None:
     assert kwargs["year"] == 2026
     assert kwargs["location"] == "青岛"
     assert kwargs["vehicle_model"] == "T13J"
-    assert kwargs["bom_version"] is None
+    assert kwargs["source_node_ids"] is None

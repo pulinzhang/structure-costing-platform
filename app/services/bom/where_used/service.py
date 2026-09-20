@@ -10,7 +10,7 @@ from app.common.bom.manufacturing_category import short_part_number_digits
 from app.common.part_number import part_number_like_pattern
 from app.exceptions.base import BusinessException
 from app.models.bom import BomNode
-from app.repositories.bom.bom_repository import BomNodeRepository
+from app.repositories.bom.bom.node import BomNodeRepository
 from app.schemas.dto.bom_where_used_dto import BomWhereUsedQuery
 from app.schemas.vo.bom_where_used_vo import (
     BomWhereUsedNodeVO,

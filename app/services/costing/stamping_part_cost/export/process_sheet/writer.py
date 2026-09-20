@@ -15,7 +15,8 @@ from sqlalchemy.orm import Session
 
 from app.common.excel_workbook import resolve_worksheet
 from app.common.export_watermark import workbook_to_xlsx_bytes
-from app.repositories.bom.bom_repository import BomNodeRepository, BomSnapshotRepository
+from app.repositories.bom.bom.node import BomNodeRepository
+from app.repositories.bom.bom.snapshot import BomSnapshotRepository
 from app.repositories.costing.steel_price.steel_price_repository import SteelPriceRepository
 from app.repositories.stamping.stamping_process_fee_repository import (
     StampingProcessFeeRepository,

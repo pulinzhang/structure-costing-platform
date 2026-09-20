@@ -16,7 +16,7 @@ from app.repositories.engineering_change.effect_link_repository import (
     EngineeringChangeEffectLinkInsert,
 )
 from app.schemas.vo.user_vo import UserVO
-from app.services.bom.bom_service import BomService
+from app.services.bom.bom.engineering import BomEngineeringService
 from app.services.bom.procurement_object.service import BomProcurementObjectService
 
 
@@ -39,7 +39,7 @@ def persist_procurement(
     if change_order.change_type == CHANGE_TYPE_STOP or after_root_id is None:
         return ProcurementPersistResult(inserted_count=0)
 
-    bom = BomService()
+    bom = BomEngineeringService()
     node = bom.get_node_row(db, after_root_id)
     if node is None:
         return ProcurementPersistResult(

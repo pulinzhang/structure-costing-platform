@@ -9,7 +9,9 @@ import pytest
 from app.exceptions.base import BusinessException
 from app.parsers.bom.bom_parser import parse_bom_excel
 from app.parsers.bom.models import BomParsedNode
-from app.services.bom.internal_number_uniqueness import validate_internal_number_uniqueness
+from app.services.bom.bom.rules.internal_number_uniqueness import (
+    validate_internal_number_uniqueness,
+)
 
 _T13J_BOM = (
     Path(__file__).resolve().parents[2]

@@ -43,6 +43,11 @@ class BomWeldingProcessBreakdownRepository:
     def map_weld_info_by_ids(self, db: Session, node_ids: list[int]) -> dict[int, str]:
         return self._queries.map_weld_info_by_ids(db, node_ids)
 
+    def list_nodes_by_ids(
+        self, db: Session, node_ids: list[int]
+    ) -> list[BomWeldingProcessBreakdownNode]:
+        return self._queries.list_nodes_by_ids(db, node_ids)
+
     def get_line_by_id(self, db: Session, line_id: int) -> BomWeldingProcessBreakdownLine | None:
         return self._queries.get_line_by_id(db, line_id)
 
@@ -61,7 +66,7 @@ class BomWeldingProcessBreakdownRepository:
         locations: list[str] | None = None,
         customer_name: str | None = None,
         vehicle_model: str | None = None,
-        bom_version: str | None = None,
+        source_node_ids: set[int] | None = None,
         part_number: str | None = None,
         level: int | None = None,
         audit_status: str | None = None,
@@ -76,7 +81,7 @@ class BomWeldingProcessBreakdownRepository:
             locations=locations,
             customer_name=customer_name,
             vehicle_model=vehicle_model,
-            bom_version=bom_version,
+            source_node_ids=source_node_ids,
             part_number=part_number,
             level=level,
             audit_status=audit_status,
@@ -94,7 +99,7 @@ class BomWeldingProcessBreakdownRepository:
         locations: list[str] | None = None,
         customer_name: str | None = None,
         vehicle_model: str | None = None,
-        bom_version: str | None = None,
+        source_node_ids: set[int] | None = None,
         part_number: str | None = None,
         process_line_count_eq: int | None = None,
     ) -> list[BomWeldingProcessBreakdownNode]:
@@ -104,7 +109,7 @@ class BomWeldingProcessBreakdownRepository:
             locations=locations,
             customer_name=customer_name,
             vehicle_model=vehicle_model,
-            bom_version=bom_version,
+            source_node_ids=source_node_ids,
             part_number=part_number,
             process_line_count_eq=process_line_count_eq,
         )
@@ -115,10 +120,10 @@ class BomWeldingProcessBreakdownRepository:
         *,
         location: str,
         vehicle_model: str,
-        bom_version: str | None = None,
+        source_node_ids: set[int] | None = None,
     ) -> list[BomWeldingProcessBreakdownNode]:
         return self._queries.list_by_scope(
-            db, location=location, vehicle_model=vehicle_model, bom_version=bom_version
+            db, location=location, vehicle_model=vehicle_model, source_node_ids=source_node_ids
         )
 
     def exists_by_location_vehicle(
@@ -132,28 +137,21 @@ class BomWeldingProcessBreakdownRepository:
             db, location=location, vehicle_model=vehicle_model
         )
 
-    def list_overlapping_year(
-        self,
-        db: Session,
-        *,
-        location: str,
-        vehicle_model: str,
-        year: int,
-    ) -> list[BomWeldingProcessBreakdownNode]:
-        return self._queries.list_overlapping_year(
-            db, location=location, vehicle_model=vehicle_model, year=year
-        )
+    def exists_by_snapshot_id(self, db: Session, snapshot_id: int) -> bool:
+        return self._queries.exists_by_snapshot_id(db, snapshot_id)
 
-    def exists_by_bom_scope(
+    def count_by_snapshot_id(self, db: Session, snapshot_id: int) -> int:
+        return self._queries.count_by_snapshot_id(db, snapshot_id)
+
+    def count_by_snapshot_and_statuses(
         self,
         db: Session,
         *,
-        location: str,
-        vehicle_model: str,
-        bom_version: str,
-    ) -> bool:
-        return self._queries.exists_by_bom_scope(
-            db, location=location, vehicle_model=vehicle_model, bom_version=bom_version
+        snapshot_id: int,
+        statuses: list[str],
+    ) -> int:
+        return self._queries.count_by_snapshot_and_statuses(
+            db, snapshot_id=snapshot_id, statuses=statuses
         )
 
     def count_by_scope(
@@ -162,10 +160,10 @@ class BomWeldingProcessBreakdownRepository:
         *,
         location: str,
         vehicle_model: str,
-        bom_version: str,
+        source_node_ids: set[int],
     ) -> int:
         return self._queries.count_by_scope(
-            db, location=location, vehicle_model=vehicle_model, bom_version=bom_version
+            db, location=location, vehicle_model=vehicle_model, source_node_ids=source_node_ids
         )
 
     def count_by_filters(
@@ -176,7 +174,7 @@ class BomWeldingProcessBreakdownRepository:
         locations: list[str] | None = None,
         customer_name: str | None = None,
         vehicle_model: str | None = None,
-        bom_version: str | None = None,
+        source_node_ids: set[int] | None = None,
         part_number: str | None = None,
         level: int | None = None,
         audit_status: str | None = None,
@@ -189,7 +187,7 @@ class BomWeldingProcessBreakdownRepository:
             locations=locations,
             customer_name=customer_name,
             vehicle_model=vehicle_model,
-            bom_version=bom_version,
+            source_node_ids=source_node_ids,
             part_number=part_number,
             level=level,
             audit_status=audit_status,
@@ -205,7 +203,7 @@ class BomWeldingProcessBreakdownRepository:
         locations: list[str] | None = None,
         customer_name: str | None = None,
         vehicle_model: str | None = None,
-        bom_version: str | None = None,
+        source_node_ids: set[int] | None = None,
         part_number: str | None = None,
         level: int | None = None,
         audit_status: str | None = None,
@@ -218,7 +216,7 @@ class BomWeldingProcessBreakdownRepository:
             locations=locations,
             customer_name=customer_name,
             vehicle_model=vehicle_model,
-            bom_version=bom_version,
+            source_node_ids=source_node_ids,
             part_number=part_number,
             level=level,
             audit_status=audit_status,
@@ -234,7 +232,7 @@ class BomWeldingProcessBreakdownRepository:
         locations: list[str] | None = None,
         customer_name: str | None = None,
         vehicle_model: str | None = None,
-        bom_version: str | None = None,
+        source_node_ids: set[int] | None = None,
         part_number: str | None = None,
         level: int | None = None,
         audit_status: str | None = None,
@@ -247,7 +245,7 @@ class BomWeldingProcessBreakdownRepository:
             locations=locations,
             customer_name=customer_name,
             vehicle_model=vehicle_model,
-            bom_version=bom_version,
+            source_node_ids=source_node_ids,
             part_number=part_number,
             level=level,
             audit_status=audit_status,
@@ -261,31 +259,19 @@ class BomWeldingProcessBreakdownRepository:
         *,
         location: str,
         vehicle_model: str,
-        bom_version: str,
+        source_node_ids: set[int],
         statuses: list[str],
     ) -> int:
         return self._queries.count_by_scope_and_statuses(
             db,
             location=location,
             vehicle_model=vehicle_model,
-            bom_version=bom_version,
+            source_node_ids=source_node_ids,
             statuses=statuses,
         )
 
     def get_distinct_locations(self, db: Session) -> list[str]:
         return self._queries.get_distinct_locations(db)
-
-    def get_distinct_bom_versions(
-        self,
-        db: Session,
-        *,
-        location: str | None = None,
-        locations: list[str] | None = None,
-        vehicle_model: str | None = None,
-    ) -> list[str]:
-        return self._queries.get_distinct_bom_versions(
-            db, location=location, locations=locations, vehicle_model=vehicle_model
-        )
 
     def get_distinct_customer_names(self, db: Session) -> list[str]:
         return self._queries.get_distinct_customer_names(db)
@@ -320,16 +306,19 @@ class BomWeldingProcessBreakdownRepository:
     ) -> BomWeldingProcessBreakdownLine | None:
         return self._writes.update_line(db, line_id, update_data)
 
+    def delete_unaudited_by_snapshot_id(self, db: Session, snapshot_id: int) -> int:
+        return self._writes.delete_unaudited_by_snapshot_id(db, snapshot_id)
+
     def delete_unaudited_by_scope(
         self,
         db: Session,
         *,
         location: str,
         vehicle_model: str,
-        bom_version: str,
+        source_node_ids: set[int],
     ) -> int:
         return self._writes.delete_unaudited_by_scope(
-            db, location=location, vehicle_model=vehicle_model, bom_version=bom_version
+            db, location=location, vehicle_model=vehicle_model, source_node_ids=source_node_ids
         )
 
     def delete_node_by_id(self, db: Session, node_id: int) -> bool:
@@ -341,7 +330,7 @@ class BomWeldingProcessBreakdownRepository:
         *,
         location: str,
         vehicle_model: str,
-        bom_version: str,
+        source_node_ids: set[int],
         audited_by: str,
         audited_at: datetime,
         audit_remark: str | None,
@@ -351,7 +340,7 @@ class BomWeldingProcessBreakdownRepository:
             db,
             location=location,
             vehicle_model=vehicle_model,
-            bom_version=bom_version,
+            source_node_ids=source_node_ids,
             audited_by=audited_by,
             audited_at=audited_at,
             audit_remark=audit_remark,
@@ -364,7 +353,7 @@ class BomWeldingProcessBreakdownRepository:
         *,
         location: str,
         vehicle_model: str,
-        bom_version: str,
+        source_node_ids: set[int],
         reverse_audited_by: str,
         reverse_audited_at: datetime,
         reverse_audit_remark: str,
@@ -374,7 +363,7 @@ class BomWeldingProcessBreakdownRepository:
             db,
             location=location,
             vehicle_model=vehicle_model,
-            bom_version=bom_version,
+            source_node_ids=source_node_ids,
             reverse_audited_by=reverse_audited_by,
             reverse_audited_at=reverse_audited_at,
             reverse_audit_remark=reverse_audit_remark,

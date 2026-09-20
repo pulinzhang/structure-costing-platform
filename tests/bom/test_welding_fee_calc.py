@@ -19,10 +19,14 @@ from app.services.bom.welding_fee.calc.orchestrator.progress import ProgressNoti
 
 @pytest.fixture(autouse=True)
 def _identity_overlaps_year() -> None:
-    with patch(
-        "app.services.bom.welding_fee.calc.orchestrator.prep.VehicleModelService"
-    ) as vehicle_cls:
+    with (
+        patch(
+            "app.services.bom.welding_fee.calc.orchestrator.prep.VehicleModelService"
+        ) as vehicle_cls,
+        patch("app.services.bom.welding_fee.calc.orchestrator.prep.BomPeriodService") as bom_cls,
+    ):
         vehicle_cls.return_value.require_overlaps_year.return_value = ("青岛", "T28")
+        bom_cls.return_value.node_ids_overlapping_year.return_value = {1, 2, 3}
         yield
 
 
@@ -46,7 +50,7 @@ def _deps(nodes: list[SimpleNamespace], *, exists: bool = True) -> MagicMock:
         SimpleNamespace(item_name="点焊", unit_price=Decimal("1"), unit="点")
     ]
     deps.breakdown_repo.exists_by_location_vehicle.return_value = exists
-    deps.breakdown_repo.list_overlapping_year.return_value = nodes
+    deps.breakdown_repo.list_by_source_node_ids.return_value = nodes
     return deps
 
 

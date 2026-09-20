@@ -18,7 +18,7 @@ from app.models.stamping.process_fee import StampingProcessFee
 from app.models.yishiyiyi.scrap_price import StampingScrapPrice
 from app.models.yishiyiyi.steel_base_price import SteelBasePrice
 from app.repositories.bom.annual_part_price_repository import BomAnnualPartPriceRepository
-from app.repositories.bom.bom_repository import BomNodeRepository
+from app.repositories.bom.bom.node import BomNodeRepository
 from app.repositories.bom.packaging_transport_fee_repository import (
     BomPackagingTransportFeeRepository,
 )

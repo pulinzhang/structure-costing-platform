@@ -4,7 +4,7 @@
 职责边界：在同一业务 Session 内按序 flush——按变更单行种树/失效 → 采购对象 → 拆解（从旧树结果抄）→
 工艺按号增行一次 → 布点按变更单从旧号逻辑建立 → 检具费/模具费/包装/年度价有则抄到新号，组装 effect_links（change_order_id 暂为变更单行下标）。
 禁止：变更单落库与上传头标成功（persist）；禁止本文件内 commit。
-依赖：树算法在 BomService；工艺/布点/检具/模具费写入在 stamping 上游 Service；包装/年度价写入在 bom 上游 Service。
+依赖：树算法在 BomEngineeringService；工艺/布点/检具/模具费写入在 stamping 上游 Service；包装/年度价写入在 bom 上游 Service。
 """
 
 from __future__ import annotations

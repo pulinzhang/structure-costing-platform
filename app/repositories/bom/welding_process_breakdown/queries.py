@@ -2,17 +2,16 @@
 
 from __future__ import annotations
 
-from sqlalchemy import and_, case, func
+from sqlalchemy import case, false, func
 from sqlalchemy.orm import Query, Session, joinedload
-from sqlalchemy.sql.elements import ColumnElement
 
 from app.common.audit import AUDIT_APPROVED, AUDIT_PENDING
+from app.common.bom.node_order import bom_node_sql_order
 from app.models.bom import (
     BomNode,
     BomWeldingProcessBreakdownLine,
     BomWeldingProcessBreakdownNode,
 )
-from app.repositories.bom.period_trees import node_ids_in_year_overlap_trees
 from app.repositories.bom.welding_process_breakdown.types import WeldingBreakdownFilterSummary
 
 
@@ -44,6 +43,20 @@ class WeldingBreakdownQueries:
             if (row.weld_info_raw or "").strip()
         }
 
+    def list_nodes_by_ids(
+        self,
+        db: Session,
+        node_ids: list[int],
+    ) -> list[BomWeldingProcessBreakdownNode]:
+        ids = sorted({int(node_id) for node_id in node_ids if node_id})
+        if not ids:
+            return []
+        return (
+            db.query(BomWeldingProcessBreakdownNode)
+            .filter(BomWeldingProcessBreakdownNode.id.in_(ids))
+            .all()
+        )
+
     def get_line_by_id(self, db: Session, line_id: int) -> BomWeldingProcessBreakdownLine | None:
         return (
             db.query(BomWeldingProcessBreakdownLine)
@@ -63,24 +76,14 @@ class WeldingBreakdownQueries:
         return (
             db.query(BomWeldingProcessBreakdownNode)
             .options(joinedload(BomWeldingProcessBreakdownNode.lines))
+            .outerjoin(
+                BomNode,
+                BomWeldingProcessBreakdownNode.source_node_id == BomNode.id,
+            )
             .filter(BomWeldingProcessBreakdownNode.source_node_id.in_(ids))
+            .order_by(*bom_node_sql_order(BomNode))
             .all()
         )
-
-    def _scope_filter(
-        self,
-        *,
-        location: str,
-        vehicle_model: str,
-        bom_version: str | None = None,
-    ) -> list[ColumnElement[bool]]:
-        clauses: list[ColumnElement[bool]] = [
-            BomWeldingProcessBreakdownNode.location == location,
-            BomWeldingProcessBreakdownNode.vehicle_model == vehicle_model,
-        ]
-        if bom_version:
-            clauses.append(BomWeldingProcessBreakdownNode.bom_version == bom_version)
-        return clauses
 
     def _apply_list_filters(
         self,
@@ -90,7 +93,7 @@ class WeldingBreakdownQueries:
         locations: list[str] | None = None,
         customer_name: str | None = None,
         vehicle_model: str | None = None,
-        bom_version: str | None = None,
+        source_node_ids: set[int] | None = None,
         part_number: str | None = None,
         level: int | None = None,
         audit_status: str | None = None,
@@ -105,8 +108,11 @@ class WeldingBreakdownQueries:
             q = q.filter(BomWeldingProcessBreakdownNode.customer_name == customer_name)
         if vehicle_model:
             q = q.filter(BomWeldingProcessBreakdownNode.vehicle_model == vehicle_model)
-        if bom_version:
-            q = q.filter(BomWeldingProcessBreakdownNode.bom_version == bom_version)
+        if source_node_ids is not None:
+            if not source_node_ids:
+                q = q.filter(false())
+            else:
+                q = q.filter(BomWeldingProcessBreakdownNode.source_node_id.in_(source_node_ids))
         if part_number:
             q = q.filter(BomWeldingProcessBreakdownNode.part_number.like(f"%{part_number}%"))
         if level is not None:
@@ -119,6 +125,22 @@ class WeldingBreakdownQueries:
             q = q.filter(BomWeldingProcessBreakdownNode.process_line_count == process_line_count_eq)
         return q
 
+    @staticmethod
+    def _count_distinct(q: Query[BomWeldingProcessBreakdownNode]) -> int:
+        return int(
+            q.with_entities(func.count(func.distinct(BomWeldingProcessBreakdownNode.id))).scalar()
+            or 0
+        )
+
+    @staticmethod
+    def _order_by_source_seq(
+        q: Query[BomWeldingProcessBreakdownNode],
+    ) -> Query[BomWeldingProcessBreakdownNode]:
+        return q.outerjoin(
+            BomNode,
+            BomWeldingProcessBreakdownNode.source_node_id == BomNode.id,
+        ).order_by(*bom_node_sql_order(BomNode))
+
     def _build_list_query(
         self,
         db: Session,
@@ -127,7 +149,7 @@ class WeldingBreakdownQueries:
         locations: list[str] | None = None,
         customer_name: str | None = None,
         vehicle_model: str | None = None,
-        bom_version: str | None = None,
+        source_node_ids: set[int] | None = None,
         part_number: str | None = None,
         level: int | None = None,
         audit_status: str | None = None,
@@ -145,7 +167,7 @@ class WeldingBreakdownQueries:
             locations=locations,
             customer_name=customer_name,
             vehicle_model=vehicle_model,
-            bom_version=bom_version,
+            source_node_ids=source_node_ids,
             part_number=part_number,
             level=level,
             audit_status=audit_status,
@@ -162,7 +184,7 @@ class WeldingBreakdownQueries:
         locations: list[str] | None = None,
         customer_name: str | None = None,
         vehicle_model: str | None = None,
-        bom_version: str | None = None,
+        source_node_ids: set[int] | None = None,
         part_number: str | None = None,
         level: int | None = None,
         audit_status: str | None = None,
@@ -177,7 +199,7 @@ class WeldingBreakdownQueries:
             locations=locations,
             customer_name=customer_name,
             vehicle_model=vehicle_model,
-            bom_version=bom_version,
+            source_node_ids=source_node_ids,
             part_number=part_number,
             level=level,
             audit_status=audit_status,
@@ -185,18 +207,8 @@ class WeldingBreakdownQueries:
             process_line_count_eq=process_line_count_eq,
             load_lines=False,
         )
-        total = q.count()
-        rows = (
-            q.order_by(
-                BomWeldingProcessBreakdownNode.level,
-                BomWeldingProcessBreakdownNode.id,
-                BomWeldingProcessBreakdownNode.supply_part_number,
-                BomWeldingProcessBreakdownNode.part_number,
-            )
-            .offset(skip)
-            .limit(limit)
-            .all()
-        )
+        total = self._count_distinct(q)
+        rows = self._order_by_source_seq(q).offset(skip).limit(limit).all()
         return rows, total
 
     def list_l0_for_export(
@@ -207,7 +219,7 @@ class WeldingBreakdownQueries:
         locations: list[str] | None = None,
         customer_name: str | None = None,
         vehicle_model: str | None = None,
-        bom_version: str | None = None,
+        source_node_ids: set[int] | None = None,
         part_number: str | None = None,
         process_line_count_eq: int | None = None,
     ) -> list[BomWeldingProcessBreakdownNode]:
@@ -221,19 +233,13 @@ class WeldingBreakdownQueries:
             locations=locations,
             customer_name=customer_name,
             vehicle_model=vehicle_model,
-            bom_version=bom_version,
+            source_node_ids=source_node_ids,
             part_number=part_number,
             level=0,
             process_line_count_eq=process_line_count_eq,
             load_lines=True,
         )
-        return q.order_by(
-            BomWeldingProcessBreakdownNode.location,
-            BomWeldingProcessBreakdownNode.vehicle_model,
-            BomWeldingProcessBreakdownNode.bom_version,
-            BomWeldingProcessBreakdownNode.part_number,
-            BomWeldingProcessBreakdownNode.id,
-        ).all()
+        return self._order_by_source_seq(q).all()
 
     def list_by_scope(
         self,
@@ -241,27 +247,16 @@ class WeldingBreakdownQueries:
         *,
         location: str,
         vehicle_model: str,
-        bom_version: str | None = None,
+        source_node_ids: set[int] | None = None,
     ) -> list[BomWeldingProcessBreakdownNode]:
-        return (
-            db.query(BomWeldingProcessBreakdownNode)
-            .options(joinedload(BomWeldingProcessBreakdownNode.lines))
-            .filter(
-                and_(
-                    *self._scope_filter(
-                        location=location,
-                        vehicle_model=vehicle_model,
-                        bom_version=bom_version,
-                    )
-                )
-            )
-            .order_by(
-                BomWeldingProcessBreakdownNode.level,
-                BomWeldingProcessBreakdownNode.part_number,
-                BomWeldingProcessBreakdownNode.id,
-            )
-            .all()
+        q = self._build_list_query(
+            db,
+            location=location,
+            vehicle_model=vehicle_model,
+            source_node_ids=source_node_ids,
+            load_lines=True,
         )
+        return self._order_by_source_seq(q).all()
 
     def exists_by_location_vehicle(
         self,
@@ -280,79 +275,35 @@ class WeldingBreakdownQueries:
             is not None
         )
 
-    def list_overlapping_year(
-        self,
-        db: Session,
-        *,
-        location: str,
-        vehicle_model: str,
-        year: int,
-    ) -> list[BomWeldingProcessBreakdownNode]:
-        """该基地+项目全部拆解行；年交集只问 source 所在树的 L0 树根。"""
-        rows = (
-            db.query(BomWeldingProcessBreakdownNode)
-            .options(joinedload(BomWeldingProcessBreakdownNode.lines))
-            .join(
-                BomNode,
-                BomWeldingProcessBreakdownNode.source_node_id == BomNode.id,
-            )
-            .filter(
-                BomWeldingProcessBreakdownNode.location == location,
-                BomWeldingProcessBreakdownNode.vehicle_model == vehicle_model,
-            )
-            .order_by(
-                BomWeldingProcessBreakdownNode.level,
-                BomWeldingProcessBreakdownNode.part_number,
-                BomWeldingProcessBreakdownNode.id,
-            )
-            .all()
-        )
-        if not rows:
-            return []
-
-        source_ids = {int(row.source_node_id) for row in rows if row.source_node_id is not None}
-        sources = db.query(BomNode).filter(BomNode.id.in_(source_ids)).all() if source_ids else []
-        snapshot_ids = {int(node.snapshot_id) for node in sources if node.snapshot_id is not None}
-        forest = (
-            db.query(BomNode).filter(BomNode.snapshot_id.in_(snapshot_ids)).all()
-            if snapshot_ids
-            else []
-        )
-        # 按 snapshot 分组，与 list_year_overlap_trees 同一口径
-        by_snapshot: dict[int, list[BomNode]] = {}
-        for node in forest:
-            by_snapshot.setdefault(int(node.snapshot_id), []).append(node)
-        allowed_ids: set[int] = set()
-        for nodes in by_snapshot.values():
-            allowed_ids |= node_ids_in_year_overlap_trees(nodes, year=year)
-
-        return [
-            row
-            for row in rows
-            if row.source_node_id is not None and int(row.source_node_id) in allowed_ids
-        ]
-
-    def exists_by_bom_scope(
-        self,
-        db: Session,
-        *,
-        location: str,
-        vehicle_model: str,
-        bom_version: str,
-    ) -> bool:
+    def exists_by_snapshot_id(self, db: Session, snapshot_id: int) -> bool:
         return (
             db.query(BomWeldingProcessBreakdownNode.id)
-            .filter(
-                and_(
-                    *self._scope_filter(
-                        location=location,
-                        vehicle_model=vehicle_model,
-                        bom_version=bom_version,
-                    )
-                )
-            )
+            .filter(BomWeldingProcessBreakdownNode.snapshot_id == snapshot_id)
             .first()
             is not None
+        )
+
+    def count_by_snapshot_id(self, db: Session, snapshot_id: int) -> int:
+        return int(
+            db.query(BomWeldingProcessBreakdownNode.id)
+            .filter(BomWeldingProcessBreakdownNode.snapshot_id == snapshot_id)
+            .count()
+        )
+
+    def count_by_snapshot_and_statuses(
+        self,
+        db: Session,
+        *,
+        snapshot_id: int,
+        statuses: list[str],
+    ) -> int:
+        return int(
+            db.query(BomWeldingProcessBreakdownNode.id)
+            .filter(
+                BomWeldingProcessBreakdownNode.snapshot_id == snapshot_id,
+                BomWeldingProcessBreakdownNode.audit_status.in_(statuses),
+            )
+            .count()
         )
 
     def count_by_scope(
@@ -361,20 +312,15 @@ class WeldingBreakdownQueries:
         *,
         location: str,
         vehicle_model: str,
-        bom_version: str,
+        source_node_ids: set[int],
     ) -> int:
-        return (
-            db.query(BomWeldingProcessBreakdownNode)
-            .filter(
-                and_(
-                    *self._scope_filter(
-                        location=location,
-                        vehicle_model=vehicle_model,
-                        bom_version=bom_version,
-                    )
-                )
+        return self._count_distinct(
+            self._build_list_query(
+                db,
+                location=location,
+                vehicle_model=vehicle_model,
+                source_node_ids=source_node_ids,
             )
-            .count()
         )
 
     def count_by_filters(
@@ -385,7 +331,7 @@ class WeldingBreakdownQueries:
         locations: list[str] | None = None,
         customer_name: str | None = None,
         vehicle_model: str | None = None,
-        bom_version: str | None = None,
+        source_node_ids: set[int] | None = None,
         part_number: str | None = None,
         level: int | None = None,
         audit_status: str | None = None,
@@ -393,20 +339,22 @@ class WeldingBreakdownQueries:
         process_line_count_eq: int | None = None,
     ) -> int:
         """按明确过滤条件计数主表（业务口径由 Service 决定传参）。"""
-        return self._build_list_query(
-            db,
-            location=location,
-            locations=locations,
-            customer_name=customer_name,
-            vehicle_model=vehicle_model,
-            bom_version=bom_version,
-            part_number=part_number,
-            level=level,
-            audit_status=audit_status,
-            parse_status=parse_status,
-            process_line_count_eq=process_line_count_eq,
-            load_lines=False,
-        ).count()
+        return self._count_distinct(
+            self._build_list_query(
+                db,
+                location=location,
+                locations=locations,
+                customer_name=customer_name,
+                vehicle_model=vehicle_model,
+                source_node_ids=source_node_ids,
+                part_number=part_number,
+                level=level,
+                audit_status=audit_status,
+                parse_status=parse_status,
+                process_line_count_eq=process_line_count_eq,
+                load_lines=False,
+            )
+        )
 
     def sum_process_line_count_by_filters(
         self,
@@ -416,7 +364,7 @@ class WeldingBreakdownQueries:
         locations: list[str] | None = None,
         customer_name: str | None = None,
         vehicle_model: str | None = None,
-        bom_version: str | None = None,
+        source_node_ids: set[int] | None = None,
         part_number: str | None = None,
         level: int | None = None,
         audit_status: str | None = None,
@@ -430,7 +378,7 @@ class WeldingBreakdownQueries:
             locations=locations,
             customer_name=customer_name,
             vehicle_model=vehicle_model,
-            bom_version=bom_version,
+            source_node_ids=source_node_ids,
             part_number=part_number,
             level=level,
             audit_status=audit_status,
@@ -451,7 +399,7 @@ class WeldingBreakdownQueries:
         locations: list[str] | None = None,
         customer_name: str | None = None,
         vehicle_model: str | None = None,
-        bom_version: str | None = None,
+        source_node_ids: set[int] | None = None,
         part_number: str | None = None,
         level: int | None = None,
         audit_status: str | None = None,
@@ -464,7 +412,7 @@ class WeldingBreakdownQueries:
             locations=locations,
             customer_name=customer_name,
             vehicle_model=vehicle_model,
-            bom_version=bom_version,
+            source_node_ids=source_node_ids,
             part_number=part_number,
             level=level,
             audit_status=audit_status,
@@ -472,7 +420,7 @@ class WeldingBreakdownQueries:
             process_line_count_eq=process_line_count_eq,
         )
         row = q.with_entities(
-            func.count(BomWeldingProcessBreakdownNode.id).label("total_count"),
+            func.count(func.distinct(BomWeldingProcessBreakdownNode.id)).label("total_count"),
             func.sum(
                 case(
                     (BomWeldingProcessBreakdownNode.audit_status == AUDIT_PENDING, 1),
@@ -506,23 +454,39 @@ class WeldingBreakdownQueries:
         *,
         location: str,
         vehicle_model: str,
-        bom_version: str,
+        source_node_ids: set[int],
         statuses: list[str],
     ) -> int:
-        return (
-            db.query(BomWeldingProcessBreakdownNode)
-            .filter(
-                and_(
-                    *self._scope_filter(
-                        location=location,
-                        vehicle_model=vehicle_model,
-                        bom_version=bom_version,
-                    )
-                ),
-                BomWeldingProcessBreakdownNode.audit_status.in_(statuses),
-            )
-            .count()
+        q = self._build_list_query(
+            db,
+            location=location,
+            vehicle_model=vehicle_model,
+            source_node_ids=source_node_ids,
+        ).filter(BomWeldingProcessBreakdownNode.audit_status.in_(statuses))
+        return self._count_distinct(q)
+
+    def list_ids_matching(
+        self,
+        db: Session,
+        *,
+        location: str,
+        vehicle_model: str,
+        source_node_ids: set[int],
+        audit_statuses: list[str] | None = None,
+        exclude_audit_status: str | None = None,
+    ) -> list[int]:
+        q = self._build_list_query(
+            db,
+            location=location,
+            vehicle_model=vehicle_model,
+            source_node_ids=source_node_ids,
         )
+        if audit_statuses:
+            q = q.filter(BomWeldingProcessBreakdownNode.audit_status.in_(audit_statuses))
+        if exclude_audit_status:
+            q = q.filter(BomWeldingProcessBreakdownNode.audit_status != exclude_audit_status)
+        rows = q.with_entities(BomWeldingProcessBreakdownNode.id).distinct().all()
+        return [int(row[0]) for row in rows]
 
     def get_distinct_locations(self, db: Session) -> list[str]:
         rows = (
@@ -531,24 +495,6 @@ class WeldingBreakdownQueries:
             .order_by(BomWeldingProcessBreakdownNode.location)
             .all()
         )
-        return [r[0] for r in rows if r[0]]
-
-    def get_distinct_bom_versions(
-        self,
-        db: Session,
-        *,
-        location: str | None = None,
-        locations: list[str] | None = None,
-        vehicle_model: str | None = None,
-    ) -> list[str]:
-        q = db.query(BomWeldingProcessBreakdownNode.bom_version)
-        if locations is not None:
-            q = q.filter(BomWeldingProcessBreakdownNode.location.in_(locations))
-        elif location:
-            q = q.filter(BomWeldingProcessBreakdownNode.location == location)
-        if vehicle_model:
-            q = q.filter(BomWeldingProcessBreakdownNode.vehicle_model == vehicle_model)
-        rows = q.distinct().order_by(BomWeldingProcessBreakdownNode.bom_version).all()
         return [r[0] for r in rows if r[0]]
 
     def get_distinct_customer_names(self, db: Session) -> list[str]:

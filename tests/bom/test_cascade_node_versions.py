@@ -11,7 +11,7 @@ from sqlalchemy.pool import StaticPool
 
 from app.database import Base
 from app.models.bom import BomNode, BomSnapshot
-from app.repositories.bom.bom_repository import BomSnapshotRepository
+from app.repositories.bom.bom.snapshot import BomSnapshotRepository
 
 LOCATION = "芜湖"
 VEHICLE_MODEL = "T13J"

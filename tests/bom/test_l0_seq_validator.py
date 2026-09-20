@@ -4,13 +4,13 @@ from decimal import Decimal
 
 from app.exceptions.base import BusinessException
 from app.parsers.bom.models import BomParsedNode
-from app.services.bom.l0_seq_validator import (
+from app.services.bom.bom.rules.l0_seq_validator import (
     L0SeqOccurrence,
     format_l0_seq_issues,
     inspect_l0_seq_nos,
     l0_seq_occurrences,
 )
-from app.services.bom.upload.gates.validate import require_consecutive_l0_seq_nos
+from app.services.bom.bom.upload.gates.validate import require_consecutive_l0_seq_nos
 
 
 def _row(part_number: str, seq_no: int, excel_row: int | None = None) -> L0SeqOccurrence:
