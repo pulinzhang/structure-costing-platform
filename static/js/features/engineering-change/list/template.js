@@ -95,39 +95,41 @@ export function engineeringChangeListTemplate() {
                     </div>
                 </div>
                 <div class="overflow-x-auto brabus-bg-grid">
-                    <table class="w-full table-fixed bg-transparent border-collapse" style="min-width: 1280px;">
+                    <table class="w-full table-fixed bg-transparent border-separate border-spacing-0" style="min-width: 1420px;">
                         <colgroup>
                             <col style="width: 8px">
                             <col style="width: 72px">
                             <col style="width: 120px">
                             <col style="width: 148px">
+                            <col style="width: 52px">
                             <col style="width: 120px">
                             <col style="width: 88px">
                             <col style="width: 64px">
                             <col style="width: 148px">
                             <col style="width: 120px">
-                            <col style="width: 52px">
-                            <col style="width: 72px">
                             <col style="width: 140px">
                             <col style="width: 80px">
+                            <col style="width: 132px">
+                            <col style="width: 72px">
                             <col style="width: 80px">
                         </colgroup>
                         <thead>
                             <tr class="border-b border-[#17171C] bg-[#0B0B0D]/95">
                                 <th class="p-0"></th>
-                                <th class="px-2 py-2 text-center text-[9px] font-medium tracking-[0.06em] text-[#555555]">状态</th>
+                                <th class="px-2 py-2 text-left text-[9px] font-medium tracking-[0.08em] text-[#555555]">基地</th>
                                 <th class="px-2 py-2 text-left text-[9px] font-medium tracking-[0.08em] text-[#555555]">项目 / 生效</th>
                                 <th class="px-2 py-2 text-left text-[9px] font-medium tracking-[0.08em] text-[#555555]">变更前 / 后总成</th>
+                                <th class="px-2 py-2 text-center text-[9px] font-medium tracking-[0.06em] text-[#555555]">序号</th>
                                 <th class="px-2 py-2 text-left text-[9px] font-medium tracking-[0.08em] text-[#555555]">总成名称</th>
                                 <th class="px-2 py-2 text-left text-[9px] font-medium tracking-[0.08em] text-[#555555]">变更类型</th>
                                 <th class="px-2 py-2 text-center text-[9px] font-medium tracking-[0.06em] text-[#555555]">层级</th>
                                 <th class="px-2 py-2 text-left text-[9px] font-medium tracking-[0.08em] text-[#555555]">变更前 / 后零件</th>
                                 <th class="px-2 py-2 text-left text-[9px] font-medium tracking-[0.08em] text-[#555555]">零件名称</th>
-                                <th class="px-2 py-2 text-center text-[9px] font-medium tracking-[0.06em] text-[#555555]">序号</th>
-                                <th class="px-2 py-2 text-left text-[9px] font-medium tracking-[0.08em] text-[#555555]">基地</th>
-                                <th class="px-2 py-2 text-left text-[9px] font-medium tracking-[0.08em] text-[#555555]">源文件</th>
+                                <th class="px-2 py-2 text-left text-[9px] font-medium tracking-[0.08em] text-[#3a3a3a]">源文件</th>
                                 <th class="px-2 py-2 text-left text-[9px] font-medium tracking-[0.08em] text-[#555555]">上传人</th>
-                                <th class="px-1 py-2 text-center text-[9px] font-medium tracking-[0.06em] text-[#555555]">操作</th>
+                                <th class="px-2 py-2 text-left text-[9px] font-medium tracking-[0.08em] text-[#555555]">上传时间</th>
+                                <th class="px-2 py-2 text-center text-[9px] font-medium tracking-[0.06em] text-[#555555]">状态</th>
+                                <th class="px-1 py-2 text-center text-[9px] font-medium tracking-[0.06em] text-[#555555] sticky right-0 z-[3] bg-[#0B0B0D] shadow-[-8px_0_12px_rgba(0,0,0,0.55)]">操作</th>
                             </tr>
                         </thead>
                         <tbody id="ecListTableBody" class="bg-transparent"></tbody>
@@ -170,6 +172,13 @@ function statusBadge(status) {
     return `<span class="text-[9px] ${item.cls}">${esc(item.text)}</span>`;
 }
 
+function formatUploadTime(value) {
+    if (!value) return '—';
+    const text = String(value);
+    if (text.length >= 19) return text.slice(0, 19).replace('T', ' ');
+    return text;
+}
+
 function stackedPair(afterValue, beforeValue) {
     const afterText = afterValue || '';
     const beforeText = beforeValue || '';
@@ -210,24 +219,25 @@ export function renderEcListRows(records, { canDelete }) {
                 <td class="p-0 relative">
                     <div class="absolute left-0 top-0 bottom-0 w-[2px] bg-[#FF1E27] opacity-0 group-hover:opacity-70 transition-opacity"></div>
                 </td>
-                <td class="px-2 py-2 text-center">${statusBadge(row.status)}</td>
+                <td class="px-2 py-2 text-[#8E8E93] truncate">${esc(row.location || '—')}</td>
                 <td class="px-2 py-2 overflow-hidden">
                     <div class="font-semibold text-[#F0F0F2] truncate" title="${esc(project)}">${esc(project)}</div>
                     <div class="text-[9px] text-[#555555] mt-0.5 tabular-nums">${periodText(row)}</div>
                 </td>
                 <td class="px-2 py-2 overflow-hidden">${stackedPair(row.after_assembly_part_number, row.before_assembly_part_number)}</td>
+                <td class="px-2 py-2 text-center text-[#8E8E93]">${row.seq_no != null ? esc(row.seq_no) : '—'}</td>
                 <td class="px-2 py-2 text-[#8E8E93] truncate" title="${esc(row.assembly_name || '')}">${esc(row.assembly_name || '—')}</td>
                 <td class="px-2 py-2 text-[#8E8E93] truncate">${esc(row.change_type || '—')}</td>
                 <td class="px-2 py-2 text-center text-[#8E8E93]">${esc(row.part_level || '—')}</td>
                 <td class="px-2 py-2 overflow-hidden">${stackedPair(row.after_part_number, row.before_part_number)}</td>
                 <td class="px-2 py-2 text-[#8E8E93] truncate" title="${esc(row.part_name || '')}">${esc(row.part_name || '—')}</td>
-                <td class="px-2 py-2 text-center text-[#8E8E93]">${row.seq_no != null ? esc(row.seq_no) : '—'}</td>
-                <td class="px-2 py-2 text-[#8E8E93] truncate">${esc(row.location || '—')}</td>
                 <td class="px-2 py-2 overflow-hidden">
-                    <div class="text-[#8E8E93] truncate" title="${esc(filename)}">${esc(filename)}</div>
+                    <div class="text-[9px] text-[#3a3a3a] truncate" title="${esc(filename)}">${esc(filename)}</div>
                 </td>
                 <td class="px-2 py-2 text-[#8E8E93] truncate">${esc(row.created_by || '—')}</td>
-                <td class="px-1 py-2 text-center whitespace-nowrap">${viewBtn}${deleteBtn}</td>
+                <td class="px-2 py-2 text-[9px] text-[#3a3a3a] whitespace-nowrap overflow-hidden">${esc(formatUploadTime(row.created_at))}</td>
+                <td class="px-2 py-2 text-center">${statusBadge(row.status)}</td>
+                <td class="px-1 py-2 text-center whitespace-nowrap sticky right-0 z-[2] bg-[#0A0A0C] group-hover:bg-[#161620] shadow-[-8px_0_12px_rgba(0,0,0,0.45)]">${viewBtn}${deleteBtn}</td>
             </tr>
         `;
     }).join('');
@@ -325,6 +335,8 @@ export function renderEcDetailBody(row) {
         : '';
     const filename = row.original_filename || '—';
     const logId = Number(row.upload_log_id) || 0;
+    const createdBy = row.created_by || '—';
+    const createdAt = formatUploadTime(row.created_at);
     return `
         ${reasonSection}
         <div class="flex items-center justify-between gap-3 ${message ? 'pt-2' : ''}">
@@ -338,6 +350,10 @@ export function renderEcDetailBody(row) {
                 ${window.svgIcon('download', 'w-3.5 h-3.5')}
                 下载
             </button>
+        </div>
+        <div class="pt-3 space-y-1">
+            <div class="text-[9px] text-[#3a3a3a] truncate">上传人 ${esc(createdBy)}</div>
+            <div class="text-[9px] text-[#3a3a3a] tabular-nums">上传时间 ${esc(createdAt)}</div>
         </div>
     `;
 }
