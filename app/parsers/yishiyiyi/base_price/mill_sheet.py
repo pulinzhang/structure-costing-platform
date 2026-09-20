@@ -1,4 +1,4 @@
-"""附页「牌号对应钢厂」：解析 Sheet2/Sheet3 文本块为牌号→钢厂。"""
+"""附页「牌号对应钢厂」：解析 Sheet2/Sheet3 文本块为牌号→钢厂（不按标题锁基地）。"""
 
 from __future__ import annotations
 
@@ -14,9 +14,9 @@ _GRADE_SPLIT_RE = re.compile(r"[、,，;\s]+")
 
 def extract_grade_mill_map(workbook: Any) -> tuple[str | None, dict[str, str]]:
     """
-    从非主表附页提取「某基地牌号对应钢厂」。
+    从非主表附页提取牌号→钢厂。标题里的基地名仅作识别附页用，不决定落库基地。
 
-    返回 (基地规范名片段或 None, {牌号: 钢厂})。
+    返回 (标题基地片段或 None, {牌号: 钢厂})。落库基地以主表列头为准。
     标题例：``2月订单芜湖基地钢板集采牌号对应钢厂如下：``
     正文例：``马钢:`` 后跟 ``DC51D+Z、DC53D+Z``。
     """

@@ -49,7 +49,7 @@ def test_extract_grade_mill_map_from_sheet2() -> None:
     assert mapping["DC51D+Z"] == "马钢"
 
 
-def test_price_only_uses_sheet_map_and_carry() -> None:
+def test_price_only_sheet2_mill_applies_to_all_sheet1_locations() -> None:
     content = _price_only_workbook()
     lookup = {"芜湖": "芜湖", "大连基地": "大连", "大连": "大连"}
     result = parse_base_price_excel(
@@ -58,10 +58,49 @@ def test_price_only_uses_sheet_map_and_carry() -> None:
         carry_mills={("大连", "DC51D+Z"): "山钢"},
     )
     assert not result.errors
+    assert any("基地以主表列头为准" in warning for warning in result.warnings)
     by_location = {row["location"]: row for row in result.records}
     assert by_location["芜湖"]["steel_mill"] == "马钢"
     assert int(by_location["芜湖"]["base_price"]) == 4096
-    assert by_location["大连"]["steel_mill"] == "山钢"
+    assert by_location["大连"]["steel_mill"] == "马钢"
+    assert int(by_location["大连"]["base_price"]) == 4090
+
+
+def test_carry_mill_only_when_grade_missing_from_sheet2() -> None:
+    workbook = Workbook()
+    sheet1 = workbook.active
+    sheet1.title = "Sheet1"
+    sheet1["A4"] = "序号"
+    sheet1["B4"] = "钢种"
+    sheet1["C4"] = "牌号"
+    sheet1["D4"] = "参考规格"
+    sheet1["E4"] = "青岛基地"
+    sheet1["E5"] = "到厂原卷承兑价格"
+    sheet1["A6"] = 1
+    sheet1["B6"] = "镀锌"
+    sheet1["C6"] = "DC51D+Z"
+    sheet1["D6"] = "1.0*1250"
+    sheet1["E6"] = 3880
+    sheet1["A7"] = 2
+    sheet1["B7"] = "冷轧"
+    sheet1["C7"] = "DC01"
+    sheet1["D7"] = "1.0*1250"
+    sheet1["E7"] = 3500
+    sheet2 = workbook.create_sheet("Sheet2")
+    sheet2["A1"] = "2月订单芜湖基地钢板集采牌号对应钢厂如下："
+    sheet2["A2"] = "马钢:"
+    sheet2["A3"] = "DC51D+Z"
+    buffer = BytesIO()
+    workbook.save(buffer)
+    result = parse_base_price_excel(
+        buffer.getvalue(),
+        location_lookup={"青岛基地": "青岛"},
+        carry_mills={("青岛", "DC01"): "本钢"},
+    )
+    by_grade = {row["grade"]: row for row in result.records}
+    assert by_grade["DC51D+Z"]["location"] == "青岛"
+    assert by_grade["DC51D+Z"]["steel_mill"] == "马钢"
+    assert by_grade["DC01"]["steel_mill"] == "本钢"
 
 
 def test_swapped_mill_price_cells() -> None:
@@ -156,3 +195,33 @@ def test_sample_price_only_file_resolves_wuhu_mill() -> None:
         row for row in result.records if row["grade"] == "DC51D+Z" and row["location"] == "芜湖"
     )
     assert sample["steel_mill"] == "马钢"
+
+
+def test_june_sample_qingdao_uses_sheet2_mill_despite_wuhu_title() -> None:
+    root = (
+        Path(__file__).resolve().parents[2]
+        / "excel_sample"
+        / "25年-26年一事一议价格"
+        / "2025年1月-12月一事一议价格"
+        / "25年6月订单7月冲焊件及废料价格"
+    )
+    path = root / "25年6月订单（25年7月原料）发布价格.xlsx"
+    if not path.is_file():
+        return
+    result = parse_base_price_excel(
+        path.read_bytes(),
+        location_lookup={"芜湖": "芜湖", "青岛基地": "青岛"},
+    )
+    assert not result.errors
+    locations = {str(row["location"]) for row in result.records}
+    assert locations == {"芜湖", "青岛"}
+    wuhu = next(
+        row for row in result.records if row["grade"] == "DC51D+Z" and row["location"] == "芜湖"
+    )
+    qingdao = next(
+        row for row in result.records if row["grade"] == "DC51D+Z" and row["location"] == "青岛"
+    )
+    assert wuhu["steel_mill"] == "马钢"
+    assert int(wuhu["base_price"]) == 4096
+    assert qingdao["steel_mill"] == "马钢"
+    assert int(qingdao["base_price"]) == 3880
