@@ -19,7 +19,7 @@ from app.database import DatabaseConfig
 from app.models.bom import BomAnnualPartPrice, BomNode, BomSnapshot, BomWeldingFee
 from app.models.costing import AssemblyCost
 from app.schemas.dto.assembly_cost_dto import AssemblyCostCalcDTO
-from app.services.costing.assembly_cost.calc.orchestrator import (
+from app.services.costing.assembly_cost.calc.orchestrator.orchestrator import (
     AssemblyCostCalcOrchestrator,
 )
 from app.services.costing.assembly_cost.calc.rollup import FORMULA_VERSION

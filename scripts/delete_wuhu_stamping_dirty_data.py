@@ -1,4 +1,5 @@
 """删除芜湖冲压工艺脏数据（未知车型 / 空冲压工厂）。"""
+
 from __future__ import annotations
 
 import logging
@@ -13,7 +14,7 @@ from sqlalchemy import create_engine, text  # noqa: E402
 
 from app.config import settings  # noqa: E402
 from app.database import DatabaseConfig  # noqa: E402
-from app.repositories.stamping.stamping_part_repository import StampingPartRepository  # noqa: E402
+from app.repositories.stamping.part.repository import StampingPartRepository  # noqa: E402
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger("scripts.delete_wuhu_stamping")

@@ -25,7 +25,9 @@ from app.common.policy_effective_period import (
     effective_periods_from_sample_path,
 )
 from app.database import DatabaseConfig
-from app.parsers.yishiyiyi.policy import parse_steel_price_policy_excel
+from app.parsers.yishiyiyi.policy.steel_price_policy_parser import (
+    parse_steel_price_policy_excel,
+)
 from app.services.yishiyiyi.policy.importing.import_service import SteelPricePolicyImportService
 
 logger = logging.getLogger("scripts.import_policy_thickness_samples")

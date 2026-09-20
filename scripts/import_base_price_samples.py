@@ -25,7 +25,9 @@ from app.common.policy_effective_period import (
     effective_periods_from_sample_path,
 )
 from app.database import DatabaseConfig
-from app.parsers.yishiyiyi.base_price import parse_base_price_excel
+from app.parsers.yishiyiyi.base_price.steel_base_price_parser import (
+    parse_base_price_excel,
+)
 from app.services.masterdata.location.location_service import LocationService
 from app.services.yishiyiyi.base_price.importing.import_service import SteelBasePriceImportService
 
