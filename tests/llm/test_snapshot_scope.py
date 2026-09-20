@@ -100,4 +100,13 @@ def test_prompt_manifest_includes_operator_scenarios() -> None:
     registry = PromptRegistry()
     buyer = registry.resolve(audience="buyer")
     assert "短码问价" in buyer.system_prompt
+    assert "当成费用表" in buyer.system_prompt
     assert "fork=sub_assembly" in buyer.user_shell or "操作员口语" in buyer.user_shell
+
+
+def test_prompt_manifest_includes_buyer_lead_scenarios() -> None:
+    registry = PromptRegistry()
+    lead = registry.resolve(audience="buyer_lead")
+    assert "外发缺供应商" in lead.system_prompt
+    assert "采购对象费用" in lead.system_prompt
+    assert "period_discontinue" in lead.system_prompt

@@ -64,13 +64,13 @@ import { pageConfig as bomPackagingTransportFeeUploadPage } from './features/bom
 import { pageConfig as bomPackagingTransportFeePage } from './features/bom/packaging-transport-fee/list/index.js?v=15';
 import { pageConfig as bomProcurementObjectGeneratePage } from './features/bom/procurement-object/generate/index.js?v=14';
 import { pageConfig as bomProcurementObjectSupplierUploadPage } from './features/bom/procurement-object/supplier-upload/index.js?v=20';
-import { pageConfig as bomProcurementObjectListPage } from './features/bom/procurement-object/list/index.js?v=35';
+import { pageConfig as bomProcurementObjectListPage } from './features/bom/procurement-object/list/index.js?v=36';
 import { pageConfig as bomWeldingProcessBreakdownGeneratePage } from './features/bom/welding-process-breakdown/generate/index.js?v=11';
 import { pageConfig as bomWeldingProcessBreakdownListPage } from './features/bom/welding-process-breakdown/list/index.js?v=47';
 import { pageConfig as bomWeldingFeeCalcPage } from './features/bom/welding-fee/calc/index.js?v=16';
 import { pageConfig as bomWeldingFeeListPage } from './features/bom/welding-fee/list/index.js?v=18';
-import { pageConfig as engineeringChangeUploadPage } from './features/engineering-change/upload/index.js?v=12';
-import { pageConfig as engineeringChangeListPage } from './features/engineering-change/list/index.js?v=10';
+import { pageConfig as engineeringChangeUploadPage } from './features/engineering-change/upload/index.js?v=13';
+import { pageConfig as engineeringChangeListPage } from './features/engineering-change/list/index.js?v=12';
 import { pageConfig as costingPage }        from './features/costing/engine/index.js?v=40';
 import { pageConfig as fileTracePage }       from './features/file-trace/index.js?v=10';
 import { pageConfig as locationPage }        from './features/masterdata/location/index.js?v=9';

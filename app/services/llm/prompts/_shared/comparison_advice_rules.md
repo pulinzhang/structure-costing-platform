@@ -93,7 +93,7 @@
 
 ### 回答结构
 
-1. **先结论**：有没有零单价、有没有相对上月 ±10%、有没有构成独大、有没有标准件单价过大（1～2 句）。
+1. **先结论**：有没有零单价、有没有相对上月 ±10%、有没有构成独大、有没有标准件单价过大（1～2 句）。**同时看 `period_discontinue`**：有停用件（完成停止/此件不装）时点明「件数变少可能由此导致，不是算错」；无则写「本区间未见停用件」。**同时看 `period_missing_supplier`**：有外发缺供应商时**必须列表零件号**；无则写「未见外发缺供应商」。
 2. **核对清单表**（必写，来自 JSON，禁止编造）：
 
    零单价 / 环比：
@@ -108,11 +108,21 @@
 
    | 月份 | 总成 | 子件 | 供货类型 | 核价单价（元） | 说明 |
 
+   本区间停用件（有 `period_discontinue.has_discontinue=true` 时必写）：
+
+   | 生效月 | 类型 | 变更前 | 变更后 | 名称 |
+
+   外发缺供应商（有 `period_missing_supplier.has_missing_supplier=true` 时必写）：
+
+   | 零件号 | 零件名 | 项目 | 清单版本 |
+
    数据来源优先级：
    - `risks` 中 `risk_type=zero_unit_price` 的 `zero_unit_price_items`
    - `mom_anomalies.items`（`anomaly_type=mom_jump`，阈值见 `threshold`，默认 10%）
    - `composition_anomalies.items`（`composition_dominance` / `extreme_qty`）
    - `standard_part_anomalies.items`（`standard_part_high_price`）
+   - `period_discontinue.stop_items` / `not_install_items`（完成停止 / 此件不装）
+   - `period_missing_supplier.missing_supplier_items`（外发未指定供应商）
    - `risks` 中 `calc_partial` / `missing_price`
 
 3. **风险提示**：口径、partial、无上月可比件。构成独大时提示去「总成核价一览」打开该卡**成本还原**，核对外购单价与用量（不要把焊装涂胶毫米数与外购件行混成一笔）。标准件过大时去「年度零件价列表」改正计件单价。
@@ -128,13 +138,17 @@
 
 ### 回答结构
 
-1. **先结论**：当月有没有零单价、算失败、±10% 跳变。
+1. **先结论**：当月有没有零单价、算失败、±10% 跳变。**同时看 `period_discontinue`**：有停用件则说明件数变少可能由此导致；无则写未见停用件。**同时看 `period_missing_supplier`**：有外发缺供应商时**必须列表零件号**；无则写「未见外发缺供应商」。
 2. **核对清单表**（必写，来自 JSON）：
 
    | 月份 | 零件号 | 零件名 | 本月单价 | 上月单价 | 环比 | 说明 |
 
-   数据来源：`zero_unit_price_items`、`stamping_calc_failed` 样本、`mom_anomalies.items`。
-3. **建议**：到「冲压零件价格一览」按月份 + 零件号核对。
+   外发缺供应商（有 `period_missing_supplier.has_missing_supplier=true` 时必写）：
+
+   | 零件号 | 零件名 | 项目 | 清单版本 |
+
+   数据来源：`zero_unit_price_items`、`stamping_calc_failed` 样本、`mom_anomalies.items`、`period_missing_supplier.missing_supplier_items`。
+3. **建议**：到「冲压零件价格一览」按月份 + 零件号核对；缺供应商去采购对象补厂家。
 
 无异常时写「当月未见单价为 0，也未见相对上月 ±10% 的偏差」。
 
@@ -158,6 +172,25 @@
 
 ---
 
+## 工程变更单价比较类（用户问「工程变更零件单价」「变更前和变更后比较」）
+
+用户目的是看 **换号前后各一张核价卡的单价差**，不是菜单怎么点。
+
+### 回答结构
+
+1. **先结论**：可比较几对、涨超阈值几对、缺价几对（引用 `both_priced_count` / `jump_up_count` / `missing_*` / `after_unpriced_count`）。
+2. **比较表**（必写，来自 `comparison.items`；问涨超 10% 时优先用 `jump_up_items`）：
+
+   | 生效月 | 类型 | 变更前号 | 变更前单价 | 变更前月 | 变更后号 | 变更后单价 | 变更后月 | 差额 | 说明 |
+
+3. **构成差额**（有 `composition_delta` 时）：点明冲压 / 外购 / 焊接哪块涨。
+4. **口径**：只引用 JSON 的 `price_rule` / `price_label`（应成本或冲压单价）；禁止自行重算。
+5. **缺价**：变更前或变更后无卡时写「无核价卡」，不要编造金额。完成停止/此件不装通常只有变更前价。
+
+无变更行时写「当前范围无工程变更记录」。
+
+---
+
 ## 作业台核对类（用户问「核价进度」「待审核还有多少」「审完了吗」「还没确认外发」）
 
 用户目的是看 **当月作业是否收口**：哪些一览还待审核、哪些核算未完成、采购对象是否还没确认外发/自制。数字只引用 JSON，禁止把各看板件数再加总一遍（`pending_audit_total` 已是合计）。
@@ -173,7 +206,7 @@
 
 无待办时写「当前范围未见待审核、未完成或待确认」，勿编造。
 
-模具费 / 检具费 / 采购对象单问：不要套整张作业台，只用该 subject 的 summary。
+模具费 / 检具费 / 采购对象单问：不要套整张作业台，只用该 subject 的 summary。采购对象可点名待确认、待审核、缺供应商、核对区异常；问「哪些/哪一个没有供应商」时必须列出 `missing_supplier_items` 的零件号，禁止编造结算价。
 
 ---
 

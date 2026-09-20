@@ -118,7 +118,11 @@ def build_gauge_fee_drilldown(
     }
 
 
-def build_procurement_object_summary(rows: list[ProcurementObjectRow]) -> SummaryPayload:
+def build_procurement_object_summary(
+    rows: list[ProcurementObjectRow],
+    *,
+    sample_limit: int = 20,
+) -> SummaryPayload:
     if not rows:
         return {
             "subject": "procurement_object",
@@ -126,9 +130,27 @@ def build_procurement_object_summary(rows: list[ProcurementObjectRow]) -> Summar
             "pending_confirm_count": 0,
             "pending_audit_count": 0,
             "anomaly_count": 0,
+            "missing_supplier_count": 0,
+            "missing_supplier_items": [],
             "confirm_counts": {},
         }
     confirm_counts = Counter(row.confirm_status for row in rows)
+    missing_supplier_rows = [
+        row
+        for row in rows
+        if row.confirm_status == "outsourced" and not (row.supplier_name or "").strip()
+    ]
+    missing_supplier_items = [
+        {
+            "part_number": row.part_number,
+            "part_name": row.part_name,
+            "confirm_status": row.confirm_status,
+            "vehicle_model": row.vehicle_model,
+            "bom_version": row.bom_version,
+            "location": row.location,
+        }
+        for row in missing_supplier_rows[:sample_limit]
+    ]
     return {
         "subject": "procurement_object",
         "row_count": len(rows),
@@ -138,11 +160,9 @@ def build_procurement_object_summary(rows: list[ProcurementObjectRow]) -> Summar
         "in_house_count": confirm_counts.get("in_house", 0),
         "pending_audit_count": sum(1 for row in rows if row.audit_status == "pending"),
         "anomaly_count": sum(1 for row in rows if row.section == "anomaly"),
-        "missing_supplier_count": sum(
-            1
-            for row in rows
-            if row.confirm_status == "outsourced" and not (row.supplier_name or "").strip()
-        ),
+        "missing_supplier_count": len(missing_supplier_rows),
+        "missing_supplier_items": missing_supplier_items,
+        "missing_supplier_truncated": len(missing_supplier_rows) > sample_limit,
         "confirm_counts": dict(confirm_counts),
     }
 

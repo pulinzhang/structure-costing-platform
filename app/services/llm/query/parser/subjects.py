@@ -74,12 +74,397 @@ def is_die_fee_question(question: str) -> bool:
     return "模具费" in question
 
 
+def is_missing_supplier_list_question(question: str) -> bool:
+    """操作员口语：哪些/哪一个采购对象没有供应商。"""
+    text = question or ""
+    missing = any(
+        word in text
+        for word in (
+            "没有供应商",
+            "没供应商",
+            "没指定供应商",
+            "未指定供应商",
+            "缺供应商",
+            "无供应商",
+        )
+    )
+    return missing and not ("怎么" in text or "如何" in text or "在哪" in text)
+
+
+def is_procurement_object_fee_confusion(question: str) -> bool:
+    """「采购对象的费用/价格」：清单不管价，应走帮助澄清，不要冒充有金额。"""
+    text = question or ""
+    if "采购对象" not in text:
+        return False
+    if any(word in text for word in ("采购价格协议", "批量零部件价格协议", "导出协议")):
+        return False
+    money = any(
+        word in text
+        for word in (
+            "费用",
+            "多少钱",
+            "什么价",
+            "结算价",
+            "价格多少",
+            "价格是多少",
+            "总成本",
+            "总费用",
+            "采购成本",
+            "单价",
+        )
+    )
+    if not money:
+        return False
+    # 状态/进度仍走查数（件数、待确认、缺供应商）
+    status = any(
+        word in text
+        for word in (
+            "确认外发",
+            "待确认",
+            "还没确认",
+            "待审核",
+            "审核",
+            "异常",
+            "缺供应商",
+            "未指定供应商",
+            "外发还是",
+            "自制还是",
+            "还有多少",
+            "有多少件",
+            "件数",
+        )
+    )
+    return not status
+
+
+_ENGINEERING_CHANGE_TOPIC_TERMS: tuple[str, ...] = (
+    "工程变更",
+    "设变",
+    "变更单",
+    "停用件",
+    "此件不装",
+    "完成停止",
+)
+
+# 新旧号对照（短语够长，可单独识别；勿用裸「旧号/新号」以免误伤问价）
+_ENGINEERING_CHANGE_ALIAS_SIGNALS: tuple[str, ...] = (
+    "变更前叫",
+    "变更后叫",
+    "变更前是",
+    "变更后是",
+    "变更前零件",
+    "变更后零件",
+    "工程变更前",
+    "工程变更后",
+    "以前叫什么",
+    "原来叫什么",
+    "对应旧号",
+    "对应新号",
+    "换号前",
+    "换号后",
+    "改号前",
+    "改号后",
+)
+
+# 停用口语：完成停止（整总成不再交）+ 此件不装（总成还交、少装一颗）
+_ENGINEERING_CHANGE_DISCONTINUE_SIGNALS: tuple[str, ...] = (
+    "停用件",
+    "此件不装",
+    "完成停止",
+    "不装的",
+    "不再交",
+    "不再交货",
+)
+
+# 四类变更口语（列表/有没有）
+_ENGINEERING_CHANGE_TYPE_SIGNALS: tuple[str, ...] = (
+    "改图",
+    "增加零件",
+    "加了哪些",
+    "新增零件",
+    "换号了哪些",
+    "换了哪些号",
+)
+
+# 查数口吻（无「怎么/在哪」时优先 analysis）
+_ENGINEERING_CHANGE_DATA_SIGNALS: tuple[str, ...] = (
+    "那些零件",
+    "哪些零件",
+    "哪些件",
+    "那些件",
+    "哪些总成",
+    "那些总成",
+    "有哪些",
+    "有那些",
+    "改了哪些",
+    "变更了哪些",
+    "设变了哪些",
+    "零件列表",
+    "多少件",
+    "有多少",
+    "有没有",
+    "怎么样",
+    "的情况",
+    "情况如何",
+    "旧号",
+    "新号",
+    "变更前",
+    "变更后",
+    "单价比较",
+    "价格比较",
+    "单价对比",
+    "价格对比",
+    *_ENGINEERING_CHANGE_ALIAS_SIGNALS,
+    *_ENGINEERING_CHANGE_DISCONTINUE_SIGNALS,
+    *_ENGINEERING_CHANGE_TYPE_SIGNALS,
+)
+
+_ENGINEERING_CHANGE_PRICE_COMPARE_SIGNALS: tuple[str, ...] = (
+    "单价比较",
+    "价格比较",
+    "单价对比",
+    "价格对比",
+    "变更前和变更后",
+    "变更前后",
+    "改前改后",
+    "新旧单价",
+    "新旧价格",
+)
+
+_ENGINEERING_CHANGE_SUPPLIER_STATUS_SIGNALS: tuple[str, ...] = (
+    "设变件供应商",
+    "设变供应商",
+    "变更件供应商",
+    "增加零件有没有指定",
+    "增加零件指定供应商",
+    "设变后哪些外发",
+    "设变进了采购对象",
+    "进了采购对象但缺",
+    "供应商的指定情况",
+    "供应商指定情况",
+)
+
+_ENGINEERING_CHANGE_JUMP_SIGNALS: tuple[str, ...] = (
+    "涨超",
+    "涨幅超",
+    "涨了超过",
+    "涨超10",
+    "超过10%",
+    "超10%",
+)
+
+_ENGINEERING_CHANGE_COMPOSITION_SIGNALS: tuple[str, ...] = (
+    "涨在冲压",
+    "涨在外购",
+    "涨在焊接",
+    "构成差额",
+    "构成差",
+    "主要涨在",
+)
+
+_ENGINEERING_CHANGE_DOWNSTREAM_SIGNALS: tuple[str, ...] = (
+    "下游齐套",
+    "齐套了没有",
+    "插齐了没有",
+    "采购对象插齐",
+    "拆解缺不缺",
+    "设变后采购对象",
+)
+
+_ENGINEERING_CHANGE_PERIOD_SIGNALS: tuple[str, ...] = (
+    "布点到期",
+    "工艺到期",
+    "旧工艺是不是",
+    "有没有模具布点",
+    "缺布点",
+    "布点有没有",
+)
+
+
+def is_engineering_change_question(question: str) -> bool:
+    text = question or ""
+    if any(term in text for term in _ENGINEERING_CHANGE_TOPIC_TERMS):
+        return True
+    if any(signal in text for signal in _ENGINEERING_CHANGE_ALIAS_SIGNALS):
+        return True
+    if any(signal in text for signal in _ENGINEERING_CHANGE_SUPPLIER_STATUS_SIGNALS):
+        return True
+    if any(signal in text for signal in _ENGINEERING_CHANGE_DOWNSTREAM_SIGNALS):
+        return True
+    if any(signal in text for signal in _ENGINEERING_CHANGE_PERIOD_SIGNALS):
+        return True
+    if any(signal in text for signal in _ENGINEERING_CHANGE_JUMP_SIGNALS):
+        return True
+    if any(signal in text for signal in _ENGINEERING_CHANGE_COMPOSITION_SIGNALS):
+        return True
+    return any(signal in text for signal in _ENGINEERING_CHANGE_DISCONTINUE_SIGNALS)
+
+
+def asks_engineering_change_price_compare(question: str) -> bool:
+    """工程变更零件：变更前 vs 变更后单价比较。"""
+    text = question or ""
+    if not is_engineering_change_question(text):
+        return False
+    if any(signal in text for signal in _ENGINEERING_CHANGE_PRICE_COMPARE_SIGNALS):
+        return True
+    if any(signal in text for signal in _ENGINEERING_CHANGE_JUMP_SIGNALS):
+        return True
+    if any(signal in text for signal in _ENGINEERING_CHANGE_COMPOSITION_SIGNALS):
+        return True
+    has_price = any(
+        word in text for word in ("单价", "价格", "多少钱", "什么价", "有没有价", "有无价")
+    )
+    has_before_after = ("变更前" in text and "变更后" in text) or "变更前后" in text
+    return has_price and has_before_after
+
+
+def asks_engineering_change_discontinue(question: str) -> bool:
+    """是否在问停用件（完成停止 / 此件不装）。"""
+    text = question or ""
+    return any(signal in text for signal in _ENGINEERING_CHANGE_DISCONTINUE_SIGNALS)
+
+
+def asks_ec_procurement_supplier_status(question: str) -> bool:
+    """设变件进采购对象后的供应商指定情况。"""
+    text = question or ""
+    if any(signal in text for signal in _ENGINEERING_CHANGE_SUPPLIER_STATUS_SIGNALS):
+        return True
+    if not is_engineering_change_question(text):
+        return False
+    has_supplier = any(word in text for word in ("供应商", "厂家", "指定厂家", "指定供应商"))
+    has_ec_scope = any(
+        word in text for word in ("设变", "工程变更", "增加零件", "新增零件", "变更后")
+    )
+    return has_supplier and has_ec_scope
+
+
+def asks_engineering_change_downstream(question: str) -> bool:
+    text = question or ""
+    if any(signal in text for signal in _ENGINEERING_CHANGE_DOWNSTREAM_SIGNALS):
+        return True
+    if not is_engineering_change_question(text):
+        return False
+    return ("齐套" in text) or ("插齐" in text) or ("下游" in text and "缺" in text)
+
+
+def asks_engineering_change_process_die_period(question: str) -> bool:
+    text = question or ""
+    return any(signal in text for signal in _ENGINEERING_CHANGE_PERIOD_SIGNALS)
+
+
+def asks_ec_tree_vs_procurement_help(question: str) -> bool:
+    """变更单行数 vs 新树采购对象件数 — 概念帮助，不是查清单。"""
+    text = question or ""
+    return any(
+        signal in text
+        for signal in (
+            "新版本采购对象",
+            "采购对象怎么这么多",
+            "采购对象有17",
+            "采购对象有 17",
+            "变更单只有",
+            "换了几棵",
+            "树的数量",
+            "树里面采购对象",
+            "为什么这么多采购对象",
+            "采购对象比变更单多",
+        )
+    )
+
+
+def asks_ec_effect_month_help(question: str) -> bool:
+    """设变哪个月用新号 / 旧号还能不能签 — 概念帮助，不是查变更单。"""
+    text = question or ""
+    return any(
+        signal in text
+        for signal in (
+            "哪个月开始",
+            "哪个月用新号",
+            "哪个月算新",
+            "用旧号还是新号",
+            "用新号还是旧号",
+            "旧零件还能",
+            "旧号还能",
+            "过期还能签",
+            "过期了还能不能出协议",
+            "过期了还能",
+            "新旧并存",
+            "厂家要不要自己填",
+            "删了变更",
+            "回滚后核价",
+            "回滚了核价认",
+        )
+    )
+
+
+def is_engineering_change_data_question(question: str) -> bool:
+    """常用查数：列表零件 / 变更前叫什么 / 有没有停用件；「怎么上传」仍走帮助。"""
+    text = question or ""
+    if asks_ec_effect_month_help(text):
+        return False
+    if asks_ec_tree_vs_procurement_help(text):
+        return False
+    if asks_ec_procurement_supplier_status(text):
+        return True
+    if asks_engineering_change_downstream(text):
+        return True
+    if asks_engineering_change_process_die_period(text):
+        return True
+    if not is_engineering_change_question(text):
+        return False
+    # 「怎么样」含「怎么」，查数口吻不可当成操作问法
+    how_text = text.replace("怎么样", "")
+    if any(
+        signal in how_text
+        for signal in (
+            "怎么",
+            "怎么用",
+            "如何使用",
+            "怎么操作",
+            "如何操作",
+            "怎么点",
+            "怎么办",
+            "如何",
+            "在哪",
+            "哪里",
+            "哪儿",
+        )
+    ):
+        return False
+    if any(signal in text for signal in _ENGINEERING_CHANGE_DATA_SIGNALS):
+        return True
+    if asks_engineering_change_price_compare(text):
+        return True
+    # 「2025年工程变更零件」无操作词也按查数
+    return "零件" in text or "总成" in text
+
+
 def is_procurement_object_question(question: str) -> bool:
     if any(word in question for word in ("采购价格协议", "批量零部件价格协议", "导出协议")):
         return False
     if "采购对象" in question:
         return True
-    return any(word in question for word in ("还没确认外发", "待确认外发", "外发确认", "确认外发"))
+    return any(
+        word in question
+        for word in (
+            "还没确认外发",
+            "待确认外发",
+            "外发确认",
+            "确认外发",
+            "外发还是自制",
+            "是外发还是自制",
+            "自制还是外发",
+            "缺供应商",
+            "未指定供应商",
+            "没有供应商",
+            "没供应商",
+            "没指定供应商",
+            "无供应商",
+            "是否指定供应商",
+            "外发件",
+            "自制件",
+        )
+    )
 
 
 def is_ops_workbench_question(question: str) -> bool:
@@ -139,6 +524,8 @@ def resolve_subject(
         return "stamping_gauge_fee"
     if is_die_fee_question(question):
         return "stamping_die_fee"
+    if is_engineering_change_question(question):
+        return "engineering_change"
     if is_procurement_object_question(question):
         return "procurement_object"
     if is_ops_workbench_question(question):

@@ -21,7 +21,11 @@
 - **作业台核对**：`summary.pending_audit_total` / `incomplete_total` / `pending_confirm_total`，以及 `boards` 各切片件数；`risks` 中 `pending_audit` / `calc_incomplete` / `pending_confirm`
 - **模具费**：`pending_audit_count`、`zero_fee_count`、`final_die_fee_sum`
 - **检具费**：`effective_count`、`invalid_count`、`zero_fee_count`
-- **采购对象**：`pending_confirm_count`、`pending_audit_count`、`anomaly_count`
+- **总成核价 / 冲压零件核价**：`period_discontinue`（本区间完成停止 + 此件不装）；有则必提，解释件数变少；无则写未见停用件
+- **总成核价 / 冲压零件核价**：`period_missing_supplier`（外发未指定供应商）；有则**必须列表零件号**提醒；无则写未见外发缺供应商
+- **采购对象**：`pending_confirm_count`、`pending_audit_count`、`anomaly_count`、`missing_supplier_count`；点名缺供应商时必须引用 `missing_supplier_items`（零件号/名称），禁止只报件数
+- **工程变更设变件供应商**：`ec_procurement_supplier` 四类（已指定、缺供应商、待确认、未进采购对象）；缺供应商必列零件号
+- **工程变更单价**：`comparison.jump_up_items` / `after_unpriced_count` / `composition_delta`
 - **年度零件价 / 一口价探查**：`annual_price_anomalies.items`（`skipped_conversion`：核价单价≈采购单价、未除转换系数；`fine_unit_unconverted`：桶/瓶对毫米但系数为 1）；`standard_part_anomalies.items`（`standard_part_high_price`：标准件/胶块计件单价过大）
 
 ## 何时写（比较 / 趋势类例外）

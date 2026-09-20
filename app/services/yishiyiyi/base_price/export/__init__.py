@@ -1,4 +1,4 @@
-"""钢材基准价格导出子包。"""
+"""钢材基准价格列表子包。"""
 
 from app.services.yishiyiyi.base_price.export.export_service import (
     SteelBasePriceExportService,

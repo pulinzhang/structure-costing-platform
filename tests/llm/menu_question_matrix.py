@@ -171,6 +171,13 @@ MENU_QUESTION_CASES: tuple[MenuQuestionCase, ...] = (
         "complete",
     ),
     MenuQuestionCase(
+        "engineering-change-order-list",
+        "工程变更单列表",
+        "工程变更",
+        "engineering_change",
+        "complete",
+    ),
+    MenuQuestionCase(
         "procurement-contract-report",
         "采购价格协议",
         "采购价格",

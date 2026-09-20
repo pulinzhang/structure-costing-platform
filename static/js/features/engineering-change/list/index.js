@@ -6,7 +6,7 @@ import {
     engineeringChangeListTemplate,
     renderEcListRows,
     updateEcFilterCapsules,
-} from './template.js?v=10';
+} from './template.js?v=12';
 import {
     DEFAULT_PAGE_SIZE,
     bindPagination,

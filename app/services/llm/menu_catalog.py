@@ -116,6 +116,10 @@ SUBJECT_MENU: dict[str, MenuTarget] = {
         hash_page="bom-procurement-object-list",
         label="打开采购对象清单",
     ),
+    "engineering_change": MenuTarget(
+        hash_page="engineering-change-order-list",
+        label="打开工程变更单列表",
+    ),
 }
 
 # 侧栏「列表/一览」页覆盖查检（上传/计算页不在此列）
@@ -256,6 +260,12 @@ MENU_COVERAGE: tuple[MenuCoverageItem, ...] = (
         "complete",
     ),
     MenuCoverageItem(
+        "engineering-change-order-list",
+        "工程变更单列表",
+        "engineering_change",
+        "complete",
+    ),
+    MenuCoverageItem(
         "costing",
         "自动核价引擎",
         None,
@@ -296,6 +306,7 @@ ENTITY_LIST_PAGES: tuple[tuple[str, str], ...] = (
     ("stamping-die-fee", "stamping_die_fee"),
     ("stamping-gauge-fee", "stamping_gauge_fee"),
     ("bom-procurement-object-list", "procurement_object"),
+    ("engineering-change-order-list", "engineering_change"),
 )
 
 
@@ -509,6 +520,19 @@ def build_list_params(query: AnalysisQuery) -> dict[str, str]:
             params["bom_version"] = bom_version
         if part_number:
             params["part_number"] = part_number
+        return params
+
+    if query.subject == "engineering_change":
+        params = {
+            "year": year,
+            "month": month,
+        }
+        location = query.location() or ""
+        vehicle_model = query.vehicle_model() or ""
+        if location:
+            params["location"] = location
+        if vehicle_model:
+            params["vehicle_model"] = vehicle_model
         return params
 
     location = query.location() or ""

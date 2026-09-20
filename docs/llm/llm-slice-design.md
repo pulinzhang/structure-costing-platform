@@ -362,3 +362,7 @@ Body：`user_question`（可选 `audience` / `force_refresh` / `idempotency_key`
 |------|------|
 | 2026-09-12 | QueryParser 拆到 `query/parser/`：subject / analyses 与流水线分离 |
 | 2026-09-12 | 初稿：as-built 切片导读；Analysis 按主题分包后的目录与分发 |
+| 2026-09-20 | 采购对象：费用混淆走 `faq_procurement_fee`；操作员/主管场景规则；缺供应商进 risk |
+| 2026-09-20 | 核价概况旁挂 `period_discontinue`（完成停止/此件不装），解释件数变少不是算错 |
+| 2026-09-20 | 管理人员 EC×核价：自然语言生效月 FAQ；`ec_procurement_supplier`；核价强制旁挂 `period_missing_supplier`；价差涨超10%/构成；下游齐套与工艺布点到期 |
+| 2026-09-20 | 工程变更：变更前/后零件单价比较（总成应成本优先，冲压单价兜底） |

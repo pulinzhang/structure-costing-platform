@@ -3,6 +3,13 @@
 from __future__ import annotations
 
 from app.schemas.llm.analysis_query import QueryMode
+from app.services.llm.query.parser.subjects import (
+    asks_ec_effect_month_help,
+    asks_ec_tree_vs_procurement_help,
+    is_engineering_change_data_question,
+    is_missing_supplier_list_question,
+    is_procurement_object_fee_confusion,
+)
 
 # 查数 / 分析类口语（与 usage 同时出现时优先走 analysis）
 _ANALYSIS_DATA_SIGNALS: tuple[str, ...] = (
@@ -51,6 +58,30 @@ _ANALYSIS_DATA_SIGNALS: tuple[str, ...] = (
     "模具费情况",
     "检具费情况",
     "核价进度",
+    "费用是多少",
+    "费用多少",
+    "的费用",
+    "没有供应商",
+    "没指定供应商",
+    "未指定供应商",
+    "缺供应商",
+    "没供应商",
+    "无供应商",
+    # 列表口吻：须带「零件/件/总成」，勿单独用「哪些」以免误伤「每月要维护哪些数据」
+    "那些零件",
+    "哪些零件",
+    "哪些件",
+    "那些件",
+    "哪些总成",
+    "那些总成",
+    "变更前叫",
+    "变更后叫",
+    "以前叫什么",
+    "原来叫什么",
+    "对应旧号",
+    "对应新号",
+    "设变了哪些",
+    "换号了哪些",
 )
 
 # 「缺口」口语：还差/缺什么（勿单独用「哪些数据」，否则会误伤「每月要维护哪些数据」）
@@ -208,13 +239,54 @@ _HELP_TOPIC_RULES: tuple[tuple[str, tuple[str, ...]], ...] = (
     ("list_usage", ("操作列", "列表只读", "明细按钮", "列表和上传")),
     ("die_gauge", ("模具费", "检具费", "模具布点", "模具单价", "检具")),
     (
+        "faq_ec_tree_vs_procurement",
+        (
+            "新版本采购对象",
+            "采购对象怎么这么多",
+            "采购对象有17",
+            "采购对象有 17",
+            "变更单只有",
+            "换了几棵",
+            "树的数量",
+            "树里面采购对象",
+        ),
+    ),
+    (
+        "faq_procurement_fee",
+        (
+            "采购对象的费用",
+            "采购对象费用",
+            "采购对象多少钱",
+            "采购对象价格",
+            "采购对象结算价",
+            "采购对象总成本",
+            "采购对象总费用",
+        ),
+    ),
+    (
         "procurement_contract_report",
         ("采购价格", "采购价格协议", "批量零部件价格协议", "价格协议", "导出协议"),
     ),
     ("procurement", ("采购对象", "外发", "退化供货件")),
     (
+        "faq_ec_costing_effect_month",
+        (
+            "哪个月开始",
+            "哪个月用新号",
+            "用旧号还是新号",
+            "旧零件还能",
+            "新旧并存",
+            "过期还能签",
+            "过期了还能不能出协议",
+            "过期了还能",
+            "删了变更",
+            "设变从哪个月",
+            "厂家要不要自己填",
+        ),
+    ),
+    (
         "engineering_change_knowledge",
-        ("时间轴", "切点", "生效月", "到期月", "新旧并存"),
+        ("生效月", "到期月", "时间轴", "切点", "新旧并存", "用旧号还是新号", "树坑"),
     ),
     (
         "engineering-change",
@@ -275,6 +347,26 @@ def detect_query_mode(question: str) -> QueryMode:
 
     if detect_engine_readiness_question(text):
         return "engine_readiness"
+
+    # 采购对象清单不管价；「费用/价格是多少」先澄清入口，禁止冒充有金额
+    if is_procurement_object_fee_confusion(text):
+        return "usage_help"
+
+    # 设变哪个月用新号 / 旧号还能签：概念帮助，不要当变更单查数
+    if asks_ec_effect_month_help(text):
+        return "usage_help"
+
+    # 变更单行数 vs 新树采购对象：概念帮助，不要当清单查数
+    if asks_ec_tree_vs_procurement_help(text):
+        return "usage_help"
+
+    # 「哪些/哪一个没有供应商」是查数，不要因「采购对象」主题词掉进帮助
+    if is_missing_supplier_list_question(text):
+        return "analysis"
+
+    # 「2025年工程变更那些零件」是查数，禁止因话题词「工程变更」掉进帮助
+    if is_engineering_change_data_question(text):
+        return "analysis"
 
     has_how = any(signal in _text_for_how_signals(text) for signal in _USAGE_HOW_SIGNALS)
     has_usage_topic = any(signal in text for signal in _USAGE_TOPIC_SIGNALS)
@@ -377,6 +469,12 @@ _OPERATOR_LOOKUP_SIGNALS: tuple[str, ...] = (
     "最近一次核价",
     "上次核价",
     "核了多少",
+    "哪一个",
+    "哪个",
+    "哪些",
+    "没有供应商",
+    "没指定供应商",
+    "缺供应商",
 )
 
 

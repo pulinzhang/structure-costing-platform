@@ -59,3 +59,4 @@ def test_runner_has_repos_for_bom_subjects() -> None:
     assert hasattr(runner._ops, "_die_fee_repo")
     assert hasattr(runner._ops, "_gauge_fee_repo")
     assert hasattr(runner._ops, "_procurement_object_repo")
+    assert hasattr(runner._ops, "_engineering_change_repo")

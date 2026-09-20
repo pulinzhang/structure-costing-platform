@@ -1,6 +1,6 @@
 /**
  * Steel Base Price Download Page
- * 基准价格导出页面逻辑
+ * 基准价格列表页面逻辑
  */
 
 import { basePriceDownloadTemplate } from './template.js?v=37';
@@ -347,7 +347,7 @@ async function exportExcel() {
                 category_name: filters.category_name,
                 grade: filters.grade,
             },
-            defaultFilename: '基准价格导出.xlsx',
+            defaultFilename: '基准价格列表.xlsx',
         });
 
         const url = window.URL.createObjectURL(blob);

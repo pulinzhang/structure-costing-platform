@@ -33,6 +33,7 @@ class AnalysisRunner:
             "stamping_die_fee": self._ops.run_stamping_die_fee,
             "stamping_gauge_fee": self._ops.run_stamping_gauge_fee,
             "procurement_object": self._ops.run_procurement_object,
+            "engineering_change": self._ops.run_engineering_change,
             "stamping_process": self._stamping.run_stamping_process,
             "stamping_tonnage": self._stamping.run_stamping_tonnage,
             "stamping_process_fee": self._stamping.run_stamping_process_fee,
