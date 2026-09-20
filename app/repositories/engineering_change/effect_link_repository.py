@@ -33,40 +33,6 @@ class EngineeringChangeEffectLinkRepository:
             .all()
         )
 
-    def list_by_change_order_id(
-        self, db: Session, change_order_id: int
-    ) -> list[EngineeringChangeEffectLink]:
-        return (
-            db.query(EngineeringChangeEffectLink)
-            .filter(EngineeringChangeEffectLink.change_order_id == change_order_id)
-            .order_by(EngineeringChangeEffectLink.sort_no.asc())
-            .all()
-        )
-
-    def list_by_change_order_ids(
-        self, db: Session, change_order_ids: list[int]
-    ) -> list[EngineeringChangeEffectLink]:
-        if not change_order_ids:
-            return []
-        return (
-            db.query(EngineeringChangeEffectLink)
-            .filter(EngineeringChangeEffectLink.change_order_id.in_(change_order_ids))
-            .order_by(EngineeringChangeEffectLink.sort_no.asc())
-            .all()
-        )
-
-    def list_by_change_order_ids_desc(
-        self, db: Session, change_order_ids: list[int]
-    ) -> list[EngineeringChangeEffectLink]:
-        if not change_order_ids:
-            return []
-        return (
-            db.query(EngineeringChangeEffectLink)
-            .filter(EngineeringChangeEffectLink.change_order_id.in_(change_order_ids))
-            .order_by(EngineeringChangeEffectLink.sort_no.desc())
-            .all()
-        )
-
     def create(
         self, db: Session, payload: EngineeringChangeEffectLinkInsert
     ) -> EngineeringChangeEffectLink:

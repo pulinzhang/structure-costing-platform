@@ -1,6 +1,8 @@
-"""工程变更单列表 / 详情查询。原件下载走文件溯源。"""
+"""工程变更单列表查询。当时 Excel 下载走文件溯源。"""
 
 from __future__ import annotations
+
+from pathlib import Path
 
 from sqlalchemy.orm import Session
 
@@ -9,27 +11,19 @@ from app.repositories.engineering_change.change_order_repository import (
     EngineeringChangeOrderListRow,
     EngineeringChangeOrderRepository,
 )
-from app.repositories.engineering_change.effect_link_repository import (
-    EngineeringChangeEffectLinkRepository,
-)
 from app.repositories.engineering_change.upload_log_repository import (
     EngineeringChangeUploadLogRepository,
 )
 from app.schemas.dto.engineering_change_dto import EngineeringChangeOrderQueryDTO
-from app.schemas.vo.engineering_change_vo import (
-    EngineeringChangeDetailVO,
-    EngineeringChangeEffectLinkVO,
-    EngineeringChangeListRowVO,
-    EngineeringChangeOrderVO,
-    EngineeringChangeUploadLogVO,
-)
+from app.schemas.vo.engineering_change_vo import EngineeringChangeListRowVO
+from app.schemas.vo.user_vo import UserVO
+from app.services.file_trace.upload_file_service import UploadFileService
 
 
 class EngineeringChangeQueryService:
     def __init__(self) -> None:
         self.log_repo = EngineeringChangeUploadLogRepository()
         self.change_order_repo = EngineeringChangeOrderRepository()
-        self.link_repo = EngineeringChangeEffectLinkRepository()
 
     def paginate(
         self, db: Session, query: EngineeringChangeOrderQueryDTO
@@ -48,32 +42,19 @@ class EngineeringChangeQueryService:
         )
         return [self._to_list_row(row) for row in rows], total
 
-    def get_detail(self, db: Session, upload_log_id: int) -> EngineeringChangeDetailVO:
-        row = self.log_repo.get_by_id(db, upload_log_id)
-        if row is None:
+    def resolve_original_file(
+        self, db: Session, upload_log_id: int, current_user: UserVO
+    ) -> tuple[Path, str, str]:
+        log_row = self.log_repo.get_by_id(db, upload_log_id)
+        if log_row is None:
             raise NotFoundException("工程变更记录不存在")
-        change_orders = self.change_order_repo.list_by_upload_log_id(db, upload_log_id)
-        links = self.link_repo.list_by_change_order_ids(
-            db, [change_order.id for change_order in change_orders]
-        )
-        change_order_vos = [
-            EngineeringChangeOrderVO.model_validate(change_order) for change_order in change_orders
-        ]
-        return EngineeringChangeDetailVO(
-            log=EngineeringChangeUploadLogVO.model_validate(row),
-            change_orders=change_order_vos,
-            effect_links=[EngineeringChangeEffectLinkVO.model_validate(link) for link in links],
-        )
+        return UploadFileService().resolve_download(db, log_row.upload_file_id, current_user)
 
     def _to_list_row(self, row: EngineeringChangeOrderListRow) -> EngineeringChangeListRowVO:
         log_row = row.log
         change_order = row.change_order
-        is_rolled_back = log_row.status == "rolled_back" or (
-            change_order is not None and change_order.status == "rolled_back"
-        )
         if change_order is None:
             return EngineeringChangeListRowVO(
-                change_order_id=None,
                 upload_log_id=log_row.id,
                 location=log_row.location,
                 vehicle_model=log_row.vehicle_model,
@@ -85,7 +66,6 @@ class EngineeringChangeQueryService:
                 message=log_row.message,
                 created_by=log_row.created_by,
                 created_at=log_row.created_at,
-                is_rolled_back=is_rolled_back,
             )
         return EngineeringChangeListRowVO(
             change_order_id=change_order.id,
@@ -102,7 +82,6 @@ class EngineeringChangeQueryService:
             after_part_number=change_order.after_part_number,
             part_name=change_order.part_name,
             seq_no=change_order.seq_no,
-            change_order_status=change_order.status,
             location=log_row.location,
             vehicle_model=log_row.vehicle_model,
             effective_year=log_row.effective_year,
@@ -113,5 +92,4 @@ class EngineeringChangeQueryService:
             message=log_row.message,
             created_by=log_row.created_by,
             created_at=log_row.created_at,
-            is_rolled_back=is_rolled_back,
         )

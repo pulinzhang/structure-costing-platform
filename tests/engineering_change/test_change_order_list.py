@@ -6,6 +6,7 @@
 from __future__ import annotations
 
 from collections.abc import Generator
+from pathlib import Path
 
 import pytest
 from sqlalchemy import create_engine, event, text
@@ -35,6 +36,7 @@ from app.repositories.engineering_change.upload_log_repository import (
     EngineeringChangeUploadLogRepository,
 )
 from app.schemas.dto.engineering_change_dto import EngineeringChangeOrderQueryDTO
+from app.schemas.vo.user_vo import UserVO
 from app.services.engineering_change.list.query_service import EngineeringChangeQueryService
 
 CHANGE_ORDER_FIELD_NAMES = (
@@ -399,3 +401,71 @@ def test_bootstrap_rebuilds_when_before_assembly_node_id_missing() -> None:
             connection.execute(text("SELECT COUNT(*) FROM engineering_change_orders")).scalar() == 0
         )
     engine.dispose()
+
+
+def _list_viewer() -> UserVO:
+    return UserVO(
+        id=9,
+        username="ec_viewer",
+        real_name="查看员",
+        is_admin=False,
+        permissions=["op:engineering-change-order-list:view"],
+    )
+
+
+def test_failed_upload_lists_message_without_change_order(memory_db: Session) -> None:
+    _seed_book(memory_db)
+    upload_file_id = memory_db.query(UploadFile).one().id
+    EngineeringChangeUploadLogRepository().create(
+        memory_db,
+        EngineeringChangeUploadLogInsert(
+            upload_file_id=upload_file_id,
+            location=LOCATION,
+            vehicle_model="T2AA",
+            customer_name="奇瑞",
+            effective_year=2025,
+            effective_month=7,
+            original_filename="t2aa-fail.xlsx",
+            created_by="tester",
+            updated_by="tester",
+            status="failed",
+            message="工程变更单第2行：变更后总成不能为空",
+        ),
+    )
+    memory_db.commit()
+    items, total = EngineeringChangeQueryService().paginate(
+        memory_db,
+        EngineeringChangeOrderQueryDTO(page=1, size=20, vehicle_model="T2AA", status="failed"),
+    )
+    assert total == 1
+    assert items[0].change_order_id is None
+    assert items[0].status == "failed"
+    assert items[0].message == "工程变更单第2行：变更后总成不能为空"
+    assert items[0].vehicle_model == "T2AA"
+
+
+def test_resolve_original_excel(
+    memory_db: Session, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    from app.config import settings
+
+    upload_dir = tmp_path / "uploads"
+    relpath = "engineering-change/t2aa-fail.xlsx"
+    target = upload_dir / relpath
+    target.parent.mkdir(parents=True, exist_ok=True)
+    target.write_bytes(b"excel")
+    monkeypatch.setattr(settings, "UPLOAD_DIR", upload_dir)
+
+    log_id = _seed_book(memory_db)
+    upload_row = memory_db.query(UploadFile).one()
+    upload_row.stored_relpath = relpath.replace("\\", "/")
+    upload_row.original_filename = "t2aa-fail.xlsx"
+    upload_row.extension = ".xlsx"
+    memory_db.commit()
+
+    absolute_path, filename, media_type = EngineeringChangeQueryService().resolve_original_file(
+        memory_db, log_id, _list_viewer()
+    )
+    assert filename == "t2aa-fail.xlsx"
+    assert absolute_path.is_file()
+    assert "spreadsheet" in media_type
