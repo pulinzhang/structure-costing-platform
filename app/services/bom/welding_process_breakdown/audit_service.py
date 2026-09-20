@@ -6,6 +6,7 @@
 
 from __future__ import annotations
 
+from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
 
 from app.common.audit import AUDIT_APPROVED, AUDIT_PENDING, display_name
@@ -23,6 +24,8 @@ from app.schemas.vo.bom_welding_process_breakdown_vo import (
     BomWeldingProcessBreakdownBatchDeleteResultVO,
 )
 from app.schemas.vo.user_vo import UserVO
+
+WELDING_FEE_REFERENCED = "仍被焊接费引用，请先删除对应焊接费后再删"
 
 
 def _normalize_scope(
@@ -73,13 +76,17 @@ class BomWeldingProcessBreakdownAuditService:
             bom_version=bom_version,
             statuses=[AUDIT_APPROVED],
         )
-        deleted = self.repository.delete_unaudited_by_scope(
-            db,
-            location=location,
-            vehicle_model=vehicle_model,
-            bom_version=bom_version,
-        )
-        db.commit()
+        try:
+            deleted = self.repository.delete_unaudited_by_scope(
+                db,
+                location=location,
+                vehicle_model=vehicle_model,
+                bom_version=bom_version,
+            )
+            db.commit()
+        except IntegrityError:
+            db.rollback()
+            raise BusinessException(WELDING_FEE_REFERENCED) from None
         return BomWeldingProcessBreakdownBatchDeleteResultVO(
             location=location,
             vehicle_model=vehicle_model,

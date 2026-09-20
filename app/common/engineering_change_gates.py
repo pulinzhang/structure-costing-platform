@@ -122,7 +122,7 @@ EC_EFFECTIVE_TOO_EARLY = "生效年月必须晚于旧总成生效月"
 EC_ROLLBACK_BLOCKED = "其后还有未回滚的变更，或对象已审未反审，不能删本次"
 EC_ROLLBACK_REFERENCED = (
     "下游核算结果仍引用本次变更产生的零件或布点"
-    "（如冲压加工费、模具费），请先删除对应结果后再回滚"
+    "（如冲压加工费、模具费、焊接费），请先删除对应结果后再回滚"
 )
 EC_INTERNAL_REQUIRED = "交货总成、分总成必须有内部号"
 EC_ASSEMBLY_SKETCH_REQUIRED = "交货总成必须有总成图"

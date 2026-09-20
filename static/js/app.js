@@ -66,7 +66,7 @@ import { pageConfig as bomProcurementObjectGeneratePage } from './features/bom/p
 import { pageConfig as bomProcurementObjectSupplierUploadPage } from './features/bom/procurement-object/supplier-upload/index.js?v=20';
 import { pageConfig as bomProcurementObjectListPage } from './features/bom/procurement-object/list/index.js?v=44';
 import { pageConfig as bomWeldingProcessBreakdownGeneratePage } from './features/bom/welding-process-breakdown/generate/index.js?v=11';
-import { pageConfig as bomWeldingProcessBreakdownListPage } from './features/bom/welding-process-breakdown/list/index.js?v=53';
+import { pageConfig as bomWeldingProcessBreakdownListPage } from './features/bom/welding-process-breakdown/list/index.js?v=54';
 import { pageConfig as bomWeldingFeeCalcPage } from './features/bom/welding-fee/calc/index.js?v=16';
 import { pageConfig as bomWeldingFeeListPage } from './features/bom/welding-fee/list/index.js?v=25';
 import { pageConfig as engineeringChangeUploadPage } from './features/engineering-change/upload/index.js?v=15';

@@ -520,7 +520,7 @@ function openBatchDrawer(mode) {
     } else {
         remarkWrap?.classList.add('hidden');
         if (title) title.textContent = '批量删除';
-        if (hint) hint.textContent = '仅删除未审核记录；已审跳过。此操作不可恢复。';
+        if (hint) hint.textContent = '仅删除未审核记录；已审跳过。已有焊接费时无法删除，须先删对应焊接费。此操作不可恢复。';
     }
     openDrawer('wpbBatchDrawer', 'wpbBatchBackdrop');
 }

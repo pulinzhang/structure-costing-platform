@@ -121,7 +121,7 @@ bom_welding_fee_calc_logs        一次「开始计算」一条（含 processing
 ```
 
 **唯一键：** `(year, location, vehicle_model, source_breakdown_node_id)`  
-`source_breakdown_node_id` 已能区分同号多树。`bom_version` **抄拆解作展示**，不进唯一键、不是计算门禁。`level` **冗余**，供筛选和索引，不进唯一键。建议索引：`(year, location, vehicle_model, level)`。
+`source_breakdown_node_id` 已能区分同号多树，并声明 `ForeignKey(bom_welding_process_breakdown_node.id, ondelete="RESTRICT", onupdate="RESTRICT")`。拆解删除 / 重生成清旧行时，仍有费行 → `IntegrityError` → 「仍被焊接费引用，请先删除对应焊接费后再删」。可空：`NULL` 不挡删。`bom_version` **抄拆解作展示**，不进唯一键、不是计算门禁。`level` **冗余**，供筛选和索引，不进唯一键。建议索引：`(year, location, vehicle_model, level)`。
 
 ### 6.1 主表 `bom_welding_fees`
 
@@ -129,6 +129,7 @@ bom_welding_fee_calc_logs        一次「开始计算」一条（含 processing
 |------|------|------|
 | 范围 | `year`, `location`, `vehicle_model` | 计算门禁。`bom_version` 抄拆解，不是入参 |
 | **层级** | **`level`** | `SmallInteger`，**抄拆解**，≥0；禁止业务代码写死只允许 0/1 |
+| 溯源 | `source_breakdown_node_id` | 拆解主表 id；`RESTRICT`；拆解不 `count` 费行 |
 | 零件 | `part_number`, `part_name`, `customer_name` | 来自拆解节点 |
 | 原文 | `weld_info_raw` | 计算快照 |
 | 计数 | `process_line_count` / `matched_line_count` / `missing_price_count` | |
@@ -257,3 +258,4 @@ static/js/features/bom/welding-fee/{calc,list}/
 | 2026-09-16 | 计算页不选层级，始终算拆解全部层。 |
 | 2026-09-16 | 身份改问账期 `require_overlaps_year`；取件仍 join 节点年交集。 |
 | 2026-09-18 | 取件改为以 L0 树根年交集为准；禁止用 L1/L2 本行生失效筛期。 |
+| 2026-09-20 | `source_breakdown_node_id` 挂拆解 `RESTRICT`；删/重生成拆解时 Toast「仍被焊接费引用…」。 |

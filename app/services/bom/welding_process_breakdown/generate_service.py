@@ -12,6 +12,7 @@ from collections.abc import Callable
 from datetime import datetime
 from decimal import Decimal
 
+from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
 
 from app.common.audit import AUDIT_APPROVED, AUDIT_PENDING, audit_create
@@ -38,6 +39,7 @@ from app.schemas.vo.bom_welding_process_breakdown_vo import (
     BomWeldingProcessBreakdownGenerateResultVO,
 )
 from app.schemas.vo.user_vo import UserVO
+from app.services.bom.welding_process_breakdown.audit_service import WELDING_FEE_REFERENCED
 from app.services.bom.welding_process_breakdown.bom_tree import (
     annotate_parse_status,
     build_children_map,
@@ -307,6 +309,16 @@ class BomWeldingProcessBreakdownGenerateService:
                 detail_text=process_log.build(),
             )
             raise
+        except IntegrityError:
+            db.rollback()
+            process_log.error(WELDING_FEE_REFERENCED)
+            self._fail_log(
+                db,
+                log_id=log_id,
+                message=WELDING_FEE_REFERENCED,
+                detail_text=process_log.build(),
+            )
+            raise BusinessException(WELDING_FEE_REFERENCED) from None
         except Exception:
             db.rollback()
             logger.exception("生成焊接工艺拆解失败")
