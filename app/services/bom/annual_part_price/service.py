@@ -39,6 +39,15 @@ from app.schemas.vo.bom_annual_part_price_vo import (
 )
 from app.schemas.vo.supplier_vo import SupplierChoiceVO
 from app.schemas.vo.user_vo import UserVO
+from app.services.bom.annual_part_price.engineering_change import (
+    EngineeringChangeAnnualPartPriceCloneResult,
+)
+from app.services.bom.annual_part_price.engineering_change import (
+    clone_revise_for_engineering_change as clone_revise_annual_part_price,
+)
+from app.services.bom.annual_part_price.engineering_change import (
+    delete_for_engineering_change_rollback as delete_annual_part_price_for_rollback,
+)
 from app.services.masterdata.location.location_service import LocationService
 from app.services.masterdata.supplier import SupplierService
 
@@ -391,3 +400,28 @@ class BomAnnualPartPriceService:
 
     def get_years(self, db: Session) -> list[int]:
         return self.repository.get_distinct_years(db)
+
+    def clone_revise_for_engineering_change(
+        self,
+        db: Session,
+        *,
+        location: str,
+        old_part_number: str,
+        new_part_number: str,
+        from_year: int,
+        current_user: UserVO,
+    ) -> list[EngineeringChangeAnnualPartPriceCloneResult]:
+        """换号抄年度零件价。只 flush。实现见 engineering_change。"""
+        return clone_revise_annual_part_price(
+            self.repository,
+            db,
+            location=location,
+            old_part_number=old_part_number,
+            new_part_number=new_part_number,
+            from_year=from_year,
+            current_user=current_user,
+        )
+
+    def delete_for_engineering_change_rollback(self, db: Session, price_id: int) -> None:
+        """回滚删新年度零件价行。只 flush。"""
+        delete_annual_part_price_for_rollback(self.repository, db, price_id)

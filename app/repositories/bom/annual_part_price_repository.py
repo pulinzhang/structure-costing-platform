@@ -51,6 +51,27 @@ class BomAnnualPartPriceRepository:
             .first()
         )
 
+    def list_by_part_from_year(
+        self,
+        db: Session,
+        *,
+        location: str,
+        part_number: str,
+        from_year: int,
+    ) -> list[BomAnnualPartPrice]:
+        return (
+            db.query(BomAnnualPartPrice)
+            .filter(
+                and_(
+                    BomAnnualPartPrice.location == location,
+                    BomAnnualPartPrice.part_number == part_number,
+                    BomAnnualPartPrice.year >= from_year,
+                )
+            )
+            .order_by(BomAnnualPartPrice.year.asc(), BomAnnualPartPrice.id.asc())
+            .all()
+        )
+
     def list_by_location_year(
         self, db: Session, location: str, year: int
     ) -> list[BomAnnualPartPrice]:
