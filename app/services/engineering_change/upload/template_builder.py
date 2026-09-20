@@ -389,6 +389,8 @@ COMBINED_CHANGE_ORDER_NOTE = (
     f"{CHANGE_TYPE_STOP}：变更后总成空，材料清单不写这个总成。"
     f"{CHANGE_TYPE_NOT_INSTALL}：变更后零件空；用量 0、备注含「{CHANGE_TYPE_NOT_INSTALL}」。"
     f"{CHANGE_TYPE_ADD_PART}：加在原来的总成上；变更前零件空、变更后零件写新号。"
+    "材料清单和确认表项目号、版本都要对齐（版本写成同一个字）；"
+    "先到焊接工程生成采购对象；生效月须在项目有效期内。细节看「工程变更填写说明」。"
 )
 
 COMBINED_BOOK = TemplateBook(
@@ -415,6 +417,8 @@ def _scenario_note(sample: ChangeOrderSample) -> str:
         f"{CHANGE_TYPE_STOP}：变更后总成空，材料清单不写这个总成。"
         f"{CHANGE_TYPE_NOT_INSTALL}：变更后零件空；用量 0、备注含「{CHANGE_TYPE_NOT_INSTALL}」。"
         f"{CHANGE_TYPE_ADD_PART}：加在原来的总成上；变更前零件空、变更后零件写新号。"
+        "材料清单和确认表项目号、版本都要对齐（版本写成同一个字）；"
+        "先到焊接工程生成采购对象；生效月须在项目有效期内。细节看「工程变更填写说明」。"
     )
 
 
@@ -471,6 +475,7 @@ def build_engineering_change_template(
     assert order_sheet is not None
     order_sheet.title = "工程变更单"
     _write_change_order(order_sheet, samples.change_orders, samples.change_order_note, meta)
+    _write_ec_fill_instructions(dest_wb.create_sheet("工程变更填写说明", 1))
 
     bom_wb = load_workbook(BytesIO(build_bom_material_template()[0]))
     bom_sheet = _copy_sheet(bom_wb["车身件材料清单"], dest_wb, "车身件材料清单")
@@ -531,7 +536,7 @@ def _write_change_order(
     sheet["A2"].font = Font(name="微软雅黑", size=9, color="666666")
     sheet["A2"].alignment = Alignment(wrap_text=True, vertical="center")
     sheet.merge_cells("A2:J2")
-    sheet.row_dimensions[2].height = 110
+    sheet.row_dimensions[2].height = 150
     for col, header in enumerate(CHANGE_ORDER_HEADERS, start=1):
         cell = sheet.cell(4, col, header)
         cell.font = head
@@ -572,6 +577,35 @@ def _write_change_order(
     for col, width in enumerate(widths, start=1):
         sheet.column_dimensions[chr(64 + col)].width = width
     sheet.freeze_panes = "A5"
+
+
+def _write_ec_fill_instructions(sheet: Worksheet) -> None:
+    sheet["A1"] = "工程变更填写说明"
+    sheet["A1"].font = Font(name="微软雅黑", size=14, bold=True)
+    lines = (
+        "上传页不填版本。车身件材料清单第 2 行「版本：」必填；冲压工艺确认表表头「版本」必填。"
+        "两张表必须写成同一个字（样表都是 EC-202507）。任一张空、或两张写成不一样，整单不能导入。"
+        "设变后的总成、工艺、布点都用这个字，不会改成投产清单的 D/00，也不会各用各的。布点不要另填表。",
+        "一本只能一个项目号。系统会拆：材料清单第 3 行「项目代号」、确认表标题"
+        "「某某项目冲压工艺确认表」里「项目」前面那一段（或表头项目名称）。"
+        "必须和上传页、工程变更单同一项目。拆不出或对不上，整单不能导入。",
+        "上传前，该基地+项目须已在「焊接工程 → 采购对象」生成过清单。没有清单则拒收；系统不代建空清单。",
+        "完成停止：材料清单不要写这个总成；确认表可以空表体。项目号仍要对齐；"
+        "两张表头「版本」仍必须同一字且非空。没有「只建议、不拦截」。",
+        "先自洽：确认表上的零件号、变更单上的变更后零件，都必须写在材料清单里。"
+        "对不上时系统一次列出缺哪些号，请改表后再传。",
+        "变更生效月必须在该项目有效期内。早于项目开始或晚于项目结束，整单不能导入。完成停止同样。",
+    )
+    sheet.merge_cells("A1:F1")
+    for index, line in enumerate(lines, start=2):
+        cell = sheet.cell(index, 1, f"{index - 1}. {line}")
+        cell.font = Font(name="微软雅黑", size=10)
+        cell.alignment = Alignment(wrap_text=True, vertical="top")
+        sheet.merge_cells(start_row=index, start_column=1, end_row=index, end_column=6)
+        sheet.row_dimensions[index].height = 48
+    sheet.column_dimensions["A"].width = 28
+    for col in ("B", "C", "D", "E", "F"):
+        sheet.column_dimensions[col].width = 18
 
 
 def _write_bom_header(sheet: Worksheet, meta: TemplateMeta) -> None:

@@ -6,7 +6,11 @@ from dataclasses import dataclass, field
 
 from sqlalchemy.orm import Session
 
-from app.common.engineering_change_gates import CHANGE_TYPE_STOP, EFFECT_WELDING_BREAKDOWN
+from app.common.engineering_change_gates import (
+    CHANGE_TYPE_STOP,
+    EFFECT_WELDING_BREAKDOWN,
+    require_after_assembly_node,
+)
 from app.parsers.engineering_change.change_order_parser import ChangeOrderRowParsed
 from app.repositories.engineering_change.effect_link_repository import (
     EngineeringChangeEffectLinkInsert,
@@ -20,7 +24,6 @@ from app.services.bom.welding_process_breakdown.service import BomWeldingProcess
 class BreakdownPersistResult:
     inserted_count: int
     effect_links: list[EngineeringChangeEffectLinkInsert] = field(default_factory=list)
-    warnings: list[str] = field(default_factory=list)
 
 
 def persist_breakdown(
@@ -33,15 +36,12 @@ def persist_breakdown(
     sort_no_start: int = 0,
     change_order_id: int = 0,
 ) -> BreakdownPersistResult:
-    if change_order.change_type == CHANGE_TYPE_STOP or after_root_id is None:
+    if change_order.change_type == CHANGE_TYPE_STOP:
         return BreakdownPersistResult(inserted_count=0)
-
-    node = BomEngineeringService().get_node_row(db, after_root_id)
-    if node is None:
-        return BreakdownPersistResult(
-            inserted_count=0,
-            warnings=["新树根不存在，跳过拆解插行"],
-        )
+    node = require_after_assembly_node(
+        None if after_root_id is None else BomEngineeringService().get_node_row(db, after_root_id),
+        part_number=change_order.after_assembly_part_number,
+    )
 
     breakdown_ids = BomWeldingProcessBreakdownService().copy_for_new_tree(
         db,

@@ -5,14 +5,18 @@ from __future__ import annotations
 from collections.abc import Iterable, Sequence
 from dataclasses import dataclass
 from decimal import Decimal
+from typing import TypeVar
 
 from app.common.period import is_in_period, period
 from app.common.timezone import now
+from app.exceptions.base import BusinessException
+
+_TNode = TypeVar("_TNode")
 
 # --- 三条现网门禁 ---
 EC_GATE_FULL_GENERATE = "设变后请走工程变更重传，勿整包生成"
-EC_GATE_ENGINE_BREAKDOWN = "缺新树拆解，请工程变更重传"
-EC_GATE_ENGINE_PROCUREMENT = "缺新树采购对象，请工程变更重传"
+EC_GATE_ENGINE_BREAKDOWN = "设变后的总成还没有拆解，请工程变更重传"
+EC_GATE_ENGINE_PROCUREMENT = "设变后的总成还没有采购对象，请工程变更重传"
 
 
 @dataclass(frozen=True, slots=True)
@@ -83,7 +87,7 @@ EC_CHANGE_ORDER_TYPE_INVALID = "变更类型只准四句：完成停止、改图
 EC_CHANGE_ORDER_COLUMNS = "工程变更单这一行填法不对"
 EC_CHANGE_ORDER_ASSEMBLY_REPEAT = "同一个总成写了多次"
 EC_EFFECTIVE_MISMATCH = "生效年月与上传页不一致"
-EC_PROJECT_MISMATCH = "工程变更单项目和上传页不一致"
+EC_PROJECT_MISMATCH = "一本只能一个项目号"
 
 
 def quoted(value: object | None) -> str:
@@ -94,8 +98,8 @@ def quoted(value: object | None) -> str:
     return f"「{text}」" if text else "（空）"
 
 
-def listed(values: Iterable[object]) -> str:
-    """拒收文案里的一串号，去空去重。"""
+def unique_texts(values: Iterable[object]) -> list[str]:
+    """去空去重，保持先出现的顺序。"""
     items: list[str] = []
     seen: set[str] = set()
     for value in values:
@@ -104,6 +108,12 @@ def listed(values: Iterable[object]) -> str:
             continue
         seen.add(text)
         items.append(text)
+    return items
+
+
+def listed(values: Iterable[object]) -> str:
+    """拒收文案里的一串号，去空去重。"""
+    items = unique_texts(values)
     return "、".join(items) if items else "（无）"
 
 
@@ -116,6 +126,75 @@ EC_NOT_INSTALL_SIGNAL = "此件不装必须用量 0 且备注含「此件不装�
 EC_ADD_VS_REVISE = "改图漏了变更前零件，或把新零件号写成了总成"
 EC_PROCESS_MISSING_NEW = "冲压工艺确认表少了这个新零件号"
 EC_PROCESS_EXTRA_NEW = "冲压工艺确认表多了材料清单没有的号"
+EC_PROCESS_NOT_ON_BOM = "冲压工艺确认表有、材料清单没有"
+EC_AFTER_PART_NOT_ON_BOM = "工程变更单变更后零件有、材料清单没有"
+EC_BOM_HEADER_VERSION_REQUIRED = "车身件材料清单表头版本必须填写"
+EC_PROCESS_HEADER_VERSION_REQUIRED = "冲压工艺确认表表头版本必须填写"
+EC_BOM_PROCESS_VERSION_MISMATCH = "车身件材料清单和冲压工艺确认表的版本必须写成同一个字"
+EC_PROCUREMENT_LIST_REQUIRED = "请先到焊接工程生成采购对象清单"
+EC_PROCUREMENT_LIST_REQUIRED_DETAIL = (
+    f"{EC_PROCUREMENT_LIST_REQUIRED}。"
+    "打开「焊接工程 → 采购对象」，对这个基地和项目点一次生成。"
+    "没有生成过就不能传工程变更；只做完成停止也一样。系统不会替你建一份空的。"
+)
+EC_AFTER_ROOT_MISSING = "设变后的总成没有写进系统，整单不能导入"
+
+
+def require_bom_header_version(value: str | None) -> str:
+    text = (value or "").strip()
+    if not text:
+        raise BusinessException(
+            f"{EC_BOM_HEADER_VERSION_REQUIRED}。"
+            "请打开「车身件材料清单」，在第 2 行「版本：」后面填上，例如 EC-202507。没填就不能导入。"
+        )
+    return text
+
+
+def require_process_header_version(value: str | None) -> str:
+    text = (value or "").strip()
+    if not text:
+        raise BusinessException(
+            f"{EC_PROCESS_HEADER_VERSION_REQUIRED}。"
+            "请打开「冲压工艺确认表」，填上表头「版本」，和材料清单第 2 行写成一样。"
+            "确认表可以没有零件行，版本这一格仍要填。"
+        )
+    return text
+
+
+def require_ec_sheet_versions(*, bom_version: str | None, process_version: str | None) -> str:
+    """材料清单与确认表版本必须同一非空字。给人看的拒收只写这一处。"""
+    bom = require_bom_header_version(bom_version)
+    process = require_process_header_version(process_version)
+    if bom != process:
+        raise BusinessException(
+            f"{EC_BOM_PROCESS_VERSION_MISMATCH}。"
+            f"材料清单写成了{quoted(bom)}，确认表写成了{quoted(process)}。"
+            "请改成同一个字后再传。"
+        )
+    return bom
+
+
+def after_assembly_missing_message(part_number: object | None) -> str:
+    return (
+        f"{EC_AFTER_ROOT_MISSING}。"
+        f"工程变更单上的变更后总成{quoted(part_number)}对不上。"
+        "请看「车身件材料清单」里有没有这个交货总成，改完再传。"
+    )
+
+
+def require_after_assembly_node(node: _TNode | None, *, part_number: object | None) -> _TNode:
+    if node is None:
+        raise BusinessException(after_assembly_missing_message(part_number))
+    return node
+
+
+def after_assembly_not_on_bom_message(part_number: object | None) -> str:
+    return (
+        f"{EC_BOM_NEW_ROOT}：变更后总成{quoted(part_number)}"
+        "没有写在「车身件材料清单」里。请在材料清单写出这一号后再传。"
+    )
+
+
 EC_PROCESS_SHARED_OLD = "这个旧号还装在别的总成上，不能按改图停掉"
 EC_SHEET_REQUIRED = "缺工程变更单 / 车身件材料清单 / 冲压工艺确认表"
 EC_EFFECTIVE_TOO_EARLY = "生效年月必须晚于旧总成生效月"
@@ -173,8 +252,6 @@ def is_not_install_row(
     设计部 Excel 习惯用量写 0 表示「本总成不再装」；仅 0 也可能是漏填。
     备注固定句防呆，避免把「暂定 0」误删出树。
     """
-    from app.exceptions.base import BusinessException
-
     has_zero = qty is not None and Decimal(str(qty)) == 0
     has_signal = NOT_INSTALL_REMARK in (remark or "")
     if has_zero and has_signal:

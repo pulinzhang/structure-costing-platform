@@ -112,7 +112,7 @@ def start_upload(
     log_id = log_row.id
     refreshed = _log_repo.get_by_id(db, log_id)
     if refreshed is None:
-        raise BusinessException("工程变更上传记录写入后丢失")
+        raise BusinessException("上传没有记上，请再传一次。")
     _log_repo.update(db, refreshed, EngineeringChangeUploadLogUpdate(task_id=task.task_id))
     db.commit()
 

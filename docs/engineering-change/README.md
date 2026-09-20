@@ -1,7 +1,7 @@
 # 工程变更
 
 跨切片能力（BOM / 冲压 / 核价）。**工程变更上传、列表、回滚已落地**（`app/services/engineering_change/`）。  
-有效期与核价按月见 [bom-process-die-effective-period-design.md](bom-process-die-effective-period-design.md)。
+有效期与核价按月见 [bom-process-die-effective-period-design.md](bom-process-die-effective-period-design.md)。工程变更门禁从严：一本一个项目号；材料清单与确认表版本必须同一字；生效月须在项目期内；必须先有 SOP 采购对象清单头；版本与清单头不得凑合。
 
 > 2–4 年后敢改：先读本节，再下钻长设计稿。长稿与代码冲突时以**代码 + 本节**为准。
 
@@ -129,7 +129,9 @@ flowchart TB
 | `EC_PART_SKETCH_REQUIRED` | 材料清单里的一级/二级零件没有单件图示 | 在「单件图示」列贴图，或在冲压工艺确认表给出该号简图（系统会抄到材料清单图目录）；总成图示按合并总成只需一张；分总成本层不要求；此件不装不要求 |
 | `EC_SHEET_REQUIRED` | 缺工程变更单 / 车身件材料清单 / 冲压工艺确认表 | 三张表缺一不可；不要「零件汇总」 |
 | `EC_EFFECTIVE_MISMATCH` | 生效年月与上传页不一致 | 上传页的年、月要和工程变更单一致；一次只能一个变更年月 |
-| `EC_PROJECT_MISMATCH` | 工程变更单项目和上传页不一致 | 对照上传页、工程变更单、材料清单项目代号 |
+| `EC_PROJECT_MISMATCH` | 一本只能一个项目号 | 对照上传页、工程变更单、材料清单项目代号、确认表标题里的项目 |
+| `EC_PROCUREMENT_LIST_REQUIRED` | 还没有采购对象清单头 | 先到焊接工程生成；完成停止也不例外 |
+| `EC_BOM_PROCESS_VERSION_MISMATCH` | 两张表版本不是同一个字 | 材料清单第 2 行与确认表表头必须写成一样 |
 | `EC_CHANGE_ORDER_*` | 变更单行数、类型、填法、同一个总成写了多次 | 类型只准四句：完成停止、改图、增加零件、此件不装；一个总成改了好几处请把总成格子上下合并 |
 | `EC_ROLLBACK_BLOCKED` | 不能删本次 | 其后还有未回滚变更，或采购对象已审未反审 |
 | `EC_ROLLBACK_REFERENCED` | 不能删本次 | 加工费/模具费/焊接费等仍引用本次变更产生的零件或布点 |

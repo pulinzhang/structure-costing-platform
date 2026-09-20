@@ -182,7 +182,7 @@ start_generate
 
 现网 generate 扫 **整份 snapshot**：有已审 409，无已审则删未审再全林。Parser / UNIQUE **不改**。
 
-**工程变更写入后**才收窄本页「开始生成」：该 snapshot 一旦有已失效树根、**或** 存在生效月不是项目 SOP 开始月的树根 → 拒绝（即使没有已审）。与采购对象同一把钥匙 `snapshot_blocks_full_generate`。缺新树拆解走 [工程变更](../engineering-change/part-number-revision-design.md) 重传，本页不提供「只补该树」。工程变更写入前本页保持整包 generate。
+**工程变更写入后**才收窄本页「开始生成」：该 snapshot 一旦有已失效树根、**或** 存在生效月不是项目 SOP 开始月的树根 → 拒绝（即使没有已审）。与采购对象同一把钥匙 `snapshot_blocks_full_generate`。设变后的总成没有拆解走 [工程变更](../engineering-change/part-number-revision-design.md) 重传，本页不提供「只补该树」。工程变更写入前本页保持整包 generate。
 
 工程变更同一事务：按新旧 BOM 节点对照，把旧树 **已有拆解结果** 抄到新树再插一套（主表身份对齐新节点；`weld_info_raw` / 解析态 / 过程量等与 **全部明细行**——可多行——从旧结果照抄）。**禁止**按新节点 `weld_info` 重新自动拆（保留手工改量）。不删旧树拆解。无旧拆解可对的新节点不插。行上 `bom_version` **抄新树根字**，不抄 snapshot 头。核价引擎缺拆解时 **仍调** 本页同进程 `generate`（找包仍用 SOP 头）；若本钥匙拦住，由引擎映射为 `EC_GATE_ENGINE_BREAKDOWN`（工程变更 §4.6 门禁之 3）——不是「引擎从不调 generate」。工程变更上传是长任务，不走本页。
 

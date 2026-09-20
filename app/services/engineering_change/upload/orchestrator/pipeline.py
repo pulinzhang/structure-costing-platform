@@ -16,6 +16,7 @@ from sqlalchemy.orm import Session
 from app.common.engineering_change_gates import (
     CHANGE_TYPE_STOP,
     EFFECT_ASSEMBLY_L0,
+    after_assembly_not_on_bom_message,
 )
 from app.common.period import previous_month
 from app.exceptions.base import BusinessException
@@ -132,8 +133,6 @@ def run_engineering_change_pipeline(
         links.extend(breakdown.effect_links)
         sort_no += len(breakdown.effect_links)
         breakdown_count += breakdown.inserted_count
-        warnings.extend(procurement.warnings)
-        warnings.extend(breakdown.warnings)
 
     report_progress(on_progress, 90, "工艺与布点")
     process_links, process_count, process_version = persist_process_parts(
@@ -149,6 +148,7 @@ def run_engineering_change_pipeline(
         sort_no_start=sort_no,
         expiry_year=prepared.project_expiry_year,
         expiry_month=prepared.project_expiry_month,
+        expected_version=prepared.node_bom_version or "",
     )
     links.extend(process_links)
     sort_no += len(process_links)
@@ -162,7 +162,7 @@ def run_engineering_change_pipeline(
         vehicle_model=prepared.vehicle_model,
         current_user=current_user,
         sort_no_start=sort_no,
-        version=process_version or None,
+        version=process_version,
         expiry_year=prepared.project_expiry_year,
         expiry_month=prepared.project_expiry_month,
     )
@@ -266,7 +266,9 @@ def _plant_or_expire(
             {},
         )
     if item.sliced_bom_nodes is None:
-        raise BusinessException("缺车身件材料清单")
+        raise BusinessException(
+            after_assembly_not_on_bom_message(change_order.after_assembly_part_number)
+        )
     plant = plant_change_tree(
         db,
         snapshot_id=item.snapshot_id,

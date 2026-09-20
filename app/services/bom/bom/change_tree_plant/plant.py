@@ -19,6 +19,7 @@ from app.common.engineering_change_gates import (
     EC_QTY_CHANGED,
     NOT_INSTALL_REMARK,
     is_not_install_row,
+    require_bom_header_version,
 )
 from app.exceptions.base import BusinessException
 from app.models.bom import BomNode
@@ -75,7 +76,7 @@ def plant_change_tree(
     current_user: UserVO,
     node_bom_version: str | None = None,
 ) -> BomChangePlantResult:
-    snapshot_vo = bom_service.get_snapshot(db, snapshot_id)
+    bom_version = require_bom_header_version(node_bom_version)
     audit = audit_create(current_user)
     session = _PlantSession(
         bom_service=bom_service,
@@ -83,7 +84,7 @@ def plant_change_tree(
         snapshot_id=snapshot_id,
         location=location,
         vehicle_model=vehicle_model,
-        bom_version=(node_bom_version or "").strip() or snapshot_vo.bom_version,
+        bom_version=bom_version,
         effective_year=effective_year,
         effective_month=effective_month,
         expiry_year=expiry_year,

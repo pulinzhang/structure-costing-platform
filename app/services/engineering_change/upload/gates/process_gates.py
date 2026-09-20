@@ -13,11 +13,11 @@ from app.common.engineering_change_gates import (
     CHANGE_TYPE_ADD_PART,
     CHANGE_TYPE_REVISE,
     CHANGE_TYPE_STOP,
-    EC_BOM_NEW_ROOT,
     EC_PROCESS_EXTRA_NEW,
     EC_PROCESS_MISSING_NEW,
     EC_PROCESS_SHARED_OLD,
     PART_LEVEL_ASSEMBLY,
+    after_assembly_not_on_bom_message,
     listed,
     quoted,
 )
@@ -25,6 +25,7 @@ from app.exceptions.base import BusinessException
 from app.parsers.bom.bom_parser import BomParsedNode
 from app.parsers.engineering_change.change_order_parser import ChangeOrderRowParsed
 from app.parsers.engineering_change.sheet_extract import SHEET_PROCESS
+from app.parsers.stamping.models.parse_result import ParserResult
 from app.parsers.stamping.stamping_parser import parse_stamping_excel
 from app.services.bom.bom.engineering import BomEngineeringService
 from app.services.stamping.stamping_service import StampingPartService
@@ -79,11 +80,11 @@ def validate_process_hard_gates(
     db: Session,
     *,
     items: list[ProcessGateItem],
-    process_sheet: bytes | None,
     location: str,
     vehicle_model: str,
     effective_year: int,
     effective_month: int,
+    process_part_numbers: set[str],
     bom_service: BomEngineeringService | None = None,
     stamping_service: StampingPartService | None = None,
 ) -> dict[str, str]:
@@ -93,7 +94,7 @@ def validate_process_hard_gates(
     """
     bom = bom_service or BomEngineeringService()
     stamping = stamping_service or StampingPartService()
-    process_numbers = _parse_process_part_numbers(process_sheet)
+    process_numbers = process_part_numbers
     as_of_rows = stamping.list_parts_as_of_for_engineering_change(
         db,
         location=location,
@@ -112,8 +113,7 @@ def validate_process_hard_gates(
         nodes = item.sliced_nodes
         if nodes is None:
             raise BusinessException(
-                f"{EC_BOM_NEW_ROOT}：变更后总成 "
-                f"{quoted(item.change_order.after_assembly_part_number)} 没有材料清单。"
+                after_assembly_not_on_bom_message(item.change_order.after_assembly_part_number)
             )
         old_nodes = bom.list_subtree_nodes(db, root_id=item.before_root_id)
         old_tree_numbers = {(node.part_number or "").strip() for node in old_nodes}
@@ -171,7 +171,7 @@ def validate_process_hard_gates(
     if extra:
         raise BusinessException(
             f"{EC_PROCESS_EXTRA_NEW}：{listed(extra)}。"
-            "冲压工艺确认表只写这次换号或新加的冲压件。"
+            "冲压工艺确认表只写这次换号或新加的冲压件。请删掉多出来的号，或把这些号写进材料清单后再传。"
         )
     return revise_old_to_new
 
@@ -214,36 +214,14 @@ def _parsed_needs_process(nodes: list[BomParsedNode], add_row: BomParsedNode) ->
     return category == "stamping"
 
 
-def _parse_process_part_numbers(process_sheet: bytes | None) -> set[str]:
-    if not process_sheet:
-        return set()
-    with tempfile.NamedTemporaryFile(suffix=".xlsx", delete=False) as tmp:
-        tmp.write(process_sheet)
-        tmp_path = tmp.name
-    try:
-        parsed = parse_stamping_excel(tmp_path)
-    finally:
-        Path(tmp_path).unlink(missing_ok=True)
-    return {
-        (part.part_number or "").strip()
-        for part in parsed.parts
-        if (part.part_number or "").strip()
-    }
-
-
-def parse_process_part_sketches(file_content: bytes | None) -> dict[str, bytes]:
-    """从工程变更原件抽冲压工艺确认表零件简图。必须读原 xlsx，抽表会丢掉 WMF。"""
+def parse_process_confirmation(file_content: bytes | None) -> ParserResult:
+    """整本或抽出的 xlsx → 「冲压工艺确认表」。空字节当空表。"""
     if not file_content:
-        return {}
+        return ParserResult()
     with tempfile.NamedTemporaryFile(suffix=".xlsx", delete=False) as tmp:
         tmp.write(file_content)
         tmp_path = tmp.name
     try:
-        parsed = parse_stamping_excel(tmp_path, sheet_title=SHEET_PROCESS)
+        return parse_stamping_excel(tmp_path, sheet_title=SHEET_PROCESS)
     finally:
         Path(tmp_path).unlink(missing_ok=True)
-    return {
-        (part_number or "").strip(): payload
-        for part_number, payload in parsed.images_by_part.items()
-        if (part_number or "").strip() and payload
-    }

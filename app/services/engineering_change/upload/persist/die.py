@@ -11,7 +11,10 @@ from __future__ import annotations
 from sqlalchemy.orm import Session
 
 from app.common.audit import audit_create
-from app.common.engineering_change_gates import EFFECT_DIE_PART
+from app.common.engineering_change_gates import (
+    EFFECT_DIE_PART,
+    require_process_header_version,
+)
 from app.common.period import previous_month
 from app.repositories.engineering_change.effect_link_repository import (
     EngineeringChangeEffectLinkInsert,
@@ -32,11 +35,12 @@ def persist_die_parts(
     vehicle_model: str,
     current_user: UserVO,
     sort_no_start: int,
-    version: str | None = None,
+    version: str,
     expiry_year: int | None = None,
     expiry_month: int | None = None,
 ) -> tuple[list[EngineeringChangeEffectLinkInsert], int, dict[str, int]]:
     """布点不读 Excel。返回 (效果链接, 新插入件数, 新零件号→布点 id)。"""
+    version = require_process_header_version(version)
     if not revise_old_to_new:
         return [], 0, {}
 

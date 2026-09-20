@@ -6,15 +6,17 @@ import logging
 
 from sqlalchemy.orm import Session
 
-from app.common.audit import audit_create, display_name
-from app.common.timezone import now
+from app.common.audit import audit_create
+from app.common.engineering_change_gates import (
+    EC_AFTER_ROOT_MISSING,
+    EC_PROCUREMENT_LIST_REQUIRED_DETAIL,
+)
 from app.exceptions.base import BusinessException, NotFoundException
 from app.models.bom.node import BomNode, BomSnapshot
 from app.models.bom.procurement_object import BomProcurementObject, BomProcurementObjectList
 from app.repositories.bom.bom.node import BomNodeRepository
 from app.repositories.bom.bom.snapshot import BomSnapshotRepository
 from app.repositories.bom.procurement_object_repository import BomProcurementObjectRepository
-from app.schemas.dto.bom_procurement_object_dto import BomProcurementObjectListWrite
 from app.schemas.vo.user_vo import UserVO
 from app.services.bom.bom.trees import collect_subtree
 from app.services.bom.procurement_object.classify import (
@@ -32,7 +34,7 @@ logger = logging.getLogger("service.bom.procurement_object.insert")
 
 
 class BomProcurementObjectInsertService:
-    """工程变更插行门面：无头建空头；同号或树上同一位置抄确认；不删旧行。"""
+    """工程变更插行门面：无清单头拒收；同号或树上同一位置抄确认；不删旧行。"""
 
     def __init__(self) -> None:
         self.snapshot_repo = BomSnapshotRepository()
@@ -58,14 +60,16 @@ class BomProcurementObjectInsertService:
         all_nodes = self.node_repo.list_by_snapshot(db, snapshot_id)
         new_tree = collect_subtree(all_nodes, new_l0_id)
         if not new_tree:
-            raise BusinessException("新交货总成树为空，无法插采购对象")
+            raise BusinessException(
+                f"{EC_AFTER_ROOT_MISSING}。设变后的总成在系统里没有零件，不能插采购对象。"
+            )
         old_tree = collect_subtree(all_nodes, old_l0_id) if old_l0_id else []
         old_by_number = self._index_old_object_rows(db, snapshot_id, old_tree)
         new_to_old = _new_to_old_part_numbers(old_tree, new_tree)
 
         classified = classify_nodes(new_tree)
         audit = audit_create(current_user)
-        header = self._ensure_header(db, snapshot=snapshot, current_user=current_user)
+        header = self._require_header(db, snapshot=snapshot)
 
         confirm_by_node: ConfirmByNode = {}
         for row in classified.rows:
@@ -92,51 +96,16 @@ class BomProcurementObjectInsertService:
         )
         return inserted_ids
 
-    def _ensure_header(
+    def _require_header(
         self,
         db: Session,
         *,
         snapshot: BomSnapshot,
-        current_user: UserVO,
     ) -> BomProcurementObjectList:
         existing = self.repository.get_list_by_snapshot_id(db, snapshot.id)
-        if existing is not None:
-            return existing
-        return self._create_empty_header(db, snapshot=snapshot, current_user=current_user)
-
-    def _create_empty_header(
-        self,
-        db: Session,
-        *,
-        snapshot: BomSnapshot,
-        current_user: UserVO,
-    ) -> BomProcurementObjectList:
-        audit = audit_create(current_user)
-        return self.repository.create_list(
-            db,
-            BomProcurementObjectListWrite(
-                snapshot_id=snapshot.id,
-                location=snapshot.location,
-                vehicle_model=snapshot.vehicle_model,
-                bom_version=snapshot.bom_version,
-                source_filename=snapshot.source_filename or "",
-                qa_passed=True,
-                qa_error_text=None,
-                l0_count=0,
-                l0_with_children_count=0,
-                l2_count=0,
-                subassembly_child_sum=0,
-                object_l0_degenerate_count=0,
-                object_l1_subassembly_count=0,
-                object_l1_stamping_count=0,
-                other_leaf_count=0,
-                anomaly_count=0,
-                generated_at=now(),
-                generated_by=display_name(current_user),
-                created_by=audit["created_by"],
-                updated_by=audit["updated_by"],
-            ),
-        )
+        if existing is None:
+            raise BusinessException(EC_PROCUREMENT_LIST_REQUIRED_DETAIL)
+        return existing
 
     def _index_old_object_rows(
         self,
