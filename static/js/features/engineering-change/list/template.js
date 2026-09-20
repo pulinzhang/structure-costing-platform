@@ -91,7 +91,7 @@ export function engineeringChangeListTemplate() {
                                 重置
                             </button>
                         </div>
-                        <p class="mt-2 text-[10px] text-[#555555]">删除即回滚：撤销本次上传的全部变更，并物理删除本记录。同一文件的全部变更单行一起去掉。原件请到文件溯源下载。</p>
+                        <p class="mt-2 text-[10px] text-[#555555]">删除即回滚：撤销本次上传的全部变更，并物理删除本记录。同一文件的全部变更单行一起去掉。</p>
                     </div>
                 </div>
                 <div class="overflow-x-auto brabus-bg-grid">
@@ -110,7 +110,7 @@ export function engineeringChangeListTemplate() {
                             <col style="width: 72px">
                             <col style="width: 140px">
                             <col style="width: 80px">
-                            <col style="width: 56px">
+                            <col style="width: 80px">
                         </colgroup>
                         <thead>
                             <tr class="border-b border-[#17171C] bg-[#0B0B0D]/95">
@@ -146,6 +146,7 @@ export function engineeringChangeListTemplate() {
                 </div>
             </div>
         </div>
+        ${detailDrawerHtml()}
     `;
 }
 
@@ -188,6 +189,15 @@ export function renderEcListRows(records, { canDelete }) {
     return records.map((row) => {
         const logId = Number(row.upload_log_id);
         const canDeleteRow = canDelete && logId && row.status !== 'pending';
+        const project = row.project_code || row.vehicle_model || '—';
+        const filename = row.original_filename || '—';
+        const viewBtn = logId
+            ? `<button type="button"
+                    class="inline-flex items-center justify-center w-7 h-7 rounded-sm text-[#555555] hover:text-[#C8C8D0] hover:bg-[#161620] opacity-0 group-hover:opacity-100 focus:opacity-100 transition-all"
+                    data-action="view" data-upload-log-id="${logId}" title="查看" aria-label="查看">
+                    ${window.svgIcon('eye', 'w-3.5 h-3.5')}
+                </button>`
+            : '';
         const deleteBtn = canDeleteRow
             ? `<button type="button"
                     class="inline-flex items-center justify-center w-7 h-7 rounded-sm text-[#555555] hover:text-[#ef5350] hover:bg-[#161620] opacity-0 group-hover:opacity-100 focus:opacity-100 transition-all"
@@ -195,8 +205,6 @@ export function renderEcListRows(records, { canDelete }) {
                     ${window.svgIcon('trash', 'w-3.5 h-3.5')}
                 </button>`
             : '';
-        const project = row.project_code || row.vehicle_model || '—';
-        const filename = row.original_filename || '—';
         return `
             <tr class="group relative font-mono text-[11px] border-b border-[#141418] hover:bg-[#161620] transition-colors duration-100">
                 <td class="p-0 relative">
@@ -219,7 +227,7 @@ export function renderEcListRows(records, { canDelete }) {
                     <div class="text-[#8E8E93] truncate" title="${esc(filename)}">${esc(filename)}</div>
                 </td>
                 <td class="px-2 py-2 text-[#8E8E93] truncate">${esc(row.created_by || '—')}</td>
-                <td class="px-1 py-2 text-center">${deleteBtn}</td>
+                <td class="px-1 py-2 text-center whitespace-nowrap">${viewBtn}${deleteBtn}</td>
             </tr>
         `;
     }).join('');
@@ -283,3 +291,54 @@ export function updateEcFilterCapsules() {
         countEl.textContent = `(${[year, month, location, vehicle, status, changeType].filter(Boolean).length})`;
     }
 }
+
+function detailDrawerHtml() {
+    return `
+        <div class="hidden fixed inset-0 z-[80] bg-black/70 backdrop-blur-sm" id="ecDetailDrawerBackdrop"></div>
+        <div class="hidden fixed inset-y-0 right-0 z-[85] w-[480px] max-w-full bg-[#121212] border-l border-[#1A1A22] flex flex-col"
+             id="ecDetailDrawer" style="box-shadow: -20px 0 60px rgba(0,0,0,0.95);">
+            <div class="px-5 py-3.5 flex items-center justify-between shrink-0 border-b border-[#262626]">
+                <h5 class="text-[11px] font-semibold tracking-wider text-[#b0b0b0] flex items-center gap-2.5 uppercase">
+                    <span style="width:3px;height:14px;background:#FF1E27;display:inline-block;"></span>
+                    工程变更详情
+                </h5>
+                <button type="button" id="ecDetailCloseBtn"
+                        class="flex items-center justify-center w-8 h-8 rounded-md text-[#707070] hover:text-white hover:bg-[#d32f2f] transition-all">
+                    ${window.svgIcon('x-lg', 'w-4 h-4')}
+                </button>
+            </div>
+            <div id="ecDetailBody" class="flex-1 min-h-0 overflow-y-auto p-5 space-y-4 font-mono"></div>
+        </div>
+    `;
+}
+
+export function renderEcDetailBody(row) {
+    const status = row.status || '';
+    const isFailed = status === 'failed';
+    const reasonTitle = isFailed ? '失败原因' : '说明';
+    const message = String(row.message || '').trim();
+    const reasonSection = message
+        ? `<div>
+                <div class="text-[9px] tracking-wider mb-2 ${isFailed ? 'text-[#FF1E27]' : 'text-[#555555]'}">${reasonTitle}</div>
+                <div class="text-[13px] text-[#F0F0F2] whitespace-pre-wrap leading-relaxed">${esc(message)}</div>
+           </div>`
+        : '';
+    const filename = row.original_filename || '—';
+    const logId = Number(row.upload_log_id) || 0;
+    return `
+        ${reasonSection}
+        <div class="flex items-center justify-between gap-3 ${message ? 'pt-2' : ''}">
+            <div class="min-w-0">
+                <div class="text-[9px] text-[#555555] tracking-wider mb-1">当时 Excel</div>
+                <div class="text-[11px] text-[#8E8E93] truncate" title="${esc(filename)}">${esc(filename)}</div>
+            </div>
+            <button type="button" data-action="download" data-upload-log-id="${logId}" data-filename="${esc(filename)}"
+                    class="inline-flex items-center gap-1 h-8 px-2.5 text-[11px] rounded-md text-[#555555] hover:text-white hover:bg-[#d32f2f] transition-all shrink-0"
+                    title="下载" aria-label="下载">
+                ${window.svgIcon('download', 'w-3.5 h-3.5')}
+                下载
+            </button>
+        </div>
+    `;
+}
+

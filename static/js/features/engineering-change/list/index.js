@@ -4,9 +4,10 @@
 
 import {
     engineeringChangeListTemplate,
+    renderEcDetailBody,
     renderEcListRows,
     updateEcFilterCapsules,
-} from './template.js?v=13';
+} from './template.js?v=20';
 import {
     DEFAULT_PAGE_SIZE,
     bindPagination,
@@ -54,6 +55,10 @@ function init() {
     });
     updateEcFilterCapsules();
     loadScopeOptions().then(() => loadData(1));
+}
+
+function destroy() {
+    closeDrawer();
 }
 
 function fillPeriodFilters() {
@@ -146,21 +151,40 @@ function bindEvents() {
             loadData(1);
         });
     });
-    document.getElementById('ecListTableBody')?.addEventListener('click', async (event) => {
-        const btn = event.target.closest('[data-action]');
-        if (!btn) return;
-        const uploadLogId = Number(btn.getAttribute('data-upload-log-id'));
-        if (!uploadLogId) return;
-        if (btn.getAttribute('data-action') !== 'delete') return;
-        if (!confirm('删除即回滚。将撤销本次上传的全部变更并删除本记录，同一文件的全部变更单行都会去掉。')) return;
-        try {
-            await HttpClient.delete(`${API}/change-orders/${uploadLogId}`);
+    document.getElementById('ecListTableBody')?.addEventListener('click', (event) => {
+        handleActionClick(event);
+    });
+    document.getElementById('ecDetailCloseBtn')?.addEventListener('click', closeDrawer);
+    document.getElementById('ecDetailDrawerBackdrop')?.addEventListener('click', closeDrawer);
+    document.getElementById('ecDetailBody')?.addEventListener('click', (event) => {
+        handleActionClick(event);
+    });
+}
+
+function handleActionClick(event) {
+    const btn = event.target.closest('[data-action]');
+    if (!btn) return;
+    const uploadLogId = Number(btn.getAttribute('data-upload-log-id'));
+    if (!uploadLogId) return;
+    const action = btn.getAttribute('data-action');
+    if (action === 'view') {
+        openView(uploadLogId);
+        return;
+    }
+    if (action === 'download') {
+        downloadOriginal(uploadLogId, btn.getAttribute('data-filename'));
+        return;
+    }
+    if (action !== 'delete') return;
+    if (!confirm('删除即回滚。将撤销本次上传的全部变更并删除本记录，同一文件的全部变更单行都会去掉。')) return;
+    HttpClient.delete(`${API}/change-orders/${uploadLogId}`)
+        .then(() => {
             showToast('已删除并回滚', 'success');
             loadData(state.page);
-        } catch (error) {
+        })
+        .catch((error) => {
             showToast(error?.message || '删除失败', 'error');
-        }
-    });
+        });
 }
 
 function collectFilters() {
@@ -259,7 +283,49 @@ async function loadData(page) {
     }
 }
 
+function openDrawer() {
+    document.getElementById('ecDetailDrawer')?.classList.remove('hidden');
+    document.getElementById('ecDetailDrawerBackdrop')?.classList.remove('hidden');
+}
+
+function closeDrawer() {
+    document.getElementById('ecDetailDrawer')?.classList.add('hidden');
+    document.getElementById('ecDetailDrawerBackdrop')?.classList.add('hidden');
+}
+
+function openView(uploadLogId) {
+    const row = state.records.find((item) => Number(item.upload_log_id) === uploadLogId);
+    const body = document.getElementById('ecDetailBody');
+    if (!row || !body) {
+        showToast('记录不存在', 'error');
+        return;
+    }
+    body.innerHTML = renderEcDetailBody(row);
+    openDrawer();
+}
+
+async function downloadOriginal(uploadLogId, fallbackName) {
+    try {
+        const { blob, filename } = await HttpClient.download(
+            `${API}/change-orders/${uploadLogId}/original-file`,
+            { defaultFilename: fallbackName || 'engineering-change.xlsx' },
+        );
+        const url = window.URL.createObjectURL(blob);
+        const anchor = document.createElement('a');
+        anchor.href = url;
+        anchor.download = filename;
+        document.body.appendChild(anchor);
+        anchor.click();
+        document.body.removeChild(anchor);
+        window.URL.revokeObjectURL(url);
+        showToast(`下载成功: ${filename}`, 'success');
+    } catch (error) {
+        showToast(error?.message || '下载失败', 'error');
+    }
+}
+
 export const pageConfig = {
     render: () => engineeringChangeListTemplate(),
     init,
+    destroy,
 };

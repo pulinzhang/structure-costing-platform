@@ -400,7 +400,7 @@ app/
 
 分页。**列表以变更单行为粒度**（一本 Excel 成功后 N 行，同一 `upload_log_id`）。列对齐样表工程变更单十列：项目、生效年月、变更前/后总成、总成名称、变更类型、零件层级、变更前/后零件、零件名称；另加材料清单序号、基地、上传人、源文件、整本状态。
 
-点行看详情：变更单十列 + `excel_row` + 效果链接（`upload_log_id` / `change_order_id` / 前后实体 id）+ 失败 `message`。操作：**删除 = 回滚**。删列表任意一条变更单行，都按 `upload_log_id` 把本次上传全部回滚，并 **物理删除** 上传头 / 变更单行 / 效果链接，列表不再留「已回滚」。原件下载走文件溯源，存档 Excel **保留**。
+点行看详情：失败 `message` 与当时 Excel 下载。操作：**删除 = 回滚**。删列表任意一条变更单行，都按 `upload_log_id` 把本次上传全部回滚，并 **物理删除** 上传头 / 变更单行 / 效果链接，列表不再留「已回滚」。存档 Excel **保留**。
 
 ### 8.3 三张表
 
@@ -420,7 +420,7 @@ app/
 | POST | `/upload` | 同上 | `AsyncTaskAcceptedVO`（multipart：基地/项目/年/月/file） |
 | GET | `/upload/tasks/{task_id}` | view / upload / order-list view 任一 | `AsyncTaskProgressVO` |
 | GET | `/change-orders` | `ENGINEERING_CHANGE_ORDER_LIST_VIEW` | `PageResult[EngineeringChangeListRowVO]`（变更单行；`upload_log_id` 整本删除） |
-| GET | `/change-orders/{upload_log_id}` | 同上 | 头 + 变更单行 + 效果链接 |
+| GET | `/change-orders/{upload_log_id}/original-file` | 同上 | 当时 Excel 文件流 |
 | DELETE | `/change-orders/{upload_log_id}` | `ENGINEERING_CHANGE_ORDER_LIST_DELETE` | 整本回滚后物理删除本记录 |
 
 步长建议：10 校验变更单与抽表 → 40 种树/失效 → 70 对象+拆解 → 90 工艺；布点逻辑建立（简图从工艺确认表抄）→ 100 回写日志。失败：业务事务全滚，不留半套新树。
@@ -433,7 +433,7 @@ app/
 |------|------|
 | `menu:engineering-change` | 一级分组 |
 | `menu:engineering-change-upload` + `op:…:view` / `op:…:upload` | 上传页；下模板、POST 上传 |
-| `menu:engineering-change-order-list` + `op:…:view` / `op:…:delete` | 工程变更单列表 / 详情；删除回滚。原件走文件溯源 |
+| `menu:engineering-change-order-list` + `op:…:view` / `op:…:delete` | 工程变更单列表；删除回滚。当时 Excel 在查看抽屉下载 |
 
 ---
 

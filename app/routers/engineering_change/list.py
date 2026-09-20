@@ -1,6 +1,9 @@
-"""工程变更单列表 / 详情 / 回滚 API。原件下载走文件溯源。"""
+"""工程变更单列表 / 回滚 API。当时 Excel 从查看抽屉下载。"""
+
+from urllib.parse import quote
 
 from fastapi import APIRouter, Depends
+from fastapi.responses import FileResponse
 from sqlalchemy.orm import Session
 
 from app.common.permissions.codes import Perm
@@ -8,10 +11,7 @@ from app.database import get_db
 from app.deps.permissions import require_perm
 from app.schemas.common.page_result import PageResult
 from app.schemas.dto.engineering_change_dto import EngineeringChangeOrderQueryDTO
-from app.schemas.vo.engineering_change_vo import (
-    EngineeringChangeDetailVO,
-    EngineeringChangeListRowVO,
-)
+from app.schemas.vo.engineering_change_vo import EngineeringChangeListRowVO
 from app.schemas.vo.user_vo import UserVO
 from app.services.engineering_change.list.query_service import EngineeringChangeQueryService
 from app.services.engineering_change.list.rollback_service import EngineeringChangeRollbackService
@@ -43,17 +43,24 @@ def list_change_orders(
     )
 
 
-@router.get(
-    "/change-orders/{upload_log_id:int}",
-    response_model=ApiResponse[EngineeringChangeDetailVO],
-)
-def get_change_order_upload(
+@router.get("/change-orders/{upload_log_id:int}/original-file")
+def download_change_order_original(
     upload_log_id: int,
     db: Session = Depends(get_db),
     current_user: UserVO = Depends(require_perm(Perm.ENGINEERING_CHANGE_ORDER_LIST_VIEW)),
-) -> ApiResponse[EngineeringChangeDetailVO]:
-    _ = current_user
-    return ApiResponse.ok(data=_query_service.get_detail(db, upload_log_id))
+) -> FileResponse:
+    absolute_path, original_filename, media_type = _query_service.resolve_original_file(
+        db, upload_log_id, current_user
+    )
+    encoded_name = quote(original_filename)
+    return FileResponse(
+        path=str(absolute_path),
+        media_type=media_type,
+        filename=original_filename,
+        headers={
+            "Content-Disposition": f"attachment; filename*=UTF-8''{encoded_name}",
+        },
+    )
 
 
 @router.delete(
