@@ -6,7 +6,7 @@
   <title>知识库 · 核价方案 · 自动核价平台</title>
   <link rel="icon" type="image/x-icon" href="/static/assets/favicon.ico">
   <link href="/static/css/fonts.css?v=1" rel="stylesheet">
-  <link rel="stylesheet" href="helper.css">
+  <link rel="stylesheet" href="helper.css?v=2">
 </head>
 <body>
   <div class="layout">
@@ -49,7 +49,7 @@
         <p>
           一句话：按<strong>材料清单</strong>核算每个<strong>成品（供货总成）</strong>的月度总费用。
           系统菜单叫「总成核价」。材料清单、冲压工艺、焊接工艺拆解为<strong>前置底盘</strong>；
-          投产后改图换号走<strong>工程变更</strong>（时间轴切点，不是再拍全量快照）；
+          投产后改图换号走<strong>工程变更</strong>（换树，不是再拍全量快照）；
           <strong>冲次单价、焊接单价一年传一次</strong>；模具布点 / 检具 / 采购对象按改版维护；再做每月钢价与总成核价。
         </p>
         <div class="hero-actions">
@@ -295,11 +295,127 @@
       </section>
 
       <section id="engineering-change">
-        <h2>工程变更（时间轴切点）</h2>
+        <h2>工程变更（换树）</h2>
         <p class="lead">
-          顾客改图后，它是另一件存货：旧零件号到期、新零件号启用。
-          工程变更是时间轴上的切点，不是再拍一份全量快照；核价按「某年某月仍有效」取树、工艺、布点。
+          <strong>工程变更不是在树上「改几个零件」，而是在树坑里决定：这棵树不动、停止，还是换成一棵新树。</strong>
+          一棵树就是一个交货总成。顾客改图后它是另一件存货：旧树到期、新树启用。核价按「某年某月仍有效」取树。
         </p>
+        <p class="ec-chain">
+          第一屏只记这条链：<strong>变更单 → 树坑 → 树 → 换树 → 盖章 → 数采购件</strong>
+        </p>
+
+        <div class="ec-fig" aria-label="树坑">
+          <h4>① 一个序号就是一个树坑；坑里放着一棵交货总成</h4>
+          <div class="ec-pits">
+            <div class="ec-pit">
+              <span class="ec-pit-id">01</span>
+              <div class="ec-pit-box"><span class="ec-pit-tree">树</span></div>
+            </div>
+            <div class="ec-pit">
+              <span class="ec-pit-id">02</span>
+              <div class="ec-pit-box"><span class="ec-pit-tree">树</span></div>
+            </div>
+            <div class="ec-pit is-stop">
+              <span class="ec-pit-id">03</span>
+              <div class="ec-pit-box"><span class="ec-pit-tree">×</span></div>
+              <span class="ec-pit-note">停止，不再生成新树</span>
+            </div>
+            <div class="ec-pit">
+              <span class="ec-pit-id">04</span>
+              <div class="ec-pit-box"><span class="ec-pit-tree">树</span></div>
+            </div>
+            <div class="ec-pit">
+              <span class="ec-pit-id">05</span>
+              <div class="ec-pit-box"><span class="ec-pit-tree">树</span></div>
+            </div>
+          </div>
+          <p>一个序号，就是一个「树坑」；一个交货总成，就是这个树坑里的一棵树。完成停止：旧树到期，历史仍在；新的有效状态下这个树坑不再种新树。</p>
+          <p>变更单有 5 行，表示记录了 5 条变化；系统再根据这些变化判断哪些树坑需要换树或停止。本例最终处理结果是：1 棵完成停止，4 棵交货总成换成新树。一行变更单不等于一个树坑——同一棵交货总成可以有多条变化记录。</p>
+        </div>
+
+        <div class="ec-fig" aria-label="换整棵树">
+          <h4>② 改一个树坑，就是整棵交货总成换树</h4>
+          <div class="ec-swap">
+            <div class="ec-tree-col">
+              <div class="ec-tree-title">旧树 · 树坑 08</div>
+              <div class="ec-crown">总成 A</div>
+              <ul>
+                <li class="is-same">├ 零件 A</li>
+                <li class="is-same">├ 零件 B</li>
+                <li class="is-same">└ 零件 C</li>
+              </ul>
+            </div>
+            <div class="ec-tree-col">
+              <div class="ec-tree-title">新树 · 同一树坑</div>
+              <div class="ec-crown">总成 A' <span class="ec-ver-badge">EC-202507</span></div>
+              <ul>
+                <li class="is-same">├ 零件 A</li>
+                <li class="is-same">├ 零件 B</li>
+                <li class="is-new">├ 零件 D</li>
+                <li class="is-new">└ 零件 E</li>
+              </ul>
+            </div>
+          </div>
+          <div class="ec-steps">
+            <span class="box">树坑 08</span> →
+            <span class="box">拿掉旧树</span> →
+            <span class="box">种入新树</span> →
+            <span class="box">新树整体属于 EC-202507</span>
+          </div>
+          <p>系统做的是整坑换树，不是「C 删除、D 新增」那种只改几个零件的清单。灰色是原号继续用，强调色是变更产生的新号——但它们现在都在同一棵新树上。</p>
+          <p>图上只画一枚版本章方便阅读；实际表示整棵新树里的零件都属于 <code>EC-202507</code>。版本章说明「这棵树属于哪个版本」，不是说明「树上的哪些枝条被改过」。不要把 <code>EC-202507</code> 当成被修改过的零件标记。</p>
+        </div>
+
+        <div class="ec-fig" aria-label="三层数字">
+          <h4>③ 先换树，再盖章，最后数采购件</h4>
+          <div class="ec-flow">
+            <div class="ec-flow-box"><span class="k">变更单</span>5 条变化记录</div>
+            <div class="ec-flow-arrow">↓ 判断受影响树坑</div>
+            <div class="ec-flow-box"><span class="k">本例处理结果</span></div>
+            <div class="ec-flow-split">
+              <div class="ec-flow-box">1 棵停止</div>
+              <div class="ec-flow-box">4 棵换新树</div>
+            </div>
+            <div class="ec-flow-arrow">↓ 整棵归属 EC-202507</div>
+            <div class="ec-flow-box">数采购件</div>
+            <div class="ec-flow-arrow">↓</div>
+            <div class="ec-flow-box"><strong>17</strong></div>
+          </div>
+          <div class="ec-leaves">
+            <div>树 1<strong>4</strong>个采购件</div>
+            <div>树 2<strong>5</strong>个采购件</div>
+            <div>树 3<strong>3</strong>个采购件</div>
+            <div>树 4<strong>5</strong>个采购件</div>
+          </div>
+          <div class="ec-triple">
+            <div>
+              <div class="n">5</div>
+              <div class="l">变更单层</div>
+              <p>变化记录数</p>
+            </div>
+            <div>
+              <div class="n">4</div>
+              <div class="l">树的数量</div>
+              <p>换了 4 棵树</p>
+            </div>
+            <div>
+              <div class="n">17</div>
+              <div class="l">树里面</div>
+              <p>数采购件</p>
+            </div>
+          </div>
+          <p><strong>4 是树的数量。17 是数采购件的结果。</strong>两者本来就不应该相等。</p>
+          <div class="ec-dont">
+            <div class="box no">
+              <div class="mark">不要这样理解</div>
+              <p>变更单 5 行 → 所以应该有 5 个采购对象。也不要：1 行变更单 = 1 个树坑；也不要把改过的零件当成新版本采购件的全部。</p>
+            </div>
+            <div class="box ok">
+              <div class="mark">应该这样理解</div>
+              <p>5 条变化 → 判断树坑 → 1 棵停止 + 4 棵换新树 → 新树完整建立并盖章 → 数采购件一共 17。</p>
+            </div>
+          </div>
+        </div>
 
         <div class="grid-2">
           <div class="mini">
@@ -308,7 +424,7 @@
           </div>
           <div class="mini">
             <h4>为什么用生效月</h4>
-            <p>生效月 = 新树 / 新工艺从这月启用；旧树 / 旧工艺写失效到生效月的前一月（不删行）。前一月旧账仍看见旧号。不要说「作废」；不要为一次换号新建清单版本当切点。</p>
+            <p>生效月 = 新树 / 新工艺从这月启用；旧树 / 旧工艺写失效到生效月的前一月（不删行）。前一月旧账仍看见旧号。不要说「作废」；不要为一次换号再传一份全量清单版本。有人口语里把生效月叫「切点」，只指从哪个月开始用新树，不是换树本身。</p>
           </div>
         </div>
 
@@ -527,6 +643,7 @@
         <p>
           有子件的 L0 <strong>永不列入</strong>。L2 不单独列入。L1 上的螺母、胶等进核对区「标准件/胶等」。
           列表上确认外发/自制、指定供应商。给二级厂签字的月度价目在「采购价格协议」，不是本页；金额读总成核价已算的应成本，本页不另算一遍。
+          筛 <code>EC-*</code> 版本，是在数采购件：问「这棵树属于哪个版本」，不是「这次改了几个件」。
         </p>
       </section>
 
@@ -536,7 +653,7 @@
           <div class="flow-step">
             <div class="n">前置 · 结构工艺</div>
             <strong>材料清单 + 冲压工艺 → 焊接工艺拆解</strong>
-            <p>投产传一次；投产后换号走工程变更切点</p>
+            <p>投产传一次；投产后换号走工程变更（换树）</p>
           </div>
           <div class="flow-step">
             <div class="n">年度 · 一年一传 / 一算</div>

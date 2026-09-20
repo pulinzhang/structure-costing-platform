@@ -1,4 +1,4 @@
-"""钢材基准价格导出服务：查询扁平化 + 生成 Excel。"""
+"""钢材基准价格列表服务：查询扁平化 + 生成 Excel。"""
 
 from __future__ import annotations
 
@@ -14,7 +14,7 @@ from app.services.yishiyiyi.base_price.export.excel_exporter import (
 
 
 class SteelBasePriceExportService:
-    """钢材基准价格导出业务。"""
+    """钢材基准价格列表业务。"""
 
     def __init__(self) -> None:
         self.repository = SteelBasePriceRepository()

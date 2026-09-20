@@ -16,6 +16,7 @@ from app.repositories.llm.tonnage_price_analysis_repository import (
 )
 from app.schemas.llm.analysis_payload import (
     AnalysisResultLeafPayload,
+    RiskPayload,
 )
 from app.schemas.llm.analysis_query import AnalysisQuery
 from app.services.llm._money import shift_month
@@ -26,6 +27,16 @@ from app.services.llm.analysis.shared.cost_driver import (
     build_stamping_mom_anomalies,
 )
 from app.services.llm.analysis.shared.cost_trend import build_stamping_trend
+from app.services.llm.analysis.shared.period_discontinue import (
+    build_period_discontinue,
+    period_discontinue_risk_entry,
+    should_attach_period_discontinue,
+)
+from app.services.llm.analysis.shared.period_missing_supplier import (
+    build_period_missing_supplier,
+    period_missing_supplier_risk_entry,
+    should_attach_period_missing_supplier,
+)
 from app.services.llm.analysis.shared.result import AnalysisRunResult
 from app.services.llm.analysis.shared.summary import build_stamping_summary
 from app.services.llm.analysis.stamping.part_cost import build_stamping_cost_drilldown
@@ -51,6 +62,65 @@ class StampingAnalysis:
         self._tonnage_repo = TonnagePriceAnalysisRepository()
         self._process_fee_repo = ProcessFeeAnalysisRepository()
         self._stamping_repo = StampingCostAnalysisRepository()
+
+    def _attach_period_discontinue(
+        self,
+        db: Session,
+        query: AnalysisQuery,
+        *,
+        parts_result: dict[str, AnalysisResultLeafPayload],
+        risk_payload: RiskPayload | None = None,
+    ) -> None:
+        if not should_attach_period_discontinue(
+            analyses=list(query.analyses),
+            asks_part_price=bool(query.asks_part_price),
+            part_number=query.part_number(),
+        ):
+            return
+        tr = query.time_range
+        payload = build_period_discontinue(
+            db,
+            location=query.location(),
+            vehicle_model=query.vehicle_model(),
+            start_year=tr.start_year,
+            start_month=tr.start_month,
+            end_year=tr.end_year,
+            end_month=tr.end_month,
+        )
+        parts_result["period_discontinue"] = payload
+        if risk_payload is not None:
+            entry = period_discontinue_risk_entry(payload)
+            if entry is not None:
+                risks = risk_payload.get("risks")
+                if isinstance(risks, list):
+                    risks.append(entry)
+
+    def _attach_period_missing_supplier(
+        self,
+        db: Session,
+        query: AnalysisQuery,
+        *,
+        parts_result: dict[str, AnalysisResultLeafPayload],
+        risk_payload: RiskPayload | None = None,
+    ) -> None:
+        if not should_attach_period_missing_supplier(
+            analyses=list(query.analyses),
+            asks_part_price=bool(query.asks_part_price),
+            part_number=query.part_number(),
+        ):
+            return
+        payload = build_period_missing_supplier(
+            db,
+            location=query.location(),
+            vehicle_model=query.vehicle_model(),
+        )
+        parts_result["period_missing_supplier"] = payload
+        if risk_payload is not None:
+            entry = period_missing_supplier_risk_entry(payload)
+            if entry is not None:
+                risks = risk_payload.get("risks")
+                if isinstance(risks, list):
+                    risks.append(entry)
 
     def run_stamping_process(self, db: Session, query: AnalysisQuery) -> AnalysisRunResult:
         """对齐「冲压零件列表」#/stamping-parts（工艺主数据）。"""
@@ -240,7 +310,14 @@ class StampingAnalysis:
             parts_result["drivers"] = build_stamping_drivers(rows)
 
         if "risk" in query.analyses:
-            parts_result["risk"] = build_stamping_risks(focus_rows)
+            risk_payload = build_stamping_risks(focus_rows)
+            self._attach_period_discontinue(
+                db, query, parts_result=parts_result, risk_payload=risk_payload
+            )
+            self._attach_period_missing_supplier(
+                db, query, parts_result=parts_result, risk_payload=risk_payload
+            )
+            parts_result["risk"] = risk_payload
 
         if rows and any(kind in query.analyses for kind in ("risk", "drivers", "trend")):
             focus_month = None
@@ -255,6 +332,10 @@ class StampingAnalysis:
             parts_result["drilldown"] = build_stamping_cost_drilldown(
                 focus_rows, part_number=query.part_number() or ""
             )
+
+        if "risk" not in query.analyses:
+            self._attach_period_discontinue(db, query, parts_result=parts_result)
+            self._attach_period_missing_supplier(db, query, parts_result=parts_result)
 
         out.result = compose_result(parts_result, default_kind="summary")
         out.evidence["stamping_part_rows"] = [

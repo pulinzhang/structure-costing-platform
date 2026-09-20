@@ -7,6 +7,8 @@ from unittest.mock import MagicMock
 import pytest
 
 from app.repositories.llm.ops_workbench_repository import WorkbenchBoardRow
+from app.repositories.llm.procurement_object_analysis_repository import ProcurementObjectRow
+from app.services.llm.analysis.ops.masterdata import build_procurement_object_summary
 from app.services.llm.analysis.ops.workbench import (
     build_ops_workbench_risks,
     build_ops_workbench_summary,
@@ -28,6 +30,9 @@ from app.services.llm.query.query_parser import QueryParser
         ("采购对象还有多少没确认外发", "analysis"),
         ("今年模具费待审核有多少", "analysis"),
         ("检具费情况怎么样", "analysis"),
+        ("2025年，T13J项目采购对象的费用是多少", "usage_help"),
+        ("哪一个采购对象没有供应商", "analysis"),
+        ("哪些采购对象没有供应商", "analysis"),
         ("总成核价怎么审核", "usage_help"),
         ("冲压零件价格计算页在哪", "usage_help"),
         ("模具费怎么算进零件价", "usage_help"),
@@ -58,6 +63,10 @@ def test_ops_help_topic(question: str, expected_topic: str) -> None:
         ("今年模具费待审核有多少", "stamping_die_fee"),
         ("青岛检具费情况怎么样", "stamping_gauge_fee"),
         ("采购对象还有多少没确认外发", "procurement_object"),
+        ("芜湖T13J外发件缺供应商的有多少", "procurement_object"),
+        ("哪一个采购对象没有供应商", "procurement_object"),
+        ("哪些采购对象没有供应商", "procurement_object"),
+        ("2856是外发还是自制", "procurement_object"),
         ("2026年01月 T13J 项目总成核价有没有异常", "l0"),
     ],
 )
@@ -86,6 +95,52 @@ def test_query_parser_workbench_includes_risk() -> None:
     assert query.query_mode == "analysis"
     assert query.subject == "ops_workbench"
     assert "risk" in query.analyses
+
+
+def test_procurement_object_missing_supplier_items() -> None:
+    rows = [
+        ProcurementObjectRow(
+            location="芜湖",
+            vehicle_model="T13J",
+            bom_version="D/09",
+            part_number="P-OUT-1",
+            part_name="外发缺供应商",
+            section="object",
+            object_kind="stamping",
+            confirm_status="outsourced",
+            audit_status="pending",
+            supplier_name=None,
+        ),
+        ProcurementObjectRow(
+            location="芜湖",
+            vehicle_model="T13J",
+            bom_version="D/09",
+            part_number="P-OUT-2",
+            part_name="外发已指定",
+            section="object",
+            object_kind="stamping",
+            confirm_status="outsourced",
+            audit_status="pending",
+            supplier_name="某二级厂",
+        ),
+        ProcurementObjectRow(
+            location="芜湖",
+            vehicle_model="T13J",
+            bom_version="D/09",
+            part_number="P-IN",
+            part_name="自制无供应商正常",
+            section="object",
+            object_kind="stamping",
+            confirm_status="in_house",
+            audit_status="pending",
+            supplier_name=None,
+        ),
+    ]
+    summary = build_procurement_object_summary(rows)
+    assert summary["missing_supplier_count"] == 1
+    items = summary["missing_supplier_items"]
+    assert isinstance(items, list) and len(items) == 1
+    assert items[0]["part_number"] == "P-OUT-1"
 
 
 def test_ops_workbench_summary_totals() -> None:
@@ -128,6 +183,7 @@ def test_ops_workbench_summary_totals() -> None:
         ("冲压零件价格计算页在哪", None, "buyer"),
         ("2856的价格多少？", None, "buyer"),
         ("8898在不在库里", None, "buyer"),
+        ("哪一个采购对象没有供应商", None, "buyer"),
         ("当月核算情况怎么样", None, "buyer_lead"),
     ],
 )

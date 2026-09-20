@@ -30,7 +30,7 @@ class SteelBasePriceExporter:
     ) -> tuple[bytes, str]:
         wb = Workbook()
         ws = wb.worksheets[0]
-        ws.title = "基准价格导出"
+        ws.title = "基准价格列表"
 
         header_font = Font(name="微软雅黑", size=10, bold=True, color="FFFFFF")
         header_fill = PatternFill(start_color="4472C4", end_color="4472C4", fill_type="solid")
@@ -137,7 +137,7 @@ class SteelBasePriceExporter:
 
         ws.freeze_panes = "A2"
 
-        parts = ["基准价格导出"]
+        parts = ["基准价格列表"]
         if year:
             parts.append(f"{year}年")
         if month:

@@ -1,6 +1,6 @@
 /**
  * Steel Base Price Download Template
- * 基准价格导出页面
+ * 基准价格列表页面
  */
 
 import {
@@ -22,7 +22,7 @@ export function basePriceDownloadTemplate() {
                      style="background: linear-gradient(90deg, #1c1c1c 0%, #1e1e1e 60%);">
                     <div class="flex items-center gap-3">
                         <div class="w-[2px] h-4 bg-[#d32f2f] rounded-[1px] shadow-[0_0_6px_rgba(211,47,47,0.3)]"></div>
-                        <h2 class="text-[12px] font-semibold text-[#c8c8c8] tracking-wide">基准价格导出</h2>
+                        <h2 class="text-[12px] font-semibold text-[#c8c8c8] tracking-wide">基准价格列表</h2>
                     </div>
                     <div class="flex items-center gap-1.5">
                         ${moreMenuShellHtml({

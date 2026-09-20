@@ -116,7 +116,7 @@ class SteelBasePriceQuery(BaseModel):
 
 
 class SteelBasePriceExportQuery(BaseModel):
-    """基准价格导出筛选：年度、月份、基地、钢厂、钢种大类、牌号。"""
+    """基准价格列表筛选：年度、月份、基地、钢厂、钢种大类、牌号。"""
 
     year: int | None = Field(None, ge=2000, le=2100, description="订单发布年份")
     month: int | None = Field(None, ge=1, le=12, description="订单发布月份")
@@ -132,7 +132,7 @@ class SteelBasePriceExportQuery(BaseModel):
 
 
 class SteelBasePriceExportPreviewQuery(SteelBasePriceExportQuery):
-    """基准价格导出预览分页。"""
+    """基准价格列表预览分页。"""
 
     page: int | None = Field(None, ge=1, description="页码（前端分页用）")
     size: int | None = Field(None, ge=1, le=5000, description="每页条数")

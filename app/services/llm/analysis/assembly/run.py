@@ -22,6 +22,7 @@ from app.repositories.llm.stamping_process_analysis_repository import (
 from app.schemas.llm.analysis_payload import (
     AnalysisResultLeafPayload,
     DrilldownPayload,
+    RiskPayload,
 )
 from app.schemas.llm.analysis_query import AnalysisQuery
 from app.services.llm._money import shift_month
@@ -54,6 +55,16 @@ from app.services.llm.analysis.shared.part_lookup import (
     format_part_lookup_message,
     resolve_part_data_profile,
 )
+from app.services.llm.analysis.shared.period_discontinue import (
+    build_period_discontinue,
+    period_discontinue_risk_entry,
+    should_attach_period_discontinue,
+)
+from app.services.llm.analysis.shared.period_missing_supplier import (
+    build_period_missing_supplier,
+    period_missing_supplier_risk_entry,
+    should_attach_period_missing_supplier,
+)
 from app.services.llm.analysis.shared.result import AnalysisRunResult
 from app.services.llm.analysis.shared.standard_part_price import (
     build_standard_part_price_anomalies,
@@ -77,6 +88,69 @@ class AssemblyAnalysis:
         self._annual_part_price_repo = AnnualPartPriceAnalysisRepository()
         self._stamping_repo = StampingCostAnalysisRepository()
         self._stamping_process_repo = StampingProcessAnalysisRepository()
+
+    def _attach_period_discontinue(
+        self,
+        db: Session,
+        query: AnalysisQuery,
+        *,
+        parts_result: dict[str, AnalysisResultLeafPayload],
+        risk_payload: RiskPayload | None = None,
+    ) -> None:
+        if not should_attach_period_discontinue(
+            analyses=list(query.analyses),
+            asks_part_price=bool(query.asks_part_price),
+            part_number=query.part_number(),
+        ):
+            return
+        tr = query.time_range
+        compare_raw = query.filter_get("compare_locations")
+        has_compare = bool(compare_raw and compare_raw.strip())
+        payload = build_period_discontinue(
+            db,
+            location=None if has_compare else query.location(),
+            vehicle_model=query.vehicle_model(),
+            start_year=tr.start_year,
+            start_month=tr.start_month,
+            end_year=tr.end_year,
+            end_month=tr.end_month,
+        )
+        parts_result["period_discontinue"] = payload
+        if risk_payload is not None:
+            entry = period_discontinue_risk_entry(payload)
+            if entry is not None:
+                risks = risk_payload.get("risks")
+                if isinstance(risks, list):
+                    risks.append(entry)
+
+    def _attach_period_missing_supplier(
+        self,
+        db: Session,
+        query: AnalysisQuery,
+        *,
+        parts_result: dict[str, AnalysisResultLeafPayload],
+        risk_payload: RiskPayload | None = None,
+    ) -> None:
+        if not should_attach_period_missing_supplier(
+            analyses=list(query.analyses),
+            asks_part_price=bool(query.asks_part_price),
+            part_number=query.part_number(),
+        ):
+            return
+        compare_raw = query.filter_get("compare_locations")
+        has_compare = bool(compare_raw and compare_raw.strip())
+        payload = build_period_missing_supplier(
+            db,
+            location=None if has_compare else query.location(),
+            vehicle_model=query.vehicle_model(),
+        )
+        parts_result["period_missing_supplier"] = payload
+        if risk_payload is not None:
+            entry = period_missing_supplier_risk_entry(payload)
+            if entry is not None:
+                risks = risk_payload.get("risks")
+                if isinstance(risks, list):
+                    risks.append(entry)
 
     def run_part(self, db: Session, query: AnalysisQuery) -> AnalysisRunResult:
         if self.should_run_part_price_drilldown(query):
@@ -512,6 +586,12 @@ class AssemblyAnalysis:
             if standard_risk is not None:
                 risk_payload["risks"].append(standard_risk)
                 risk_payload["standard_part_high_price_count"] = standard_risk["count"]
+            self._attach_period_discontinue(
+                db, query, parts_result=parts_result, risk_payload=risk_payload
+            )
+            self._attach_period_missing_supplier(
+                db, query, parts_result=parts_result, risk_payload=risk_payload
+            )
             parts_result["risk"] = risk_payload
 
         if part_rows and any(kind in query.analyses for kind in ("risk", "drivers", "trend")):
@@ -529,6 +609,10 @@ class AssemblyAnalysis:
             if drilldown.get("fork") == "sub_assembly":
                 drilldown["related"] = self._related_branch_costing(db, query, drilldown)
             parts_result["drilldown"] = drilldown
+
+        if "risk" not in query.analyses:
+            self._attach_period_discontinue(db, query, parts_result=parts_result)
+            self._attach_period_missing_supplier(db, query, parts_result=parts_result)
 
         out.result = compose_result(parts_result, default_kind="summary")
         out.has_data = bool(monthly) or bool(part_rows)

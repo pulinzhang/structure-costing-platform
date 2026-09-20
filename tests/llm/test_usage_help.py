@@ -24,6 +24,8 @@ from app.services.llm.usage.runner import UsageHelpRunner
         ("我在进行成品核价计算时卡住了，怎么办？", "usage_help"),
         ("工程变更怎么上传？", "usage_help"),
         ("投产后改图换号走哪里？", "usage_help"),
+        ("为什么新版本采购对象有 17 个", "usage_help"),
+        ("变更单只有 5 条采购对象怎么这么多", "usage_help"),
         ("青岛 1 月成品价多少？", "analysis"),
         ("501006875AA 多少钱", "analysis"),
         ("2026年01月 T13J 项目总成核价有没有异常", "analysis"),
@@ -35,6 +37,8 @@ from app.services.llm.usage.runner import UsageHelpRunner
         ("怎么用简码问某个件的价？", "usage_help"),
         ("2856的价格多少？", "analysis"),
         ("2856最新价", "analysis"),
+        ("2025年，T13J项目采购对象的费用是多少", "usage_help"),
+        ("采购对象还有多少没确认外发", "analysis"),
     ],
 )
 def test_detect_query_mode(question: str, expected_mode: str) -> None:
@@ -52,6 +56,7 @@ def test_detect_query_mode(question: str, expected_mode: str) -> None:
         ("引擎一直运行中怎么办", "faq_stuck"),
         ("我在进行成品核价计算时卡住了，怎么办？", "faq_calc_stuck"),
         ("采购对象在哪确认外发", "procurement"),
+        ("2025年，T13J项目采购对象的费用是多少", "faq_procurement_fee"),
         ("采购价格在哪", "procurement_contract_report"),
         ("怎么导出批量零部件价格协议", "procurement_contract_report"),
         ("模具费怎么算进零件价", "die_gauge"),
@@ -67,6 +72,12 @@ def test_detect_query_mode(question: str, expected_mode: str) -> None:
         ("材料清单换号走哪里", "engineering-change"),
         ("生效月怎么算", "engineering_change_knowledge"),
         ("时间轴切点怎么理解", "engineering_change_knowledge"),
+        ("为什么新版本采购对象有 17 个", "faq_ec_tree_vs_procurement"),
+        ("变更单只有 5 条采购对象怎么这么多", "faq_ec_tree_vs_procurement"),
+        ("设变从哪个月开始算新零件", "faq_ec_costing_effect_month"),
+        ("这个月核价用旧号还是新号", "faq_ec_costing_effect_month"),
+        ("旧零件过期了还能不能出协议", "faq_ec_costing_effect_month"),
+        ("增加零件进采购对象后厂家要不要自己填", "faq_ec_costing_effect_month"),
     ],
 )
 def test_detect_help_topic(question: str, expected_topic: str) -> None:
@@ -89,6 +100,7 @@ def test_load_corpus_has_p1a_sections() -> None:
         "stamping",
         "welding",
         "procurement",
+        "faq_procurement_fee",
         "die_gauge",
         "file_trace",
         "masterdata",
@@ -99,6 +111,8 @@ def test_load_corpus_has_p1a_sections() -> None:
         "part_lookup_how",
         "engineering-change",
         "engineering_change_knowledge",
+        "faq_ec_costing_effect_month",
+        "faq_ec_tree_vs_procurement",
     ):
         assert required in chunk_ids
 

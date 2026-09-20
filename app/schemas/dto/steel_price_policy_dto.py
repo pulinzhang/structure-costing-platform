@@ -200,7 +200,7 @@ class PolicyQuery(BaseModel):
 
 
 class PolicyExportQuery(BaseModel):
-    """加减价政策导出筛选：年度、月份、钢厂、钢种大类、牌号。"""
+    """加减价政策列表筛选：年度、月份、钢厂、钢种大类、牌号。"""
 
     year: int | None = Field(None, ge=2000, le=2100, description="生效年度")
     month: int | None = Field(None, ge=1, le=12, description="生效月份（1-12）")
@@ -215,7 +215,7 @@ class PolicyExportQuery(BaseModel):
 
 
 class PolicyExportPreviewQuery(PolicyExportQuery):
-    """加减价政策导出预览分页。"""
+    """加减价政策列表预览分页。"""
 
     page: int = Field(1, ge=1, description="页码")
     size: int = Field(100, ge=1, le=5000, description="每页条数")

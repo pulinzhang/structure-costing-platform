@@ -60,6 +60,18 @@ def _extract_section(html: str, section_id: str) -> str:
     return _strip_html(match.group(1))
 
 
+def _extract_faq_qa(html: str, heading: str) -> str:
+    """帮助 FAQ 唯一正文：h3 + 紧随的 p，禁止另写一份。"""
+    pattern = re.compile(
+        rf"<h3>\s*{re.escape(heading)}\s*</h3>\s*<p>(.*?)</p>",
+        re.DOTALL | re.IGNORECASE,
+    )
+    match = pattern.search(html)
+    if not match:
+        return ""
+    return _strip_html(f"{heading} {match.group(1)}")
+
+
 def _read_helper_page(name: str) -> str:
     path = _helper_dir() / name
     return path.read_text(encoding="utf-8")
@@ -157,9 +169,85 @@ def _faq_chunks(faq_text: str) -> list[CorpusChunk]:
     return chunks
 
 
-def _extra_faq_chunks() -> list[CorpusChunk]:
-    """P1a 高频 FAQ：无独立 help 章节时补短答。"""
+def _extra_faq_chunks(help_html: str) -> list[CorpusChunk]:
+    """P1a 高频 FAQ：无独立 help 章节时补短答。工程变更采购件 FAQ 只抽 help.html，禁止另写。"""
+    tree_heading = "为什么新版本采购对象有 17 个，而变更单只有 5 条？"
+    tree_faq = _extract_faq_qa(help_html, tree_heading)
+    if not tree_faq:
+        raise ValueError("help.html 缺少工程变更数采购件 FAQ")
+    effect_heading = "设变后哪个月用新号？这个月核价用旧号还是新号？"
+    effect_faq = _extract_faq_qa(help_html, effect_heading)
+    if not effect_faq:
+        raise ValueError("help.html 缺少工程变更生效月 FAQ")
+    add_part_heading = "增加零件进采购对象后，厂家要不要自己填？"
+    add_part_faq = _extract_faq_qa(help_html, add_part_heading)
+    effect_faq = f"{effect_faq} {add_part_faq}".strip()
     return [
+        CorpusChunk(
+            chunk_id="faq_procurement_fee",
+            title="采购对象的费用在哪看",
+            text=(
+                "「焊接工程 → 采购对象」只管集合：买哪些、外发还是自制、供应商是谁，"
+                "清单行没有费用字段，也没有按年裁剪；问「采购对象的费用是多少」系统答不出金额是正常的。"
+                "要看钱请改问法："
+                "① 单件价直接问「2856的价格多少」或「T13J 某某总成多少钱」（读总成核价卡）；"
+                "② 按供应商签二级厂、横排月列结算价：打开一级菜单「采购价格协议」"
+                "（采购对象视图一家一导；总成视图整包一份）。"
+                "协议金额抄总成核价已算的应成本，须先算总成核价。"
+            ),
+            source_page="help.html",
+            anchor="faq",
+            keywords=(
+                "采购对象的费用",
+                "采购对象费用",
+                "采购对象多少钱",
+                "采购对象价格",
+                "采购对象结算价",
+                "采购对象总成本",
+                "采购对象总费用",
+            ),
+        ),
+        CorpusChunk(
+            chunk_id="faq_ec_costing_effect_month",
+            title="设变后哪个月用新号",
+            text=effect_faq,
+            source_page="help.html",
+            anchor="faq",
+            keywords=(
+                "哪个月开始",
+                "哪个月用新号",
+                "用旧号还是新号",
+                "旧零件还能",
+                "新旧并存",
+                "过期还能签",
+                "过期了还能不能出协议",
+                "过期了还能",
+                "回滚",
+                "删了变更",
+                "生效月怎么算",
+                "设变从哪个月",
+                "厂家要不要自己填",
+            ),
+        ),
+        CorpusChunk(
+            chunk_id="faq_ec_tree_vs_procurement",
+            title="为什么新版本采购对象比变更单多",
+            text=tree_faq,
+            source_page="help.html",
+            anchor="faq",
+            keywords=(
+                "新版本采购对象",
+                "采购对象怎么这么多",
+                "采购对象有17",
+                "采购对象有 17",
+                "变更单只有",
+                "换了几棵",
+                "树的数量",
+                "树里面采购对象",
+                "为什么这么多采购对象",
+                "采购对象比变更单多",
+            ),
+        ),
         CorpusChunk(
             chunk_id="part_lookup_how",
             title="怎么用零件号或简码问价",
@@ -477,7 +565,19 @@ def load_corpus_chunks() -> tuple[CorpusChunk, ...]:
             text=_extract_section(knowledge_html, "engineering-change"),
             source_page="knowledge.html",
             anchor="engineering-change",
-            keywords=("时间轴", "切点", "生效月", "到期月", "新旧并存"),
+            keywords=(
+                "生效月",
+                "到期月",
+                "新旧并存",
+                "哪个月开始",
+                "用旧号还是新号",
+                "旧零件还能",
+                "过期还能签",
+                "时间轴",
+                "切点",
+                "树坑",
+                "换树",
+            ),
         ),
         CorpusChunk(
             chunk_id="procurement_knowledge",
@@ -491,6 +591,6 @@ def load_corpus_chunks() -> tuple[CorpusChunk, ...]:
 
     faq_text = _extract_section(help_html, "faq")
     chunks.extend(_faq_chunks(faq_text))
-    chunks.extend(_extra_faq_chunks())
+    chunks.extend(_extra_faq_chunks(help_html))
 
     return tuple(chunk for chunk in chunks if chunk.text.strip())

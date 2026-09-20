@@ -5,17 +5,20 @@ from __future__ import annotations
 from app.schemas.llm.analysis_query import AnalysisKind
 from app.services.llm.query.parser.part_price import is_drilldown_focused
 from app.services.llm.query.parser.subjects import (
+    asks_engineering_change_price_compare,
     is_base_price_question,
     is_policy_question,
     is_winning_thickness_question,
 )
 from app.services.llm.query.time_range import asks_latest_costing
 
-COMPARE_QUESTION_WORDS: tuple[str, ...] = ("对比", "比较", "哪个基地", "谁更")
+COMPARE_QUESTION_WORDS: tuple[str, ...] = ("对比", "比较", "哪个基地", "谁更", "变更前后")
 
 
 def question_has_compare_signal(question: str) -> bool:
-    return any(word in (question or "") for word in COMPARE_QUESTION_WORDS)
+    return any(word in (question or "") for word in COMPARE_QUESTION_WORDS) or (
+        asks_engineering_change_price_compare(question or "")
+    )
 
 
 def resolve_analyses(
@@ -98,6 +101,16 @@ def resolve_analyses(
             "还没确认",
             "未完成",
             "算不全",
+            "缺供应商",
+            "未指定供应商",
+            "待确认外发",
+            "没有供应商",
+            "没指定供应商",
+            "没供应商",
+            "无供应商",
+            "停用件",
+            "此件不装",
+            "完成停止",
         )
     ):
         if "risk" not in result:

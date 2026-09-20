@@ -192,9 +192,11 @@ class RiskEntry(TypedDict, total=False):
     samples: Sequence[object]
     zero_unit_price_items: Sequence[object]
     missing_price_items: Sequence[object]
+    missing_supplier_items: Sequence[object]
     composition_items: Sequence[object]
     standard_part_items: Sequence[object]
     conversion_items: Sequence[object]
+    truncated: bool
 
 
 class RiskPayload(TypedDict, total=False):

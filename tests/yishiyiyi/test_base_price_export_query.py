@@ -1,4 +1,4 @@
-"""基准价格导出筛选字段。"""
+"""基准价格列表筛选字段。"""
 
 from app.schemas.dto.steel_base_price_dto import (
     SteelBasePriceExportPreviewQuery,
