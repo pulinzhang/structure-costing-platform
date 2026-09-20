@@ -8,12 +8,12 @@ from unittest.mock import MagicMock, patch
 import pytest
 
 from app.schemas.vo.costing_engine_vo import CostingEngineAnnualItemVO, CostingEngineGateItemVO
-from app.services.costing.engine.annual_calc_planner import AnnualCalcPlanner
-from app.services.costing.engine.costing_engine_service import SOFT_UPLOAD_GATE_CODES
-from app.services.costing.engine.gate_navigate import build_navigate
-from app.services.costing.engine.orchestrator import RunOrchestrator
-from app.services.costing.engine.progress import map_progress
-from app.services.costing.engine.scope_discovery import DiscoveryResult, L0Scope, ScopeDiscovery
+from app.services.costing.engine.crud.service import SOFT_UPLOAD_GATE_CODES
+from app.services.costing.engine.gate.navigate import build_navigate
+from app.services.costing.engine.orchestrator.progress import map_progress
+from app.services.costing.engine.orchestrator.run_orchestrator import RunOrchestrator
+from app.services.costing.engine.plan.annual import AnnualCalcPlanner
+from app.services.costing.engine.scope.discovery import DiscoveryResult, L0Scope, ScopeDiscovery
 
 
 def _plan_item(items: list[CostingEngineAnnualItemVO], code: str) -> CostingEngineAnnualItemVO:
@@ -24,7 +24,7 @@ def _stub_no_dies(monkeypatch: pytest.MonkeyPatch) -> None:
     from app.services.stamping.die_fee.calc.orchestrator.ready import DieFeeCoverage
 
     monkeypatch.setattr(
-        "app.services.costing.engine.annual_calc_planner.evaluate_die_fee_coverage",
+        "app.services.costing.engine.plan.annual.evaluate_die_fee_coverage",
         lambda *args, **kwargs: DieFeeCoverage(False, False, "无模具布点", 0, 0),
     )
 
@@ -88,7 +88,7 @@ def test_scope_discovery_multi_bom_dedupe() -> None:
     db = MagicMock()
 
     with (
-        patch("app.services.costing.engine.scope_discovery.LocationService") as location_cls,
+        patch("app.services.costing.engine.scope.discovery.LocationService") as location_cls,
         patch.object(
             discovery.vehicle_model_service,
             "list_introducible",
@@ -136,7 +136,7 @@ def test_scope_discovery_empty_as_of_still_queries_l0() -> None:
     db = MagicMock()
 
     with (
-        patch("app.services.costing.engine.scope_discovery.LocationService") as location_cls,
+        patch("app.services.costing.engine.scope.discovery.LocationService") as location_cls,
         patch.object(
             discovery.vehicle_model_service,
             "list_introducible",
@@ -172,7 +172,7 @@ def test_scope_discovery_includes_l0_only_vehicle() -> None:
     db = MagicMock()
 
     with (
-        patch("app.services.costing.engine.scope_discovery.LocationService") as location_cls,
+        patch("app.services.costing.engine.scope.discovery.LocationService") as location_cls,
         patch.object(
             discovery.vehicle_model_service,
             "list_introducible",
@@ -209,7 +209,7 @@ def test_scope_discovery_filters_stopped_project() -> None:
     db = MagicMock()
 
     with (
-        patch("app.services.costing.engine.scope_discovery.LocationService") as location_cls,
+        patch("app.services.costing.engine.scope.discovery.LocationService") as location_cls,
         patch.object(
             discovery.vehicle_model_service,
             "list_introducible",
@@ -406,10 +406,6 @@ def test_run_orchestrator_does_not_submit_nested_async_task() -> None:
             "app.services.async_task.async_task_service.AsyncTaskService.submit",
             side_effect=fake_submit,
         ),
-        patch(
-            "app.services.async_task.AsyncTaskService.submit",
-            side_effect=fake_submit,
-        ),
     ):
         user = SimpleNamespace(id=1, username="tester", real_name="测试", is_admin=True)
         summary = orch.execute(
@@ -428,7 +424,7 @@ def test_run_orchestrator_does_not_submit_nested_async_task() -> None:
 
 
 def test_delete_all_runs_marks_parent_tasks() -> None:
-    from app.services.costing.engine.costing_engine_service import CostingEngineService
+    from app.services.costing.engine.crud.service import CostingEngineService
 
     service = CostingEngineService()
     db = MagicMock()
@@ -445,7 +441,7 @@ def test_delete_all_runs_marks_parent_tasks() -> None:
 
 def test_delete_running_allows_new_key(monkeypatch: pytest.MonkeyPatch) -> None:
     """删除 running 后同键不再视为进行中。"""
-    from app.services.costing.engine.costing_engine_service import CostingEngineService
+    from app.services.costing.engine.crud.service import CostingEngineService
 
     service = CostingEngineService()
     db = MagicMock()
@@ -484,18 +480,18 @@ def test_annual_planner_welding_fee_auto_calc_when_coverage_incomplete(
 ) -> None:
     """拆解未全覆盖时视为缺失，引擎应补算焊接费（不能只凭「有几条费行」就跳过）。"""
     from app.services.costing.assembly_cost.calc.orchestrator.ready import WeldingCoverage
-    from app.services.costing.engine.scope_discovery import L0Scope
+    from app.services.costing.engine.scope.discovery import L0Scope
     from app.services.stamping.process_fee.calc.orchestrator.ready import ProcessFeeCoverage
 
     planner = AnnualCalcPlanner()
     db = MagicMock()
     _stub_no_dies(monkeypatch)
     monkeypatch.setattr(
-        "app.services.costing.engine.annual_calc_planner.evaluate_process_fee_coverage",
+        "app.services.costing.engine.plan.annual.evaluate_process_fee_coverage",
         lambda *args, **kwargs: ProcessFeeCoverage(True, "冲压加工费已完成", 1, 1),
     )
     monkeypatch.setattr(
-        "app.services.costing.engine.annual_calc_planner.evaluate_welding_coverage",
+        "app.services.costing.engine.plan.annual.evaluate_welding_coverage",
         lambda *args, **kwargs: WeldingCoverage(
             False,
             "拆解节点没有对应的焊接费行（当前树拆解 86 条，对齐 9 条），请先完成焊接费计算",
@@ -528,18 +524,18 @@ def test_annual_planner_skips_welding_fee_when_coverage_complete(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     from app.services.costing.assembly_cost.calc.orchestrator.ready import WeldingCoverage
-    from app.services.costing.engine.scope_discovery import L0Scope
+    from app.services.costing.engine.scope.discovery import L0Scope
     from app.services.stamping.process_fee.calc.orchestrator.ready import ProcessFeeCoverage
 
     planner = AnnualCalcPlanner()
     db = MagicMock()
     _stub_no_dies(monkeypatch)
     monkeypatch.setattr(
-        "app.services.costing.engine.annual_calc_planner.evaluate_process_fee_coverage",
+        "app.services.costing.engine.plan.annual.evaluate_process_fee_coverage",
         lambda *args, **kwargs: ProcessFeeCoverage(True, "冲压加工费已完成", 1, 1),
     )
     monkeypatch.setattr(
-        "app.services.costing.engine.annual_calc_planner.evaluate_welding_coverage",
+        "app.services.costing.engine.plan.annual.evaluate_welding_coverage",
         lambda *args, **kwargs: WeldingCoverage(True, "焊接费已完成", 86, {}),
     )
 
@@ -572,7 +568,7 @@ def test_annual_planner_process_fee_auto_calc_when_coverage_incomplete(
     db = MagicMock()
     _stub_no_dies(monkeypatch)
     monkeypatch.setattr(
-        "app.services.costing.engine.annual_calc_planner.evaluate_process_fee_coverage",
+        "app.services.costing.engine.plan.annual.evaluate_process_fee_coverage",
         lambda *args, **kwargs: ProcessFeeCoverage(
             False,
             "冲压零件没有对应的加工费行（工艺零件 20 条，对齐 3 条），请先完成冲压加工费计算",
@@ -604,11 +600,11 @@ def test_annual_planner_die_fee_auto_calc_when_dies_without_fee(
     planner = AnnualCalcPlanner()
     db = MagicMock()
     monkeypatch.setattr(
-        "app.services.costing.engine.annual_calc_planner.evaluate_process_fee_coverage",
+        "app.services.costing.engine.plan.annual.evaluate_process_fee_coverage",
         lambda *args, **kwargs: ProcessFeeCoverage(True, "冲压加工费已完成", 1, 1),
     )
     monkeypatch.setattr(
-        "app.services.costing.engine.annual_calc_planner.evaluate_die_fee_coverage",
+        "app.services.costing.engine.plan.annual.evaluate_die_fee_coverage",
         lambda *args, **kwargs: DieFeeCoverage(False, True, "有模具布点，当年无模具费结果", 5, 0),
     )
     discovery = DiscoveryResult(
@@ -635,11 +631,11 @@ def test_annual_planner_skips_die_fee_when_fee_exists(
     planner = AnnualCalcPlanner()
     db = MagicMock()
     monkeypatch.setattr(
-        "app.services.costing.engine.annual_calc_planner.evaluate_process_fee_coverage",
+        "app.services.costing.engine.plan.annual.evaluate_process_fee_coverage",
         lambda *args, **kwargs: ProcessFeeCoverage(True, "冲压加工费已完成", 1, 1),
     )
     monkeypatch.setattr(
-        "app.services.costing.engine.annual_calc_planner.evaluate_die_fee_coverage",
+        "app.services.costing.engine.plan.annual.evaluate_die_fee_coverage",
         lambda *args, **kwargs: DieFeeCoverage(True, True, "冲压模具费已有结果", 5, 3),
     )
     discovery = DiscoveryResult(
@@ -666,7 +662,7 @@ def test_annual_planner_omits_die_fee_without_dies(
     db = MagicMock()
     _stub_no_dies(monkeypatch)
     monkeypatch.setattr(
-        "app.services.costing.engine.annual_calc_planner.evaluate_process_fee_coverage",
+        "app.services.costing.engine.plan.annual.evaluate_process_fee_coverage",
         lambda *args, **kwargs: ProcessFeeCoverage(True, "冲压加工费已完成", 1, 1),
     )
     discovery = DiscoveryResult(
@@ -709,18 +705,18 @@ def test_annual_planner_welding_breakdown_auto_calc_when_tree_stale(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     from app.services.costing.assembly_cost.calc.orchestrator.ready import WeldingCoverage
-    from app.services.costing.engine.scope_discovery import L0Scope
+    from app.services.costing.engine.scope.discovery import L0Scope
     from app.services.stamping.process_fee.calc.orchestrator.ready import ProcessFeeCoverage
 
     planner = AnnualCalcPlanner()
     db = MagicMock()
     _stub_no_dies(monkeypatch)
     monkeypatch.setattr(
-        "app.services.costing.engine.annual_calc_planner.evaluate_process_fee_coverage",
+        "app.services.costing.engine.plan.annual.evaluate_process_fee_coverage",
         lambda *args, **kwargs: ProcessFeeCoverage(True, "冲压加工费已完成", 1, 1),
     )
     monkeypatch.setattr(
-        "app.services.costing.engine.annual_calc_planner.evaluate_welding_coverage",
+        "app.services.costing.engine.plan.annual.evaluate_welding_coverage",
         lambda *args, **kwargs: WeldingCoverage(
             False,
             "焊接拆解/费行未对齐当前 BOM 树（当前树对齐 9 条），请重导后重算焊接费",
@@ -797,7 +793,7 @@ def test_annual_planner_skips_process_fee_without_stamping_process(
     _stub_no_dies(monkeypatch)
     coverage_fn = MagicMock()
     monkeypatch.setattr(
-        "app.services.costing.engine.annual_calc_planner.evaluate_process_fee_coverage",
+        "app.services.costing.engine.plan.annual.evaluate_process_fee_coverage",
         coverage_fn,
     )
     discovery = DiscoveryResult(
@@ -825,7 +821,7 @@ def test_annual_planner_skips_welding_without_bom(
     db = MagicMock()
     _stub_no_dies(monkeypatch)
     monkeypatch.setattr(
-        "app.services.costing.engine.annual_calc_planner.evaluate_process_fee_coverage",
+        "app.services.costing.engine.plan.annual.evaluate_process_fee_coverage",
         lambda *args, **kwargs: ProcessFeeCoverage(True, "冲压加工费已完成", 1, 1),
     )
     discovery = DiscoveryResult(
@@ -878,7 +874,7 @@ def test_gate_skips_die_unit_price_without_dies(
 
 
 def test_gate_skips_tonnage_without_stamping_process() -> None:
-    from app.services.costing.engine.gate_checker import GateChecker
+    from app.services.costing.engine.gate.checker import GateChecker
 
     checker = GateChecker()
     db = MagicMock()
@@ -901,7 +897,7 @@ def test_gate_skips_tonnage_without_stamping_process() -> None:
 
 
 def test_gate_skips_welding_unit_price_without_bom() -> None:
-    from app.services.costing.engine.gate_checker import GateChecker
+    from app.services.costing.engine.gate.checker import GateChecker
 
     checker = GateChecker()
     db = MagicMock()
@@ -924,7 +920,7 @@ def test_gate_skips_welding_unit_price_without_bom() -> None:
 
 
 def test_gate_skips_annual_part_price_without_bom() -> None:
-    from app.services.costing.engine.gate_checker import GateChecker
+    from app.services.costing.engine.gate.checker import GateChecker
 
     checker = GateChecker()
     db = MagicMock()

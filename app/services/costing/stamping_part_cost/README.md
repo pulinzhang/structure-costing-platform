@@ -6,7 +6,7 @@
 
 ## 架构
 
-门面委托 `queries` / `audit` / `calc_ops`；核价本身走 `calc/orchestrator`。
+门面委托 `queries` / `audit` / `calc_ops`；核价本身走 `calc.orchestrator.orchestrator.StampingPartCostCalcOrchestrator`。
 
 ## 职责
 
@@ -17,4 +17,4 @@
 | `audit.py` | 手工改价、范围删除/审核/反审核 |
 | `calc_ops.py` | 计算入队、计算日志 |
 | `calc/` | 单件/拼焊计价、费用匹配、批量落库 |
-| `export/` | 核价结果 Excel（含 `process_sheet/`） |
+| `export/` | 核价结果 Excel（`export.service.StampingPartCostExportService`；含 `process_sheet/`） |

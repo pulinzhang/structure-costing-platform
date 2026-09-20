@@ -14,7 +14,7 @@ from app.common.swing_shear import steel_kg_price_with_swing_shear
 from app.models.costing import SteelPrice
 from app.models.stamping.tailor_weld_blank import StampingTailorWeldBlank
 from app.repositories.costing.steel_price.steel_price_repository import SteelPriceRepository
-from app.repositories.stamping.tailor_weld_blank_repository import (
+from app.repositories.stamping.part.tailor_weld_blank import (
     StampingTailorWeldBlankRepository,
 )
 from app.services.costing.stamping_part_cost.export.formatters import formula_number

@@ -17,7 +17,7 @@ from app.schemas.dto.location_dto import (
 )
 from app.schemas.vo.location_vo import LocationVO
 from app.schemas.vo.user_vo import UserVO
-from app.services.masterdata.location import LocationService
+from app.services.masterdata.location.location_service import LocationService
 from app.utils.response import ApiResponse
 
 router = APIRouter(prefix="/api/masterdata/locations", tags=["基地"])

@@ -6,7 +6,8 @@ from sqlalchemy.orm import Session
 from app.common.permissions.codes import Perm
 from app.database import get_db
 from app.deps.permissions import require_perm
-from app.schemas.common import DeletedCountVO, PageResult
+from app.schemas.common.deleted_count import DeletedCountVO
+from app.schemas.common.page_result import PageResult
 from app.schemas.dto.costing_engine_dto import CostingEngineRunCreateDTO
 from app.schemas.vo.async_task_vo import AsyncTaskAcceptedVO, AsyncTaskProgressVO
 from app.schemas.vo.costing_engine_vo import (
@@ -15,7 +16,7 @@ from app.schemas.vo.costing_engine_vo import (
     CostingEngineRunVO,
 )
 from app.schemas.vo.user_vo import UserVO
-from app.services.costing.engine import CostingEngineService
+from app.services.costing.engine.crud.service import CostingEngineService
 from app.utils.response import ApiResponse
 
 router = APIRouter(prefix="/api/costing/engine", tags=["核价引擎 API"])

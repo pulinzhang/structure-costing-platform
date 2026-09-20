@@ -12,7 +12,7 @@ from app.repositories.costing.stamping_part_cost.stamping_part_cost_repository i
     empty_part_cost_summary,
 )
 from app.repositories.costing.steel_price.steel_price_repository import SteelPriceRepository
-from app.repositories.stamping.tailor_weld_blank_repository import (
+from app.repositories.stamping.part.tailor_weld_blank import (
     StampingTailorWeldBlankRepository,
 )
 from app.schemas.dto.stamping_part_cost_dto import StampingPartCostQuery
@@ -23,8 +23,8 @@ from app.services.costing.stamping_part_cost.export.tailor_weld_display import (
     resolve_part_cost_display,
 )
 from app.services.masterdata.location.location_service import LocationService
-from app.services.masterdata.supplier import SupplierService
-from app.services.masterdata.vehicle_model import VehicleModelService
+from app.services.masterdata.supplier.supplier_service import SupplierService
+from app.services.masterdata.vehicle_model.vehicle_model_service import VehicleModelService
 
 
 def to_cost_vos(

@@ -24,7 +24,9 @@ from typing import Any
 
 from openpyxl.worksheet.worksheet import Worksheet
 
-from app.parsers.yishiyiyi.policy.handlers.base_handler import BaseSheetHandler
+from app.parsers.yishiyiyi.policy.handlers.base_handler.base_handler import (
+    BaseSheetHandler,
+)
 from app.parsers.yishiyiyi.policy.models.ladder_item import ParsedLadderItem
 
 from .magang_thickness import parse_thickness_fixed

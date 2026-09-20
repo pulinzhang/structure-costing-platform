@@ -1,7 +1,1 @@
-"""牌号分类档案 Repository。"""
-
-from app.repositories.masterdata.steel_grade_category.steel_grade_category_repository import (
-    SteelGradeCategoryRepository,
-)
-
-__all__ = ["SteelGradeCategoryRepository"]
+"""牌号分类仓储。按模块 import，不要在本文件汇总。"""

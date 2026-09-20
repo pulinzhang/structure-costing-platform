@@ -25,7 +25,7 @@ from app.schemas.dto.stamping_part_cost_dto import StampingPartCostCalcDTO
 from app.schemas.dto.stamping_process_fee_dto import StampingProcessFeeCalcDTO
 from app.schemas.vo.costing_engine_vo import CostingEngineAnnualItemVO
 from app.schemas.vo.user_vo import UserVO
-from app.services.costing.engine.scope_discovery import DiscoveryResult, L0Scope
+from app.services.costing.engine.scope.discovery import DiscoveryResult, L0Scope
 from app.services.costing.steel_price.calc.models import SteelPriceCalcRequest
 
 if TYPE_CHECKING:

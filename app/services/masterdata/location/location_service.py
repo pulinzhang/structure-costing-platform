@@ -10,7 +10,7 @@ from sqlalchemy.orm import Session
 from app.common.audit import audit_create, audit_update
 from app.exceptions.base import BusinessException, NotFoundException
 from app.models.masterdata.location import Location
-from app.repositories.masterdata.location import LocationRepository
+from app.repositories.masterdata.location.location_repository import LocationRepository
 from app.schemas.dto.location_dto import (
     LocationAliasCreateDTO,
     LocationAliasInsert,

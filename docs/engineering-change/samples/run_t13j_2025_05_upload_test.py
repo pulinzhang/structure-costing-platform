@@ -17,7 +17,7 @@ from app.repositories.engineering_change.upload_log_repository import (  # noqa:
     EngineeringChangeUploadLogInsert,
     EngineeringChangeUploadLogRepository,
 )
-from app.services.engineering_change.upload.orchestrator import (  # noqa: E402
+from app.services.engineering_change.upload.orchestrator.orchestrator import (  # noqa: E402
     EngineeringChangeOrchestrator,
 )
 from app.services.engineering_change.upload.orchestrator.types import (  # noqa: E402
@@ -25,7 +25,9 @@ from app.services.engineering_change.upload.orchestrator.types import (  # noqa:
 )
 from app.services.file_trace.path_utils import to_upload_relpath  # noqa: E402
 from app.services.file_trace.register import register_existing  # noqa: E402
-from app.services.masterdata.vehicle_model import VehicleModelService  # noqa: E402
+from app.services.masterdata.vehicle_model.vehicle_model_service import (  # noqa: E402
+    VehicleModelService,
+)
 
 logging.disable(logging.WARNING)
 

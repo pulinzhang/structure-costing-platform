@@ -14,7 +14,9 @@ from app.schemas.llm.analysis_payload import (
     SummaryPayload,
 )
 from app.services.llm._money import money_str, month_key
-from app.services.yishiyiyi.winning_thickness import WinningThicknessExportService
+from app.services.yishiyiyi.winning_thickness.export.service import (
+    WinningThicknessExportService,
+)
 
 _MAX_ROWS = 8000
 

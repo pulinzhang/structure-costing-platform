@@ -15,7 +15,7 @@ from sqlalchemy.orm import Session
 
 from app.common.audit import display_name
 from app.models.stamping import StampingProcessFeeCalcLog
-from app.schemas.common import DeletedCountVO
+from app.schemas.common.deleted_count import DeletedCountVO
 from app.schemas.dto.stamping_process_fee_dto import StampingProcessFeeCalcDTO
 from app.schemas.vo.async_task_vo import AsyncTaskAcceptedVO
 from app.schemas.vo.stamping_process_fee_vo import (
@@ -24,13 +24,15 @@ from app.schemas.vo.stamping_process_fee_vo import (
     StampingProcessFeeCalcResultVO,
 )
 from app.schemas.vo.user_vo import UserVO
-from app.services.async_task import (
+from app.services.async_task.async_task_service import (
     TASK_TYPE_STAMPING_PROCESS_FEE_CALC,
     AsyncTaskService,
+)
+from app.services.async_task.worker_runner import (
     WorkerTaskOutcome,
     outcome_from_calc_status,
 )
-from app.services.masterdata.vehicle_model import VehicleModelService
+from app.services.masterdata.vehicle_model.vehicle_model_service import VehicleModelService
 from app.services.stamping.process_fee.calc.models import ProgressCallback
 from app.services.stamping.process_fee.calc.orchestrator.batch_engine import (
     BatchCalculationEngine,

@@ -26,10 +26,10 @@ Repository / Model / Router / Schema 不在这里。
 
 ```python
 from app.services.costing.assembly_cost.assembly_cost_service import AssemblyCostService
-from app.services.costing.assembly_cost.export.assembly_cost_export_service import (
+from app.services.costing.assembly_cost.export.service import (
     AssemblyCostExportService,
 )
-from app.services.costing.assembly_cost.calc_report.report_export_service import (
+from app.services.costing.assembly_cost.calc_report.service import (
     AssemblyCostCalcReportExportService,
 )
 ```
@@ -88,14 +88,14 @@ assembly_cost/
 │       └── progress.py               # 进度回调适配
 ├── export/                           # 结果表工作簿
 │   ├── __init__.py
-│   ├── assembly_cost_export_service.py   # 筛选校验、文件名、水印 bytes
+│   ├── service.py                    # 筛选校验、文件名、水印 bytes
 │   └── workbook/                     # 列 / 样式 / 各 Sheet（openpyxl）
 │       ├── builder.py                # 取数 + 写 Sheet；collect_welding_fee_ids
 │       ├── columns.py / labels.py / layout.py / styles.py / filename.py
 │       ├── list_sheet.py / items_sheet.py / indirects_sheet.py
 │       └── （焊费 Sheet 委托 BomWeldingFeeExportService.write_to_workbook）
 └── calc_report/                      # 计算过程报告工作簿
-    ├── report_export_service.py      # 拉日志、筛卡、文件名、水印 bytes
+    ├── service.py                    # 拉日志、筛卡、文件名、水印 bytes
     ├── builder.py                    # CalcReportWorkbookBuilder
     ├── match.py                      # 与浅色页筛选同口径
     ├── columns.py / labels.py / layout.py / styles.py / filename.py

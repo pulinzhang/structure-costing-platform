@@ -12,7 +12,7 @@ from sqlalchemy.orm import Session
 from app.common.permissions.codes import Perm
 from app.database import get_db
 from app.deps.permissions import require_any_perm, require_perm
-from app.schemas.common import PageResult
+from app.schemas.common.page_result import PageResult
 from app.schemas.dto.steel_grade_category_dto import (
     SteelGradeCategoryCreate,
     SteelGradeCategoryExportQuery,
@@ -25,9 +25,11 @@ from app.schemas.vo.steel_grade_category_vo import (
     SteelGradeCategoryVO,
 )
 from app.schemas.vo.user_vo import UserVO
-from app.services.masterdata.steel_grade_category import SteelGradeCategoryService
-from app.services.masterdata.steel_grade_category.export_service import (
+from app.services.masterdata.steel_grade_category.export.service import (
     SteelGradeCategoryExportService,
+)
+from app.services.masterdata.steel_grade_category.steel_grade_category_service import (
+    SteelGradeCategoryService,
 )
 from app.utils.response import ApiResponse
 

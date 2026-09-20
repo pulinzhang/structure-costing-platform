@@ -17,7 +17,7 @@ from app.repositories.bom.welding_process_breakdown_repository import (
     BomWeldingProcessBreakdownRepository,
     WeldingBreakdownListFilters,
 )
-from app.schemas.common import DeletedCountVO
+from app.schemas.common.deleted_count import DeletedCountVO
 from app.schemas.dto.bom_welding_process_breakdown_dto import (
     BomWeldingProcessBreakdownBatchApproveDTO,
     BomWeldingProcessBreakdownBatchReverseAuditDTO,
@@ -57,7 +57,7 @@ from app.services.bom.welding_process_breakdown.query import (
     paginate_nodes,
 )
 from app.services.masterdata.location.location_service import LocationService
-from app.services.masterdata.vehicle_model import VehicleModelService
+from app.services.masterdata.vehicle_model.vehicle_model_service import VehicleModelService
 
 
 class BomWeldingProcessBreakdownService:

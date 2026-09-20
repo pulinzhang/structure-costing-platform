@@ -7,7 +7,7 @@ from app.common.types.repository_types import (
     EngineStepSummaryJson,
     SummaryJson,
 )
-from app.services.costing.engine.scope_discovery import DiscoveryResult
+from app.services.costing.engine.scope.discovery import DiscoveryResult
 
 
 def step_summary(

@@ -18,7 +18,9 @@ from typing import Any
 
 from openpyxl.worksheet.worksheet import Worksheet
 
-from app.parsers.yishiyiyi.policy.handlers.base_handler import BaseSheetHandler
+from app.parsers.yishiyiyi.policy.handlers.base_handler.base_handler import (
+    BaseSheetHandler,
+)
 
 from .constants import GRADE_LABELS
 
@@ -59,8 +61,7 @@ class AngangSheetHandler(BaseSheetHandler):
         每行数据（各钢种）共用相同的宽度阶梯价格（合并单元格实现）。
         因此每块只生成一条政策，grade_type = CATEGORY，所有宽度区间作为 items。
         """
-        from ..models import ParsedPolicy
-        from ..models.policy import GRADE_TYPE_CATEGORY, POLICY_TYPE_WIDTH
+        from ..models.policy import GRADE_TYPE_CATEGORY, POLICY_TYPE_WIDTH, ParsedPolicy
 
         header_row = block["header_row"]
         price_cols = list(block["price_cols"])

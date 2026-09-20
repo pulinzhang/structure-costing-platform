@@ -1,5 +1,1 @@
-"""仪表盘业务服务"""
-
-from app.services.dashboard.dashboard_service import DashboardService
-
-__all__ = ["DashboardService"]
+"""仪表盘。按模块 import，不要在本文件汇总。"""

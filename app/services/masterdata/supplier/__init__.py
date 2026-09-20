@@ -1,5 +1,1 @@
-"""供应商主数据服务。"""
-
-from app.services.masterdata.supplier.supplier_service import SupplierService
-
-__all__ = ["SupplierService"]
+"""供应商主数据。按模块 import，不要在本文件汇总。"""

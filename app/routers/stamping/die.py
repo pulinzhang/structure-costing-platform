@@ -9,7 +9,7 @@ from sqlalchemy.orm import Session
 from app.common.permissions.codes import Perm
 from app.database import get_db
 from app.deps.permissions import require_any_perm, require_perm
-from app.schemas.common import PageResult
+from app.schemas.common.page_result import PageResult
 from app.schemas.dto.stamping_die_dto import (
     StampingDieAllocRatioUpdate,
     StampingDiePartQuery,
@@ -24,14 +24,14 @@ from app.schemas.vo.stamping_die_vo import (
     StampingDieScopeFilterVO,
 )
 from app.schemas.vo.user_vo import UserVO
-from app.services.async_task import (
+from app.services.async_task.async_task_service import (
     STATUS_PENDING,
     TASK_TYPE_STAMPING_DIE_UPLOAD,
     AsyncTaskService,
 )
-from app.services.stamping.die.die_service import StampingDieService
-from app.services.stamping.die.export_service import StampingDieExportService
-from app.services.stamping.die.upload_service import StampingDieUploadService
+from app.services.stamping.die.crud.service import StampingDieService
+from app.services.stamping.die.export.service import StampingDieExportService
+from app.services.stamping.die.upload.upload_service import StampingDieUploadService
 from app.utils.response import ApiResponse
 
 router = APIRouter(prefix="/api/stamping/die", tags=["冲压模具 API"])

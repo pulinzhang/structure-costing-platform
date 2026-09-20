@@ -11,7 +11,7 @@ from app.common.audit import audit_create, display_name
 from app.config import settings
 from app.exceptions.base import BusinessException, NotFoundException, PermissionException
 from app.models.llm import LlmAnalysisReport
-from app.repositories.llm import (
+from app.repositories.llm.report_repository import (
     LlmAnalysisReportFailPatch,
     LlmAnalysisReportInsert,
     LlmAnalysisReportRepository,
@@ -32,24 +32,26 @@ from app.schemas.vo.llm_analysis_vo import (
     LlmAnalysisTimeRangeVO,
 )
 from app.schemas.vo.user_vo import UserVO
-from app.services.async_task import (
+from app.services.async_task.async_task_service import (
     STATUS_COMPLETED,
     AsyncTaskService,
+)
+from app.services.async_task.worker_runner import (
     ProgressCallback,
     WorkerTaskOutcome,
 )
 from app.services.llm.analysis.runner import AnalysisRunner
 from app.services.llm.analysis.shared.idempotency import build_idempotency_key
-from app.services.llm.client import LlmClientError
+from app.services.llm.client.openai_compatible import LlmClientError
 from app.services.llm.comparison_basis import default_comparison_basis
 from app.services.llm.context.snapshot_builder import SnapshotBuilder
-from app.services.llm.engine_readiness import EngineReadinessRunner
+from app.services.llm.engine_readiness.runner import EngineReadinessRunner
 from app.services.llm.generator import LlmReportGenerator
 from app.services.llm.prompts.labels import sanitize_report_markdown
 from app.services.llm.prompts.registry import PromptRegistry
 from app.services.llm.query.intent_router import detect_audience
 from app.services.llm.query.query_parser import QueryParser
-from app.services.llm.usage import UsageHelpRunner
+from app.services.llm.usage.runner import UsageHelpRunner
 from app.utils.logging_config import get_logger
 
 logger = get_logger("service.llm.report")

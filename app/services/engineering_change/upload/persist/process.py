@@ -27,12 +27,12 @@ from app.repositories.engineering_change.effect_link_repository import (
 from app.schemas.dto.stamping_upload_dto import PartData, ProcessData
 from app.schemas.vo.user_vo import UserVO
 from app.services.engineering_change.upload.gates.process_gates import parse_process_confirmation
-from app.services.stamping.part.engineering_change import (
+from app.services.stamping.part.engineering.service import (
     EngineeringChangePartAsOfRow,
     EngineeringChangeProcessPartSpec,
+    StampingEngineeringService,
 )
-from app.services.stamping.stamping_service import StampingPartService
-from app.services.stamping.upload.persist.files import save_part_sketches
+from app.services.stamping.part.upload.persist.files import save_part_sketches
 
 
 def persist_process_parts(
@@ -59,7 +59,7 @@ def persist_process_parts(
     if not parsed.parts:
         return [], 0, sheet_version
 
-    stamping = StampingPartService()
+    stamping = StampingEngineeringService()
     as_of_rows = stamping.list_parts_as_of_for_engineering_change(
         db,
         location=location,

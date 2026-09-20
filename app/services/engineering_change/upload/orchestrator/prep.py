@@ -64,7 +64,7 @@ from app.services.engineering_change.upload.orchestrator.types import (
     ProgressCallback,
     report_progress,
 )
-from app.services.masterdata.vehicle_model import VehicleModelService
+from app.services.masterdata.vehicle_model.vehicle_model_service import VehicleModelService
 
 
 def prepare_engineering_change_run(

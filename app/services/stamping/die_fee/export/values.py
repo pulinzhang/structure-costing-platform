@@ -12,7 +12,7 @@ from app.common.timezone import now
 from app.models.stamping.die import StampingDieProcess
 from app.models.stamping.die_fee import StampingDieFee
 from app.models.stamping.die_fee_item import StampingDieFeeItem
-from app.services.stamping.die.weight_check import DIE_STEEL_DENSITY
+from app.services.stamping.die.rules.weight_check import DIE_STEEL_DENSITY
 from app.services.stamping.die_fee.export.columns import (
     COL_HEIGHT,
     COL_HOLLOW,

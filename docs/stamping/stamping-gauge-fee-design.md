@@ -72,11 +72,11 @@
 - Router：`app/routers/stamping/gauge_fee.py`
 - Service：`app/services/stamping/gauge_fee/`（列表 / 上传 / 模板 / 导出；工程变更抄写/回滚删除）
 - Parser：`app/parsers/stamping/gauge_fee_parser.py`
-- Repo：`app/repositories/stamping/gauge_fee_repository.py`
+- Repo：`app/repositories/stamping/gauge_fee/repository.py`
 - 模具零件：只读 `StampingDiePartRepository.list_parts_for_scope`（无模具则无需检具费）
 
 ---
 
 ## 5. 工程变更
 
-改图换号时，若旧号有 `effective` 档，工程变更管线调本切片 Service **抄到新号**；回滚调本切片 **按 id 删新行**。旧号行不动。实现在 `gauge_fee/engineering_change.py`（Service 只转发）。本切片 **不** import `engineering_change`。规则见 [part-number-revision-design.md](../engineering-change/part-number-revision-design.md) §4.3.1。
+改图换号时，若旧号有 `effective` 档，工程变更管线调本切片 Service **抄到新号**；回滚调本切片 **按 id 删新行**。旧号行不动。实现在 `gauge_fee/engineering/change.py`（Service 只转发）。本切片 **不** import `engineering_change`。规则见 [part-number-revision-design.md](../engineering-change/part-number-revision-design.md) §4.3.1。

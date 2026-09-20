@@ -1,4 +1,4 @@
-from app.services.stamping.die.process_identity import matches_die_identity
+from app.services.stamping.die.rules.process_identity import matches_die_identity
 
 
 def test_matches_die_identity_optional_filters() -> None:

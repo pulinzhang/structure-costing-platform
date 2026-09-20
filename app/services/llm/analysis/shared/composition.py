@@ -4,7 +4,7 @@ from __future__ import annotations
 
 from decimal import Decimal
 
-from app.repositories.llm.cost_analysis import L0CompositionLineRow
+from app.repositories.llm.cost_analysis.rows import L0CompositionLineRow
 from app.schemas.llm.analysis_payload import (
     CompositionAnomaliesPayload,
     CompositionAnomalyItem,

@@ -18,8 +18,8 @@
 **对外入口**：
 
 ```python
-from app.services.yishiyiyi.scrap_price import (
-    StampingScrapPriceService,
+from app.services.yishiyiyi.scrap_price.scrap_price_service import StampingScrapPriceService
+from app.services.yishiyiyi.scrap_price.export.service import (
     StampingScrapPriceExportService,
 )
 ```
@@ -54,7 +54,7 @@ app/services/yishiyiyi/scrap_price/
 ├── crud/
 │   └── scrap_price_crud.py         # 整月取数/保存/复制/删除
 └── export/
-    ├── export_service.py           # 查库 + 调导出器
+    ├── service.py                  # 查库 + 调导出器
     └── excel_exporter.py           # 宽表 openpyxl
 ```
 
@@ -91,7 +91,7 @@ repositories.yishiyiyi.scrap_price
 | 模块 | 职责 |
 |------|------|
 | `crud/scrap_price_crud.py` | 月表字段 / 复制校验 |
-| `export/export_service.py` | 导出取数范围 |
+| `export/service.py` | 导出取数范围 |
 | `export/excel_exporter.py` | 宽表版式 / 公式 |
 
 ---

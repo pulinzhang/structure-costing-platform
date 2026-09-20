@@ -16,7 +16,7 @@ from app.schemas.dto.bom_welding_fee_dto import BomWeldingFeeCalcDTO
 from app.services.bom.bom.period import BomPeriodService
 from app.services.bom.welding_fee.calc.orchestrator.deps import WeldingFeeCalcDeps
 from app.services.bom.welding_fee.calc.orchestrator.progress import ProgressNotifier
-from app.services.masterdata.vehicle_model import VehicleModelService
+from app.services.masterdata.vehicle_model.vehicle_model_service import VehicleModelService
 
 
 @dataclass(slots=True)

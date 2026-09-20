@@ -25,7 +25,7 @@ from app.common.engineering_change_gates import (
 )
 from app.parsers.engineering_change.change_order_parser import CHANGE_ORDER_HEADERS
 from app.services.bom.bom.upload.template_builder import build_bom_material_template
-from app.services.stamping.upload.template_builder import build_stamping_process_template
+from app.services.stamping.part.upload.template_builder import build_stamping_process_template
 
 TEMPLATE_FILENAME = "工程变更导入模板.xlsx"
 

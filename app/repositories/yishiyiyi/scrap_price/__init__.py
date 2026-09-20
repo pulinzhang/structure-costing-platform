@@ -1,7 +1,1 @@
-"""废料月度销售价数据访问"""
-
-from app.repositories.yishiyiyi.scrap_price.scrap_price_repository import (
-    StampingScrapPriceRepository,
-)
-
-__all__ = ["StampingScrapPriceRepository"]
+"""废料价仓储。按模块 import，不要在本文件汇总。"""

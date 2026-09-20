@@ -2,7 +2,7 @@
 
 CRUD、生效窗口门禁、上传与解析契约。
 
-对外入口：`VehicleModelService`（`vehicle_model_service.py`）。
+对外入口：`vehicle_model_service.VehicleModelService`。禁止本包 `__init__.py` 再导出。
 
 ## 架构
 

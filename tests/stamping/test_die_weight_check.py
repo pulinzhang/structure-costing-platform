@@ -1,6 +1,6 @@
 from decimal import Decimal
 
-from app.services.stamping.die.weight_check import (
+from app.services.stamping.die.rules.weight_check import (
     DieWeightCheckRow,
     calc_die_weight_t,
     find_die_weight_mismatches,

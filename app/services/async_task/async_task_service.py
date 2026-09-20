@@ -28,7 +28,7 @@ from app.common.types.repository_types import AsyncTaskSnapshot
 from app.database import AuxiliaryDatabaseConfig, DatabaseConfig
 from app.exceptions.base import NotFoundException
 from app.models.async_task import AsyncTask
-from app.repositories.async_task import AsyncTaskRepository
+from app.repositories.async_task.async_task_repository import AsyncTaskRepository
 from app.repositories.persist import model_from_payload
 from app.schemas.dto.async_task_dto import AsyncTaskInsert, AsyncTaskPatch
 from app.services.async_task.worker_runner import (

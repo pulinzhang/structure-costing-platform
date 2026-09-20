@@ -2,7 +2,7 @@
 
 from unittest.mock import MagicMock, patch
 
-from app.services.costing.monthly_bundle_export.monthly_bundle_export_service import (
+from app.services.costing.monthly_bundle_export.export.service import (
     MonthlyBundleExportService,
 )
 
@@ -22,11 +22,11 @@ def test_bundle_always_exports_finance_tree_roots() -> None:
     _stub_sheet_writers(service)
     with (
         patch(
-            "app.services.costing.monthly_bundle_export.monthly_bundle_export_service.write_cover_sheet",
+            "app.services.costing.monthly_bundle_export.export.service.write_cover_sheet",
             return_value="封皮·核价说明",
         ),
         patch(
-            "app.services.costing.monthly_bundle_export.monthly_bundle_export_service.workbook_to_xlsx_bytes",
+            "app.services.costing.monthly_bundle_export.export.service.workbook_to_xlsx_bytes",
             return_value=b"xlsx",
         ),
     ):
@@ -49,11 +49,11 @@ def test_bundle_allows_optional_bom_version_filter() -> None:
     _stub_sheet_writers(service)
     with (
         patch(
-            "app.services.costing.monthly_bundle_export.monthly_bundle_export_service.write_cover_sheet",
+            "app.services.costing.monthly_bundle_export.export.service.write_cover_sheet",
             return_value="封皮·核价说明",
         ) as cover,
         patch(
-            "app.services.costing.monthly_bundle_export.monthly_bundle_export_service.workbook_to_xlsx_bytes",
+            "app.services.costing.monthly_bundle_export.export.service.workbook_to_xlsx_bytes",
             return_value=b"xlsx",
         ),
     ):

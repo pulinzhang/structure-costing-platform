@@ -26,7 +26,7 @@ from app.schemas.vo.stamping_part_cost_vo import (
     StampingPartCostVO,
 )
 from app.schemas.vo.user_vo import UserVO
-from app.services.costing.stamping_part_cost.stamping_part_cost_export_service import (
+from app.services.costing.stamping_part_cost.export.service import (
     StampingPartCostExportService,
 )
 from app.services.costing.stamping_part_cost.stamping_part_cost_service import (

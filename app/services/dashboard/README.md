@@ -1,6 +1,12 @@
 # 仪表盘 Service（`dashboard/`）
 
-下游组合上游切片，输出管理者待办 / 就绪 / 本期产出。
+下游组合上游切片，输出管理者待办 / 就绪 / 本期产出。不算账。
+
+| 你要做什么 | 调 |
+|---|---|
+| 看板汇总 | `dashboard_service.DashboardService` |
+
+禁止本包 `__init__.py` 再导出。HTTP 仍在 `/api/dashboard`。
 
 对外入口：`DashboardService`（`dashboard_service.py`）。
 

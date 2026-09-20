@@ -5,11 +5,9 @@ from __future__ import annotations
 from dataclasses import dataclass
 
 from app.services.costing.steel_price.calc.calc_log_service import CalcLogService
-from app.services.costing.steel_price.calc.steps import (
-    AdjustmentApplier,
-    BasePriceEnricher,
-    MaterialThicknessLoader,
-)
+from app.services.costing.steel_price.calc.steps.apply_adjustments import AdjustmentApplier
+from app.services.costing.steel_price.calc.steps.enrich_base_price import BasePriceEnricher
+from app.services.costing.steel_price.calc.steps.load_materials import MaterialThicknessLoader
 from app.services.costing.steel_price.steel_price_service import SteelPriceService
 
 

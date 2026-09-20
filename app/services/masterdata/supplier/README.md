@@ -2,7 +2,7 @@
 
 CRUD、别名、上传与解析契约。
 
-对外入口：`SupplierService`（`supplier_service.py`）。
+对外入口：`supplier_service.SupplierService`。禁止本包 `__init__.py` 再导出。
 
 ## 架构
 

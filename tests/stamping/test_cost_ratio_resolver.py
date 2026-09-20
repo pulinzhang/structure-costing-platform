@@ -4,8 +4,8 @@ from decimal import Decimal
 
 from app.parsers.stamping.models.part import Part
 from app.parsers.stamping.models.process import Process
-from app.services.stamping.upload.cost_ratio_preserver import ProcessCostRatioPreserver
-from app.services.stamping.upload.cost_ratio_resolver import (
+from app.services.stamping.part.upload.cost_ratio_preserver import ProcessCostRatioPreserver
+from app.services.stamping.part.upload.cost_ratio_resolver import (
     is_blanking_first_process_code,
     is_prg_process_code,
     is_shared_die_row,

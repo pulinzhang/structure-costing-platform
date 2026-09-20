@@ -21,10 +21,8 @@
 **对外入口**：
 
 ```python
-from app.services.yishiyiyi.base_price import (
-    SteelBasePriceService,
-    SteelBasePriceExportService,
-)
+from app.services.yishiyiyi.base_price.steel_base_price_service import SteelBasePriceService
+from app.services.yishiyiyi.base_price.export.service import SteelBasePriceExportService
 ```
 
 - `SteelBasePriceService`：CRUD / 导入 / 导出预览 / 核价取数（门面）  
@@ -69,7 +67,7 @@ app/services/yishiyiyi/base_price/
 │   └── import_service.py               # 归档 + 解析 + upsert
 └── export/
     ├── __init__.py
-    ├── export_service.py               # 导出预览查询、调导出器
+    ├── service.py                      # 导出预览查询、调导出器
     └── excel_exporter.py               # openpyxl 生成
 ```
 
@@ -131,7 +129,7 @@ parsers.yishiyiyi.base_price     （仅 importing 调用）
 |------|------|
 | `crud/base_price_crud.py` | 列表字段 / 写操作审计 |
 | `importing/import_service.py` | 导入 upsert 策略、进度分段 |
-| `export/export_service.py` | 导出预览字段 |
+| `export/service.py` | 导出预览字段 |
 | `export/excel_exporter.py` | Excel 列与样式 |
 
 约束：门面不堆业务逻辑；Router 不直接调 Parser；子包之间避免成环。

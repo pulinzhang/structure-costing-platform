@@ -10,7 +10,9 @@ from app.services.costing.stamping_part_cost.export.formatters import formula_nu
 from app.services.costing.stamping_part_cost.helpers import (
     format_number as _num,
 )
-from app.services.costing.stamping_part_cost.helpers import to_decimal
+from app.services.costing.stamping_part_cost.helpers import (
+    to_decimal,
+)
 
 
 def _steel_kg_for_material(row: object) -> Decimal | None:

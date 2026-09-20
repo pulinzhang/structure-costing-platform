@@ -4,7 +4,7 @@ from __future__ import annotations
 
 from collections import defaultdict
 
-from app.repositories.llm.cost_analysis import L0PartPeriodRow
+from app.repositories.llm.cost_analysis.rows import L0PartPeriodRow
 from app.schemas.llm.analysis_query import ComparisonBasis
 from app.services.llm.comparison_basis import resolve_comparability
 

@@ -16,7 +16,7 @@ from app.common.money import Q4, excel_money_cell
 from app.repositories.bom.bom.node import BomNodeRepository
 from app.repositories.bom.bom.snapshot import BomSnapshotRepository
 from app.repositories.costing.steel_price.steel_price_repository import SteelPriceRepository
-from app.repositories.stamping.stamping_process_fee_repository import (
+from app.repositories.stamping.process_fee.repository import (
     StampingProcessFeeRepository,
 )
 from app.repositories.yishiyiyi.scrap_price.scrap_price_repository import (

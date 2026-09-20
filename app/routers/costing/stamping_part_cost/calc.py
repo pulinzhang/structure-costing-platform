@@ -9,7 +9,8 @@ from sqlalchemy.orm import Session
 from app.common.permissions.codes import Perm
 from app.database import get_db
 from app.deps.permissions import require_any_perm, require_perm
-from app.schemas.common import DeletedCountVO, PageResult
+from app.schemas.common.deleted_count import DeletedCountVO
+from app.schemas.common.page_result import PageResult
 from app.schemas.dto.stamping_part_cost_dto import StampingPartCostCalcDTO
 from app.schemas.vo.async_task_vo import AsyncTaskAcceptedVO, AsyncTaskProgressVO
 from app.schemas.vo.stamping_part_cost_vo import (
@@ -18,7 +19,7 @@ from app.schemas.vo.stamping_part_cost_vo import (
     StampingPartCostCalcResultVO,
 )
 from app.schemas.vo.user_vo import UserVO
-from app.services.async_task import (
+from app.services.async_task.async_task_service import (
     STATUS_PENDING,
     TASK_TYPE_STAMPING_PART_COST_CALC,
     AsyncTaskService,

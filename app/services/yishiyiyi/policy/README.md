@@ -21,10 +21,10 @@
 **对外入口**：
 
 ```python
-from app.services.yishiyiyi.policy import SteelPricePolicyService
+from app.services.yishiyiyi.policy.steel_price_policy_service import SteelPricePolicyService
 ```
 
-业务调用方经门面访问；子包实现类仅供本切片内部使用。
+禁止本包 `__init__.py` 再导出。业务调用方经门面访问；子包实现类仅供本切片内部使用。
 
 ---
 
@@ -69,7 +69,7 @@ app/services/yishiyiyi/policy/
 │   └── adjustment_common.py          # 钢厂/大类别名 + 加减价候选筛选（供本切片与 costing）
 └── export/
     ├── __init__.py
-    ├── export_service.py             # 主子表扁平化、调导出器
+    ├── service.py                    # 主子表扁平化、调导出器
     └── excel_exporter.py             # openpyxl 生成；含 format_interval
 ```
 
@@ -139,7 +139,7 @@ parsers.yishiyiyi.policy         （仅 importing 调用）
 | `match/ladder_matcher.py` | 区间运算符、命中维度 |
 | `match/adjustment_common.py` | 钢厂别名 / 加减价候选排序 |
 | `match/match_service.py` | fallback 策略 |
-| `export/excel_exporter.py` / `export_service.py` | 导出列、Excel 样式 |
+| `export/excel_exporter.py` / `export/service.py` | 导出列、Excel 样式 |
 
 约束：门面不堆业务逻辑；Router 不直接调 Parser；子包之间避免成环（共享逻辑抽 helpers，或由门面编排）。
 

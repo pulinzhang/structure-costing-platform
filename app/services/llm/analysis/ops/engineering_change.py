@@ -13,7 +13,7 @@ from app.common.engineering_change_gates import (
     CHANGE_TYPE_STOP,
 )
 from app.common.part_number import normalize_part_number_token, part_numbers_match
-from app.repositories.llm.cost_analysis import L0PartPeriodRow
+from app.repositories.llm.cost_analysis.rows import L0PartPeriodRow
 from app.repositories.llm.engineering_change_analysis_repository import EngineeringChangeRow
 from app.repositories.llm.procurement_object_analysis_repository import ProcurementObjectRow
 from app.repositories.llm.stamping_cost_analysis_repository import StampingPartPeriodRow

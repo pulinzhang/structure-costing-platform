@@ -4,20 +4,29 @@ from __future__ import annotations
 
 from sqlalchemy.orm import Session
 
-from app.common.period import is_in_period as columns_in_period
-from app.common.period import overlaps_year as period_overlaps_year
-from app.common.period import period, validate_period
+from app.common.period import (
+    is_in_period as columns_in_period,
+)
+from app.common.period import (
+    overlaps_year as period_overlaps_year,
+)
+from app.common.period import (
+    period,
+    validate_period,
+)
 from app.common.vehicle_model import normalize_vehicle_model
 from app.exceptions.base import BusinessException, NotFoundException
 from app.models.masterdata.vehicle_model import VehicleModel
-from app.repositories.masterdata.vehicle_model import VehicleModelRepository
+from app.repositories.masterdata.vehicle_model.vehicle_model_repository import (
+    VehicleModelRepository,
+)
 from app.schemas.vo.vehicle_model_vo import (
     PERIOD_EXPIRED,
     PERIOD_INTRODUCIBLE,
     PERIOD_PENDING,
     VehicleModelVO,
 )
-from app.services.masterdata.location import LocationService
+from app.services.masterdata.location.location_service import LocationService
 
 PLACEHOLDER_CODES = frozenset({"UNKNOWN"})
 PAGE_HINT = "请到项目一览手工增加或上传（#/vehicle-model-list）"

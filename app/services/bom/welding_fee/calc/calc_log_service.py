@@ -18,7 +18,7 @@ from app.models.bom import BomWeldingFeeCalcLog
 from app.repositories.bom.welding_fee_calc_log_repository import (
     BomWeldingFeeCalcLogRepository,
 )
-from app.schemas.common import DeletedCountVO
+from app.schemas.common.deleted_count import DeletedCountVO
 from app.schemas.dto.bom_welding_fee_dto import (
     BomWeldingFeeCalcDTO,
     BomWeldingFeeCalcLogCreate,

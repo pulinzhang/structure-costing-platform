@@ -44,10 +44,10 @@ from app.services.bom.bom.engineering import BomEngineeringService
 from app.services.bom.packaging_transport_fee.service import BomPackagingTransportFeeService
 from app.services.bom.procurement_object.service import BomProcurementObjectService
 from app.services.bom.welding_process_breakdown.service import BomWeldingProcessBreakdownService
-from app.services.stamping.die.die_service import StampingDieService
-from app.services.stamping.die_fee.die_fee_service import StampingDieFeeService
-from app.services.stamping.gauge_fee.gauge_fee_service import StampingGaugeFeeService
-from app.services.stamping.stamping_service import StampingPartService
+from app.services.stamping.die.engineering.service import StampingDieEngineeringService
+from app.services.stamping.die_fee.crud.service import StampingDieFeeService
+from app.services.stamping.gauge_fee.crud.service import StampingGaugeFeeService
+from app.services.stamping.part.engineering.service import StampingEngineeringService
 
 logger = logging.getLogger("service.engineering_change.rollback")
 
@@ -60,8 +60,8 @@ class EngineeringChangeRollbackService:
         self.bom_service = BomEngineeringService()
         self.po_service = BomProcurementObjectService()
         self.breakdown_service = BomWeldingProcessBreakdownService()
-        self.stamping_service = StampingPartService()
-        self.die_service = StampingDieService()
+        self.stamping_service = StampingEngineeringService()
+        self.die_service = StampingDieEngineeringService()
         self.gauge_fee_service = StampingGaugeFeeService()
         self.die_fee_service = StampingDieFeeService()
         self.packaging_fee_service = BomPackagingTransportFeeService()

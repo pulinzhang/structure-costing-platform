@@ -1,7 +1,1 @@
-"""核价引擎 Repository。"""
-
-from app.repositories.costing.engine.costing_engine_run_repository import (
-    CostingEngineRunRepository,
-)
-
-__all__ = ["CostingEngineRunRepository"]
+"""核价引擎仓储。按模块 import，不要在本文件汇总。"""

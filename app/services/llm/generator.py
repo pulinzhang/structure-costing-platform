@@ -10,7 +10,10 @@ from app.services.llm.catalog.field_labels import (
     AGGREGATE_FIELD_LABELS,
     L0_FIELD_LABELS,
 )
-from app.services.llm.client import LlmChatResult, OpenAiCompatibleClient
+from app.services.llm.client.openai_compatible import (
+    LlmChatResult,
+    OpenAiCompatibleClient,
+)
 from app.services.llm.engine_readiness.runner import render_engine_readiness_markdown
 from app.services.llm.prompts.labels import (
     analyses_key_label_zh,

@@ -7,10 +7,10 @@ from typing import NamedTuple
 from sqlalchemy.orm import Session
 
 from app.exceptions.base import BusinessException
-from app.repositories.stamping.die_fee_repository import StampingDieFeeRepository
-from app.repositories.stamping.stamping_die_repository import StampingDiePartRepository
+from app.repositories.stamping.die.repository import StampingDiePartRepository
+from app.repositories.stamping.die_fee.repository import StampingDieFeeRepository
 from app.schemas.vo.stamping_die_fee_vo import StampingDieFeeCalcReadyVO
-from app.services.masterdata.vehicle_model import VehicleModelService
+from app.services.masterdata.vehicle_model.vehicle_model_service import VehicleModelService
 from app.services.stamping.die_fee.calc.orchestrator.deps import DieFeeCalcDeps
 from app.services.stamping.die_fee.calc.orchestrator.identity import (
     matches_part,
@@ -18,7 +18,7 @@ from app.services.stamping.die_fee.calc.orchestrator.identity import (
     strip_optional,
 )
 from app.services.stamping.die_fee.calc.weight_resolver import PreviousWeightIndex
-from app.services.stamping.die_fee.fee_math import ZERO
+from app.services.stamping.die_fee.rules.fee_math import ZERO
 
 
 class DieFeeCoverage(NamedTuple):

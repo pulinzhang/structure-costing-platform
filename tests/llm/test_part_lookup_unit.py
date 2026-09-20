@@ -4,7 +4,7 @@ from __future__ import annotations
 
 from decimal import Decimal
 
-from app.repositories.llm.cost_analysis import L0PartPeriodRow
+from app.repositories.llm.cost_analysis.rows import L0PartPeriodRow
 from app.repositories.llm.stamping_cost_analysis_repository import StampingPartPeriodRow
 from app.repositories.llm.stamping_process_analysis_repository import StampingProcessPartRow
 from app.services.llm.analysis.shared.part_lookup import (

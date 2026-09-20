@@ -31,7 +31,7 @@ from app.schemas.vo.user_vo import UserVO
 from app.services.costing.assembly_cost.assembly_cost_service import (
     AssemblyCostService,
 )
-from app.services.costing.assembly_cost.export.assembly_cost_export_service import (
+from app.services.costing.assembly_cost.export.service import (
     AssemblyCostExportService,
 )
 from app.services.costing.assembly_cost.restore.restore_service import (

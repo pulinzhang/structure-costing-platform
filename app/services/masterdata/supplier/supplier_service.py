@@ -5,7 +5,7 @@ from __future__ import annotations
 from openpyxl import Workbook
 from sqlalchemy.orm import Session
 
-from app.repositories.masterdata.supplier import SupplierRepository
+from app.repositories.masterdata.supplier.supplier_repository import SupplierRepository
 from app.schemas.dto.supplier_dto import (
     SupplierAliasCreateDTO,
     SupplierCreateDTO,
@@ -24,7 +24,9 @@ from app.services.masterdata.supplier.catalog import (
 from app.services.masterdata.supplier.catalog import (
     export_excel as export_catalog_excel,
 )
-from app.services.masterdata.supplier.catalog import write_catalog_to_workbook
+from app.services.masterdata.supplier.catalog import (
+    write_catalog_to_workbook,
+)
 from app.services.masterdata.supplier.crud import (
     add_alias as add_supplier_alias,
 )

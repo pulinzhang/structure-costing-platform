@@ -3,8 +3,8 @@
 from decimal import Decimal
 
 from app.parsers.stamping.die.parser import ParsedDiePart, ParsedDieProcess, parse_unit_interval
-from app.services.stamping.die.alloc_preserver import resolve_part_ratios
-from app.services.stamping.die.alloc_ratio_resolver import resolve_alloc_ratio
+from app.services.stamping.die.upload.alloc_preserver import resolve_part_ratios
+from app.services.stamping.die.upload.alloc_ratio_resolver import resolve_alloc_ratio
 
 
 def test_shared_die_is_0_50() -> None:

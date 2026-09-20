@@ -15,7 +15,7 @@ from app.services.costing.engine.gate.item import (
     make_skipped,
     skip_if_period_filtered,
 )
-from app.services.costing.engine.scope_discovery import DiscoveryResult
+from app.services.costing.engine.scope.discovery import DiscoveryResult
 
 
 def check_bom_snapshot(

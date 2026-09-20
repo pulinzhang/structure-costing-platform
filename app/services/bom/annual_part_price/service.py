@@ -49,7 +49,7 @@ from app.services.bom.annual_part_price.engineering_change import (
     delete_for_engineering_change_rollback as delete_annual_part_price_for_rollback,
 )
 from app.services.masterdata.location.location_service import LocationService
-from app.services.masterdata.supplier import SupplierService
+from app.services.masterdata.supplier.supplier_service import SupplierService
 
 logger = logging.getLogger("service.bom")
 

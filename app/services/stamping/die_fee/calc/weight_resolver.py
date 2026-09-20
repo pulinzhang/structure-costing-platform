@@ -7,7 +7,7 @@ from decimal import Decimal
 
 from app.common.scrap_byproduct import layout_is_scrap_byproduct_part
 from app.models.stamping.die import StampingDiePart, StampingDieProcess
-from app.services.stamping.die_fee.fee_math import ZERO
+from app.services.stamping.die_fee.rules.fee_math import ZERO
 
 WEIGHT_SOURCE_SELF = "self"
 WEIGHT_SOURCE_INHERITED = "inherited"

@@ -20,8 +20,10 @@ from app.repositories.engineering_change.effect_link_repository import (
     EngineeringChangeEffectLinkInsert,
 )
 from app.schemas.vo.user_vo import UserVO
-from app.services.stamping.die.die_service import StampingDieService
-from app.services.stamping.die.engineering_change import EngineeringChangeDiePartSpec
+from app.services.stamping.die.engineering.service import (
+    EngineeringChangeDiePartSpec,
+    StampingDieEngineeringService,
+)
 
 
 def persist_die_parts(
@@ -44,7 +46,7 @@ def persist_die_parts(
     if not revise_old_to_new:
         return [], 0, {}
 
-    die = StampingDieService()
+    die = StampingDieEngineeringService()
     as_of_rows = die.list_parts_as_of_for_engineering_change(
         db,
         location=location,

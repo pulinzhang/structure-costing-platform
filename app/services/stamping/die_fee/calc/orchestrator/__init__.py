@@ -1,5 +1,1 @@
-"""冲压年度模具费计算编排器。"""
-
-from .orchestrator import StampingDieFeeCalcOrchestrator
-
-__all__ = ["StampingDieFeeCalcOrchestrator"]
+"""编排包标记，不汇总导出。"""

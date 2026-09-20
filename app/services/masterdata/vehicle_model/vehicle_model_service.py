@@ -4,7 +4,9 @@ from __future__ import annotations
 
 from sqlalchemy.orm import Session
 
-from app.repositories.masterdata.vehicle_model import VehicleModelRepository
+from app.repositories.masterdata.vehicle_model.vehicle_model_repository import (
+    VehicleModelRepository,
+)
 from app.schemas.dto.vehicle_model_dto import VehicleModelCreateDTO, VehicleModelUpdateDTO
 from app.schemas.vo.user_vo import UserVO
 from app.schemas.vo.vehicle_model_vo import (
@@ -12,7 +14,7 @@ from app.schemas.vo.vehicle_model_vo import (
     VehicleModelUploadResultVO,
     VehicleModelVO,
 )
-from app.services.masterdata.location import LocationService
+from app.services.masterdata.location.location_service import LocationService
 from app.services.masterdata.vehicle_model.catalog import (
     build_template as build_catalog_template,
 )

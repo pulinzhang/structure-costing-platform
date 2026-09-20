@@ -1,5 +1,1 @@
-"""操作日志数据访问"""
-
-from app.repositories.settings.logs.operation_log_repository import OperationLogRepository
-
-__all__ = ["OperationLogRepository"]
+"""操作日志仓储。按模块 import，不要在本文件汇总。"""

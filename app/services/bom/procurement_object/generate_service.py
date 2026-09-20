@@ -41,7 +41,7 @@ from app.services.bom.procurement_object.generate_log_service import (
 from app.services.bom.procurement_object.row_write import ConfirmByNode, build_object_row_write
 from app.services.bom.procurement_object.snapshot_scope import lookup_snapshot, require_snapshot
 from app.services.masterdata.location.location_service import LocationService
-from app.services.masterdata.vehicle_model import VehicleModelService
+from app.services.masterdata.vehicle_model.vehicle_model_service import VehicleModelService
 
 logger = logging.getLogger("service.bom.procurement_object.generate")
 

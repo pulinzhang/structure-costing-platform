@@ -22,8 +22,8 @@ from app.repositories.masterdata.location.location_repository import LocationRep
 from app.schemas.dto.location_dto import LocationInsert
 from app.schemas.dto.stamping_die_dto import StampingDieScopeDTO
 from app.schemas.dto.vehicle_model_dto import VehicleModelCreateDTO
-from app.services.masterdata.vehicle_model import VehicleModelService
-from app.services.stamping.die.die_service import StampingDieService
+from app.services.masterdata.vehicle_model.vehicle_model_service import VehicleModelService
+from app.services.stamping.die.crud.service import StampingDieService
 
 LOCATION = "芜湖"
 VEHICLE = "T13J"

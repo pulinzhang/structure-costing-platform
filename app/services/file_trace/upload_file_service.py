@@ -13,7 +13,7 @@ from app.schemas.vo.file_trace_vo import UploadFileFiltersVO, UploadFileVO
 from app.schemas.vo.user_vo import UserVO
 from app.services.file_trace.categories import category_label, resolve_allowed_categories
 from app.services.file_trace.path_utils import resolve_upload_path
-from app.services.masterdata.vehicle_model import VehicleModelService
+from app.services.masterdata.vehicle_model.vehicle_model_service import VehicleModelService
 
 _repo = UploadFileRepository()
 

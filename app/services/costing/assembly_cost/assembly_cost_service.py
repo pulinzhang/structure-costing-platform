@@ -24,7 +24,7 @@ from app.repositories.costing.assembly_cost.assembly_cost_repository import (
 from app.repositories.costing.stamping_part_cost.stamping_part_cost_repository import (
     StampingPartCostRepository,
 )
-from app.schemas.common import DeletedCountVO
+from app.schemas.common.deleted_count import DeletedCountVO
 from app.schemas.dto.assembly_cost_dto import (
     AssemblyCostBatchApproveDTO,
     AssemblyCostBatchDeleteDTO,
@@ -41,9 +41,11 @@ from app.schemas.vo.assembly_cost_vo import (
 )
 from app.schemas.vo.async_task_vo import AsyncTaskAcceptedVO
 from app.schemas.vo.user_vo import UserVO
-from app.services.async_task import (
+from app.services.async_task.async_task_service import (
     TASK_TYPE_ASSEMBLY_COST_CALC,
     AsyncTaskService,
+)
+from app.services.async_task.worker_runner import (
     ProgressCallback,
     WorkerTaskOutcome,
     calc_status_label,
@@ -54,11 +56,11 @@ from app.services.costing.assembly_cost.calc.calc_log_service import (
     AssemblyCostCalcLogService,
     DuplicateScopeCalcError,
 )
-from app.services.costing.assembly_cost.calc.orchestrator import (
+from app.services.costing.assembly_cost.calc.orchestrator.orchestrator import (
     AssemblyCostCalcOrchestrator,
 )
 from app.services.masterdata.location.location_service import LocationService
-from app.services.masterdata.vehicle_model import VehicleModelService
+from app.services.masterdata.vehicle_model.vehicle_model_service import VehicleModelService
 
 __all__ = [
     "DUPLICATE_SCOPE_CALC_MESSAGE",

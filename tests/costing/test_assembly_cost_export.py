@@ -10,7 +10,7 @@ from app.services.costing.assembly_cost.codes import (
     procurement_part_short_code,
     tree_item_short_code,
 )
-from app.services.costing.assembly_cost.export.assembly_cost_export_service import (
+from app.services.costing.assembly_cost.export.service import (
     AssemblyCostExportService,
 )
 from app.services.costing.assembly_cost.export.workbook.builder import (
@@ -178,7 +178,7 @@ def test_write_to_workbook_passes_welding_ids_not_level() -> None:
             return "成品焊接费", 1
 
     with patch(
-        "app.services.bom.welding_fee.export_service.BomWeldingFeeExportService",
+        "app.services.bom.welding_fee.export.service.BomWeldingFeeExportService",
         _FakeWelding,
     ):
         from openpyxl import Workbook
@@ -234,7 +234,7 @@ def test_procurement_workbook_skips_indirect_sheet() -> None:
 
     with (
         patch(
-            "app.services.bom.welding_fee.export_service.BomWeldingFeeExportService",
+            "app.services.bom.welding_fee.export.service.BomWeldingFeeExportService",
             _FakeWelding,
         ),
         patch(
@@ -275,7 +275,7 @@ def test_export_procurement_filename_prefix() -> None:
     service = AssemblyCostExportService()
     service.write_to_workbook = MagicMock(return_value=(PROCUREMENT_LIST_SHEET, 1))
     with patch(
-        "app.services.costing.assembly_cost.export.assembly_cost_export_service.workbook_to_xlsx_bytes",
+        "app.services.costing.assembly_cost.export.service.workbook_to_xlsx_bytes",
         return_value=b"xlsx",
     ):
         _content, filename = service.export(
@@ -354,7 +354,7 @@ def test_procurement_items_sheet_merges_object_identity() -> None:
 
     with (
         patch(
-            "app.services.bom.welding_fee.export_service.BomWeldingFeeExportService",
+            "app.services.bom.welding_fee.export.service.BomWeldingFeeExportService",
             _FakeWelding,
         ),
         patch(
@@ -422,7 +422,7 @@ def test_procurement_export_allows_missing_bom_version() -> None:
     service = AssemblyCostExportService()
     service.write_to_workbook = MagicMock(return_value=(PROCUREMENT_LIST_SHEET, 1))
     with patch(
-        "app.services.costing.assembly_cost.export.assembly_cost_export_service.workbook_to_xlsx_bytes",
+        "app.services.costing.assembly_cost.export.service.workbook_to_xlsx_bytes",
         return_value=b"xlsx",
     ):
         content, filename = service.export(
@@ -450,7 +450,7 @@ def _write_procurement_workbook(records: list[SimpleNamespace]):
 
     with (
         patch(
-            "app.services.bom.welding_fee.export_service.BomWeldingFeeExportService",
+            "app.services.bom.welding_fee.export.service.BomWeldingFeeExportService",
             _FakeWelding,
         ),
         patch(
@@ -547,7 +547,7 @@ def test_finance_list_banner_and_formula_total() -> None:
             return "成品焊接费", 1
 
     with patch(
-        "app.services.bom.welding_fee.export_service.BomWeldingFeeExportService",
+        "app.services.bom.welding_fee.export.service.BomWeldingFeeExportService",
         _FakeWelding,
     ):
         from openpyxl import Workbook

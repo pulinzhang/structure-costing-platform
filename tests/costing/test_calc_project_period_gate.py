@@ -57,7 +57,7 @@ from app.services.costing.stamping_part_cost.calc.orchestrator.ready import (
 from app.services.costing.stamping_part_cost.stamping_part_cost_service import (
     StampingPartCostService,
 )
-from app.services.masterdata.vehicle_model import VehicleModelService
+from app.services.masterdata.vehicle_model.vehicle_model_service import VehicleModelService
 from app.services.stamping.die_fee.calc.orchestrator.orchestrator import (
     StampingDieFeeCalcOrchestrator,
 )

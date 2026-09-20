@@ -44,10 +44,10 @@ from app.schemas.dto.bom_procurement_object_dto import (
 )
 from app.schemas.dto.location_dto import LocationAliasInsert, LocationInsert
 from app.schemas.dto.supplier_dto import SupplierCreateDTO
-from app.services.bom.procurement_object.export import BomProcurementObjectExportService
+from app.services.bom.procurement_object.export.service import BomProcurementObjectExportService
 from app.services.bom.procurement_object.insert_service import BomProcurementObjectInsertService
 from app.services.bom.procurement_object.service import BomProcurementObjectService
-from app.services.masterdata.supplier import SupplierService
+from app.services.masterdata.supplier.supplier_service import SupplierService
 
 
 @pytest.fixture()

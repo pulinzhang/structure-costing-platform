@@ -10,11 +10,13 @@ from sqlalchemy.orm import Session
 from app.common.audit import audit_create
 from app.exceptions.base import BusinessException
 from app.parsers.masterdata.vehicle_model_parser import parse_vehicle_model_excel
-from app.repositories.masterdata.vehicle_model import VehicleModelRepository
+from app.repositories.masterdata.vehicle_model.vehicle_model_repository import (
+    VehicleModelRepository,
+)
 from app.schemas.dto.vehicle_model_dto import VehicleModelInsert
 from app.schemas.vo.user_vo import UserVO
 from app.schemas.vo.vehicle_model_vo import VehicleModelUploadResultVO
-from app.services.masterdata.location import LocationService
+from app.services.masterdata.location.location_service import LocationService
 from app.services.masterdata.vehicle_model.identity import normalize, validate_period
 
 logger = logging.getLogger("service.vehicle_model")

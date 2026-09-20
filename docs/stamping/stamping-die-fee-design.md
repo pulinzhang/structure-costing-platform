@@ -203,9 +203,9 @@ menu:stamping-die-fee-group
 
 ```text
 app/routers/stamping/die_fee.py
-  die_fee/die_fee_service.py      列表 / 改调整金额 / 审核 / 删
-  die_fee/export_service.py
-  die_fee/calc/orchestrator.py    start_calc + work()
+  die_fee/crud/service.py      列表 / 改调整金额 / 审核 / 删
+  die_fee/export/service.py
+  die_fee/calc/orchestrator/    start_calc + work()
     只读布点（含工序）、模具单价
     本切片结果表 / 计算日志
 ```
@@ -233,7 +233,7 @@ app/routers/stamping/die_fee.py
 
 ## 9.1 工程变更
 
-改图换号时，若旧号已有 `year >= 变更生效年` 的结果行，工程变更管线调本切片 Service **整单抄到新号**（含各序；`source_die_part_id` 绑新布点；审核待审）；**不算**一次计算任务、不写 calc_log。回滚按 id 删新主表（级联明细）。旧行不动。实现在 `die_fee/engineering_change.py`（Service 只转发）。本切片 **不** import `engineering_change`。
+改图换号时，若旧号已有 `year >= 变更生效年` 的结果行，工程变更管线调本切片 Service **整单抄到新号**（含各序；`source_die_part_id` 绑新布点；审核待审）；**不算**一次计算任务、不写 calc_log。回滚按 id 删新主表（级联明细）。旧行不动。实现在 `die_fee/engineering/change.py`（Service 只转发）。本切片 **不** import `engineering_change`。
 
 与引擎：旧号已有结果 → EC 抄新号；旧号无结果 → 引擎 `annual_die_fee` 补算（项目级「有任一行则跳过」）。见 [part-number-revision-design.md](../engineering-change/part-number-revision-design.md) §4.3.2、[costing-engine-design.md](../costing/costing-engine-design.md)。
 

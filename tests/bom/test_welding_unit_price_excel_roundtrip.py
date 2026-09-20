@@ -11,7 +11,7 @@ from openpyxl import load_workbook
 
 from app.common.audit import SYSTEM_USER
 from app.parsers.bom.welding_unit_price_parser import parse_welding_unit_price_excel
-from app.services.bom.welding_unit_price.export_service import BomWeldingUnitPriceExportService
+from app.services.bom.welding_unit_price.export.service import BomWeldingUnitPriceExportService
 from app.services.bom.welding_unit_price.import_service import BomWeldingUnitPriceImportService
 
 

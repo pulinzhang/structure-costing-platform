@@ -24,7 +24,7 @@ from app.services.stamping.process_fee.calc.orchestrator.deps import ProcessFeeC
 from app.services.stamping.process_fee.calc.orchestrator.messages import append_result_detail
 from app.services.stamping.process_fee.calc.orchestrator.prep import CalcPrepContext
 from app.services.stamping.process_fee.calc.orchestrator.progress import ProgressNotifier
-from app.services.stamping.process_fee.scope import ALL_SUPPLIERS_LOCK
+from app.services.stamping.process_fee.rules.scope import ALL_SUPPLIERS_LOCK
 
 logger = logging.getLogger("service.stamping_process_fee.calc")
 

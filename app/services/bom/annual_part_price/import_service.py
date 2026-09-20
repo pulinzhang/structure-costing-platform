@@ -23,7 +23,7 @@ from app.repositories.bom.procurement_object_repository import (
     BomProcurementObjectRepository,
     object_scope_filters,
 )
-from app.repositories.stamping.stamping_part_repository import StampingPartRepository
+from app.repositories.stamping.part.repository import StampingPartRepository
 from app.schemas.dto.bom_annual_part_price_dto import (
     BomAnnualPartPriceCreate,
     BomAnnualPartPriceUpdate,

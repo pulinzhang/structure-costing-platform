@@ -1,5 +1,1 @@
-"""焊接费计算编排器。"""
-
-from .orchestrator import BomWeldingFeeCalcOrchestrator
-
-__all__ = ["BomWeldingFeeCalcOrchestrator"]
+"""编排包标记，不汇总导出。"""

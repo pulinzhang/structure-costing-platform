@@ -24,7 +24,7 @@ from app.services.bom.bom.rules.l0_seq_validator import (
 from app.services.bom.bom.rules.subassembly_consistency import (
     validate_subassembly_consistency,
 )
-from app.services.masterdata.vehicle_model import VehicleModelService
+from app.services.masterdata.vehicle_model.vehicle_model_service import VehicleModelService
 
 
 def require_introducible_project(db: Session, location: str, vehicle_model: str) -> tuple[str, str]:

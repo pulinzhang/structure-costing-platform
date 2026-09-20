@@ -14,7 +14,7 @@ from app.repositories.costing.stamping_part_cost.stamping_part_cost_repository i
 from app.repositories.costing.steel_price.steel_price_repository import (
     SteelPriceRepository,
 )
-from app.repositories.stamping.stamping_process_fee_repository import (
+from app.repositories.stamping.process_fee.repository import (
     StampingProcessFeeRepository,
 )
 from app.repositories.yishiyiyi.base_price.steel_base_price_repository import (
@@ -39,8 +39,10 @@ from app.services.dashboard.coverage import (
 from app.services.dashboard.readiness import build_outcome, build_readiness
 from app.services.dashboard.scope import resolve_scope
 from app.services.dashboard.scrap import scrap_month_status
-from app.services.masterdata.steel_grade_category import SteelGradeCategoryService
-from app.services.stamping.stamping_service import StampingPartService
+from app.services.masterdata.steel_grade_category.steel_grade_category_service import (
+    SteelGradeCategoryService,
+)
+from app.services.stamping.part.crud.service import StampingPartService
 from app.services.yishiyiyi.base_price.steel_base_price_service import SteelBasePriceService
 from app.services.yishiyiyi.policy.steel_price_policy_service import (
     SteelPricePolicyService,

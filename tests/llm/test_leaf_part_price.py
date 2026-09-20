@@ -7,7 +7,7 @@ from types import SimpleNamespace
 from unittest.mock import MagicMock
 
 from app.repositories.llm.annual_part_price_analysis_repository import AnnualPartPriceRow
-from app.repositories.llm.cost_analysis import L0CompositionLineRow
+from app.repositories.llm.cost_analysis.rows import L0CompositionLineRow
 from app.schemas.llm.analysis_query import AnalysisQuery, TimeRange
 from app.services.llm.analysis.assembly.run import AssemblyAnalysis
 from app.services.llm.analysis.runner import AnalysisRunner

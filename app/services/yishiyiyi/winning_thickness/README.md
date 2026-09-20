@@ -22,7 +22,9 @@
 **对外入口**：
 
 ```python
-from app.services.yishiyiyi.winning_thickness import WinningThicknessExportService
+from app.services.yishiyiyi.winning_thickness.export.service import (
+    WinningThicknessExportService,
+)
 ```
 
 本切片无独立 CRUD / 导入：数据来自 `base_price` 与 `policy` 主数据。
@@ -53,10 +55,10 @@ from app.services.yishiyiyi.winning_thickness import WinningThicknessExportServi
 app/services/yishiyiyi/winning_thickness/
 ├── README.md
 ├── __init__.py
-├── winning_thickness_export_service.py   # 薄门面
 ├── assemble/
 │   └── row_assembler.py                  # 基价×厚度阶梯行组装
 └── export/
+    ├── service.py                        # 薄门面
     ├── excel_exporter.py                 # 组工作簿
     ├── letterhead.py                     # 外发抬头
     ├── overview_sheet.py                 # 阅读页

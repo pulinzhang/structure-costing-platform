@@ -11,7 +11,7 @@ from app.services.stamping.die_fee.calc.weight_resolver import (
     index_resolved_weights,
     resolve_part_weights,
 )
-from app.services.stamping.die_fee.fee_math import (
+from app.services.stamping.die_fee.rules.fee_math import (
     PRICE_KIND_PROGRESSIVE,
     ZERO,
     DieFeeLineResult,

@@ -7,13 +7,12 @@ from unittest.mock import MagicMock
 import pytest
 from sqlalchemy.orm import Session
 
-from app.services.async_task import (
+from app.services.async_task.async_task_service import (
     STATUS_COMPLETED,
     STATUS_FAILED,
     AsyncTaskService,
-    WorkerTaskOutcome,
 )
-from app.services.async_task.worker_runner import ProgressCallback
+from app.services.async_task.worker_runner import ProgressCallback, WorkerTaskOutcome
 
 
 def _service_with_mocks(monkeypatch: pytest.MonkeyPatch) -> tuple[AsyncTaskService, MagicMock]:
@@ -49,8 +48,7 @@ def test_run_in_worker_session_writes_completed_outcome(
 
     db.close.assert_called_once()
     assert any(
-        call.kwargs.get("status") == STATUS_COMPLETED
-        and call.kwargs.get("message") == "ok"
+        call.kwargs.get("status") == STATUS_COMPLETED and call.kwargs.get("message") == "ok"
         for call in service.update_task_standalone.call_args_list
     )
     assert any(

@@ -23,7 +23,9 @@ from app.parsers.masterdata.steel_grade_category_parser import (
     HEADER_GRADE,
     HEADER_REMARK,
 )
-from app.repositories.masterdata.steel_grade_category import SteelGradeCategoryRepository
+from app.repositories.masterdata.steel_grade_category.steel_grade_category_repository import (
+    SteelGradeCategoryRepository,
+)
 from app.schemas.vo.user_vo import UserVO
 
 IMPORT_HEADERS = (

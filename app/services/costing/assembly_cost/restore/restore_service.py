@@ -31,9 +31,9 @@ from app.repositories.costing.stamping_part_cost.stamping_part_cost_repository i
 )
 from app.repositories.costing.steel_price.steel_price_repository import SteelPriceRepository
 from app.repositories.file_trace.upload_file_repository import UploadFileRepository
-from app.repositories.stamping.die_fee_repository import StampingDieFeeRepository
-from app.repositories.stamping.gauge_fee_repository import StampingGaugeFeeRepository
-from app.repositories.stamping.stamping_process_fee_repository import (
+from app.repositories.stamping.die_fee.repository import StampingDieFeeRepository
+from app.repositories.stamping.gauge_fee.repository import StampingGaugeFeeRepository
+from app.repositories.stamping.process_fee.repository import (
     StampingProcessFeeRepository,
 )
 from app.repositories.yishiyiyi.base_price.steel_base_price_repository import (

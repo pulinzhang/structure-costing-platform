@@ -33,7 +33,7 @@ from app.services.costing.assembly_cost.calc.rollup import (
     RollupWeldingFee,
 )
 from app.services.costing.assembly_cost.calc.seq_label import calc_card_seq_labels
-from app.services.masterdata.vehicle_model import VehicleModelService
+from app.services.masterdata.vehicle_model.vehicle_model_service import VehicleModelService
 
 
 @dataclass(frozen=True, slots=True)

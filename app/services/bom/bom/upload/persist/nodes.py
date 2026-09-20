@@ -19,7 +19,7 @@ from app.services.bom.bom.upload.gates.validate import (
     require_matching_snapshot_version,
 )
 from app.services.file_trace.register import register_existing
-from app.services.masterdata.vehicle_model import VehicleModelService
+from app.services.masterdata.vehicle_model.vehicle_model_service import VehicleModelService
 
 # Excel 列号（1-based）：各层级「零件号」列，与 node_parser 一致
 _EXCEL_PART_COL_BY_LEVEL = {0: 3, 1: 9, 2: 14}

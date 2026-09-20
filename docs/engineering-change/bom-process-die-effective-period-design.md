@@ -58,7 +58,7 @@
 | 上传模具布点 | `#/stamping-die-upload` | `GET /api/stamping/die/filters`（年+月 → 可引入项目） | `POST /api/stamping/die/upload` Form：`location` + `vehicle_model` + file（异步） |
 | 模具清单 | `#/stamping-die-list` | `GET /api/stamping/die/parts`（`StampingDiePartQuery`：**必须**基地+项目，无年+月）；筛选项同年+月只问可引入 | 详情只 `PATCH /api/stamping/die/processes/{id}`（`alloc_ratio`）。`POST /batch-delete` 整项目；`GET /export` 无 as_of |
 
-落库 `die/upload_service.py`：`delete_scope(location, vehicle_model)` 整项目替换，再 `preserve_die_alloc` 按零件号+工序号沿用分摊。UNIQUE `(location, vehicle_model, part_number)` — **同号只能一行**。`version` / `stamping_supplier` 可从工艺回填，不是覆盖键。**冲压模具费计算按布点零件有效期与计算年做年交集**，见 §5.4；不要再用项目 `require_overlaps_year` 当取件 WHERE。
+落库 `die/upload/upload_service.py`：`delete_scope(location, vehicle_model)` 整项目替换，再 `preserve_die_alloc` 按零件号+工序号沿用分摊。UNIQUE `(location, vehicle_model, part_number)` — **同号只能一行**。`version` / `stamping_supplier` 可从工艺回填，不是覆盖键。**冲压模具费计算按布点零件有效期与计算年做年交集**，见 §5.4；不要再用项目 `require_overlaps_year` 当取件 WHERE。
 
 ---
 
@@ -316,7 +316,7 @@ L0 生效 <= 该年该月  且  （失效空  或  失效 >= 该年该月）
 
 ### 5.2 写入
 
-`die/upload_service.py`：**去掉** 整项目 `delete_scope`。
+`die/upload/upload_service.py`：**去掉** 整项目 `delete_scope`。
 
 第一次 SOP（该基地+项目尚无布点行）：整表插入，每件生失效抄项目起止（结束空则空）。其后按 `(location, vehicle_model, part_number)` 找 **这一行**（唯一键，至多一行）：有则更新尺寸/工序（`alloc_ratio` 仍按零件号+工序号沿用已改值；**生失效、`seq_no`、已有 `version` 不动**）；无这一号 → **拒绝整单**，指向工程变更。Excel 没有的号不删。补号 `DP-40-{项目}-流水` 扫描 **含已失效行已占用的号**，避免复号。
 

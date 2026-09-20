@@ -1,12 +1,5 @@
-"""
-中标钢厂厚度价格一览 — Excel 导出包
+"""中标钢厂厚度价格一览 — Excel 导出包
 
 以 assemble 组装的 VO 为唯一数据源：仅含当期有中标基价的行。
 export 不查库、不补行；未定基价的牌号不会进入本包。
 """
-
-from app.services.yishiyiyi.winning_thickness.export.excel_exporter import (
-    WinningThicknessExporter,
-)
-
-__all__ = ["WinningThicknessExporter"]

@@ -7,7 +7,7 @@
 ## 快速开始
 
 ```python
-from app.parsers.stamping import parse_stamping_excel, StampingExcelParser
+from app.parsers.stamping.stamping_parser import parse_stamping_excel, StampingExcelParser
 
 # 方式一：便捷函数
 result = parse_stamping_excel("冲压工艺确认表.xlsx")
@@ -491,7 +491,7 @@ def parse_part_row(...) -> Part:
 表示冲压工艺表中的一个零件。
 
 ```python
-from app.parsers.stamping import Part
+from app.parsers.stamping.models.part import Part
 
 part = Part(
     part_number="501006875AA",
@@ -512,7 +512,7 @@ print(part.thickness)     # 料厚（自动类型提示）
 表示冲压工艺表中的一个工序。
 
 ```python
-from app.parsers.stamping import Process
+from app.parsers.stamping.models.process import Process
 
 process = Process(
     part_number="501006875AA",
@@ -550,7 +550,7 @@ context.header_paths      # 一目了然
 表示零件号列的合并单元格范围。
 
 ```python
-from app.parsers.stamping import PartNoRange
+from app.parsers.stamping.models.part_no_range import PartNoRange
 
 pr = PartNoRange(value="501006875AA", start_row=5, end_row=7)
 print(pr.contains(6))  # True - 第6行属于这个零件

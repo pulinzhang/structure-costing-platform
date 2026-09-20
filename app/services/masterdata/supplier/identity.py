@@ -6,7 +6,7 @@ from sqlalchemy.orm import Session
 
 from app.exceptions.base import BusinessException, NotFoundException
 from app.models.masterdata.supplier import Supplier
-from app.repositories.masterdata.supplier import SupplierRepository
+from app.repositories.masterdata.supplier.supplier_repository import SupplierRepository
 from app.schemas.vo.supplier_vo import SupplierVO
 
 PAGE_HINT = "请到供应商一览手工增加或上传（#/supplier-list）"

@@ -20,7 +20,7 @@ from app.schemas.vo.vehicle_model_vo import (
     VehicleModelUploadResultVO,
     VehicleModelVO,
 )
-from app.services.masterdata.vehicle_model import VehicleModelService
+from app.services.masterdata.vehicle_model.vehicle_model_service import VehicleModelService
 from app.utils.response import ApiResponse
 
 router = APIRouter(prefix="/api/masterdata/vehicle-models", tags=["项目"])

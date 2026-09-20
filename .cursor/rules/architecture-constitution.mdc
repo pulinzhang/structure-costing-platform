@@ -7,6 +7,7 @@ alwaysApply: false
 # 架构宪法
 
 > 导读（为什么）：`docs/architecture.md`。本文件只写**谁做什么、谁不能依赖谁**。  
+> 切片内路径形状（`service.py` / `export/` / `__init__`）→ 本文 §二  
 > JSON/`ApiResponse`/Decimal/`Any`/`Perm.*`/路径 `/{name:int}`（零例外）→ `api-type-safety.mdc`  
 > Orchestrator 主方法行数与 `for` → `orchestrator-constitution.mdc`  
 > `main.py` 装配与扫描顺序 → `main-structure.mdc`  
@@ -51,7 +52,18 @@ app/
 └── utils/                  # ApiResponse 等
 ```
 
-- 层根 `__init__.py`（services/repositories/schemas/parsers）只作包标记，禁止汇总导出。
+- `services` / `repositories` / `parsers` / `schemas` **任意层级** `__init__.py` 只作包标记，禁止 `from` / `__all__` 汇总。调用方写到模块，禁止用包根藏路径。
+- `models/` 根与切片 `__init__.py` 仍可再导出，仅供 `create_all`（业务代码仍 `from app.models.{feature} import …`）。
+- 切片内拆文件以 `app/services/bom/` **整棵**为准（不是冲压 `crud/service.py`）。新切片跟 BOM；已有冲压 `crud/` **不强制搬迁**，不算本条违规。
+  - **单门面**：切片根 `service.py`（如 `bom/welding_fee/service.py`）。
+  - **多门面**：命名模块，禁止再加总门面（如 `bom/bom/snapshot.py`、`node.py`、`period.py`）。
+  - **根上第二职责**：命名文件（`generate_service.py`、`audit_service.py`、`import_service.py`）。
+  - **导出成包**：入口 `{duty}/service.py`（导出即 `export/service.py`）。类名仍是 `XxxExportService`。
+  - **导出未拆列/值**：允许切片根 `export.py`（如 `bom/where_used/export.py`）。
+  - **计算指挥包**：`calc/orchestrator/orchestrator.py`；包 `__init__` 不导出。
+  - **仅编排导出**：指挥是模块 `export/orchestrator.py`，禁止再套 `export/orchestrator/__init__.py` 再导出。
+  - **禁止** export 门面文件名：`export_service.py`、`{slice}_export_service.py`、`export/export_service.py`。职责目录若叫 `calc_report/`，入口是 `calc_report/service.py`，不要再套 `export/`。
+- 同一源模块在一个文件里只允许一条 `from … import (`；别名留在同一括号内。
 - 领域表留在所属切片；下游按 §三组合，不要虚构 `common/models`。
 
 **`common/`：** 权限、审计、时区、金额量化等。仅当算法**无自然归属切片**且多方复用才再抽入。`llm` 内部工具不进 `common/`。

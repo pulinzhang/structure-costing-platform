@@ -5,7 +5,7 @@ from __future__ import annotations
 from collections import defaultdict
 from decimal import Decimal
 
-from app.repositories.llm.cost_analysis import L0MonthlyTotalRow
+from app.repositories.llm.cost_analysis.rows import L0MonthlyTotalRow
 from app.schemas.llm.analysis_payload import ComparisonPayload
 from app.schemas.llm.analysis_query import ComparisonBasis
 from app.services.llm._money import money_str, month_key, rate_str

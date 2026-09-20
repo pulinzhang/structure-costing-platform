@@ -1,5 +1,4 @@
-"""
-钢材联动价格 Excel 导出包
+"""钢材联动价格 Excel 导出包
 
 关注点：
   columns.py   列布局 / 分组区间
@@ -8,7 +7,3 @@
   workbook.py  openpyxl 渲染（不访问 DB）
   service.py   取数 → 渲染 → 水印
 """
-
-from app.services.costing.steel_price.export.service import SteelPriceExportService
-
-__all__ = ["SteelPriceExportService"]

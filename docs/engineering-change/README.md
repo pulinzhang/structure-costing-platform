@@ -185,10 +185,10 @@ Router → EngineeringChangeUploadService.start_upload
 上游内核（勿把业务搬回 EC）：
 
 - `app/services/bom/bom/change_tree_plant/`
-- `app/services/stamping/part/engineering_change.py`
-- `app/services/stamping/die/engineering_change.py`
-- `app/services/stamping/gauge_fee/engineering_change.py`
-- `app/services/stamping/die_fee/engineering_change.py`
+- `app/services/stamping/part/engineering/change.py`
+- `app/services/stamping/die/engineering/change.py`
+- `app/services/stamping/gauge_fee/engineering/change.py`
+- `app/services/stamping/die_fee/engineering/change.py`
 - `app/services/bom/packaging_transport_fee/engineering_change.py`
 - `app/services/bom/annual_part_price/engineering_change.py`
 

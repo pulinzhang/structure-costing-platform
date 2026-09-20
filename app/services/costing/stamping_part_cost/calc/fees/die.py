@@ -11,7 +11,7 @@ from decimal import Decimal
 
 from sqlalchemy.orm import Session
 
-from app.repositories.stamping.die_fee_repository import StampingDieFeeRepository
+from app.repositories.stamping.die_fee.repository import StampingDieFeeRepository
 from app.services.costing.stamping_part_cost.calc.constants import (
     AMOUNT_QUANTIZE,
     quantize,

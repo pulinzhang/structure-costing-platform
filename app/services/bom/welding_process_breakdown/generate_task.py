@@ -16,13 +16,13 @@ from app.schemas.vo.bom_welding_process_breakdown_vo import (
     BomWeldingProcessBreakdownGenerateResultVO,
 )
 from app.schemas.vo.user_vo import UserVO
-from app.services.async_task import (
+from app.services.async_task.async_task_service import (
     STATUS_COMPLETED,
     STATUS_FAILED,
     TASK_TYPE_BOM_WELDING_PROCESS_BREAKDOWN_GENERATE,
     AsyncTaskService,
-    WorkerTaskOutcome,
 )
+from app.services.async_task.worker_runner import WorkerTaskOutcome
 from app.services.bom.welding_process_breakdown.generate_service import ProgressCallback
 from app.services.masterdata.location.location_service import LocationService
 

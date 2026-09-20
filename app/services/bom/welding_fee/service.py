@@ -40,7 +40,7 @@ from app.schemas.vo.user_vo import UserVO
 from app.services.bom.bom.period import BomPeriodService
 from app.services.bom.welding_fee.fee_math import resolve_final_welding_fee
 from app.services.masterdata.location.location_service import LocationService
-from app.services.masterdata.vehicle_model import VehicleModelService
+from app.services.masterdata.vehicle_model.vehicle_model_service import VehicleModelService
 
 
 def _fee_tree_root_versions(db: Session, records: list[BomWeldingFee]) -> dict[int, str]:

@@ -10,7 +10,8 @@ from app.common.engineering_change_gates import (
     CHANGE_TYPE_REVISE,
 )
 from app.common.part_number import normalize_part_number_token
-from app.repositories.llm.cost_analysis import L0CostAnalysisRepository, L0PartPeriodRow
+from app.repositories.llm.cost_analysis.repository import L0CostAnalysisRepository
+from app.repositories.llm.cost_analysis.rows import L0PartPeriodRow
 from app.repositories.llm.die_fee_analysis_repository import DieFeeAnalysisRepository
 from app.repositories.llm.engineering_change_analysis_repository import (
     EngineeringChangeAnalysisRepository,

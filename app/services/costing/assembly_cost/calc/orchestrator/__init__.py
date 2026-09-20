@@ -1,5 +1,1 @@
-"""成品月核价计算编排器。"""
-
-from .orchestrator import AssemblyCostCalcOrchestrator
-
-__all__ = ["AssemblyCostCalcOrchestrator"]
+"""编排包标记，不汇总导出。"""

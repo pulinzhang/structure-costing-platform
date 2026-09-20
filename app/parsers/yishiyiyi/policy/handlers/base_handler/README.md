@@ -28,7 +28,7 @@
 ```text
 base_handler/
 ├── README.md
-├── __init__.py                 # 对外导出
+├── __init__.py                 # 包标记，不汇总导出
 ├── base_handler.py             # BaseSheetHandler：编排 + 钩子 + 薄委托
 ├── sheet_scanner.py            # SheetScanner：单元格原语
 ├── policy_assembler.py         # PolicyAssembler：对外入口（独立类委托）
@@ -43,13 +43,13 @@ base_handler/
 **导入：**
 
 ```python
-from app.parsers.yishiyiyi.policy.handlers.base_handler import (
-    BaseSheetHandler,
-    PolicyAssembler,
-    SheetScanner,
+from app.parsers.yishiyiyi.policy.handlers.base_handler.base_handler import BaseSheetHandler
+from app.parsers.yishiyiyi.policy.handlers.base_handler.policy_assembler import PolicyAssembler
+from app.parsers.yishiyiyi.policy.handlers.base_handler.sheet_scanner import SheetScanner
+from app.parsers.yishiyiyi.policy.handlers.base_handler.thickness_block_finder import (
     ThicknessBlockFinder,
-    ZincCoatingParser,
 )
+from app.parsers.yishiyiyi.policy.handlers.base_handler.zinc_coating import ZincCoatingParser
 ```
 
 ---

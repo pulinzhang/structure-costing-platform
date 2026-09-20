@@ -28,7 +28,7 @@ alwaysApply: true
 | 私有 | 单下划线前缀 | `_cache` |
 | 函数 | 小写下划线；私有 `_foo`；异步 `async_foo` | `get_part_by_number` |
 | 类 | 大驼峰；异常 `Error` 后缀；基类 `Base` 前缀 | `StampingPartService` |
-| 模块 | 小写下划线；Router `{feature}/crud.py`；测试 `test_{module}.py` | `stamping_parser.py` |
+| 模块 | 小写下划线；Router `{feature}/crud.py`；测试 `test_{module}.py`。路径形状跟 `app/services/bom/`：单门面根 `service.py`；导出成包 `export/service.py`；未拆列/值允许根 `export.py`；根上第二职责 `generate_service.py` / `import_service.py`。禁止 `export_service.py`、`{slice}_export_service.py`、`export/export_service.py`。HTTP 路径不随 Service 搬家。冲压已有 `crud/` 不搬迁。 | `welding_fee/service.py` |
 
 ## 领域词
 

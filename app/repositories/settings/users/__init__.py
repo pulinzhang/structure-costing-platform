@@ -1,5 +1,1 @@
-"""用户 Repository 包"""
-
-from app.repositories.settings.users.user_repository import UserRepository
-
-__all__ = ["UserRepository"]
+"""用户仓储。按模块 import，不要在本文件汇总。"""

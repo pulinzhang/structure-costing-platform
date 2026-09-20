@@ -17,13 +17,13 @@ from app.repositories.bom.welding_process_breakdown_repository import (
 from app.repositories.costing.stamping_part_cost.stamping_part_cost_calc_log_repository import (
     StampingPartCostCalcLogRepository,
 )
-from app.repositories.stamping.stamping_part_repository import StampingPartRepository
+from app.repositories.stamping.part.repository import StampingPartRepository
 from app.schemas.vo.assembly_cost_vo import AssemblyCostCalcReadyVO
 from app.services.bom.bom.period import BomPeriodService
 from app.services.bom.procurement_object.classify import SECTION_OBJECT, classify_nodes
 from app.services.costing.assembly_cost.calc.orchestrator.deps import AssemblyCalcDeps
 from app.services.costing.stamping_part_cost.calc.constants import ALL_SUPPLIERS_LOCK
-from app.services.masterdata.vehicle_model import VehicleModelService
+from app.services.masterdata.vehicle_model.vehicle_model_service import VehicleModelService
 
 
 class WeldingCoverage(NamedTuple):

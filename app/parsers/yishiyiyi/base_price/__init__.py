@@ -1,5 +1,1 @@
-"""钢材基准价格解析器"""
-
-from app.parsers.yishiyiyi.base_price.steel_base_price_parser import parse_base_price_excel
-
-__all__ = ["parse_base_price_excel"]
+"""基价解析。按模块 import，不要在本文件汇总。"""

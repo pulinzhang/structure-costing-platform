@@ -4,11 +4,11 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 
-from app.repositories.stamping.stamping_process_fee_repository import (
+from app.repositories.stamping.part.repository import StampingPartRepository
+from app.repositories.stamping.process_fee.repository import (
     StampingProcessFeeRepository,
 )
-from app.repositories.stamping.stamping_repository import StampingPartRepository
-from app.repositories.stamping.tonnage_price_repository import StampingTonnagePriceRepository
+from app.repositories.stamping.tonnage_price.repository import StampingTonnagePriceRepository
 from app.services.stamping.process_fee.calc.calc_log_service import ProcessFeeCalcLogService
 from app.services.stamping.process_fee.calc.part_calculator import PartFeeCalculator
 from app.services.stamping.process_fee.calc.tailor_weld_calculator import (

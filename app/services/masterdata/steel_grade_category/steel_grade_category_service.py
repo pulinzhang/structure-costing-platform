@@ -19,7 +19,9 @@ from app.common.steel_grade_category import (
 )
 from app.exceptions.base import BusinessException, NotFoundException
 from app.parsers.masterdata.steel_grade_category_parser import parse_steel_grade_category_excel
-from app.repositories.masterdata.steel_grade_category import SteelGradeCategoryRepository
+from app.repositories.masterdata.steel_grade_category.steel_grade_category_repository import (
+    SteelGradeCategoryRepository,
+)
 from app.schemas.dto.steel_grade_category_dto import (
     SteelGradeCategoryCreate,
     SteelGradeCategoryInsert,

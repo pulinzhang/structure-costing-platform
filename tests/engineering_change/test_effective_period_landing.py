@@ -25,27 +25,27 @@ from app.models.stamping.part import StampingPart
 from app.parsers.bom.models import BomParsedMeta, BomParsedNode, BomParseResult
 from app.parsers.stamping.die.types import ParsedDiePart, ParsedDieProcess
 from app.parsers.stamping.models.part import Part
-from app.repositories.stamping.stamping_die_repository import (
+from app.repositories.stamping.die.repository import (
     StampingDiePartRepository,
     StampingDieProcessRepository,
 )
-from app.repositories.stamping.stamping_part_repository import StampingPartRepository
+from app.repositories.stamping.part.repository import StampingPartRepository
 from app.schemas.dto.stamping_die_fee_dto import StampingDieFeeCalcDTO
 from app.schemas.dto.stamping_upload_dto import FileInfo
 from app.schemas.vo.user_vo import UserVO
 from app.services.bom.bom.engineering import BomEngineeringService
 from app.services.bom.bom.node import BomNodeService
-from app.services.bom.bom.upload.orchestrator import BomUploadOrchestrator
+from app.services.bom.bom.upload.orchestrator.orchestrator import BomUploadOrchestrator
 from app.services.bom.bom.upload.orchestrator.types import BomUploadExecuteArgs
 from app.services.bom.bom.upload.persist.nodes import align_existing_trees
-from app.services.stamping.die.die_number_assigner import assign_die_numbers
-from app.services.stamping.die.export_service import StampingDieExportService
+from app.services.stamping.die.export.service import StampingDieExportService
+from app.services.stamping.die.upload.die_number_assigner import assign_die_numbers
 from app.services.stamping.die_fee.calc.orchestrator.prep import prepare_calc_run
 from app.services.stamping.die_fee.calc.orchestrator.progress import ProgressNotifier
-from app.services.stamping.part_export.helpers import PartExportStyle
-from app.services.stamping.part_export.process_confirm import ProcessConfirmExport
-from app.services.stamping.stamping_part_export_service import StampingPartExportService
-from app.services.stamping.upload.persist.parts import save_parts
+from app.services.stamping.part.export.helpers import PartExportStyle
+from app.services.stamping.part.export.process_confirm import ProcessConfirmExport
+from app.services.stamping.part.export.service import StampingPartExportService
+from app.services.stamping.part.upload.persist.parts import save_parts
 
 LOCATION = "青岛"
 VEHICLE_MODEL = "T13J"

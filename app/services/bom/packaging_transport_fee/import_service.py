@@ -31,7 +31,7 @@ from app.schemas.vo.bom_packaging_transport_fee_vo import (
 )
 from app.schemas.vo.user_vo import UserVO
 from app.services.file_trace.register import register_existing
-from app.services.masterdata.vehicle_model import VehicleModelService
+from app.services.masterdata.vehicle_model.vehicle_model_service import VehicleModelService
 from app.utils.bom_packaging_transport_fee_archive import (
     save_packaging_transport_fee_upload,
 )

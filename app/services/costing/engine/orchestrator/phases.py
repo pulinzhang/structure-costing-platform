@@ -11,6 +11,7 @@ from app.common.types.repository_types import EngineStepSummaryJson
 from app.schemas.vo.costing_engine_vo import CostingEngineAnnualItemVO
 from app.schemas.vo.user_vo import UserVO
 from app.services.costing.engine.orchestrator.persist import add_step, finish_step
+from app.services.costing.engine.orchestrator.progress import ProgressNotifier
 from app.services.costing.engine.orchestrator.runners import (
     run_annual_item,
     run_assembly,
@@ -18,8 +19,7 @@ from app.services.costing.engine.orchestrator.runners import (
     run_steel,
 )
 from app.services.costing.engine.orchestrator.summary import resolve_run_status, step_summary
-from app.services.costing.engine.progress import ProgressNotifier
-from app.services.costing.engine.scope_discovery import DiscoveryResult, L0Scope
+from app.services.costing.engine.scope.discovery import DiscoveryResult, L0Scope
 
 if TYPE_CHECKING:
     from app.services.costing.engine.orchestrator.run_orchestrator import RunOrchestrator

@@ -9,7 +9,7 @@ from sqlalchemy.orm import Session
 
 from app.common.audit import audit_create, audit_update
 from app.exceptions.base import BusinessException, NotFoundException
-from app.repositories.masterdata.supplier import SupplierRepository
+from app.repositories.masterdata.supplier.supplier_repository import SupplierRepository
 from app.schemas.dto.supplier_dto import (
     SupplierAliasCreateDTO,
     SupplierAliasInsert,

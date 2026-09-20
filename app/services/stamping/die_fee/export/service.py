@@ -13,10 +13,10 @@ from app.common.export_watermark import workbook_to_xlsx_bytes
 from app.common.vehicle_model import normalize_vehicle_model
 from app.models.stamping.die import StampingDieProcess
 from app.models.stamping.die_fee import StampingDieFee
-from app.repositories.stamping.die_fee_repository import StampingDieFeeRepository
-from app.repositories.stamping.stamping_die_repository import StampingDieProcessRepository
+from app.repositories.stamping.die.repository import StampingDieProcessRepository
+from app.repositories.stamping.die_fee.repository import StampingDieFeeRepository
 from app.schemas.vo.user_vo import UserVO
-from app.services.masterdata.location import LocationService
+from app.services.masterdata.location.location_service import LocationService
 from app.services.stamping.die_fee.export.styles import build_sheet_style
 from app.services.stamping.die_fee.export.values import build_filename, filter_text
 from app.services.stamping.die_fee.export.workbook import fill_sheet

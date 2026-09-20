@@ -8,10 +8,10 @@ import pytest
 from sqlalchemy.orm import Session, selectinload
 
 from app.models.stamping import StampingPart
-from app.repositories.stamping.tonnage_price_repository import StampingTonnagePriceRepository
+from app.repositories.stamping.tonnage_price.repository import StampingTonnagePriceRepository
 from app.services.stamping.process_fee.calc.models import TonnageRateInfo
 from app.services.stamping.process_fee.calc.part_calculator import PartFeeCalculator
-from app.services.stamping.process_fee.fee_math import resolve_final_fee
+from app.services.stamping.process_fee.rules.fee_math import resolve_final_fee
 
 YEAR = 2026
 LOCATION = "芜湖"

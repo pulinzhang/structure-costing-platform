@@ -20,7 +20,9 @@ from typing import Any
 
 from openpyxl.worksheet.worksheet import Worksheet
 
-from app.parsers.yishiyiyi.policy.handlers.base_handler import BaseSheetHandler
+from app.parsers.yishiyiyi.policy.handlers.base_handler.base_handler import (
+    BaseSheetHandler,
+)
 
 from ..value_parser import _to_int_price
 from .constants import parse_thickness_label
@@ -142,10 +144,10 @@ class AnshenSheetHandler(BaseSheetHandler):
         grade_type=GRADE（不分类），grade_value=厚度范围标签（如 "1.6＜T≤2.0"），
         items 只包含宽度边界和价格。不同厚度范围通过 grade_value 区分。
         """
-        from ..models import ParsedPolicy
         from ..models.policy import (
             GRADE_TYPE_THICKNESS_RANGE,
             POLICY_TYPE_THICKNESS_WIDTH,
+            ParsedPolicy,
         )
 
         data_start = block["data_row_start"]

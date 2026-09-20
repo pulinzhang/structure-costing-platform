@@ -9,7 +9,7 @@ from app.parsers.stamping.models.part import Part
 from app.services.engineering_change.upload.persist.process import (
     _part_from_confirmation_sheet,
 )
-from app.services.stamping.part.engineering_change import clone_revise_part_payload
+from app.services.stamping.part.engineering.change import clone_revise_part_payload
 
 
 def test_revise_clones_part_and_identical_processes() -> None:
@@ -116,7 +116,7 @@ def test_revise_clones_part_and_identical_processes() -> None:
 
 def test_save_process_sketches_writes_png(tmp_path, monkeypatch) -> None:
     from app.config import settings
-    from app.services.stamping.upload.persist.files import save_part_sketches
+    from app.services.stamping.part.upload.persist.files import save_part_sketches
 
     monkeypatch.setattr(settings, "UPLOAD_DIR", tmp_path)
     png = (
@@ -150,7 +150,7 @@ def test_t2aa_process_sheet_keeps_revised_part_sketch() -> None:
 
 
 def test_revise_remaps_tailor_weld_blank_part_number() -> None:
-    from app.services.stamping.part.engineering_change import _remapped_blank_part_number
+    from app.services.stamping.part.engineering.change import _remapped_blank_part_number
 
     assert (
         _remapped_blank_part_number(

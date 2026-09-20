@@ -9,10 +9,8 @@ from sqlalchemy.orm import Session
 from app.repositories.llm.annual_part_price_analysis_repository import (
     AnnualPartPriceAnalysisRepository,
 )
-from app.repositories.llm.cost_analysis import (
-    L0CostAnalysisRepository,
-    L0PartPeriodRow,
-)
+from app.repositories.llm.cost_analysis.repository import L0CostAnalysisRepository
+from app.repositories.llm.cost_analysis.rows import L0PartPeriodRow
 from app.repositories.llm.stamping_cost_analysis_repository import (
     StampingCostAnalysisRepository,
 )

@@ -18,14 +18,16 @@ from sqlalchemy.orm import Session
 from app.common.audit import display_name
 from app.exceptions.base import BusinessException
 from app.models.costing import SteelPriceCalcLog
-from app.schemas.common import DeletedCountVO
+from app.schemas.common.deleted_count import DeletedCountVO
 from app.schemas.dto.steel_price_dto import SteelPriceCalcDTO
 from app.schemas.vo.async_task_vo import AsyncTaskAcceptedVO
 from app.schemas.vo.steel_price_vo import SteelPriceCalcLogVO, SteelPriceCalcResultVO
 from app.schemas.vo.user_vo import UserVO
-from app.services.async_task import (
+from app.services.async_task.async_task_service import (
     TASK_TYPE_STEEL_PRICE_CALC,
     AsyncTaskService,
+)
+from app.services.async_task.worker_runner import (
     WorkerTaskOutcome,
     calc_status_label,
     outcome_from_calc_status,

@@ -24,7 +24,7 @@ from app.services.bom.bom.period import BomPeriodService
 from app.services.bom.welding_process_breakdown.bom_tree import build_children_map
 from app.services.bom.welding_process_breakdown.evidence import build_node_evidence
 from app.services.masterdata.location.location_service import LocationService
-from app.services.masterdata.vehicle_model import VehicleModelService
+from app.services.masterdata.vehicle_model.vehicle_model_service import VehicleModelService
 
 
 def overlay_breakdown_vos(

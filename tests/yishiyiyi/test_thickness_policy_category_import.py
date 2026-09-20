@@ -63,7 +63,9 @@ def test_directory_overrides_wrong_filename_paren() -> None:
 
 
 def test_parse_sample_thickness_policies_are_category_level() -> None:
-    from app.parsers.yishiyiyi.policy import parse_steel_price_policy_excel
+    from app.parsers.yishiyiyi.policy.steel_price_policy_parser import (
+        parse_steel_price_policy_excel,
+    )
 
     sample_root = Path(__file__).resolve().parents[2] / "excel_sample" / "25年-26年一事一议价格"
     root = sample_root / "2026年1月-12月一事一议价格"

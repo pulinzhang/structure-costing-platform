@@ -13,7 +13,7 @@ from app.repositories.costing.stamping_part_cost.stamping_part_cost_repository i
     StampingPartCostRepository,
 )
 from app.repositories.costing.steel_price.steel_price_repository import SteelPriceRepository
-from app.repositories.stamping.tailor_weld_blank_repository import (
+from app.repositories.stamping.part.tailor_weld_blank import (
     StampingTailorWeldBlankRepository,
 )
 from app.schemas.dto.stamping_part_cost_dto import (

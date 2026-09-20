@@ -7,7 +7,7 @@ from typing import Any
 from openpyxl.worksheet.worksheet import Worksheet
 
 from app.parsers.yishiyiyi.policy.boundary_parser import _Boundary
-from app.parsers.yishiyiyi.policy.models import ParsedLadderItem
+from app.parsers.yishiyiyi.policy.models.ladder_item import ParsedLadderItem
 from app.parsers.yishiyiyi.policy.models.policy import (
     GRADE_TYPE_CATEGORY,
     GRADE_TYPE_GRADE,

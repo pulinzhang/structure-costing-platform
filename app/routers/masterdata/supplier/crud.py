@@ -13,7 +13,7 @@ from sqlalchemy.orm import Session
 from app.common.permissions.codes import Perm
 from app.database import get_db
 from app.deps.permissions import require_perm
-from app.schemas.common import PageResult
+from app.schemas.common.page_result import PageResult
 from app.schemas.dto.supplier_dto import (
     SupplierAliasCreateDTO,
     SupplierCreateDTO,
@@ -22,7 +22,7 @@ from app.schemas.dto.supplier_dto import (
 )
 from app.schemas.vo.supplier_vo import SupplierUploadResultVO, SupplierVO
 from app.schemas.vo.user_vo import UserVO
-from app.services.masterdata.supplier import SupplierService
+from app.services.masterdata.supplier.supplier_service import SupplierService
 from app.utils.response import ApiResponse
 
 router = APIRouter(prefix="/api/masterdata/suppliers", tags=["供应商"])

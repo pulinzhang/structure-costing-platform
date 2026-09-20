@@ -10,16 +10,15 @@ from app.common.audit import display_name
 from app.exceptions.base import BusinessException
 from app.schemas.vo.async_task_vo import AsyncTaskAcceptedVO
 from app.schemas.vo.user_vo import UserVO
-from app.services.async_task import (
+from app.services.async_task.async_task_service import (
     STATUS_COMPLETED,
     STATUS_FAILED,
     TASK_TYPE_BOM_UPLOAD,
     AsyncTaskService,
-    WorkerTaskOutcome,
 )
-from app.services.async_task.worker_runner import ProgressCallback
+from app.services.async_task.worker_runner import ProgressCallback, WorkerTaskOutcome
 from app.services.bom.bom.upload.gates.validate import validate_upload_file
-from app.services.bom.bom.upload.orchestrator import BomUploadOrchestrator
+from app.services.bom.bom.upload.orchestrator.orchestrator import BomUploadOrchestrator
 from app.services.bom.bom.upload.orchestrator.types import BomUploadExecuteArgs
 
 logger = logging.getLogger("service.bom.upload")

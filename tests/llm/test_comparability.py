@@ -4,7 +4,7 @@ from __future__ import annotations
 
 from decimal import Decimal
 
-from app.repositories.llm.cost_analysis import L0PartPeriodRow
+from app.repositories.llm.cost_analysis.rows import L0PartPeriodRow
 from app.services.llm.analysis.shared.comparability import resolve_runtime_comparability
 from app.services.llm.comparison_basis import default_comparison_basis
 

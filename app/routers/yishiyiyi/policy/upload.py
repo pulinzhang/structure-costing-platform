@@ -13,12 +13,12 @@ from app.deps.permissions import require_perm
 from app.schemas.vo.async_task_vo import AsyncTaskAcceptedVO, AsyncTaskProgressVO
 from app.schemas.vo.steel_price_policy_vo import ImportResultResponse
 from app.schemas.vo.user_vo import UserVO
-from app.services.async_task import (
+from app.services.async_task.async_task_service import (
     STATUS_PENDING,
     TASK_TYPE_POLICY_UPLOAD,
     AsyncTaskService,
 )
-from app.services.yishiyiyi.policy import SteelPricePolicyService
+from app.services.yishiyiyi.policy.steel_price_policy_service import SteelPricePolicyService
 from app.utils.response import ApiResponse
 
 router = APIRouter(prefix="/api/yishiyiyi/policy", tags=["钢价政策上传"])

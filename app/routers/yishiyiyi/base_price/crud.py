@@ -12,7 +12,7 @@ from sqlalchemy.orm import Session
 from app.common.permissions.codes import Perm
 from app.database import get_db
 from app.deps.permissions import require_any_perm, require_perm
-from app.schemas.common import PageResult
+from app.schemas.common.page_result import PageResult
 from app.schemas.dto.steel_base_price_dto import (
     SteelBasePriceCreate,
     SteelBasePriceExportPreviewQuery,
@@ -28,15 +28,13 @@ from app.schemas.vo.steel_base_price_vo import (
     SteelBasePriceResponse,
 )
 from app.schemas.vo.user_vo import UserVO
-from app.services.async_task import (
+from app.services.async_task.async_task_service import (
     STATUS_PENDING,
     TASK_TYPE_BASE_PRICE_IMPORT,
     AsyncTaskService,
 )
-from app.services.yishiyiyi.base_price import (
-    SteelBasePriceExportService,
-    SteelBasePriceService,
-)
+from app.services.yishiyiyi.base_price.export.service import SteelBasePriceExportService
+from app.services.yishiyiyi.base_price.steel_base_price_service import SteelBasePriceService
 from app.utils.response import ApiResponse
 
 # 默认分页大小常量

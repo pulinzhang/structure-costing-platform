@@ -2,7 +2,7 @@
 
 核对风排版 + 完整溯源列（默认折叠）。
 
-对外入口：`steel_price_export_service.py`。
+对外入口：`export.service.SteelPriceExportService`。
 
 ## 职责
 

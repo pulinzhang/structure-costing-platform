@@ -49,7 +49,7 @@
 | 项 | 状态 |
 |---|---|
 | `#/costing` 与 `/api/costing/engine` | 已上线（就绪检查、启动 Run、轮询、历史删除含 running） |
-| 「基地+年+月」展开为多工厂 × 多 BOM 并串链 | 已上线（`engine/orchestrator/` / `scope_discovery`） |
+| 「基地+年+月」展开为多工厂 × 多 BOM 并串链 | 已上线（`engine/orchestrator/` / `scope/discovery`） |
 | Run 账本与「上传硬停 / 年度补算 / 月度主链」分类门禁 | 已上线 |
 
 产品规则（R1–R8）仍以本文为准。目标页若暂不读 `navigate.query`，至少落到正确功能页（见 §12）。  
@@ -350,7 +350,7 @@ GET  .../tasks/{task_id} → AsyncTaskProgressVO
 - 新增 `TASK_TYPE_COSTING_ENGINE_RUN`。  
 - `run.task_id` ↔ 父任务互指；完成时 `result` 含 `run_id` + 摘要。  
 - **分层：** `start_run` 已在 Service 提交；开 Session / `on_progress` / `finally` 必须走公共 runner（架构宪法 §5.3），禁止引擎再自建一套 worker 壳。  
-- 领域逻辑（`RunDeletedError`、回写 Run 失败态、进度权重）留在 `CostingEngineService`，runner 不感知 `run_id`。  
+- 领域逻辑（`RunDeletedError`、回写 Run 失败态）留在 `CostingEngineService`；进度权重在 `engine/orchestrator/progress.py`。runner 不感知 `run_id`。  
 
 ### 9.3 禁止嵌套入队死等
 
@@ -606,9 +606,9 @@ can_start: bool   # = not hard_stop 且存在可执行路径（该月命中冲�
 
 | 主题 | 路径 |
 |---|---|
-| 钢材编排 | `app/services/costing/steel_price/calc/orchestrator.py` |
-| 零件价编排 | `app/services/costing/stamping_part_cost/calc/orchestrator.py` |
-| 总成编排 | `app/services/costing/assembly_cost/calc/orchestrator.py` |
+| 钢材编排 | `app/services/costing/steel_price/calc/orchestrator/` |
+| 零件价编排 | `app/services/costing/stamping_part_cost/calc/orchestrator/` |
+| 总成编排 | `app/services/costing/assembly_cost/calc/orchestrator/` |
 | 月度核对导出 | `app/services/costing/monthly_bundle_export/` |
 | 引擎实现 | `app/routers/costing/engine/`、`app/services/costing/engine/`（指挥：`engine/orchestrator/`；年度子算：`orchestrator/runners.py`）、`static/js/features/costing/engine/` |
 | 焊接拆解 generate / 门禁钥匙 | `app/services/bom/welding_process_breakdown/generate_service.py`、`app/common/engineering_change_gates.py`（`snapshot_blocks_full_generate`） |

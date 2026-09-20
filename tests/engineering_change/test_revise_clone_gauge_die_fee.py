@@ -20,7 +20,7 @@ from app.models.stamping.die import StampingDiePart, StampingDieProcess
 from app.models.stamping.die_fee import StampingDieFee
 from app.models.stamping.die_fee_item import StampingDieFeeItem
 from app.models.stamping.gauge_fee import STATUS_EFFECTIVE, StampingGaugeFee
-from app.repositories.stamping.die_fee_repository import StampingDieFeeRepository
+from app.repositories.stamping.die_fee.repository import StampingDieFeeRepository
 from app.schemas.dto.stamping_die_fee_dto import DieFeeInsertPayload, DieFeeItemPayload
 from app.schemas.vo.user_vo import UserVO
 from app.services.engineering_change.list.rollback_service import (
@@ -28,8 +28,8 @@ from app.services.engineering_change.list.rollback_service import (
 )
 from app.services.engineering_change.upload.persist.die_fee import persist_die_fees
 from app.services.engineering_change.upload.persist.gauge_fee import persist_gauge_fees
-from app.services.stamping.die_fee.die_fee_service import StampingDieFeeService
-from app.services.stamping.gauge_fee.gauge_fee_service import StampingGaugeFeeService
+from app.services.stamping.die_fee.crud.service import StampingDieFeeService
+from app.services.stamping.gauge_fee.crud.service import StampingGaugeFeeService
 
 LOCATION = "芜湖"
 VEHICLE = "T13J"

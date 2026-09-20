@@ -20,8 +20,8 @@ from app.repositories.costing.assembly_cost.assembly_cost_repository import (
     AssemblyCostRepository,
     SettlementAmountField,
 )
-from app.repositories.stamping.die_fee_repository import StampingDieFeeRepository
-from app.repositories.stamping.gauge_fee_repository import StampingGaugeFeeRepository
+from app.repositories.stamping.die_fee.repository import StampingDieFeeRepository
+from app.repositories.stamping.gauge_fee.repository import StampingGaugeFeeRepository
 from app.schemas.dto.procurement_contract_report_dto import ProcurementContractReportQuery
 from app.schemas.vo.procurement_contract_report_vo import (
     ProcurementContractMonthAmountVO,

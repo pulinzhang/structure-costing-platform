@@ -4,8 +4,8 @@ from __future__ import annotations
 
 from sqlalchemy.orm import Session
 
-from app.repositories.stamping.die_unit_price_repository import StampingDieUnitPriceRepository
-from app.repositories.stamping.tonnage_price_repository import StampingTonnagePriceRepository
+from app.repositories.stamping.die.unit_price import StampingDieUnitPriceRepository
+from app.repositories.stamping.tonnage_price.repository import StampingTonnagePriceRepository
 from app.schemas.vo.costing_engine_vo import CostingEngineGateItemVO
 from app.services.costing.engine.gate.item import (
     USABLE_STATUSES,
@@ -13,11 +13,11 @@ from app.services.costing.engine.gate.item import (
     make_skipped,
     skip_if_period_filtered,
 )
-from app.services.costing.engine.scope_discovery import DiscoveryResult
+from app.services.costing.engine.scope.discovery import DiscoveryResult
 from app.services.stamping.die_fee.calc.orchestrator.ready import (
     evaluate_die_fee_coverage,
 )
-from app.services.stamping.die_fee.fee_math import ZERO
+from app.services.stamping.die_fee.rules.fee_math import ZERO
 
 
 def check_period_projects(

@@ -39,7 +39,9 @@ from app.services.llm.analysis.steel.winning_thickness import (
     load_winning_thickness_rows,
 )
 from app.services.llm.comparison_basis import resolve_comparability
-from app.services.yishiyiyi.winning_thickness import WinningThicknessExportService
+from app.services.yishiyiyi.winning_thickness.export.service import (
+    WinningThicknessExportService,
+)
 
 
 class SteelAnalysis:

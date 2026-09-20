@@ -10,7 +10,8 @@ from app.common.permissions.codes import Perm
 from app.common.vehicle_model import normalize_vehicle_model
 from app.database import get_db
 from app.deps.permissions import require_any_perm, require_perm
-from app.schemas.common import DeletedCountVO, PageResult
+from app.schemas.common.deleted_count import DeletedCountVO
+from app.schemas.common.page_result import PageResult
 from app.schemas.dto.stamping_die_fee_dto import (
     StampingDieFeeBatchApproveDTO,
     StampingDieFeeBatchReverseAuditDTO,
@@ -30,14 +31,16 @@ from app.schemas.vo.stamping_die_fee_vo import (
     StampingDieFeeVO,
 )
 from app.schemas.vo.user_vo import UserVO
-from app.services.async_task import (
+from app.services.async_task.async_task_service import (
     STATUS_PENDING,
     TASK_TYPE_STAMPING_DIE_FEE_CALC,
     AsyncTaskService,
 )
-from app.services.stamping.die_fee.calc.orchestrator import StampingDieFeeCalcOrchestrator
-from app.services.stamping.die_fee.die_fee_service import StampingDieFeeService
-from app.services.stamping.die_fee.export_service import StampingDieFeeExportService
+from app.services.stamping.die_fee.calc.orchestrator.orchestrator import (
+    StampingDieFeeCalcOrchestrator,
+)
+from app.services.stamping.die_fee.crud.service import StampingDieFeeService
+from app.services.stamping.die_fee.export.service import StampingDieFeeExportService
 from app.utils.response import ApiResponse
 
 router = APIRouter(prefix="/api/stamping/die-fees", tags=["冲压模具费 API"])
