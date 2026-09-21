@@ -12,6 +12,7 @@
     --hud-red: 255 30 39;
     --brand-glow: rgb(var(--brabus-red) / 0.25);
     --hud-filter-chevron: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 24 24'%3E%3Cpath stroke='%23000' stroke-linecap='round' stroke-linejoin='round' stroke-width='1.5' d='M19 9l-7 7-7-7'/%3E%3C/svg%3E");
+    --hud-check-mark: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 12 12' fill='none'%3E%3Cpath d='M2.2 6.2L4.7 8.7L9.8 3.3' stroke='%23000' stroke-width='1.6' stroke-linecap='square' stroke-linejoin='miter'/%3E%3C/svg%3E");
 
     --bg-deep: 10 10 10;
     --bg-main: 18 18 18;
@@ -688,6 +689,7 @@ textarea:-webkit-autofill:active {
 .brabus-check {
     appearance: none;
     -webkit-appearance: none;
+    position: relative;
     width: 0.875rem;
     height: 0.875rem;
     margin: 0;
@@ -714,10 +716,20 @@ textarea:-webkit-autofill:active {
     background-color: rgb(var(--hud-red));
     border-color: rgb(var(--hud-red));
     box-shadow: 0 0 8px rgb(var(--hud-red) / 0.35);
-    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 12 12' fill='none'%3E%3Cpath d='M2.2 6.2L4.7 8.7L9.8 3.3' stroke='%23ffffff' stroke-width='1.6' stroke-linecap='square' stroke-linejoin='miter'/%3E%3C/svg%3E");
-    background-size: 0.7rem 0.7rem;
-    background-position: center;
-    background-repeat: no-repeat;
+}
+
+.brabus-check:checked::after {
+    content: '';
+    position: absolute;
+    left: 50%;
+    top: 50%;
+    width: 0.7rem;
+    height: 0.7rem;
+    transform: translate(-50%, -50%);
+    pointer-events: none;
+    background-color: rgb(var(--text-on-brand));
+    -webkit-mask: var(--hud-check-mark) center / contain no-repeat;
+    mask: var(--hud-check-mark) center / contain no-repeat;
 }
 
 /* 零件用在哪：盖过 Tailwind 的 img{max-width:100%;height:auto}，否则简图按原图像素撑开 */
