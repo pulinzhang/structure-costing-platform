@@ -6,7 +6,7 @@
  * - 拖拽区加大垂直留白
  */
 
-import { BTN_FILE_SELECT, BTN_GHOST, BTN_UPLOAD_SUBMIT, UPLOAD_DROPZONE, HUD_LED } from '../../../../ui/classes.js?v=11';
+import { BTN_FILE_SELECT, BTN_GHOST, BTN_UPLOAD_SUBMIT, UPLOAD_DROPZONE, HUD_LED } from '../../../../ui/classes.js?v=13';
 
 export function uploadTemplate() {
     return `

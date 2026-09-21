@@ -6,7 +6,7 @@ import {
     locationTemplate,
     renderLocationRows,
     renderAliasItems,
-} from './template.js?v=22';
+} from './template.js?v=23';
 
 const API_BASE = '/api/masterdata/locations';
 const DRAWER_ANIMATION_MS = 300;

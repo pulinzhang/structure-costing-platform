@@ -12,7 +12,7 @@ import {
     UPLOAD_DROPZONE,
     UPLOAD_INPUT,
     UPLOAD_LABEL,
-} from '../../../../ui/classes.js?v=11';
+} from '../../../../ui/classes.js?v=13';
 
 export function policyUploadTemplate() {
     return `

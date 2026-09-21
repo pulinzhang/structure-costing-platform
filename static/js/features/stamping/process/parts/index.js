@@ -12,7 +12,7 @@ import {
 } from './template.js?v=58';
 import { hudRowHtml, opsIconButtonHtml } from '../../../../ui/hud-table.js?v=2';
 import { bindMoreMenu } from '../../../../ui/more-menu.js?v=5';
-import { bindFilterBar } from '../../../../ui/filter-bar.js?v=3';
+import { bindFilterBar } from '../../../../ui/filter-bar.js?v=4';
 import { fmtPeriodRange } from '../../../common/period-ui.js?v=4';
 import {
     BTN_SAVE_ACTIVE,
@@ -20,7 +20,7 @@ import {
     SKETCH_PLACEHOLDER,
     SKETCH_THUMBNAIL,
     ZOOM_OVERLAY,
-} from '../../../../ui/classes.js?v=11';
+} from '../../../../ui/classes.js?v=13';
 import {
     DEFAULT_PAGE_SIZE,
     PAGE_SIZE_OPTIONS,
@@ -28,7 +28,7 @@ import {
     paintPagination,
     normalizePageSize,
 } from '../../../../ui/page-size.js?v=6';
-import { setSearchBusy } from '../../../../ui/search-busy.js?v=3';
+import { setSearchBusy } from '../../../../ui/search-busy.js?v=4';
 import { partShortCodeCellHtml, partNumberNameCellHtml } from '../../../../domain/part-identity.js?v=5';
 
 /** @type {{ setOpen: (isOpen: boolean) => void, close: () => void, unbind: () => void } | null} */
@@ -674,7 +674,7 @@ export const PartsPage = {
         const btn = document.getElementById('saveOffalBtn');
         if (!btn || btn.dataset.active === 'true') return;
         btn.dataset.active = 'true';
-        btn.className = 'h-7 px-3 text-[10px] text-white bg-brand border border-brand rounded-sm hover:bg-brand-hover transition-all tracking-wide';
+        btn.className = 'h-7 px-3 text-[10px] text-ink-onbrand bg-brand border border-brand rounded-sm hover:bg-brand-hover transition-all tracking-wide';
     },
 
     _activateSaveButton() {

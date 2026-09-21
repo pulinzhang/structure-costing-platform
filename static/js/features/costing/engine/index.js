@@ -2,7 +2,7 @@
  * 月度智能自动核价引擎 — 页面逻辑 (BRABUS Pure Industrial Spec)
  */
 
-import { costingTemplate } from './template.js?v=32';
+import { costingTemplate } from './template.js?v=33';
 import {
     DEFAULT_PAGE_SIZE,
     bindPagination,

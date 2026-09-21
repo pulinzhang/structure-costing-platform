@@ -3,7 +3,7 @@
  * 基地 + 年度 + 项目必选；支持生产样例表或平台扁平模板
  */
 
-import { BTN_FILE_SELECT, BTN_GHOST, BTN_UPLOAD_SUBMIT, UPLOAD_DROPZONE, UPLOAD_INPUT, UPLOAD_LABEL, HUD_LED } from '../../../../ui/classes.js?v=11';
+import { BTN_FILE_SELECT, BTN_GHOST, BTN_UPLOAD_SUBMIT, UPLOAD_DROPZONE, UPLOAD_INPUT, UPLOAD_LABEL, HUD_LED } from '../../../../ui/classes.js?v=13';
 
 export function pkgTransportFeeUploadTemplate() {
     return `

@@ -3,7 +3,7 @@
  * 基准价格列表页面
  */
 
-import { filterSelect, filterInputWithDatalist, HUD_LED, BTN_GHOST, BTN_FILTER_SEARCH, DRAWER_BACKDROP } from '../../../../ui/classes.js?v=11';
+import { filterSelect, filterInputWithDatalist, HUD_LED, BTN_GHOST, BTN_FILTER_SEARCH, DRAWER_BACKDROP } from '../../../../ui/classes.js?v=13';
 import {
     DEFAULT_PREVIEW_PAGE_SIZE,
     PREVIEW_PAGE_SIZE_OPTIONS,
@@ -50,7 +50,7 @@ export function basePriceDownloadTemplate() {
                     </div>
                     <div class="flex items-center gap-2">
                         <button id="btnPreviewBasePrice"
-                                class="${BTN_FILTER_SEARCH}">
+                                class="${BTN_FILTER_SEARCH} h-7">
                             ${window.svgIcon('search', 'w-3 h-3')}
                             查询
                         </button>

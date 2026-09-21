@@ -6,7 +6,7 @@ import {
     steelGradeCategoryTemplate,
     renderTableRows,
     syncTabStyles,
-} from './template.js?v=26';
+} from './template.js?v=27';
 import {
     DEFAULT_PAGE_SIZE,
     bindPagination,

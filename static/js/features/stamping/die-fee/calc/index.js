@@ -1,4 +1,4 @@
-import { DRAWER_SHELL, DRAWER_BACKDROP } from '../../../../ui/classes.js?v=11';
+import { DRAWER_SHELL, DRAWER_BACKDROP } from '../../../../ui/classes.js?v=13';
 import {
     dieFeeCalcTemplate,
     CALC_HISTORY_COLSPAN,

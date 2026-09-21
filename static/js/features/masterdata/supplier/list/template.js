@@ -2,7 +2,7 @@
  * 供应商一览 — HUD 密表 + 抽屉；有搜索 / 分页 / 导出
  */
 
-import { HUD_SHELL, DRAWER_SHELL, DRAWER_BACKDROP, HUD_BAND, OPS_TH, BTN_HUD_CREATE, BTN_HUD_SAVE, BTN_HUD_CHIP } from '../../../../ui/classes.js?v=11';
+import { HUD_SHELL, DRAWER_SHELL, DRAWER_BACKDROP, HUD_BAND, OPS_TH, BTN_HUD_CREATE, BTN_HUD_SAVE, BTN_HUD_CHIP } from '../../../../ui/classes.js?v=13';
 import { hudTableHtml, hudRowHtml, opsIconButtonHtml } from '../../../../ui/hud-table.js?v=2';
 
 import { moreMenuItemHtml, moreMenuShellHtml } from '../../../../ui/more-menu.js?v=5';
@@ -208,7 +208,7 @@ export function supplierListTemplate() {
             </div>
             <div class="px-5 py-3 border-t border-line flex items-center justify-end gap-2 bg-app-surface shrink-0">
                 <button type="button" id="cancelSupplierDeleteBtn" class="px-4 py-1.5 text-xs text-ink-muted border border-line">取消</button>
-                <button type="button" id="confirmSupplierDeleteBtn" class="bg-danger hover:bg-brand-hover text-white px-5 py-1.5 text-xs font-semibold">删除</button>
+                <button type="button" id="confirmSupplierDeleteBtn" class="bg-danger hover:bg-brand-hover text-ink-onbrand px-5 py-1.5 text-xs font-semibold">删除</button>
             </div>
         </div>
     `;

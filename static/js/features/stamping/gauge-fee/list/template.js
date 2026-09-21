@@ -3,8 +3,8 @@
  * 布局对齐零件列表：HUD + 胶囊筛选（默认收起）
  */
 
-import { filterSelect, filterInput, HUD_SHELL, DRAWER_SHELL, DRAWER_BACKDROP, HUD_FILTER, FILTER_LABEL, BTN_GHOST, HUD_BAND, OPS_TH, BTN_HUD_SAVE } from '../../../../ui/classes.js?v=11';
-import { filterBarHtml } from '../../../../ui/filter-bar.js?v=3';
+import { filterSelect, filterInput, HUD_SHELL, DRAWER_SHELL, DRAWER_BACKDROP, HUD_FILTER, FILTER_LABEL, BTN_GHOST, HUD_BAND, OPS_TH, BTN_HUD_SAVE } from '../../../../ui/classes.js?v=13';
+import { filterBarHtml } from '../../../../ui/filter-bar.js?v=4';
 import { hudTableHtml, hudRowHtml, opsIconButtonHtml } from '../../../../ui/hud-table.js?v=2';
 import { hudKpiCardHtml } from '../../../../ui/hud-kpi.js?v=1';
 
@@ -182,7 +182,7 @@ export function gaugeFeeListTemplate() {
             </div>
             <div class="mt-auto px-5 py-3 border-t border-line flex justify-end gap-2">
                 <button type="button" id="gflCancelDelete" class="px-4 py-1.5 text-xs text-ink-muted border border-line">取消</button>
-                <button type="button" id="gflConfirmDelete" class="bg-danger text-white px-4 py-1.5 text-xs font-semibold">删除</button>
+                <button type="button" id="gflConfirmDelete" class="bg-danger text-ink-onbrand px-4 py-1.5 text-xs font-semibold">删除</button>
             </div>
         </div>
     `;

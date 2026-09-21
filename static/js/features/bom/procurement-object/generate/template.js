@@ -3,7 +3,7 @@
  */
 
 import { paginationBarHtml } from '../../../../ui/page-size.js?v=6';
-import { filterSelect, BTN_ABORT } from '../../../../ui/classes.js?v=11';
+import { filterSelect, BTN_ABORT } from '../../../../ui/classes.js?v=13';
 
 import { SECTION_LABELS } from '../labels.js?v=4';
 

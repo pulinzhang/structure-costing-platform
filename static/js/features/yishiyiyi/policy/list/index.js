@@ -4,7 +4,7 @@
  * 用于测试部门核对数据，主子表联合查询导出 Excel
  */
 
-import { policyDownloadTemplate, renderPolicyRows } from './template.js?v=49';
+import { policyDownloadTemplate, renderPolicyRows } from './template.js?v=50';
 import { bindMoreMenu } from '../../../../ui/more-menu.js?v=5';
 import {
     DEFAULT_PREVIEW_PAGE_SIZE,
@@ -12,7 +12,7 @@ import {
     bindPagination,
     paintPagination,
 } from '../../../../ui/page-size.js?v=6';
-import { setSearchBusy } from '../../../../ui/search-busy.js?v=3';
+import { setSearchBusy } from '../../../../ui/search-busy.js?v=4';
 import {
     requireExportYearMonth,
     selectDefaultYear,

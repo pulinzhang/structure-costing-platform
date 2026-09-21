@@ -12,7 +12,7 @@ import {
     parsePriceInput,
     comparePriceStrings,
     subtractPriceStrings,
-} from './template.js?v=26';
+} from './template.js?v=27';
 import { bindMoreMenu } from '../../../ui/more-menu.js?v=5';
 
 const API_BASE = '/api/yishiyiyi/scrap-price';
@@ -199,7 +199,7 @@ function syncCategoryButtons() {
     if (steelBtn) {
         steelBtn.classList.toggle('bg-brand', steelOn);
         steelBtn.classList.toggle('border-brand', steelOn);
-        steelBtn.classList.toggle('text-white', steelOn);
+        steelBtn.classList.toggle('text-ink-onbrand', steelOn);
         steelBtn.classList.toggle('bg-transparent', !steelOn);
         steelBtn.classList.toggle('border-line', !steelOn);
         steelBtn.classList.toggle('text-ink-dim', !steelOn);
@@ -207,7 +207,7 @@ function syncCategoryButtons() {
     if (aluBtn) {
         aluBtn.classList.toggle('bg-brand', !steelOn);
         aluBtn.classList.toggle('border-brand', !steelOn);
-        aluBtn.classList.toggle('text-white', !steelOn);
+        aluBtn.classList.toggle('text-ink-onbrand', !steelOn);
         aluBtn.classList.toggle('bg-transparent', steelOn);
         aluBtn.classList.toggle('border-line', steelOn);
         aluBtn.classList.toggle('text-ink-dim', steelOn);

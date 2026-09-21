@@ -1,4 +1,4 @@
-import { DRAWER_BACKDROP } from '../../../ui/classes.js?v=11';
+import { DRAWER_BACKDROP } from '../../../ui/classes.js?v=13';
 /**
  * 废料月度销售价 — 价格矩阵视觉层（非表格填表）
  * 基地锚点 · 净价 Hero · 扣费弱化 · 备注隐式 · 中文极简
@@ -91,7 +91,7 @@ export function scrapPriceTemplate() {
                     <h2 class="text-[14px] font-medium text-ink shrink-0">废料月度销售价</h2>
                     <div class="flex items-center gap-1.5" role="group" aria-label="废料类别">
                         <button id="scrapCategorySteelBtn" type="button"
-                                class="px-3 py-1.5 text-[11px] font-medium rounded-md bg-brand border border-brand text-white transition-all">
+                                class="px-3 py-1.5 text-[11px] font-medium rounded-md bg-brand border border-brand text-ink-onbrand transition-all">
                             钢材料
                         </button>
                         <button id="scrapCategoryAluminumBtn" type="button"
@@ -114,7 +114,7 @@ export function scrapPriceTemplate() {
                         ].join(''),
                     })}
                     <button id="btnScrapSave"
-                            class="inline-flex items-center h-8 px-4 text-[12px] font-semibold bg-brand text-white hover:bg-brand-hover transition-colors">
+                            class="inline-flex items-center h-8 px-4 text-[12px] font-semibold bg-brand text-ink-onbrand hover:bg-brand-hover transition-colors">
                         保存
                     </button>
                 </div>
@@ -252,7 +252,7 @@ export function scrapPriceTemplate() {
                     取消
                 </button>
                 <button type="button" id="confirmScrapCopy"
-                        class="h-8 px-4 text-[12px] font-semibold bg-brand text-white hover:bg-brand-hover transition-colors shrink-0 whitespace-nowrap">
+                        class="h-8 px-4 text-[12px] font-semibold bg-brand text-ink-onbrand hover:bg-brand-hover transition-colors shrink-0 whitespace-nowrap">
                     复制
                 </button>
             </div>

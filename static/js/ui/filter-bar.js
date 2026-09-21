@@ -9,7 +9,7 @@ import {
     CAPSULE_IDLE,
     BTN_FILTER_SEARCH,
     capsuleClass,
-} from './classes.js?v=11';
+} from './classes.js?v=13';
 
 const TOGGLE_BTN_CLASS =
     'text-ink-dim hover:text-ink transition-colors flex items-center gap-1.5 text-[11px]';
@@ -85,7 +85,7 @@ export function filterBarHtml({
                                 <span id="${ids.labelId}">展开高级筛选</span>
                                 <span id="${ids.countId}" class="text-ink-faint">(0)</span>
                             </button>
-                            <button type="button" id="${ids.searchId}" class="${BTN_FILTER_SEARCH}">
+                            <button type="button" id="${ids.searchId}" class="${BTN_FILTER_SEARCH} h-7">
                                 ${searchIcon}
                                 查询
                             </button>

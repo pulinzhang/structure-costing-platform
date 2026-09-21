@@ -13,7 +13,7 @@ import {
     cancelPcrHudCountUp,
     updatePcrViewButtons,
     updateRingIndicators,
-} from './template.js?v=45';
+} from './template.js?v=53';
 import {
     DEFAULT_PAGE_SIZE,
     bindPagination,

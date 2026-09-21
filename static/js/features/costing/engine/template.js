@@ -184,7 +184,7 @@ ${engineMotionStyles}
       <button id="engineReadyBtn" type="button" class="h-10 px-4 border border-ink/10 text-ink text-xs hover:border-ink/20 hover:text-ink transition-colors disabled:opacity-40 disabled:cursor-not-allowed disabled:pointer-events-none">
         检查就绪
       </button>
-      <button id="engineStartBtn" type="button" class="h-10 px-6 bg-brand-hud hover:bg-brand-hud/15 text-white text-sm font-semibold tracking-[0.08em] flex items-center gap-2.5 disabled:bg-transparent disabled:text-ink-dim disabled:border disabled:border-ink/10 disabled:opacity-40 disabled:cursor-not-allowed disabled:pointer-events-none transition-colors">
+      <button id="engineStartBtn" type="button" class="h-10 px-6 bg-brand-hud hover:bg-brand-hud/15 text-ink-onbrand text-sm font-semibold tracking-[0.08em] flex items-center gap-2.5 disabled:bg-transparent disabled:text-ink-dim disabled:border disabled:border-ink/10 disabled:opacity-40 disabled:cursor-not-allowed disabled:pointer-events-none transition-colors">
         <span id="engineIgnitionLed" class="w-2 h-2 rounded-full bg-app-elevated shrink-0" aria-hidden="true"></span>
         启动核算引擎
       </button>

@@ -17,6 +17,7 @@ module.exports = {
           muted: 'rgb(var(--text-muted) / <alpha-value>)',
           dim: 'rgb(var(--text-disabled) / <alpha-value>)',
           faint: 'rgb(var(--text-faint) / <alpha-value>)',
+          onbrand: 'rgb(var(--text-on-brand) / <alpha-value>)',
         },
         line: {
           DEFAULT: 'rgb(var(--border-color) / <alpha-value>)',

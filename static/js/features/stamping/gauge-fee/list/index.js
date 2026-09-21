@@ -7,16 +7,16 @@ import {
     renderTableRows,
     updateGaugeFeeHud,
     updateGaugeFeeHudScope,
-} from './template.js?v=31';
+} from './template.js?v=32';
 import { bindMoreMenu } from '../../../../ui/more-menu.js?v=5';
-import { bindFilterBar } from '../../../../ui/filter-bar.js?v=3';
+import { bindFilterBar } from '../../../../ui/filter-bar.js?v=4';
 import {
     DEFAULT_PAGE_SIZE,
     bindPagination,
     paintPagination,
     normalizePageSize,
 } from '../../../../ui/page-size.js?v=6';
-import { setSearchBusy } from '../../../../ui/search-busy.js?v=3';
+import { setSearchBusy } from '../../../../ui/search-busy.js?v=4';
 
 const API_BASE = '/api/stamping/gauge-fees';
 const STORAGE_KEY = 'gaugeFeePageSize';
