@@ -10,7 +10,7 @@ from app.database import DatabaseConfig
 from app.repositories.llm.cost_analysis.repository import L0CostAnalysisRepository
 from app.services.llm.analysis.runner import AnalysisRunner
 from app.services.llm.context.snapshot_builder import SnapshotBuilder
-from app.services.llm.query.query_parser import QueryParser
+from app.services.llm.query.parser.pipeline import QueryParser
 
 
 @pytest.mark.integration

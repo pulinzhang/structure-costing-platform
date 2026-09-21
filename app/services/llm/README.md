@@ -4,7 +4,7 @@
 
 | 你要做什么 | 打开 |
 |---|---|
-| 任务 / 幂等 / 落库 | `report_service.LlmAnalysisReportService` |
+| 任务 / 幂等 / 落库 | `report.LlmAnalysisReportService` |
 | 问句 → AnalysisQuery | `query/` |
 | 确定性业务分析 | `analysis/` |
 | 组 Snapshot | `context/` |
@@ -29,4 +29,4 @@
 | `usage/` | 用法帮助 |
 | `catalog/` | 字段标签 |
 | `generator.py` | Prompt + LLM 解释 |
-| `report_service.py` | 报告任务编排 |
+| `report.py` | 报告任务编排 |

@@ -50,7 +50,7 @@ from app.services.llm.generator import LlmReportGenerator
 from app.services.llm.prompts.labels import sanitize_report_markdown
 from app.services.llm.prompts.registry import PromptRegistry
 from app.services.llm.query.intent_router import detect_audience
-from app.services.llm.query.query_parser import QueryParser
+from app.services.llm.query.parser.pipeline import QueryParser
 from app.services.llm.usage.runner import UsageHelpRunner
 from app.utils.logging_config import get_logger
 

@@ -20,7 +20,7 @@ from app.repositories.stamping.process_fee.repository import (
 from app.repositories.yishiyiyi.scrap_price.scrap_price_repository import (
     StampingScrapPriceRepository,
 )
-from app.services.costing.stamping_part_cost.calc.calc_log_service import (
+from app.services.costing.stamping_part_cost.calc.calc_log import (
     PartCostCalcLogService,
 )
 from app.services.costing.stamping_part_cost.calc.fees.die import DieFeeResolver

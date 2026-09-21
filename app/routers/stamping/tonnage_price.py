@@ -33,7 +33,7 @@ from app.services.stamping.tonnage_price.export.service import (
     StampingTonnagePriceExportService,
 )
 from app.services.stamping.tonnage_price.service import StampingTonnagePriceService
-from app.services.stamping.tonnage_price.upload.import_service import (
+from app.services.stamping.tonnage_price.upload.service import (
     StampingTonnagePriceImportService,
 )
 from app.utils.response import ApiResponse

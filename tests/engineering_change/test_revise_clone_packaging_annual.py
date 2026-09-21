@@ -25,7 +25,7 @@ from app.models.masterdata.vehicle_model import VehicleModel
 from app.schemas.vo.user_vo import UserVO
 from app.services.bom.annual_part_price.service import BomAnnualPartPriceService
 from app.services.bom.packaging_transport_fee.service import BomPackagingTransportFeeService
-from app.services.engineering_change.list.rollback_service import (
+from app.services.engineering_change.list.rollback import (
     EngineeringChangeRollbackService,
 )
 from app.services.engineering_change.upload.persist.annual_part_price import (

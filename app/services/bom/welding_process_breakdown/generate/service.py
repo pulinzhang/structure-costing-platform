@@ -41,7 +41,7 @@ from app.schemas.vo.bom_welding_process_breakdown_vo import (
     BomWeldingProcessBreakdownGenerateResultVO,
 )
 from app.schemas.vo.user_vo import UserVO
-from app.services.bom.welding_process_breakdown.audit_service import WELDING_FEE_REFERENCED
+from app.services.bom.welding_process_breakdown.audit.service import WELDING_FEE_REFERENCED
 from app.services.bom.welding_process_breakdown.bom_tree import (
     annotate_parse_status,
     build_children_map,
@@ -51,7 +51,7 @@ from app.services.bom.welding_process_breakdown.bom_tree import (
 from app.services.bom.welding_process_breakdown.fastener_check import (
     check_process_qty_against_children,
 )
-from app.services.bom.welding_process_breakdown.generate_log_service import (
+from app.services.bom.welding_process_breakdown.generate.log import (
     STATUS_SUCCESS,
     BomWeldingProcessBreakdownGenerateLogService,
 )

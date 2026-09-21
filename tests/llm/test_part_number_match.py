@@ -8,7 +8,7 @@ from app.common.part_number import (
     extract_part_number_from_text,
     part_numbers_match,
 )
-from app.services.llm.query.query_parser import QueryParser
+from app.services.llm.query.parser.pipeline import QueryParser
 
 
 def test_extract_full_part_number() -> None:

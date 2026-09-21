@@ -17,7 +17,7 @@ from app.services.async_task.service import (
     TASK_TYPE_STAMPING_UPLOAD,
     AsyncTaskService,
 )
-from app.services.stamping.part.upload.upload_service import StampingUploadService
+from app.services.stamping.part.upload.service import StampingUploadService
 from app.utils.logging_config import get_logger
 from app.utils.response import ApiResponse
 

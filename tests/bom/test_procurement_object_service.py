@@ -45,7 +45,7 @@ from app.schemas.dto.bom_procurement_object_dto import (
 from app.schemas.dto.location_dto import LocationAliasInsert, LocationInsert
 from app.schemas.dto.supplier_dto import SupplierCreateDTO
 from app.services.bom.procurement_object.export.service import BomProcurementObjectExportService
-from app.services.bom.procurement_object.insert_service import BomProcurementObjectInsertService
+from app.services.bom.procurement_object.insert.service import BomProcurementObjectInsertService
 from app.services.bom.procurement_object.service import BomProcurementObjectService
 from app.services.masterdata.supplier.service import SupplierService
 
@@ -666,7 +666,7 @@ def test_insert_pair_by_sort_no_not_letter_stem() -> None:
     """§14.3：换号抄确认按树上同一 sort_no；禁止字母版本同茎猜旧号。"""
     from types import SimpleNamespace
 
-    from app.services.bom.procurement_object.insert_service import _new_to_old_part_numbers
+    from app.services.bom.procurement_object.insert.service import _new_to_old_part_numbers
 
     def node(
         *,

@@ -51,7 +51,7 @@ from app.services.async_task.worker_runner import (
     calc_status_label,
     outcome_from_calc_status,
 )
-from app.services.costing.assembly_cost.calc.calc_log_service import (
+from app.services.costing.assembly_cost.calc.calc_log import (
     DUPLICATE_SCOPE_CALC_MESSAGE,
     AssemblyCostCalcLogService,
     DuplicateScopeCalcError,

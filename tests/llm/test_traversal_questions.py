@@ -9,7 +9,7 @@ from app.database import DatabaseConfig
 from app.services.llm.analysis.runner import AnalysisRunner
 from app.services.llm.context.snapshot_builder import SnapshotBuilder
 from app.services.llm.menu_catalog import SUBJECT_MENU
-from app.services.llm.query.query_parser import QueryParser
+from app.services.llm.query.parser.pipeline import QueryParser
 from app.services.llm.usage.runner import UsageHelpRunner
 from tests.llm.traversal_question_matrix import (
     TraversalCase,

@@ -40,7 +40,7 @@ from app.services.yishiyiyi.base_price.crud.base_price_crud import (
 from app.services.yishiyiyi.base_price.export.service import (
     SteelBasePriceExportService,
 )
-from app.services.yishiyiyi.base_price.importing.import_service import (
+from app.services.yishiyiyi.base_price.importing.service import (
     ProgressCallback,
     SteelBasePriceImportService,
 )

@@ -32,7 +32,7 @@ from app.repositories.bom.bom.snapshot import BomSnapshotRepository
 from app.repositories.masterdata.location.location_repository import LocationRepository
 from app.schemas.dto.bom_dto import BomNodeWrite, BomSnapshotWrite
 from app.schemas.dto.location_dto import LocationAliasInsert, LocationInsert
-from app.services.bom.annual_part_price.import_service import BomAnnualPartPriceImportService
+from app.services.bom.annual_part_price.importing.service import BomAnnualPartPriceImportService
 from app.services.bom.annual_part_price.template_source import (
     SUPPLY_TYPE_CARRYOVER,
     SUPPLY_TYPE_GLUE,

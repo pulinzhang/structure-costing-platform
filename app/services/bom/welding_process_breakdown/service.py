@@ -2,7 +2,7 @@
 BOM 焊接工艺拆解 — 门面 Service
 
 对外统一入口：查询 / 修改 / 生成 / 审核。
-复杂逻辑下沉到 generate / audit / query / lines / generate_task。
+复杂逻辑下沉到 generate / audit / query / lines。
 """
 
 from __future__ import annotations
@@ -37,17 +37,17 @@ from app.schemas.vo.bom_welding_process_breakdown_vo import (
     BomWeldingProcessBreakdownNodeVO,
 )
 from app.schemas.vo.user_vo import UserVO
-from app.services.bom.welding_process_breakdown.audit_service import (
+from app.services.bom.welding_process_breakdown.audit.service import (
     BomWeldingProcessBreakdownAuditService,
 )
-from app.services.bom.welding_process_breakdown.generate_log_service import (
+from app.services.bom.welding_process_breakdown.generate.log import (
     BomWeldingProcessBreakdownGenerateLogService,
 )
-from app.services.bom.welding_process_breakdown.generate_service import (
+from app.services.bom.welding_process_breakdown.generate.service import (
     BomWeldingProcessBreakdownGenerateService,
     ProgressCallback,
 )
-from app.services.bom.welding_process_breakdown.generate_task import start_generate
+from app.services.bom.welding_process_breakdown.generate.task import start_generate
 from app.services.bom.welding_process_breakdown.lines import (
     update_line,
     update_node_lines,

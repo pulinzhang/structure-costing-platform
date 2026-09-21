@@ -8,7 +8,7 @@
 | 工程变更当月命中、改图抄行、插行、回滚 | `engineering.service.StampingEngineeringService` |
 | 拼焊子片 | `tailor_weld.service.StampingTailorWeldBlankService` |
 | 工艺确认表 / 钢材测算导出 | `export.service.StampingPartExportService` |
-| 工艺确认表 Excel 导入 | `upload.upload_service.StampingUploadService` |
+| 工艺确认表 Excel 导入 | `upload.service.StampingUploadService` |
 
 禁止切片根 `stamping_service.py`。禁止本包 `__init__.py` 再导出。
 

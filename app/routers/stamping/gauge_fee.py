@@ -21,7 +21,7 @@ from app.schemas.vo.stamping_gauge_fee_vo import (
 from app.schemas.vo.user_vo import UserVO
 from app.services.stamping.gauge_fee.export.service import StampingGaugeFeeExportService
 from app.services.stamping.gauge_fee.service import StampingGaugeFeeService
-from app.services.stamping.gauge_fee.upload.upload_service import StampingGaugeFeeUploadService
+from app.services.stamping.gauge_fee.upload.service import StampingGaugeFeeUploadService
 from app.utils.response import ApiResponse
 
 router = APIRouter(prefix="/api/stamping/gauge-fees", tags=["冲压检具费"])

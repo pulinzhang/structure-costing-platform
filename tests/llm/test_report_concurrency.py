@@ -9,7 +9,7 @@ import pytest
 from app.exceptions.base import BusinessException
 from app.schemas.dto.llm_analysis_dto import LlmAnalysisReportCreateDTO
 from app.schemas.vo.user_vo import UserVO
-from app.services.llm.report_service import LlmAnalysisReportService
+from app.services.llm.report import LlmAnalysisReportService
 
 
 def _user(user_id: int) -> UserVO:

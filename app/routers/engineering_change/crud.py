@@ -13,8 +13,8 @@ from app.schemas.common.page_result import PageResult
 from app.schemas.dto.engineering_change_dto import EngineeringChangeOrderQueryDTO
 from app.schemas.vo.engineering_change_vo import EngineeringChangeListRowVO
 from app.schemas.vo.user_vo import UserVO
-from app.services.engineering_change.list.query_service import EngineeringChangeQueryService
-from app.services.engineering_change.list.rollback_service import EngineeringChangeRollbackService
+from app.services.engineering_change.list.query import EngineeringChangeQueryService
+from app.services.engineering_change.list.rollback import EngineeringChangeRollbackService
 from app.utils.response import ApiResponse
 
 router = APIRouter(prefix="/api/engineering-change", tags=["工程变更"])

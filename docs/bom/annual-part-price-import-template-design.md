@@ -5,7 +5,7 @@
 
 | 文件 | 职责 |
 |------|------|
-| `import_service.build_template` | 校验、按基地+项目扫 BOM / 工艺库 / 采购对象、拼文件名 |
+| `importing.service.build_template` | 校验、按基地+项目扫 BOM / 工艺库 / 采购对象、拼文件名 |
 | `template_source` | 哪些叶子进模板（去重、零价、标签） |
 | `template_builder` | 行 → xlsx；不查库；第二页填写说明 |
 | Parser `HEADER_*` | 表头唯一来源；只读第一张工作表 |

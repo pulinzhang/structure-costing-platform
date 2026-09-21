@@ -18,8 +18,8 @@ from app.services.llm.query.intent_router import (
     detect_help_topic,
     detect_query_mode,
 )
+from app.services.llm.query.parser.pipeline import QueryParser
 from app.services.llm.query.parser.subjects import resolve_subject
-from app.services.llm.query.query_parser import QueryParser
 
 
 @pytest.mark.parametrize(

@@ -90,7 +90,7 @@ _run_report_work（runner 提供任务 Session / 进度 / catch）
 
 | 路径 | 职责 |
 |------|------|
-| `report_service.py` | 唯一编排：解析、限流、幂等、入队、落库、权限隔离 |
+| `report.py` | 唯一编排：解析、限流、幂等、入队、落库、权限隔离 |
 | `query/` | 问句 → `AnalysisQuery`（不 import analysis） |
 | `analysis/` | 确定性分析（查库 + 公式）；只读 Query 字段与叶模块，不 import query |
 | `_money.py` / `comparison_basis.py` | 切片叶模块：金额、移月、口径映射 |
@@ -124,7 +124,7 @@ user_question (+ 可选上一份报告的 AnalysisQuery)
 
 | 模块 | 文件 |
 |------|------|
-| 对外入口 | `query/query_parser.py`（re-export `QueryParser`） |
+| 对外入口 | `query/parser/pipeline.py`（`QueryParser`） |
 | 流水线 | `query/parser/pipeline.py` |
 | 口语 → subject | `query/parser/subjects.py`（顺序即优先级） |
 | analyses[] | `query/parser/analyses.py` |
@@ -196,7 +196,7 @@ AnalysisRunner
 
 `ANALYSIS_VERSION` 定义在 `schemas/llm/analysis_snapshot.py`；Analysis 只引用，Schema 不 import Service。
 
-Markdown 清洗在 `generator`（写入前）和 `report_service._report_vo`（读出时），不在 VO。
+Markdown 清洗在 `generator`（写入前）和 `report._report_vo`（读出时），不在 VO。
 
 ---
 
@@ -317,7 +317,7 @@ Body：`user_question`（可选 `audience` / `force_refresh` / `idempotency_key`
 | 回答口吻 / 禁止事项 | `prompts/`（bump `manifest.yaml` version） | 不要在 Generator 里写死长文案 |
 | 帮助「怎么点菜单」 | `usage/` + `static/helper` | 不要去查核价表 |
 | 核算缺口口径 | `engine_readiness/`；须与引擎 `get_ready` 同源 | 不要自己发明红灯 |
-| 限流 / 幂等 | `report_service.py` + `settings` | — |
+| 限流 / 幂等 | `report.py` + `settings` | — |
 | 浮窗交互 | `static/js/llm-assistant/`（改脚本递增 `?v=`） | 不要在聊天区挂 Snapshot JSON |
 
 ---
@@ -327,7 +327,7 @@ Body：`user_question`（可选 `audience` / `force_refresh` / `idempotency_key`
 | 主题 | 路径 |
 |------|------|
 | HTTP | `app/routers/llm.py` |
-| 编排 | `app/services/llm/report_service.py` |
+| 编排 | `app/services/llm/report.py` |
 | Query | `app/services/llm/query/`（规则在 `query/parser/`） |
 | Analysis 分发 | `app/services/llm/analysis/runner.py` |
 | 公式与口径 | `app/services/llm/analysis/shared/` |

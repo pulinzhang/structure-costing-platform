@@ -7,7 +7,7 @@ from unittest.mock import MagicMock
 import pytest
 
 from app.services.llm.menu_catalog import SUBJECT_MENU, build_list_params
-from app.services.llm.query.query_parser import QueryParser
+from app.services.llm.query.parser.pipeline import QueryParser
 from tests.llm.menu_question_matrix import (
     MENU_QUESTION_CASES,
     complete_cases,

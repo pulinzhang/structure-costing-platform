@@ -31,7 +31,7 @@ from app.schemas.vo.user_vo import UserVO
 from app.services.bom.annual_part_price.export.service import (
     BomAnnualPartPriceExportService,
 )
-from app.services.bom.annual_part_price.import_service import (
+from app.services.bom.annual_part_price.importing.service import (
     BomAnnualPartPriceImportService,
 )
 from app.services.bom.annual_part_price.service import BomAnnualPartPriceService

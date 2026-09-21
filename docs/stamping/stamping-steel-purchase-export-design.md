@@ -224,7 +224,7 @@ T =
 
 | 要做的 | 用现成的 | 禁止 |
 |--------|----------|------|
-| HTTP | `app/routers/stamping/crud.py` 已有 `_export_service`（Router 局部变量）；旁边加一条 GET | 新 Router 文件；Router 里组 Excel |
+| HTTP | `app/routers/stamping/parts.py` 已有 `_export_service`（Router 局部变量）；旁边加一条 GET | 新 Router 文件；Router 里组 Excel |
 | 编排 | `StampingPartExportService` 增加方法（如 `export_steel_purchase`），签名与现有 `export` 同参：`location` 必填 + 可选工厂/项目/版本/零件号 + `current_user` | 新建 `*export_service.py` 门面文件、新 Orchestrator、新包目录。入口已在 `part/export/service.py` |
 | 取数 / 排序 | 现有 `StampingPartRepository.list_for_export` | 新 Repo 方法、新 `order_by` |
 | 短码 | 现有 `short_part_number_digits`（工艺导出已 import） | 自写截码、焊接 `short_weld_part_number` |

@@ -10,7 +10,7 @@ from app.common.audit import display_name
 from app.common.timezone import now
 from app.schemas.vo.bom_welding_fee_vo import BomWeldingFeeCalcResultVO
 from app.schemas.vo.user_vo import UserVO
-from app.services.bom.welding_fee.calc.calc_log_service import (
+from app.services.bom.welding_fee.calc.calc_log import (
     STATUS_FAILED,
     STATUS_PARTIAL,
     STATUS_SUCCESS,

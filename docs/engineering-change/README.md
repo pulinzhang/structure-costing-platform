@@ -107,7 +107,7 @@ flowchart TB
   RB --> MF[mark_log_failed]
 ```
 
-回滚：删除列表任意一条 = `list/rollback_service.py` 按 `effect_links` **逆序**恢复业务对象，再 **物理删除** 本本上传头 / 变更单 / 效果链接。未知 `effect_kind` 拒收。存档 Excel 保留。逆序时先删本次新插的年度价/包装/模具费/检具费，再滚布点（避免布点 RESTRICT）。只删链接 `after_id`，禁止按零件号扫库。
+回滚：删除列表任意一条 = `list/rollback.py` 按 `effect_links` **逆序**恢复业务对象，再 **物理删除** 本本上传头 / 变更单 / 效果链接。未知 `effect_kind` 拒收。存档 Excel 保留。逆序时先删本次新插的年度价/包装/模具费/检具费，再滚布点（避免布点 RESTRICT）。只删链接 `after_id`，禁止按零件号扫库。
 
 ---
 
@@ -172,14 +172,14 @@ Router → EngineeringChangeUploadService.start_upload
 
 | 路径 | 职责 |
 |------|------|
-| `upload/upload_service.py` | 门面：下模板、点上传 |
+| `upload/service.py` | 门面：下模板、点上传 |
 | `upload/start_upload.py` | 入队壳 + 业务失败 rollback |
 | `upload/template_builder.py` | 下载模板（与导入执行无关） |
 | `upload/orchestrator/` | 指挥家：prep / pipeline / persist |
 | `upload/gates/` | 校验帮手：变更单 / 树 / 工艺 / 切清单 |
 | `upload/persist/` | 写入适配（树 / 对象 / 拆解 / 工艺 / 布点 / 检具费 / 模具费 / 包装 / 年度价）；只 flush |
-| `list/query_service.py` | 工程变更单列表 / 详情 |
-| `list/rollback_service.py` | `EFFECT_*` 回滚（含 `gauge_fee` / `die_fee` / `packaging_fee` / `annual_part_price`） |
+| `list/query.py` | 工程变更单列表 / 详情 |
+| `list/rollback.py` | `EFFECT_*` 回滚（含 `gauge_fee` / `die_fee` / `packaging_fee` / `annual_part_price`） |
 | `app/common/engineering_change_gates.py` | 文案常量 + 整包门禁谓词（新旧号整号比较，不 bump） |
 
 上游内核（勿把业务搬回 EC）：

@@ -63,7 +63,7 @@ def _seed_if_empty() -> None:
     from app.services.masterdata.steel_grade_category.service import (
         SteelGradeCategoryService,
     )
-    from app.services.settings.users.user_service import UserService
+    from app.services.settings.users.service import UserService
 
     session_factory = DatabaseConfig.get_session_factory()
     db = session_factory()

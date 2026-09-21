@@ -15,7 +15,7 @@ from app.repositories.costing.assembly_cost.assembly_cost_repository import (
 from app.repositories.costing.stamping_part_cost.stamping_part_cost_repository import (
     StampingPartCostRepository,
 )
-from app.services.costing.assembly_cost.calc.calc_log_service import (
+from app.services.costing.assembly_cost.calc.calc_log import (
     AssemblyCostCalcLogService,
 )
 from app.services.settings.system.service import SettingsService

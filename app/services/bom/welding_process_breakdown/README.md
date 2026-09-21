@@ -6,7 +6,7 @@
 
 ## 架构
 
-门面委托 `query` / `lines` / `generate_task` / `generate_service` / `audit_service`。
+门面委托 `query` / `lines` / `generate/` / `audit/`。
 
 ## 职责
 
@@ -15,7 +15,8 @@
 | `service.py` | 对外入口 |
 | `query.py` | 列表分页、HUD、节点旁证 |
 | `lines.py` | 未审核节点下工艺明细改写 |
-| `generate_task.py` | 异步拆解入队 |
-| `generate_service.py` | 从 BOM 生成；工程变更 `copy_for_new_tree`（抄旧结果，不重拆） |
-| `audit_service.py` | 范围删除 / 审核 / 反审核 |
+| `generate/task.py` | 异步拆解入队 |
+| `generate/service.py` | 从 BOM 生成；工程变更 `copy_for_new_tree`（抄旧结果，不重拆） |
+| `generate/log.py` | 生成批次日志 |
+| `audit/service.py` | 范围删除 / 审核 / 反审核 |
 | `export/` | L0 导出编排 |

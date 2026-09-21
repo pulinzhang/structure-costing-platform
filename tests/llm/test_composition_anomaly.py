@@ -10,7 +10,7 @@ from app.services.llm.analysis.shared.composition import (
     build_composition_anomalies,
     composition_risk_entry,
 )
-from app.services.llm.query.query_parser import QueryParser
+from app.services.llm.query.parser.pipeline import QueryParser
 from tests.llm.test_query_parser import _mock_aligner
 
 

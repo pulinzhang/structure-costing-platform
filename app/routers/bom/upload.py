@@ -15,7 +15,7 @@ from app.services.async_task.service import (
     TASK_TYPE_BOM_UPLOAD,
     AsyncTaskService,
 )
-from app.services.bom.bom.upload.upload_service import BomUploadService
+from app.services.bom.bom.upload.service import BomUploadService
 from app.utils.response import ApiResponse
 
 router = APIRouter(prefix="/api/bom", tags=["BOM API"])

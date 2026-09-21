@@ -16,7 +16,7 @@ from app.services.llm.analysis.shared.drilldown import (
     build_item_price_drilldown,
     build_missing_part_price,
 )
-from app.services.llm.query.query_parser import QueryParser
+from app.services.llm.query.parser.pipeline import QueryParser
 
 
 def _item_row(

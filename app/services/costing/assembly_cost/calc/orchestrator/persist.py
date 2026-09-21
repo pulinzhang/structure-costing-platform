@@ -7,7 +7,7 @@ from sqlalchemy.orm import Session
 from app.common.audit import display_name
 from app.schemas.vo.assembly_cost_vo import AssemblyCostCalcResultVO
 from app.schemas.vo.user_vo import UserVO
-from app.services.costing.assembly_cost.calc.calc_log_service import (
+from app.services.costing.assembly_cost.calc.calc_log import (
     STATUS_FAILED,
     STATUS_PARTIAL,
     STATUS_SUCCESS,

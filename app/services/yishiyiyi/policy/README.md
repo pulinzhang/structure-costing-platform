@@ -37,7 +37,7 @@ from app.services.yishiyiyi.policy.service import SteelPricePolicyService
    `SteelPricePolicyService` 不写业务细节，只转发。对外能力清单在门面，细节在子包。
 
 3. **纯逻辑与编排分离（匹配）**  
-   `LadderMatcher` 不访问数据库，只做区间判断；`match_service` 负责查候选与 fallback。
+   `LadderMatcher` 不访问数据库，只做区间判断；`match/service` 负责查候选与 fallback。
 
 4. **查询组装与 Excel 生成分离（导出）**  
    `export/service.py` 产出扁平行；`excel_exporter` 负责 openpyxl。样式变更不搅进数据查询。
@@ -61,10 +61,10 @@ app/services/yishiyiyi/policy/
 │   └── policy_crud.py                # 主表/明细 CRUD、批量删除、筛选统计
 ├── importing/
 │   ├── __init__.py
-│   └── import_service.py             # 上传校验 + 批量导入
+│   └── service.py                    # 上传校验 + 批量导入
 ├── match/
 │   ├── __init__.py
-│   ├── match_service.py              # 查候选 + fallback 编排（API 匹配）
+│   ├── service.py                    # 查候选 + fallback 编排（API 匹配）
 │   ├── ladder_matcher.py             # 纯区间匹配（无 DB）
 │   └── adjustment_common.py          # 钢厂/大类别名 + 加减价候选筛选（供本切片与 costing）
 └── export/
@@ -135,10 +135,10 @@ parsers.yishiyiyi.policy         （仅 importing 调用）
 | 模块 | 职责 |
 |------|------|
 | `crud/policy_crud.py` | 列表字段 / 写操作审计 |
-| `importing/import_service.py` | 导入替换策略、进度分段 |
+| `importing/service.py` | 导入替换策略、进度分段 |
 | `match/ladder_matcher.py` | 区间运算符、命中维度 |
 | `match/adjustment_common.py` | 钢厂别名 / 加减价候选排序 |
-| `match/match_service.py` | fallback 策略 |
+| `match/service.py` | fallback 策略 |
 | `export/excel_exporter.py` / `export/service.py` | 导出列、Excel 样式 |
 
 约束：门面不堆业务逻辑；Router 不直接调 Parser；子包之间避免成环（共享逻辑抽 helpers，或由门面编排）。

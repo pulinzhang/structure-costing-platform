@@ -37,7 +37,7 @@ from app.repositories.engineering_change.upload_log_repository import (
 )
 from app.schemas.dto.engineering_change_dto import EngineeringChangeOrderQueryDTO
 from app.schemas.vo.user_vo import UserVO
-from app.services.engineering_change.list.query_service import EngineeringChangeQueryService
+from app.services.engineering_change.list.query import EngineeringChangeQueryService
 
 CHANGE_ORDER_FIELD_NAMES = (
     "project_code",
@@ -289,7 +289,7 @@ def test_delete_rolls_back_and_physically_deletes_whole_book(memory_db: Session)
     from unittest.mock import MagicMock
 
     from app.schemas.vo.user_vo import UserVO
-    from app.services.engineering_change.list.rollback_service import (
+    from app.services.engineering_change.list.rollback import (
         EngineeringChangeRollbackService,
     )
 
@@ -318,7 +318,7 @@ def test_rollback_integrity_error_becomes_business_exception(memory_db: Session)
     from app.common.engineering_change_gates import EC_ROLLBACK_REFERENCED
     from app.exceptions.base import BusinessException
     from app.schemas.vo.user_vo import UserVO
-    from app.services.engineering_change.list.rollback_service import (
+    from app.services.engineering_change.list.rollback import (
         EngineeringChangeRollbackService,
     )
 

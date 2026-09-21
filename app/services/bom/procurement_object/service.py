@@ -41,21 +41,21 @@ from app.schemas.vo.bom_procurement_object_vo import (
 )
 from app.schemas.vo.supplier_vo import SupplierChoiceVO
 from app.schemas.vo.user_vo import UserVO
-from app.services.bom.procurement_object.audit_service import BomProcurementObjectAuditService
-from app.services.bom.procurement_object.generate_log_service import (
+from app.services.bom.procurement_object.audit.service import BomProcurementObjectAuditService
+from app.services.bom.procurement_object.generate.log import (
     BomProcurementObjectGenerateLogService,
 )
-from app.services.bom.procurement_object.generate_service import (
+from app.services.bom.procurement_object.generate.service import (
     BomProcurementObjectGenerateService,
 )
-from app.services.bom.procurement_object.insert_service import BomProcurementObjectInsertService
+from app.services.bom.procurement_object.insert.service import BomProcurementObjectInsertService
 from app.services.bom.procurement_object.mapping import (
     as_of_when_excluding_expired,
     row_to_vo,
     rows_to_vos,
     scope_from_query,
 )
-from app.services.bom.procurement_object.supplier_upload_service import (
+from app.services.bom.procurement_object.supplier_upload.service import (
     BomProcurementObjectSupplierUploadService,
 )
 from app.services.masterdata.location.service import LocationService

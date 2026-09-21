@@ -23,7 +23,7 @@ from app.services.async_task.service import (
     AsyncTaskService,
 )
 from app.services.async_task.worker_runner import WorkerTaskOutcome
-from app.services.bom.welding_process_breakdown.generate_service import ProgressCallback
+from app.services.bom.welding_process_breakdown.generate.service import ProgressCallback
 from app.services.masterdata.location.service import LocationService
 
 if TYPE_CHECKING:

@@ -32,7 +32,7 @@ from app.services.llm.client.openai_compatible import LlmClientError  # noqa: E4
 from app.services.llm.context.snapshot_builder import SnapshotBuilder  # noqa: E402
 from app.services.llm.generator import LlmReportGenerator  # noqa: E402
 from app.services.llm.menu_catalog import SUBJECT_MENU  # noqa: E402
-from app.services.llm.query.query_parser import QueryParser  # noqa: E402
+from app.services.llm.query.parser.pipeline import QueryParser  # noqa: E402
 from app.services.llm.usage.runner import UsageHelpRunner  # noqa: E402
 from tests.llm.traversal_question_matrix import (  # noqa: E402
     TraversalCase,

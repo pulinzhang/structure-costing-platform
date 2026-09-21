@@ -2,7 +2,7 @@
 
 只读装配：按已落库核价卡还原当时口径。不重算、不写库。
 
-对外入口：`AssemblyCostRestoreService`（`restore_service.py`）。  
+对外入口：`AssemblyCostRestoreService`（`service.py`）。  
 HTTP：`GET /api/costing/assembly-costs/restore`（按零件号选卡）、`GET /api/costing/assembly-costs/{cost_id}/restore`。  
 产物：`AssemblyCostRestoreVO`。
 
@@ -27,7 +27,7 @@ AssemblyCostRestoreService
 
 | 模块 | 类 | 职责 |
 |------|----|------|
-| `restore_service.py` | `AssemblyCostRestoreService` | 选卡（财务根 / 采购对象）、编排、填 VO |
+| `service.py` | `AssemblyCostRestoreService` | 选卡（财务根 / 采购对象）、编排、填 VO |
 | `tree.py` | `RestoreTree` | BOM 快照父子、缩进、分总成占位行 |
 | `lookups.py` | `RestoreLookups` | 冲压核价、年价、加工/模具/检具 ID 批量查出 |
 | `material.py` | `RestoreMaterial` | 材料行按 `cost_source` 分支（冲压 / 年价 / 缺价） |
