@@ -2,7 +2,7 @@
  * 操作日志 — 对接 /api/settings/logs，筛选项来自权限目录
  */
 
-import { logsTemplate, renderTableRows } from './template.js?v=11';
+import { logsTemplate, renderTableRows } from './template.js?v=12';
 import {
     DEFAULT_PAGE_SIZE,
     bindPagination,

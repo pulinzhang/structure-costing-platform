@@ -12,6 +12,7 @@ _STATE_KEY = "operation_log_user"
 _PERM_KEY = "operation_log_permission_code"
 _SCOPE_KEY = "operation_log_audit_scope"
 _UPLOAD_FILENAMES_KEY = "operation_log_upload_filenames"
+_ERROR_MESSAGE_KEY = "operation_log_error_message"
 
 
 class OperationAuditScope(TypedDict, total=False):
@@ -85,3 +86,16 @@ def get_request_upload_filenames(request: Request) -> list[str] | None:
         return None
     names = [str(item).strip() for item in value if str(item).strip()]
     return names or None
+
+
+def set_request_error_message(request: Request, message: str) -> None:
+    """异常 handler 写入对外原因，供操作日志中间件读取。"""
+    setattr(request.state, _ERROR_MESSAGE_KEY, message)
+
+
+def get_request_error_message(request: Request) -> str | None:
+    value = getattr(request.state, _ERROR_MESSAGE_KEY, None)
+    if not isinstance(value, str):
+        return None
+    text = value.strip()
+    return text or None

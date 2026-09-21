@@ -26,6 +26,7 @@ class OperationLogCreate:
     ip_province: str | None = None
     ip_city: str | None = None
     detail: str | None = None
+    error_message: str | None = None
 
 
 class OperationLogQuery(BaseModel):

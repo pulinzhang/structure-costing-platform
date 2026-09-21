@@ -188,6 +188,13 @@ export function renderTableRows(records, catalogByCode) {
             ? `<div class="text-[11px] text-[#616161]">${esc(locationParts.join(' / '))}</div>`
             : '';
 
+        const errorText = !record.success && record.error_message
+            ? String(record.error_message)
+            : '';
+        const errorLine = errorText
+            ? `<div class="max-w-[160px] mx-auto truncate text-[10px] text-[#9e9e9e] mt-1" title="${esc(errorText)}">${esc(errorText)}</div>`
+            : '';
+
         return `
         <tr class="hover:bg-[#ffffff]/[0.02] transition-colors border-b border-[#222222]">
             <td class="px-4 py-2.5 text-[11px] text-[#616161] font-mono whitespace-nowrap align-top">${esc(formatDateTime(record.created_at))}</td>
@@ -201,7 +208,10 @@ export function renderTableRows(records, catalogByCode) {
             <td class="px-4 py-2.5 w-[132px] max-w-[132px] align-top">
                 <div class="text-[11px] text-[#9e9e9e] truncate" title="${esc(objectText)}">${esc(objectText || '-')}</div>
             </td>
-            <td class="px-4 py-2.5 text-center whitespace-nowrap align-top">${successBadge}</td>
+            <td class="px-4 py-2.5 text-center align-top">
+                <div class="inline-flex whitespace-nowrap">${successBadge}</div>
+                ${errorLine}
+            </td>
             <td class="px-4 py-2.5 whitespace-nowrap align-top">
                 <div class="text-[11px] text-[#9e9e9e] font-mono">${esc(record.client_ip || '-')}</div>
                 ${locationHint}

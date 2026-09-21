@@ -26,6 +26,7 @@ class OperationLogVO(BaseModel):
     ip_province: str | None = None
     ip_city: str | None = None
     detail: str | None = None
+    error_message: str | None = None
     permission_code: str | None = None
     created_at: datetime | None = None
 
