@@ -13,12 +13,12 @@ import {
     cancelPcrHudCountUp,
     updatePcrViewButtons,
     updateRingIndicators,
-} from './template.js?v=40';
+} from './template.js?v=44';
 import {
     DEFAULT_PAGE_SIZE,
     bindPagination,
     paintPagination,
-} from '../../../page-size.js?v=3';
+} from '../../../ui/page-size.js?v=5';
 
 const API_BASE = '/api/costing/procurement-contract-report';
 const CASCADE_API = '/api/bom/filters/cascade';
@@ -488,7 +488,7 @@ function setQaBanner(filters) {
 }
 
 function missingListMessage() {
-    return '请先生成采购对象清单。<a href="#/bom-procurement-object" class="text-[#FF1E27] hover:underline">去生成</a>';
+    return '请先生成采购对象清单。<a href="#/bom-procurement-object" class="text-brand-hud hover:underline">去生成</a>';
 }
 
 async function loadList(page = 1) {
@@ -532,7 +532,7 @@ async function loadList(page = 1) {
         const emptyHint = filters.empty_hint
             ? (isAssemblyView()
                 ? esc(filters.empty_hint)
-                : `${esc(filters.empty_hint)} <a href="#/bom-procurement-object-list" class="text-[#FF1E27] hover:underline">去采购对象清单</a>`)
+                : `${esc(filters.empty_hint)} <a href="#/bom-procurement-object-list" class="text-brand-hud hover:underline">去采购对象清单</a>`)
             : '当前范围没有可展示的价目行';
         setListEmpty(listState.items.length === 0, emptyHint);
         const pageInfo = document.getElementById('pcrPageInfo');
@@ -551,7 +551,7 @@ async function loadList(page = 1) {
         if (!isAssemblyView() && message.includes('采购对象清单')) {
             emptyText = missingListMessage();
         } else if (isAssemblyView() && message.includes('材料清单')) {
-            emptyText = '未找到对应材料清单。<a href="#/bom-upload" class="text-[#FF1E27] hover:underline">去上传材料清单</a>';
+            emptyText = '未找到对应材料清单。<a href="#/bom-upload" class="text-brand-hud hover:underline">去上传材料清单</a>';
         } else {
             emptyText = esc(message || '查询失败');
         }
@@ -588,7 +588,7 @@ async function exportExcel() {
     if (btn) {
         btn.disabled = true;
         btn.innerHTML =
-            `<div class="w-3 h-3 border border-[#FF1E27] border-t-transparent rounded-full animate-spin"></div>导出中..`;
+            `<div class="w-3 h-3 border border-brand-hud border-t-transparent rounded-full animate-spin"></div>导出中..`;
     }
     try {
         const { blob, filename } = await HttpClient.download(`${API_BASE}/export`, {

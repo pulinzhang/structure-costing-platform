@@ -6,13 +6,13 @@ import {
     fileTraceTemplate,
     renderDrawerDetail,
     renderTableRows,
-} from './template.js?v=10';
+} from './template.js?v=17';
 import {
     DEFAULT_PAGE_SIZE,
     bindPagination,
     paintPagination,
-} from '../../page-size.js?v=3';
-import { setSearchBusy } from '../../search-busy.js?v=1';
+} from '../../ui/page-size.js?v=5';
+import { setSearchBusy } from '../../ui/search-busy.js?v=3';
 
 const ftState = {
     items: [],
@@ -77,7 +77,7 @@ function applyFilterOptions(data) {
     const noCategory = !(data.allowed_categories || []).length;
     document.getElementById('ftNoCategoryHint')?.classList.toggle('hidden', !noCategory);
     document.getElementById('ftTableWrap')?.classList.toggle('hidden', noCategory);
-    document.getElementById('ftPagination')?.classList.toggle('hidden', noCategory);
+    document.getElementById('ftPager')?.classList.toggle('hidden', noCategory);
 }
 
 async function loadFilters() {
@@ -121,7 +121,7 @@ function renderList() {
     const info = document.getElementById('ftPageInfo');
     if (info) info.textContent = `共 ${ftState.total} 条`;
     const totalPages = Math.max(1, Math.ceil((ftState.total || 0) / ftState.pageSize));
-    paintPagination('ftPageButtons', ftState.page, totalPages);
+    paintPagination('ftPagination', ftState.page, totalPages);
 }
 
 function openDrawer(item) {
@@ -175,7 +175,7 @@ function resetFilters() {
 function bindEvents() {
     bindPagination({
         selectId: 'ftPageSize',
-        buttonsId: 'ftPageButtons',
+        buttonsId: 'ftPagination',
         getSize: () => ftState.pageSize,
         setSize: (size) => {
             ftState.pageSize = size;

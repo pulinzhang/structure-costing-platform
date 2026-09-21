@@ -5,9 +5,10 @@
  * 自上而下层级树：父子关系 + 用量 + 制造类别。
  */
 
-import { can } from '../../../../permissions.js?v=8';
-import { bomVizTemplate } from './template.js?v=5';
-import { fmtPeriodRange, hasClosedPeriod } from '../../../common/period-ui.js?v=3';
+import { can } from '../../../../core/permissions.js?v=10';
+import { HUD_LED } from '../../../../ui/classes.js?v=8';
+import { bomVizTemplate } from './template.js?v=9';
+import { fmtPeriodRange, hasClosedPeriod } from '../../../common/period-ui.js?v=5';
 
 /** 布局常量（保证同层不重叠、标签不挤） */
 const LAYOUT = {
@@ -338,9 +339,9 @@ function renderExcelProvenance(node) {
     const col = node?.excel_part_col;
     if (!filename && !sheet && row == null && col == null) {
         return `
-            <div class="border border-[#262626] bg-[#111111] p-3">
-                <p class="text-[10px] uppercase tracking-[0.14em] text-[#d32f2f] mb-1.5">Excel 溯源</p>
-                <p class="text-[12px] text-[#616161]">无单元格溯源（请重新上传材料清单生成）</p>
+            <div class="border border-app-elevated bg-app-main p-3">
+                <p class="text-[10px] uppercase tracking-[0.14em] text-brand mb-1.5">Excel 溯源</p>
+                <p class="text-[12px] text-ink-dim">无单元格溯源（请重新上传材料清单生成）</p>
             </div>
         `;
     }
@@ -354,14 +355,13 @@ function renderExcelProvenance(node) {
         .filter(Boolean)
         .join(' · ');
     return `
-        <div class="border border-[#d32f2f]/25 bg-[#111111] p-3"
-             style="box-shadow: 0 0 20px rgba(211,47,47,0.06), inset 0 1px 0 rgba(211,47,47,0.05);">
-            <p class="text-[10px] uppercase tracking-[0.14em] text-[#d32f2f] mb-2 flex items-center gap-2">
-                <span class="w-0.5 h-3 bg-[#d32f2f] rounded-sm shadow-[0_0_8px_rgba(211,47,47,0.5)]"></span>
+        <div class="border border-brand/25 bg-app-main p-3">
+            <p class="text-[10px] uppercase tracking-[0.14em] text-brand mb-2 flex items-center gap-2">
+                <span class="${HUD_LED}"></span>
                 Excel 溯源
             </p>
-            <p class="text-[12px] text-[#cfcfcf] font-mono break-all mb-1">${esc(filename || '—')}</p>
-            <p class="text-[11px] text-[#888888]">${esc(locator || '—')}</p>
+            <p class="text-[12px] text-ink font-mono break-all mb-1">${esc(filename || '—')}</p>
+            <p class="text-[11px] text-ink-muted">${esc(locator || '—')}</p>
         </div>
     `;
 }
@@ -636,7 +636,7 @@ const BomVizPage = {
                     return `
                         <span class="inline-flex items-center gap-1.5 whitespace-nowrap">
                             <span class="inline-block w-1.5 h-1.5 rounded-full"
-                                  style="background:${cat.color};box-shadow:0 0 0 1px ${hexToRgba(cat.color, 0.35)}"></span>
+                                  style="background:${cat.color}"></span>
                             ${esc(cat.label)}
                         </span>
                     `;
@@ -662,11 +662,11 @@ const BomVizPage = {
         const root = document.getElementById('bomVizRoot');
         if (!root) return;
         root.innerHTML = `
-            <div class="flex flex-col items-center justify-center py-24 border border-[#2c2c2c] bg-[#121212]">
-                <p class="text-xs text-[#9e9e9e] mb-1">${esc(title)}</p>
-                <p class="text-[11px] text-[#616161] mb-5">${esc(desc || '')}</p>
+            <div class="flex flex-col items-center justify-center py-24 border border-line bg-app-main">
+                <p class="text-xs text-ink-muted mb-1">${esc(title)}</p>
+                <p class="text-[11px] text-ink-dim mb-5">${esc(desc || '')}</p>
                 <button type="button" id="bomVizFatalBack"
-                        class="text-[11px] text-[#9e9e9e] hover:text-white transition-colors">
+                        class="text-[11px] text-ink-muted hover:text-ink transition-colors">
                     ← 返回总成列表
                 </button>
             </div>
@@ -729,10 +729,10 @@ const BomVizPage = {
                 const qtySize = p.depth === 0 ? 'text-lg' : 'text-base';
                 const badge =
                     hasKids && !p.isExpanded
-                        ? `<span class="absolute -bottom-2 left-1/2 -translate-x-1/2 inline-flex items-center px-1.5 py-0.5 text-[10px] font-mono font-semibold tabular-nums bg-[#1a1a1a] border text-[#cfcfcf]"
+                        ? `<span class="absolute -bottom-2 left-1/2 -translate-x-1/2 inline-flex items-center px-1.5 py-0.5 text-[10px] font-mono font-semibold tabular-nums bg-app-surface border text-ink"
                                  style="border-color:${hexToRgba(color, 0.55)}">+${p.childCount}</span>`
                         : hasKids && p.isExpanded
-                          ? `<span class="absolute -bottom-2 left-1/2 -translate-x-1/2 inline-flex items-center px-1.5 py-0.5 text-[9px] font-mono text-[#616161] bg-[#121212] border border-[#2c2c2c]">−</span>`
+                          ? `<span class="absolute -bottom-2 left-1/2 -translate-x-1/2 inline-flex items-center px-1.5 py-0.5 text-[9px] font-mono text-ink-dim bg-app-main border border-line">−</span>`
                           : '';
 
                 const imgBlock =
@@ -741,7 +741,7 @@ const BomVizPage = {
                                <img src="${esc(src)}" alt="" class="max-h-full max-w-full object-contain" draggable="false" loading="lazy">
                            </div>`
                         : p.depth <= 1 && !src
-                          ? `<div class="flex items-center justify-center mb-1 text-[9px] text-[#3a3a3a]" style="height:${Math.max(p.imgSize, 28)}px">暂无图</div>`
+                          ? `<div class="flex items-center justify-center mb-1 text-[9px] text-ink-faint" style="height:${Math.max(p.imgSize, 28)}px">暂无图</div>`
                           : '';
 
                 return `
@@ -752,13 +752,13 @@ const BomVizPage = {
                        style="left:${left}px;top:${top}px;width:${p.w}px;height:${p.h}px;
                               background:${hexToRgba(color, p.depth === 0 ? 0.22 : 0.12)};
                               border-color:${hexToRgba(color, 0.55)};
-                              box-shadow:inset 0 1px 0 rgba(255,255,255,0.03)">
+">
                     ${imgBlock}
-                    <p class="${shortSize} font-mono font-semibold tabular-nums tracking-[0.06em] text-[#ffffff] leading-tight text-center break-all px-0.5
+                    <p class="${shortSize} font-mono font-semibold tabular-nums tracking-[0.06em] text-ink leading-tight text-center break-all px-0.5
                                drop-shadow-[0_0_12px_rgba(255,255,255,0.06)]">${esc(p.partNoLabel)}</p>
                     <p class="${qtySize} font-mono font-semibold tabular-nums tracking-wide mt-1.5 leading-none"
                        style="color:${lightenHex(color, 0.45)}">${esc(p.qtyLabel)}</p>
-                    <p class="text-[10px] text-[#555555] mt-1.5 leading-tight text-center truncate w-full">${esc(p.displayName)}</p>
+                    <p class="text-[10px] text-ink-faint mt-1.5 leading-tight text-center truncate w-full">${esc(p.displayName)}</p>
                     ${badge}
                   </div>
                 `;
@@ -902,7 +902,7 @@ const BomVizPage = {
         if (imgBox) {
             imgBox.innerHTML = src
                 ? `<img src="${esc(src)}" alt="${esc(fullName)}" class="w-full h-full object-fill" draggable="false">`
-                : `<div class="w-full h-full flex items-center justify-center"><span class="text-[10px] text-[#3a3a3a]">暂无图</span></div>`;
+                : `<div class="w-full h-full flex items-center justify-center"><span class="text-[10px] text-ink-faint">暂无图</span></div>`;
         }
 
         const setText = (id, text) => {
@@ -938,8 +938,8 @@ const BomVizPage = {
                 node.expiry_year,
                 node.expiry_month,
             );
-            periodEl.classList.toggle('text-[#d32f2f]', isChanged);
-            periodEl.classList.toggle('text-[#3a3a3a]', !isChanged);
+            periodEl.classList.toggle('text-brand', isChanged);
+            periodEl.classList.toggle('text-ink-faint', !isChanged);
             periodEl.title = isChanged ? '已变更' : '';
         }
 
@@ -1038,19 +1038,19 @@ const BomVizPage = {
                         <span class="inline-block w-1.5 h-1.5 rounded-full" style="background:${category.color}"></span>
                         ${esc(category.label)}
                     </p>
-                    <h3 class="text-xl font-mono font-semibold tabular-nums tracking-[0.06em] text-[#ffffff] leading-snug mb-2 break-all">${esc(
+                    <h3 class="text-xl font-mono font-semibold tabular-nums tracking-[0.06em] text-ink leading-snug mb-2 break-all">${esc(
                         resolvePartNumberLabel(node, category)
                     )}</h3>
                     <p class="text-xl font-mono font-semibold tabular-nums tracking-wide mb-2"
                        style="color:${lightenHex(category.color, 0.35)}">${esc(qtyLabel)}</p>
-                    <p class="text-[12px] text-[#777777] mb-1">${esc(displayName)}</p>
-                    <p class="text-[13px] text-[#9e9e9e] mb-2">${esc(fullName)}</p>
+                    <p class="text-[12px] text-ink-dim mb-1">${esc(displayName)}</p>
+                    <p class="text-[13px] text-ink-muted mb-2">${esc(fullName)}</p>
                     ${
                         node.part_number
-                            ? `<p class="text-[11px] font-mono text-[#555555]">${esc(node.part_number)}</p>`
+                            ? `<p class="text-[11px] font-mono text-ink-faint">${esc(node.part_number)}</p>`
                             : ''
                     }
-                    <p class="text-[11px] text-[#555555] mt-2">
+                    <p class="text-[11px] text-ink-faint mt-2">
                         ${esc(node.location || '')} · ${esc(node.vehicle_model || '')} · ${esc(node.bom_version || '')}
                     </p>
                 </div>
@@ -1059,50 +1059,50 @@ const BomVizPage = {
                     src
                         ? `
                     <button type="button" id="bomVizKnowledgeSketch"
-                            class="w-full h-56 bg-[#0a0a0a] border overflow-hidden hover:border-[#3a3a3a] transition-colors p-0"
+                            class="w-full h-56 bg-app-deep border overflow-hidden hover:border-line transition-colors p-0"
                             style="border-color:${hexToRgba(category.color, 0.45)}">
                         <img src="${esc(src)}" alt="${esc(fullName)}" class="w-full h-full object-fill" loading="lazy" draggable="false">
                     </button>
-                    <p class="text-[10px] text-[#484848] -mt-3">点击在新窗口打开图纸</p>
+                    <p class="text-[10px] text-ink-faint -mt-3">点击在新窗口打开图纸</p>
                 `
                         : `
-                    <div class="h-56 bg-[#0a0a0a] border border-[#222222] flex items-center justify-center">
-                        <span class="text-[10px] text-[#3a3a3a]">暂无图</span>
+                    <div class="h-56 bg-app-deep border border-line-subtle flex items-center justify-center">
+                        <span class="text-[10px] text-ink-faint">暂无图</span>
                     </div>
                 `
                 }
 
                 <div class="space-y-4">
                     <div>
-                        <p class="text-[10px] uppercase tracking-[0.14em] text-[#616161] mb-1.5">完整名称</p>
-                        <p class="text-[13px] text-[#cfcfcf] leading-relaxed">${esc(fullName)}</p>
+                        <p class="text-[10px] uppercase tracking-[0.14em] text-ink-dim mb-1.5">完整名称</p>
+                        <p class="text-[13px] text-ink leading-relaxed">${esc(fullName)}</p>
                     </div>
                     <div>
-                        <p class="text-[10px] uppercase tracking-[0.14em] text-[#616161] mb-1.5">结构位置</p>
-                        <p class="text-[13px] text-[#cfcfcf]">第 ${esc(String(node.level ?? placement?.depth ?? '—'))} 层</p>
+                        <p class="text-[10px] uppercase tracking-[0.14em] text-ink-dim mb-1.5">结构位置</p>
+                        <p class="text-[13px] text-ink">第 ${esc(String(node.level ?? placement?.depth ?? '—'))} 层</p>
                         ${
                             parent
-                                ? `<p class="text-[12px] text-[#888888] mt-1">所属：${esc(
+                                ? `<p class="text-[12px] text-ink-muted mt-1">所属：${esc(
                                       resolveDisplayName(parent, Math.max(0, (placement?.depth ?? 1) - 1))
                                   )} · ${esc(parent.part_number || '')}</p>`
-                                : '<p class="text-[12px] text-[#888888] mt-1">本页供货总成</p>'
+                                : '<p class="text-[12px] text-ink-muted mt-1">本页供货总成</p>'
                         }
                         ${
                             childCount(node) > 0
-                                ? `<p class="text-[12px] text-[#888888] mt-0.5">子件：${childCount(node)} 件</p>`
+                                ? `<p class="text-[12px] text-ink-muted mt-0.5">子件：${childCount(node)} 件</p>`
                                 : ''
                         }
                     </div>
                     <div>
-                        <p class="text-[10px] uppercase tracking-[0.14em] text-[#616161] mb-1.5">制造类别</p>
+                        <p class="text-[10px] uppercase tracking-[0.14em] text-ink-dim mb-1.5">制造类别</p>
                         <p class="text-[13px] leading-relaxed" style="color:${lightenHex(category.color, 0.35)}">${esc(roleText)}</p>
                     </div>
                     ${
                         node.material
                             ? `
                         <div>
-                            <p class="text-[10px] uppercase tracking-[0.14em] text-[#616161] mb-1.5">材料</p>
-                            <p class="text-[13px] font-mono text-[#cfcfcf]">${esc(node.material)}${
+                            <p class="text-[10px] uppercase tracking-[0.14em] text-ink-dim mb-1.5">材料</p>
+                            <p class="text-[13px] font-mono text-ink">${esc(node.material)}${
                                   node.thickness_mm != null
                                       ? ` · ${esc(String(node.thickness_mm))} mm`
                                       : ''
@@ -1115,8 +1115,8 @@ const BomVizPage = {
                         node.weld_info
                             ? `
                         <div>
-                            <p class="text-[10px] uppercase tracking-[0.14em] text-[#616161] mb-1.5">连接 / 焊接</p>
-                            <p class="text-[13px] text-[#9e9e9e] leading-relaxed">${esc(node.weld_info)}</p>
+                            <p class="text-[10px] uppercase tracking-[0.14em] text-ink-dim mb-1.5">连接 / 焊接</p>
+                            <p class="text-[13px] text-ink-muted leading-relaxed">${esc(node.weld_info)}</p>
                         </div>
                     `
                             : ''

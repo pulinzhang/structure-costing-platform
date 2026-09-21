@@ -6,13 +6,13 @@ import {
     steelGradeCategoryTemplate,
     renderTableRows,
     syncTabStyles,
-} from './template.js?v=18';
+} from './template.js?v=25';
 import {
     DEFAULT_PAGE_SIZE,
     bindPagination,
     paintPagination,
-} from '../../../page-size.js?v=3';
-import { bindMoreMenu } from '../../../more-menu.js?v=1';
+} from '../../../ui/page-size.js?v=5';
+import { bindMoreMenu } from '../../../ui/more-menu.js?v=3';
 
 const API_BASE = '/api/masterdata/steel-grade-category';
 const DRAWER_ANIMATION_MS = 300;
@@ -90,8 +90,8 @@ function buildFilterParams() {
 
 function setLoading(isLoading) {
     pageState.isLoading = isLoading;
-    const loading = document.getElementById('sgcLoadingState');
-    const empty = document.getElementById('sgcEmptyState');
+    const loading = document.getElementById('sgcLoading');
+    const empty = document.getElementById('sgcEmpty');
     const body = document.getElementById('sgcTableBody');
     if (loading) loading.classList.toggle('hidden', !isLoading);
     if (isLoading) {
@@ -131,12 +131,12 @@ async function loadData(page = pageState.page) {
 
 function renderList() {
     const body = document.getElementById('sgcTableBody');
-    const empty = document.getElementById('sgcEmptyState');
-    const totalEl = document.getElementById('sgcTotalCount');
+    const empty = document.getElementById('sgcEmpty');
+    const totalEl = document.getElementById('sgcPageInfo');
     if (body) body.innerHTML = renderTableRows(pageState.records);
     empty?.classList.toggle('hidden', pageState.records.length > 0 || pageState.isLoading);
     if (totalEl) totalEl.textContent = `共 ${pageState.total} 条`;
-    paintPagination('sgcPaginationBtns', pageState.page, pageState.totalPages);
+    paintPagination('sgcPagination', pageState.page, pageState.totalPages);
     syncTabStyles(pageState.tab);
 }
 
@@ -407,7 +407,7 @@ function init() {
     bindEvents();
     bindPagination({
         selectId: 'sgcPageSize',
-        buttonsId: 'sgcPaginationBtns',
+        buttonsId: 'sgcPagination',
         getSize: () => pageState.pageSize,
         setSize: (size) => {
             pageState.pageSize = size;

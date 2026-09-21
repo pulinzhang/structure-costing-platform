@@ -3,8 +3,8 @@
  * 下载模板：基地 + 项目 + 年度；导入：基地 + 年度
  */
 
-import { annualPartPriceUploadTemplate } from './template.js?v=16';
-import { bindSyncUploadProgress } from '../../../../sync-upload-progress.js?v=1';
+import { annualPartPriceUploadTemplate } from './template.js?v=20';
+import { bindSyncUploadProgress } from '../../../../ui/sync-upload-progress.js?v=3';
 
 const API_BASE = '/api/bom/annual-part-price';
 const CASCADE_API = '/api/bom/filters/cascade';
@@ -104,14 +104,14 @@ const AnnualPartPriceUploadPage = {
         zone?.addEventListener('dragover', (event) => {
             if (this.canUpload === false || this.isUploading) return;
             event.preventDefault();
-            zone.classList.add('border-[#d32f2f]');
+            zone.classList.add('border-brand');
         });
         zone?.addEventListener('dragleave', () => {
-            zone.classList.remove('border-[#d32f2f]');
+            zone.classList.remove('border-brand');
         });
         zone?.addEventListener('drop', (event) => {
             event.preventDefault();
-            zone.classList.remove('border-[#d32f2f]');
+            zone.classList.remove('border-brand');
             if (this.canUpload === false || this.isUploading) return;
             this.selectFile(event.dataTransfer.files?.[0]);
         });
@@ -213,17 +213,17 @@ const AnnualPartPriceUploadPage = {
         if (preview) {
             preview.classList.remove('hidden');
             preview.innerHTML = `
-                <div class="flex items-center gap-3 p-3 bg-[#121212] border border-[#2c2c2c]">
-                    ${window.svgIcon('file-earmark-excel', 'w-5 h-5 text-[#2e7d32]')}
+                <div class="flex items-center gap-3 p-3 bg-app-main border border-line">
+                    ${window.svgIcon('file-earmark-excel', 'w-5 h-5 text-ok')}
                     <div class="min-w-0 flex-1">
-                        <p class="text-xs text-[#ffffff] truncate">${esc(file.name)}</p>
-                        <p class="text-[10px] text-[#616161]">${this.formatFileSize(file.size)}</p>
+                        <p class="text-xs text-ink truncate">${esc(file.name)}</p>
+                        <p class="text-[10px] text-ink-dim">${this.formatFileSize(file.size)}</p>
                     </div>
                 </div>`;
         }
 
         const title = document.getElementById('annualPartPriceUploadTitle');
-        if (title) title.innerHTML = `<span class="text-[#2e7d32]">${esc(file.name)}</span> 已选择`;
+        if (title) title.innerHTML = `<span class="text-ok">${esc(file.name)}</span> 已选择`;
 
         const submitBtn = document.getElementById('annualPartPriceUploadSubmitBtn');
         if (submitBtn) submitBtn.disabled = false;
@@ -267,7 +267,7 @@ const AnnualPartPriceUploadPage = {
 
     showProgress(msg = '解析并写入数据库，请稍候') {
         uploadProgress.setRunning(msg);
-        document.getElementById('annualPartPriceUploadZone')?.classList.remove('border-[#d32f2f]');
+        document.getElementById('annualPartPriceUploadZone')?.classList.remove('border-brand');
     },
 
     showDoneOnPanel(message, opts = {}) {

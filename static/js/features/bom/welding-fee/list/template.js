@@ -2,78 +2,79 @@
  * BOM 焊接费列表模板 — HUD 密表
  */
 
-import { paginationBarHtml } from '../../../../page-size.js?v=3';
-import { moreMenuItemHtml, moreMenuShellHtml } from '../../../../more-menu.js?v=1';
+import { filterSelect, filterInput, HUD_SHELL, DRAWER_CLOSE, DRAWER_BACKDROP, DRAWER_SHELL, HUD_BAND, BTN_GHOST, TH_ROW, OPS_TH, HUD_KPI_AUX, HUD_LED } from '../../../../ui/classes.js?v=8';
+import { filterBarHtml } from '../../../../ui/filter-bar.js?v=2';
+import { hudTableHtml, hudRowHtml, opsIconButtonHtml } from '../../../../ui/hud-table.js?v=1';
+
+import { moreMenuItemHtml, moreMenuShellHtml } from '../../../../ui/more-menu.js?v=3';
 import {
     partShortCodeCellHtml,
     partNumberNameCellHtml,
     resolveBomNodeShortCode,
-} from '../../../../part-identity.js?v=3';
+} from '../../../../domain/part-identity.js?v=5';
 
 const AUDIT_LABEL = {
-    pending: { text: '待审', cls: 'bg-[#ffb74d]/15 text-[#ffb74d]' },
-    approved: { text: '已审', cls: 'bg-[#4caf50]/15 text-[#4caf50]' },
-    rejected: { text: '已驳回', cls: 'bg-[#ef5350]/15 text-[#ef5350]' },
+    pending: { text: '待审', cls: 'bg-warn/15 text-warn' },
+    approved: { text: '已审', cls: 'bg-ok/15 text-ok' },
+    rejected: { text: '已驳回', cls: 'bg-danger/15 text-danger' },
 };
 
 const CALC_LABEL = {
-    ok: { text: '正常', cls: 'text-[#8E8E93]' },
-    partial: { text: '缺单价', cls: 'text-[#ffb74d]' },
-    failed: { text: '失败', cls: 'text-[#ef5350]' },
+    ok: { text: '正常', cls: 'text-ink-muted' },
+    partial: { text: '缺单价', cls: 'text-warn' },
+    failed: { text: '失败', cls: 'text-danger' },
 };
 
 export function l0WeldingFeeListTemplate() {
     return `
         <div class="space-y-2 w-full max-w-full">
-            <div class="bg-[#0A0A0C] border border-[#1A1A22] overflow-hidden w-full max-w-full"
-                 style="box-shadow: 0 4px 24px rgba(0,0,0,0.7), inset 0 1px 0 rgba(255,255,255,0.02);">
+            <div class="${HUD_SHELL}">
 
-                <div class="px-5 pt-4 pb-3.5 border-b border-[#14141A]"
-                     style="background: linear-gradient(135deg, #0E0E12 0%, #121218 45%, #0C0C10 100%);">
+                <div class="${HUD_BAND}">
                     <div class="flex items-start justify-between gap-4 mb-3">
                         <div class="grid grid-cols-2 lg:grid-cols-4 gap-3 font-mono flex-1 min-w-0">
-                            <div class="bg-[#0D0D11]/80 border border-[#1E1E26] p-3.5">
-                                <div class="text-[#555555] text-[10px] tracking-wider">焊接费合计</div>
-                                <div class="text-[22px] font-black text-[#FFFFFF] mt-1 tracking-tight tabular-nums leading-none">
+                            <div class="${HUD_KPI_AUX}">
+                                <div class="text-ink-faint text-[10px] tracking-wider">焊接费合计</div>
+                                <div class="text-[22px] font-black text-ink mt-1 tracking-tight tabular-nums leading-none">
                                     ¥ <span id="l0wfHudTotalFee">—</span>
                                 </div>
-                                <div class="text-[9px] font-mono text-[#6E6E73] mt-2">系统计算 + 其它费用</div>
+                                <div class="text-[9px] font-mono text-ink-dim mt-2">系统计算 + 其它费用</div>
                             </div>
-                            <div class="bg-[#0D0D11]/80 border border-[#1E1E26] p-3.5">
-                                <div class="text-[#555555] text-[10px] tracking-wider">结果条数</div>
-                                <div class="text-[22px] font-black text-[#FFFFFF] mt-1 tracking-tight tabular-nums leading-none">
+                            <div class="${HUD_KPI_AUX}">
+                                <div class="text-ink-faint text-[10px] tracking-wider">结果条数</div>
+                                <div class="text-[22px] font-black text-ink mt-1 tracking-tight tabular-nums leading-none">
                                     <span id="l0wfHudTotal">—</span>
-                                    <span class="text-[10px] text-[#555555] ml-1 font-bold">条</span>
+                                    <span class="text-[10px] text-ink-faint ml-1 font-bold">条</span>
                                 </div>
-                                <div class="text-[9px] font-mono text-[#6E6E73] mt-2 flex justify-between">
+                                <div class="text-[9px] font-mono text-ink-dim mt-2 flex justify-between">
                                     <span>版本</span>
-                                    <span id="l0wfHudVersion" class="text-[#A1A1A6]">—</span>
+                                    <span id="l0wfHudVersion" class="text-ink-muted">—</span>
                                 </div>
                             </div>
                             <button type="button" id="l0wfHudPartialCard"
                                     class="text-left w-full p-3.5 relative overflow-hidden group transition-all duration-200 cursor-pointer
-                                           bg-[#0D0D11]/80 border border-[#1E1E26] hover:border-[#2A2A35] focus:outline-none"
+                                           bg-app-main/80 border border-line-hud hover:border-line-hud focus:outline-none"
                                     title="点击筛选缺单价（partial）">
-                                <div id="l0wfHudPartialGlow" class="hidden absolute top-0 left-0 right-0 h-[2px] bg-gradient-to-r from-transparent via-[#FF1E27] to-transparent"></div>
+                                <div id="l0wfHudPartialGlow" class="hidden absolute top-0 left-0 right-0 h-[2px] bg-gradient-to-r from-transparent via-brand-hud to-transparent hud-kpi-line-glow"></div>
                                 <div class="flex justify-between items-start">
-                                    <span class="text-[#555555] text-[10px] font-bold tracking-widest">缺单价待办</span>
-                                    <span id="l0wfHudPartialDot" class="hidden w-2 h-2 rounded-full bg-[#FF1E27] animate-pulse"></span>
+                                    <span class="text-ink-faint text-[10px] font-bold tracking-widest">缺单价待办</span>
+                                    <span id="l0wfHudPartialDot" class="hidden w-2 h-2 rounded-full bg-brand-hud animate-pulse hud-kpi-dot-glow"></span>
                                 </div>
-                                <div class="text-[26px] font-black text-[#6E6E73] font-mono mt-1 tracking-tight tabular-nums leading-none">
+                                <div class="text-[26px] font-black text-ink-dim font-mono mt-1 tracking-tight tabular-nums leading-none">
                                     <span id="l0wfHudPartial">—</span>
                                     <span class="text-[10px] ml-1 font-bold opacity-70">条</span>
                                 </div>
-                                <div class="text-[9px] font-mono text-[#555555] mt-2">工艺行缺分年单价</div>
+                                <div class="text-[9px] font-mono text-ink-faint mt-2">工艺行缺分年单价</div>
                             </button>
-                            <div class="bg-[#0D0D11]/80 border border-[#1E1E26] p-3.5">
-                                <div class="text-[#555555] text-[10px] tracking-wider">审核进度</div>
-                                <div class="text-[22px] font-black text-[#FFFFFF] mt-1 tracking-tight tabular-nums leading-none">
+                            <div class="${HUD_KPI_AUX}">
+                                <div class="text-ink-faint text-[10px] tracking-wider">审核进度</div>
+                                <div class="text-[22px] font-black text-ink mt-1 tracking-tight tabular-nums leading-none">
                                     <span id="l0wfHudPending">—</span>
-                                    <span class="text-[10px] text-[#555555] ml-1 font-bold">条待审</span>
+                                    <span class="text-[10px] text-ink-faint ml-1 font-bold">条待审</span>
                                 </div>
-                                <div class="text-[9px] font-mono text-[#6E6E73] mt-2 flex justify-between">
+                                <div class="text-[9px] font-mono text-ink-dim mt-2 flex justify-between">
                                     <span>已审核</span>
-                                    <span class="text-[#A1A1A6] tabular-nums"><span id="l0wfHudApproved">—</span> 条</span>
+                                    <span class="text-ink-muted tabular-nums"><span id="l0wfHudApproved">—</span> 条</span>
                                 </div>
                             </div>
                         </div>
@@ -89,7 +90,7 @@ export function l0WeldingFeeListTemplate() {
                                 ].join(''),
                             })}
                             <button id="l0wfExportBtn" type="button" title="按当前筛选导出"
-                                    class="inline-flex items-center gap-1.5 bg-transparent text-[#6E6E73] border border-[#2A2A35] px-3 py-1.5 text-[11px] font-medium rounded-md hover:border-[#FF1E27]/50 hover:text-[#FF1E27] transition-all">
+                                    class="inline-flex items-center gap-1.5 bg-transparent text-ink-dim border border-line-hud px-3 py-1.5 text-[11px] font-medium rounded-md hover:border-brand-hud/50 hover:text-brand-hud transition-all">
                                 ${window.svgIcon('download', 'w-3 h-3')}
                                 Excel
                             </button>
@@ -97,57 +98,40 @@ export function l0WeldingFeeListTemplate() {
                     </div>
                 </div>
 
-                <div class="px-5 py-3 border-b border-[#14141A]"
-                     style="background: linear-gradient(180deg, #0C0C10 0%, #0A0A0E 100%);">
-                    <div class="flex items-center justify-between gap-4 bg-[#0C0C10] border border-[#1E1E26] px-4 py-2.5 rounded-md font-mono text-[11px]">
-                        <div class="flex items-center gap-3 min-w-0 flex-1">
-                            <span class="text-[#555555] shrink-0 tracking-wider">当前筛选：</span>
-                            <div class="flex items-center gap-2 flex-wrap">
-                                <span id="l0wfCapsuleYear" class="bg-[#1A1A22] border border-[#2A2A35] text-[#8E8E93] px-2.5 py-1 rounded-md">全部年度</span>
-                                <span id="l0wfCapsuleLocation" class="bg-[#1A1A22] border border-[#2A2A35] text-[#8E8E93] px-2.5 py-1 rounded-md">全部基地</span>
-                                <span id="l0wfCapsuleModel" class="bg-[#1A1A22] border border-[#2A2A35] text-[#8E8E93] px-2.5 py-1 rounded-md">全部项目</span>
-                                <span id="l0wfCapsuleVersion" class="bg-[#1A1A22] border border-[#2A2A35] text-[#8E8E93] px-2.5 py-1 rounded-md">全部版本</span>
-                                <span id="l0wfCapsuleLevel" class="bg-[#1A1A22] border border-[#2A2A35] text-[#8E8E93] px-2.5 py-1 rounded-md">全部层级</span>
-                                <span id="l0wfCapsulePartial" class="hidden bg-[#FF1E27]/15 border border-[#FF1E27]/40 text-[#FF1E27] px-2.5 py-1 rounded-md font-bold">缺单价筛选中</span>
-                            </div>
-                        </div>
-                        <div class="flex items-center gap-3 shrink-0">
-                            <button type="button" id="l0wfToggleAdvancedFilter"
-                                    class="text-[#6E6E73] hover:text-white transition-colors flex items-center gap-1.5 text-[11px]">
-                                <span id="l0wfAdvancedFilterLabel">展开高级筛选</span>
-                                <span id="l0wfAdvancedFilterCount" class="text-[#555555]">(0)</span>
-                            </button>
-                            <button type="button" id="l0wfSearchBtn"
-                                    class="inline-flex items-center gap-1.5 h-7 px-3 text-[11px] font-semibold rounded-sm text-[#c8c8c8] border border-[#8a2020]"
-                                    style="background: linear-gradient(180deg, #3d1515 0%, #2d0f0f 100%);">
-                                ${window.svgIcon('search', 'w-3 h-3')}
-                                查询
-                            </button>
-                        </div>
-                    </div>
-
-                    <div id="l0wfAdvancedFilterPanel" class="hidden mt-3 pt-3 border-t border-[#1A1A22]">
-                        <div class="flex items-end gap-3 flex-wrap">
-                            ${filterSelect('l0wfYearFilter', '年度')}
-                            ${filterSelect('l0wfLocationFilter', '基地')}
-                            ${filterSelect('l0wfVehicleModelFilter', '项目')}
-                            ${filterSelect('l0wfBomVersionFilter', '版本')}
-                            ${filterSelect('l0wfLevelFilter', '层级')}
-                            ${filterSelect('l0wfAuditStatusFilter', '审核状态')}
-                            ${filterInput('l0wfPartNumberFilter', '零件号', '短号或完整零件号')}
-                            <button id="l0wfResetBtn" type="button"
-                                    class="inline-flex items-center gap-1.5 h-8 px-3 text-[11px] font-medium rounded-md bg-transparent text-[#6E6E73] border border-[#2A2A35] hover:text-[#FF1E27] hover:border-[#FF1E27]/50 transition-all">
+                <div class="px-5 py-3 border-b border-line-subtle bg-gradient-to-b from-app-hud to-app-deep">
+                    ${filterBarHtml({
+                        prefix: 'l0wf',
+                        searchId: 'l0wfSearchBtn',
+                        capsules: [
+                            { capsuleId: 'l0wfCapsuleYear', idleLabel: '全部年度' },
+                            { capsuleId: 'l0wfCapsuleLocation', idleLabel: '全部基地' },
+                            { capsuleId: 'l0wfCapsuleModel', idleLabel: '全部项目' },
+                            { capsuleId: 'l0wfCapsuleVersion', idleLabel: '全部版本' },
+                            { capsuleId: 'l0wfCapsuleLevel', idleLabel: '全部层级' },
+                        ],
+                        extraCapsulesHtml: '<span id="l0wfCapsulePartial" class="hidden bg-brand-hud/15 border border-brand-hud/40 text-brand-hud px-2.5 py-1 rounded-md font-bold">缺单价筛选中</span>',
+                        fieldsHtml: [
+                            filterSelect('l0wfYearFilter', '年度'),
+                            filterSelect('l0wfLocationFilter', '基地'),
+                            filterSelect('l0wfVehicleModelFilter', '项目'),
+                            filterSelect('l0wfBomVersionFilter', '版本'),
+                            filterSelect('l0wfLevelFilter', '层级'),
+                            filterSelect('l0wfAuditStatusFilter', '审核状态'),
+                            filterInput('l0wfPartNumberFilter', '零件号', '短号或完整零件号'),
+                            `<button id="l0wfResetBtn" type="button" class="${BTN_GHOST}">
                                 ${window.svgIcon('refresh', 'w-3 h-3')}
                                 重置
-                            </button>
-                        </div>
-                        <p class="mt-2 text-[10px] text-[#555555]">批量审核 / 反审核 / 删除须选定年度 + 基地 + 项目。版本可选，选了只处理该版本。</p>
-                    </div>
+                            </button>`,
+                        ].join(''),
+                        hintHtml: '批量审核 / 反审核 / 删除须选定年度 + 基地 + 项目。版本可选，选了只处理该版本。',
+                    })}
                 </div>
 
-                <div class="overflow-x-auto brabus-bg-grid">
-                    <table class="w-full table-fixed bg-transparent border-separate border-spacing-0" style="min-width: 1580px;">
-                        <colgroup>
+                ${hudTableHtml({
+                    prefix: 'l0wf',
+                    bodyClass: '',
+                    minWidth: '1580px',
+                    colgroupHtml: `
                             <col style="width: 8px;">
                             <col style="width: 100px;">
                             <col style="width: 110px;">
@@ -163,63 +147,47 @@ export function l0WeldingFeeListTemplate() {
                             <col style="width: 96px;">
                             <col style="width: 64px;">
                             <col style="width: 64px;">
-                            <col style="width: 72px;">
-                        </colgroup>
-                        <thead>
-                            <tr class="border-b border-[#17171C] bg-[#0B0B0D]/95">
+                            <col style="width: 72px;">`,
+                    headHtml: `
                                 <th class="p-0"></th>
-                                <th class="px-2 py-2 text-left text-[9px] font-medium tracking-[0.08em] text-[#555555]">基地 / 年</th>
-                                <th class="px-2 py-2 text-left text-[9px] font-medium tracking-[0.08em] text-[#555555]">项目 / 版本</th>
-                                <th class="px-2 py-2 text-center text-[9px] font-medium tracking-[0.06em] text-[#555555]">层级</th>
-                                <th class="px-2 py-2 text-left text-[9px] font-medium tracking-[0.08em] text-[#A1A1A6]">短代码</th>
-                                <th class="px-2 py-2 text-left text-[9px] font-medium tracking-[0.08em] text-[#555555]">零件</th>
-                                <th class="px-2 py-2 text-left text-[9px] font-medium tracking-[0.08em] text-[#555555]">焊接信息原文</th>
-                                <th class="px-2 py-2 text-right text-[9px] font-medium tracking-[0.06em] text-[#555555]">工艺数</th>
-                                <th class="px-2 py-2 text-right text-[9px] font-medium tracking-[0.06em] text-[#555555]">命中</th>
-                                <th class="px-2 py-2 text-right text-[9px] font-medium tracking-[0.06em] text-[#555555]">缺单价</th>
-                                <th class="px-2 py-2 text-right text-[9px] font-medium tracking-[0.06em] text-[#555555]">系统计算</th>
-                                <th class="px-2 py-2 text-right text-[9px] font-medium tracking-[0.06em] text-[#555555]">其它费用</th>
-                                <th class="px-2 py-2 text-right text-[9px] font-semibold tracking-[0.06em] text-[#FF1E27]/90 bg-[#1A080A]">确认单价</th>
-                                <th class="px-1 py-2 text-center text-[9px] font-medium tracking-[0.06em] text-[#555555]">计算</th>
-                                <th class="px-1 py-2 text-center text-[9px] font-medium tracking-[0.06em] text-[#555555]">审核</th>
-                                <th class="p-0 w-9 sticky right-0 z-[3] bg-[#0B0B0D]" aria-label="操作"></th>
-                            </tr>
-                        </thead>
-                        <tbody id="l0wfTableBody"></tbody>
-                    </table>
-                </div>
-
-                ${paginationBarHtml({ infoId: 'l0wfTotalLabel', selectId: 'l0wfPageSize', buttonsId: 'l0wfPagination' })}
-
-                <div id="l0wfEmpty" class="hidden flex flex-col items-center justify-center py-14">
-                    <div class="w-10 h-10 flex items-center justify-center mb-3 rounded-md bg-[#121218] border border-[#2A2A35]">
-                        ${window.svgIcon('clipboard-list', 'w-4 h-4 text-[#555555]')}
-                    </div>
-                    <h5 class="text-[11px] font-medium text-[#8E8E93] mb-1">暂无焊接费数据</h5>
-                    <p class="text-[10px] text-[#555555]">请先在计算页按年 / 基地 / 项目生成</p>
-                </div>
+                                <th class="px-2 py-2 text-left text-[9px] font-medium tracking-[0.08em] text-ink-faint">基地 / 年</th>
+                                <th class="px-2 py-2 text-left text-[9px] font-medium tracking-[0.08em] text-ink-faint">项目 / 版本</th>
+                                <th class="px-2 py-2 text-center text-[9px] font-medium tracking-[0.06em] text-ink-faint">层级</th>
+                                <th class="px-2 py-2 text-left text-[9px] font-medium tracking-[0.08em] text-ink-muted">短代码</th>
+                                <th class="px-2 py-2 text-left text-[9px] font-medium tracking-[0.08em] text-ink-faint">零件</th>
+                                <th class="px-2 py-2 text-left text-[9px] font-medium tracking-[0.08em] text-ink-faint">焊接信息原文</th>
+                                <th class="px-2 py-2 text-right text-[9px] font-medium tracking-[0.06em] text-ink-faint">工艺数</th>
+                                <th class="px-2 py-2 text-right text-[9px] font-medium tracking-[0.06em] text-ink-faint">命中</th>
+                                <th class="px-2 py-2 text-right text-[9px] font-medium tracking-[0.06em] text-ink-faint">缺单价</th>
+                                <th class="px-2 py-2 text-right text-[9px] font-medium tracking-[0.06em] text-ink-faint">系统计算</th>
+                                <th class="px-2 py-2 text-right text-[9px] font-medium tracking-[0.06em] text-ink-faint">其它费用</th>
+                                <th class="px-2 py-2 text-right text-[9px] font-semibold tracking-[0.06em] text-brand-hud/90 bg-brand-hud/10">确认单价</th>
+                                <th class="px-1 py-2 text-center text-[9px] font-medium tracking-[0.06em] text-ink-faint">计算</th>
+                                <th class="px-1 py-2 text-center text-[9px] font-medium tracking-[0.06em] text-ink-faint">审核</th>
+                                <th class="${OPS_TH}" aria-label="操作"></th>`,
+                    empty: { title: '暂无焊接费数据', hint: '请先在计算页按年 / 基地 / 项目生成' },
+                })}
             </div>
 
             <!-- 查看详情抽屉 -->
-            <div id="l0wfViewBackdrop" class="fixed inset-0 z-[80] bg-black/70 backdrop-blur-sm transition-opacity duration-300" style="display:none;"></div>
+            <div id="l0wfViewBackdrop" class="${DRAWER_BACKDROP} transition-opacity duration-300" style="display:none;"></div>
             <div id="l0wfViewDrawer"
-                 class="fixed inset-y-0 right-0 z-[85] w-[640px] max-w-[95vw] bg-[#1a1a1a] border-l border-[#2a2a2a] flex flex-col translate-x-full transition-transform duration-300"
-                 style="display:none; max-height: 100vh; box-shadow: -20px 0 60px rgba(0,0,0,0.95);">
-                <div class="px-5 py-3.5 flex items-center justify-between shrink-0"
-                     style="background: linear-gradient(180deg, #1f1f1f 0%, #1a1a1a 100%); border-bottom: 1px solid #333333;">
-                    <h5 class="text-[11px] font-semibold tracking-wider text-[#b0b0b0] flex items-center gap-2.5 uppercase">
-                        <span class="w-0.5 h-3.5 bg-[#d32f2f] rounded-sm shadow-[0_0_8px_rgba(211,47,47,0.5)]"></span>
+                 class="${DRAWER_SHELL} w-[640px] translate-x-full transition-transform duration-300"
+                 style="display:none; max-height: 100vh">
+                <div class="px-5 py-3.5 flex items-center justify-between shrink-0">
+                    <h5 class="text-[11px] font-semibold tracking-wider text-ink-muted flex items-center gap-2.5 uppercase">
+                        <span class="${HUD_LED}"></span>
                         焊接费详情
                     </h5>
                     <button type="button" id="l0wfViewClose"
-                            class="flex items-center justify-center w-8 h-8 rounded-md text-[#707070] hover:text-white hover:bg-[#d32f2f] transition-all">
-                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
+                            class="${DRAWER_CLOSE}">
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M6 18L18 6M6 6l12 12"></path></svg>
                     </button>
                 </div>
                 <div class="flex-1 min-h-0 overflow-y-auto overscroll-contain p-6 space-y-4" id="l0wfViewDrawerContent">
-                    <div class="bg-[#111111] border border-[#262626]">
-                        <div class="px-4 py-3 bg-[#0c0c0c] border-b border-[#181818]">
-                            <h6 class="text-[10px] font-semibold text-[#9e9e9e] tracking-wider uppercase">基本信息</h6>
+                    <div class="bg-app-main border border-app-elevated">
+                        <div class="px-4 py-3 bg-app-deep border-b border-line-subtle">
+                            <h6 class="text-[10px] font-semibold text-ink-muted tracking-wider uppercase">基本信息</h6>
                         </div>
                         <div class="p-4 grid grid-cols-2 gap-x-6 gap-y-3">
                             ${viewRow('年度', 'l0wf-view-year')}
@@ -232,24 +200,24 @@ export function l0WeldingFeeListTemplate() {
                         </div>
                     </div>
 
-                    <div class="bg-[#111111] border border-[#d32f2f]/30 shadow-[0_0_24px_rgba(211,47,47,0.08)]">
-                        <div class="px-4 py-3 bg-[#0c0c0c] border-b border-[#181818] flex items-center gap-2">
-                            <span class="w-0.5 h-3 bg-[#d32f2f] rounded-sm shadow-[0_0_8px_rgba(211,47,47,0.5)]"></span>
-                            <h6 class="text-[10px] font-semibold text-[#d32f2f] tracking-wider uppercase">单价构成</h6>
+                    <div class="bg-app-main border border-brand/30">
+                        <div class="px-4 py-3 bg-app-deep border-b border-line-subtle flex items-center gap-2">
+                            <span class="${HUD_LED}"></span>
+                            <h6 class="text-[10px] font-semibold text-brand tracking-wider uppercase">单价构成</h6>
                         </div>
                         <div class="p-4">
                             <div class="grid grid-cols-3 gap-3 mb-4">
-                                <div class="bg-[#0a0a0a] border border-[#2c2c2c] px-3 py-2.5">
-                                    <div class="text-[9px] text-[#555555] tracking-[0.08em] uppercase mb-1">系统计算</div>
-                                    <div id="l0wf-view-system-fee" class="text-[14px] font-mono font-bold tabular-nums text-[#C8C8D0] text-right">—</div>
+                                <div class="bg-app-deep border border-line px-3 py-2.5">
+                                    <div class="text-[9px] text-ink-faint tracking-[0.08em] uppercase mb-1">系统计算</div>
+                                    <div id="l0wf-view-system-fee" class="text-[14px] font-mono font-bold tabular-nums text-ink-muted text-right">—</div>
                                 </div>
-                                <div class="bg-[#0a0a0a] border border-[#2c2c2c] px-3 py-2.5">
-                                    <div class="text-[9px] text-[#555555] tracking-[0.08em] uppercase mb-1">其它费用</div>
-                                    <div id="l0wf-view-other-fee" class="text-[14px] font-mono font-bold tabular-nums text-[#C8C8D0] text-right">—</div>
+                                <div class="bg-app-deep border border-line px-3 py-2.5">
+                                    <div class="text-[9px] text-ink-faint tracking-[0.08em] uppercase mb-1">其它费用</div>
+                                    <div id="l0wf-view-other-fee" class="text-[14px] font-mono font-bold tabular-nums text-ink-muted text-right">—</div>
                                 </div>
-                                <div class="bg-[#1A080A] border border-[#FF1E27]/30 px-3 py-2.5">
-                                    <div class="text-[9px] text-[#FF1E27]/90 tracking-[0.08em] uppercase mb-1">确认单价</div>
-                                    <div id="l0wf-view-final-fee" class="text-[15px] font-mono font-black tabular-nums text-[#FF1E27] text-right">—</div>
+                                <div class="bg-brand-hud/10 border border-brand-hud/30 px-3 py-2.5">
+                                    <div class="text-[9px] text-brand-hud/90 tracking-[0.08em] uppercase mb-1">确认单价</div>
+                                    <div id="l0wf-view-final-fee" class="text-[15px] font-mono font-black tabular-nums text-brand-hud text-right">—</div>
                                 </div>
                             </div>
                             <div class="grid grid-cols-2 gap-x-6 gap-y-3">
@@ -258,36 +226,36 @@ export function l0WeldingFeeListTemplate() {
                                 ${viewRow('计算状态', 'l0wf-view-calc-status')}
                                 ${viewRow('备注', 'l0wf-view-remark')}
                                 <div class="col-span-2 min-w-0">
-                                    <span class="block text-[9px] font-semibold text-[#555555] uppercase tracking-[0.1em] mb-1">计算说明</span>
-                                    <span id="l0wf-view-calc-message" class="block text-xs text-[#cccccc] whitespace-pre-wrap break-words">—</span>
+                                    <span class="block text-[9px] font-semibold text-ink-faint uppercase tracking-[0.1em] mb-1">计算说明</span>
+                                    <span id="l0wf-view-calc-message" class="block text-xs text-ink whitespace-pre-wrap break-words">—</span>
                                 </div>
                             </div>
                         </div>
                     </div>
 
-                    <div class="bg-[#111111] border border-[#262626]">
-                        <div class="px-4 py-3 bg-[#0c0c0c] border-b border-[#181818] flex items-center gap-2">
-                            <span class="w-0.5 h-3 bg-[#d32f2f] rounded-sm shadow-[0_0_8px_rgba(211,47,47,0.5)]"></span>
-                            <h6 class="text-[10px] font-semibold text-[#d32f2f] tracking-wider uppercase">焊接信息原文</h6>
+                    <div class="bg-app-main border border-app-elevated">
+                        <div class="px-4 py-3 bg-app-deep border-b border-line-subtle flex items-center gap-2">
+                            <span class="${HUD_LED}"></span>
+                            <h6 class="text-[10px] font-semibold text-brand tracking-wider uppercase">焊接信息原文</h6>
                         </div>
                         <div class="px-4 py-3">
-                            <p id="l0wf-view-weld-info" class="text-[11px] text-[#6E6E73] leading-relaxed whitespace-pre-wrap break-words mb-0">—</p>
+                            <p id="l0wf-view-weld-info" class="text-[11px] text-ink-dim leading-relaxed whitespace-pre-wrap break-words mb-0">—</p>
                         </div>
                     </div>
 
-                    <div class="bg-[#111111] border border-[#262626]">
-                        <div class="px-4 py-3 bg-[#0c0c0c] border-b border-[#181818] flex items-center gap-2">
-                            <span class="w-0.5 h-3 bg-[#d32f2f] rounded-sm shadow-[0_0_8px_rgba(211,47,47,0.5)]"></span>
-                            <h6 class="text-[10px] font-semibold text-[#d32f2f] tracking-wider uppercase">工艺明细</h6>
+                    <div class="bg-app-main border border-app-elevated">
+                        <div class="px-4 py-3 bg-app-deep border-b border-line-subtle flex items-center gap-2">
+                            <span class="${HUD_LED}"></span>
+                            <h6 class="text-[10px] font-semibold text-brand tracking-wider uppercase">工艺明细</h6>
                         </div>
                         <div class="overflow-x-auto" id="l0wfViewProcessItems">
-                            <div class="px-4 py-6 text-[11px] text-[#616161]">加载中..</div>
+                            <div class="px-4 py-6 text-[11px] text-ink-dim">加载中..</div>
                         </div>
                     </div>
 
-                    <div class="bg-[#111111] border border-[#262626]">
-                        <div class="px-4 py-3 bg-[#0c0c0c] border-b border-[#181818]">
-                            <h6 class="text-[10px] font-semibold text-[#9e9e9e] tracking-wider uppercase">审核 / 元数据</h6>
+                    <div class="bg-app-main border border-app-elevated">
+                        <div class="px-4 py-3 bg-app-deep border-b border-line-subtle">
+                            <h6 class="text-[10px] font-semibold text-ink-muted tracking-wider uppercase">审核 / 元数据</h6>
                         </div>
                         <div class="p-4 grid grid-cols-2 gap-x-6 gap-y-3">
                             ${viewRow('审核状态', 'l0wf-view-audit-status')}
@@ -304,9 +272,9 @@ export function l0WeldingFeeListTemplate() {
                         </div>
                     </div>
                 </div>
-                <div class="px-6 py-4 border-t border-[#262626] flex items-center justify-end gap-2 shrink-0 flex-wrap">
+                <div class="px-6 py-4 border-t border-app-elevated flex items-center justify-end gap-2 shrink-0 flex-wrap">
                     <button type="button" id="l0wfViewEditBtn"
-                            class="inline-flex items-center gap-1.5 bg-[#d32f2f] text-white px-4 py-2 text-[11px] font-semibold rounded hover:bg-[#b71c1c] transition-all">
+                            class="inline-flex items-center gap-1.5 bg-brand text-white px-4 py-2 text-[11px] font-semibold rounded hover:bg-brand-hover transition-all">
                         ${window.svgIcon('pencil', 'w-3.5 h-3.5')}
                         编辑
                     </button>
@@ -314,57 +282,57 @@ export function l0WeldingFeeListTemplate() {
             </div>
 
             <!-- 编辑抽屉：其它费用 / 确认单价 -->
-            <div id="l0wfEditBackdrop" class="fixed inset-0 z-[80] bg-black/70 backdrop-blur-sm" style="display:none;"></div>
+            <div id="l0wfEditBackdrop" class="${DRAWER_BACKDROP}" style="display:none;"></div>
             <div id="l0wfEditDrawer"
-                 class="fixed inset-y-0 right-0 z-[85] w-[560px] max-w-[95vw] bg-[#1a1a1a] border-l border-[#2a2a2a] flex flex-col translate-x-full transition-transform duration-300"
-                 style="display:none; max-height: 100vh; box-shadow: -20px 0 60px rgba(0,0,0,0.95);">
-                <div class="px-5 py-3.5 flex items-center justify-between shrink-0 bg-[#1f1f1f] border-b border-[#333]">
-                    <h5 class="text-[11px] font-semibold tracking-wider text-[#b0b0b0] flex items-center gap-2.5 uppercase">
-                        <span class="w-0.5 h-3.5 bg-[#d32f2f] rounded-sm shadow-[0_0_8px_rgba(211,47,47,0.5)]"></span>
+                 class="${DRAWER_SHELL} w-[560px] translate-x-full transition-transform duration-300"
+                 style="display:none; max-height: 100vh">
+                <div class="px-5 py-3.5 flex items-center justify-between shrink-0 bg-app-surface border-b border-line">
+                    <h5 class="text-[11px] font-semibold tracking-wider text-ink-muted flex items-center gap-2.5 uppercase">
+                        <span class="${HUD_LED}"></span>
                         编辑焊接费
                     </h5>
                     <button type="button" id="l0wfEditClose"
-                            class="flex items-center justify-center w-8 h-8 rounded-md text-[#707070] hover:text-white hover:bg-[#d32f2f] transition-all">
-                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
+                            class="${DRAWER_CLOSE}">
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M6 18L18 6M6 6l12 12"></path></svg>
                     </button>
                 </div>
                 <div class="flex-1 min-h-0 overflow-y-auto overscroll-contain p-6">
                     <form id="l0wfEditForm" class="space-y-5">
                         <input type="hidden" id="l0wfEditRecordId" value="">
-                        <div class="bg-[#111111] border border-[#d32f2f]/30 p-4 shadow-[0_0_24px_rgba(211,47,47,0.08)]">
-                            <label class="text-[10px] font-semibold text-[#d32f2f] uppercase tracking-[0.1em] mb-3 flex items-center gap-2">
-                                <span class="w-0.5 h-3 bg-[#d32f2f] rounded-sm shadow-[0_0_8px_rgba(211,47,47,0.5)]"></span>
+                        <div class="bg-app-main border border-brand/30 p-4">
+                            <label class="text-[10px] font-semibold text-brand uppercase tracking-[0.1em] mb-3 flex items-center gap-2">
+                                <span class="${HUD_LED}"></span>
                                 单价构成
                             </label>
                             <div class="grid grid-cols-[1fr_auto_1fr_auto_1fr] gap-2 items-end mb-4">
-                                <div class="bg-[#0a0a0a] border border-[#2c2c2c] px-3 py-2.5">
-                                    <div class="text-[9px] text-[#555555] tracking-[0.08em] uppercase mb-1">系统计算</div>
-                                    <div id="l0wf-edit-system-fee" class="text-[15px] font-mono font-bold tabular-nums text-[#C8C8D0] text-right">—</div>
+                                <div class="bg-app-deep border border-line px-3 py-2.5">
+                                    <div class="text-[9px] text-ink-faint tracking-[0.08em] uppercase mb-1">系统计算</div>
+                                    <div id="l0wf-edit-system-fee" class="text-[15px] font-mono font-bold tabular-nums text-ink-muted text-right">—</div>
                                 </div>
-                                <div class="pb-3 text-[#555555] font-mono text-lg font-bold">+</div>
+                                <div class="pb-3 text-ink-faint font-mono text-lg font-bold">+</div>
                                 <div>
-                                    <label class="text-[9px] text-[#555555] tracking-[0.08em] uppercase mb-1 block">
-                                        其它费用 <span class="text-[#616161] normal-case">（可正可负）</span>
+                                    <label class="text-[9px] text-ink-faint tracking-[0.08em] uppercase mb-1 block">
+                                        其它费用 <span class="text-ink-dim normal-case">（可正可负）</span>
                                     </label>
                                     <input type="number" id="l0wfEditOtherFee" step="0.0001"
-                                           class="w-full h-10 px-3 text-sm font-mono bg-[#0a0a0a] border border-[#2c2c2c] text-[#ffffff] placeholder:text-[#616161] focus:outline-none focus:border-[#ff5252] rounded tabular-nums text-right"
+                                           class="w-full h-10 px-3 text-sm font-mono bg-app-deep border border-line text-ink placeholder:text-ink-dim focus:outline-none focus:border-brand-active rounded tabular-nums text-right"
                                            placeholder="0.0000">
                                 </div>
-                                <div class="pb-3 text-[#555555] font-mono text-lg font-bold">=</div>
-                                <div class="bg-[#1A080A] border border-[#FF1E27]/30 px-3 py-2.5 shadow-[0_0_16px_rgba(255,30,39,0.12)]">
-                                    <div class="text-[9px] text-[#FF1E27]/90 tracking-[0.08em] uppercase mb-1">确认单价</div>
-                                    <div id="l0wf-edit-final-fee" class="text-[16px] font-mono font-black tabular-nums text-[#FF1E27] text-right">—</div>
+                                <div class="pb-3 text-ink-faint font-mono text-lg font-bold">=</div>
+                                <div class="bg-brand-hud/10 border border-brand-hud/30 px-3 py-2.5">
+                                    <div class="text-[9px] text-brand-hud/90 tracking-[0.08em] uppercase mb-1">确认单价</div>
+                                    <div id="l0wf-edit-final-fee" class="text-[16px] font-mono font-black tabular-nums text-brand-hud text-right">—</div>
                                 </div>
                             </div>
                             <div>
-                                <label class="text-[10px] text-[#777777] mb-1 block">备注</label>
+                                <label class="text-[10px] text-ink-dim mb-1 block">备注</label>
                                 <textarea id="l0wfEditRemark" rows="3" maxlength="1000"
-                                          class="w-full px-3 py-2 text-xs bg-[#0a0a0a] border border-[#2c2c2c] text-[#ffffff] placeholder:text-[#616161] focus:outline-none focus:border-[#ff5252] rounded resize-none"
+                                          class="w-full px-3 py-2 text-xs bg-app-deep border border-line text-ink placeholder:text-ink-dim focus:outline-none focus:border-brand-active rounded resize-none"
                                           placeholder="调整理由 / 原因"></textarea>
                             </div>
                         </div>
                         <div>
-                            <label class="text-[10px] font-semibold text-[#616161] uppercase tracking-[0.1em] mb-2 block">基本信息（只读）</label>
+                            <label class="text-[10px] font-semibold text-ink-dim uppercase tracking-[0.1em] mb-2 block">基本信息（只读）</label>
                             <div class="grid grid-cols-2 gap-x-6 gap-y-3">
                                 ${partNumberViewBlock('l0wf-edit')}
                                 ${viewRow('零件名称', 'l0wf-edit-part-name')}
@@ -376,11 +344,11 @@ export function l0WeldingFeeListTemplate() {
                         </div>
                     </form>
                 </div>
-                <div class="px-6 py-4 border-t border-[#262626] flex items-center justify-end gap-2 shrink-0">
+                <div class="px-6 py-4 border-t border-app-elevated flex items-center justify-end gap-2 shrink-0">
                     <button type="button" id="l0wfEditCancel"
-                            class="inline-flex items-center gap-1.5 bg-transparent text-[#9e9e9e] border border-[#2c2c2c] px-4 py-2 text-[11px] font-medium rounded hover:border-[#9e9e9e] hover:text-white transition-all">取消</button>
+                            class="inline-flex items-center gap-1.5 bg-transparent text-ink-muted border border-line px-4 py-2 text-[11px] font-medium rounded hover:border-ink-muted hover:text-ink transition-all">取消</button>
                     <button type="button" id="l0wfEditSubmit"
-                            class="inline-flex items-center gap-1.5 bg-[#d32f2f] text-white px-4 py-2 text-[11px] font-semibold rounded hover:bg-[#b71c1c] transition-all">
+                            class="inline-flex items-center gap-1.5 bg-brand text-white px-4 py-2 text-[11px] font-semibold rounded hover:bg-brand-hover transition-all">
                         ${window.svgIcon('archive', 'w-3.5 h-3.5')}
                         保存
                     </button>
@@ -388,67 +356,52 @@ export function l0WeldingFeeListTemplate() {
             </div>
 
             <!-- 批量审核抽屉 -->
-            <div id="l0wfBatchAuditBackdrop" class="fixed inset-0 z-[80] bg-black/70 backdrop-blur-sm" style="display:none;"></div>
+            <div id="l0wfBatchAuditBackdrop" class="${DRAWER_BACKDROP}" style="display:none;"></div>
             <div id="l0wfBatchAuditDrawer"
-                 class="fixed inset-y-0 right-0 z-[85] w-[420px] max-w-[95vw] bg-[#1a1a1a] border-l border-[#2a2a2a] flex flex-col translate-x-full transition-transform duration-300"
+                 class="${DRAWER_SHELL} w-[420px] translate-x-full transition-transform duration-300"
                  style="display:none;">
-                <div class="px-5 py-3.5 flex items-center justify-between shrink-0 bg-[#1f1f1f] border-b border-[#333]">
-                    <h5 id="l0wfBatchAuditTitle" class="text-[11px] font-semibold tracking-wider text-[#b0b0b0] uppercase">批量审核</h5>
+                <div class="px-5 py-3.5 flex items-center justify-between shrink-0 bg-app-surface border-b border-line">
+                    <h5 id="l0wfBatchAuditTitle" class="text-[11px] font-semibold tracking-wider text-ink-muted uppercase">批量审核</h5>
                     <button type="button" id="l0wfBatchAuditClose"
-                            class="flex items-center justify-center w-8 h-8 rounded-md text-[#707070] hover:text-white hover:bg-[#d32f2f] transition-all">
-                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
+                            class="${DRAWER_CLOSE}">
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M6 18L18 6M6 6l12 12"></path></svg>
                     </button>
                 </div>
                 <div class="flex-1 overflow-y-auto p-5 space-y-4">
-                    <p id="l0wfBatchAuditScope" class="text-[11px] text-[#9e9e9e]"></p>
+                    <p id="l0wfBatchAuditScope" class="text-[11px] text-ink-muted"></p>
                     <label class="block space-y-1.5">
-                        <span id="l0wfBatchAuditRemarkLabel" class="text-[10px] text-[#6E6E73]">审核意见</span>
+                        <span id="l0wfBatchAuditRemarkLabel" class="text-[10px] text-ink-dim">审核意见</span>
                         <textarea id="l0wfBatchAuditRemark" rows="4"
-                                  class="w-full px-3 py-2 text-xs bg-[#0a0a0a] border border-[#2c2c2c] text-[#ffffff] placeholder:text-[#616161] focus:outline-none focus:border-[#ff5252] rounded-sm"
+                                  class="w-full px-3 py-2 text-xs bg-app-deep border border-line text-ink placeholder:text-ink-dim focus:outline-none focus:border-brand-active rounded-sm"
                                   placeholder="请填写审核意见（必填）"></textarea>
                     </label>
                 </div>
-                <div class="px-5 py-3 border-t border-[#222] flex justify-end gap-2 shrink-0">
+                <div class="px-5 py-3 border-t border-line-subtle flex justify-end gap-2 shrink-0">
                     <button type="button" id="l0wfBatchAuditCancel"
-                            class="h-8 px-4 text-[11px] text-[#9e9e9e] border border-[#2c2c2c] rounded hover:text-white hover:border-[#9e9e9e]">取消</button>
+                            class="h-8 px-4 text-[11px] text-ink-muted border border-line rounded hover:text-ink hover:border-ink-muted">取消</button>
                     <button type="button" id="l0wfBatchAuditSubmit"
-                            class="h-8 px-4 text-[11px] bg-[#d32f2f] text-white rounded hover:bg-[#b71c1c]">确认</button>
+                            class="h-8 px-4 text-[11px] bg-brand text-white rounded hover:bg-brand-hover">确认</button>
                 </div>
             </div>
         </div>
     `;
 }
 
-function filterSelect(id, label) {
-    return `<label class="space-y-1">
-        <span class="block text-[9px] font-semibold text-[#484848] uppercase tracking-[0.12em]">${label}</span>
-        <select id="${id}" class="w-32 h-8 pl-2.5 pr-7 text-[11px] bg-[#0d0d0d] border border-[#272727] text-[#909090] appearance-none cursor-pointer focus:outline-none focus:border-[#ff5252] rounded-sm">
-            <option value="">全部</option>
-        </select>
-    </label>`;
-}
 
-function filterInput(id, label, placeholder) {
-    return `<label class="space-y-1">
-        <span class="block text-[9px] font-semibold text-[#484848] uppercase tracking-[0.12em]">${label}</span>
-        <input id="${id}" type="text" placeholder="${placeholder}"
-               class="w-40 h-8 px-2.5 text-[11px] bg-[#0d0d0d] border border-[#272727] text-[#ffffff] placeholder:text-[#555] focus:outline-none focus:border-[#ff5252] rounded-sm">
-    </label>`;
-}
 
 function viewRow(label, id, isHighlight = false) {
     return `<div class="min-w-0">
-        <span class="block text-[9px] font-semibold text-[#555555] uppercase tracking-[0.1em] mb-1">${label}</span>
-        <span id="${id}" class="block text-xs ${isHighlight ? 'text-[#d32f2f] font-mono' : 'text-[#cccccc]'} truncate">—</span>
+        <span class="block text-[9px] font-semibold text-ink-faint uppercase tracking-[0.1em] mb-1">${label}</span>
+        <span id="${id}" class="block text-xs ${isHighlight ? 'text-brand font-mono' : 'text-ink'} truncate">—</span>
     </div>`;
 }
 
 function partNumberViewBlock(prefix) {
     return `<div class="min-w-0">
-        <span class="block text-[9px] font-semibold text-[#555555] uppercase tracking-[0.1em] mb-1">零件号</span>
+        <span class="block text-[9px] font-semibold text-ink-faint uppercase tracking-[0.1em] mb-1">零件号</span>
         <span id="${prefix}-part-short"
-              class="block text-xl font-mono font-bold tabular-nums text-white tracking-[0.14em] drop-shadow-[0_0_16px_rgba(211,47,47,0.18)]">—</span>
-        <span id="${prefix}-part-number" class="block text-[11px] font-mono text-[#616161] tracking-wider mt-0.5 truncate"></span>
+              class="hud-kpi-num-glow block text-xl font-mono font-bold tabular-nums text-white tracking-[0.14em]">—</span>
+        <span id="${prefix}-part-number" class="block text-[11px] font-mono text-ink-dim tracking-wider mt-0.5 truncate"></span>
     </div>`;
 }
 
@@ -472,46 +425,27 @@ export function updateL0WeldingFeeHud(summary = {}, versionLabel = '—') {
     document.getElementById('l0wfHudPartialDot')?.classList.toggle('hidden', partial <= 0);
     const partialValue = document.getElementById('l0wfHudPartial');
     if (partialValue) {
-        partialValue.parentElement.classList.toggle('text-[#FF1E27]', partial > 0);
-        partialValue.parentElement.classList.toggle('text-[#6E6E73]', partial <= 0);
+        partialValue.parentElement.classList.toggle('text-brand-hud', partial > 0);
+        partialValue.parentElement.classList.toggle('text-ink-dim', partial <= 0);
     }
 }
 
 export function updateL0WeldingFeeFilterCapsules(state) {
-    const idle = 'bg-[#1A1A22] border border-[#2A2A35] text-[#8E8E93] px-2.5 py-1 rounded-md';
-    const active = 'bg-[#FF1E27]/10 border border-[#FF1E27]/40 text-[#FF1E27] px-2.5 py-1 rounded-md';
-    const setCap = (id, emptyLabel, value) => {
-        const el = document.getElementById(id);
-        if (!el) return;
-        el.textContent = value || emptyLabel;
-        el.className = value ? active : idle;
-    };
-    setCap('l0wfCapsuleYear', '全部年度', state.year ? fmtYear(state.year) : '');
-    setCap('l0wfCapsuleLocation', '全部基地', state.location || '');
-    setCap('l0wfCapsuleModel', '全部项目', state.vehicle_model || '');
-    setCap('l0wfCapsuleVersion', '全部版本', state.bom_version || '');
-    let levelLabel = '';
-    if (Array.isArray(state.levels) && state.levels.length) {
-        levelLabel = state.levels.map((n) => `L${n}`).join('+');
-    } else if (state.level === 0 || state.level) {
-        levelLabel = `L${state.level}`;
-    }
-    setCap('l0wfCapsuleLevel', '全部层级', levelLabel);
     document.getElementById('l0wfCapsulePartial')?.classList.toggle('hidden', !state.onlyPartial);
-
-    const count = [state.year, state.location, state.vehicle_model, state.bom_version, state.audit_status, state.part_number]
-        .filter(Boolean).length + (state.onlyPartial ? 1 : 0) + (levelLabel ? 1 : 0);
     const countEl = document.getElementById('l0wfAdvancedFilterCount');
-    if (countEl) countEl.textContent = `(${count})`;
+    if (!countEl || !state.onlyPartial) return;
+    const match = /^\((\d+)\)$/.exec((countEl.textContent || '').trim());
+    const counted = match ? Number(match[1]) : 0;
+    countEl.textContent = `(${counted + 1})`;
 }
 
 export function renderL0WeldingFeeRows(records) {
     if (!records.length) return '';
-    const numCell = 'px-2 py-2 font-mono text-[10px] text-right tabular-nums text-[#8E8E93]';
+    const numCell = 'px-2 py-2 font-mono text-[10px] text-right tabular-nums text-ink-muted';
     const canUpdate = typeof can === 'function' ? can('op:bom-welding-fee-list:update') : true;
     return records.map((row) => {
-        const audit = AUDIT_LABEL[row.audit_status] || { text: row.audit_status || '-', cls: 'text-[#8E8E93]' };
-        const calc = CALC_LABEL[row.calc_status] || { text: row.calc_status || '-', cls: 'text-[#8E8E93]' };
+        const audit = AUDIT_LABEL[row.audit_status] || { text: row.audit_status || '-', cls: 'text-ink-muted' };
+        const calc = CALC_LABEL[row.calc_status] || { text: row.calc_status || '-', cls: 'text-ink-muted' };
         const shortNo = resolveBomNodeShortCode(row.part_number, { level: row.level });
         const systemFee = row.total_welding_fee != null ? fmtNum(row.total_welding_fee, 4) : '-';
         const otherFee = row.other_fee != null && Number(row.other_fee) !== 0
@@ -522,20 +456,32 @@ export function renderL0WeldingFeeRows(records) {
             : systemFee;
         const approved = row.audit_status === 'approved';
         const weld = (row.weld_info_raw || '').trim();
-        return `
-            <tr class="group relative font-mono text-[11px] border-b border-[#141418] hover:bg-[#161620] transition-colors duration-100">
-                <td class="p-0 relative">
-                    <div class="absolute left-0 top-0 bottom-0 w-[2px] bg-[#FF1E27] opacity-0 group-hover:opacity-70 transition-opacity"></div>
+        const detailBtn = opsIconButtonHtml({
+            action: 'detail',
+            title: '明细',
+            icon: window.svgIcon('eye', 'w-3.5 h-3.5'),
+            attrs: `data-id="${esc(row.id)}"`,
+        });
+        const editBtn = canUpdate
+            ? opsIconButtonHtml({
+                action: 'edit',
+                extraClass: approved ? 'opacity-30 pointer-events-none' : '',
+                title: approved ? '已审核，不可编辑' : '编辑',
+                icon: window.svgIcon('pencil', 'w-3.5 h-3.5'),
+                attrs: `data-id="${esc(row.id)}"`,
+            })
+            : '';
+        return hudRowHtml({
+            cellsHtml: `
+                <td class="px-2 py-2 overflow-hidden">
+                    <div class="text-ink font-semibold truncate">${esc(row.location || '-')}</div>
+                    <div class="text-[9px] text-ink-faint">${esc(fmtYear(row.year))}</div>
                 </td>
                 <td class="px-2 py-2 overflow-hidden">
-                    <div class="text-[#F0F0F2] font-semibold truncate">${esc(row.location || '-')}</div>
-                    <div class="text-[9px] text-[#555555]">${esc(fmtYear(row.year))}</div>
+                    <div class="text-ink-muted truncate">${esc(row.vehicle_model || '-')}</div>
+                    <div class="text-[9px] text-ink-faint">${esc(row.bom_version || '-')}</div>
                 </td>
-                <td class="px-2 py-2 overflow-hidden">
-                    <div class="text-[#C8C8D0] truncate">${esc(row.vehicle_model || '-')}</div>
-                    <div class="text-[9px] text-[#555555]">${esc(row.bom_version || '-')}</div>
-                </td>
-                <td class="px-1 py-2 text-center font-mono text-[10px] text-[#8E8E93]">L${esc(row.level ?? 0)}</td>
+                <td class="px-1 py-2 text-center font-mono text-[10px] text-ink-muted">L${esc(row.level ?? 0)}</td>
                 <td class="px-2 py-2 overflow-hidden whitespace-nowrap">
                     ${partShortCodeCellHtml(row.part_number, shortNo)}
                 </td>
@@ -543,57 +489,42 @@ export function renderL0WeldingFeeRows(records) {
                     ${partNumberNameCellHtml(row.part_number, row.part_name)}
                 </td>
                 <td class="px-2 py-2 overflow-hidden">
-                    <div class="text-[10px] text-[#555555] truncate" title="${esc(weld || '')}">${esc(weld || '—')}</div>
+                    <div class="text-[10px] text-ink-faint truncate" title="${esc(weld || '')}">${esc(weld || '—')}</div>
                 </td>
                 <td class="${numCell}">${esc(row.process_line_count ?? 0)}</td>
                 <td class="${numCell}">${esc(row.matched_line_count ?? 0)}</td>
-                <td class="${numCell} ${Number(row.missing_price_count) > 0 ? 'text-[#ffb74d]' : ''}">${esc(row.missing_price_count ?? 0)}</td>
+                <td class="${numCell} ${Number(row.missing_price_count) > 0 ? 'text-warn' : ''}">${esc(row.missing_price_count ?? 0)}</td>
                 <td class="${numCell}">${esc(systemFee)}</td>
                 <td class="${numCell}">${esc(otherFee)}</td>
-                <td class="px-2 py-1.5 text-right font-mono font-black tabular-nums text-[12px] text-[#FF1E27] bg-[#1A080A] border-x border-[#FF1E27]/20">${esc(finalFee)}</td>
+                <td class="px-2 py-1.5 text-right font-mono font-black tabular-nums text-[12px] text-brand-hud bg-brand-hud/10 border-x border-brand-hud/20">${esc(finalFee)}</td>
                 <td class="px-1 py-2 text-center text-[9px] ${calc.cls}">${calc.text}</td>
                 <td class="px-1 py-2 text-center">
                     <span class="inline-flex px-1.5 py-0.5 text-[9px] rounded-sm ${audit.cls}">${audit.text}</span>
-                </td>
-                <td class="px-1 py-2 text-center sticky right-0 z-[2] brabus-bg-grid group-hover:bg-[#161620]">
-                    <div class="inline-flex items-center justify-center gap-0.5 opacity-0 group-hover:opacity-100 focus-within:opacity-100 transition-opacity">
-                        <button type="button" data-action="detail" data-id="${esc(row.id)}"
-                                class="w-7 h-7 inline-flex items-center justify-center rounded text-[#6E6E73] hover:text-[#FF1E27] hover:bg-[#FF1E27]/10 transition-all"
-                                title="明细">
-                            ${window.svgIcon('eye', 'w-3.5 h-3.5')}
-                        </button>
-                        ${canUpdate ? `
-                        <button type="button" data-action="edit" data-id="${esc(row.id)}"
-                                class="w-7 h-7 inline-flex items-center justify-center rounded text-[#6E6E73] hover:text-[#FF1E27] hover:bg-[#FF1E27]/10 transition-all ${approved ? 'opacity-30 pointer-events-none' : ''}"
-                                title="${approved ? '已审核，不可编辑' : '编辑'}">
-                            ${window.svgIcon('pencil', 'w-3.5 h-3.5')}
-                        </button>` : ''}
-                    </div>
-                </td>
-            </tr>
-        `;
+                </td>`,
+            opsHtml: `${detailBtn}${editBtn}`,
+        });
     }).join('');
 }
 
 
 export function renderFeeDetailItems(items) {
     if (!items?.length) {
-        return `<div class="px-4 py-8 text-center text-[11px] text-[#555555]">无工艺明细</div>`;
+        return `<div class="px-4 py-8 text-center text-[11px] text-ink-faint">无工艺明细</div>`;
     }
     const matchMap = {
-        matched: { text: '已匹配', cls: 'text-[#4caf50]' },
-        missing_price: { text: '缺单价', cls: 'text-[#ffb74d]' },
-        unmapped: { text: '未映射', cls: 'text-[#8E8E93]' },
+        matched: { text: '已匹配', cls: 'text-ok' },
+        missing_price: { text: '缺单价', cls: 'text-warn' },
+        unmapped: { text: '未映射', cls: 'text-ink-muted' },
     };
     const rows = items.map((item) => {
-        const m = matchMap[item.match_status] || { text: item.match_status || '-', cls: 'text-[#8E8E93]' };
+        const m = matchMap[item.match_status] || { text: item.match_status || '-', cls: 'text-ink-muted' };
         return `
-            <tr class="border-b border-[#141418] hover:bg-[#161620] transition-colors">
-                <td class="px-3 py-2 text-[10px] text-[#C8C8D0]">${esc(item.standard_process_name || item.process_token || '-')}</td>
-                <td class="px-3 py-2 text-right font-mono text-[10px] tabular-nums text-[#8E8E93]">${esc(fmtNum(item.process_qty, 4))} ${esc(item.process_qty_unit || '')}</td>
-                <td class="px-3 py-2 text-right font-mono text-[10px] tabular-nums text-[#8E8E93]">${item.unit_price != null ? esc(fmtNum(item.unit_price, 4)) : '-'}</td>
-                <td class="px-3 py-2 text-[10px] text-[#555]">${esc(item.unit || '-')}</td>
-                <td class="px-3 py-2 text-right font-mono text-[10px] tabular-nums text-[#FF1E27]">${item.line_fee != null ? esc(fmtNum(item.line_fee, 4)) : '-'}</td>
+            <tr class="border-b border-line-subtle hover:bg-app-rowhover transition-colors">
+                <td class="px-3 py-2 text-[10px] text-ink-muted">${esc(item.standard_process_name || item.process_token || '-')}</td>
+                <td class="px-3 py-2 text-right font-mono text-[10px] tabular-nums text-ink-muted">${esc(fmtNum(item.process_qty, 4))} ${esc(item.process_qty_unit || '')}</td>
+                <td class="px-3 py-2 text-right font-mono text-[10px] tabular-nums text-ink-muted">${item.unit_price != null ? esc(fmtNum(item.unit_price, 4)) : '-'}</td>
+                <td class="px-3 py-2 text-[10px] text-ink-faint">${esc(item.unit || '-')}</td>
+                <td class="px-3 py-2 text-right font-mono text-[10px] tabular-nums text-brand-hud">${item.line_fee != null ? esc(fmtNum(item.line_fee, 4)) : '-'}</td>
                 <td class="px-3 py-2 text-center text-[9px] ${m.cls}">${m.text}</td>
             </tr>
         `;
@@ -601,13 +532,13 @@ export function renderFeeDetailItems(items) {
     return `
         <table class="w-full border-collapse">
             <thead>
-                <tr class="border-b border-[#17171C] bg-[#0B0B0D]/95">
-                    <th class="px-3 py-2 text-left text-[9px] font-medium tracking-[0.08em] text-[#555555]">标准工艺</th>
-                    <th class="px-3 py-2 text-right text-[9px] font-medium tracking-[0.06em] text-[#555555]">过程量</th>
-                    <th class="px-3 py-2 text-right text-[9px] font-medium tracking-[0.06em] text-[#555555]">单价</th>
-                    <th class="px-3 py-2 text-left text-[9px] font-medium tracking-[0.08em] text-[#555555]">单位</th>
-                    <th class="px-3 py-2 text-right text-[9px] font-medium tracking-[0.06em] text-[#555555]">行费</th>
-                    <th class="px-3 py-2 text-center text-[9px] font-medium tracking-[0.06em] text-[#555555]">匹配</th>
+                <tr class="${TH_ROW}">
+                    <th class="px-3 py-2 text-left text-[9px] font-medium tracking-[0.08em] text-ink-faint">标准工艺</th>
+                    <th class="px-3 py-2 text-right text-[9px] font-medium tracking-[0.06em] text-ink-faint">过程量</th>
+                    <th class="px-3 py-2 text-right text-[9px] font-medium tracking-[0.06em] text-ink-faint">单价</th>
+                    <th class="px-3 py-2 text-left text-[9px] font-medium tracking-[0.08em] text-ink-faint">单位</th>
+                    <th class="px-3 py-2 text-right text-[9px] font-medium tracking-[0.06em] text-ink-faint">行费</th>
+                    <th class="px-3 py-2 text-center text-[9px] font-medium tracking-[0.06em] text-ink-faint">匹配</th>
                 </tr>
             </thead>
             <tbody>${rows}</tbody>

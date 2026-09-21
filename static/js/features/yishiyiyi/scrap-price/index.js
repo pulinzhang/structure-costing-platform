@@ -12,8 +12,8 @@ import {
     parsePriceInput,
     comparePriceStrings,
     subtractPriceStrings,
-} from './template.js?v=21';
-import { bindMoreMenu } from '../../../more-menu.js?v=1';
+} from './template.js?v=26';
+import { bindMoreMenu } from '../../../ui/more-menu.js?v=3';
 
 const API_BASE = '/api/yishiyiyi/scrap-price';
 const DRAWER_ANIMATION_MS = 300;
@@ -163,8 +163,8 @@ function syncYearPicker() {
 
     const itemClass =
         'w-full px-3 py-1.5 text-left text-[12px] font-mono tabular-nums transition-colors ';
-    const idleClass = 'text-[#9e9e9e] hover:bg-[#1e1e1e] hover:text-[#ffffff]';
-    const activeClass = 'bg-[#1e1e1e] text-[#ffffff]';
+    const idleClass = 'text-ink-muted hover:bg-app-surface hover:text-ink';
+    const activeClass = 'bg-app-surface text-ink';
 
     menu.innerHTML = Array.from(yearSelect.options)
         .map((opt) => {
@@ -197,20 +197,20 @@ function syncCategoryButtons() {
     const steelBtn = document.getElementById('scrapCategorySteelBtn');
     const aluBtn = document.getElementById('scrapCategoryAluminumBtn');
     if (steelBtn) {
-        steelBtn.classList.toggle('bg-[#d32f2f]', steelOn);
-        steelBtn.classList.toggle('border-[#d32f2f]', steelOn);
+        steelBtn.classList.toggle('bg-brand', steelOn);
+        steelBtn.classList.toggle('border-brand', steelOn);
         steelBtn.classList.toggle('text-white', steelOn);
         steelBtn.classList.toggle('bg-transparent', !steelOn);
-        steelBtn.classList.toggle('border-[#2c2c2c]', !steelOn);
-        steelBtn.classList.toggle('text-[#616161]', !steelOn);
+        steelBtn.classList.toggle('border-line', !steelOn);
+        steelBtn.classList.toggle('text-ink-dim', !steelOn);
     }
     if (aluBtn) {
-        aluBtn.classList.toggle('bg-[#d32f2f]', !steelOn);
-        aluBtn.classList.toggle('border-[#d32f2f]', !steelOn);
+        aluBtn.classList.toggle('bg-brand', !steelOn);
+        aluBtn.classList.toggle('border-brand', !steelOn);
         aluBtn.classList.toggle('text-white', !steelOn);
         aluBtn.classList.toggle('bg-transparent', steelOn);
-        aluBtn.classList.toggle('border-[#2c2c2c]', steelOn);
-        aluBtn.classList.toggle('text-[#616161]', steelOn);
+        aluBtn.classList.toggle('border-line', steelOn);
+        aluBtn.classList.toggle('text-ink-dim', steelOn);
     }
 }
 

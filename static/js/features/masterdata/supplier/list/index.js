@@ -7,13 +7,13 @@ import {
     paintPagination,
     DEFAULT_PAGE_SIZE,
     normalizePageSize,
-} from '../../../../page-size.js?v=3';
-import { bindMoreMenu } from '../../../../more-menu.js?v=1';
+} from '../../../../ui/page-size.js?v=5';
+import { bindMoreMenu } from '../../../../ui/more-menu.js?v=3';
 import {
     renderAliasItems,
     renderSupplierRows,
     supplierListTemplate,
-} from './template.js?v=15';
+} from './template.js?v=22';
 
 const API_BASE = '/api/masterdata/suppliers';
 const DRAWER_ANIMATION_MS = 300;
@@ -76,9 +76,9 @@ function applyPermissionUi() {
 
 function setLoading(isLoading) {
     listState.isLoading = isLoading;
-    document.getElementById('supplierLoadingState')?.classList.toggle('hidden', !isLoading);
+    document.getElementById('supplierLoading')?.classList.toggle('hidden', !isLoading);
     if (isLoading) {
-        document.getElementById('supplierEmptyState')?.classList.add('hidden');
+        document.getElementById('supplierEmpty')?.classList.add('hidden');
         const body = document.getElementById('supplierTableBody');
         if (body) body.innerHTML = '';
     }
@@ -89,16 +89,16 @@ function renderStatusCapsules() {
         const value = btn.getAttribute('data-enabled-filter') ?? '';
         const selected = value === listState.isEnabled;
         btn.className = selected
-            ? 'supplier-status-capsule px-2 py-0.5 text-[10px] font-mono rounded-md border border-[#FF1E27]/50 bg-[#1A080A] text-white'
-            : 'supplier-status-capsule px-2 py-0.5 text-[10px] font-mono rounded-md border border-[#2A2A35] text-[#8E8E93] hover:text-white';
+            ? 'supplier-status-capsule px-2 py-0.5 text-[10px] font-mono rounded-md border border-brand-hud/50 bg-brand-hud/10 text-white'
+            : 'supplier-status-capsule px-2 py-0.5 text-[10px] font-mono rounded-md border border-line-hud text-ink-muted hover:text-ink';
     });
 }
 
 function renderList() {
     const body = document.getElementById('supplierTableBody');
-    const empty = document.getElementById('supplierEmptyState');
+    const empty = document.getElementById('supplierEmpty');
     const hint = document.getElementById('supplierEmptyHint');
-    const totalEl = document.getElementById('supplierTotalCount');
+    const totalEl = document.getElementById('supplierPageInfo');
     const hasRows = listState.records.length > 0;
     if (body) body.innerHTML = renderSupplierRows(listState.records);
     empty?.classList.toggle('hidden', hasRows || listState.isLoading);
@@ -109,7 +109,7 @@ function renderList() {
             : '点右上角新增，或从上传页补档';
     }
     if (totalEl) totalEl.textContent = `共 ${listState.total} 条`;
-    paintPagination('supplierPaginationBtns', listState.page, listState.totalPages);
+    paintPagination('supplierPagination', listState.page, listState.totalPages);
     renderStatusCapsules();
 }
 
@@ -425,7 +425,7 @@ function bindFilters() {
     });
     bindPagination({
         selectId: 'supplierPageSize',
-        buttonsId: 'supplierPaginationBtns',
+        buttonsId: 'supplierPagination',
         getSize: () => listState.pageSize,
         setSize: (size) => {
             listState.pageSize = normalizePageSize(size);

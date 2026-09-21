@@ -28,7 +28,7 @@ export function bindSyncUploadProgress(ids) {
         showPanel();
         el(ids.zoneId)?.classList.add('pointer-events-none');
         const icon = el(ids.iconId);
-        if (icon) icon.innerHTML = window.svgIcon('spinner', 'w-4 h-4 text-[#d32f2f]');
+        if (icon) icon.innerHTML = window.svgIcon('spinner', 'w-4 h-4 text-brand');
         const title = el(ids.titleId);
         if (title) title.textContent = runningTitle;
         const bar = el(ids.barId);
@@ -48,7 +48,7 @@ export function bindSyncUploadProgress(ids) {
         if (icon) {
             icon.innerHTML = window.svgIcon(
                 hasSkip ? 'exclamation-triangle' : 'check-circle',
-                hasSkip ? 'w-4 h-4 text-[#ffb74d]' : 'w-4 h-4 text-[#66bb6a]',
+                hasSkip ? 'w-4 h-4 text-warn' : 'w-4 h-4 text-ok',
             );
         }
         const title = el(ids.titleId);
@@ -67,7 +67,7 @@ export function bindSyncUploadProgress(ids) {
         showPanel();
         el(ids.zoneId)?.classList.remove('pointer-events-none');
         const icon = el(ids.iconId);
-        if (icon) icon.innerHTML = window.svgIcon('exclamation-circle', 'w-4 h-4 text-[#d32f2f]');
+        if (icon) icon.innerHTML = window.svgIcon('exclamation-circle', 'w-4 h-4 text-brand');
         const title = el(ids.titleId);
         if (title) title.textContent = '导入失败';
         const bar = el(ids.barId);

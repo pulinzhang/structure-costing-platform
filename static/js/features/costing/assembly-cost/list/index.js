@@ -2,19 +2,21 @@ import {
     assemblyCostListTemplate,
     renderLacRows,
     updateLacHud,
-    updateLacFilterCapsules,
     updateLacTableHead,
-} from './template.js?v=43';
+} from './template.js?v=51';
 import {
     DEFAULT_PAGE_SIZE,
     bindPagination,
     paintPagination,
-} from '../../../../page-size.js?v=3';
-import { bindMoreMenu } from '../../../../more-menu.js?v=1';
-import { setSearchBusy } from '../../../../search-busy.js?v=1';
+} from '../../../../ui/page-size.js?v=5';
+import { bindMoreMenu } from '../../../../ui/more-menu.js?v=3';
+import { bindFilterBar } from '../../../../ui/filter-bar.js?v=2';
+import { setSearchBusy } from '../../../../ui/search-busy.js?v=3';
 
 /** @type {{ setOpen: (isOpen: boolean) => void, close: () => void, unbind: () => void } | null} */
 let moreMenu = null;
+/** @type {{ paint: () => void, setOpen: (isOpen: boolean) => void, unbind: () => void } | null} */
+let filterBar = null;
 
 const API_BASE = '/api/costing/assembly-costs';
 const CASCADE_API = '/api/bom/filters/cascade';
@@ -29,6 +31,7 @@ const FILTER_IDS = [
     'lacBomVersionFilter',
     'lacAuditFilter',
     'lacCalcFilter',
+    'lacPartNumberFilter',
 ];
 
 const listState = {
@@ -42,7 +45,6 @@ const listState = {
     canReverse: true,
     canExport: true,
     view: 'finance',
-    advancedOpen: false,
     pendingFilters: null,
     batchAuditSubmitting: false,
     isLoading: false,
@@ -88,12 +90,10 @@ function init() {
     fillAuditOptions();
     fillCalcOptions();
     listState.pendingFilters = readHashFilters();
-    if (listState.pendingFilters) setAdvancedOpen(true);
-    updateLacFilterCapsules();
     loadYearOptions().then(async () => {
         await loadCascadeFilters();
         applyPendingFiltersToSelects();
-        updateLacFilterCapsules();
+        filterBar?.paint();
         loadList(1);
     });
 }
@@ -101,14 +101,16 @@ function init() {
 function destroy() {
     moreMenu?.unbind();
     moreMenu = null;
+    filterBar?.unbind();
+    filterBar = null;
     closeDetailDrawer();
 }
 
 function syncViewButtons() {
     const financeBtn = document.getElementById('lacViewFinanceBtn');
     const procurementBtn = document.getElementById('lacViewProcurementBtn');
-    const active = 'bg-[#1A080A] border border-[#FF1E27]/50 text-[#FF1E27]';
-    const idle = 'bg-transparent border border-[#2A2A35] text-[#6E6E73] hover:text-white';
+    const active = 'bg-brand-hud/10 border border-brand-hud/50 text-brand-hud';
+    const idle = 'bg-transparent border border-line-hud text-ink-dim hover:text-ink';
     if (financeBtn) {
         financeBtn.className = `px-3 py-1.5 text-[11px] font-medium rounded-md transition-all ${listState.view === 'finance' ? active : idle}`;
     }
@@ -161,10 +163,7 @@ function applyPermissionUi() {
 }
 
 function setAdvancedOpen(isOpen) {
-    listState.advancedOpen = isOpen;
-    document.getElementById('lacAdvancedFilterPanel')?.classList.toggle('hidden', !isOpen);
-    const label = document.getElementById('lacAdvancedFilterLabel');
-    if (label) label.textContent = isOpen ? '收起高级筛选' : '展开高级筛选';
+    filterBar?.setOpen(isOpen);
 }
 
 function readHashFilters() {
@@ -232,68 +231,74 @@ function bindEvents() {
         syncViewButtons();
         loadList(1);
     });
-    document.getElementById('lacSearchBtn')?.addEventListener('click', () => {
-        updateLacFilterCapsules();
-        loadList(1);
-    });
-    document.getElementById('lacToggleAdvancedFilter')?.addEventListener('click', () => {
-        setAdvancedOpen(!listState.advancedOpen);
-    });
-    document.getElementById('lacResetBtn')?.addEventListener('click', () => resetFilters());
-    document.getElementById('lacPartNumberFilter')?.addEventListener('keydown', (event) => {
-        if (event.key === 'Enter') {
-            event.preventDefault();
-            updateLacFilterCapsules();
-            loadList(1);
-        }
-    });
-    document.getElementById('lacPartNumberFilter')?.addEventListener('input', () => {
-        updateLacFilterCapsules();
+    filterBar = bindFilterBar({
+        prefix: 'lac',
+        searchId: 'lacSearchBtn',
+        capsules: [
+            {
+                capsuleId: 'lacCapsulePeriod',
+                fieldIds: ['lacYearFilter', 'lacMonthFilter'],
+                idleLabel: '全部期间',
+                display: () => window.fmtPeriod(
+                    document.getElementById('lacYearFilter')?.value,
+                    document.getElementById('lacMonthFilter')?.value,
+                ),
+            },
+            { capsuleId: 'lacCapsuleLocation', fieldId: 'lacLocationFilter', idleLabel: '全部基地' },
+            {
+                capsuleId: 'lacCapsuleVehicle',
+                fieldIds: ['lacVehicleModelFilter', 'lacBomVersionFilter'],
+                idleLabel: '全部项目',
+                display: () => {
+                    const vehicle = document.getElementById('lacVehicleModelFilter')?.value || '';
+                    const version = document.getElementById('lacBomVersionFilter')?.value || '';
+                    return [vehicle, version].filter(Boolean).join('/');
+                },
+            },
+        ],
+        countFieldIds: FILTER_IDS,
+        resetId: 'lacResetBtn',
+        enterFieldIds: ['lacPartNumberFilter'],
+        onSearch: () => loadList(1),
+        onReset: () => resetFilters(),
     });
 
     document.getElementById('lacYearFilter')?.addEventListener('change', () => {
         setSelectValue('lacBomVersionFilter', '');
-        updateLacFilterCapsules();
         loadCascadeFilters().then(() => {
-            updateLacFilterCapsules();
+            filterBar?.paint();
             loadList(1);
         });
     });
     document.getElementById('lacMonthFilter')?.addEventListener('change', () => {
         setSelectValue('lacBomVersionFilter', '');
-        updateLacFilterCapsules();
         loadCascadeFilters().then(() => {
-            updateLacFilterCapsules();
+            filterBar?.paint();
             loadList(1);
         });
     });
     document.getElementById('lacLocationFilter')?.addEventListener('change', () => {
         setSelectValue('lacVehicleModelFilter', '');
         setSelectValue('lacBomVersionFilter', '');
-        updateLacFilterCapsules();
         loadCascadeFilters().then(() => {
-            updateLacFilterCapsules();
+            filterBar?.paint();
             loadList(1);
         });
     });
     document.getElementById('lacVehicleModelFilter')?.addEventListener('change', () => {
         setSelectValue('lacBomVersionFilter', '');
-        updateLacFilterCapsules();
         loadCascadeFilters().then(() => {
-            updateLacFilterCapsules();
+            filterBar?.paint();
             loadList(1);
         });
     });
     document.getElementById('lacBomVersionFilter')?.addEventListener('change', () => {
-        updateLacFilterCapsules();
         loadList(1);
     });
     document.getElementById('lacAuditFilter')?.addEventListener('change', () => {
-        updateLacFilterCapsules();
         loadList(1);
     });
     document.getElementById('lacCalcFilter')?.addEventListener('change', () => {
-        updateLacFilterCapsules();
         loadList(1);
     });
 
@@ -452,6 +457,7 @@ async function loadCascadeFilters() {
             filters.bom_versions || [],
             pending?.bom_version || null,
         );
+        filterBar?.paint();
     } catch (error) {
         console.error(error);
     }
@@ -462,11 +468,8 @@ function resetFilters() {
         const el = document.getElementById(id);
         if (el) el.value = '';
     });
-    const partEl = document.getElementById('lacPartNumberFilter');
-    if (partEl) partEl.value = '';
-    updateLacFilterCapsules();
     loadCascadeFilters().then(() => {
-        updateLacFilterCapsules();
+        filterBar?.paint();
         loadList(1);
     });
 }
@@ -521,7 +524,7 @@ async function loadList(page = 1) {
     if (listState.isLoading) return;
     setListLoading(true);
     body.innerHTML = '';
-    updateLacFilterCapsules();
+    filterBar?.paint();
     try {
         const filters = getFilters();
         const res = await HttpClient.get(API_BASE, {
@@ -602,8 +605,8 @@ function openBatchAuditDrawer(mode) {
     }
     if (remarkLabel) {
         remarkLabel.innerHTML = isApprove
-            ? '审核意见<span class="text-[#d32f2f]">*</span>'
-            : '反审核意见<span class="text-[#d32f2f]">*</span>';
+            ? '审核意见<span class="text-brand">*</span>'
+            : '反审核意见<span class="text-brand">*</span>';
     }
     if (remarkEl) {
         remarkEl.value = '';
@@ -619,7 +622,7 @@ function openBatchAuditDrawer(mode) {
     if (confirmBtn) {
         confirmBtn.textContent = isApprove ? '确认审核通过' : '确认反审核';
         confirmBtn.className =
-            'inline-flex items-center gap-1.5 bg-[#d32f2f] text-white px-4 py-2 text-[11px] font-semibold rounded hover:bg-[#b71c1c] transition-all';
+            'inline-flex items-center gap-1.5 bg-brand text-white px-4 py-2 text-[11px] font-semibold rounded hover:bg-brand-hover transition-all';
     }
 
     openDrawer('lacBatchAuditDrawer', 'lacBatchAuditDrawerBackdrop');
@@ -715,7 +718,7 @@ async function exportExcel() {
     if (btn) {
         btn.disabled = true;
         btn.innerHTML =
-            `<div class="w-3 h-3 border border-[#ef5350] border-t-transparent rounded-full animate-spin"></div>导出中..`;
+            `<div class="w-3 h-3 border border-danger border-t-transparent rounded-full animate-spin"></div>导出中..`;
     }
     try {
         const { blob, filename } = await HttpClient.download(`${API_BASE}/export-download`, {
@@ -762,7 +765,7 @@ async function exportBundleExcel() {
     if (btn) {
         btn.disabled = true;
         btn.innerHTML =
-            `<div class="w-3 h-3 border border-[#ef5350] border-t-transparent rounded-full animate-spin"></div>月度核对导出中..`;
+            `<div class="w-3 h-3 border border-danger border-t-transparent rounded-full animate-spin"></div>月度核对导出中..`;
     }
     try {
         const params = {
@@ -809,12 +812,12 @@ async function openDetail(costId) {
         closeDetailDrawer();
         const overlay = document.createElement('div');
         overlay.id = 'lacDetailOverlay';
-        overlay.className = 'fixed inset-0 z-[80] bg-black/60';
+        overlay.className = 'fixed inset-0 z-[80] bg-overlay/60';
         overlay.addEventListener('click', closeDetailDrawer);
         const panel = document.createElement('div');
         panel.id = 'lacDetailPanel';
         panel.className =
-            'fixed top-0 right-0 h-full w-full max-w-xl z-[85] bg-[#0A0A0C] border-l border-[#1A1A22] overflow-y-auto';
+            'fixed top-0 right-0 h-full w-full max-w-xl z-[85] bg-app-hud border-l border-line-hud overflow-y-auto';
         panel.innerHTML = renderDetailHtml(row);
         panel.querySelector('[data-action="close-detail"]')
             ?.addEventListener('click', closeDetailDrawer);
@@ -829,42 +832,42 @@ function renderDetailHtml(row) {
     const items = Array.isArray(row.items) ? row.items : [];
     const indirects = Array.isArray(row.indirects) ? row.indirects : [];
     return `
-        <div class="p-4 border-b border-[#14141A] flex items-center justify-between sticky top-0 bg-[#0A0A0C] z-10">
+        <div class="p-4 border-b border-line-subtle flex items-center justify-between sticky top-0 bg-app-hud z-10">
             <div>
-                <div class="text-sm font-bold text-[#F0F0F2] font-mono">${esc(row.part_number)}</div>
-                <div class="text-[10px] text-[#555555]">${esc(row.part_name || '')}</div>
+                <div class="text-sm font-bold text-ink font-mono">${esc(row.part_number)}</div>
+                <div class="text-[10px] text-ink-faint">${esc(row.part_name || '')}</div>
             </div>
-            <button data-action="close-detail" class="text-[#6E6E73] hover:text-white text-xs">关闭</button>
+            <button data-action="close-detail" class="text-ink-dim hover:text-ink text-xs">关闭</button>
         </div>
         <div class="p-4 space-y-4 text-[11px]">
             <div class="grid grid-cols-2 gap-2 font-mono">
-                <div class="text-[#555555]">月总账 <span class="text-[#C8C8D0]">${esc(fmtNum(row.total_amount, 4))}</span></div>
-                <div class="text-[#555555]">间接 <span class="text-[#C8C8D0]">${esc(fmtNum(row.indirect_amount, 4))}</span></div>
-                <div class="col-span-2 text-[#555555]">总费用 <span class="text-[#FF1E27] font-bold">${esc(fmtNum(row.grand_total, 4))}</span></div>
+                <div class="text-ink-faint">月总账 <span class="text-ink-muted">${esc(fmtNum(row.total_amount, 4))}</span></div>
+                <div class="text-ink-faint">间接 <span class="text-ink-muted">${esc(fmtNum(row.indirect_amount, 4))}</span></div>
+                <div class="col-span-2 text-ink-faint">总费用 <span class="text-brand-hud font-bold">${esc(fmtNum(row.grand_total, 4))}</span></div>
             </div>
             <div>
-                <div class="text-[10px] text-[#555555] mb-1 tracking-wider">材料明细</div>
-                <div class="border border-[#1E1E26] divide-y divide-[#141418]">
+                <div class="text-[10px] text-ink-faint mb-1 tracking-wider">材料明细</div>
+                                <div class="border border-line-hud divide-y divide-line-hud">
                     ${items.map((it) => `
                         <div class="px-2 py-1.5 flex justify-between gap-2">
                             <div class="min-w-0">
-                                <div class="font-mono text-[#F0F0F2] truncate">${esc(it.part_number)}</div>
-                                <div class="text-[9px] text-[#555555]">${esc(it.level_label)} · ${esc(it.cost_source)}${it.match_hint ? ` · ${esc(it.match_hint)}` : ''}</div>
+                                <div class="font-mono text-ink truncate">${esc(it.part_number)}</div>
+                                <div class="text-[9px] text-ink-faint">${esc(it.level_label)} · ${esc(it.cost_source)}${it.match_hint ? ` · ${esc(it.match_hint)}` : ''}</div>
                             </div>
-                            <div class="text-right font-mono text-[#8E8E93] shrink-0">${esc(fmtNum(it.line_amount, 4))}</div>
+                            <div class="text-right font-mono text-ink-muted shrink-0">${esc(fmtNum(it.line_amount, 4))}</div>
                         </div>
-                    `).join('') || '<div class="px-2 py-3 text-[#555555]">无明细</div>'}
+                    `).join('') || '<div class="px-2 py-3 text-ink-faint">无明细</div>'}
                 </div>
             </div>
             <div>
-                <div class="text-[10px] text-[#555555] mb-1 tracking-wider">间接费用</div>
-                <div class="border border-[#1E1E26] divide-y divide-[#141418]">
+                <div class="text-[10px] text-ink-faint mb-1 tracking-wider">间接费用</div>
+                                <div class="border border-line-hud divide-y divide-line-hud">
                     ${indirects.map((ind) => `
                         <div class="px-2 py-1.5 flex justify-between gap-2">
-                            <div class="text-[#C8C8D0]">${esc(ind.label)}</div>
-                            <div class="font-mono text-[#8E8E93]">${esc(fmtNum(ind.amount, 4))}</div>
+                            <div class="text-ink-muted">${esc(ind.label)}</div>
+                            <div class="font-mono text-ink-muted">${esc(fmtNum(ind.amount, 4))}</div>
                         </div>
-                    `).join('') || '<div class="px-2 py-3 text-[#555555]">无间接项</div>'}
+                    `).join('') || '<div class="px-2 py-3 text-ink-faint">无间接项</div>'}
                 </div>
             </div>
         </div>

@@ -18,11 +18,12 @@ alwaysApply: false
 - 样式：本地 `tailwind.css` + `style.css`。禁止 Tailwind Play CDN。新任意值类后 `npm run build:css`，并递增 `tailwind.css?v=`。
 - 字体：本地 `fonts.css` + `assets/fonts/`。禁止 Google Fonts。
 - JS 第三方：`static/js/vendor/`。禁止 jsDelivr。
+- `static/js` 根目录只留入口：`main.js`、`app.js`。横切 `core/`（`permissions.js`）；跨页领域展示 `domain/`（`part-identity.js`、`duration.js`）；HUD 原语与控件 `ui/`（`classes.js`、`filter-bar.js`、`hud-table.js`、`page-size.js` 等）。禁止把新控件或工具再扔回根目录。
 - 脚本：先普通 `<script> main.js`，再 `type="module"` 的 `app.js` / `login/boot.js`。改脚本递增对应 `?v=`。
-- 禁止 Jinja2。禁止往 `style.css` 加业务 class（壳层：sidebar / page-header / 滚动条 / `@keyframes` / `.sr-only` 可留）。
+- 禁止 Jinja2。禁止往 `style.css` 加业务 class（壳层：sidebar / page-header / 滚动条 / `@keyframes` / `.sr-only` / `.toast-shell` / `.brabus-bg-grid` / `.brabus-check` / `.hud-filter` / `.hud-led` / `.hud-kpi-*-glow` / `.hud-kpi-aux-inset` 可留）。
 - 内联 `style` 仅阴影/渐变等 Tailwind 表达不了的；历史抽屉不追溯。
 
-`:root` 色板在 `style.css`。业务用 Tailwind 任意值对齐：`#0a0a0a` / `#121212` / `#1e1e1e` / `#262626`；字 `#ffffff` / `#9e9e9e` / `#616161`；边 `#2c2c2c`；红 `#d32f2f`（hover `#b71c1c`）。列表 HUD 可改用同族 `#FF1E27`，**同一表不得两套红混用**。
+`:root` 色板在 `style.css`（RGB 通道）。另有 `--grid-size` / `--radius-ctl` / `--shadow-hud` / `--shadow-drawer` / `--glow-hud`。业务用 Tailwind 语义色：`bg-app-deep` / `bg-app-main` / `bg-app-surface` / `bg-app-elevated` / `bg-app-hud`；字 `text-ink` / `text-ink-muted` / `text-ink-dim` / `text-ink-faint`；边 `border-line` / `border-line-hud`；红 `brand`（`#d32f2f`）与 HUD `brand-hud`（`#FF1E27`）。**禁止新写主题 hex 任意值**（`bg-[#0a0a0a]`）。同表不得两套红混用。原语在 `static/js/ui/classes.js`。
 
 新页必须同时：`pageMeta`、`app.js` 注册、侧栏 `data-page`（若需菜单）、权限码（`docs/permission-design.md`）。
 
@@ -36,13 +37,14 @@ JS 标识符：camelCase；页面对象 PascalCase；常量 `UPPER_SNAKE`；与�
 
 参照 `static/js/features/costing/stamping-part-cost/list/template.js`。设置/简单 CRUD、列很少、无金额 KPI 可按 §例外放宽。采购价格页另守 **指挥舱（非 ERP）**：`.cursor/rules/command-cockpit.mdc`。
 
-- 外框 `bg-[#0A0A0C] border-[#1A1A22]`；表区 `overflow-x-auto`；列多用 `table-fixed` + `colgroup`。
-- 表头 `text-[9px] text-[#555555]`；文本左、金额右、状态中。
-- 行 `font-mono text-[11px]`；hover `bg-[#161620]`；左 2px 红条仅视觉。
-- **操作只走操作列按钮**（`data-action`）。禁止整行点击进明细；不要给数据行 `cursor-pointer`。操作列必须是最后一列，表 `border-separate border-spacing-0`，操作 `th`/`td` 用 `sticky right-0`。表头空（`aria-label="操作"`）纯色不铺格；表体操作格与表区同用 `brabus-bg-grid`。禁止阴影。
-- 分页：当前页品牌红；整条栏用 `static/js/page-size.js`（`paginationBarHtml` / `paintPagination` / `bindPagination`），禁止各页复制页码按钮或每页常量。
-- 抽屉：遮罩 `z-[80]`、面板 `z-[85]`，append 到 `body`。禁止 `z-40`/`z-50`。
-- 禁止 Bootstrap、浅色底（`bg-white` 等）、`rounded-lg` 及以上、`shadow-md` 等。控件可用 `rounded`/`rounded-sm`/`rounded-md`。
+- 外框 `HUD_SHELL`（`bg-app-hud border-line-hud`）。密表走 `static/js/ui/hud-table.js`（`hudTableHtml` 含表区 + 分页 + 空态/加载；`hudRowHtml` / `opsIconButtonHtml` 行壳）。列与单元格仍由各页传入。禁止 HUD 列表再复制 wrap / 空态 / 行壳，也禁止再单独拼 `paginationBarHtml`。主数据列表（基地 / 项目 / 供应商 / 牌号分类）同样走该控件。calc/generate 历史表、一事一议、设置用户/日志仍直接用 `page-size.js`。
+- 过滤：胶囊条 + 高级筛选一体，走 `static/js/ui/filter-bar.js`（`filterBarHtml` / `bindFilterBar`）。字段仍用 `filterSelect` / `filterInput` / `filterInputWithDatalist`（`ui/classes.js`）；查询钮在控件内用 `BTN_FILTER_SEARCH`；重置/Excel `BTN_GHOST`。禁止各页再复制 `FILTER_STRIP` + 展开面板。`period-ui.js` 的年+月筛同样走 `HUD_FILTER`。禁止各页再复制 select 函数。
+- 表头 `TH_TEXT` / `TH_NUM`（`text-[9px] text-ink-faint`）；文本左、金额右、状态中。靶心列才 `TH_FOCUS`。列多用 `table-fixed` + `colgroup`；无 colgroup 的宽表用 `minWidth`。
+- 行 `TR_HUD`（含 `data-current` 底）；左 2px `ROW_LED`。当前行 `setCurrentTableRow` / `bindCurrentRowOnOps`；换页 `clearCurrentTableRows`（`page-size` 已接）。操作格 `OPS_TD` 跟底。禁止整行 `cursor-pointer`。
+- **操作只走操作列按钮**（`data-action` 或现网 `.edit-btn` / `.delete-btn` / `.view-btn`）。操作列必须是最后一列；`OPS_TH` 纯色不铺格；`OPS_TD` 同格 sticky；钮 `OPS_ICON`（hover/focus 才显）。禁止阴影。
+- 分页：当前页 `brand-hud`。HUD 列表分页栏由 `hudTableHtml` 内嵌 `paginationBarHtml`；`index.js` 仍用 `static/js/ui/page-size.js` 的 `paintPagination` / `bindPagination` 绑原 id。禁止各页复制页码按钮或每页常量。
+- 抽屉：`DRAWER_BACKDROP` z-80、`DRAWER_SHELL` z-85，append 到 `body`。禁止 `z-40`/`z-50`。
+- 禁止 Bootstrap、浅色底（`bg-white` 等）、`rounded-lg` 及以上、`shadow-md` 等。控件圆角 2px。图标走 `svgIcon`，描边 1.5。
 
 ## 全局 JS（禁止页面重写）
 

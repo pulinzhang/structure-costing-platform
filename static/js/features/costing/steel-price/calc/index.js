@@ -3,16 +3,18 @@
  * 钢价计算 —过滤条件 + 异步后台计算 + 进度轮询 + 历史过程日志
  */
 
-import { steelPriceCalcTemplate } from './template.js?v=13';
+import { steelPriceCalcTemplate } from './template.js?v=18';
+import { DRAWER_CLOSE, DRAWER_SHELL, DRAWER_BACKDROP } from '../../../../ui/classes.js?v=8';
+
 import {
     DEFAULT_PAGE_SIZE,
     bindPagination,
     paintPagination,
-} from '../../../../page-size.js?v=3';
+} from '../../../../ui/page-size.js?v=5';
 import {
     formatDurationSeconds,
     formatTimingLine,
-} from '../../../../duration.js?v=1';
+} from '../../../../domain/duration.js?v=3';
 
 const STEEL_PRICE_CALC_STATS_API = '/api/dashboard/stats/steel-price-calc';
 const STEEL_PRICE_CALC_API = '/api/costing/steel-price/calc';
@@ -22,10 +24,10 @@ const POLL_INTERVAL_MS = 1500;
 const DUPLICATE_PERIOD_CALC_MESSAGE = '当前期别正在计算中，请勿重复提交。'
 
 const STATUS_META = {
-    processing: { label: '计算中', className: 'text-[#64b5f6]' },
-    success: { label: '成功', className: 'text-[#66bb6a]' },
-    partial: { label: '部分成功', className: 'text-[#ffb74d]' },
-    failed: { label: '失败', className: 'text-[#ef5350]' },
+    processing: { label: '计算中', className: 'text-ink-muted' },
+    success: { label: '成功', className: 'text-ok' },
+    partial: { label: '部分成功', className: 'text-warn' },
+    failed: { label: '失败', className: 'text-danger' },
 };
 
 const calcState = {
@@ -178,7 +180,7 @@ async function loadCalcHistory(page = calcState.history.page) {
         size: calcState.history.size,
     };
 
-    body.innerHTML = `<tr><td colspan="14" class="py-8 text-center text-[#555]">加载中..</td></tr>`;
+    body.innerHTML = `<tr><td colspan="14" class="py-8 text-center text-ink-faint">加载中..</td></tr>`;
 
     try {
         const response = await HttpClient.get(STEEL_PRICE_CALC_LOGS_API, { params });
@@ -200,7 +202,7 @@ async function loadCalcHistory(page = calcState.history.page) {
             );
     } catch (error) {
         console.error('加载计算历史失败:', error);
-        body.innerHTML = `<tr><td colspan="14" class="py-8 text-center text-[#ef5350]">加载失败</td></tr>`;
+        body.innerHTML = `<tr><td colspan="14" class="py-8 text-center text-danger">加载失败</td></tr>`;
     }
 }
 
@@ -209,7 +211,7 @@ function renderHistoryRows(items) {
     if (!body) return;
 
     if (!items.length) {
-        body.innerHTML = `<tr><td colspan="14" class="py-8 text-center text-[#555]">暂无计算记录</td></tr>`;
+        body.innerHTML = `<tr><td colspan="14" class="py-8 text-center text-ink-faint">暂无计算记录</td></tr>`;
         return;
     }
 
@@ -220,30 +222,30 @@ function renderHistoryRows(items) {
         const isProcessing = item.status === 'processing';
 
         return `
-            <tr class="hover:bg-[#ffffff]/[0.02] transition-colors text-[#999]" data-log-id="${esc(item.id)}">
-                <td class="py-2 px-2 font-mono text-[#666] whitespace-nowrap">${esc(formatDateTime(item.started_at))}</td>
-                <td class="py-2 px-2 font-mono text-[#666] whitespace-nowrap">${esc(formatDateTime(item.finished_at))}</td>
-                <td class="py-2 px-2 font-mono text-right tabular-nums text-[#777] whitespace-nowrap">${esc(formatDurationSeconds(item))}</td>
-                <td class="py-2 px-2 text-[#ccc] whitespace-nowrap">${esc(createdBy)}</td>
-                <td class="py-2 px-2 font-mono text-[#ccc] whitespace-nowrap">${esc(period)}</td>
-                <td class="py-2 px-2 text-[#ccc] whitespace-nowrap">${esc(item.location || '-')}</td>
+            <tr class="hover:bg-ink/[0.02] transition-colors text-ink-muted" data-log-id="${esc(item.id)}">
+                <td class="py-2 px-2 font-mono text-ink-dim whitespace-nowrap">${esc(formatDateTime(item.started_at))}</td>
+                <td class="py-2 px-2 font-mono text-ink-dim whitespace-nowrap">${esc(formatDateTime(item.finished_at))}</td>
+                <td class="py-2 px-2 font-mono text-right tabular-nums text-ink-dim whitespace-nowrap">${esc(formatDurationSeconds(item))}</td>
+                <td class="py-2 px-2 text-ink-muted whitespace-nowrap">${esc(createdBy)}</td>
+                <td class="py-2 px-2 font-mono text-ink-muted whitespace-nowrap">${esc(period)}</td>
+                <td class="py-2 px-2 text-ink-muted whitespace-nowrap">${esc(item.location || '-')}</td>
                 <td class="py-2 px-2 text-center text-[9px] ${status.className}">${status.label}</td>
-                <td class="py-2 px-2 font-mono text-right tabular-nums text-[#777]">${fmtInt(item.material_count)}</td>
-                <td class="py-2 px-2 font-mono text-right tabular-nums text-[#777]">${fmtInt(item.enriched_count)}</td>
-                <td class="py-2 px-2 font-mono text-right tabular-nums ${Number(item.no_base_count) > 0 ? 'text-[#ffb74d]' : 'text-[#777]'}">${fmtInt(item.no_base_count)}</td>
-                <td class="py-2 px-2 font-mono text-right tabular-nums text-[#777]">${fmtInt(item.created_count)}</td>
-                <td class="py-2 px-2 font-mono text-right tabular-nums text-[#777]">${fmtInt(item.updated_count)}</td>
-                <td class="py-2 px-2 font-mono text-right tabular-nums ${Number(item.failed_count) > 0 ? 'text-[#ef5350]' : 'text-[#777]'}">${fmtInt(item.failed_count)}</td>
+                <td class="py-2 px-2 font-mono text-right tabular-nums text-ink-dim">${fmtInt(item.material_count)}</td>
+                <td class="py-2 px-2 font-mono text-right tabular-nums text-ink-dim">${fmtInt(item.enriched_count)}</td>
+                <td class="py-2 px-2 font-mono text-right tabular-nums ${Number(item.no_base_count) > 0 ? 'text-warn' : 'text-ink-dim'}">${fmtInt(item.no_base_count)}</td>
+                <td class="py-2 px-2 font-mono text-right tabular-nums text-ink-dim">${fmtInt(item.created_count)}</td>
+                <td class="py-2 px-2 font-mono text-right tabular-nums text-ink-dim">${fmtInt(item.updated_count)}</td>
+                <td class="py-2 px-2 font-mono text-right tabular-nums ${Number(item.failed_count) > 0 ? 'text-danger' : 'text-ink-dim'}">${fmtInt(item.failed_count)}</td>
                 <td class="py-2 px-2 text-right whitespace-nowrap">
                     ${isProcessing ? `
-                    <span class="text-[9px] text-[#555] mr-2">进行中</span>
+                    <span class="text-[9px] text-ink-faint mr-2">进行中</span>
                     ` : `
                     <button type="button"
-                            class="calc-view-process-btn text-[9px] text-[#777] hover:text-white mr-2"
+                            class="calc-view-process-btn text-[9px] text-ink-dim hover:text-ink mr-2"
                             data-log-id="${esc(item.id)}">过程</button>
                     ${item.status === 'failed' ? '' : `
                     <button type="button"
-                            class="calc-view-result-btn text-[9px] text-[#777] hover:text-white mr-2"
+                            class="calc-view-result-btn text-[9px] text-ink-dim hover:text-ink mr-2"
                             data-year="${esc(item.year)}"
                             data-month="${esc(item.month)}"
                             data-location="${esc(item.location || '')}">结果</button>
@@ -251,7 +253,7 @@ function renderHistoryRows(items) {
                     `}
                     ${calcState.canDelete !== false ? `
                     <button type="button"
-                            class="calc-delete-log-btn text-[9px] text-[#777] hover:text-[#ef5350]"
+                            class="calc-delete-log-btn text-[9px] text-ink-dim hover:text-danger"
                             data-log-id="${esc(item.id)}"
                             title="含计算中：删除可释放锁">删除</button>` : ''}
                 </td>
@@ -335,35 +337,35 @@ function showProcessDrawer(log) {
         const period = fmtPeriod(log.year, log.month);
     const backdrop = document.createElement('div');
     backdrop.id = 'calcProcessBackdrop';
-    backdrop.className = 'fixed inset-0 z-[80] bg-black/70 backdrop-blur-sm';
+    backdrop.className = DRAWER_BACKDROP;
 
     const drawer = document.createElement('div');
     drawer.id = 'calcProcessDrawer';
     drawer.className =
-        'fixed inset-y-0 right-0 z-[85] w-[640px] max-w-[95vw] bg-[#1a1a1a] border-l border-[#2a2a2a] flex flex-col';
+        `${DRAWER_SHELL} w-[640px]`;
     drawer.innerHTML = `
-        <div class="px-5 py-3.5 flex items-center justify-between shrink-0 bg-[#1f1f1f] border-b border-[#333333]">
-            <h5 class="text-[11px] font-semibold tracking-wider text-[#b0b0b0] uppercase">
+        <div class="px-5 py-3.5 flex items-center justify-between shrink-0 bg-app-surface border-b border-line">
+            <h5 class="text-[11px] font-semibold tracking-wider text-ink-muted uppercase">
                 计算过程 · ${esc(period)} · ${esc(log.location || '-')}
                 <span class="ml-2 normal-case ${status.className}">${status.label}</span>
             </h5>
             <div class="flex items-center gap-0.5 shrink-0">
                 ${window.copyProcessReportButtonHtml()}
                 <button type="button" id="closeCalcProcessDrawer"
-                    class="flex items-center justify-center w-8 h-8 rounded-md text-[#707070] hover:text-white hover:bg-[#d32f2f] transition-all">
+                    class="${DRAWER_CLOSE}">
                     <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M6 18L18 6M6 6l12 12"></path>
                     </svg>
                 </button>
             </div>
         </div>
-        <div class="px-5 py-3 border-b border-[#222] text-[10px] text-[#777] space-y-1 shrink-0">
-            <div>批次<span class="font-mono text-[#999]">${esc(log.calc_batch_id || '-')}</span></div>
+        <div class="px-5 py-3 border-b border-line-subtle text-[10px] text-ink-dim space-y-1 shrink-0">
+            <div>批次<span class="font-mono text-ink-muted">${esc(log.calc_batch_id || '-')}</span></div>
             <div>${esc(formatTimingLine(log, formatDateTime) || '-')}</div>
             <div>汇总：材料 ${fmtInt(log.material_count)} · 命中 ${fmtInt(log.enriched_count)} · 无基价${fmtInt(log.no_base_count)} · 新增 ${fmtInt(log.created_count)} · 更新 ${fmtInt(log.updated_count)} · 失败 ${fmtInt(log.failed_count)}</div>
         </div>
         <div class="flex-1 overflow-y-auto overscroll-contain p-5">
-            <pre class="text-[11px] leading-5 font-mono text-[#9e9e9e] whitespace-pre-wrap break-words bg-[#111111] border border-[#262626] p-4">${esc(log.detail_text || '（无过程文本）')}</pre>
+            <pre class="text-[11px] leading-5 font-mono text-ink-muted whitespace-pre-wrap break-words bg-app-main border border-app-elevated p-4">${esc(log.detail_text || '（无过程文本）')}</pre>
         </div>
     `;
 
@@ -404,7 +406,7 @@ function setCountHtml(id, count, unit) {
     const el = document.getElementById(id);
     if (!el) return;
     const display = Number.isFinite(count) ? Number(count).toLocaleString('zh-CN') : '-';
-    el.innerHTML = `${display} <span class="text-[9px] font-normal text-[#555]">${unit}</span>`;
+    el.innerHTML = `${display} <span class="text-[9px] font-normal text-ink-faint">${unit}</span>`;
 }
 
 function fillSelect(id, values = [], label = value => value, preferredValue = null) {
@@ -522,25 +524,25 @@ function updateProgress(progress, msg, status) {
     if (titleEl) {
         if (status === 'completed') {
             titleEl.textContent = '计算完成';
-            titleEl.className = 'text-xs font-medium text-[#4caf50] truncate mb-0';
+            titleEl.className = 'text-xs font-medium text-ok truncate mb-0';
         } else if (status === 'failed') {
             titleEl.textContent = '计算失败';
-            titleEl.className = 'text-xs font-medium text-[#ef5350] truncate mb-0';
+            titleEl.className = 'text-xs font-medium text-danger truncate mb-0';
         } else {
             titleEl.textContent = '正在计算钢价...';
-            titleEl.className = 'text-xs font-medium text-[#ffffff] truncate mb-0';
+            titleEl.className = 'text-xs font-medium text-ink truncate mb-0';
         }
     }
 
     if (status === 'completed' && bar) {
-        bar.className = 'h-full bg-[#2e7d32] transition-all duration-300';
-        if (percentEl) percentEl.className = 'text-xs font-mono tabular-nums text-[#4caf50] shrink-0';
+        bar.className = 'h-full bg-ok transition-all duration-300';
+        if (percentEl) percentEl.className = 'text-xs font-mono tabular-nums text-ok shrink-0';
     } else if (status === 'failed' && bar) {
-        bar.className = 'h-full bg-[#c62828] transition-all duration-300';
-        if (percentEl) percentEl.className = 'text-xs font-mono tabular-nums text-[#ef5350] shrink-0';
+        bar.className = 'h-full bg-danger transition-all duration-300';
+        if (percentEl) percentEl.className = 'text-xs font-mono tabular-nums text-danger shrink-0';
     } else if (bar) {
-        bar.className = 'h-full bg-[#d32f2f] shadow-[0_0_8px_rgba(211,47,47,0.5)] transition-all duration-300';
-        if (percentEl) percentEl.className = 'text-xs font-mono tabular-nums text-[#d32f2f] shrink-0';
+        bar.className = 'h-full bg-brand shadow-[0_0_8px_rgb(var(--brabus-red)/0.5)] transition-all duration-300';
+        if (percentEl) percentEl.className = 'text-xs font-mono tabular-nums text-brand shrink-0';
     }
 }
 

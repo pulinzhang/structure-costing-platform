@@ -11,18 +11,20 @@ import {
     conversionFactorInputValue,
     parseConversionFactorInput,
     updateAnnualHud,
-    updateAnnualFilterCapsules,
-} from './template.js?v=22';
-import { bindMoreMenu } from '../../../../more-menu.js?v=1';
+} from './template.js?v=30';
+import { bindMoreMenu } from '../../../../ui/more-menu.js?v=3';
+import { bindFilterBar } from '../../../../ui/filter-bar.js?v=2';
 import {
     DEFAULT_PAGE_SIZE,
     bindPagination,
     paintPagination,
-} from '../../../../page-size.js?v=3';
-import { setSearchBusy } from '../../../../search-busy.js?v=1';
+} from '../../../../ui/page-size.js?v=5';
+import { setSearchBusy } from '../../../../ui/search-busy.js?v=3';
 
 /** @type {{ setOpen: (isOpen: boolean) => void, close: () => void, unbind: () => void } | null} */
 let moreMenu = null;
+/** @type {{ paint: () => void, setOpen: (isOpen: boolean) => void, unbind: () => void } | null} */
+let filterBar = null;
 
 const annualPartPriceState = {
     records: [],
@@ -74,8 +76,8 @@ function init() {
     loadFilterOptions().then(() => loadData());
     bindEvents();
     bindPagination({
-        selectId: 'annualPartPricePageSize',
-        buttonsId: 'annualPaginationBtns',
+        selectId: 'annualPageSize',
+        buttonsId: 'annualPagination',
         getSize: () => annualPartPriceState.pageSize,
         setSize: (size) => {
             annualPartPriceState.pageSize = size;
@@ -83,7 +85,6 @@ function init() {
         onPage: (page) => loadData(page),
     });
     applyPermissionUi();
-    updateAnnualFilterCapsules();
 }
 
 function applyPermissionUi() {
@@ -101,14 +102,6 @@ function applyPermissionUi() {
     if (!moreItems.length) {
         document.getElementById('annualMoreWrap')?.classList.add('hidden');
     }
-}
-
-function setAdvancedOpen(open) {
-    annualPartPriceState.advancedOpen = open;
-    const panel = document.getElementById('annualAdvancedFilterPanel');
-    const label = document.getElementById('annualAdvancedFilterLabel');
-    if (panel) panel.classList.toggle('hidden', !open);
-    if (label) label.textContent = open ? '收起高级筛选' : '展开高级筛选';
 }
 
 async function loadFilterOptions() {
@@ -159,6 +152,7 @@ async function loadFilterOptions() {
                 auditFilter.value = annualPartPriceState.selectedAuditStatus;
             }
         }
+        filterBar?.paint();
     } catch (error) {
         console.error('加载筛选项失败:', error);
     }
@@ -175,7 +169,6 @@ function readFiltersFromDom() {
     annualPartPriceState.selectedKeyword = keywordFilter
         ? (keywordFilter.value.trim() || null)
         : null;
-    updateAnnualFilterCapsules();
 }
 
 function collectScopeFilters() {
@@ -191,9 +184,9 @@ async function loadData(page = 1) {
     setSearchBusy('btnFilter', true);
 
     const tableBody = document.getElementById('annualPartPriceTableBody');
-    const emptyState = document.getElementById('annualEmptyState');
-    const loadingState = document.getElementById('annualLoadingState');
-    const totalCountPagination = document.getElementById('annualTotalCountPagination');
+    const emptyState = document.getElementById('annualEmpty');
+    const loadingState = document.getElementById('annualLoading');
+    const totalCountPagination = document.getElementById('annualPageInfo');
 
     if (tableBody) tableBody.innerHTML = '';
     if (emptyState) emptyState.classList.add('hidden');
@@ -239,13 +232,13 @@ async function loadData(page = 1) {
         if (totalCountPagination) {
             totalCountPagination.textContent = `共 ${annualPartPriceState.total} 条`;
         }
-        paintPagination('annualPaginationBtns', annualPartPriceState.page, annualPartPriceState.totalPages);
+        paintPagination('annualPagination', annualPartPriceState.page, annualPartPriceState.totalPages);
     } catch (error) {
         console.error('加载数据失败:', error);
         if (tableBody) {
             tableBody.innerHTML = `
                 <tr>
-                    <td colspan="15" class="px-4 py-8 text-center text-[#9e9e9e] text-xs">加载数据失败，请重试</td>
+                    <td colspan="15" class="px-4 py-8 text-center text-ink-muted text-xs">加载数据失败，请重试</td>
                 </tr>`;
         }
     } finally {
@@ -305,34 +298,35 @@ function bindEvents() {
         moreMenu?.close();
         openBatchAuditDrawer('reverse');
     });
-    document.getElementById('btnFilter')?.addEventListener('click', () => {
-        readFiltersFromDom();
-        loadData(1);
+    filterBar = bindFilterBar({
+        prefix: 'annual',
+        searchId: 'btnFilter',
+        resetId: 'annualResetFilterBtn',
+        capsules: [
+            { capsuleId: 'annualCapsuleYear', fieldId: 'annualYearFilter', idleLabel: '全部年度' },
+            { capsuleId: 'annualCapsuleLocation', fieldId: 'annualLocationFilter', idleLabel: '全部基地' },
+            { capsuleId: 'annualCapsuleAudit', fieldId: 'annualAuditStatusFilter', idleLabel: '全部审核' },
+            { capsuleId: 'annualCapsuleKeyword', fieldId: 'annualKeywordFilter', idleLabel: '零件号/名称' },
+        ],
+        enterFieldIds: ['annualKeywordFilter'],
+        onSearch: () => {
+            readFiltersFromDom();
+            loadData(1);
+        },
+        onReset: () => {
+            ['annualLocationFilter', 'annualYearFilter', 'annualAuditStatusFilter', 'annualKeywordFilter'].forEach((id) => {
+                const el = document.getElementById(id);
+                if (el) el.value = '';
+            });
+            readFiltersFromDom();
+            loadData(1);
+        },
     });
     ['annualLocationFilter', 'annualYearFilter', 'annualAuditStatusFilter'].forEach((id) => {
         document.getElementById(id)?.addEventListener('change', () => {
             readFiltersFromDom();
             loadData(1);
         });
-    });
-    document.getElementById('annualToggleAdvancedFilter')?.addEventListener('click', () => {
-        setAdvancedOpen(!annualPartPriceState.advancedOpen);
-    });
-    document.getElementById('annualResetFilterBtn')?.addEventListener('click', () => {
-        ['annualLocationFilter', 'annualYearFilter', 'annualAuditStatusFilter', 'annualKeywordFilter'].forEach((id) => {
-            const el = document.getElementById(id);
-            if (el) el.value = '';
-        });
-        readFiltersFromDom();
-        loadData(1);
-    });
-
-    document.getElementById('annualKeywordFilter')?.addEventListener('keydown', (e) => {
-        if (e.key === 'Enter') {
-            e.preventDefault();
-            readFiltersFromDom();
-            loadData(1);
-        }
     });
 
     bindEditDrawerEvents();
@@ -434,7 +428,7 @@ function getSessionDisplayName() {
 function openBatchAuditDrawer(mode) {
     const filters = collectScopeFilters();
     if (!filters.year || !filters.location) {
-        setAdvancedOpen(true);
+        filterBar?.setOpen(true);
         showToast(SCOPE_REQUIRED_MESSAGE, 'warning');
         return;
     }
@@ -449,8 +443,8 @@ function openBatchAuditDrawer(mode) {
         getSessionDisplayName() || '（当前登录用户）';
     const remarkLabel = document.getElementById('annualBatchAuditRemarkLabel');
     remarkLabel.innerHTML = isApprove
-        ? '审核意见<span class="text-[#d32f2f]">*</span>'
-        : '反审核意见<span class="text-[#d32f2f]">*</span>';
+        ? '审核意见<span class="text-brand">*</span>'
+        : '反审核意见<span class="text-brand">*</span>';
     const remarkEl = document.getElementById('annualBatchAuditRemark');
     remarkEl.value = '';
     remarkEl.placeholder = isApprove ? '请填写审核意见（必填）' : '必填反审核原因';
@@ -512,7 +506,7 @@ async function exportExcel() {
     const originalHtml = btn ? btn.innerHTML : '';
     if (btn) {
         btn.disabled = true;
-        btn.innerHTML = `<div class="w-3 h-3 border border-[#ef5350] border-t-transparent rounded-full animate-spin"></div>导出中..`;
+        btn.innerHTML = `<div class="w-3 h-3 border border-danger border-t-transparent rounded-full animate-spin"></div>导出中..`;
     }
     try {
         const { blob, filename } = await HttpClient.download(`${API_BASE}/export`, {
@@ -549,7 +543,7 @@ async function batchDeleteByFilters() {
     if (annualPartPriceState.isBatchDeleting) return;
     const filters = collectScopeFilters();
     if (!filters.location || !filters.year) {
-        setAdvancedOpen(true);
+        filterBar?.setOpen(true);
         showToast(SCOPE_REQUIRED_MESSAGE, 'warning');
         return;
     }
@@ -567,7 +561,7 @@ async function batchDeleteByFilters() {
     annualPartPriceState.isBatchDeleting = true;
     if (btn) {
         btn.disabled = true;
-        btn.innerHTML = `<div class="w-3 h-3 border border-[#ef5350] border-t-transparent rounded-full animate-spin"></div>删除中..`;
+        btn.innerHTML = `<div class="w-3 h-3 border border-danger border-t-transparent rounded-full animate-spin"></div>删除中..`;
     }
     try {
         const res = await HttpClient.post(`${API_BASE}/batch-delete`, {
@@ -665,5 +659,7 @@ export const pageConfig = {
     destroy() {
         moreMenu?.unbind();
         moreMenu = null;
+        filterBar?.unbind();
+        filterBar = null;
     },
 };

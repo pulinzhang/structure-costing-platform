@@ -3,7 +3,7 @@
  * 弹窗被拦时回退全屏预览，用户可自行再点打印。
  */
 
-import { buildAssistantDocumentHtml, canExportAssistantMessage } from './document.js?v=6';
+import { buildAssistantDocumentHtml, canExportAssistantMessage } from './document.js?v=8';
 import { llmIconClose, llmIconPrint, PANEL_ICON_BTN_CLASS } from '../icons.js';
 
 /**
@@ -116,12 +116,12 @@ function openFullscreenPreview(msg, html) {
 
     const overlay = document.createElement('div');
     overlay.id = FULLSCREEN_OVERLAY_ID;
-    overlay.className = 'fixed inset-0 z-[120] flex flex-col bg-[#0a0a0a]';
+    overlay.className = 'fixed inset-0 z-[120] flex flex-col bg-app-deep';
     overlay.setAttribute('role', 'dialog');
     overlay.setAttribute('aria-label', '打印预览');
     overlay.innerHTML = `
-<div class="flex items-center justify-between gap-2 px-3 py-2 border-b border-[#222] bg-[#1e1e1e] shrink-0">
-  <span class="text-[10px] text-[#616161] truncate px-1">打印预览 · 报告${msg.report_id ? ` #${msg.report_id}` : ''}</span>
+<div class="flex items-center justify-between gap-2 px-3 py-2 border-b border-line-subtle bg-app-surface shrink-0">
+  <span class="text-[10px] text-ink-dim truncate px-1">打印预览 · 报告${msg.report_id ? ` #${msg.report_id}` : ''}</span>
   <div class="flex items-center gap-0.5 shrink-0">
     <button type="button" data-llm-print-action="print"
       class="${PANEL_ICON_BTN_CLASS}"

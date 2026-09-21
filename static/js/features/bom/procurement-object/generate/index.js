@@ -2,20 +2,21 @@
  * 采购对象清单生成页
  */
 
+import { DRAWER_CLOSE, DRAWER_SHELL, DRAWER_BACKDROP } from '../../../../ui/classes.js?v=8';
 import {
     procurementObjectGenerateTemplate,
-} from './template.js?v=8';
+} from './template.js?v=13';
 import {
     DEFAULT_PAGE_SIZE,
     bindPagination,
     paintPagination,
-} from '../../../../page-size.js?v=3';
-import { SECTION_LABELS } from '../labels.js?v=2';
+} from '../../../../ui/page-size.js?v=5';
+import { SECTION_LABELS } from '../labels.js?v=4';
 import {
     formatDurationSeconds,
     formatTimingLine,
-} from '../../../../duration.js?v=1';
-import { loadSnapshotCascade } from '../snapshot-cascade.js?v=3';
+} from '../../../../domain/duration.js?v=3';
+import { loadSnapshotCascade } from '../snapshot-cascade.js?v=5';
 
 const API_BASE = '/api/bom/procurement-objects';
 const GENERATE_API = `${API_BASE}/generate`;
@@ -23,8 +24,8 @@ const PREP_STATS_API = `${API_BASE}/generate/prep-stats`;
 const LOGS_API = `${API_BASE}/generate/logs`;
 
 const STATUS_META = {
-    success: { label: '成功', className: 'text-[#66bb6a]' },
-    failed: { label: '失败', className: 'text-[#ef5350]' },
+    success: { label: '成功', className: 'text-ok' },
+    failed: { label: '失败', className: 'text-danger' },
 };
 
 const genState = {
@@ -186,7 +187,7 @@ function setCountHtml(id, count, unit) {
     const el = document.getElementById(id);
     if (!el) return;
     const display = Number.isFinite(count) ? Number(count).toLocaleString('zh-CN') : '-';
-    el.innerHTML = `${display} <span class="text-[9px] font-normal text-[#555]">${unit}</span>`;
+    el.innerHTML = `${display} <span class="text-[9px] font-normal text-ink-faint">${unit}</span>`;
 }
 
 function validateReady() {
@@ -231,25 +232,25 @@ function updateProgress(progress, msg, status) {
     if (titleEl) {
         if (status === 'completed') {
             titleEl.textContent = '生成完成';
-            titleEl.className = 'text-xs font-medium text-[#4caf50] truncate mb-0';
+            titleEl.className = 'text-xs font-medium text-ok truncate mb-0';
         } else if (status === 'failed') {
             titleEl.textContent = '生成失败';
-            titleEl.className = 'text-xs font-medium text-[#ef5350] truncate mb-0';
+            titleEl.className = 'text-xs font-medium text-danger truncate mb-0';
         } else {
             titleEl.textContent = '正在生成采购对象清单...';
-            titleEl.className = 'text-xs font-medium text-[#ffffff] truncate mb-0';
+            titleEl.className = 'text-xs font-medium text-ink truncate mb-0';
         }
     }
 
     if (status === 'completed' && bar) {
-        bar.className = 'h-full bg-[#2e7d32] transition-all duration-300';
-        if (percentEl) percentEl.className = 'text-xs font-mono tabular-nums text-[#4caf50] shrink-0';
+        bar.className = 'h-full bg-ok transition-all duration-300';
+        if (percentEl) percentEl.className = 'text-xs font-mono tabular-nums text-ok shrink-0';
     } else if (status === 'failed' && bar) {
-        bar.className = 'h-full bg-[#c62828] transition-all duration-300';
-        if (percentEl) percentEl.className = 'text-xs font-mono tabular-nums text-[#ef5350] shrink-0';
+        bar.className = 'h-full bg-danger transition-all duration-300';
+        if (percentEl) percentEl.className = 'text-xs font-mono tabular-nums text-danger shrink-0';
     } else if (bar) {
-        bar.className = 'h-full bg-[#d32f2f] shadow-[0_0_8px_rgba(211,47,47,0.5)] transition-all duration-300';
-        if (percentEl) percentEl.className = 'text-xs font-mono tabular-nums text-[#d32f2f] shrink-0';
+        bar.className = 'h-full bg-brand shadow-[0_0_8px_rgb(var(--brabus-red)/0.5)] transition-all duration-300';
+        if (percentEl) percentEl.className = 'text-xs font-mono tabular-nums text-brand shrink-0';
     }
 }
 
@@ -266,7 +267,7 @@ function hideProgress() {
 async function loadGenHistory(page = genState.history.page) {
     const body = document.getElementById('poGenHistoryBody');
     if (!body) return;
-    body.innerHTML = `<tr><td colspan="11" class="py-8 text-center text-[#555]">加载中..</td></tr>`;
+    body.innerHTML = `<tr><td colspan="11" class="py-8 text-center text-ink-faint">加载中..</td></tr>`;
     try {
         const response = await HttpClient.get(LOGS_API, {
             params: { page, size: genState.history.size },
@@ -287,7 +288,7 @@ async function loadGenHistory(page = genState.history.page) {
             );
     } catch (error) {
         console.error('加载生成历史失败:', error);
-        body.innerHTML = `<tr><td colspan="11" class="py-8 text-center text-[#ef5350]">加载失败</td></tr>`;
+        body.innerHTML = `<tr><td colspan="11" class="py-8 text-center text-danger">加载失败</td></tr>`;
     }
 }
 
@@ -295,7 +296,7 @@ function renderHistoryRows(items) {
     const body = document.getElementById('poGenHistoryBody');
     if (!body) return;
     if (!items.length) {
-        body.innerHTML = `<tr><td colspan="11" class="py-8 text-center text-[#555]">暂无生成记录</td></tr>`;
+        body.innerHTML = `<tr><td colspan="11" class="py-8 text-center text-ink-faint">暂无生成记录</td></tr>`;
         return;
     }
 
@@ -303,22 +304,22 @@ function renderHistoryRows(items) {
         const status = STATUS_META[item.status] || STATUS_META.failed;
         const createdBy = item.created_by || item.operator_name || '-';
         return `
-            <tr class="hover:bg-[#ffffff]/[0.02] transition-colors text-[#999]">
-                <td class="py-2 px-2 font-mono text-[#666] whitespace-nowrap">${esc(formatDateTime(item.started_at))}</td>
-                <td class="py-2 px-2 font-mono text-[#666] whitespace-nowrap">${esc(formatDateTime(item.finished_at))}</td>
-                <td class="py-2 px-2 font-mono text-right tabular-nums text-[#777] whitespace-nowrap">${esc(formatDurationSeconds(item))}</td>
-                <td class="py-2 px-2 text-[#ccc] whitespace-nowrap">${esc(createdBy)}</td>
-                <td class="py-2 px-2 text-[#ccc] whitespace-nowrap">${esc(item.location || '-')}</td>
-                <td class="py-2 px-2 text-[#ccc] whitespace-nowrap">${esc(item.vehicle_model || '-')}</td>
-                <td class="py-2 px-2 font-mono text-[#ccc] whitespace-nowrap">${esc(item.bom_version || '-')}</td>
+            <tr class="hover:bg-ink/[0.02] transition-colors text-ink-muted">
+                <td class="py-2 px-2 font-mono text-ink-dim whitespace-nowrap">${esc(formatDateTime(item.started_at))}</td>
+                <td class="py-2 px-2 font-mono text-ink-dim whitespace-nowrap">${esc(formatDateTime(item.finished_at))}</td>
+                <td class="py-2 px-2 font-mono text-right tabular-nums text-ink-dim whitespace-nowrap">${esc(formatDurationSeconds(item))}</td>
+                <td class="py-2 px-2 text-ink-muted whitespace-nowrap">${esc(createdBy)}</td>
+                <td class="py-2 px-2 text-ink-muted whitespace-nowrap">${esc(item.location || '-')}</td>
+                <td class="py-2 px-2 text-ink-muted whitespace-nowrap">${esc(item.vehicle_model || '-')}</td>
+                <td class="py-2 px-2 font-mono text-ink-muted whitespace-nowrap">${esc(item.bom_version || '-')}</td>
                 <td class="py-2 px-2 text-center text-[9px] ${status.className}">${status.label}</td>
-                <td class="py-2 px-2 font-mono text-right tabular-nums text-[#777]">${fmtInt(item.node_count)}</td>
-                <td class="py-2 px-2 font-mono text-right tabular-nums text-[#777]">${fmtInt(item.object_count)}</td>
+                <td class="py-2 px-2 font-mono text-right tabular-nums text-ink-dim">${fmtInt(item.node_count)}</td>
+                <td class="py-2 px-2 font-mono text-right tabular-nums text-ink-dim">${fmtInt(item.object_count)}</td>
                 <td class="py-2 px-2 text-right whitespace-nowrap">
-                    <button type="button" class="po-gen-view-process-btn text-[9px] text-[#777] hover:text-white mr-2"
+                    <button type="button" class="po-gen-view-process-btn text-[9px] text-ink-dim hover:text-ink mr-2"
                             data-log-id="${esc(item.id)}">过程</button>
                     ${item.status === 'failed' ? '' : `
-                    <button type="button" class="po-gen-view-result-btn text-[9px] text-[#777] hover:text-white"
+                    <button type="button" class="po-gen-view-result-btn text-[9px] text-ink-dim hover:text-ink"
                             data-location="${esc(item.location || '')}"
                             data-model="${esc(item.vehicle_model || '')}"
                             data-version="${esc(item.bom_version || '')}">结果</button>
@@ -358,34 +359,34 @@ function showProcessDrawer(log) {
     const status = STATUS_META[log.status] || STATUS_META.failed;
     const backdrop = document.createElement('div');
     backdrop.id = 'poGenProcessBackdrop';
-    backdrop.className = 'fixed inset-0 z-[80] bg-black/70 backdrop-blur-sm';
+    backdrop.className = DRAWER_BACKDROP;
     const drawer = document.createElement('div');
     drawer.id = 'poGenProcessDrawer';
     drawer.className =
-        'fixed inset-y-0 right-0 z-[85] w-[640px] max-w-[95vw] bg-[#1a1a1a] border-l border-[#2a2a2a] flex flex-col';
+        `${DRAWER_SHELL} w-[640px]`;
     drawer.innerHTML = `
-        <div class="px-5 py-3.5 flex items-center justify-between shrink-0 bg-[#1f1f1f] border-b border-[#333333]">
-            <h5 class="text-[11px] font-semibold tracking-wider text-[#b0b0b0] uppercase">
+        <div class="px-5 py-3.5 flex items-center justify-between shrink-0 bg-app-surface border-b border-line">
+            <h5 class="text-[11px] font-semibold tracking-wider text-ink-muted uppercase">
                 生成过程 · ${esc(log.location || '-')} · ${esc(log.vehicle_model || '-')} · ${esc(log.bom_version || '-')}
                 <span class="ml-2 normal-case ${status.className}">${status.label}</span>
             </h5>
             <div class="flex items-center gap-0.5 shrink-0">
                 ${window.copyProcessReportButtonHtml()}
                 <button type="button" id="closePoGenProcessDrawer"
-                    class="flex items-center justify-center w-8 h-8 rounded-md text-[#707070] hover:text-white hover:bg-[#d32f2f] transition-all">
+                    class="${DRAWER_CLOSE}">
                     <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M6 18L18 6M6 6l12 12"></path>
                     </svg>
                 </button>
             </div>
         </div>
-        <div class="px-5 py-3 border-b border-[#222] text-[10px] text-[#777] space-y-1 shrink-0">
-            <div>批次 <span class="font-mono text-[#999]">${esc(log.calc_batch_id || '-')}</span></div>
+        <div class="px-5 py-3 border-b border-line-subtle text-[10px] text-ink-dim space-y-1 shrink-0">
+            <div>批次 <span class="font-mono text-ink-muted">${esc(log.calc_batch_id || '-')}</span></div>
             <div>${esc(formatTimingLine(log, formatDateTime) || '-')}</div>
             <div>汇总：节点 ${fmtInt(log.node_count)} · ${SECTION_LABELS.object} ${fmtInt(log.object_count)} · ${SECTION_LABELS.other_leaf} ${fmtInt(log.other_leaf_count)} · ${SECTION_LABELS.anomaly} ${fmtInt(log.anomaly_count)}</div>
         </div>
         <div class="flex-1 overflow-y-auto overscroll-contain p-5">
-            <pre class="text-[11px] leading-5 font-mono text-[#9e9e9e] whitespace-pre-wrap break-words bg-[#111111] border border-[#262626] p-4">${esc(log.detail_text || '（无过程文本）')}</pre>
+            <pre class="text-[11px] leading-5 font-mono text-ink-muted whitespace-pre-wrap break-words bg-app-main border border-app-elevated p-4">${esc(log.detail_text || '（无过程文本）')}</pre>
         </div>
     `;
     document.body.appendChild(backdrop);

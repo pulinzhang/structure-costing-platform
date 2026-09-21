@@ -3,80 +3,75 @@
  * 冲压加工费计算结果浏览—Brabus Carbon & Precision Dark
  */
 
-import { paginationBarHtml } from '../../../../page-size.js?v=3';
-import { moreMenuItemHtml, moreMenuShellHtml } from '../../../../more-menu.js?v=1';
-import { partShortCodeCellHtml, partNumberNameCellHtml } from '../../../../part-identity.js?v=3';
+import { filterSelect, filterInput, HUD_SHELL, DRAWER_CLOSE, DRAWER_SHELL, DRAWER_BACKDROP, HUD_BAND, BTN_GHOST, OPS_TH, HUD_KPI_AUX, TH_KEY, TH_TEXT, TH_NUM, TH_FOCUS, HUD_LED } from '../../../../ui/classes.js?v=8';
+import { filterBarHtml } from '../../../../ui/filter-bar.js?v=2';
+import { hudTableHtml, hudRowHtml, opsIconButtonHtml } from '../../../../ui/hud-table.js?v=1';
+
+import { moreMenuItemHtml, moreMenuShellHtml } from '../../../../ui/more-menu.js?v=3';
+import { partShortCodeCellHtml, partNumberNameCellHtml } from '../../../../domain/part-identity.js?v=5';
 
 export function processFeeListTemplate() {
     return `
         <div class="space-y-2 w-full max-w-full">
-            <div class="bg-[#0A0A0C] border border-[#1A1A22] overflow-hidden w-full max-w-full"
-                 style="box-shadow: 0 4px 24px rgba(0,0,0,0.7), inset 0 1px 0 rgba(255,255,255,0.02);">
+            <div class="${HUD_SHELL}">
 
                 <!-- HUD 战术数据看板 + 操作 -->
-                <div class="px-5 pt-4 pb-3.5 border-b border-[#14141A]"
-                     style="background: linear-gradient(135deg, #0E0E12 0%, #121218 45%, #0C0C10 100%);">
+                <div class="${HUD_BAND}">
                     <div class="flex items-start justify-between gap-4 mb-3">
                         <div class="grid grid-cols-2 lg:grid-cols-4 gap-3 font-mono flex-1 min-w-0">
                             <!-- 1. 整体加工费：管理者成本大盘 -->
-                            <div class="bg-[#0D0D11]/80 border border-[#1E1E26] p-3.5 backdrop-blur-sm"
-                                 style="box-shadow: inset 0 1px 0 rgba(255,255,255,0.03);">
-                                <div class="text-[#555555] text-[10px] tracking-wider">整体加工费</div>
-                                <div class="text-[22px] font-black text-[#FFFFFF] mt-1 tracking-tight tabular-nums leading-none">
+                            <div class="${HUD_KPI_AUX} backdrop-blur-sm">
+                                <div class="text-ink-faint text-[10px] tracking-wider">整体加工费</div>
+                                <div class="text-[22px] font-black text-ink mt-1 tracking-tight tabular-nums leading-none">
                                     ¥ <span id="feeHudTotalFee">—</span>
                                 </div>
-                                <div class="text-[9px] font-mono text-[#6E6E73] mt-2 flex items-center justify-between gap-2">
+                                <div class="text-[9px] font-mono text-ink-dim mt-2 flex items-center justify-between gap-2">
                                     <span>件均</span>
-                                    <span class="text-[#A1A1A6] tabular-nums">¥ <span id="feeHudAvgFee">—</span> / 件</span>
+                                    <span class="text-ink-muted tabular-nums">¥ <span id="feeHudAvgFee">—</span> / 件</span>
                                 </div>
                             </div>
                             <!-- 2. 零件总条数：批次规模 -->
-                            <div class="bg-[#0D0D11]/80 border border-[#1E1E26] p-3.5 backdrop-blur-sm"
-                                 style="box-shadow: inset 0 1px 0 rgba(255,255,255,0.03);">
-                                <div class="text-[#555555] text-[10px] tracking-wider">零件总条数</div>
-                                <div class="text-[22px] font-black text-[#FFFFFF] mt-1 tracking-tight tabular-nums leading-none">
+                            <div class="${HUD_KPI_AUX} backdrop-blur-sm">
+                                <div class="text-ink-faint text-[10px] tracking-wider">零件总条数</div>
+                                <div class="text-[22px] font-black text-ink mt-1 tracking-tight tabular-nums leading-none">
                                     <span id="feeHudTotal">—</span>
-                                    <span class="text-[10px] text-[#555555] ml-1 font-bold">条</span>
+                                    <span class="text-[10px] text-ink-faint ml-1 font-bold">条</span>
                                 </div>
-                                <div class="text-[9px] font-mono text-[#6E6E73] mt-2 flex items-center justify-between gap-2">
+                                <div class="text-[9px] font-mono text-ink-dim mt-2 flex items-center justify-between gap-2">
                                     <span>当前版本</span>
-                                    <span id="feeHudVersion" class="text-[#A1A1A6] tabular-nums">—</span>
+                                    <span id="feeHudVersion" class="text-ink-muted tabular-nums">—</span>
                                 </div>
                             </div>
                             <!-- 3. 算费失败待办：操作员核心工作台（有待办才红晕） -->
                             <button type="button" id="feeHudZeroCard"
                                     class="text-left w-full p-3.5 relative overflow-hidden group transition-all duration-200 cursor-pointer
-                                           bg-[#0D0D11]/80 border border-[#1E1E26] backdrop-blur-sm
-                                           hover:border-[#2A2A35] focus:outline-none focus-visible:border-[#FF1E27]/60"
-                                    style="box-shadow: inset 0 1px 0 rgba(255,255,255,0.03);"
+                                           bg-app-main/80 border border-line-hud backdrop-blur-sm
+                                           hover:border-line-hud focus:outline-none focus-visible:border-brand-hud/60"
                                     title="点击筛选算费失败 / 零价待补价行"
                                     aria-pressed="false">
-                                <div id="feeHudZeroGlow" class="hidden absolute top-0 left-0 right-0 h-[2px] bg-gradient-to-r from-transparent via-[#FF1E27] to-transparent"
-                                     style="box-shadow: 0 0 10px #FF1E27;"></div>
+                                <div id="feeHudZeroGlow" class="hidden absolute top-0 left-0 right-0 h-[2px] bg-gradient-to-r from-transparent via-brand-hud to-transparent hud-kpi-line-glow"></div>
                                 <div class="flex justify-between items-start">
-                                    <span id="feeHudZeroLabel" class="text-[#555555] text-[10px] font-bold tracking-widest">算费失败待办</span>
-                                    <span id="feeHudZeroDot" class="hidden w-2 h-2 rounded-full bg-[#FF1E27] animate-pulse"
-                                          style="box-shadow: 0 0 8px #FF1E27;"></span>
+                                    <span id="feeHudZeroLabel" class="text-ink-faint text-[10px] font-bold tracking-widest">算费失败待办</span>
+                                    <span id="feeHudZeroDot" class="hidden w-2 h-2 rounded-full bg-brand-hud animate-pulse hud-kpi-dot-glow"></span>
                                 </div>
-                                <div id="feeHudZeroValue" class="text-[26px] font-black text-[#6E6E73] font-mono mt-1 tracking-tight tabular-nums leading-none">
+                                <div id="feeHudZeroValue" class="text-[26px] font-black text-ink-dim font-mono mt-1 tracking-tight tabular-nums leading-none">
                                     <span id="feeHudZero">—</span>
                                     <span class="text-[10px] ml-1 font-bold opacity-70">条</span>
                                 </div>
-                                <div id="feeHudZeroHint" class="text-[9px] font-mono text-[#555555] mt-2">
+                                <div id="feeHudZeroHint" class="text-[9px] font-mono text-ink-faint mt-2">
                                     规则运行完备
                                 </div>
                             </button>
                             <!-- 4. 审核进度：出账 / 封盘条件 -->
-                            <div class="bg-[#0D0D11]/80 border border-[#1E1E26] p-3.5 backdrop-blur-sm"
-                                 style="box-shadow: inset 0 1px 0 rgba(255,255,255,0.03);">
-                                <div class="text-[#555555] text-[10px] tracking-wider">审核进度</div>
-                                <div class="text-[22px] font-black text-[#FFFFFF] mt-1 tracking-tight tabular-nums leading-none">
+                            <div class="${HUD_KPI_AUX} backdrop-blur-sm">
+                                <div class="text-ink-faint text-[10px] tracking-wider">审核进度</div>
+                                <div class="text-[22px] font-black text-ink mt-1 tracking-tight tabular-nums leading-none">
                                     <span id="feeHudPending">—</span>
-                                    <span class="text-[10px] text-[#555555] ml-1 font-bold">条待审</span>
+                                    <span class="text-[10px] text-ink-faint ml-1 font-bold">条待审</span>
                                 </div>
-                                <div class="text-[9px] font-mono text-[#6E6E73] mt-2 flex items-center justify-between gap-2">
+                                <div class="text-[9px] font-mono text-ink-dim mt-2 flex items-center justify-between gap-2">
                                     <span>已审核</span>
-                                    <span class="text-[#A1A1A6] tabular-nums"><span id="feeHudApproved">—</span> 条</span>
+                                    <span class="text-ink-muted tabular-nums"><span id="feeHudApproved">—</span> 条</span>
                                 </div>
                             </div>
                         </div>
@@ -92,7 +87,7 @@ export function processFeeListTemplate() {
                                 ].join(''),
                             })}
                             <button id="feeExportBtn" type="button"
-                                    class="inline-flex items-center gap-1.5 bg-transparent text-[#6E6E73] border border-[#2A2A35] px-3 py-1.5 text-[11px] font-medium rounded-md hover:border-[#FF1E27]/50 hover:text-[#FF1E27] hover:bg-[#FF1E27]/10 hover:shadow-[0_0_12px_rgba(255,30,39,0.2)] transition-all duration-200">
+                                    class="${BTN_GHOST}">
                                 ${window.svgIcon('download', 'w-3 h-3')}
                                 Excel
                             </button>
@@ -101,168 +96,126 @@ export function processFeeListTemplate() {
                 </div>
 
                 <!-- 战术胶囊筛选栏：默认收起，抹平 ERP 模版意-->
-                <div class="px-5 py-3 border-b border-[#14141A]"
-                     style="background: linear-gradient(180deg, #0C0C10 0%, #0A0A0E 100%);">
-                    <div class="flex items-center justify-between gap-4 bg-[#0C0C10] border border-[#1E1E26] px-4 py-2.5 rounded-md font-mono text-[11px]"
-                         style="box-shadow: inset 0 1px 0 rgba(255,255,255,0.02), 0 0 20px rgba(0,0,0,0.3);">
-                        <div class="flex items-center gap-3 min-w-0 flex-1">
-                            <span class="text-[#555555] shrink-0 tracking-wider">当前筛选：</span>
-                            <div class="flex items-center gap-2 flex-wrap">
-                                <span id="feeCapsuleYear" class="bg-[#1A1A22] border border-[#2A2A35] text-[#8E8E93] px-2.5 py-1 rounded-md">全部年度</span>
-                                <span id="feeCapsuleLocation" class="bg-[#1A1A22] border border-[#2A2A35] text-[#8E8E93] px-2.5 py-1 rounded-md">全部基地</span>
-                                <span id="feeCapsuleVehicle" class="bg-[#1A1A22] border border-[#2A2A35] text-[#8E8E93] px-2.5 py-1 rounded-md">全部项目</span>
-                                <span id="feeCapsuleVersion" class="bg-[#1A1A22] border border-[#2A2A35] text-[#8E8E93] px-2.5 py-1 rounded-md">全部版本</span>
-                                <span id="feeCapsuleSupplier" class="bg-[#1A1A22] border border-[#2A2A35] text-[#8E8E93] px-2.5 py-1 rounded-md">全部工厂</span>
-                                <span id="feeCapsuleFailTodo" class="hidden bg-[#FF1E27]/15 border border-[#FF1E27]/40 text-[#FF1E27] px-2.5 py-1 rounded-md font-bold">待补价筛选中</span>
-                            </div>
-                        </div>
-                        <div class="flex items-center gap-3 shrink-0">
-                            <button type="button" id="feeToggleAdvancedFilter"
-                                    class="text-[#6E6E73] hover:text-white transition-colors flex items-center gap-1.5 text-[11px]">
-                                <span id="feeAdvancedFilterLabel">展开高级筛选</span>
-                                <span id="feeAdvancedFilterCount" class="text-[#555555]">(0)</span>
-                            </button>
-                            <button type="button" id="feeSearchBtn"
-                                    class="inline-flex items-center gap-1.5 h-7 px-3 text-[11px] font-semibold rounded-sm text-[#c8c8c8] border border-[#8a2020] transition-all duration-200 hover:text-white"
-                                    style="background: linear-gradient(180deg, #3d1515 0%, #2d0f0f 100%); border-color: #6b1a1a; box-shadow: 0 1px 3px rgba(0,0,0,0.4), inset 0 1px 0 rgba(211,47,47,0.1), 0 0 12px rgba(198,40,40,0.08);">
-                                ${window.svgIcon('search', 'w-3 h-3')}
-                                查询
-                            </button>
-                        </div>
-                    </div>
-
-                    <!-- 高级筛选面板（默认折叠）-->
-                    <div id="feeAdvancedFilterPanel" class="hidden mt-3 pt-3 border-t border-[#1A1A22]">
-                        <div class="flex items-end gap-3 flex-wrap">
-                            ${filterSelect('feeYearFilter', '年度')}
-                            ${filterSelect('feeLocationFilter', '基地')}
-                            ${filterSelect('feeVehicleFilter', '项目')}
-                            ${filterSelect('feeVersionFilter', '版本')}
-                            ${filterSelect('feeSupplierFilter', '冲压工厂')}
-                            ${filterSelect('feeAuditStatusFilter', '审核状态')}
-                            ${filterInput('feePartNumberFilter', '零件号', '短号或完整零件号')}
-                            <button id="feeResetBtn" type="button"
-                                    class="inline-flex items-center gap-1.5 h-8 px-3 text-[11px] font-medium rounded-md bg-transparent text-[#6E6E73] border border-[#2A2A35] hover:bg-[#FF1E27]/10 hover:border-[#FF1E27]/50 hover:text-[#FF1E27] transition-all duration-200">
+                <div class="px-5 py-3 border-b border-line-subtle bg-gradient-to-b from-app-hud to-app-deep">
+                    ${filterBarHtml({
+                        prefix: 'fee',
+                        searchId: 'feeSearchBtn',
+                        capsules: [
+                            { capsuleId: 'feeCapsuleYear', idleLabel: '全部年度' },
+                            { capsuleId: 'feeCapsuleLocation', idleLabel: '全部基地' },
+                            { capsuleId: 'feeCapsuleVehicle', idleLabel: '全部项目' },
+                            { capsuleId: 'feeCapsuleVersion', idleLabel: '全部版本' },
+                            { capsuleId: 'feeCapsuleSupplier', idleLabel: '全部工厂' },
+                        ],
+                        extraCapsulesHtml: '<span id="feeCapsuleFailTodo" class="hidden bg-brand-hud/15 border border-brand-hud/40 text-brand-hud px-2.5 py-1 rounded-md font-bold">待补价筛选中</span>',
+                        fieldsHtml: [
+                            filterSelect('feeYearFilter', '年度'),
+                            filterSelect('feeLocationFilter', '基地'),
+                            filterSelect('feeVehicleFilter', '项目'),
+                            filterSelect('feeVersionFilter', '版本'),
+                            filterSelect('feeSupplierFilter', '冲压工厂'),
+                            filterSelect('feeAuditStatusFilter', '审核状态'),
+                            filterInput('feePartNumberFilter', '零件号', '短号或完整零件号'),
+                            `<button id="feeResetBtn" type="button" class="${BTN_GHOST}">
                                 ${window.svgIcon('refresh', 'w-3 h-3')}
                                 重置
-                            </button>
-                        </div>
-                        <p class="mt-2 text-[10px] text-[#555555]">筛选均可选；级联为年度 → 基地 → 项目 → 版本 → 冲压工厂。批量审核 / 反审核按整车签字。批量删除可按工厂收窄。</p>
-                    </div>
+                            </button>`,
+                        ].join(''),
+                        hintHtml: '筛选均可选；级联为年度 → 基地 → 项目 → 版本 → 冲压工厂。批量审核 / 反审核按整车签字。批量删除可按工厂收窄。',
+                    })}
                 </div>
 
-                <div class="overflow-x-auto brabus-bg-grid">
-                    <table class="w-full min-w-[2100px] bg-transparent border-separate border-spacing-0">
-                        <thead>
-                            <tr class="border-b border-[#17171C] bg-[#0B0B0D]/95">
+                ${hudTableHtml({
+                    prefix: 'fee',
+                    minWidth: '2100px',
+                    headHtml: `
                                 <th class="p-0 w-0"></th>
-                                <!-- 关注区：短代码 + 系统计算 / 其它费用 / 确认单价 -->
-                                <th class="px-3 py-3 text-left text-[10px] font-semibold uppercase tracking-[0.18em] text-[#6E6E73] whitespace-nowrap">核价维度</th>
-                                <th class="px-3 py-3 text-left text-[10px] font-semibold uppercase tracking-[0.18em] text-[#A1A1A6] whitespace-nowrap">短代码</th>
-                                <th class="px-3 py-3 text-left text-[10px] font-semibold uppercase tracking-[0.18em] text-[#6E6E73] whitespace-nowrap">零件</th>
-                                <th class="px-3 py-3 text-left text-[10px] font-semibold uppercase tracking-[0.18em] text-[#6E6E73] whitespace-nowrap border-r border-[#22222A]">项目/版本</th>
-                                <th class="px-3 py-3 text-right text-[10px] font-semibold uppercase tracking-[0.18em] text-[#6E6E73] whitespace-nowrap">工序数</th>
-                                <th class="px-3 py-3 text-right text-[10px] font-semibold uppercase tracking-[0.18em] text-[#6E6E73] whitespace-nowrap">系统计算</th>
-                                <th class="px-3 py-3 text-right text-[10px] font-semibold uppercase tracking-[0.18em] text-[#6E6E73] whitespace-nowrap border-r border-[#22222A]">其它费用</th>
-                                <th class="px-3 py-3 text-right text-[10px] font-bold uppercase tracking-[0.18em] text-[#FFFFFF]/70 whitespace-nowrap bg-[#14141C] border-x border-[#222230]">确认单价</th>
-                                <!-- 次要：材新/ 工艺明细 -->
-                                <th class="px-3 py-3 text-left text-[10px] font-semibold uppercase tracking-[0.18em] text-[#6E6E73] whitespace-nowrap">材质</th>
-                                <th class="px-3 py-3 text-right text-[10px] font-semibold uppercase tracking-[0.18em] text-[#6E6E73] whitespace-nowrap">料厚</th>
-                                <th class="px-3 py-3 text-right text-[10px] font-semibold uppercase tracking-[0.18em] text-[#6E6E73] whitespace-nowrap">重量</th>
-                                <th class="px-3 py-3 text-right text-[10px] font-semibold uppercase tracking-[0.18em] text-[#6E6E73] whitespace-nowrap">料片长</th>
-                                <th class="px-3 py-3 text-right text-[10px] font-semibold uppercase tracking-[0.18em] text-[#6E6E73] whitespace-nowrap">料片审</th>
-                                <th class="px-3 py-3 text-left text-[10px] font-semibold uppercase tracking-[0.18em] text-[#6E6E73] whitespace-nowrap">模具/工艺</th>
-                                <th class="px-3 py-3 text-left text-[10px] font-semibold uppercase tracking-[0.18em] text-[#6E6E73] whitespace-nowrap">备注</th>
-                                <th class="px-3 py-3 text-left text-[10px] font-semibold uppercase tracking-[0.18em] text-[#6E6E73] whitespace-nowrap">审核</th>
-                                <th class="px-3 py-3 text-left text-[10px] font-semibold uppercase tracking-[0.18em] text-[#6E6E73] whitespace-nowrap">说明</th>
-                                <th class="px-3 py-3 text-left text-[9px] font-normal tracking-[0.08em] text-[#3a3a3a] whitespace-nowrap">创建人</th>
-                                <th class="px-3 py-3 text-left text-[9px] font-normal tracking-[0.08em] text-[#3a3a3a] whitespace-nowrap">创建时间</th>
-                                <th class="px-3 py-3 text-left text-[9px] font-normal tracking-[0.08em] text-[#3a3a3a] whitespace-nowrap">最后修改人</th>
-                                <th class="px-3 py-3 text-left text-[9px] font-normal tracking-[0.08em] text-[#3a3a3a] whitespace-nowrap">最后修改时间</th>
-                                <th class="p-0 w-9 sticky right-0 z-[3] bg-[#0B0B0D]" aria-label="操作"></th>
-                            </tr>
-                        </thead>
-                        <tbody id="feeTableBody" class="bg-transparent"></tbody>
-                    </table>
-                </div>
-
-                ${paginationBarHtml({ infoId: 'feeTotalLabel', selectId: 'feePageSize', buttonsId: 'feePagination' })}
-
-                <div id="feeEmpty" class="hidden flex flex-col items-center justify-center py-14">
-                    <div class="w-10 h-10 flex items-center justify-center mb-3 rounded-md bg-[#121218] border border-[#2A2A35]">
-                        ${window.svgIcon('clipboard-list', 'w-4 h-4 text-[#555555]')}
-                    </div>
-                    <h5 class="text-[11px] font-medium text-[#8E8E93] mb-1">暂无加工费数据</h5>
-                    <p class="text-[10px] text-[#555555]">请先在「冲压加工费计算」中执行计算</p>
-                </div>
-
-                <div id="feeLoading" class="hidden flex items-center justify-center py-14">
-                    <div class="w-5 h-5 border-2 border-[#2A2A35] border-t-[#FF1E27] rounded-full animate-spin"
-                         style="box-shadow: 0 0 12px rgba(255,30,39,0.35);"></div>
-                </div>
+                                <th class="${TH_TEXT} whitespace-nowrap">核价维度</th>
+                                <th class="${TH_KEY} whitespace-nowrap">短代码</th>
+                                <th class="${TH_TEXT} whitespace-nowrap">零件</th>
+                                <th class="${TH_TEXT} whitespace-nowrap border-r border-line-hud">项目/版本</th>
+                                <th class="${TH_NUM} whitespace-nowrap">工序数</th>
+                                <th class="${TH_NUM} whitespace-nowrap">系统计算</th>
+                                <th class="${TH_NUM} whitespace-nowrap border-r border-line-hud">其它费用</th>
+                                <th class="${TH_FOCUS} whitespace-nowrap">确认单价</th>
+                                <th class="${TH_TEXT} whitespace-nowrap">材质</th>
+                                <th class="${TH_NUM} whitespace-nowrap">料厚</th>
+                                <th class="${TH_NUM} whitespace-nowrap">重量</th>
+                                <th class="${TH_NUM} whitespace-nowrap">料片长</th>
+                                <th class="${TH_NUM} whitespace-nowrap">料片审</th>
+                                <th class="${TH_TEXT} whitespace-nowrap">模具/工艺</th>
+                                <th class="${TH_TEXT} whitespace-nowrap">备注</th>
+                                <th class="${TH_TEXT} whitespace-nowrap">审核</th>
+                                <th class="${TH_TEXT} whitespace-nowrap">说明</th>
+                                <th class="${TH_TEXT} whitespace-nowrap">创建人</th>
+                                <th class="${TH_TEXT} whitespace-nowrap">创建时间</th>
+                                <th class="${TH_TEXT} whitespace-nowrap">最后修改人</th>
+                                <th class="${TH_TEXT} whitespace-nowrap">最后修改时间</th>
+                                <th class="${OPS_TH}" aria-label="操作"></th>`,
+                    empty: { title: '暂无加工费数据', hint: '请先在「冲压加工费计算」中执行计算' },
+                    loading: true,
+                })}
             </div>
         </div>
 
         <!-- 批量审核 / 反审核抽屉-->
-        <div class="fixed inset-0 z-[80] bg-black/70 backdrop-blur-sm transition-opacity duration-300"
+        <div class="${DRAWER_BACKDROP} transition-opacity duration-300"
              id="feeBatchAuditDrawerBackdrop" style="display:none"></div>
-        <div class="fixed inset-y-0 right-0 z-[85] w-[420px] bg-[#1a1a1a] border-l border-[#2a2a2a] transform translate-x-full transition-transform duration-300 ease-in-out flex flex-col"
-             id="feeBatchAuditDrawer" style="display:none; max-height: 100vh; box-shadow: -20px 0 60px rgba(0,0,0,0.95);">
-            <div class="px-5 py-3.5 flex items-center justify-between shrink-0"
-                 style="background: linear-gradient(180deg, #1f1f1f 0%, #1a1a1a 100%); border-bottom: 1px solid #333333;">
-                <h5 class="text-[11px] font-semibold tracking-wider text-[#b0b0b0] flex items-center gap-2.5 uppercase">
-                    <span style="width:3px;height:14px;background:#d32f2f;border-radius:1px;display:inline-block;box-shadow: 0 0 8px rgba(211,47,47,0.5);"></span>
+        <div class="${DRAWER_SHELL} w-[420px] transform translate-x-full transition-transform duration-300 ease-in-out"
+             id="feeBatchAuditDrawer" style="display:none; max-height: 100vh">
+            <div class="px-5 py-3.5 flex items-center justify-between shrink-0">
+                <h5 class="text-[11px] font-semibold tracking-wider text-ink-muted flex items-center gap-2.5 uppercase">
+                    <span class="hud-led"></span>
                     <span id="feeBatchAuditDrawerTitle">批量审核</span>
                 </h5>
                 <button type="button" id="closeFeeBatchAuditDrawer"
-                        class="flex items-center justify-center w-8 h-8 rounded-md text-[#707070] hover:text-white hover:bg-[#d32f2f] transition-all">
+                        class="${DRAWER_CLOSE}">
                     <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M6 18L18 6M6 6l12 12"></path>
                     </svg>
                 </button>
             </div>
             <div class="flex-1 min-h-0 overflow-y-auto p-6 space-y-4">
                 <input type="hidden" id="feeBatchAuditMode" value="approve">
-                <div class="bg-[#0c0c0c] border border-[#1a1a1a] rounded p-3 text-[11px] text-[#9e9e9e]" id="feeBatchAuditFilterSummary"></div>
-                <p id="feeBatchAuditHint" class="text-[11px] text-[#616161]"></p>
+                <div class="bg-app-deep border border-line-subtle rounded p-3 text-[11px] text-ink-muted" id="feeBatchAuditFilterSummary"></div>
+                <p id="feeBatchAuditHint" class="text-[11px] text-ink-dim"></p>
                 <div>
-                    <label class="text-[10px] text-[#777777] mb-1 block" id="feeBatchAuditOperatorLabel">操作人</label>
+                    <label class="text-[10px] text-ink-dim mb-1 block" id="feeBatchAuditOperatorLabel">操作人</label>
                     <div id="feeBatchAuditOperatorDisplay"
-                         class="w-full h-9 px-3 flex items-center text-xs bg-[#0a0a0a] border border-[#2c2c2c] text-[#9e9e9e] rounded">
+                         class="w-full h-9 px-3 flex items-center text-xs bg-app-deep border border-line text-ink-muted rounded">
                         —
                     </div>
-                    <p class="text-[10px] text-[#555555] mt-1">取自当前登录用户，无需填写</p>
+                    <p class="text-[10px] text-ink-faint mt-1">取自当前登录用户，无需填写</p>
                 </div>
                 <div>
-                    <label class="text-[10px] text-[#777777] mb-1 block" id="feeBatchAuditRemarkLabel">审核意见</label>
+                    <label class="text-[10px] text-ink-dim mb-1 block" id="feeBatchAuditRemarkLabel">审核意见</label>
                     <textarea id="feeBatchAuditRemark" rows="4" maxlength="500"
-                              class="w-full px-3 py-2 text-xs bg-[#0a0a0a] border border-[#2c2c2c] text-[#ffffff] placeholder:text-[#616161] focus:outline-none focus:border-[#ff5252] transition-all rounded resize-none"
+                              class="w-full px-3 py-2 text-xs bg-app-deep border border-line text-ink placeholder:text-ink-dim focus:outline-none focus:border-brand-active transition-all rounded resize-none"
                               placeholder="请填写审核意见（必填）"></textarea>
                 </div>
             </div>
-            <div class="px-6 py-4 border-t border-[#262626] flex items-center justify-end gap-2 shrink-0">
-                <button type="button" id="cancelFeeBatchAuditBtn" class="inline-flex items-center gap-1.5 bg-transparent text-[#9e9e9e] border border-[#2c2c2c] px-4 py-2 text-[11px] font-medium rounded hover:border-[#9e9e9e] hover:text-white transition-all">取消</button>
-                <button type="button" id="confirmFeeBatchAuditBtn" class="inline-flex items-center gap-1.5 bg-[#d32f2f] text-white px-4 py-2 text-[11px] font-semibold rounded hover:bg-[#b71c1c] transition-all">
+            <div class="px-6 py-4 border-t border-app-elevated flex items-center justify-end gap-2 shrink-0">
+                <button type="button" id="cancelFeeBatchAuditBtn" class="inline-flex items-center gap-1.5 bg-transparent text-ink-muted border border-line px-4 py-2 text-[11px] font-medium rounded hover:border-ink-muted hover:text-ink transition-all">取消</button>
+                <button type="button" id="confirmFeeBatchAuditBtn" class="inline-flex items-center gap-1.5 bg-brand text-white px-4 py-2 text-[11px] font-semibold rounded hover:bg-brand-hover transition-all">
                     确认提交
                 </button>
             </div>
         </div>
 
         <!-- 编辑抽屉：其它费用 / 确认单价 -->
-        <div class="fixed inset-0 z-[80] bg-black/70 backdrop-blur-sm transition-opacity duration-300"
+        <div class="${DRAWER_BACKDROP} transition-opacity duration-300"
              id="feeEditDrawerBackdrop" style="display:none"></div>
-        <div class="fixed inset-y-0 right-0 z-[85] w-[560px] bg-[#1a1a1a] border-l border-[#2a2a2a] transform translate-x-full transition-transform duration-300 ease-in-out flex flex-col"
-             id="feeEditDrawer" style="display:none; max-height: 100vh; box-shadow: -20px 0 60px rgba(0,0,0,0.95);">
-            <div class="px-5 py-3.5 flex items-center justify-between shrink-0"
-                 style="background: linear-gradient(180deg, #1f1f1f 0%, #1a1a1a 100%); border-bottom: 1px solid #333333;">
-                <h5 class="text-[11px] font-semibold tracking-wider text-[#b0b0b0] flex items-center gap-2.5 uppercase">
-                    <span style="width:3px;height:14px;background:#d32f2f;border-radius:1px;display:inline-block;box-shadow: 0 0 8px rgba(211,47,47,0.5);"></span>
+        <div class="${DRAWER_SHELL} w-[560px] transform translate-x-full transition-transform duration-300 ease-in-out"
+             id="feeEditDrawer" style="display:none; max-height: 100vh">
+            <div class="px-5 py-3.5 flex items-center justify-between shrink-0">
+                <h5 class="text-[11px] font-semibold tracking-wider text-ink-muted flex items-center gap-2.5 uppercase">
+                    <span class="hud-led"></span>
                     <span id="feeEditDrawerTitle">编辑加工费</span>
                 </h5>
                 <button type="button" id="closeFeeEditDrawer"
-                        class="flex items-center justify-center w-8 h-8 rounded-md text-[#707070] hover:text-white hover:bg-[#d32f2f] transition-all">
+                        class="${DRAWER_CLOSE}">
                     <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M6 18L18 6M6 6l12 12"></path>
                     </svg>
                 </button>
             </div>
@@ -270,50 +223,48 @@ export function processFeeListTemplate() {
                 <form id="feeEditForm" class="p-6 space-y-5">
                     <input type="hidden" id="feeEditRecordId" value="">
                     <!-- 关注区：系统计算 + 其它费用 = 确认单价 -->
-                    <div class="bg-[#111111] border border-[#d32f2f]/30 p-4"
-                         style="box-shadow: 0 0 24px rgba(211,47,47,0.08), inset 0 1px 0 rgba(211,47,47,0.06);">
-                        <label class="text-[10px] font-semibold text-[#d32f2f] uppercase tracking-[0.1em] mb-3 flex items-center gap-2">
-                            <span class="w-0.5 h-3 bg-[#d32f2f] rounded-sm shadow-[0_0_8px_rgba(211,47,47,0.5)]"></span>
+                    <div class="bg-app-main border border-brand/30 p-4">
+                        <label class="text-[10px] font-semibold text-brand uppercase tracking-[0.1em] mb-3 flex items-center gap-2">
+                            <span class="${HUD_LED}"></span>
                             单价构成
                         </label>
                         <div id="feeEditTailorWeldHint"
-                             class="hidden mb-3 px-3 py-2 border border-[#FF1E27]/30 bg-[#1A080A]">
-                            <div class="text-[10px] font-semibold tracking-[0.08em] text-[#FF1E27]">拼焊件</div>
-                            <div class="text-[10px] text-[#C8C8D0] mt-1 leading-relaxed">
+                             class="hidden mb-3 px-3 py-2 border border-brand-hud/30 bg-brand-hud/10">
+                            <div class="text-[10px] font-semibold tracking-[0.08em] text-brand-hud">拼焊件</div>
+                            <div class="text-[10px] text-ink-muted mt-1 leading-relaxed">
                                 系统计算不含拼焊费，请在「其它费用」录入拼焊费（可正可负）。
                             </div>
                         </div>
                         <div class="grid grid-cols-[1fr_auto_1fr_auto_1fr] gap-2 items-end mb-4">
-                            <div class="bg-[#0a0a0a] border border-[#2c2c2c] px-3 py-2.5">
-                                <div class="text-[9px] text-[#555555] tracking-[0.08em] uppercase mb-1">系统计算</div>
-                                <div id="fee-edit-processing-fee" class="text-[15px] font-mono font-bold tabular-nums text-[#C8C8D0] text-right">—</div>
+                            <div class="bg-app-deep border border-line px-3 py-2.5">
+                                <div class="text-[9px] text-ink-faint tracking-[0.08em] uppercase mb-1">系统计算</div>
+                                <div id="fee-edit-processing-fee" class="text-[15px] font-mono font-bold tabular-nums text-ink-muted text-right">—</div>
                             </div>
-                            <div class="pb-3 text-[#555555] font-mono text-lg font-bold">+</div>
+                            <div class="pb-3 text-ink-faint font-mono text-lg font-bold">+</div>
                             <div>
-                                <label class="text-[9px] text-[#555555] tracking-[0.08em] uppercase mb-1 block">
+                                <label class="text-[9px] text-ink-faint tracking-[0.08em] uppercase mb-1 block">
                                     其它费用
-                                    <span id="feeEditOtherFeeHint" class="text-[#616161] normal-case">（可正可负）</span>
+                                    <span id="feeEditOtherFeeHint" class="text-ink-dim normal-case">（可正可负）</span>
                                 </label>
                                 <input type="number" id="feeEditOtherFee" step="0.001"
-                                       class="w-full h-10 px-3 text-sm font-mono bg-[#0a0a0a] border border-[#2c2c2c] text-[#ffffff] placeholder:text-[#616161] focus:outline-none focus:border-[#ff5252] rounded tabular-nums text-right"
+                                       class="w-full h-10 px-3 text-sm font-mono bg-app-deep border border-line text-ink placeholder:text-ink-dim focus:outline-none focus:border-brand-active rounded tabular-nums text-right"
                                        placeholder="0.000">
                             </div>
-                            <div class="pb-3 text-[#555555] font-mono text-lg font-bold">=</div>
-                            <div class="bg-[#1A080A] border border-[#FF1E27]/30 px-3 py-2.5"
-                                 style="box-shadow: 0 0 16px rgba(255,30,39,0.12);">
-                                <div class="text-[9px] text-[#FF1E27]/90 tracking-[0.08em] uppercase mb-1">确认单价</div>
-                                <div id="fee-edit-final-fee" class="text-[16px] font-mono font-black tabular-nums text-[#FF1E27] text-right">—</div>
+                            <div class="pb-3 text-ink-faint font-mono text-lg font-bold">=</div>
+                            <div class="bg-brand-hud/10 border border-brand-hud/30 px-3 py-2.5">
+                                <div class="text-[9px] text-brand-hud/90 tracking-[0.08em] uppercase mb-1">确认单价</div>
+                                <div id="fee-edit-final-fee" class="text-[16px] font-mono font-black tabular-nums text-brand-hud text-right">—</div>
                             </div>
                         </div>
                         <div>
-                            <label class="text-[10px] text-[#777777] mb-1 block">备注</label>
+                            <label class="text-[10px] text-ink-dim mb-1 block">备注</label>
                             <textarea id="feeEditRemark" rows="3" maxlength="1000"
-                                      class="w-full px-3 py-2 text-xs bg-[#0a0a0a] border border-[#2c2c2c] text-[#ffffff] placeholder:text-[#616161] focus:outline-none focus:border-[#ff5252] transition-all rounded resize-none"
+                                      class="w-full px-3 py-2 text-xs bg-app-deep border border-line text-ink placeholder:text-ink-dim focus:outline-none focus:border-brand-active transition-all rounded resize-none"
                                       placeholder="调整理由 / 原因"></textarea>
                         </div>
                     </div>
                     <div>
-                        <label class="text-[10px] font-semibold text-[#616161] uppercase tracking-[0.1em] mb-2 block">零件基本信息（只读）</label>
+                        <label class="text-[10px] font-semibold text-ink-dim uppercase tracking-[0.1em] mb-2 block">零件基本信息（只读）</label>
                         <div class="grid grid-cols-2 gap-3">
                             ${viewRow('年度', 'fee-edit-year')}
                             ${viewRow('基地', 'fee-edit-location')}
@@ -326,9 +277,9 @@ export function processFeeListTemplate() {
                     </div>
                 </form>
             </div>
-            <div class="px-6 py-4 border-t border-[#262626] flex items-center justify-end gap-2 shrink-0">
-                <button type="button" id="cancelFeeEditBtn" class="inline-flex items-center gap-1.5 bg-transparent text-[#9e9e9e] border border-[#2c2c2c] px-4 py-2 text-[11px] font-medium rounded hover:border-[#9e9e9e] hover:text-white transition-all">取消</button>
-                <button type="button" id="submitFeeEditBtn" class="inline-flex items-center gap-1.5 bg-[#d32f2f] text-white px-4 py-2 text-[11px] font-semibold rounded hover:bg-[#b71c1c] transition-all">
+            <div class="px-6 py-4 border-t border-app-elevated flex items-center justify-end gap-2 shrink-0">
+                <button type="button" id="cancelFeeEditBtn" class="inline-flex items-center gap-1.5 bg-transparent text-ink-muted border border-line px-4 py-2 text-[11px] font-medium rounded hover:border-ink-muted hover:text-ink transition-all">取消</button>
+                <button type="button" id="submitFeeEditBtn" class="inline-flex items-center gap-1.5 bg-brand text-white px-4 py-2 text-[11px] font-semibold rounded hover:bg-brand-hover transition-all">
                     ${window.svgIcon('archive', 'w-3.5 h-3.5')}
                     保存
                 </button>
@@ -336,28 +287,27 @@ export function processFeeListTemplate() {
         </div>
 
         <!-- 查看详情抽屉 -->
-        <div class="fixed inset-0 z-[80] bg-black/70 backdrop-blur-sm transition-opacity duration-300"
+        <div class="${DRAWER_BACKDROP} transition-opacity duration-300"
              id="feeViewDrawerBackdrop" style="display:none"></div>
-        <div class="fixed inset-y-0 right-0 z-[85] w-[640px] bg-[#1a1a1a] border-l border-[#2a2a2a] transform translate-x-full transition-transform duration-300 ease-in-out flex flex-col"
-             id="feeViewDrawer" style="display:none; max-height: 100vh; box-shadow: -20px 0 60px rgba(0,0,0,0.95);">
-            <div class="px-5 py-3.5 flex items-center justify-between shrink-0"
-                 style="background: linear-gradient(180deg, #1f1f1f 0%, #1a1a1a 100%); border-bottom: 1px solid #333333;">
-                <h5 class="text-[11px] font-semibold tracking-wider text-[#b0b0b0] flex items-center gap-2.5 uppercase">
-                    <span style="width:3px;height:14px;background:#d32f2f;border-radius:1px;display:inline-block;box-shadow: 0 0 8px rgba(211,47,47,0.5);"></span>
+        <div class="${DRAWER_SHELL} w-[640px] transform translate-x-full transition-transform duration-300 ease-in-out"
+             id="feeViewDrawer" style="display:none; max-height: 100vh">
+            <div class="px-5 py-3.5 flex items-center justify-between shrink-0">
+                <h5 class="text-[11px] font-semibold tracking-wider text-ink-muted flex items-center gap-2.5 uppercase">
+                    <span class="hud-led"></span>
                     加工费详情
                 </h5>
                 <button type="button" id="closeFeeViewDrawer"
-                        class="flex items-center justify-center w-8 h-8 rounded-md text-[#707070] hover:text-white hover:bg-[#d32f2f] transition-all">
+                        class="${DRAWER_CLOSE}">
                     <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M6 18L18 6M6 6l12 12"></path>
                     </svg>
                 </button>
             </div>
             <div class="flex-1 min-h-0 overflow-y-auto overscroll-contain p-6 space-y-4" id="feeViewDrawerContent">
                 <!-- 关注区：零件标识 + 加工费结果-->
-                <div class="bg-[#111111] border border-[#262626]">
-                    <div class="px-4 py-3 bg-[#0c0c0c] border-b border-[#181818]">
-                        <h6 class="text-[10px] font-semibold text-[#9e9e9e] tracking-wider uppercase">零件基本信息</h6>
+                <div class="bg-app-main border border-app-elevated">
+                    <div class="px-4 py-3 bg-app-deep border-b border-line-subtle">
+                        <h6 class="text-[10px] font-semibold text-ink-muted tracking-wider uppercase">零件基本信息</h6>
                     </div>
                     <div class="p-4 grid grid-cols-2 gap-x-6 gap-y-3">
                         ${viewRow('年度', 'fee-view-year')}
@@ -371,25 +321,24 @@ export function processFeeListTemplate() {
                         ${viewRow('序号', 'fee-view-seq-no')}
                     </div>
                 </div>
-                <div class="bg-[#111111] border border-[#d32f2f]/30"
-                     style="box-shadow: 0 0 24px rgba(211,47,47,0.08), inset 0 1px 0 rgba(211,47,47,0.06);">
-                    <div class="px-4 py-3 bg-[#0c0c0c] border-b border-[#181818] flex items-center gap-2">
-                        <span class="w-0.5 h-3 bg-[#d32f2f] rounded-sm shadow-[0_0_8px_rgba(211,47,47,0.5)]"></span>
-                        <h6 class="text-[10px] font-semibold text-[#d32f2f] tracking-wider uppercase">单价构成</h6>
+                <div class="bg-app-main border border-brand/30">
+                    <div class="px-4 py-3 bg-app-deep border-b border-line-subtle flex items-center gap-2">
+                        <span class="${HUD_LED}"></span>
+                        <h6 class="text-[10px] font-semibold text-brand tracking-wider uppercase">单价构成</h6>
                     </div>
                     <div class="p-4">
                         <div class="grid grid-cols-3 gap-3 mb-4">
-                            <div class="bg-[#0a0a0a] border border-[#2c2c2c] px-3 py-2.5">
-                                <div class="text-[9px] text-[#555555] tracking-[0.08em] uppercase mb-1">系统计算</div>
-                                <div id="fee-view-processing-fee" class="text-[14px] font-mono font-bold tabular-nums text-[#C8C8D0] text-right">—</div>
+                            <div class="bg-app-deep border border-line px-3 py-2.5">
+                                <div class="text-[9px] text-ink-faint tracking-[0.08em] uppercase mb-1">系统计算</div>
+                                <div id="fee-view-processing-fee" class="text-[14px] font-mono font-bold tabular-nums text-ink-muted text-right">—</div>
                             </div>
-                            <div class="bg-[#0a0a0a] border border-[#2c2c2c] px-3 py-2.5">
-                                <div class="text-[9px] text-[#555555] tracking-[0.08em] uppercase mb-1">其它费用</div>
-                                <div id="fee-view-other-fee" class="text-[14px] font-mono font-bold tabular-nums text-[#C8C8D0] text-right">—</div>
+                            <div class="bg-app-deep border border-line px-3 py-2.5">
+                                <div class="text-[9px] text-ink-faint tracking-[0.08em] uppercase mb-1">其它费用</div>
+                                <div id="fee-view-other-fee" class="text-[14px] font-mono font-bold tabular-nums text-ink-muted text-right">—</div>
                             </div>
-                            <div class="bg-[#1A080A] border border-[#FF1E27]/30 px-3 py-2.5">
-                                <div class="text-[9px] text-[#FF1E27]/90 tracking-[0.08em] uppercase mb-1">确认单价</div>
-                                <div id="fee-view-final-fee" class="text-[15px] font-mono font-black tabular-nums text-[#FF1E27] text-right">—</div>
+                            <div class="bg-brand-hud/10 border border-brand-hud/30 px-3 py-2.5">
+                                <div class="text-[9px] text-brand-hud/90 tracking-[0.08em] uppercase mb-1">确认单价</div>
+                                <div id="fee-view-final-fee" class="text-[15px] font-mono font-black tabular-nums text-brand-hud text-right">—</div>
                             </div>
                         </div>
                         <div class="grid grid-cols-2 gap-x-6 gap-y-3">
@@ -399,26 +348,25 @@ export function processFeeListTemplate() {
                         </div>
                     </div>
                 </div>
-                <div class="bg-[#111111] border border-[#262626]">
-                    <div class="px-4 py-3 bg-[#0c0c0c] border-b border-[#181818] flex items-center gap-2">
-                        <span class="w-0.5 h-3 bg-[#d32f2f] rounded-sm shadow-[0_0_8px_rgba(211,47,47,0.5)]"></span>
-                        <h6 class="text-[10px] font-semibold text-[#d32f2f] tracking-wider uppercase">工序单价溯源</h6>
+                <div class="bg-app-main border border-app-elevated">
+                    <div class="px-4 py-3 bg-app-deep border-b border-line-subtle flex items-center gap-2">
+                        <span class="${HUD_LED}"></span>
+                        <h6 class="text-[10px] font-semibold text-brand tracking-wider uppercase">工序单价溯源</h6>
                     </div>
                     <div class="overflow-x-auto" id="feeViewProcessItems">
-                        <div class="px-4 py-6 text-[11px] text-[#616161]">加载中..</div>
+                        <div class="px-4 py-6 text-[11px] text-ink-dim">加载中..</div>
                     </div>
                 </div>
                 <!-- 材料 / 工艺快照：自动化着重显示-->
-                <div class="bg-[#111111] border border-[#262626]">
-                    <div class="px-4 py-3 bg-[#0c0c0c] border-b border-[#181818]">
-                        <h6 class="text-[10px] font-semibold text-[#9e9e9e] tracking-wider uppercase">材料 / 工艺快照</h6>
+                <div class="bg-app-main border border-app-elevated">
+                    <div class="px-4 py-3 bg-app-deep border-b border-line-subtle">
+                        <h6 class="text-[10px] font-semibold text-ink-muted tracking-wider uppercase">材料 / 工艺快照</h6>
                     </div>
                     <div class="p-4 space-y-4">
-                        <div class="border border-[#d32f2f]/35 bg-[#0c0c0c] p-3"
-                             style="box-shadow: 0 0 20px rgba(211,47,47,0.08), inset 0 1px 0 rgba(211,47,47,0.06);">
+                        <div class="border border-brand/35 bg-app-deep p-3">
                             <div class="flex items-center gap-2 mb-2">
-                                <span class="w-0.5 h-3 bg-[#d32f2f] rounded-sm shadow-[0_0_8px_rgba(211,47,47,0.5)]"></span>
-                                <span class="text-[9px] font-semibold text-[#d32f2f] uppercase tracking-[0.12em]">关键工艺</span>
+                                <span class="${HUD_LED}"></span>
+                                <span class="text-[9px] font-semibold text-brand uppercase tracking-[0.12em]">关键工艺</span>
                             </div>
                             <div class="grid grid-cols-2 gap-x-6 gap-y-3">
                                 ${viewRow('工艺方法', 'fee-view-process-method')}
@@ -439,9 +387,9 @@ export function processFeeListTemplate() {
                         </div>
                     </div>
                 </div>
-                <div class="bg-[#111111] border border-[#262626]">
-                    <div class="px-4 py-3 bg-[#0c0c0c] border-b border-[#181818]">
-                        <h6 class="text-[10px] font-semibold text-[#9e9e9e] tracking-wider uppercase">审核 / 元数据</h6>
+                <div class="bg-app-main border border-app-elevated">
+                    <div class="px-4 py-3 bg-app-deep border-b border-line-subtle">
+                        <h6 class="text-[10px] font-semibold text-ink-muted tracking-wider uppercase">审核 / 元数据</h6>
                     </div>
                     <div class="p-4 grid grid-cols-2 gap-x-6 gap-y-3">
                         ${viewRow('审核状态', 'fee-view-audit-status')}
@@ -458,8 +406,8 @@ export function processFeeListTemplate() {
                     </div>
                 </div>
             </div>
-            <div class="px-6 py-4 border-t border-[#262626] flex items-center justify-end gap-2 shrink-0 flex-wrap">
-                <button type="button" id="feeViewDrawerEditBtn" class="inline-flex items-center gap-1.5 bg-[#d32f2f] text-white px-4 py-2 text-[11px] font-semibold rounded hover:bg-[#b71c1c] transition-all">
+            <div class="px-6 py-4 border-t border-app-elevated flex items-center justify-end gap-2 shrink-0 flex-wrap">
+                <button type="button" id="feeViewDrawerEditBtn" class="inline-flex items-center gap-1.5 bg-brand text-white px-4 py-2 text-[11px] font-semibold rounded hover:bg-brand-hover transition-all">
                     ${window.svgIcon('pencil', 'w-3.5 h-3.5')}
                     编辑
                 </button>
@@ -478,37 +426,45 @@ export function renderFeeRows(records) {
         const isZero = feeText == null || feeText === '0.000';
         const isTailor = Boolean(row.is_tailor_welded);
         const failHint = row.calc_fail_reason
-            ? `<span class="text-[#FF1E27]" title="${esc(row.calc_fail_reason)}">计算失败</span>`
+            ? `<span class="text-brand-hud" title="${esc(row.calc_fail_reason)}">计算失败</span>`
             : (isTailor && (row.other_fee == null || row.other_fee === '')
-                ? '<span class="text-[#FF1E27]">拼焊件待补价</span>'
+                ? '<span class="text-brand-hud">拼焊件待补价</span>'
                 : (isZero
-                    ? '<span class="text-[#FF1E27]">计算价为 0</span>'
-                    : '<span class="text-[#555555]">—</span>'));
-        const cell = 'p-3 border-b border-[#17171C] font-mono text-[11px]';
-        const muted = 'text-[#8E8E93]';
-        const mutedDeep = 'text-[#6E6E73]';
-        const zoneEnd = 'border-r border-[#22222A]';
+                    ? '<span class="text-brand-hud">计算价为 0</span>'
+                    : '<span class="text-ink-faint">—</span>'));
+        const cell = 'p-3 border-b border-line-subtle font-mono text-[11px]';
+        const muted = 'text-ink-muted';
+        const mutedDeep = 'text-ink-dim';
+        const zoneEnd = 'border-r border-line-hud';
         const finalCell = [
             'p-3 text-right font-mono font-bold tabular-nums text-[13px]',
-            'text-[#FFFFFF] bg-[#14141C]',
-            'border-b border-[#17171C] border-l border-r border-[#222230]',
-            'group-hover:bg-[#1A1A26] transition-colors',
+            'text-ink bg-app-hud',
+            'border-b border-line-subtle border-l border-r border-line-subtle',
+            'group-hover:bg-app-surface transition-colors',
         ].join(' ');
         const canUpdate = typeof can === 'function' ? can('op:stamping-process-fee:update') : true;
         const otherFee = row.other_fee != null && Number(row.other_fee) !== 0
             ? formatNum(row.other_fee, 3)
             : '-';
 
-        return `
-        <tr class="group relative font-mono text-[11px] border-b border-[#17171C] hover:bg-gradient-to-r hover:from-[#FF1E27]/10 hover:via-[#121218] hover:to-transparent transition-all duration-150"
-            data-id="${esc(row.id)}">
-            <td class="p-0 w-0 relative">
-                <div class="absolute left-0 top-0 bottom-0 w-[3px] bg-[#FF1E27] opacity-0 group-hover:opacity-100 transition-all"
-                     style="box-shadow: 0 0 10px #FF1E27;"></div>
-            </td>
+        const viewBtn = opsIconButtonHtml({
+            extraClass: 'view-btn',
+            title: '查看详情',
+            icon: window.svgIcon('eye', 'w-3.5 h-3.5'),
+        });
+        const editBtn = canUpdate
+            ? opsIconButtonHtml({
+                extraClass: `edit-btn${approved ? ' opacity-30 pointer-events-none' : ''}`,
+                title: approved ? '已审核，不可编辑' : '编辑',
+                icon: window.svgIcon('pencil', 'w-3.5 h-3.5'),
+            })
+            : '';
+        return hudRowHtml({
+            attrs: `data-id="${esc(row.id)}"`,
+            cellsHtml: `
             <td class="${cell} font-sans whitespace-nowrap">
-                <div class="font-bold text-white text-[12px] group-hover:text-[#FF1E27] transition-colors">${esc(fmtYear(row.year))}</div>
-                <div class="text-[#555555] text-[10px] mt-0.5">${esc(row.location)} · ${esc(row.stamping_supplier)}</div>
+                <div class="font-bold text-white text-[12px] group-hover:text-brand-hud transition-colors">${esc(fmtYear(row.year))}</div>
+                <div class="text-ink-faint text-[10px] mt-0.5">${esc(row.location)} · ${esc(row.stamping_supplier)}</div>
             </td>
             <td class="${cell} font-sans whitespace-nowrap">
                 ${partShortCodeCellHtml(row.part_number)}
@@ -518,7 +474,7 @@ export function renderFeeRows(records) {
             </td>
             <td class="${cell} ${muted} font-sans ${zoneEnd}">${esc(row.vehicle_model)} / ${esc(row.version)}</td>
             <td class="${cell} text-right ${muted} tabular-nums">${esc(row.process_count)}</td>
-            <td class="${cell} text-right tabular-nums ${isZero ? 'text-[#FF1E27]' : muted}">${formatNum(row.processing_fee, 3)}</td>
+            <td class="${cell} text-right tabular-nums ${isZero ? 'text-brand-hud' : muted}">${formatNum(row.processing_fee, 3)}</td>
             <td class="${cell} text-right ${muted} tabular-nums ${zoneEnd}">${otherFee}</td>
             <td class="${finalCell}">${formatNum(row.final_processing_fee, 3)}</td>
             <td class="${cell} ${muted} font-sans">${esc(row.material)}</td>
@@ -528,23 +484,17 @@ export function renderFeeRows(records) {
             <td class="${cell} text-right ${mutedDeep} tabular-nums">${formatNum(row.sheet_width, 2)}</td>
             <td class="${cell} ${muted} font-sans">
                 <div>${esc(row.die_type)}</div>
-                <div class="text-[10px] text-[#555555] mt-0.5">${esc(row.process_method)}</div>
+                <div class="text-[10px] text-ink-faint mt-0.5">${esc(row.process_method)}</div>
             </td>
-            <td class="${cell} text-[10px] text-[#555555] max-w-[160px] truncate" title="${esc(row.remark || '')}">${esc(row.remark)}</td>
+            <td class="${cell} text-[10px] text-ink-faint max-w-[160px] truncate" title="${esc(row.remark || '')}">${esc(row.remark)}</td>
             <td class="${cell}">${auditBadge(row.audit_status)}</td>
             <td class="${cell}">${failHint}</td>
-            <td class="${cell} text-[9px] text-[#484848] whitespace-nowrap">${esc(row.created_by)}</td>
-            <td class="${cell} text-[9px] text-[#3a3a3a] font-mono whitespace-nowrap">${esc(formatAuditDateTime(row.created_at))}</td>
-            <td class="${cell} text-[9px] text-[#484848] whitespace-nowrap">${esc(row.updated_by)}</td>
-            <td class="${cell} text-[9px] text-[#3a3a3a] font-mono whitespace-nowrap">${esc(formatAuditDateTime(row.updated_at))}</td>
-            <td class="px-1 py-2 text-center align-middle sticky right-0 z-[2] brabus-bg-grid group-hover:bg-[#121218]">
-                <div class="inline-flex items-center justify-center gap-0.5 opacity-0 pointer-events-none group-hover:opacity-100 group-hover:pointer-events-auto focus-within:opacity-100 focus-within:pointer-events-auto transition-opacity duration-100">
-                    <button type="button" class="view-btn inline-flex items-center justify-center w-7 h-7 rounded-sm text-[#555555] hover:text-[#C8C8D0] hover:bg-[#161620] transition-all" title="查看详情" aria-label="查看详情">${window.svgIcon('eye', 'w-3.5 h-3.5')}</button>
-                    ${canUpdate ? `
-                    <button type="button" class="edit-btn inline-flex items-center justify-center w-7 h-7 rounded-sm text-[#555555] hover:text-[#C8C8D0] hover:bg-[#161620] transition-all ${approved ? 'opacity-30 pointer-events-none' : ''}" title="${approved ? '已审核，不可编辑' : '编辑'}" aria-label="${approved ? '已审核，不可编辑' : '编辑'}">${window.svgIcon('pencil', 'w-3.5 h-3.5')}</button>` : ''}
-                </div>
-            </td>
-        </tr>`;
+            <td class="${cell} text-[9px] text-ink-faint whitespace-nowrap">${esc(row.created_by)}</td>
+            <td class="${cell} text-[9px] text-ink-faint font-mono whitespace-nowrap">${esc(formatAuditDateTime(row.created_at))}</td>
+            <td class="${cell} text-[9px] text-ink-faint whitespace-nowrap">${esc(row.updated_by)}</td>
+            <td class="${cell} text-[9px] text-ink-faint font-mono whitespace-nowrap">${esc(formatAuditDateTime(row.updated_at))}</td>`,
+            opsHtml: `${viewBtn}${editBtn}`,
+        });
     }).join('');
 }
 
@@ -589,18 +539,16 @@ export function updateFeeHud(total, summary, onlyZeroActive = false) {
         if (hasFailTodo) {
             card.className = [
                 'text-left w-full p-3.5 relative overflow-hidden group transition-all duration-200 cursor-pointer',
-                'bg-gradient-to-b from-[#18080A] to-[#0D0708] border border-[#FF1E27]/50',
-                onlyZeroActive ? 'ring-1 ring-[#FF1E27]/40' : '',
-                'hover:border-[#FF1E27]/80 focus:outline-none focus-visible:border-[#FF1E27]',
+                'hud-kpi-card-glow bg-gradient-to-b from-brand-hud/15 to-app-deep border border-brand-hud/50',
+                onlyZeroActive ? 'ring-1 border-brand-hud/40' : '',
+                'hover:border-brand-hud/80 focus:outline-none focus-visible:border-brand-hud',
             ].filter(Boolean).join(' ');
-            card.style.boxShadow = '0 0 30px rgba(255,30,39,0.15), inset 0 1px 0 rgba(255,30,39,0.12)';
         } else {
             card.className = [
                 'text-left w-full p-3.5 relative overflow-hidden group transition-all duration-200 cursor-pointer',
-                'bg-[#0D0D11]/80 border border-[#1E1E26] backdrop-blur-sm',
-                'hover:border-[#2A2A35] focus:outline-none focus-visible:border-[#2e7d32]/50',
+                'hud-kpi-aux-inset bg-app-main/80 border border-line-hud backdrop-blur-sm',
+                'hover:border-line-hud focus:outline-none focus-visible:border-ok/40/50',
             ].join(' ');
-            card.style.boxShadow = 'inset 0 1px 0 rgba(255,255,255,0.03)';
         }
     }
 
@@ -609,26 +557,21 @@ export function updateFeeHud(total, summary, onlyZeroActive = false) {
 
     if (label) {
         label.className = hasFailTodo
-            ? 'text-[#FF1E27] text-[10px] font-bold tracking-widest'
-            : 'text-[#2e7d32] text-[10px] font-bold tracking-widest';
+            ? 'text-brand-hud text-[10px] font-bold tracking-widest'
+            : 'text-ok text-[10px] font-bold tracking-widest';
         label.textContent = '算费失败待办';
     }
     if (valueEl) {
         valueEl.className = hasFailTodo
-            ? 'text-[26px] font-black text-[#FF1E27] font-mono mt-1 tracking-tight tabular-nums leading-none'
-            : 'text-[26px] font-black text-[#2e7d32] font-mono mt-1 tracking-tight tabular-nums leading-none';
-        if (hasFailTodo) {
-            valueEl.style.textShadow = '0 0 12px rgba(255,30,39,0.7), 0 0 25px rgba(255,30,39,0.3)';
-        } else {
-            valueEl.style.textShadow = 'none';
-        }
+            ? 'hud-kpi-num-glow text-[26px] font-black text-brand-hud font-mono mt-1 tracking-tight tabular-nums leading-none'
+            : 'text-[26px] font-black text-ok font-mono mt-1 tracking-tight tabular-nums leading-none';
     }
     if (hint) {
         if (hasFailTodo) {
-            hint.className = 'text-[9px] font-mono text-[#FF1E27]/60 mt-2';
+            hint.className = 'text-[9px] font-mono text-brand-hud/60 mt-2';
             hint.textContent = onlyZeroActive ? '已定位异常行 · 再点取消' : '点击一键定位';
         } else {
-            hint.className = 'text-[9px] font-mono text-[#2e7d32]/70 mt-2';
+            hint.className = 'text-[9px] font-mono text-ok/70 mt-2';
             hint.textContent = '规则运行完备';
         }
     }
@@ -639,101 +582,37 @@ export function updateFeeHud(total, summary, onlyZeroActive = false) {
     }
 }
 
-/**
- * 同步战术胶囊：年度/ 基地 / 工厂 + 高级筛选已启用数量
- */
-export function updateFeeFilterCapsules() {
-    const year = document.getElementById('feeYearFilter')?.value || '';
-    const location = document.getElementById('feeLocationFilter')?.value || '';
-    const supplier = document.getElementById('feeSupplierFilter')?.value || '';
-    const vehicle = document.getElementById('feeVehicleFilter')?.value || '';
-    const version = document.getElementById('feeVersionFilter')?.value || '';
-    const audit = document.getElementById('feeAuditStatusFilter')?.value || '';
-    const part = document.getElementById('feePartNumberFilter')?.value.trim() || '';
-
-    const activeCapsule = 'bg-[#1A1A22] border border-[#2A2A35] text-white px-2.5 py-1 rounded-md font-bold';
-    const idleCapsule = 'bg-[#1A1A22] border border-[#2A2A35] text-[#8E8E93] px-2.5 py-1 rounded-md';
-
-    const yearEl = document.getElementById('feeCapsuleYear');
-    const locationEl = document.getElementById('feeCapsuleLocation');
-    const supplierEl = document.getElementById('feeCapsuleSupplier');
-    const vehicleEl = document.getElementById('feeCapsuleVehicle');
-    const versionEl = document.getElementById('feeCapsuleVersion');
-    const countEl = document.getElementById('feeAdvancedFilterCount');
-
-    if (yearEl) {
-        yearEl.textContent = year ? fmtYear(year) : '全部年度';
-        yearEl.className = year ? activeCapsule : idleCapsule;
-    }
-    if (locationEl) {
-        locationEl.textContent = location || '全部基地';
-        locationEl.className = location ? activeCapsule : idleCapsule;
-    }
-    if (supplierEl) {
-        supplierEl.textContent = supplier || '全部工厂';
-        supplierEl.className = supplier ? activeCapsule : idleCapsule;
-    }
-    if (vehicleEl) {
-        vehicleEl.textContent = vehicle || '全部项目';
-        vehicleEl.className = vehicle ? activeCapsule : idleCapsule;
-    }
-    if (versionEl) {
-        versionEl.textContent = version || '全部版本';
-        versionEl.className = version ? activeCapsule : idleCapsule;
-    }
-
-    const advancedActive = [year, location, supplier, vehicle, version, audit, part].filter(Boolean).length;
-    if (countEl) countEl.textContent = `(${advancedActive})`;
-}
-
-
-function filterSelect(id, label) {
-    return `<label class="space-y-1">
-        <span class="block text-[9px] font-semibold text-[#555555] uppercase tracking-[0.14em]">${label}</span>
-        <select id="${id}" class="w-32 h-8 pl-2.5 pr-7 text-[11px] bg-[#0A0A0E] border border-[#2A2A35] text-[#A1A1A6] appearance-none cursor-pointer focus:outline-none focus:border-[#FF1E27] rounded-md transition-colors">
-            <option value="">全部</option>
-        </select>
-    </label>`;
-}
-
-function filterInput(id, label, placeholder) {
-    return `<label class="space-y-1">
-        <span class="block text-[9px] font-semibold text-[#555555] uppercase tracking-[0.14em]">${label}</span>
-        <input id="${id}" placeholder="${placeholder}" class="h-8 w-32 px-2.5 text-[11px] bg-[#0A0A0E] border border-[#2A2A35] text-[#ffffff] placeholder:text-[#555555] rounded-md focus:outline-none focus:border-[#FF1E27] transition-colors">
-    </label>`;
-}
-
 function viewRow(label, id, isHighlight = false) {
     return `<div class="min-w-0">
-        <span class="block text-[9px] font-semibold text-[#555555] uppercase tracking-[0.1em] mb-1">${label}</span>
-        <span id="${id}" class="block text-xs ${isHighlight ? 'text-[#d32f2f] font-mono' : 'text-[#cccccc]'} truncate"></span>
+        <span class="block text-[9px] font-semibold text-ink-faint uppercase tracking-[0.1em] mb-1">${label}</span>
+        <span id="${id}" class="block text-xs ${isHighlight ? 'text-brand font-mono' : 'text-ink'} truncate"></span>
     </div>`;
 }
 
 function tailorBadge(isTailorWelded) {
     return isTailorWelded
-        ? `<span class="mt-1 inline-block text-[9px] font-sans tracking-[0.08em] text-[#FF1E27] border border-[#FF1E27]/30 bg-[#1A080A] px-1.5 py-0.5">拼焊件</span>`
+        ? `<span class="mt-1 inline-block text-[9px] font-sans tracking-[0.08em] text-brand-hud border border-brand-hud/30 bg-brand-hud/10 px-1.5 py-0.5">拼焊件</span>`
         : '';
 }
 
 /** 抽屉：短史+ 完整零件号*/
 function partNumberViewBlock(prefix) {
     return `<div class="min-w-0">
-        <span class="block text-[9px] font-semibold text-[#555555] uppercase tracking-[0.1em] mb-1">零件号</span>
+        <span class="block text-[9px] font-semibold text-ink-faint uppercase tracking-[0.1em] mb-1">零件号</span>
         <span id="${prefix}-part-short"
-              class="block text-xl font-mono font-bold tabular-nums text-white tracking-[0.14em] drop-shadow-[0_0_16px_rgba(211,47,47,0.18)]"></span>
-        <span id="${prefix}-part-number" class="block text-[11px] font-mono text-[#616161] tracking-wider mt-0.5 truncate"></span>
+              class="block text-xl font-mono font-bold tabular-nums text-white tracking-[0.14em] hud-kpi-num-glow"></span>
+        <span id="${prefix}-part-number" class="block text-[11px] font-mono text-ink-dim tracking-wider mt-0.5 truncate"></span>
     </div>`;
 }
 
 function auditBadge(status) {
     const map = {
-        pending: 'bg-[#1C1C22] text-[#8E8E93] border border-[#2A2A32]',
-        approved: 'bg-[#1C1C22] text-[#8E8E93] border border-[#2A2A32]',
-        rejected: 'bg-[#1C1C22] text-[#8E8E93] border border-[#2A2A32]',
+        pending: 'bg-app-surface text-ink-muted border border-line',
+        approved: 'bg-app-surface text-ink-muted border border-line',
+        rejected: 'bg-app-surface text-ink-muted border border-line',
     };
     const label = { pending: '待审', approved: '已通过', rejected: '已驳回' }[status] || status || '-';
-    const cls = map[status] || 'bg-[#1C1C22] text-[#8E8E93] border border-[#2A2A32]';
+    const cls = map[status] || 'bg-app-surface text-ink-muted border border-line';
     return `<span class="inline-flex items-center px-2 py-0.5 text-[10px] font-sans rounded-sm ${cls}">${esc(label)}</span>`;
 }
 

@@ -2,7 +2,10 @@
  * 冲压模具单价档案 — HUD 密表 + 抽屉增改
  */
 
-import { paginationBarHtml } from '../../../../page-size.js?v=3';
+import { HUD_SHELL, DRAWER_BACKDROP, DRAWER_SHELL, DRAWER_CLOSE, HUD_BAND, OPS_TH, filterSelect, BTN_GHOST, FILTER_LABEL, HUD_FILTER } from '../../../../ui/classes.js?v=8';
+import { filterBarHtml } from '../../../../ui/filter-bar.js?v=2';
+import { hudTableHtml, hudRowHtml, opsIconButtonHtml } from '../../../../ui/hud-table.js?v=1';
+
 
 function canOp(code) {
     return typeof window.can === 'function' ? window.can(code) : true;
@@ -11,57 +14,52 @@ function canOp(code) {
 export function dieUnitPriceTemplate() {
     return `
         <div class="space-y-2 w-full max-w-full">
-            <div class="bg-[#0A0A0C] border border-[#1A1A22] overflow-hidden w-full max-w-full"
-                 style="box-shadow: 0 4px 24px rgba(0,0,0,0.7), inset 0 1px 0 rgba(255,255,255,0.02);">
-                <div class="px-5 pt-4 pb-3.5 border-b border-[#14141A]"
-                     style="background: linear-gradient(135deg, #0E0E12 0%, #121218 45%, #0C0C10 100%);">
+            <div class="${HUD_SHELL}">
+                <div class="${HUD_BAND}">
                     <div class="flex items-start justify-between gap-4 mb-3">
                         <div>
-                            <h2 class="text-[13px] font-semibold text-[#F0F0F2] tracking-wide">模具单价</h2>
-                            <p class="text-[11px] text-[#555555]">按基地 + 项目维护钢板模 / 级进模单价与分摊台数，不必先有冲压工艺</p>
+                            <h2 class="text-[13px] font-semibold text-ink tracking-wide">模具单价</h2>
+                            <p class="text-[11px] text-ink-faint">按基地 + 项目维护钢板模 / 级进模单价与分摊台数，不必先有冲压工艺</p>
                         </div>
                         <button type="button" id="dupAddBtn"
-                                class="inline-flex items-center gap-1.5 bg-[#FF1E27] text-white px-3 py-1.5 text-[11px] font-semibold rounded hover:bg-[#d32f2f] transition-all">
+                                class="inline-flex items-center gap-1.5 bg-brand-hud text-white px-3 py-1.5 text-[11px] font-semibold rounded hover:bg-brand transition-all">
                             ${window.svgIcon('plus', 'w-3 h-3')}
                             新增
                         </button>
                     </div>
-                    <div class="flex items-end gap-3 flex-wrap">
-                        <label class="flex flex-col gap-1">
-                            <span class="text-[10px] text-[#555555] tracking-wider">基地</span>
-                            <select id="dupListLocation"
-                                    class="h-9 min-w-[140px] px-3 text-xs bg-[#0a0a0a] border border-[#2c2c2c] text-[#9e9e9e] appearance-none cursor-pointer focus:outline-none focus:border-[#ff5252]">
-                                <option value="">全部</option>
-                            </select>
-                        </label>
-                        <label class="flex flex-col gap-1">
-                            <span class="text-[10px] text-[#555555] tracking-wider">项目</span>
-                            <select id="dupListVehicle"
-                                    class="h-9 min-w-[140px] px-3 text-xs bg-[#0a0a0a] border border-[#2c2c2c] text-[#9e9e9e] appearance-none cursor-pointer focus:outline-none focus:border-[#ff5252]">
-                                <option value="">全部</option>
-                            </select>
-                        </label>
-                        <label class="flex flex-col gap-1">
-                            <span class="text-[10px] text-[#555555] tracking-wider">状态</span>
-                            <select id="dupListStatus"
-                                    class="h-9 min-w-[100px] px-3 text-xs bg-[#0a0a0a] border border-[#2c2c2c] text-[#9e9e9e] appearance-none cursor-pointer focus:outline-none focus:border-[#ff5252]">
-                                <option value="">全部</option>
-                                <option value="effective">生效</option>
-                                <option value="invalid">失效</option>
-                            </select>
-                        </label>
-                        <button id="dupListSearchBtn" type="button"
-                                class="inline-flex items-center gap-1.5 h-9 px-3 text-[11px] font-semibold rounded-sm text-[#c8c8c8] border border-[#8a2020] hover:text-white"
-                                style="background: linear-gradient(180deg, #3d1515 0%, #2d0f0f 100%);">
-                            ${window.svgIcon('search', 'w-3 h-3')}
-                            查询
-                        </button>
-                    </div>
+                </div>
+                <div class="px-5 py-3 border-b border-line-subtle bg-gradient-to-b from-app-hud to-app-deep">
+                    ${filterBarHtml({
+                        prefix: 'dupList',
+                        capsules: [
+                            { capsuleId: 'dupListCapsuleLocation', idleLabel: '全部基地' },
+                            { capsuleId: 'dupListCapsuleModel', idleLabel: '全部项目' },
+                            { capsuleId: 'dupListCapsuleStatus', idleLabel: '全部状态' },
+                        ],
+                        fieldsHtml: [
+                            filterSelect('dupListLocation', '基地'),
+                            filterSelect('dupListVehicle', '项目'),
+                            `<label class="space-y-1">
+                                <span class="${FILTER_LABEL}">状态</span>
+                                <select id="dupListStatus" class="w-32 ${HUD_FILTER}">
+                                    <option value="">全部</option>
+                                    <option value="effective">生效</option>
+                                    <option value="invalid">失效</option>
+                                </select>
+                            </label>`,
+                            `<button id="dupListResetBtn" type="button" class="${BTN_GHOST}">
+                                ${window.svgIcon('refresh', 'w-3 h-3')}
+                                重置
+                            </button>`,
+                        ].join(''),
+                    })}
                 </div>
 
-                <div class="overflow-x-auto brabus-bg-grid">
-                    <table class="w-full table-fixed bg-transparent border-separate border-spacing-0" style="min-width: 920px;">
-                        <colgroup>
+                ${hudTableHtml({
+                    prefix: 'dupList',
+                    bodyId: 'dupTableBody',
+                    minWidth: '920px',
+                    colgroupHtml: `
                             <col style="width: 8px;">
                             <col style="width: 88px;">
                             <col style="width: 88px;">
@@ -70,125 +68,116 @@ export function dieUnitPriceTemplate() {
                             <col style="width: 100px;">
                             <col style="width: 72px;">
                             <col style="width: 120px;">
-                            <col style="width: 88px;">
-                        </colgroup>
-                        <thead>
-                            <tr class="border-b border-[#17171C] bg-[#0B0B0D]/95">
+                            <col style="width: 88px;">`,
+                    headHtml: `
                                 <th class="p-0" aria-hidden="true"></th>
-                                <th class="px-2 py-2 text-left text-[9px] font-medium tracking-[0.08em] text-[#555555]">基地</th>
-                                <th class="px-2 py-2 text-left text-[9px] font-medium tracking-[0.08em] text-[#555555]">项目</th>
-                                <th class="px-2 py-2 text-right text-[9px] font-medium tracking-[0.06em] text-[#555555]">钢板模（万/吨）</th>
-                                <th class="px-2 py-2 text-right text-[9px] font-semibold tracking-[0.06em] text-[#FF1E27]/90 bg-[#1A080A]">级进模（万/吨）</th>
-                                <th class="px-2 py-2 text-right text-[9px] font-medium tracking-[0.06em] text-[#555555]">分摊（万台）</th>
-                                <th class="px-1 py-2 text-center text-[9px] font-medium tracking-[0.06em] text-[#555555]">状态</th>
-                                <th class="px-2 py-2 text-left text-[9px] font-medium tracking-[0.06em] text-[#555555]">更新</th>
-                                <th class="p-0 w-9 sticky right-0 z-[3] bg-[#0B0B0D]" aria-label="操作"></th>
-                            </tr>
-                        </thead>
-                        <tbody id="dupTableBody"></tbody>
-                    </table>
-                </div>
-
-                <div id="dupEmptyState" class="hidden flex flex-col items-center justify-center py-16 text-center bg-[#0A0A0E]">
-                    <div class="text-[#555555] mb-2">${window.svgIcon('inbox')}</div>
-                    <p class="text-[12px] text-[#8E8E93] mb-1">暂无模具单价</p>
-                    <p class="text-[11px] text-[#555555]">按基地 + 项目新增档案；新项目可直接填写</p>
-                </div>
-                <div id="dupLoadingState" class="hidden flex flex-col items-center justify-center py-16 gap-2 bg-[#0A0A0E]">
-                    <div class="w-5 h-5 border-2 border-[#2c2c2c] border-t-[#FF1E27] rounded-full animate-spin"></div>
-                    <span class="text-[11px] text-[#555555]">加载中</span>
-                </div>
-
-                ${paginationBarHtml({ infoId: 'dupTotalCount', selectId: 'dupPageSize', buttonsId: 'dupPaginationBtns' })}
+                                <th class="px-2 py-2 text-left text-[9px] font-medium tracking-[0.08em] text-ink-faint">基地</th>
+                                <th class="px-2 py-2 text-left text-[9px] font-medium tracking-[0.08em] text-ink-faint">项目</th>
+                                <th class="px-2 py-2 text-right text-[9px] font-medium tracking-[0.06em] text-ink-faint">钢板模（万/吨）</th>
+                                <th class="px-2 py-2 text-right text-[9px] font-semibold tracking-[0.06em] text-brand-hud/90 bg-brand-hud/10">级进模（万/吨）</th>
+                                <th class="px-2 py-2 text-right text-[9px] font-medium tracking-[0.06em] text-ink-faint">分摊（万台）</th>
+                                <th class="px-1 py-2 text-center text-[9px] font-medium tracking-[0.06em] text-ink-faint">状态</th>
+                                <th class="px-2 py-2 text-left text-[9px] font-medium tracking-[0.06em] text-ink-faint">更新</th>
+                                <th class="${OPS_TH}" aria-label="操作"></th>`,
+                    empty: {
+                        className: 'py-16',
+                        html: `<div class="text-ink-faint mb-2">${window.svgIcon('inbox')}</div>
+                    <p class="text-[12px] text-ink-muted mb-1">暂无模具单价</p>
+                    <p class="text-[11px] text-ink-faint">按基地 + 项目新增档案；新项目可直接填写</p>`,
+                    },
+                    loading: {
+                        html: `<div class="w-5 h-5 border-2 border-line border-brand-hud rounded-full animate-spin"></div>
+                    <span class="text-[11px] text-ink-faint">加载中</span>`,
+                        className: 'flex-col gap-2 bg-app-hud',
+                    },
+                })}
             </div>
         </div>
 
-        <div class="fixed inset-0 z-[80] bg-black/80 backdrop-blur-sm transition-opacity" id="dupEditBackdrop" style="display:none"></div>
-        <div class="fixed inset-y-0 right-0 z-[85] w-[420px] bg-[#121215] border-l border-[#2c2c2c]
-                    transform translate-x-full transition-transform duration-300 ease-in-out flex flex-col"
+        <div class="${DRAWER_BACKDROP} transition-opacity" id="dupEditBackdrop" style="display:none"></div>
+        <div class="${DRAWER_SHELL} w-[420px] transform translate-x-full transition-transform duration-300 ease-in-out"
              id="dupEditDrawer" style="display:none; max-height: 100vh;">
-            <div class="px-5 py-3.5 flex items-center justify-between border-b border-[#2c2c2c] bg-[#16161a] shrink-0">
+            <div class="px-5 py-3.5 flex items-center justify-between border-b border-line bg-app-surface shrink-0">
                 <div class="flex items-center gap-2">
-                    <span class="w-1 h-3.5 bg-[#FF1E27]"></span>
+                    <span class="w-1 h-3.5 bg-brand-hud"></span>
                     <h5 class="text-xs font-semibold text-white tracking-wider" id="dupEditTitle">新增模具单价</h5>
                 </div>
-                <button type="button" id="dupCloseEdit" class="text-[#616161] hover:text-white w-6 h-6 flex items-center justify-center">✕</button>
+                <button type="button" id="dupCloseEdit" class="text-ink-dim hover:text-ink w-6 h-6 flex items-center justify-center">✕</button>
             </div>
             <div class="flex-1 min-h-0 overflow-y-auto p-5">
                 <form id="dupEditForm" class="space-y-4">
                     <input type="hidden" id="dupEditId" value="">
                     <div>
-                        <label class="text-[10px] font-semibold text-[#616161] tracking-wider mb-1 block">基地 <span class="text-[#FF1E27]">*</span></label>
+                        <label class="text-[10px] font-semibold text-ink-dim tracking-wider mb-1 block">基地 <span class="text-brand-hud">*</span></label>
                         <select id="dupEditLocation" required
-                                class="w-full h-8 px-3 text-xs bg-[#0a0a0c] border border-[#2c2c2c] text-[#9e9e9e] appearance-none cursor-pointer focus:outline-none focus:border-[#ff5252]">
+                                class="w-full h-8 px-3 text-xs bg-app-hud border border-line text-ink-muted appearance-none cursor-pointer focus:outline-none focus:border-brand-active">
                             <option value="">请选择</option>
                         </select>
                     </div>
                     <div>
-                        <label class="text-[10px] font-semibold text-[#616161] tracking-wider mb-1 block">项目 <span class="text-[#FF1E27]">*</span></label>
+                        <label class="text-[10px] font-semibold text-ink-dim tracking-wider mb-1 block">项目 <span class="text-brand-hud">*</span></label>
                         <input id="dupEditVehicle" name="vehicle_model" list="dupEditVehicleOptions" required
                                placeholder="已有项目可下拉，新项目请直接填写"
-                               class="w-full h-8 px-3 text-xs bg-[#0a0a0c] border border-[#2c2c2c] text-[#ffffff] placeholder:text-[#616161] focus:outline-none focus:border-[#ff5252]">
+                               class="w-full h-8 px-3 text-xs bg-app-hud border border-line text-ink placeholder:text-ink-dim focus:outline-none focus:border-brand-active">
                         <datalist id="dupEditVehicleOptions"></datalist>
-                        <p id="dupEditScopeHint" class="text-[10px] text-[#616161] mt-1">已有项目可下拉，新项目请直接填写。同一基地+项目只能有一条。</p>
+                        <p id="dupEditScopeHint" class="text-[10px] text-ink-dim mt-1">已有项目可下拉，新项目请直接填写。同一基地+项目只能有一条。</p>
                     </div>
                     <div>
-                        <label class="text-[10px] font-semibold text-[#616161] tracking-wider mb-1 block">钢板模单价（万元/吨） <span class="text-[#FF1E27]">*</span></label>
+                        <label class="text-[10px] font-semibold text-ink-dim tracking-wider mb-1 block">钢板模单价（万元/吨） <span class="text-brand-hud">*</span></label>
                         <input type="text" id="dupEditPlatePrice" required inputmode="decimal"
-                               class="w-full h-8 px-3 text-xs font-mono bg-[#0a0a0c] border border-[#2c2c2c] text-white placeholder:text-[#616161] focus:outline-none focus:border-[#ff5252]"
+                               class="w-full h-8 px-3 text-xs font-mono bg-app-hud border border-line text-white placeholder:text-ink-dim focus:outline-none focus:border-brand-active"
                                placeholder="如 3.36" autocomplete="off">
                     </div>
                     <div>
-                        <label class="text-[10px] font-semibold text-[#616161] tracking-wider mb-1 block">级进模单价（万元/吨） <span class="text-[#FF1E27]">*</span></label>
+                        <label class="text-[10px] font-semibold text-ink-dim tracking-wider mb-1 block">级进模单价（万元/吨） <span class="text-brand-hud">*</span></label>
                         <input type="text" id="dupEditProgressivePrice" required inputmode="decimal"
-                               class="w-full h-8 px-3 text-xs font-mono bg-[#0a0a0c] border border-[#2c2c2c] text-white placeholder:text-[#616161] focus:outline-none focus:border-[#ff5252]"
+                               class="w-full h-8 px-3 text-xs font-mono bg-app-hud border border-line text-white placeholder:text-ink-dim focus:outline-none focus:border-brand-active"
                                placeholder="如 5.15" autocomplete="off">
                     </div>
                     <div>
-                        <label class="text-[10px] font-semibold text-[#616161] tracking-wider mb-1 block">项目分摊数量（万台） <span class="text-[#FF1E27]">*</span></label>
+                        <label class="text-[10px] font-semibold text-ink-dim tracking-wider mb-1 block">项目分摊数量（万台） <span class="text-brand-hud">*</span></label>
                         <input type="text" id="dupEditAllocQty" required inputmode="numeric"
-                               class="w-full h-8 px-3 text-xs font-mono bg-[#0a0a0c] border border-[#2c2c2c] text-white placeholder:text-[#616161] focus:outline-none focus:border-[#ff5252]"
+                               class="w-full h-8 px-3 text-xs font-mono bg-app-hud border border-line text-white placeholder:text-ink-dim focus:outline-none focus:border-brand-active"
                                placeholder="如 10" value="10" autocomplete="off">
                     </div>
                     <div>
-                        <label class="text-[10px] font-semibold text-[#616161] tracking-wider mb-1 block">状态 <span class="text-[#FF1E27]">*</span></label>
+                        <label class="text-[10px] font-semibold text-ink-dim tracking-wider mb-1 block">状态 <span class="text-brand-hud">*</span></label>
                         <select id="dupEditStatus" required
-                                class="w-full h-8 px-3 text-xs bg-[#0a0a0c] border border-[#2c2c2c] text-[#9e9e9e] appearance-none cursor-pointer focus:outline-none focus:border-[#ff5252]">
+                                class="w-full h-8 px-3 text-xs bg-app-hud border border-line text-ink-muted appearance-none cursor-pointer focus:outline-none focus:border-brand-active">
                             <option value="effective">生效</option>
                             <option value="invalid">失效</option>
                         </select>
                     </div>
                 </form>
             </div>
-            <div class="px-5 py-3 border-t border-[#2c2c2c] flex items-center justify-end gap-2 bg-[#16161a] shrink-0">
+            <div class="px-5 py-3 border-t border-line flex items-center justify-end gap-2 bg-app-surface shrink-0">
                 <button type="button" id="dupCancelEdit"
-                        class="px-4 py-1.5 text-xs text-[#9e9e9e] hover:text-white border border-[#2c2c2c] hover:bg-[#262626] transition-all">取消</button>
+                        class="px-4 py-1.5 text-xs text-ink-muted hover:text-ink border border-line hover:bg-app-elevated transition-all">取消</button>
                 <button type="button" id="dupSubmitEdit"
-                        class="bg-[#FF1E27] hover:bg-[#d32f2f] text-white px-5 py-1.5 text-xs font-semibold transition-all">保存</button>
+                        class="bg-brand-hud hover:bg-brand text-white px-5 py-1.5 text-xs font-semibold transition-all">保存</button>
             </div>
         </div>
 
-        <div class="fixed inset-0 z-[80] bg-black/70 backdrop-blur-sm" id="dupDeleteBackdrop" style="display:none"></div>
-        <div class="fixed inset-y-0 right-0 z-[85] w-[380px] bg-[#1a1a1a] border-l border-[#2a2a2a]
-                    transform translate-x-full transition-transform duration-300 ease-in-out flex flex-col"
+        <div class="${DRAWER_BACKDROP}" id="dupDeleteBackdrop" style="display:none"></div>
+        <div class="${DRAWER_SHELL} w-[380px] transform translate-x-full transition-transform duration-300 ease-in-out"
              id="dupDeleteDrawer" style="display:none; max-height: 100vh;">
-            <div class="px-5 py-3.5 flex items-center justify-between shrink-0 border-b border-[#333333]">
-                <h5 class="text-[11px] font-semibold tracking-wider text-[#b0b0b0] flex items-center gap-2.5">
-                    <span class="w-[3px] h-3.5 bg-[#c62828] inline-block"></span>
+            <div class="px-5 py-3.5 flex items-center justify-between shrink-0 border-b border-line">
+                <h5 class="text-[11px] font-semibold tracking-wider text-ink-muted flex items-center gap-2.5">
+                    <span class="w-[3px] h-3.5 bg-danger inline-block"></span>
                     确认删除
                 </h5>
-                <button type="button" id="dupCloseDelete" class="w-8 h-8 text-[#707070] hover:text-white">✕</button>
+                <button type="button" id="dupCloseDelete" class="w-8 h-8 text-ink-dim hover:text-ink">✕</button>
             </div>
             <div class="flex-1 p-6">
                 <input type="hidden" id="dupDeleteId" value="">
-                <p class="text-[12px] text-[#9e9e9e] mb-2">确定删除 <span id="dupDeleteScope" class="font-mono text-white"></span> 的模具单价？</p>
-                <p class="text-[11px] text-[#616161]">只删档案，不影响模具布点。</p>
+                <p class="text-[12px] text-ink-muted mb-2">确定删除 <span id="dupDeleteScope" class="font-mono text-white"></span> 的模具单价？</p>
+                <p class="text-[11px] text-ink-dim">只删档案，不影响模具布点。</p>
             </div>
-            <div class="px-6 py-4 border-t border-[#262626] flex items-center justify-end gap-2 shrink-0">
+            <div class="px-6 py-4 border-t border-app-elevated flex items-center justify-end gap-2 shrink-0">
                 <button type="button" id="dupCancelDelete"
-                        class="inline-flex items-center bg-transparent text-[#9e9e9e] border border-[#2c2c2c] px-4 py-2 text-[11px] font-medium rounded hover:text-white">取消</button>
+                        class="inline-flex items-center bg-transparent text-ink-muted border border-line px-4 py-2 text-[11px] font-medium rounded hover:text-ink">取消</button>
                 <button type="button" id="dupConfirmDelete"
-                        class="inline-flex items-center bg-[#c62828] text-white px-4 py-2 text-[11px] font-semibold rounded hover:bg-[#b71c1c]">删除</button>
+                        class="inline-flex items-center bg-danger text-white px-4 py-2 text-[11px] font-semibold rounded hover:bg-brand-hover">删除</button>
             </div>
         </div>
     `;
@@ -198,54 +187,55 @@ export function renderTableRows(records) {
     if (!records || !records.length) return '';
     const canUpdate = canOp('op:stamping-die-unit-price:update');
     const canDelete = canOp('op:stamping-die-unit-price:delete');
-    const numCell = 'px-2 py-2 font-mono text-[10px] text-right tabular-nums text-[#8E8E93]';
+    const numCell = 'px-2 py-2 font-mono text-[10px] text-right tabular-nums text-ink-muted';
 
     return records
         .map((record) => {
             const isEffective = record.status === 'effective';
             const statusClass = isEffective
-                ? 'text-[#4caf50] bg-[#2e7d32]/20 px-1.5 py-0.5'
-                : 'text-[#8E8E93] bg-[#262626] px-1.5 py-0.5';
+                ? 'text-ok bg-ok/20 px-1.5 py-0.5'
+                : 'text-ink-muted bg-app-elevated px-1.5 py-0.5';
             const updated = formatDateTime(record.updated_at);
             const scope = `${record.location} / ${record.vehicle_model}`;
-            return `
-        <tr class="group relative font-mono text-[11px] border-b border-[#141418] hover:bg-[#161620] transition-colors duration-100">
-            <td class="p-0 relative">
-                <div class="absolute left-0 top-0 bottom-0 w-[2px] bg-[#FF1E27] opacity-0 group-hover:opacity-70 transition-opacity"></div>
+            const editBtn = canUpdate
+                ? opsIconButtonHtml({
+                    action: 'edit',
+                    extraClass: 'edit-btn',
+                    title: '编辑',
+                    icon: window.svgIcon('pencil', 'w-3.5 h-3.5'),
+                    attrs: `data-id="${esc(record.id)}"`,
+                })
+                : '';
+            const deleteBtn = canDelete
+                ? opsIconButtonHtml({
+                    action: 'delete',
+                    extraClass: 'delete-btn',
+                    danger: true,
+                    title: '删除',
+                    icon: window.svgIcon('trash', 'w-3.5 h-3.5'),
+                    attrs: `data-id="${esc(record.id)}" data-scope="${esc(scope)}"`,
+                })
+                : '';
+            return hudRowHtml({
+                cellsHtml: `
+            <td class="px-2 py-2 overflow-hidden">
+                <div class="text-[12px] font-semibold text-ink truncate" title="${esc(record.location)}">${esc(record.location)}</div>
             </td>
             <td class="px-2 py-2 overflow-hidden">
-                <div class="text-[12px] font-semibold text-[#F0F0F2] truncate" title="${esc(record.location)}">${esc(record.location)}</div>
-            </td>
-            <td class="px-2 py-2 overflow-hidden">
-                <div class="text-[14px] font-bold text-[#F0F0F2] truncate" title="${esc(record.vehicle_model)}">${esc(record.vehicle_model)}</div>
+                <div class="text-[14px] font-bold text-ink truncate" title="${esc(record.vehicle_model)}">${esc(record.vehicle_model)}</div>
             </td>
             <td class="${numCell}">${esc(fmtNum(record.steel_plate_unit_price, 4))}</td>
-            <td class="px-2 py-1.5 text-right font-mono font-black tabular-nums text-[12px] text-[#FF1E27] bg-[#1A080A] border-x border-[#FF1E27]/20">${esc(fmtNum(record.progressive_die_unit_price, 4))}</td>
+            <td class="px-2 py-1.5 text-right font-mono font-black tabular-nums text-[12px] text-brand-hud bg-brand-hud/10 border-x border-brand-hud/20">${esc(fmtNum(record.progressive_die_unit_price, 4))}</td>
             <td class="${numCell}">${esc(fmtNum(record.allocation_qty, 0))}</td>
             <td class="px-1 py-2 text-center">
                 <span class="text-[9px] font-medium ${statusClass}">${esc(record.status_label || record.status)}</span>
             </td>
-            <td class="px-2 py-2 text-[9px] text-[#3A3A42] whitespace-nowrap overflow-hidden">
+            <td class="px-2 py-2 text-[9px] text-ink-faint whitespace-nowrap overflow-hidden">
                 <div>${esc(record.updated_by || '—')}</div>
                 <div>${esc(updated)}</div>
-            </td>
-            <td class="px-1 py-2 text-center sticky right-0 z-[2] brabus-bg-grid group-hover:bg-[#161620]">
-                <div class="inline-flex items-center justify-center gap-0.5 opacity-0 pointer-events-none group-hover:opacity-100 group-hover:pointer-events-auto focus-within:opacity-100 focus-within:pointer-events-auto transition-opacity duration-100">
-                    ${canUpdate ? `
-                    <button type="button" data-action="edit" data-id="${esc(record.id)}"
-                            class="inline-flex items-center justify-center w-7 h-7 rounded-sm text-[#555555] hover:text-[#C8C8D0] hover:bg-[#161620] transition-all"
-                            title="编辑" aria-label="编辑">
-                        ${window.svgIcon('pencil', 'w-3.5 h-3.5')}
-                    </button>` : ''}
-                    ${canDelete ? `
-                    <button type="button" data-action="delete" data-id="${esc(record.id)}" data-scope="${esc(scope)}"
-                            class="inline-flex items-center justify-center w-7 h-7 rounded-sm text-[#555555] hover:text-[#ef5350] hover:bg-[#161620] transition-all"
-                            title="删除" aria-label="删除">
-                        ${window.svgIcon('trash', 'w-3.5 h-3.5')}
-                    </button>` : ''}
-                </div>
-            </td>
-        </tr>`;
+            </td>`,
+                opsHtml: `${editBtn}${deleteBtn}`,
+            });
         })
         .join('');
 }

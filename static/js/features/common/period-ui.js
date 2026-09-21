@@ -2,6 +2,8 @@
  * 生失效展示 / 年+月筛 / SOP 上传说明（对齐项目一览 fillYearMonthSelects）。
  */
 
+import { FILTER_LABEL, HUD_FILTER } from '../../ui/classes.js?v=8';
+
 export const SOP_INTRO =
     '本页只导入 SOP（该项目第一次标准化投产）。投产使用后换号、新旧并存，必须走工程变更，不要在本页操作。';
 
@@ -125,15 +127,13 @@ export function readAsOf(prefix) {
 const AS_OF_FILTER_STYLES = {
     parts: {
         wrap: 'space-y-1',
-        label: 'block text-[9px] font-semibold text-[#555555] uppercase tracking-[0.14em]',
-        select:
-            'w-32 h-8 pl-2.5 pr-7 text-[11px] bg-[#0A0A0E] border border-[#2A2A35] text-[#A1A1A6] appearance-none cursor-pointer focus:outline-none focus:border-[#FF1E27] rounded-md transition-colors',
+        label: FILTER_LABEL,
+        select: `w-32 ${HUD_FILTER}`,
     },
     die: {
         wrap: 'flex flex-col gap-1',
-        label: 'text-[10px] text-[#555555] tracking-wider',
-        select:
-            'h-9 min-w-[140px] px-3 text-xs bg-[#0a0a0a] border border-[#2c2c2c] text-[#9e9e9e] appearance-none cursor-pointer focus:outline-none focus:border-[#ff5252]',
+        label: FILTER_LABEL,
+        select: `min-w-[140px] ${HUD_FILTER}`,
     },
 };
 
@@ -143,8 +143,8 @@ export function asOfFilterHtml(prefix, options = {}) {
     const checkbox = includeExpired
         ? `<label class="flex items-center gap-1.5 h-9 mt-5">
             <input id="${prefix}IncludeExpired" type="checkbox"
-                   class="w-3.5 h-3.5 accent-[#d32f2f]">
-            <span class="text-[10px] text-[#8E8E93]">含已失效</span>
+                   class="brabus-check">
+            <span class="text-[10px] text-ink-muted">含已失效</span>
         </label>`
         : '';
     return `
@@ -161,23 +161,23 @@ export function asOfFilterHtml(prefix, options = {}) {
 }
 
 export function periodEditorHtml(prefix) {
-    const inputClass = 'w-full h-8 px-2 text-xs bg-[#0a0a0c] border border-[#2c2c2c] text-white focus:outline-none focus:border-[#ff5252]';
+    const inputClass = HUD_FILTER;
     return `
         <div class="grid grid-cols-2 gap-2">
             <label class="flex flex-col gap-1">
-                <span class="text-[10px] text-[#555555]">生效年</span>
+                <span class="${FILTER_LABEL}">生效年</span>
                 <select id="${prefix}EffectiveYear" class="${inputClass}"></select>
             </label>
             <label class="flex flex-col gap-1">
-                <span class="text-[10px] text-[#555555]">生效月</span>
+                <span class="${FILTER_LABEL}">生效月</span>
                 <select id="${prefix}EffectiveMonth" class="${inputClass}"></select>
             </label>
             <label class="flex flex-col gap-1">
-                <span class="text-[10px] text-[#555555]">失效年</span>
+                <span class="${FILTER_LABEL}">失效年</span>
                 <select id="${prefix}ExpiryYear" class="${inputClass}"></select>
             </label>
             <label class="flex flex-col gap-1">
-                <span class="text-[10px] text-[#555555]">失效月</span>
+                <span class="${FILTER_LABEL}">失效月</span>
                 <select id="${prefix}ExpiryMonth" class="${inputClass}"></select>
             </label>
         </div>
@@ -186,9 +186,9 @@ export function periodEditorHtml(prefix) {
 
 export function sopBannerHtml() {
     return `
-        <div id="sopBanner" class="mx-5 mt-4 mb-0 px-4 py-3 border border-[#2c2c2c] bg-[#161616] text-[11px] text-[#c8c8c8] leading-relaxed">
-            <p class="text-[#ffb74d] mb-1">${SOP_INTRO}</p>
-            <p id="sopBannerDetail" class="text-[#888888] mb-0">选项目后显示本文件按项目 SOP 时段。</p>
+        <div id="sopBanner" class="mx-5 mt-4 mb-0 px-4 py-3 border border-line bg-app-surface text-[11px] text-ink-muted leading-relaxed">
+            <p class="text-warn mb-1">${SOP_INTRO}</p>
+            <p id="sopBannerDetail" class="text-ink-muted mb-0">选项目后显示本文件按项目 SOP 时段。</p>
         </div>
     `;
 }

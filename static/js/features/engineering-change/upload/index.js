@@ -2,18 +2,18 @@
  * 工程变更上传页 — 异步 task_id + 拖拽区原位进度（对齐布点 / 工艺上传）
  */
 
-import { engineeringChangeUploadTemplate } from './template.js?v=13';
-import { can } from '../../../permissions.js?v=6';
+import { engineeringChangeUploadTemplate } from './template.js?v=17';
+import { can } from '../../../core/permissions.js?v=8';
 import {
     setDropzoneDragActive,
     setDropzoneFileSelected,
-} from '../../../upload-dropzone.js?v=1';
-import { fillAsOfSelects } from '../../common/period-ui.js?v=5';
+} from '../../../ui/upload-dropzone.js?v=3';
+import { fillAsOfSelects } from '../../common/period-ui.js?v=7';
 
 const POLL_INTERVAL_MS = 2000;
 const MAX_RECENT_UPLOADS = 8;
 const API = '/api/engineering-change';
-const SUBMIT_IDLE_HTML = `<svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12"></path></svg> 上传`;
+const SUBMIT_IDLE_HTML = `<svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12"></path></svg> 上传`;
 
 const EngineeringChangeUploadPage = {
     selectedFile: null,
@@ -180,13 +180,13 @@ const EngineeringChangeUploadPage = {
         if (preview) {
             preview.classList.remove('hidden');
             preview.innerHTML = `
-                <div class="flex items-center gap-3 p-3 bg-[#121212] border border-[#2c2c2c]">
-                    <span class="text-[#2e7d32]">${svgIcon('file-earmark-excel')}</span>
+                <div class="flex items-center gap-3 p-3 bg-app-main border border-line">
+                    <span class="text-ok">${svgIcon('file-earmark-excel')}</span>
                     <div class="flex-1 min-w-0">
                         <div class="text-xs font-medium text-white truncate">${esc(file.name)}</div>
-                        <div class="text-[10px] text-[#616161]">${window.formatFileSize(file.size)}</div>
+                        <div class="text-[10px] text-ink-dim">${window.formatFileSize(file.size)}</div>
                     </div>
-                    <button type="button" id="ecRemoveFileBtn" class="p-1.5 text-[#616161] hover:text-[#d32f2f] hover:bg-[#262626] rounded-sm transition-all">
+                    <button type="button" id="ecRemoveFileBtn" class="p-1.5 text-ink-dim hover:text-brand hover:bg-app-elevated rounded-sm transition-all">
                         ${svgIcon('trash')}
                     </button>
                 </div>
@@ -240,21 +240,21 @@ const EngineeringChangeUploadPage = {
         if (this.recentUploads.length === 0) {
             container.innerHTML = `
                 <div class="text-center py-5">
-                    <div class="w-8 h-8 bg-[#1a1a1a] border border-[#2a2a2a] flex items-center justify-center mx-auto mb-2.5">
-                        <svg class="w-4 h-4 text-[#4a4a4a]" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10"></path></svg>
+                    <div class="w-8 h-8 bg-app-surface border border-line flex items-center justify-center mx-auto mb-2.5">
+                        <svg class="w-4 h-4 text-ink-faint" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10"></path></svg>
                     </div>
-                    <p class="text-[10px] text-[#4a4a4a]">暂无上传记录</p>
+                    <p class="text-[10px] text-ink-faint">暂无上传记录</p>
                 </div>
             `;
             return;
         }
         container.innerHTML = this.recentUploads.map((item) => `
-            <div class="flex items-start gap-2.5 p-2.5 bg-[#121212] border border-[#2c2c2c] mb-2 last:mb-0">
-                <span class="text-[#2e7d32] shrink-0 mt-0.5">${svgIcon('file-earmark-excel')}</span>
+            <div class="flex items-start gap-2.5 p-2.5 bg-app-main border border-line mb-2 last:mb-0">
+                <span class="text-ok shrink-0 mt-0.5">${svgIcon('file-earmark-excel')}</span>
                 <div class="min-w-0 flex-1">
-                    <p class="text-[11px] text-[#ffffff] truncate">${esc(item.fileName)}</p>
-                    <p class="text-[10px] text-[#616161] mt-0.5">${esc(item.scopeLabel)} · ${esc(item.timeLabel)}</p>
-                    ${item.summary ? `<p class="text-[10px] text-[#9e9e9e] mt-0.5">${esc(item.summary)}</p>` : ''}
+                    <p class="text-[11px] text-ink truncate">${esc(item.fileName)}</p>
+                    <p class="text-[10px] text-ink-dim mt-0.5">${esc(item.scopeLabel)} · ${esc(item.timeLabel)}</p>
+                    ${item.summary ? `<p class="text-[10px] text-ink-muted mt-0.5">${esc(item.summary)}</p>` : ''}
                 </div>
             </div>
         `).join('');
@@ -340,21 +340,21 @@ const EngineeringChangeUploadPage = {
         if (titleEl) {
             if (status === 'completed') {
                 titleEl.textContent = '解析成功';
-                titleEl.className = 'text-xs font-medium text-[#4caf50] truncate mb-0';
+                titleEl.className = 'text-xs font-medium text-ok truncate mb-0';
             } else if (status === 'failed') {
                 titleEl.textContent = '解析失败';
-                titleEl.className = 'text-xs font-medium text-[#ef5350] truncate mb-0';
+                titleEl.className = 'text-xs font-medium text-danger truncate mb-0';
             } else {
                 titleEl.textContent = '正在解析工程变更...';
-                titleEl.className = 'text-xs font-medium text-[#ffffff] truncate mb-0';
+                titleEl.className = 'text-xs font-medium text-ink truncate mb-0';
             }
         }
         if (status === 'completed' && bar) {
-            bar.className = 'h-full bg-[#2e7d32] transition-all duration-300';
+            bar.className = 'h-full bg-ok transition-all duration-300';
         } else if (status === 'failed' && bar) {
-            bar.className = 'h-full bg-[#c62828] transition-all duration-300';
+            bar.className = 'h-full bg-danger transition-all duration-300';
         } else if (bar) {
-            bar.className = 'h-full bg-[#d32f2f] shadow-[0_0_8px_rgba(211,47,47,0.5)] transition-all duration-300';
+            bar.className = 'h-full bg-brand shadow-[0_0_8px_rgb(var(--brabus-red)/0.5)] transition-all duration-300';
         }
     },
 

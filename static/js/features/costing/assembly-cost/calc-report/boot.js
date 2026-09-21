@@ -2,8 +2,8 @@
  * 总成核价计算报告（独立浅色页签 · Brabus light）
  */
 
-import { resolveBomNodeShortCode } from '../../../../part-identity.js?v=3';
-import { formatDurationSeconds } from '../../../../duration.js?v=1';
+import { resolveBomNodeShortCode } from '../../../../domain/part-identity.js?v=5';
+import { formatDurationSeconds } from '../../../../domain/duration.js?v=3';
 
 const STATUS_LABEL = {
     ok: '成功',

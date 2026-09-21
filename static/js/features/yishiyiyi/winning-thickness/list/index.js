@@ -9,16 +9,16 @@ import {
     PREVIEW_PAGE_SIZE_OPTIONS,
     bindPagination,
     paintPagination,
-} from '../../../../page-size.js?v=3';
-import { setSearchBusy } from '../../../../search-busy.js?v=1';
+} from '../../../../ui/page-size.js?v=5';
+import { setSearchBusy } from '../../../../ui/search-busy.js?v=3';
 import {
     winningThicknessDownloadTemplate,
     renderWinningThicknessRows,
-} from './template.js?v=17';
+} from './template.js?v=23';
 import {
     requireExportYearMonth,
     selectDefaultYear,
-} from '../../../common/period-ui.js?v=4';
+} from '../../../common/period-ui.js?v=6';
 
 const winningThicknessState = {
     records: [],
@@ -268,8 +268,8 @@ async function previewData() {
             <tr>
                 <td colspan="10" class="px-4 py-8 text-center">
                     <div class="flex items-center justify-center">
-                        <div class="w-4 h-4 border border-[#252525] border-t-[#d32f2f] rounded-full animate-spin mr-2"></div>
-                        <span class="text-[11px] text-[#616161]">加载中...</span>
+                        <div class="w-4 h-4 border border-line border-brand rounded-full animate-spin mr-2"></div>
+                        <span class="text-[11px] text-ink-dim">加载中...</span>
                     </div>
                 </td>
             </tr>
@@ -300,7 +300,7 @@ async function previewData() {
                 ? renderWinningThicknessRows(records)
                 : `
                 <tr>
-                    <td colspan="10" class="px-4 py-8 text-center text-[#616161] text-xs">
+                    <td colspan="10" class="px-4 py-8 text-center text-ink-dim text-xs">
                         当前筛选下暂无数据
                     </td>
                 </tr>
@@ -317,7 +317,7 @@ async function previewData() {
         if (tableBody) {
             tableBody.innerHTML = `
                 <tr>
-                    <td colspan="10" class="px-4 py-8 text-center text-[#ef5350] text-xs">加载失败</td>
+                    <td colspan="10" class="px-4 py-8 text-center text-danger text-xs">加载失败</td>
                 </tr>
             `;
         }

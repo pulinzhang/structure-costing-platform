@@ -55,8 +55,8 @@ export function partShortCodeCellHtml(partNumber, shortCode) {
     const display = shortNo || full || '—';
     const isShort = Boolean(shortNo);
     const klass = isShort
-        ? 'text-[16px] font-mono font-bold tabular-nums text-[#F0F0F2] tracking-[0.12em] leading-none group-hover:text-[#FF1E27] transition-colors'
-        : 'text-[10px] font-mono text-[#8E8E93] tracking-wide truncate';
+        ? 'text-[16px] font-mono font-bold tabular-nums text-ink tracking-[0.12em] leading-none group-hover:text-brand-hud transition-colors'
+        : 'text-[10px] font-mono text-ink-muted tracking-wide truncate';
     return `<div class="${klass}" title="${htmlEsc(full)}">${htmlEsc(display)}</div>`;
 }
 
@@ -71,10 +71,10 @@ export function partNumberNameCellHtml(partNumber, partName, extraHtml = '') {
     const name = partName || '';
     const extra = extraHtml || '';
     const nameLine = name
-        ? `<div class="text-[9px] text-[#555555] mt-0.5 truncate" title="${htmlEsc(name)}">${htmlEsc(name)}</div>`
+        ? `<div class="text-[9px] text-ink-faint mt-0.5 truncate" title="${htmlEsc(name)}">${htmlEsc(name)}</div>`
         : '';
     return `
-        <div class="text-[10px] font-mono text-[#8E8E93] tracking-wide truncate" title="${htmlEsc(full)}">${htmlEsc(full) || '—'}</div>
+        <div class="text-[10px] font-mono text-ink-muted tracking-wide truncate" title="${htmlEsc(full)}">${htmlEsc(full) || '—'}</div>
         ${nameLine}
         ${extra}`;
 }

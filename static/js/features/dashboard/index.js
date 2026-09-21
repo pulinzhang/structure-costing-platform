@@ -3,8 +3,8 @@
  * 管理者看板：本期产出 · 待办决策 · 闭环就绪
  */
 
-import { canAccessPage } from '../../permissions.js?v=9';
-import { dashboardTemplate } from './template.js?v=9';
+import { canAccessPage } from '../../core/permissions.js?v=11';
+import { dashboardTemplate } from './template.js?v=14';
 
 const DASHBOARD_STATS_API = '/api/dashboard/stats';
 
@@ -17,9 +17,9 @@ const dashState = {
 };
 
 const SEVERITY_META = {
-    critical: { label: '阻断', className: 'text-[#ef5350] border-[#ef5350]/40 bg-[#ef5350]/10' },
-    warning: { label: '待办', className: 'text-[#ffb74d] border-[#ffb74d]/35 bg-[#ffb74d]/10' },
-    info: { label: '提示', className: 'text-[#64b5f6] border-[#64b5f6]/30 bg-[#64b5f6]/10' },
+    critical: { label: '阻断', className: 'text-danger border-danger/40 bg-danger/10' },
+    warning: { label: '待办', className: 'text-warn border-warn/40/35 bg-warn/10' },
+    info: { label: '提示', className: 'text-ink-muted border-ink-muted/30 bg-ink-muted/10' },
 };
 
 const READY_ROWS = [
@@ -118,8 +118,8 @@ function renderOutcome(outcome, partCost, steelPrice) {
 
     const pendingEl = document.getElementById('dashPendingTotal');
     if (pendingEl) {
-        pendingEl.classList.toggle('text-[#ffb74d]', (o.pending_total || 0) > 0);
-        pendingEl.classList.toggle('text-[#4caf50]', (o.pending_total || 0) === 0);
+        pendingEl.classList.toggle('text-warn', (o.pending_total || 0) > 0);
+        pendingEl.classList.toggle('text-ok', (o.pending_total || 0) === 0);
     }
 }
 
@@ -138,8 +138,8 @@ function renderAttention(items) {
     if (!visible.length) {
         list.innerHTML = `
             <div class="px-5 py-10 text-center">
-                <p class="text-sm text-[#4caf50] font-medium">本期暂无待办</p>
-                <p class="mt-1 text-[10px] text-[#555555]">核价闭环可按就绪清单推进或复核已审结果</p>
+                <p class="text-sm text-ok font-medium">本期暂无待办</p>
+                <p class="mt-1 text-[10px] text-ink-faint">核价闭环可按就绪清单推进或复核已审结果</p>
             </div>
         `;
         return;
@@ -150,24 +150,24 @@ function renderAttention(items) {
             const meta = SEVERITY_META[item.severity] || SEVERITY_META.info;
             const countBadge =
                 item.count != null
-                    ? `<span class="font-mono text-[11px] tabular-nums text-[#F0F0F2]">${esc(item.count)}</span>`
+                    ? `<span class="font-mono text-[11px] tabular-nums text-ink">${esc(item.count)}</span>`
                     : '';
             const link =
                 item.page && canAccessPage(item.page)
                     ? `<a href="#/${item.page}" data-page="${esc(item.page)}"
-                           class="shrink-0 text-[10px] text-[#d32f2f] hover:underline">去处理</a>`
+                           class="shrink-0 text-[10px] text-brand hover:underline">去处理</a>`
                     : '';
             return `
-                <div class="flex items-start gap-3 px-5 py-3.5 hover:bg-[#161616] transition-colors">
+                <div class="flex items-start gap-3 px-5 py-3.5 hover:bg-app-surface transition-colors">
                     <span class="mt-0.5 shrink-0 px-1.5 py-0.5 text-[9px] font-semibold tracking-wide border ${meta.className}">
                         ${meta.label}
                     </span>
                     <div class="flex-1 min-w-0">
                         <div class="flex items-center gap-2">
-                            <p class="text-xs font-medium text-[#F0F0F2] truncate">${esc(item.title)}</p>
+                            <p class="text-xs font-medium text-ink truncate">${esc(item.title)}</p>
                             ${countBadge}
                         </div>
-                        <p class="mt-0.5 text-[10px] text-[#8E8E93] leading-relaxed">${esc(item.detail)}</p>
+                        <p class="mt-0.5 text-[10px] text-ink-muted leading-relaxed">${esc(item.detail)}</p>
                     </div>
                     ${link}
                 </div>
@@ -186,14 +186,14 @@ function renderReadiness(readiness) {
         const ok = Boolean(r[row.key]);
         const canGo = canAccessPage(row.page);
         const status = ok
-            ? '<span class="text-[#4caf50] font-mono text-[10px]">READY</span>'
-            : '<span class="text-[#ffb74d] font-mono text-[10px]">GAP</span>';
+            ? '<span class="text-ok font-mono text-[10px]">READY</span>'
+            : '<span class="text-warn font-mono text-[10px]">GAP</span>';
         const link = !ok && canGo
-            ? `<a href="#/${row.page}" data-page="${row.page}" class="text-[10px] text-[#d32f2f] hover:underline">补齐</a>`
+            ? `<a href="#/${row.page}" data-page="${row.page}" class="text-[10px] text-brand hover:underline">补齐</a>`
             : '';
         return `
-            <div class="flex items-center justify-between gap-2 px-3 py-2 border border-[#222222] bg-[#121212]">
-                <span class="text-xs text-[#F0F0F2]">${esc(row.label)}</span>
+            <div class="flex items-center justify-between gap-2 px-3 py-2 border border-line-subtle bg-app-main">
+                <span class="text-xs text-ink">${esc(row.label)}</span>
                 <div class="flex items-center gap-2">
                     ${status}
                     ${link}
@@ -225,14 +225,14 @@ function renderContext(master, bom, yishiyiyi, scope) {
     if (masterEl) {
         if (!m.parts) {
             masterEl.innerHTML = canAccessPage('stamping-upload')
-                ? `<span class="text-[#8E8E93]">${loc ? esc(loc) + ' ' : ''}尚无工艺零件</span>
-                   <a href="#/stamping-upload" data-page="stamping-upload" class="text-[#d32f2f] hover:underline ml-1 text-xs">去上传</a>`
-                : `<span class="text-[#8E8E93]">${loc ? esc(loc) + ' ' : ''}尚无工艺零件</span>`;
+                ? `<span class="text-ink-muted">${loc ? esc(loc) + ' ' : ''}尚无工艺零件</span>
+                   <a href="#/stamping-upload" data-page="stamping-upload" class="text-brand hover:underline ml-1 text-xs">去上传</a>`
+                : `<span class="text-ink-muted">${loc ? esc(loc) + ' ' : ''}尚无工艺零件</span>`;
         } else {
             const scopeTag = loc
-                ? `<span class="text-[#555555]">（${esc(loc)}${scope?.vehicle_model ? ' · ' + esc(scope.vehicle_model) : ''}）</span> `
-                : `<span class="text-[#555555]">（${scope?.vehicle_model ? esc(scope.vehicle_model) : '全部基地'}）</span> `;
-            masterEl.innerHTML = `${scopeTag}<span class="text-[#F0F0F2]">冲压零件 ${esc(m.parts)} · 工序 ${esc(m.processes)} · 项目 ${esc(m.models)}</span>`;
+                ? `<span class="text-ink-faint">（${esc(loc)}${scope?.vehicle_model ? ' · ' + esc(scope.vehicle_model) : ''}）</span> `
+                : `<span class="text-ink-faint">（${scope?.vehicle_model ? esc(scope.vehicle_model) : '全部基地'}）</span> `;
+            masterEl.innerHTML = `${scopeTag}<span class="text-ink">冲压零件 ${esc(m.parts)} · 工序 ${esc(m.processes)} · 项目 ${esc(m.models)}</span>`;
         }
     }
 
@@ -294,7 +294,7 @@ async function loadStats() {
         console.error('加载管理者看板失败:', error);
         const list = document.getElementById('dashAttentionList');
         if (list) {
-            list.innerHTML = `<div class="px-5 py-8 text-center text-sm text-[#ef5350]">统计加载失败</div>`;
+            list.innerHTML = `<div class="px-5 py-8 text-center text-sm text-danger">统计加载失败</div>`;
         }
     } finally {
         dashState.loading = false;

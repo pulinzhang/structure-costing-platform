@@ -13,12 +13,10 @@ from app.database import get_db
 from app.deps.permissions import require_perm
 from app.schemas.common.page_result import PageResult
 from app.schemas.dto.steel_price_dto import (
-    SteelPriceAuditDTO,
     SteelPriceBatchApproveDTO,
     SteelPriceBatchDeleteDTO,
     SteelPriceBatchReverseAuditDTO,
     SteelPriceQuery,
-    SteelPriceReverseAuditDTO,
     SteelPriceUpdate,
 )
 from app.schemas.vo.steel_price_vo import (
@@ -187,48 +185,3 @@ def delete_steel_price(
     """删除钢材价格（已审核通过不可删）。"""
     _steel_price_service.delete(db, record_id)
     return ApiResponse.deleted(message="删除成功")
-
-
-@router.post(
-    "/{record_id:int}/approve",
-    response_model=ApiResponse[SteelPriceResponse],
-)
-def approve_steel_price(
-    record_id: int,
-    body: SteelPriceAuditDTO,
-    db: Session = Depends(get_db),
-    current_user: UserVO = Depends(require_perm(Perm.STEEL_PRICE_LIST_APPROVE)),
-) -> ApiResponse[SteelPriceResponse]:
-    """经理审核通过。"""
-    record = _steel_price_service.approve(db, record_id, body, current_user=current_user)
-    return ApiResponse.updated(data=record, message="审核通过")
-
-
-@router.post(
-    "/{record_id:int}/reject",
-    response_model=ApiResponse[SteelPriceResponse],
-)
-def reject_steel_price(
-    record_id: int,
-    body: SteelPriceAuditDTO,
-    db: Session = Depends(get_db),
-    current_user: UserVO = Depends(require_perm(Perm.STEEL_PRICE_LIST_REJECT)),
-) -> ApiResponse[SteelPriceResponse]:
-    """经理审核驳回。"""
-    record = _steel_price_service.reject(db, record_id, body, current_user=current_user)
-    return ApiResponse.updated(data=record, message="已驳回")
-
-
-@router.post(
-    "/{record_id:int}/reverse-audit",
-    response_model=ApiResponse[SteelPriceResponse],
-)
-def reverse_audit_steel_price(
-    record_id: int,
-    body: SteelPriceReverseAuditDTO,
-    db: Session = Depends(get_db),
-    current_user: UserVO = Depends(require_perm(Perm.STEEL_PRICE_LIST_REVERSE)),
-) -> ApiResponse[SteelPriceResponse]:
-    """经理反审核（approved → pending）。"""
-    record = _steel_price_service.reverse_audit(db, record_id, body, current_user=current_user)
-    return ApiResponse.updated(data=record, message="反审核成功")

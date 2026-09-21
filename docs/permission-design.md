@@ -66,7 +66,7 @@ current_user: UserVO = Depends(require_admin_user)
 ### 0.3 前端写法（强制）
 
 ```javascript
-import { can, canAccessPage } from '../../../permissions.js?v=…';
+import { can, canAccessPage } from '../../../core/permissions.js?v=…';
 
 // 菜单：侧栏 a[data-page="my-page"] → 默认校验 menu:my-page
 // 路由：app.js 已用 canAccessPage(page) 拦截，无权限跳 fallbackPageName()
@@ -385,7 +385,7 @@ op:settings-profile:password
 | bom-welding-fee-calc | `view` / `run` / `delete` | 历史/过程；开始计算；删除计算日志（含清空全部） |
 | bom-welding-fee-list | `view` / `update` / `delete` / `approve` / `reverse` / `export` | 查询；编辑其它费用；删除（含批量）；审核（含批量）；反审核；导出 Excel |
 | steel-price-calc | `view` / `run` / `delete` | 历史/过程；开始计算；删除日志（含清空全部） |
-| steel-price-list | `view` / `update` / `delete` / `approve` / `reject` / `reverse` / `export` | 查询；编辑；删除（含批量）；通过（含批量）；驳回；反审核（含批量）；导出 |
+| steel-price-list | `view` / `update` / `delete` / `approve` / `reverse` / `export` | 查询；编辑；删除（含批量）；审核（仅批量）；反审核（仅批量）；导出 |
 | stamping-part-cost-calc | `view` / `run` / `delete` | 历史/过程；开始计算；删除日志（含清空全部） |
 | stamping-part-cost | `view` / `update` / `delete` / `approve` / `reverse` / `export` | 查询；失败手工改价；删除（含批量）；审核（含批量）；反审核；导出工艺清单 Excel |
 | assembly-cost-calc | `view` / `run` / `delete` | 历史/过程；开始计算；删除日志（含清空全部） |
@@ -620,4 +620,4 @@ static/index.html           # 侧栏 data-page
 | 2026-09-08 | `op:supplier-list:delete`；`update` 含改全称/缩写/ERP（下一跳 RESTRICT） |
 | 2026-09-09 | 侧栏文案改为 **采购价格协议**（码不变） |
 | 2026-09-09 | `menu:procurement-contract-report` 从核价分组提出为一级叶子（码不变）；授权树与侧栏对齐 |
-| 2026-09-08 | §7 不再手抄权限树；目录唯一源 `catalog.json`（评审看 JSON 或授权 API） |
+| 2026-09-21 | 钢材价一览去掉 `op:steel-price-list:reject`；审核/反审核只走批量 |

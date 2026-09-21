@@ -8,23 +8,36 @@ import {
     updateL0WeldingFeeHud,
     updateL0WeldingFeeFilterCapsules,
     renderFeeDetailItems,
-} from './template.js?v=35';
-import { bindMoreMenu } from '../../../../more-menu.js?v=1';
+} from './template.js?v=43';
+import { bindMoreMenu } from '../../../../ui/more-menu.js?v=3';
+import { bindFilterBar } from '../../../../ui/filter-bar.js?v=2';
 import {
     DEFAULT_PAGE_SIZE,
     bindPagination,
     paintPagination,
-} from '../../../../page-size.js?v=3';
-import { setSearchBusy } from '../../../../search-busy.js?v=1';
-import { shortPartNumber } from '../../../../part-identity.js?v=3';
+} from '../../../../ui/page-size.js?v=5';
+import { setSearchBusy } from '../../../../ui/search-busy.js?v=3';
+import { shortPartNumber } from '../../../../domain/part-identity.js?v=5';
 
 const API_BASE = '/api/bom/welding-fees';
 const DRAWER_ANIMATION_MS = 300;
 const SCOPE_REQUIRED_MESSAGE = '须选定年度、基地、项目';
 const FEE_DIGITS = 4;
 
+const L0WF_FILTER_FIELD_IDS = [
+    'l0wfYearFilter',
+    'l0wfLocationFilter',
+    'l0wfVehicleModelFilter',
+    'l0wfBomVersionFilter',
+    'l0wfLevelFilter',
+    'l0wfAuditStatusFilter',
+    'l0wfPartNumberFilter',
+];
+
 /** @type {{ setOpen: (isOpen: boolean) => void, close: () => void, unbind: () => void } | null} */
 let moreMenu = null;
+/** @type {{ paint: () => void, setOpen: (isOpen: boolean) => void, unbind: () => void } | null} */
+let filterBar = null;
 
 const feeState = {
     records: [],
@@ -34,7 +47,6 @@ const feeState = {
     totalPages: 1,
     summary: {},
     onlyPartial: false,
-    advancedOpen: false,
     batchAuditMode: null,
     batchAuditSubmitting: false,
     isLoading: false,
@@ -90,6 +102,8 @@ function init() {
 function destroy() {
     moreMenu?.unbind();
     moreMenu = null;
+    filterBar?.unbind();
+    filterBar = null;
     closeDrawer('l0wfViewDrawer', 'l0wfViewBackdrop');
     closeDrawer('l0wfEditDrawer', 'l0wfEditBackdrop');
     closeDrawer('l0wfBatchAuditDrawer', 'l0wfBatchAuditBackdrop');
@@ -165,14 +179,10 @@ function applyHashFilters() {
         }
         el.dataset.pending = value;
     });
-    if (qs.get('year') || qs.get('location')) setAdvancedOpen(true);
 }
 
 function setAdvancedOpen(isOpen) {
-    feeState.advancedOpen = isOpen;
-    document.getElementById('l0wfAdvancedFilterPanel')?.classList.toggle('hidden', !isOpen);
-    const label = document.getElementById('l0wfAdvancedFilterLabel');
-    if (label) label.textContent = isOpen ? '收起高级筛选' : '展开高级筛选';
+    filterBar?.setOpen(isOpen);
 }
 
 function val(id) {
@@ -224,6 +234,7 @@ function getFilters() {
 }
 
 function updateCapsules() {
+    filterBar?.paint();
     updateL0WeldingFeeFilterCapsules(getFilters());
 }
 
@@ -249,6 +260,7 @@ async function loadFilterOptions() {
         await loadLocationOptions();
         await loadVehicleModelOptions();
         await loadBomVersionOptions();
+        updateCapsules();
     } catch (error) {
         console.error('加载筛选失败:', error);
     }
@@ -285,10 +297,29 @@ async function loadBomVersionOptions() {
 }
 
 function bindEvents() {
-    document.getElementById('l0wfSearchBtn')?.addEventListener('click', () => loadData(1));
-    document.getElementById('l0wfResetBtn')?.addEventListener('click', resetFilters);
-    document.getElementById('l0wfToggleAdvancedFilter')?.addEventListener('click', () => {
-        setAdvancedOpen(!feeState.advancedOpen);
+    filterBar = bindFilterBar({
+        prefix: 'l0wf',
+        searchId: 'l0wfSearchBtn',
+        capsules: [
+            {
+                capsuleId: 'l0wfCapsuleYear',
+                fieldId: 'l0wfYearFilter',
+                idleLabel: '全部年度',
+                display: () => {
+                    const year = document.getElementById('l0wfYearFilter')?.value || '';
+                    return year ? window.fmtYear(year) : '';
+                },
+            },
+            { capsuleId: 'l0wfCapsuleLocation', fieldId: 'l0wfLocationFilter', idleLabel: '全部基地' },
+            { capsuleId: 'l0wfCapsuleModel', fieldId: 'l0wfVehicleModelFilter', idleLabel: '全部项目' },
+            { capsuleId: 'l0wfCapsuleVersion', fieldId: 'l0wfBomVersionFilter', idleLabel: '全部版本' },
+            { capsuleId: 'l0wfCapsuleLevel', fieldId: 'l0wfLevelFilter', idleLabel: '全部层级' },
+        ],
+        countFieldIds: L0WF_FILTER_FIELD_IDS,
+        resetId: 'l0wfResetBtn',
+        enterFieldIds: ['l0wfPartNumberFilter'],
+        onSearch: () => loadData(1),
+        onReset: () => resetFilters(),
     });
     document.getElementById('l0wfHudPartialCard')?.addEventListener('click', () => {
         if (feeState.onlyPartial) {
@@ -306,7 +337,6 @@ function bindEvents() {
     });
 
     document.getElementById('l0wfYearFilter')?.addEventListener('change', async () => {
-        updateCapsules();
         await loadLocationOptions();
         await loadVehicleModelOptions();
         await loadBomVersionOptions();
@@ -314,37 +344,25 @@ function bindEvents() {
         loadData(1);
     });
     document.getElementById('l0wfLocationFilter')?.addEventListener('change', async () => {
-        updateCapsules();
         await loadVehicleModelOptions();
         await loadBomVersionOptions();
         updateCapsules();
         loadData(1);
     });
     document.getElementById('l0wfVehicleModelFilter')?.addEventListener('change', async () => {
-        updateCapsules();
         await loadBomVersionOptions();
         updateCapsules();
         loadData(1);
     });
     document.getElementById('l0wfBomVersionFilter')?.addEventListener('change', () => {
-        updateCapsules();
         loadData(1);
     });
     document.getElementById('l0wfLevelFilter')?.addEventListener('change', () => {
-        updateCapsules();
         loadData(1);
     });
     document.getElementById('l0wfAuditStatusFilter')?.addEventListener('change', () => {
-        updateCapsules();
         loadData(1);
     });
-    document.getElementById('l0wfPartNumberFilter')?.addEventListener('keydown', (e) => {
-        if (e.key !== 'Enter') return;
-        e.preventDefault();
-        updateCapsules();
-        loadData(1);
-    });
-    document.getElementById('l0wfPartNumberFilter')?.addEventListener('input', updateCapsules);
 
 
     document.getElementById('l0wfTableBody')?.addEventListener('click', (event) => {
@@ -458,8 +476,8 @@ async function loadData(page = feeState.page) {
     const body = document.getElementById('l0wfTableBody');
     const empty = document.getElementById('l0wfEmpty');
     if (body) {
-        body.innerHTML = `<tr><td colspan="16" class="py-10 text-center text-[#555]">
-            <div class="inline-block w-5 h-5 border-2 border-[#2c2c2c] border-t-[#FF1E27] rounded-full animate-spin"></div>
+        body.innerHTML = `<tr><td colspan="16" class="py-10 text-center text-ink-faint">
+            <div class="inline-block w-5 h-5 border-2 border-line border-brand-hud rounded-full animate-spin"></div>
         </td></tr>`;
     }
     empty?.classList.add('hidden');
@@ -494,7 +512,7 @@ async function loadData(page = feeState.page) {
         );
         updateCapsules();
 
-        const totalLabel = document.getElementById('l0wfTotalLabel');
+        const totalLabel = document.getElementById('l0wfPageInfo');
         if (totalLabel) totalLabel.textContent = `共 ${feeState.total} 条`;
 
         paintPagination('l0wfPagination', feeState.page, feeState.totalPages);
@@ -509,7 +527,7 @@ async function loadData(page = feeState.page) {
     } catch (error) {
         console.error('加载焊接费失败:', error);
         if (body) {
-            body.innerHTML = `<tr><td colspan="16" class="py-8 text-center text-[#ef5350]">加载失败</td></tr>`;
+            body.innerHTML = `<tr><td colspan="16" class="py-8 text-center text-danger">加载失败</td></tr>`;
         }
     } finally {
         feeState.isLoading = false;
@@ -835,7 +853,7 @@ async function exportExcel() {
     const originalHtml = btn ? btn.innerHTML : '';
     if (btn) {
         btn.disabled = true;
-        btn.innerHTML = `<div class="w-3 h-3 border border-[#ef5350] border-t-transparent rounded-full animate-spin"></div>导出中..`;
+        btn.innerHTML = `<div class="w-3 h-3 border border-danger border-t-transparent rounded-full animate-spin"></div>导出中..`;
     }
     try {
         const { blob, filename } = await HttpClient.download(`${API_BASE}/export-download`, {

@@ -2,9 +2,9 @@
  * 冲压检具费同步上传
  */
 
-import { gaugeFeeUploadTemplate } from './template.js?v=6';
-import { setDropzoneDragActive } from '../../../../upload-dropzone.js?v=1';
-import { bindSyncUploadProgress } from '../../../../sync-upload-progress.js?v=1';
+import { gaugeFeeUploadTemplate } from './template.js?v=10';
+import { setDropzoneDragActive } from '../../../../ui/upload-dropzone.js?v=3';
+import { bindSyncUploadProgress } from '../../../../ui/sync-upload-progress.js?v=3';
 
 const API_BASE = '/api/stamping/gauge-fees';
 
@@ -138,7 +138,7 @@ const GaugeFeeUploadPage = {
         const preview = document.getElementById('gfuFilePreview');
         if (preview) {
             preview.classList.remove('hidden');
-            preview.innerHTML = `<p class="text-[11px] text-[#9e9e9e]">已选：${esc(file.name)}</p>`;
+            preview.innerHTML = `<p class="text-[11px] text-ink-muted">已选：${esc(file.name)}</p>`;
         }
         const submitBtn = document.getElementById('gfuSubmitBtn');
         if (submitBtn) submitBtn.disabled = false;
@@ -161,7 +161,7 @@ const GaugeFeeUploadPage = {
 
     showProgress(msg = '解析并写入数据库，请稍候') {
         uploadProgress.setRunning(msg);
-        document.getElementById('gfuZone')?.classList.remove('border-[#d32f2f]');
+        document.getElementById('gfuZone')?.classList.remove('border-brand');
     },
 
     showDoneOnPanel(message, opts = {}) {

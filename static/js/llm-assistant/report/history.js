@@ -39,13 +39,13 @@ export async function openHistoryPanel(overlay, options) {
 
     overlay.classList.remove('hidden');
     overlay.innerHTML = `
-<div class="flex items-center justify-between px-3 py-2 border-b border-[#222] bg-[#1e1e1e] shrink-0">
-  <div class="text-xs font-semibold text-[#F0F0F2]">分析历史</div>
-  <button type="button" id="llmHistoryClose" class="w-7 h-7 inline-flex items-center justify-center text-[#9e9e9e] hover:text-white" aria-label="关闭">×</button>
+<div class="flex items-center justify-between px-3 py-2 border-b border-line-subtle bg-app-surface shrink-0">
+  <div class="text-xs font-semibold text-ink">分析历史</div>
+  <button type="button" id="llmHistoryClose" class="w-7 h-7 inline-flex items-center justify-center text-ink-muted hover:text-ink" aria-label="关闭">×</button>
 </div>
-<div id="llmHistoryBody" class="flex-1 overflow-y-auto px-3 py-2 bg-[#0a0a0a] min-h-0">
+<div id="llmHistoryBody" class="flex-1 overflow-y-auto px-3 py-2 bg-app-deep min-h-0">
   <div id="llmHistoryList"></div>
-  <div id="llmHistoryFooter" class="py-3 text-center text-[10px] text-[#555555]"></div>
+  <div id="llmHistoryFooter" class="py-3 text-center text-[10px] text-ink-faint"></div>
 </div>`;
 
     overlay.querySelector('#llmHistoryClose')?.addEventListener('click', () => {
@@ -70,7 +70,7 @@ export async function openHistoryPanel(overlay, options) {
         }
         if (state.loading && state.items.length) {
             footerEl.innerHTML = `
-  <span class="inline-block w-3 h-3 border border-[#616161] border-t-[#ff5252] rounded-full animate-spin mr-1 align-middle"></span>
+  <span class="inline-block w-3 h-3 border border-ink-muted border-brand-active rounded-full animate-spin mr-1 align-middle"></span>
   加载更多…`;
             return;
         }
@@ -79,7 +79,7 @@ export async function openHistoryPanel(overlay, options) {
 
     const renderList = () => {
         if (!state.items.length && !state.loading) {
-            listEl.innerHTML = `<div class="py-10 text-center text-[11px] text-[#757575]">暂无分析记录</div>`;
+            listEl.innerHTML = `<div class="py-10 text-center text-[11px] text-ink-muted">暂无分析记录</div>`;
             renderFooter();
             return;
         }
@@ -92,8 +92,8 @@ export async function openHistoryPanel(overlay, options) {
         state.loading = true;
         if (!state.items.length) {
             listEl.innerHTML = `
-  <div class="flex items-center justify-center py-8 text-[11px] text-[#757575]">
-    <span class="inline-block w-3 h-3 border border-[#616161] border-t-[#ff5252] rounded-full animate-spin mr-2"></span>
+  <div class="flex items-center justify-center py-8 text-[11px] text-ink-muted">
+    <span class="inline-block w-3 h-3 border border-ink-muted border-brand-active rounded-full animate-spin mr-2"></span>
     加载中…
   </div>`;
             footerEl.innerHTML = '';
@@ -113,7 +113,7 @@ export async function openHistoryPanel(overlay, options) {
         } catch (error) {
             state.loading = false;
             if (!state.items.length) {
-                listEl.innerHTML = `<div class="py-8 text-center text-[11px] text-[#ef5350]">${esc(error?.message || '加载失败')}</div>`;
+                listEl.innerHTML = `<div class="py-8 text-center text-[11px] text-danger">${esc(error?.message || '加载失败')}</div>`;
                 footerEl.innerHTML = '';
             } else {
                 window.showToast?.(error?.message || '加载失败', 'error');
@@ -199,10 +199,10 @@ function renderHistoryItem(item) {
     const status = String(item.status || '').toLowerCase();
     const statusLabel = STATUS_LABEL[status] || status || '-';
     const statusClass = status === 'succeeded'
-        ? 'text-[#4caf50]'
+        ? 'text-ok'
         : status === 'failed'
-            ? 'text-[#ef5350]'
-            : 'text-[#ffb74d]';
+            ? 'text-danger'
+            : 'text-warn';
     const question = item.user_question || '（无问句）';
     const scope = item.scope || {};
     const scopeText = [scope.location, fmtPeriod(scope.year, scope.month)].filter(Boolean).join(' · ');
@@ -214,9 +214,9 @@ function renderHistoryItem(item) {
         : '';
 
     return `
-<div class="mb-2 px-2.5 py-2 border border-[#222222] bg-[#141414] rounded-sm">
-  <div class="text-[11px] text-[#F0F0F2] line-clamp-2">${esc(question)}</div>
-  <div class="mt-1 flex flex-wrap gap-x-2 gap-y-0.5 text-[9px] text-[#555555]">
+<div class="mb-2 px-2.5 py-2 border border-line-subtle bg-app-main rounded-sm">
+  <div class="text-[11px] text-ink line-clamp-2">${esc(question)}</div>
+  <div class="mt-1 flex flex-wrap gap-x-2 gap-y-0.5 text-[9px] text-ink-faint">
     <span class="${statusClass}">${esc(statusLabel)}</span>
     ${scopeText ? `<span>${esc(scopeText)}</span>` : ''}
     ${types ? `<span class="font-mono">${esc(types)}</span>` : ''}
@@ -224,13 +224,13 @@ function renderHistoryItem(item) {
   </div>
   <div class="mt-2 flex items-center justify-end gap-1">
     <button type="button" data-action="open-report" data-report-id="${escAttr(item.report_id)}"
-      class="px-2 py-1 text-[10px] text-[#9e9e9e] border border-[#2c2c2c] hover:border-[#9e9e9e] hover:text-white rounded-sm transition-colors">
+      class="px-2 py-1 text-[10px] text-ink-muted border border-line hover:border-ink-muted hover:text-ink rounded-sm transition-colors">
       打开
     </button>
     <button type="button" data-action="delete-report"
       data-report-id="${escAttr(item.report_id)}"
       data-question="${escAttr(question)}"
-      class="px-2 py-1 text-[10px] text-[#ef5350] border border-[#2c2c2c] hover:border-[#ef5350] hover:bg-[#1a0808] rounded-sm transition-colors">
+      class="px-2 py-1 text-[10px] text-danger border border-line hover:border-danger hover:bg-app-deep rounded-sm transition-colors">
       删除
     </button>
   </div>

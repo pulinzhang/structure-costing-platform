@@ -4,6 +4,9 @@
  * - 一事一议预览页：默认 200，可选 10 / 20 / 50 / 100 / 200
  */
 
+import { BTN_PAGINATION_CURRENT } from './classes.js?v=8';
+import { clearCurrentTableRows } from './table-row.js?v=4';
+
 export const PAGE_SIZE_OPTIONS = Object.freeze([10, 20, 50, 100]);
 export const DEFAULT_PAGE_SIZE = 10;
 
@@ -13,7 +16,7 @@ export const DEFAULT_PREVIEW_PAGE_SIZE = 200;
 const PAGINATION_BTN_CLASS = 'page-btn';
 
 const HUD_BAR_CLASS =
-    'flex items-center justify-between px-5 py-2.5 border-t border-[#14141A] bg-[#0A0A0E]';
+    'flex items-center justify-between px-5 py-2.5 border-t border-line-subtle bg-app-hud';
 
 export function normalizePageSize(
     value,
@@ -44,9 +47,9 @@ function pageSizeSelectHtml(
         .join('');
     return `
         <label class="inline-flex items-center gap-1.5 shrink-0">
-            <span class="text-[10px] font-mono text-[#555555]">每页</span>
+            <span class="text-[10px] font-mono text-ink-faint">每页</span>
             <select id="${selectId}"
-                    class="h-6 min-w-[3.25rem] pl-1.5 pr-5 text-[10px] font-mono bg-[#121216] border border-[#22222A] text-[#8E8E93] appearance-none cursor-pointer focus:outline-none focus:border-[#FF1E27] rounded-sm">
+                    class="h-6 min-w-[3.25rem] pl-1.5 pr-5 text-[10px] font-mono bg-app-main border border-line-hud text-ink-muted appearance-none cursor-pointer focus:outline-none focus:border-brand-hud rounded-[2px] hud-filter">
                 ${optionHtml}
             </select>
         </label>`;
@@ -69,7 +72,7 @@ export function paginationBarHtml(spec) {
     const wrapperClass = spec.wrapperClass || HUD_BAR_CLASS;
     const idAttr = spec.wrapperId ? ` id="${spec.wrapperId}"` : '';
     const infoHtml = spec.infoHtml
-        ?? `<span id="${spec.infoId}" class="text-[10px] font-mono text-[#555555]"></span>`;
+        ?? `<span id="${spec.infoId}" class="text-[10px] font-mono text-ink-faint"></span>`;
     const currentSize = spec.currentSize ?? DEFAULT_PAGE_SIZE;
     const options = spec.options ?? PAGE_SIZE_OPTIONS;
     return `
@@ -117,15 +120,14 @@ function renderPageButtons(currentPage, totalPages, btnClass = PAGINATION_BTN_CL
     const page = Number(currentPage) || 1;
     if (pages <= 1) return '';
     const idle =
-        'flex items-center justify-center w-6 h-6 text-[10px] text-[#585858] hover:text-[#c0c0c0] hover:bg-[#232323]';
+        'flex items-center justify-center w-6 h-6 text-[10px] text-ink-dim hover:text-ink hover:bg-app-surface';
     const disabledCls =
-        'flex items-center justify-center w-6 h-6 text-[10px] text-[#333333] cursor-not-allowed';
-    const activeCls =
-        'flex items-center justify-center w-6 h-6 text-[10px] bg-[#FF1E27] text-white';
+        'flex items-center justify-center w-6 h-6 text-[10px] text-ink-faint cursor-not-allowed';
+    const activeCls = BTN_PAGINATION_CURRENT;
     let buttons = `
         <button type="button" class="${btnClass} ${page === 1 ? disabledCls : idle} transition-all"
                 data-page="${page - 1}" ${page === 1 ? 'disabled' : ''}>
-            <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"></path></svg>
+            ${typeof window.svgIcon === 'function' ? window.svgIcon('chevron-left', 'w-3 h-3') : ''}
         </button>`;
     const maxVisible = 5;
     let startPage = Math.max(1, page - Math.floor(maxVisible / 2));
@@ -135,20 +137,20 @@ function renderPageButtons(currentPage, totalPages, btnClass = PAGINATION_BTN_CL
     }
     if (startPage > 1) {
         buttons += `<button type="button" class="${btnClass} ${idle}" data-page="1">1</button>`;
-        if (startPage > 2) buttons += `<span class="px-0.5 text-[#333333] text-[9px]">…</span>`;
+        if (startPage > 2) buttons += `<span class="px-0.5 text-ink-faint text-[9px]">…</span>`;
     }
     for (let i = startPage; i <= endPage; i++) {
         const isActive = i === page;
         buttons += `<button type="button" class="${btnClass} ${isActive ? activeCls : idle}" data-page="${i}">${i}</button>`;
     }
     if (endPage < pages) {
-        if (endPage < pages - 1) buttons += `<span class="px-0.5 text-[#333333] text-[9px]">…</span>`;
+        if (endPage < pages - 1) buttons += `<span class="px-0.5 text-ink-faint text-[9px]">…</span>`;
         buttons += `<button type="button" class="${btnClass} ${idle}" data-page="${pages}">${pages}</button>`;
     }
     buttons += `
         <button type="button" class="${btnClass} ${page === pages ? disabledCls : idle} transition-all"
                 data-page="${page + 1}" ${page === pages ? 'disabled' : ''}>
-            <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"></path></svg>
+            ${typeof window.svgIcon === 'function' ? window.svgIcon('chevron-right', 'w-3 h-3') : ''}
         </button>`;
     return buttons;
 }
@@ -167,6 +169,7 @@ function bindPaginationButtons(buttonsId, onPage) {
         if (!btn || btn.disabled) return;
         const page = Number.parseInt(btn.dataset.page, 10);
         if (!Number.isFinite(page) || page < 1) return;
+        clearCurrentTableRows();
         onPage(page);
     });
 }
@@ -183,7 +186,10 @@ export function bindPagination({
     bindPageSizeSelect(selectId, {
         getSize,
         setSize,
-        onChange: () => onPage(1),
+        onChange: () => {
+            clearCurrentTableRows();
+            onPage(1);
+        },
         options,
         defaultSize,
     });

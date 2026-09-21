@@ -5,7 +5,7 @@
  * 密度按 4 位小数；各类「率」界面按 2 位小数（‰ / %），提交时再换算为小数串。
  */
 
-import { settingsTemplate } from './template.js?v=22';
+import { settingsTemplate } from './template.js?v=25';
 
 const API = '/api/settings/system/config';
 const DEFAULT_APP_NAME = '结构件自动核价平台';

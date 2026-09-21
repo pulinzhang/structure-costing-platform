@@ -7,22 +7,24 @@ import {
     renderWpbTableRows,
     renderWpbDetailBody,
     updateWpbHud,
-    updateWpbCapsules,
     refreshWpbLineDerived,
-} from './template.js?v=50';
-import { bindMoreMenu } from '../../../../more-menu.js?v=1';
+} from './template.js?v=58';
+import { bindMoreMenu } from '../../../../ui/more-menu.js?v=3';
+import { bindFilterBar } from '../../../../ui/filter-bar.js?v=2';
 import {
     DEFAULT_PAGE_SIZE,
     bindPagination,
     paintPagination,
-} from '../../../../page-size.js?v=3';
-import { setSearchBusy } from '../../../../search-busy.js?v=1';
+} from '../../../../ui/page-size.js?v=5';
+import { setSearchBusy } from '../../../../ui/search-busy.js?v=3';
 
 const API_BASE = '/api/bom/welding-process-breakdown';
 const DRAWER_MS = 300;
 
 /** @type {{ setOpen: (isOpen: boolean) => void, close: () => void, unbind: () => void } | null} */
 let moreMenu = null;
+/** @type {{ paint: () => void, setOpen: (isOpen: boolean) => void, unbind: () => void } | null} */
+let filterBar = null;
 
 const wpbState = {
     records: [],
@@ -81,7 +83,7 @@ function init() {
     bindEvents();
     bindPagination({
         selectId: 'wpbPageSize',
-        buttonsId: 'wpbPaginationBtns',
+        buttonsId: 'wpbPagination',
         getSize: () => wpbState.pageSize,
         setSize: (size) => {
             wpbState.pageSize = size;
@@ -89,13 +91,7 @@ function init() {
         onPage: (page) => loadData(page),
     });
     applyPermissionUi();
-    if (wpbState.advancedOpen) {
-        document.getElementById('wpbAdvancedFilterPanel')?.classList.remove('hidden');
-        const label = document.getElementById('wpbAdvancedFilterLabel');
-        if (label) label.textContent = '收起高级筛选';
-    }
     loadData(1);
-    updateWpbCapsules(wpbState);
 }
 
 /** 抽屉挂到 body，避免被主内容区 overflow 裁切；清掉重复 id */
@@ -120,6 +116,8 @@ function mountDrawersToBody() {
 function destroy() {
     moreMenu?.unbind();
     moreMenu = null;
+    filterBar?.unbind();
+    filterBar = null;
     wpbState.currentNodeId = null;
     for (const id of [
         'wpbDetailBackdrop',
@@ -164,9 +162,36 @@ function applyPermissionUi() {
 }
 
 function bindEvents() {
-    document.getElementById('btnWpbFilter')?.addEventListener('click', () => {
-        readFiltersFromDom();
-        loadData(1);
+    filterBar = bindFilterBar({
+        prefix: 'wpb',
+        searchId: 'btnWpbFilter',
+        resetId: 'wpbResetFilterBtn',
+        startOpen: wpbState.advancedOpen,
+        capsules: [
+            { capsuleId: 'wpbCapsuleLocation', fieldId: 'wpbLocationFilter', idleLabel: '全部基地' },
+            { capsuleId: 'wpbCapsuleModel', fieldId: 'wpbModelFilter', idleLabel: '全部项目' },
+            { capsuleId: 'wpbCapsuleVersion', fieldId: 'wpbVersionFilter', idleLabel: '全部版本' },
+            { capsuleId: 'wpbCapsuleLevel', fieldId: 'wpbLevelFilter', idleLabel: '全部层级' },
+            {
+                capsuleId: 'wpbCapsuleProcessCount',
+                fieldId: 'wpbProcessCountFilter',
+                idleLabel: '全部工艺数',
+                display: () => {
+                    const count = document.getElementById('wpbProcessCountFilter')?.value;
+                    if (count !== '0') return '';
+                    const level = document.getElementById('wpbLevelFilter')?.value;
+                    return level === '0' ? 'L0 · 工艺数=0' : '工艺数 = 0';
+                },
+            },
+            { capsuleId: 'wpbCapsuleAudit', fieldId: 'wpbAuditFilter', idleLabel: '全部审核' },
+        ],
+        countFieldIds: ['wpbPartNumberFilter'],
+        enterFieldIds: ['wpbPartNumberFilter'],
+        onSearch: () => {
+            readFiltersFromDom();
+            loadData(1);
+        },
+        onReset: resetFilters,
     });
     [
         'wpbLocationFilter',
@@ -181,35 +206,18 @@ function bindEvents() {
             loadData(1);
         });
     });
-    document.getElementById('wpbPartNumberFilter')?.addEventListener('keydown', (event) => {
-        if (event.key === 'Enter') {
-            event.preventDefault();
-            readFiltersFromDom();
-            loadData(1);
-        }
-    });
-    document.getElementById('wpbResetFilterBtn')?.addEventListener('click', resetFilters);
     document.querySelector('[data-action="filter-zero-process"]')?.addEventListener('click', () => {
         const card = document.getElementById('wpbHudZeroProcessCard');
         if (!card || card.dataset.clickable !== '1') return;
-        wpbState.advancedOpen = true;
-        document.getElementById('wpbAdvancedFilterPanel')?.classList.remove('hidden');
-        const label = document.getElementById('wpbAdvancedFilterLabel');
-        if (label) label.textContent = '收起高级筛选';
+        filterBar?.setOpen(true);
         const levelEl = document.getElementById('wpbLevelFilter');
         if (levelEl) levelEl.value = '0';
         const el = document.getElementById('wpbProcessCountFilter');
         if (el) el.value = '0';
         readFiltersFromDom();
+        filterBar?.paint();
         loadData(1);
     });
-    document.getElementById('wpbToggleAdvancedFilter')?.addEventListener('click', () => {
-        wpbState.advancedOpen = !wpbState.advancedOpen;
-        document.getElementById('wpbAdvancedFilterPanel')?.classList.toggle('hidden', !wpbState.advancedOpen);
-        const label = document.getElementById('wpbAdvancedFilterLabel');
-        if (label) label.textContent = wpbState.advancedOpen ? '收起高级筛选' : '展开高级筛选';
-    });
-
     document.getElementById('wpbCloseDetailDrawer')?.addEventListener('click', () => closeDrawer('wpbDetailDrawer', 'wpbDetailBackdrop'));
     document.getElementById('wpbDetailBackdrop')?.addEventListener('click', () => closeDrawer('wpbDetailDrawer', 'wpbDetailBackdrop'));
 
@@ -276,7 +284,6 @@ function readFiltersFromDom() {
     const processCountRaw = val('wpbProcessCountFilter');
     wpbState.processLineCountEq = processCountRaw === '' ? null : Number(processCountRaw);
     wpbState.partNumber = val('wpbPartNumberFilter') || null;
-    updateWpbCapsules(wpbState);
 }
 
 function val(id) {
@@ -312,8 +319,8 @@ async function loadData(page = 1) {
     wpbState.isLoading = true;
     setSearchBusy('btnWpbFilter', true);
     const tbody = document.getElementById('wpbTableBody');
-    const empty = document.getElementById('wpbEmptyState');
-    const loading = document.getElementById('wpbLoadingState');
+    const empty = document.getElementById('wpbEmpty');
+    const loading = document.getElementById('wpbLoading');
     if (tbody) tbody.innerHTML = '';
     empty?.classList.add('hidden');
     loading?.classList.remove('hidden');
@@ -366,7 +373,7 @@ async function loadData(page = 1) {
         }
 
         updateWpbHud(wpbState.summary);
-        updateWpbCapsules(wpbState);
+        filterBar?.paint();
 
         if (tbody) {
             tbody.innerHTML = renderWpbTableRows(wpbState.records, {
@@ -374,9 +381,9 @@ async function loadData(page = 1) {
                 canEdit: wpbState.canEdit,
             });
         }
-        const totalEl = document.getElementById('wpbTotalCount');
+        const totalEl = document.getElementById('wpbPageInfo');
         if (totalEl) totalEl.textContent = `共 ${wpbState.total} 条`;
-        paintPagination('wpbPaginationBtns', wpbState.page, wpbState.totalPages);
+        paintPagination('wpbPagination', wpbState.page, wpbState.totalPages);
 
         if (!wpbState.records.length) empty?.classList.remove('hidden');
     } catch (error) {
@@ -509,7 +516,7 @@ function openBatchDrawer(mode) {
         remarkWrap?.classList.remove('hidden');
         if (title) title.textContent = '批量审核';
         if (hint) hint.textContent = '将范围内待审主表标记为已审核；已审跳过。审核意见必填。';
-        if (remarkLabel) remarkLabel.innerHTML = '审核意见<span class="text-[#d32f2f]">*</span>';
+        if (remarkLabel) remarkLabel.innerHTML = '审核意见<span class="text-brand">*</span>';
         if (remark) remark.placeholder = '请填写审核意见（必填）';
     } else if (mode === 'reverse') {
         remarkWrap?.classList.remove('hidden');
@@ -566,7 +573,7 @@ async function exportL0Excel() {
     const originalHtml = btn ? btn.innerHTML : '';
     if (btn) {
         btn.disabled = true;
-        btn.innerHTML = `<div class="w-3 h-3 border border-[#ef5350] border-t-transparent rounded-full animate-spin"></div>导出中…`;
+        btn.innerHTML = `<div class="w-3 h-3 border border-danger border-t-transparent rounded-full animate-spin"></div>导出中…`;
     }
     try {
         readFiltersFromDom();

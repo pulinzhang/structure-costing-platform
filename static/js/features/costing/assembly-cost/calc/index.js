@@ -4,15 +4,15 @@
 
 import {
     assemblyCostCalcTemplate,
-} from './template.js?v=10';
+} from './template.js?v=15';
 import {
     DEFAULT_PAGE_SIZE,
     bindPagination,
     paintPagination,
-} from '../../../../page-size.js?v=3';
+} from '../../../../ui/page-size.js?v=5';
 import {
     formatDurationSeconds,
-} from '../../../../duration.js?v=1';
+} from '../../../../domain/duration.js?v=3';
 
 const API_BASE = '/api/costing/assembly-costs';
 const CASCADE_API = '/api/bom/filters/cascade';
@@ -40,10 +40,10 @@ function emptyReady(message = null) {
 }
 
 const STATUS_META = {
-    processing: { label: '计算中', className: 'text-[#64b5f6]' },
-    success: { label: '成功', className: 'text-[#66bb6a]' },
-    partial: { label: '部分成功', className: 'text-[#ffb74d]' },
-    failed: { label: '失败', className: 'text-[#ef5350]' },
+    processing: { label: '计算中', className: 'text-ink-muted' },
+    success: { label: '成功', className: 'text-ok' },
+    partial: { label: '部分成功', className: 'text-warn' },
+    failed: { label: '失败', className: 'text-danger' },
 };
 
 const calcState = {
@@ -310,15 +310,15 @@ function setCountHtml(id, count, unit, isComplete) {
     const el = document.getElementById(id);
     if (!el) return;
     const display = Number.isFinite(count) ? Number(count).toLocaleString('zh-CN') : '-';
-    const tone = isComplete === false ? 'text-[#ffb74d]' : 'text-[#dddddd]';
+    const tone = isComplete === false ? 'text-warn' : 'text-ink';
     el.className = `text-xs font-mono font-bold ${tone}`;
-    el.innerHTML = `${display} <span class="text-[9px] font-normal text-[#555]">${unit}</span>`;
+    el.innerHTML = `${display} <span class="text-[9px] font-normal text-ink-faint">${unit}</span>`;
 }
 
 async function loadCalcHistory(page = calcState.history.page) {
     const body = document.getElementById('lacCalcHistoryBody');
     if (!body) return;
-    body.innerHTML = `<tr><td colspan="15" class="py-8 text-center text-[#555]">加载中..</td></tr>`;
+    body.innerHTML = `<tr><td colspan="15" class="py-8 text-center text-ink-faint">加载中..</td></tr>`;
     try {
         const res = await HttpClient.get(CALC_LOGS_API, {
             params: { page, size: calcState.history.size },
@@ -337,7 +337,7 @@ async function loadCalcHistory(page = calcState.history.page) {
                 calcState.history.totalPages,
             );
     } catch (error) {
-        body.innerHTML = `<tr><td colspan="15" class="py-8 text-center text-[#ef5350]">${esc(error.message || '加载失败')}</td></tr>`;
+        body.innerHTML = `<tr><td colspan="15" class="py-8 text-center text-danger">${esc(error.message || '加载失败')}</td></tr>`;
     }
 }
 
@@ -345,35 +345,35 @@ function renderHistoryRows(items) {
     const body = document.getElementById('lacCalcHistoryBody');
     if (!body) return;
     if (!items.length) {
-        body.innerHTML = `<tr><td colspan="15" class="py-8 text-center text-[#555]">暂无计算历史</td></tr>`;
+        body.innerHTML = `<tr><td colspan="15" class="py-8 text-center text-ink-faint">暂无计算历史</td></tr>`;
         return;
     }
     body.innerHTML = items.map((row) => {
-        const meta = STATUS_META[row.status] || { label: row.status, className: 'text-[#9e9e9e]' };
+        const meta = STATUS_META[row.status] || { label: row.status, className: 'text-ink-muted' };
         const query = `?year=${encodeURIComponent(row.year)}&month=${encodeURIComponent(row.month)}&location=${encodeURIComponent(row.location)}&vehicle_model=${encodeURIComponent(row.vehicle_model)}`;
         const versionLabel = row.bom_version ? String(row.bom_version) : '—';
         return `
-            <tr class="hover:bg-[#1a1a1a]">
-                <td class="py-2 px-2 font-mono text-[#666] whitespace-nowrap">${esc(formatDateTime(row.started_at))}</td>
-                <td class="py-2 px-2 font-mono text-[#666] whitespace-nowrap">${esc(formatDateTime(row.finished_at))}</td>
-                <td class="py-2 px-2 font-mono text-right tabular-nums text-[#777] whitespace-nowrap">${esc(formatDurationSeconds(row))}</td>
-                <td class="py-2 px-2 text-[#c0c0c0]">${esc(row.operator_name || '-')}</td>
+            <tr class="hover:bg-app-surface">
+                <td class="py-2 px-2 font-mono text-ink-dim whitespace-nowrap">${esc(formatDateTime(row.started_at))}</td>
+                <td class="py-2 px-2 font-mono text-ink-dim whitespace-nowrap">${esc(formatDateTime(row.finished_at))}</td>
+                <td class="py-2 px-2 font-mono text-right tabular-nums text-ink-dim whitespace-nowrap">${esc(formatDurationSeconds(row))}</td>
+                <td class="py-2 px-2 text-ink">${esc(row.operator_name || '-')}</td>
                 <td class="py-2 px-2 font-mono">${esc(fmtPeriod(row.year, row.month))}</td>
                 <td class="py-2 px-2">${esc(row.location)}</td>
                 <td class="py-2 px-2">${esc(row.vehicle_model)}</td>
                 <td class="py-2 px-2 font-mono">${esc(versionLabel)}</td>
                 <td class="py-2 px-2 text-center ${meta.className}">${esc(meta.label)}</td>
                 <td class="py-2 px-2 text-right font-mono">${esc(row.subject_total)}</td>
-                <td class="py-2 px-2 text-right font-mono text-[#66bb6a]">${esc(row.ok_count)}</td>
-                <td class="py-2 px-2 text-right font-mono text-[#ffb74d]">${esc(row.partial_count)}</td>
-                <td class="py-2 px-2 text-right font-mono text-[#ef5350]">${esc(row.failed_count)}</td>
+                <td class="py-2 px-2 text-right font-mono text-ok">${esc(row.ok_count)}</td>
+                <td class="py-2 px-2 text-right font-mono text-warn">${esc(row.partial_count)}</td>
+                <td class="py-2 px-2 text-right font-mono text-danger">${esc(row.failed_count)}</td>
                 <td class="py-2 px-2 text-right font-mono">${esc(row.skipped_approved_count)}</td>
                 <td class="py-2 px-2 text-right whitespace-nowrap">
                     <button data-action="open-report" data-id="${row.id}"
-                            class="text-[10px] text-[#9e9e9e] hover:text-white mr-2">报告</button>
+                            class="text-[10px] text-ink-muted hover:text-ink mr-2">报告</button>
                     <button data-action="jump-list" data-query="${esc(query)}"
-                            class="text-[10px] text-[#9e9e9e] hover:text-white mr-2">结果</button>
-                    ${calcState.canDelete ? `<button data-action="delete-log" data-id="${row.id}" class="text-[10px] text-[#ef5350] hover:text-[#ff8a80]" title="含计算中：删除可释放锁">删除</button>` : ''}
+                            class="text-[10px] text-ink-muted hover:text-ink mr-2">结果</button>
+                    ${calcState.canDelete ? `<button data-action="delete-log" data-id="${row.id}" class="text-[10px] text-danger hover:text-danger/80" title="含计算中：删除可释放锁">删除</button>` : ''}
                 </td>
             </tr>
         `;

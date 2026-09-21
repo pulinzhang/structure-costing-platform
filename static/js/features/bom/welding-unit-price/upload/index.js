@@ -1,10 +1,11 @@
-﻿/**
+import { HUD_LED } from '../../../../ui/classes.js?v=8';
+/**
  * 焊接单价上传页
  * 同步导入：基地 + 年度必选，仅 .xlsx
  */
 
-import { weldingUnitPriceUploadTemplate } from './template.js?v=8';
-import { bindSyncUploadProgress } from '../../../../sync-upload-progress.js?v=1';
+import { weldingUnitPriceUploadTemplate } from './template.js?v=13';
+import { bindSyncUploadProgress } from '../../../../ui/sync-upload-progress.js?v=3';
 
 const API_BASE = '/api/bom/welding-unit-price';
 const MAX_FILE_SIZE = 5 * 1024 * 1024;
@@ -116,14 +117,14 @@ const WeldingUnitPriceUploadPage = {
         zone?.addEventListener('dragover', (event) => {
             if (this.canUpload === false || this.isUploading) return;
             event.preventDefault();
-            zone.classList.add('border-[#d32f2f]');
+            zone.classList.add('border-brand');
         });
         zone?.addEventListener('dragleave', () => {
-            zone.classList.remove('border-[#d32f2f]');
+            zone.classList.remove('border-brand');
         });
         zone?.addEventListener('drop', (event) => {
             event.preventDefault();
-            zone.classList.remove('border-[#d32f2f]');
+            zone.classList.remove('border-brand');
             if (this.canUpload === false || this.isUploading) return;
             this.selectFile(event.dataTransfer.files?.[0]);
         });
@@ -151,7 +152,7 @@ const WeldingUnitPriceUploadPage = {
             if (body) {
                 body.innerHTML = `
                     <tr>
-                        <td colspan="2" class="px-2 py-3 text-[11px] text-[#ef5350] text-center">标准目录加载失败</td>
+                        <td colspan="2" class="px-2 py-3 text-[11px] text-danger text-center">标准目录加载失败</td>
                     </tr>`;
             }
             if (countEl) countEl.textContent = '—';
@@ -167,14 +168,14 @@ const WeldingUnitPriceUploadPage = {
         if (!items.length) {
             body.innerHTML = `
                 <tr>
-                    <td colspan="2" class="px-2 py-3 text-[11px] text-[#555555] text-center">暂无标准目录</td>
+                    <td colspan="2" class="px-2 py-3 text-[11px] text-ink-faint text-center">暂无标准目录</td>
                 </tr>`;
             return;
         }
         body.innerHTML = items.map((item) => `
             <tr>
-                <td class="px-2 py-1.5 text-[11px] text-[#C8C8D0]">${esc(item.item_name)}</td>
-                <td class="px-2 py-1.5 text-[11px] font-mono text-[#9e9e9e]">${esc(item.unit)}</td>
+                <td class="px-2 py-1.5 text-[11px] text-ink-muted">${esc(item.item_name)}</td>
+                <td class="px-2 py-1.5 text-[11px] font-mono text-ink-muted">${esc(item.unit)}</td>
             </tr>`).join('');
     },
 
@@ -197,23 +198,23 @@ const WeldingUnitPriceUploadPage = {
         if (title) {
             title.textContent = isError ? '导入失败' : (isWarning ? '导入完成（有警告）' : '导入成功');
             title.className = isError
-                ? 'text-[11px] font-semibold text-[#ef5350] mb-0 tracking-wide'
+                ? 'text-[11px] font-semibold text-danger mb-0 tracking-wide'
                 : (isWarning
-                    ? 'text-[11px] font-semibold text-[#ffb74d] mb-0 tracking-wide'
-                    : 'text-[11px] font-semibold text-[#66bb6a] mb-0 tracking-wide');
+                    ? 'text-[11px] font-semibold text-warn mb-0 tracking-wide'
+                    : 'text-[11px] font-semibold text-ok mb-0 tracking-wide');
         }
         if (accent) {
             accent.className = isError
-                ? 'w-0.5 h-3 bg-[#d32f2f] shrink-0 shadow-[0_0_6px_rgba(211,47,47,0.45)]'
+                ? HUD_LED
                 : (isWarning
-                    ? 'w-0.5 h-3 bg-[#f57f17] shrink-0'
-                    : 'w-0.5 h-3 bg-[#2e7d32] shrink-0');
+                    ? 'w-0.5 h-3 bg-warn shrink-0'
+                    : 'w-0.5 h-3 bg-ok shrink-0');
         }
         panel.className = isError
-            ? 'mb-4 border border-[#5c1a1a] bg-[#1a0808]'
+            ? 'mb-4 border border-danger/50 bg-app-deep'
             : (isWarning
-                ? 'mb-4 border border-[#4a3a12] bg-[#14100a]'
-                : 'mb-4 border border-[#1a3a1a] bg-[#0a140a]');
+                ? 'mb-4 border border-warn/40 bg-app-deep'
+                : 'mb-4 border border-line-subtle bg-app-deep');
 
         const lines = [];
         const main = String(message || '').trim();
@@ -230,13 +231,13 @@ const WeldingUnitPriceUploadPage = {
         }
 
         if (expanded.length <= 1) {
-            body.innerHTML = `<p class="mb-0 text-[12px] leading-relaxed ${isError ? 'text-[#ffcdd2]' : 'text-[#C8C8D0]'}">${esc(expanded[0] || '')}</p>`;
+            body.innerHTML = `<p class="mb-0 text-[12px] leading-relaxed ${isError ? 'text-danger' : 'text-ink-muted'}">${esc(expanded[0] || '')}</p>`;
         } else {
             body.innerHTML = `
                 <ul class="list-none space-y-1.5 mb-0">
                     ${expanded.map((line) => `
-                        <li class="flex gap-2 text-[12px] leading-relaxed ${isError ? 'text-[#ffcdd2]' : 'text-[#C8C8D0]'}">
-                            <span class="text-[#616161] shrink-0">·</span>
+                        <li class="flex gap-2 text-[12px] leading-relaxed ${isError ? 'text-danger' : 'text-ink-muted'}">
+                            <span class="text-ink-dim shrink-0">·</span>
                             <span class="min-w-0 break-words">${esc(line)}</span>
                         </li>`).join('')}
                 </ul>`;
@@ -264,17 +265,17 @@ const WeldingUnitPriceUploadPage = {
         if (preview) {
             preview.classList.remove('hidden');
             preview.innerHTML = `
-                <div class="flex items-center gap-3 p-3 bg-[#121212] border border-[#2c2c2c]">
-                    ${window.svgIcon('file-earmark-excel', 'w-5 h-5 text-[#2e7d32]')}
+                <div class="flex items-center gap-3 p-3 bg-app-main border border-line">
+                    ${window.svgIcon('file-earmark-excel', 'w-5 h-5 text-ok')}
                     <div class="min-w-0 flex-1">
-                        <p class="text-xs text-[#ffffff] truncate">${esc(file.name)}</p>
-                        <p class="text-[10px] text-[#616161]">${this.formatFileSize(file.size)}</p>
+                        <p class="text-xs text-ink truncate">${esc(file.name)}</p>
+                        <p class="text-[10px] text-ink-dim">${this.formatFileSize(file.size)}</p>
                     </div>
                 </div>`;
         }
 
         const title = document.getElementById('weldingUnitPriceUploadTitle');
-        if (title) title.innerHTML = `<span class="text-[#2e7d32]">${esc(file.name)}</span> 已选择`;
+        if (title) title.innerHTML = `<span class="text-ok">${esc(file.name)}</span> 已选择`;
 
         const submitBtn = document.getElementById('weldingUnitPriceUploadSubmitBtn');
         if (submitBtn) submitBtn.disabled = false;
@@ -316,7 +317,7 @@ const WeldingUnitPriceUploadPage = {
 
     showProgress(msg = '解析并写入数据库，请稍候') {
         uploadProgress.setRunning(msg);
-        document.getElementById('weldingUnitPriceUploadZone')?.classList.remove('border-[#d32f2f]');
+        document.getElementById('weldingUnitPriceUploadZone')?.classList.remove('border-brand');
     },
 
     showDoneOnPanel(message, opts = {}) {

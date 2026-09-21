@@ -291,7 +291,6 @@ class Perm:
     STEEL_PRICE_LIST_UPDATE = "op:steel-price-list:update"  # 编辑
     STEEL_PRICE_LIST_DELETE = "op:steel-price-list:delete"  # 删除
     STEEL_PRICE_LIST_APPROVE = "op:steel-price-list:approve"  # 审核通过
-    STEEL_PRICE_LIST_REJECT = "op:steel-price-list:reject"  # 驳回
     STEEL_PRICE_LIST_REVERSE = "op:steel-price-list:reverse"  # 反审核
     STEEL_PRICE_LIST_EXPORT = "op:steel-price-list:export"  # 导出
 
