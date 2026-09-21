@@ -49,6 +49,9 @@ class OperationLog(Base):
     detail: Mapped[str | None] = mapped_column(
         Text, nullable=True, comment="补充信息（查询串等，不含敏感体）"
     )
+    error_message: Mapped[str | None] = mapped_column(
+        String(255), nullable=True, comment="失败对外原因"
+    )
     created_at: Mapped[datetime] = mapped_column(
         DateTime,
         nullable=False,

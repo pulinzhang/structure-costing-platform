@@ -16,6 +16,7 @@ from sqlalchemy.orm import Session
 from app.common.audit import display_name
 from app.common.export_watermark import workbook_to_xlsx_bytes
 from app.common.operation_log.context import OperationAuditScope
+from app.common.operation_log.error_message import clip_error_message
 from app.common.operation_log.ip_location import lookup_ip_location
 from app.common.operation_log.rules import (
     append_upload_filenames,
@@ -93,6 +94,13 @@ def _build_detail(
     return joined or None
 
 
+def _stored_error_message(status_code: int, error_message: str | None) -> str | None:
+    if status_code < 400 or not error_message:
+        return None
+    clipped = clip_error_message(error_message)
+    return clipped or None
+
+
 def _schedule_ip_lookup(log_id: int, client_ip: str | None) -> None:
     if not log_id or not client_ip:
         return
@@ -148,6 +156,7 @@ class OperationLogService:
         path_params: dict[str, str] | None = None,
         audit_scope: OperationAuditScope | None = None,
         upload_filenames: list[str] | None = None,
+        error_message: str | None = None,
     ) -> None:
         """中间件调用：独立 Session 写入，失败不影响主请求。"""
         session_factory = DatabaseConfig.get_session_factory()
@@ -184,6 +193,7 @@ class OperationLogService:
                     success=status_code < 400,
                     client_ip=(client_ip or "")[:64] or None,
                     detail=detail,
+                    error_message=_stored_error_message(status_code, error_message),
                 ),
             )
             db.commit()
@@ -262,6 +272,7 @@ class OperationLogService:
             "操作",
             "对象",
             "结果",
+            "失败原因",
             "状态码",
             "IP",
             "国家",
@@ -288,6 +299,7 @@ class OperationLogService:
                 row.summary or "",
                 row.detail or "",
                 "成功" if row.success else "失败",
+                row.error_message or "",
                 row.status_code,
                 row.client_ip or "",
                 row.ip_country or "",

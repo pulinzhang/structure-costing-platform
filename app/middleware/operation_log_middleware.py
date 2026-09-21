@@ -10,6 +10,7 @@ from starlette.requests import Request
 
 from app.common.operation_log.context import (
     get_request_audit_scope,
+    get_request_error_message,
     get_request_permission,
     get_request_upload_filenames,
     get_request_user,
@@ -58,6 +59,7 @@ class OperationLogMiddleware(BaseHTTPMiddleware):
                     path_params=path_params or None,
                     audit_scope=get_request_audit_scope(request),
                     upload_filenames=get_request_upload_filenames(request),
+                    error_message=get_request_error_message(request),
                 )
         except Exception:
             logger.exception("操作日志中间件异常（已忽略）")
