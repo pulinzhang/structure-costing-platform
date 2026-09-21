@@ -9,7 +9,6 @@ from sqlalchemy.orm import Session
 from app.common.permissions.codes import Perm
 from app.database import get_db
 from app.deps.permissions import require_any_perm, require_perm
-from app.exceptions.base import BusinessException
 from app.schemas.common.page_result import PageResult
 from app.schemas.dto.stamping_gauge_fee_dto import StampingGaugeFeeQuery, StampingGaugeFeeUpdate
 from app.schemas.vo.stamping_gauge_fee_vo import (
@@ -73,13 +72,11 @@ async def upload_gauge_fees(
     db: Session = Depends(get_db),
     current_user: UserVO = Depends(require_perm(Perm.STAMPING_GAUGE_FEE_UPLOAD_UPLOAD)),
 ) -> ApiResponse[StampingGaugeFeeImportResultVO]:
-    if not file.filename:
-        raise BusinessException("未提供文件名")
     file_content = await file.read()
     result = _upload_service.import_excel(
         db,
         file_content=file_content,
-        filename=file.filename,
+        filename=file.filename or "",
         location=location,
         vehicle_model=vehicle_model,
         current_user=current_user,

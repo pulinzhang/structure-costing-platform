@@ -19,6 +19,7 @@ from app.schemas.dto.stamping_part_dto import (
 )
 from app.schemas.dto.stamping_upload_dto import PartData, StampingPartPatch
 from app.schemas.vo.stamping_vo import (
+    BatchUpdateResponse,
     StampingCascadeFilterOptionsVO,
     StampingMaterialResponse,
     StampingPartBatchDeleteResultVO,
@@ -223,5 +224,5 @@ class StampingPartService:
         db: Session,
         items: list[StampingProcessItemUpdate],
         current_user: UserVO,
-    ) -> int:
+    ) -> BatchUpdateResponse:
         return batch_update_processes_fn(db, items, current_user)

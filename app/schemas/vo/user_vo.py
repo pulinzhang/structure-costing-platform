@@ -43,3 +43,4 @@ class AvatarUploadVO(BaseModel):
     """头像上传结果：相对路径 URL，如 /uploads/avatars/xxx.png"""
 
     url: str
+    message: str = ""

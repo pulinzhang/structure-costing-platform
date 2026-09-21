@@ -107,3 +107,11 @@ class SteelBasePriceFilterOptionsVO(BaseModel):
     category_names: list[str] = []
     grades: list[str] = []
     specs: list[str] = []
+
+
+class SteelBasePriceBatchDeleteResultVO(BaseModel):
+    """按年+月（及可选基地/钢厂）批量删除结果"""
+
+    year: int
+    month: int
+    message: str = ""

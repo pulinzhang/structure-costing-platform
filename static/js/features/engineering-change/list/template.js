@@ -29,7 +29,7 @@ export function engineeringChangeListTemplate() {
                         </div>
                     </div>
                     <p class="mt-3 text-[10px] text-[#6E6E73] leading-snug tracking-wide">
-                        变更单 → 树坑 → 树 → 换树 → 盖章 → 数采购件（本页只数变更单）
+                        变更单 → 树坑 → 树 → 换树 → 盖章 → 数采购件（分总成和冲压件以新版本号存在了新树上）
                     </p>
                 </div>
                 <div class="px-5 py-3 border-b border-[#14141A]"

@@ -59,6 +59,7 @@ class StampingTonnagePriceBulkUpsertResponse(BaseModel):
     updated_count: int
     failed_count: int
     skipped_approved_count: int = 0
+    message: str = ""
 
 
 class StampingTonnagePriceImportResultVO(BaseModel):

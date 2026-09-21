@@ -19,9 +19,7 @@ from app.schemas.vo.stamping_scrap_price_vo import (
     StampingScrapPriceMonthSummaryVO,
 )
 from app.schemas.vo.user_vo import UserVO
-from app.services.yishiyiyi.scrap_price.crud.scrap_price_crud import (
-    StampingScrapPriceCrudService,
-)
+from app.services.yishiyiyi.scrap_price.crud.service import StampingScrapPriceCrudService
 
 __all__ = ["StampingScrapPriceService"]
 

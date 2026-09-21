@@ -14,6 +14,7 @@ from app.repositories.bom.packaging_transport_fee_repository import (
     BomPackagingTransportFeeRepository,
     PackagingTransportFeeListFilters,
 )
+from app.schemas.common.batch_result import batch_approve_message, batch_reverse_message
 from app.schemas.dto.bom_packaging_transport_fee_dto import (
     BomPackagingTransportFeeBatchApproveDTO,
     BomPackagingTransportFeeBatchReverseAuditDTO,
@@ -23,6 +24,7 @@ from app.schemas.dto.bom_packaging_transport_fee_dto import (
 )
 from app.schemas.vo.bom_packaging_transport_fee_vo import (
     BomPackagingTransportFeeBatchAuditResultVO,
+    BomPackagingTransportFeeBatchDeleteResultVO,
     BomPackagingTransportFeeResponse,
 )
 from app.schemas.vo.user_vo import UserVO
@@ -200,7 +202,7 @@ class BomPackagingTransportFeeService:
         location: str,
         year: int,
         vehicle_model: str,
-    ) -> tuple[int, int]:
+    ) -> BomPackagingTransportFeeBatchDeleteResultVO:
         location = (location or "").strip()
         vehicle_model = (vehicle_model or "").strip()
         if not location:
@@ -234,7 +236,19 @@ class BomPackagingTransportFeeService:
             logger.exception("批量删除包装运输费失败")
             raise
 
-        return deleted_count, skipped
+        message = (
+            f"已删除基地「{location}」{year} 年项目「{vehicle_model}」" f"共 {deleted_count} 条"
+        )
+        if skipped:
+            message += f"，跳过已审核 {skipped} 条"
+        return BomPackagingTransportFeeBatchDeleteResultVO(
+            location=location,
+            year=year,
+            vehicle_model=vehicle_model,
+            deleted_count=deleted_count,
+            skipped_approved_count=skipped,
+            message=message,
+        )
 
     def batch_approve(
         self,
@@ -283,6 +297,7 @@ class BomPackagingTransportFeeService:
             location=location,
             year=dto.year,
             vehicle_model=vehicle_model,
+            message=batch_approve_message(updated, skipped),
         )
 
     def batch_reverse_audit(
@@ -335,6 +350,7 @@ class BomPackagingTransportFeeService:
             location=location,
             year=dto.year,
             vehicle_model=vehicle_model,
+            message=batch_reverse_message(updated, skipped),
         )
 
     def get_locations(self, db: Session) -> list[str]:

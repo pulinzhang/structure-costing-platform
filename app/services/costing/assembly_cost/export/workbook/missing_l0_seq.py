@@ -8,8 +8,8 @@ from dataclasses import dataclass
 from sqlalchemy.orm import Session
 
 from app.common.period import period
-from app.models.bom.node import BomNode
 from app.models.costing.assembly_cost import AssemblyCost
+from app.repositories.bom.bom.node import BomNodeRepository
 from app.services.masterdata.location.service import LocationService
 
 
@@ -48,15 +48,10 @@ def find_missing_l0_seqs(
     locations = LocationService().expand_for_query(db, location_raw)
     if not locations:
         return [], None
-    rows = (
-        db.query(BomNode)
-        .filter(
-            BomNode.level == 0,
-            BomNode.location.in_(locations),
-            BomNode.vehicle_model == vehicle,
-            BomNode.seq_no.isnot(None),
-        )
-        .all()
+    rows = BomNodeRepository().list_l0_with_seq_by_locations(
+        db,
+        locations=locations,
+        vehicle_model=vehicle,
     )
     as_of = period(int(year), int(month))
     introduced = [

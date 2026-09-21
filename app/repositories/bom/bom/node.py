@@ -174,3 +174,23 @@ class BomNodeRepository:
             )
         by_id = {row.id: row for row in rows}
         return [by_id[node_id] for node_id in unique_ids if node_id in by_id]
+
+    def list_l0_with_seq_by_locations(
+        self,
+        db: Session,
+        *,
+        locations: list[str],
+        vehicle_model: str,
+    ) -> list[BomNode]:
+        if not locations:
+            return []
+        return (
+            db.query(BomNode)
+            .filter(
+                BomNode.level == 0,
+                BomNode.location.in_(locations),
+                BomNode.vehicle_model == vehicle_model,
+                BomNode.seq_no.isnot(None),
+            )
+            .all()
+        )

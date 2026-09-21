@@ -150,7 +150,7 @@ stamping-costing-platform/
 - 长任务 `start_*` 入队：HTTP 200 + `ApiResponse.ok(data=accepted)`，不要套 POST 201。同步 Excel 的 `POST …/upload` 不入队，直接返回结果 VO（入口只在宪法 §五）
 - 下载/导出：`StreamingResponse` / `FileResponse`，不走 `ApiResponse`
 - 业务路由：`Depends(require_perm(Perm.…))`；写操作把 `current_user` 显式传给 Service
-- Service 返回 VO；Repository 返回 Model（聚合签名用具名 `TypedDict`，函数体 `return {…}` 合法；禁止签名写成匿名 `dict`）
+- Service 返回 VO；Router 只工厂调用，禁止 `FooVO(`。对 Router 的元组仅分页 `(items, total[, filters])` 与下载 `(bytes, filename)`。Repository 返回 Model（聚合签名用具名 `TypedDict`，函数体 `return {…}` 合法；禁止签名写成匿名 `dict`）
 - **禁止** Model.`to_dict`；JSON 形态用 VO `@field_serializer`（金额/物理量字符串；datetime **必须** `app.common.timezone.datetime_to_iso`）
 
 细则：[架构宪法](../.cursor/rules/architecture-constitution.mdc)（归属）+ [类型安全](../.cursor/rules/api-type-safety.mdc)（形态）。

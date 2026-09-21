@@ -155,30 +155,13 @@ def batch_delete(
     db: Session = Depends(get_db),
     current_user: UserVO = Depends(require_perm(Perm.BOM_PACKAGING_TRANSPORT_FEE_DELETE)),
 ) -> ApiResponse[BomPackagingTransportFeeBatchDeleteResultVO]:
-    deleted_count, skipped = _service.batch_delete_by_scope(
+    result = _service.batch_delete_by_scope(
         db,
         location=body.location,
         year=body.year,
         vehicle_model=body.vehicle_model,
     )
-
-    message = (
-        f"已删除基地「{body.location}」{body.year} 年项目「{body.vehicle_model}」"
-        f"共 {deleted_count} 条"
-    )
-    if skipped:
-        message += f"，跳过已审核 {skipped} 条"
-    return ApiResponse.ok(
-        data=BomPackagingTransportFeeBatchDeleteResultVO(
-            location=body.location.strip(),
-            year=body.year,
-            vehicle_model=body.vehicle_model.strip(),
-            deleted_count=deleted_count,
-            skipped_approved_count=skipped,
-            message=message,
-        ),
-        message=message,
-    )
+    return ApiResponse.ok(data=result, message=result.message)
 
 
 @router.post(
@@ -191,10 +174,7 @@ def batch_approve(
     current_user: UserVO = Depends(require_perm(Perm.BOM_PACKAGING_TRANSPORT_FEE_APPROVE)),
 ) -> ApiResponse[BomPackagingTransportFeeBatchAuditResultVO]:
     result = _service.batch_approve(db, body, current_user=current_user)
-    message = f"已审核通过 {result.updated_count} 条"
-    if result.skipped_count:
-        message += f"，跳过已审核 {result.skipped_count} 条"
-    return ApiResponse.ok(data=result, message=message)
+    return ApiResponse.ok(data=result, message=result.message)
 
 
 @router.post(
@@ -207,10 +187,7 @@ def batch_reverse_audit(
     current_user: UserVO = Depends(require_perm(Perm.BOM_PACKAGING_TRANSPORT_FEE_REVERSE)),
 ) -> ApiResponse[BomPackagingTransportFeeBatchAuditResultVO]:
     result = _service.batch_reverse_audit(db, body, current_user=current_user)
-    message = f"已反审核 {result.updated_count} 条"
-    if result.skipped_count:
-        message += f"，跳过非已审 {result.skipped_count} 条"
-    return ApiResponse.ok(data=result, message=message)
+    return ApiResponse.ok(data=result, message=result.message)
 
 
 @router.post(

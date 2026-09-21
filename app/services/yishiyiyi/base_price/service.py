@@ -21,6 +21,7 @@ from app.schemas.dto.steel_base_price_dto import (
 )
 from app.schemas.vo.async_task_vo import AsyncTaskAcceptedVO
 from app.schemas.vo.steel_base_price_vo import (
+    SteelBasePriceBatchDeleteResultVO,
     SteelBasePriceExportRow,
     SteelBasePriceFilterOptionsVO,
     SteelBasePriceImportResultResponse,
@@ -34,9 +35,7 @@ from app.services.async_task.service import (
     AsyncTaskService,
 )
 from app.services.async_task.worker_runner import WorkerTaskOutcome
-from app.services.yishiyiyi.base_price.crud.base_price_crud import (
-    SteelBasePriceCrudService,
-)
+from app.services.yishiyiyi.base_price.crud.service import SteelBasePriceCrudService
 from app.services.yishiyiyi.base_price.export.service import (
     SteelBasePriceExportService,
 )
@@ -103,7 +102,7 @@ class SteelBasePriceService:
         month: int | None,
         location: str | None = None,
         steel_mill: str | None = None,
-    ) -> tuple[int, int]:
+    ) -> SteelBasePriceBatchDeleteResultVO:
         if year is None or month is None:
             raise BusinessException("year 和 month 不能为空")
         self._crud.batch_delete(
@@ -113,7 +112,11 @@ class SteelBasePriceService:
             location=location,
             steel_mill=steel_mill,
         )
-        return year, month
+        return SteelBasePriceBatchDeleteResultVO(
+            year=year,
+            month=month,
+            message="批量删除成功",
+        )
 
     def import_excel(
         self,

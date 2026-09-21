@@ -200,25 +200,12 @@ def batch_delete(
     current_user: UserVO = Depends(require_perm(Perm.BOM_WELDING_UNIT_PRICE_DELETE)),
 ) -> ApiResponse[BomWeldingUnitPriceBatchDeleteResultVO]:
     """按基地 + 年度批量删除焊接单价（仅删未审核；已通过跳过）。"""
-    deleted_count, skipped = _welding_unit_price_service.batch_delete_by_location_year(
+    result = _welding_unit_price_service.batch_delete_by_location_year(
         db,
         location=body.location,
         year=body.year,
     )
-
-    message = f"已删除基地「{body.location}」{body.year} 年共 {deleted_count} 条"
-    if skipped:
-        message += f"，跳过已审核 {skipped} 条"
-    return ApiResponse.ok(
-        data=BomWeldingUnitPriceBatchDeleteResultVO(
-            location=body.location.strip(),
-            year=body.year,
-            deleted_count=deleted_count,
-            skipped_approved_count=skipped,
-            message=message,
-        ),
-        message=message,
-    )
+    return ApiResponse.ok(data=result, message=result.message)
 
 
 @router.post(
@@ -232,10 +219,7 @@ def batch_approve(
 ) -> ApiResponse[BomWeldingUnitPriceBatchAuditResultVO]:
     """按基地 + 年度批量审核通过。"""
     result = _welding_unit_price_service.batch_approve(db, body, current_user=current_user)
-    message = f"已审核通过 {result.updated_count} 条"
-    if result.skipped_count:
-        message += f"，跳过已审核 {result.skipped_count} 条"
-    return ApiResponse.ok(data=result, message=message)
+    return ApiResponse.ok(data=result, message=result.message)
 
 
 @router.post(
@@ -249,10 +233,7 @@ def batch_reverse_audit(
 ) -> ApiResponse[BomWeldingUnitPriceBatchAuditResultVO]:
     """按基地 + 年度批量反审核。"""
     result = _welding_unit_price_service.batch_reverse_audit(db, body, current_user=current_user)
-    message = f"已反审核 {result.updated_count} 条"
-    if result.skipped_count:
-        message += f"，跳过非已审 {result.skipped_count} 条"
-    return ApiResponse.ok(data=result, message=message)
+    return ApiResponse.ok(data=result, message=result.message)
 
 
 @router.post(
@@ -265,24 +246,8 @@ def bulk_upsert(
     current_user: UserVO = Depends(require_perm(Perm.BOM_WELDING_UNIT_PRICE_CREATE)),
 ) -> ApiResponse[BomWeldingUnitPriceBulkUpsertResponse]:
     """批量写入焊接单价（存在则更新）"""
-    created, updated, failed, skipped_approved = _welding_unit_price_service.bulk_upsert(
-        db, items, current_user=current_user
-    )
-    return ApiResponse.ok(
-        data=BomWeldingUnitPriceBulkUpsertResponse(
-            created=created,
-            updated=updated,
-            failed=failed,
-            created_count=len(created),
-            updated_count=len(updated),
-            failed_count=len(failed),
-            skipped_approved_count=skipped_approved,
-        ),
-        message=(
-            f"批量写入完成: 新增 {len(created)}, 更新 {len(updated)}, "
-            f"失败 {len(failed)}, 跳过已审核 {skipped_approved}"
-        ),
-    )
+    result = _welding_unit_price_service.bulk_upsert(db, items, current_user=current_user)
+    return ApiResponse.ok(data=result, message=result.message)
 
 
 @router.post(

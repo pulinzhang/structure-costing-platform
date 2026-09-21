@@ -21,6 +21,7 @@ from app.repositories.stamping.tonnage_price.repository import (
     StampingTonnagePriceRepository,
     TonnagePriceListFilters,
 )
+from app.schemas.common.batch_result import batch_approve_message, batch_reverse_message
 from app.schemas.dto.stamping_tonnage_price_dto import (
     StampingTonnagePriceBatchApproveDTO,
     StampingTonnagePriceBatchReverseAuditDTO,
@@ -30,6 +31,8 @@ from app.schemas.dto.stamping_tonnage_price_dto import (
 )
 from app.schemas.vo.stamping_tonnage_price_vo import (
     StampingTonnagePriceBatchAuditResultVO,
+    StampingTonnagePriceBatchDeleteResultVO,
+    StampingTonnagePriceBulkUpsertResponse,
     StampingTonnagePriceResponse,
 )
 from app.schemas.vo.user_vo import UserVO
@@ -147,16 +150,10 @@ class StampingTonnagePriceService:
         db: Session,
         items: list[StampingTonnagePriceCreate],
         current_user: UserVO,
-    ) -> tuple[
-        list[StampingTonnagePriceResponse],
-        list[StampingTonnagePriceResponse],
-        list[str],
-        int,
-    ]:
+    ) -> StampingTonnagePriceBulkUpsertResponse:
         """
         批量写入冲次单价（与 Excel 导入一致：存在则更新单价）。
         已审核通过的记录跳过，不覆盖。
-        返回 (新增列表, 更新列表, 失败错误信息列表, 跳过已审核条数)。
         """
         created: list[StampingTonnagePriceResponse] = []
         updated: list[StampingTonnagePriceResponse] = []
@@ -191,7 +188,20 @@ class StampingTonnagePriceService:
             except BusinessException as error:
                 failed.append(str(error) or "未知错误")
 
-        return created, updated, failed, skipped_approved
+        message = (
+            f"批量写入完成: 新增 {len(created)}, 更新 {len(updated)}, "
+            f"失败 {len(failed)}, 跳过已审核 {skipped_approved}"
+        )
+        return StampingTonnagePriceBulkUpsertResponse(
+            created=created,
+            updated=updated,
+            failed=failed,
+            created_count=len(created),
+            updated_count=len(updated),
+            failed_count=len(failed),
+            skipped_approved_count=skipped_approved,
+            message=message,
+        )
 
     def update(
         self,
@@ -250,8 +260,8 @@ class StampingTonnagePriceService:
         *,
         location: str,
         year: int,
-    ) -> tuple[int, int]:
-        """按基地 + 年度批量删除未审核记录。返回 (删除条数, 跳过已审核条数)。"""
+    ) -> StampingTonnagePriceBatchDeleteResultVO:
+        """按基地 + 年度批量删除未审核记录。"""
         location = (location or "").strip()
         if not location:
             raise BusinessException("请选择采购基地")
@@ -282,7 +292,16 @@ class StampingTonnagePriceService:
             deleted_count,
             skipped,
         )
-        return deleted_count, skipped
+        message = f"已删除基地「{location}」{year} 年共 {deleted_count} 条"
+        if skipped:
+            message += f"，跳过已审核 {skipped} 条"
+        return StampingTonnagePriceBatchDeleteResultVO(
+            location=location,
+            year=year,
+            deleted_count=deleted_count,
+            skipped_approved_count=skipped,
+            message=message,
+        )
 
     def batch_approve(
         self,
@@ -323,6 +342,7 @@ class StampingTonnagePriceService:
             skipped_count=skipped,
             location=location,
             year=dto.year,
+            message=batch_approve_message(updated, skipped),
         )
 
     def batch_reverse_audit(
@@ -367,6 +387,7 @@ class StampingTonnagePriceService:
             skipped_count=skipped,
             location=location,
             year=dto.year,
+            message=batch_reverse_message(updated, skipped),
         )
 
     def get_locations(self, db: Session) -> list[str]:

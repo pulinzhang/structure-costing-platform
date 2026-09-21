@@ -275,6 +275,7 @@ class BatchUpdateResponse(BaseModel):
     """批量更新响应 VO"""
 
     updated: int
+    message: str = ""
 
 
 class StampingPartBatchDeleteResultVO(BaseModel):

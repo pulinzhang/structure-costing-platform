@@ -159,25 +159,12 @@ def batch_delete(
     current_user: UserVO = Depends(require_perm(Perm.BOM_ANNUAL_PART_PRICE_DELETE)),
 ) -> ApiResponse[BomAnnualPartPriceBatchDeleteResultVO]:
     """按基地 + 年度批量删除（仅删未审核；已通过跳过）。"""
-    deleted_count, skipped = _service.batch_delete_by_location_year(
+    result = _service.batch_delete_by_location_year(
         db,
         location=body.location,
         year=body.year,
     )
-
-    message = f"已删除基地「{body.location}」{body.year} 年共 {deleted_count} 条"
-    if skipped:
-        message += f"，跳过已审核 {skipped} 条"
-    return ApiResponse.ok(
-        data=BomAnnualPartPriceBatchDeleteResultVO(
-            location=body.location.strip(),
-            year=body.year,
-            deleted_count=deleted_count,
-            skipped_approved_count=skipped,
-            message=message,
-        ),
-        message=message,
-    )
+    return ApiResponse.ok(data=result, message=result.message)
 
 
 @router.post(
@@ -191,10 +178,7 @@ def batch_approve(
 ) -> ApiResponse[BomAnnualPartPriceBatchAuditResultVO]:
     """按基地 + 年度批量审核通过。"""
     result = _service.batch_approve(db, body, current_user=current_user)
-    message = f"已审核通过 {result.updated_count} 条"
-    if result.skipped_count:
-        message += f"，跳过已审核 {result.skipped_count} 条"
-    return ApiResponse.ok(data=result, message=message)
+    return ApiResponse.ok(data=result, message=result.message)
 
 
 @router.post(
@@ -208,10 +192,7 @@ def batch_reverse_audit(
 ) -> ApiResponse[BomAnnualPartPriceBatchAuditResultVO]:
     """按基地 + 年度批量反审核。"""
     result = _service.batch_reverse_audit(db, body, current_user=current_user)
-    message = f"已反审核 {result.updated_count} 条"
-    if result.skipped_count:
-        message += f"，跳过非已审 {result.skipped_count} 条"
-    return ApiResponse.ok(data=result, message=message)
+    return ApiResponse.ok(data=result, message=result.message)
 
 
 @router.post(

@@ -43,9 +43,9 @@ JSON 业务接口必须 `response_model=ApiResponse[T]` 且 `-> ApiResponse[T]`�
 
 **Repository：** Model / `list` / `Optional` / `tuple[list[Model], int]` / 具名 TypedDict。禁止造 API、转 VO、收 VO、签名 `Any`、格式化 datetime/Decimal。
 
-**Service：** VO / `list[VO]` / `(list, total[, filters])` / `PageResult[VO]`。写方法显式 `current_user: UserVO`，禁止 ContextVar。对 Router 的单资源 get/写：找不到/拒绝抛异常（架构宪法），不要 `VO | None`。写入 Repo 用 dataclass/TypedDict/DTO，禁止 VO 进 Repo。分页推荐 `(list, total)` 交给 Router `list_()`。
+**Service：** VO / `list[VO]` / `PageResult[VO]`。对 Router 的元组**仅**分页 `(list, total[, filters])` 与下载 `(bytes, filename)`。写方法显式 `current_user: UserVO`，禁止 ContextVar。对 Router 的单资源 get/写：找不到/拒绝抛异常（架构宪法），不要 `VO | None`。写入 Repo 用 dataclass/TypedDict/DTO，禁止 VO 进 Repo。分页推荐 `(list, total)` 交给 Router `list_()`。批量写/删/审交**一个**结果 VO（count、范围字段、文案所需数据在 Service 填齐）。禁止四元组 / `(deleted, skipped)` / 裸 `int` 再让 Router 组 VO。改出参必须同时改本切片 Router。
 
-**Router：** 只组装成功 `ApiResponse`。禁止碰 Model、禁止 `vo.model_dump()` 当 API 输出。
+**Router：** 只把 Service 已返回的 VO 交给工厂：`ok` / `created` / `updated` / `deleted` / `list_()`（`PageResult` 由工厂造）。可用 `result` 字段拼 **message**。禁止碰 Model；禁止 `vo.model_dump()` 当 API 输出；禁止 `FooVO(` / `FooResponse(`（含 `created_count=len(…)`）；禁止在 Router 模块定义 VO。进度查询例外：`parse_result_json` + `VO.model_validate`（§7）。
 
 ## 4. 权限 Depends
 
@@ -69,11 +69,11 @@ JSON 业务接口必须 `response_model=ApiResponse[T]` 且 `-> ApiResponse[T]`�
 | POST `start_*` | `AsyncTaskAcceptedVO` | `ok`（**200**） | `ApiResponse[AsyncTaskAcceptedVO]` |
 | POST 同步 Excel `upload` | 结果 VO | `ok`（**200**） | 结果 VO；禁止 `created` / 201 |
 | PUT/PATCH | `VO` | `updated` | `ApiResponse[UserVO]` |
-| POST 批量 | 结果 VO | `ok`（**200**） | 结果 VO |
+| POST 批量 | 结果 VO（count/范围已填） | `ok(data=result)`（**200**）；禁止再 `XxxVO(` | 结果 VO |
 | DELETE | `None` | `deleted` | `ApiResponse[None]` |
-| GET 下载 | bytes | Stream/File | 无 |
+| GET 下载 | `(bytes, filename)` | Stream/File | 无 |
 
-不要为每个动词复制一整段 Router 示例；照上表套现网相邻路由即可。
+不要为每个动词复制一整段 Router 示例；按本表套现网相邻路由。邻路由若在解匿名元组或 `data=XxxVO(`，按本表，不要抄。
 
 ## 6. 路径参数与静态路由（零例外）
 
@@ -114,14 +114,14 @@ def get_by_name(full_name: str): ...
 ## 7. DTO / VO / 序列化
 
 - DTO 只入参；可用 `dto.model_dump(exclude_unset=True)` 给更新/Repo。Query / Update / Scope 只放 `dto/`。
-- VO 只出参；`UserVO.model_validate(row)`；禁止 `__dict__`。
+- VO 只出参；`UserVO.model_validate(row)` 在 **Service**（进度查询除外，见下 `model_dump` 条）。禁止 `__dict__`。VO 类只放 `schemas/vo/`（或 `schemas/common/`），禁止写在 Router 文件里。
 - **`model_config`（零例外）**：凡类体声明 `model_config`（VO / Repo DTO / Mixin），**必须**
   `model_config = ConfigDict(...)`（ORM 出参常见 `ConfigDict(from_attributes=True)`）。
   **禁止** `model_config = {"from_attributes": True}` 等可变 `dict` 字面量。
   原因：全库一种写法，四年后还能全库搜改；`ConfigDict` 不可变。**不要指望 Ruff `RUF012`**——它对 pydantic 的 `model_config` 赋值**不报**。
   **必须**通过守卫：`python -X utf8 -m scripts.check_model_config`；`tests/test_model_config.py`。不通过即违规，不准合并。
   继承 `DurationSecondsMixin` 的运行历史 VO：**禁止**再声明一份 `model_config`（Mixin 已带 `ConfigDict`）。
-- 批量审核/删除结果 VO 继承 `BatchAuditCountsVO` / `BatchDeleteCountsVO`，范围字段留切片；字段名不同的结果不要硬套。
+- 批量审核/删除结果 VO 继承 `BatchAuditCountsVO` / `BatchDeleteCountsVO`，范围字段留切片；字段名不同的结果不要硬套。由 **Service** `return` 该 VO，禁止 Router 解元组再填。
 - 禁止裸类名 `FilterOptions`；跨 DTO/VO 的 Enum 只定义一次（VO 引用 DTO 或 `common`）。
 - datetime / Decimal / Enum 的 **JSON 形态**只写在 VO `@field_serializer`。datetime 必须 `app.common.timezone.datetime_to_iso`。Excel 文件名可用 `strftime`。
 - **运行历史耗时**：Model 存 `started_at` + `finished_at`；VO 继承 `app.schemas.vo.timing.DurationSecondsMixin`（统一 `duration_seconds` 整秒或 null）；新 CalcLog / GenerateLog / Engine Run 必须登记进 `calc_history_timing_vo_types()`。前端历史表用 `static/js/duration.js`，列「开始 / 结束 / 耗时」。禁止各切片自写秒数公式；禁止页面内估秒——仅允许 `duration.js` 在缺 `duration_seconds` 时用起止时间兜底。
@@ -130,5 +130,5 @@ def get_by_name(full_name: str): ...
 
 ## 8. 检查清单（仅本文件）
 
-必须：JSON `ApiResponse[T]`；业务路由 `Perm.*`；写操作传 `current_user`；整数路径 `/{name:int}`；字符串键同 router 且静态全部在前；`check_route_path_params` 通过；`model_config` 只用 `ConfigDict` 且 `check_model_config` 通过；运行历史 VO 走 `DurationSecondsMixin` + `calc_history_timing_vo_types` 登记。
-禁止：业务签名 `Any`/`dict[str, Any]`；业务 Router `JSONResponse`；Router 输出 `model_dump`；金额 `float`；`cast` 跳过 `model_validate`；裸 `/{name}` 注解 `int`；跨模块首段 `{str}` 抢静态段；靠文件名抢路由顺序；`model_config = {...}` 可变 dict；各切片自写 `duration_seconds` 公式。
+必须：JSON `ApiResponse[T]`；业务路由 `Perm.*`；写操作传 `current_user`；整数路径 `/{name:int}`；字符串键同 router 且静态全部在前；`check_route_path_params` 通过；`model_config` 只用 `ConfigDict` 且 `check_model_config` 通过；运行历史 VO 走 `DurationSecondsMixin` + `calc_history_timing_vo_types` 登记；批量/写结果由 Service 交 VO，Router 只工厂调用。
+禁止：业务签名 `Any`/`dict[str, Any]`；业务 Router `JSONResponse`；Router 输出 `model_dump`；Router `FooVO(` / 在 Router 模块定义 VO；对 Router 匿名元组（分页与下载除外）；金额 `float`；`cast` 跳过 `model_validate`；裸 `/{name}` 注解 `int`；跨模块首段 `{str}` 抢静态段；靠文件名抢路由顺序；`model_config = {...}` 可变 dict；各切片自写 `duration_seconds` 公式。

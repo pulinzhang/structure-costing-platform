@@ -88,17 +88,14 @@ async def upload_avatar(
     例：/uploads/avatars/u1_20260812_103000_ab12cd34.png
     """
     content = await file.read()
-    user = _user_service.update_own_avatar(
+    result = _auth_service.upload_own_avatar(
         db,
+        token_db,
         current_user,
         file_content=content,
         filename=file.filename or "avatar.png",
     )
-    _auth_service.sync_profile_to_tokens(token_db, user)
-    return ApiResponse.ok(
-        data=AvatarUploadVO(url=user.avatar or ""),
-        message="头像上传成功",
-    )
+    return ApiResponse.ok(data=result, message=result.message)
 
 
 @router.put(

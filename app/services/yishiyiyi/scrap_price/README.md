@@ -52,7 +52,7 @@ app/services/yishiyiyi/scrap_price/
 ├── __init__.py
 ├── service.py          # 薄门面
 ├── crud/
-│   └── scrap_price_crud.py         # 整月取数/保存/复制/删除
+│   └── service.py                  # 整月取数/保存/复制/删除
 └── export/
     ├── service.py                  # 查库 + 调导出器
     └── excel_exporter.py           # 宽表 openpyxl
@@ -90,7 +90,7 @@ repositories.yishiyiyi.scrap_price
 
 | 模块 | 职责 |
 |------|------|
-| `crud/scrap_price_crud.py` | 月表字段 / 复制校验 |
+| `crud/service.py` | 月表字段 / 复制校验 |
 | `export/service.py` | 导出取数范围 |
 | `export/excel_exporter.py` | 宽表版式 / 公式 |
 
