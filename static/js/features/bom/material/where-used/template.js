@@ -3,8 +3,9 @@
  */
 
 import { can } from '../../../../core/permissions.js?v=14';
-import { filterSelect, HUD_SHELL, HUD_INPUT, HUD_BAND, BTN_GHOST } from '../../../../ui/classes.js?v=8';
-import { filterBarHtml } from '../../../../ui/filter-bar.js?v=2';
+import { filterSelect, HUD_SHELL, HUD_INPUT, HUD_BAND, BTN_GHOST } from '../../../../ui/classes.js?v=11';
+import { filterBarHtml } from '../../../../ui/filter-bar.js?v=3';
+import { hudKpiCardHtml } from '../../../../ui/hud-kpi.js?v=1';
 
 
 export function bomWhereUsedTemplate() {
@@ -15,9 +16,23 @@ export function bomWhereUsedTemplate() {
                 <div class="${HUD_BAND}">
                     <div class="flex items-start justify-between gap-4">
                         <div class="grid grid-cols-3 gap-3 font-mono flex-1 min-w-0">
-                            ${hudCard('wuHudHits', '命中节点', '条', true)}
-                            ${hudCard('wuHudSnapshots', '材料清单', '份')}
-                            ${hudCard('wuHudModels', '项目', '个')}
+                            ${hudKpiCardHtml({
+                                variant: 'focus',
+                                title: '命中节点',
+                                pulse: true,
+                                valueHtml: '<span id="wuHudHits">—</span>',
+                                unit: '条',
+                            })}
+                            ${hudKpiCardHtml({
+                                title: '材料清单',
+                                valueHtml: '<span id="wuHudSnapshots">—</span>',
+                                unit: '份',
+                            })}
+                            ${hudKpiCardHtml({
+                                title: '项目',
+                                valueHtml: '<span id="wuHudModels">—</span>',
+                                unit: '个',
+                            })}
                         </div>
                         ${canExport ? `
                         <div class="flex items-center shrink-0 pt-1">
@@ -56,22 +71,6 @@ export function bomWhereUsedTemplate() {
             </div>
         </div>
         <div id="wuHover" class="hidden fixed z-[82] w-64 pointer-events-none bg-app-main border border-line p-3 text-[11px]"></div>
-    `;
-}
-
-function hudCard(id, label, unit, focus = false) {
-    const box = focus
-        ? 'hud-kpi-card-glow bg-gradient-to-b from-brand-hud/15 to-app-deep border border-brand-hud/50'
-        : 'bg-app-main/80 border border-line-hud';
-    const valueCls = focus ? 'text-[22px] font-black text-brand-hud' : 'text-[18px] font-bold text-ink';
-    return `
-        <div class="${box} p-3 backdrop-blur-sm">
-            <div class="text-ink-faint text-[10px] tracking-wider">${label}</div>
-            <div class="${valueCls} mt-1 tabular-nums leading-none">
-                <span id="${id}">—</span>
-                <span class="text-[10px] text-ink-faint ml-1 font-bold">${unit}</span>
-            </div>
-        </div>
     `;
 }
 

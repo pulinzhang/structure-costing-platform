@@ -2,9 +2,10 @@
  * BOM 材料清单列表 — HUD 密表
  */
 
-import { filterSelect, HUD_SHELL, HUD_BAND, OPS_TH, BTN_GHOST } from '../../../../ui/classes.js?v=8';
-import { filterBarHtml } from '../../../../ui/filter-bar.js?v=2';
-import { hudTableHtml, hudRowHtml, opsIconButtonHtml } from '../../../../ui/hud-table.js?v=1';
+import { filterSelect, HUD_SHELL, HUD_BAND, OPS_TH, BTN_GHOST } from '../../../../ui/classes.js?v=11';
+import { filterBarHtml } from '../../../../ui/filter-bar.js?v=3';
+import { hudTableHtml, hudRowHtml, opsIconButtonHtml } from '../../../../ui/hud-table.js?v=2';
+import { hudKpiCardHtml } from '../../../../ui/hud-kpi.js?v=1';
 
 
 const STATUS_LABEL = {
@@ -25,11 +26,16 @@ export function bomMaterialListTemplate() {
 
                 <div class="${HUD_BAND}">
                     <div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3 font-mono mb-3">
-                        ${hudCard('bomMatHudTotal', '清单', '份')}
-                        ${hudCard('bomMatHudActive', '生效', '份')}
-                        ${hudCard('bomMatHudDraft', '草稿', '份')}
-                        ${hudCard('bomMatHudArchived', '归档', '份')}
-                        ${hudCard('bomMatHudNodes', '节点合计', '个', true)}
+                        ${hudKpiCardHtml({ title: '清单', valueHtml: '<span id="bomMatHudTotal">—</span>', unit: '份' })}
+                        ${hudKpiCardHtml({ title: '生效', valueHtml: '<span id="bomMatHudActive">—</span>', unit: '份' })}
+                        ${hudKpiCardHtml({ title: '草稿', valueHtml: '<span id="bomMatHudDraft">—</span>', unit: '份' })}
+                        ${hudKpiCardHtml({ title: '归档', valueHtml: '<span id="bomMatHudArchived">—</span>', unit: '份' })}
+                        ${hudKpiCardHtml({
+                            title: '节点合计',
+                            tone: 'warn',
+                            valueHtml: '<span id="bomMatHudNodes">—</span>',
+                            unit: '个',
+                        })}
                     </div>
                     <p class="text-[10px] text-ink-muted leading-relaxed">
                         材料清单按<strong class="font-semibold text-ink">基地 + 项目 + 版本</strong>唯一。
@@ -94,22 +100,6 @@ export function bomMaterialListTemplate() {
         </div>
     `;
 }
-
-function hudCard(id, label, unit, warn = false) {
-    const border = warn ? 'border-warn/40/30' : 'border-line-hud';
-    const labelCls = warn ? 'text-warn/80' : 'text-ink-faint';
-    const valueCls = warn ? 'text-warn' : 'text-ink';
-    return `
-        <div class="bg-app-main/80 border ${border} p-3 backdrop-blur-sm">
-            <div class="${labelCls} text-[10px] tracking-wider">${label}</div>
-            <div class="text-[18px] font-bold ${valueCls} mt-1 tabular-nums">
-                <span id="${id}">—</span>
-                <span class="text-[10px] text-ink-faint ml-1">${unit}</span>
-            </div>
-        </div>
-    `;
-}
-
 
 export function updateBomMatHud(summary) {
     const set = (id, val) => {

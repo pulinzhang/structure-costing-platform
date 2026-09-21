@@ -9,10 +9,10 @@ import {
     renderDetailContent,
     updatePartsHudScope,
     updatePartsHud,
-} from './template.js?v=56';
-import { hudRowHtml, opsIconButtonHtml } from '../../../../ui/hud-table.js?v=1';
-import { bindMoreMenu } from '../../../../ui/more-menu.js?v=3';
-import { bindFilterBar } from '../../../../ui/filter-bar.js?v=2';
+} from './template.js?v=58';
+import { hudRowHtml, opsIconButtonHtml } from '../../../../ui/hud-table.js?v=2';
+import { bindMoreMenu } from '../../../../ui/more-menu.js?v=5';
+import { bindFilterBar } from '../../../../ui/filter-bar.js?v=3';
 import { fmtPeriodRange } from '../../../common/period-ui.js?v=4';
 import {
     BTN_SAVE_ACTIVE,
@@ -20,14 +20,14 @@ import {
     SKETCH_PLACEHOLDER,
     SKETCH_THUMBNAIL,
     ZOOM_OVERLAY,
-} from '../../../../ui/classes.js?v=8';
+} from '../../../../ui/classes.js?v=11';
 import {
     DEFAULT_PAGE_SIZE,
     PAGE_SIZE_OPTIONS,
     bindPagination,
     paintPagination,
     normalizePageSize,
-} from '../../../../ui/page-size.js?v=5';
+} from '../../../../ui/page-size.js?v=6';
 import { setSearchBusy } from '../../../../ui/search-busy.js?v=3';
 import { partShortCodeCellHtml, partNumberNameCellHtml } from '../../../../domain/part-identity.js?v=5';
 
@@ -574,7 +574,7 @@ export const PartsPage = {
             modal.id = 'sketchModal';
             modal.className = 'fixed inset-0 z-[100] flex items-center justify-center';
             modal.innerHTML = `
-                <div class="absolute inset-0 bg-black/90 backdrop-blur-sm" id="sketchModalBackdrop"></div>
+                <div class="absolute inset-0 bg-overlay/70 backdrop-blur-sm" id="sketchModalBackdrop"></div>
                 <div class="relative z-10 max-w-4xl w-full mx-8 max-h-[85vh] flex flex-col">
                     <button type="button" id="closeSketchModal" class="absolute -top-10 right-0 flex items-center gap-1.5 text-[10px] text-ink-faint hover:text-ink transition-colors tracking-wider group">
                         <span class="group-hover:text-brand transition-colors">关闭</span>

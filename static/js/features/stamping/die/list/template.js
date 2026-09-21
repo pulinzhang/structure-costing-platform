@@ -1,8 +1,9 @@
-import { HUD_SHELL, DRAWER_SHELL, DRAWER_BACKDROP, HUD_BAND, OPS_TH, filterSelect, filterInput, BTN_GHOST } from '../../../../ui/classes.js?v=8';
-import { filterBarHtml } from '../../../../ui/filter-bar.js?v=2';
-import { hudTableHtml } from '../../../../ui/hud-table.js?v=1';
+import { HUD_SHELL, DRAWER_SHELL, DRAWER_BACKDROP, HUD_BAND, OPS_TH, filterSelect, filterInput, BTN_GHOST } from '../../../../ui/classes.js?v=11';
+import { filterBarHtml } from '../../../../ui/filter-bar.js?v=3';
+import { hudTableHtml } from '../../../../ui/hud-table.js?v=2';
+import { hudKpiCardHtml } from '../../../../ui/hud-kpi.js?v=1';
 
-import { moreMenuItemHtml, moreMenuShellHtml } from '../../../../ui/more-menu.js?v=3';
+import { moreMenuItemHtml, moreMenuShellHtml } from '../../../../ui/more-menu.js?v=5';
 
 export function dieListTemplate() {
     return `
@@ -11,14 +12,17 @@ export function dieListTemplate() {
                 <div class="${HUD_BAND}">
                     <div class="flex items-start justify-between gap-4 mb-3">
                         <div class="grid grid-cols-2 gap-3 font-mono flex-1 min-w-0">
-                            <div class="bg-app-main/80 border border-line-hud p-3">
-                                <div class="text-ink-faint text-[10px] tracking-wider">查询范围</div>
-                                <div class="text-[14px] font-bold text-ink mt-1 truncate" id="dieHudScope">全部</div>
-                            </div>
-                            <div class="bg-app-main/80 border border-line-hud p-3">
-                                <div class="text-ink-faint text-[10px] tracking-wider">零件</div>
-                                <div class="text-[18px] font-bold text-ink mt-1 tabular-nums" id="dieHudTotal">—</div>
-                            </div>
+                            ${hudKpiCardHtml({
+                                title: '查询范围',
+                                valueKind: 'text',
+                                valueId: 'dieHudScope',
+                                valueHtml: '全部',
+                            })}
+                            ${hudKpiCardHtml({
+                                title: '零件',
+                                valueId: 'dieHudTotal',
+                                valueHtml: '—',
+                            })}
                         </div>
                         <div class="flex items-center gap-1.5 shrink-0">
                             ${moreMenuShellHtml({

@@ -3,11 +3,12 @@
  * 冲压加工费计算结果浏览—Brabus Carbon & Precision Dark
  */
 
-import { filterSelect, filterInput, HUD_SHELL, DRAWER_CLOSE, DRAWER_SHELL, DRAWER_BACKDROP, HUD_BAND, BTN_GHOST, OPS_TH, HUD_KPI_AUX, TH_KEY, TH_TEXT, TH_NUM, TH_FOCUS, HUD_LED } from '../../../../ui/classes.js?v=8';
-import { filterBarHtml } from '../../../../ui/filter-bar.js?v=2';
-import { hudTableHtml, hudRowHtml, opsIconButtonHtml } from '../../../../ui/hud-table.js?v=1';
+import { filterSelect, filterInput, HUD_SHELL, DRAWER_CLOSE, DRAWER_SHELL, DRAWER_BACKDROP, HUD_BAND, BTN_GHOST, OPS_TH, TH_KEY, TH_TEXT, TH_NUM, TH_FOCUS, HUD_LED, BTN_SOLID } from '../../../../ui/classes.js?v=11';
+import { filterBarHtml } from '../../../../ui/filter-bar.js?v=3';
+import { hudTableHtml, hudRowHtml, opsIconButtonHtml } from '../../../../ui/hud-table.js?v=2';
+import { hudKpiCardHtml, paintHudKpiAlert } from '../../../../ui/hud-kpi.js?v=1';
 
-import { moreMenuItemHtml, moreMenuShellHtml } from '../../../../ui/more-menu.js?v=3';
+import { moreMenuItemHtml, moreMenuShellHtml } from '../../../../ui/more-menu.js?v=5';
 import { partShortCodeCellHtml, partNumberNameCellHtml } from '../../../../domain/part-identity.js?v=5';
 
 export function processFeeListTemplate() {
@@ -19,61 +20,37 @@ export function processFeeListTemplate() {
                 <div class="${HUD_BAND}">
                     <div class="flex items-start justify-between gap-4 mb-3">
                         <div class="grid grid-cols-2 lg:grid-cols-4 gap-3 font-mono flex-1 min-w-0">
-                            <!-- 1. 整体加工费：管理者成本大盘 -->
-                            <div class="${HUD_KPI_AUX} backdrop-blur-sm">
-                                <div class="text-ink-faint text-[10px] tracking-wider">整体加工费</div>
-                                <div class="text-[22px] font-black text-ink mt-1 tracking-tight tabular-nums leading-none">
-                                    ¥ <span id="feeHudTotalFee">—</span>
-                                </div>
-                                <div class="text-[9px] font-mono text-ink-dim mt-2 flex items-center justify-between gap-2">
-                                    <span>件均</span>
-                                    <span class="text-ink-muted tabular-nums">¥ <span id="feeHudAvgFee">—</span> / 件</span>
-                                </div>
-                            </div>
-                            <!-- 2. 零件总条数：批次规模 -->
-                            <div class="${HUD_KPI_AUX} backdrop-blur-sm">
-                                <div class="text-ink-faint text-[10px] tracking-wider">零件总条数</div>
-                                <div class="text-[22px] font-black text-ink mt-1 tracking-tight tabular-nums leading-none">
-                                    <span id="feeHudTotal">—</span>
-                                    <span class="text-[10px] text-ink-faint ml-1 font-bold">条</span>
-                                </div>
-                                <div class="text-[9px] font-mono text-ink-dim mt-2 flex items-center justify-between gap-2">
-                                    <span>当前版本</span>
-                                    <span id="feeHudVersion" class="text-ink-muted tabular-nums">—</span>
-                                </div>
-                            </div>
-                            <!-- 3. 算费失败待办：操作员核心工作台（有待办才红晕） -->
-                            <button type="button" id="feeHudZeroCard"
-                                    class="text-left w-full p-3.5 relative overflow-hidden group transition-all duration-200 cursor-pointer
-                                           bg-app-main/80 border border-line-hud backdrop-blur-sm
-                                           hover:border-line-hud focus:outline-none focus-visible:border-brand-hud/60"
-                                    title="点击筛选算费失败 / 零价待补价行"
-                                    aria-pressed="false">
-                                <div id="feeHudZeroGlow" class="hidden absolute top-0 left-0 right-0 h-[2px] bg-gradient-to-r from-transparent via-brand-hud to-transparent hud-kpi-line-glow"></div>
-                                <div class="flex justify-between items-start">
-                                    <span id="feeHudZeroLabel" class="text-ink-faint text-[10px] font-bold tracking-widest">算费失败待办</span>
-                                    <span id="feeHudZeroDot" class="hidden w-2 h-2 rounded-full bg-brand-hud animate-pulse hud-kpi-dot-glow"></span>
-                                </div>
-                                <div id="feeHudZeroValue" class="text-[26px] font-black text-ink-dim font-mono mt-1 tracking-tight tabular-nums leading-none">
-                                    <span id="feeHudZero">—</span>
-                                    <span class="text-[10px] ml-1 font-bold opacity-70">条</span>
-                                </div>
-                                <div id="feeHudZeroHint" class="text-[9px] font-mono text-ink-faint mt-2">
-                                    规则运行完备
-                                </div>
-                            </button>
-                            <!-- 4. 审核进度：出账 / 封盘条件 -->
-                            <div class="${HUD_KPI_AUX} backdrop-blur-sm">
-                                <div class="text-ink-faint text-[10px] tracking-wider">审核进度</div>
-                                <div class="text-[22px] font-black text-ink mt-1 tracking-tight tabular-nums leading-none">
-                                    <span id="feeHudPending">—</span>
-                                    <span class="text-[10px] text-ink-faint ml-1 font-bold">条待审</span>
-                                </div>
-                                <div class="text-[9px] font-mono text-ink-dim mt-2 flex items-center justify-between gap-2">
-                                    <span>已审核</span>
-                                    <span class="text-ink-muted tabular-nums"><span id="feeHudApproved">—</span> 条</span>
-                                </div>
-                            </div>
+                            ${hudKpiCardHtml({
+                                title: '整体加工费',
+                                valueHtml: '¥ <span id="feeHudTotalFee">—</span>',
+                                footer: [{ label: '件均', valueHtml: '¥ <span id="feeHudAvgFee">—</span> / 件' }],
+                            })}
+                            ${hudKpiCardHtml({
+                                title: '零件总条数',
+                                valueHtml: '<span id="feeHudTotal">—</span>',
+                                unit: '条',
+                                footer: [{ label: '当前版本', valueHtml: '<span id="feeHudVersion" class="text-ink-muted tabular-nums">—</span>' }],
+                            })}
+                            ${hudKpiCardHtml({
+                                as: 'button',
+                                id: 'feeHudZeroCard',
+                                title: '算费失败待办',
+                                titleId: 'feeHudZeroLabel',
+                                titleAttr: '点击筛选算费失败 / 零价待补价行',
+                                valueWrapId: 'feeHudZeroValue',
+                                valueHtml: '<span id="feeHudZero">—</span>',
+                                unit: '条',
+                                glowId: 'feeHudZeroGlow',
+                                pulseId: 'feeHudZeroDot',
+                                meta: '规则运行完备',
+                                metaId: 'feeHudZeroHint',
+                            })}
+                            ${hudKpiCardHtml({
+                                title: '审核进度',
+                                valueHtml: '<span id="feeHudPending">—</span>',
+                                unit: '条待审',
+                                footer: [{ label: '已审核', valueHtml: '<span id="feeHudApproved">—</span> 条' }],
+                            })}
                         </div>
                         <div class="flex items-center gap-1.5 shrink-0">
                             ${moreMenuShellHtml({
@@ -165,7 +142,7 @@ export function processFeeListTemplate() {
              id="feeBatchAuditDrawer" style="display:none; max-height: 100vh">
             <div class="px-5 py-3.5 flex items-center justify-between shrink-0">
                 <h5 class="text-[11px] font-semibold tracking-wider text-ink-muted flex items-center gap-2.5 uppercase">
-                    <span class="hud-led"></span>
+                    <span class="${HUD_LED}"></span>
                     <span id="feeBatchAuditDrawerTitle">批量审核</span>
                 </h5>
                 <button type="button" id="closeFeeBatchAuditDrawer"
@@ -196,7 +173,7 @@ export function processFeeListTemplate() {
             </div>
             <div class="px-6 py-4 border-t border-app-elevated flex items-center justify-end gap-2 shrink-0">
                 <button type="button" id="cancelFeeBatchAuditBtn" class="inline-flex items-center gap-1.5 bg-transparent text-ink-muted border border-line px-4 py-2 text-[11px] font-medium rounded hover:border-ink-muted hover:text-ink transition-all">取消</button>
-                <button type="button" id="confirmFeeBatchAuditBtn" class="inline-flex items-center gap-1.5 bg-brand text-white px-4 py-2 text-[11px] font-semibold rounded hover:bg-brand-hover transition-all">
+                <button type="button" id="confirmFeeBatchAuditBtn" class="${BTN_SOLID}">
                     确认提交
                 </button>
             </div>
@@ -209,7 +186,7 @@ export function processFeeListTemplate() {
              id="feeEditDrawer" style="display:none; max-height: 100vh">
             <div class="px-5 py-3.5 flex items-center justify-between shrink-0">
                 <h5 class="text-[11px] font-semibold tracking-wider text-ink-muted flex items-center gap-2.5 uppercase">
-                    <span class="hud-led"></span>
+                    <span class="${HUD_LED}"></span>
                     <span id="feeEditDrawerTitle">编辑加工费</span>
                 </h5>
                 <button type="button" id="closeFeeEditDrawer"
@@ -279,7 +256,7 @@ export function processFeeListTemplate() {
             </div>
             <div class="px-6 py-4 border-t border-app-elevated flex items-center justify-end gap-2 shrink-0">
                 <button type="button" id="cancelFeeEditBtn" class="inline-flex items-center gap-1.5 bg-transparent text-ink-muted border border-line px-4 py-2 text-[11px] font-medium rounded hover:border-ink-muted hover:text-ink transition-all">取消</button>
-                <button type="button" id="submitFeeEditBtn" class="inline-flex items-center gap-1.5 bg-brand text-white px-4 py-2 text-[11px] font-semibold rounded hover:bg-brand-hover transition-all">
+                <button type="button" id="submitFeeEditBtn" class="${BTN_SOLID}">
                     ${window.svgIcon('archive', 'w-3.5 h-3.5')}
                     保存
                 </button>
@@ -293,7 +270,7 @@ export function processFeeListTemplate() {
              id="feeViewDrawer" style="display:none; max-height: 100vh">
             <div class="px-5 py-3.5 flex items-center justify-between shrink-0">
                 <h5 class="text-[11px] font-semibold tracking-wider text-ink-muted flex items-center gap-2.5 uppercase">
-                    <span class="hud-led"></span>
+                    <span class="${HUD_LED}"></span>
                     加工费详情
                 </h5>
                 <button type="button" id="closeFeeViewDrawer"
@@ -407,7 +384,7 @@ export function processFeeListTemplate() {
                 </div>
             </div>
             <div class="px-6 py-4 border-t border-app-elevated flex items-center justify-end gap-2 shrink-0 flex-wrap">
-                <button type="button" id="feeViewDrawerEditBtn" class="inline-flex items-center gap-1.5 bg-brand text-white px-4 py-2 text-[11px] font-semibold rounded hover:bg-brand-hover transition-all">
+                <button type="button" id="feeViewDrawerEditBtn" class="${BTN_SOLID}">
                     ${window.svgIcon('pencil', 'w-3.5 h-3.5')}
                     编辑
                 </button>
@@ -463,7 +440,7 @@ export function renderFeeRows(records) {
             attrs: `data-id="${esc(row.id)}"`,
             cellsHtml: `
             <td class="${cell} font-sans whitespace-nowrap">
-                <div class="font-bold text-white text-[12px] group-hover:text-brand-hud transition-colors">${esc(fmtYear(row.year))}</div>
+                <div class="font-bold text-ink text-[12px] group-hover:text-brand-hud transition-colors">${esc(fmtYear(row.year))}</div>
                 <div class="text-ink-faint text-[10px] mt-0.5">${esc(row.location)} · ${esc(row.stamping_supplier)}</div>
             </td>
             <td class="${cell} font-sans whitespace-nowrap">
@@ -527,53 +504,20 @@ export function updateFeeHud(total, summary, onlyZeroActive = false) {
     setText('feeHudPending', Number(data.pending_count ?? 0).toLocaleString('zh-CN'));
     setText('feeHudApproved', Number(data.approved_count ?? 0).toLocaleString('zh-CN'));
 
-    const card = document.getElementById('feeHudZeroCard');
-    const glow = document.getElementById('feeHudZeroGlow');
-    const dot = document.getElementById('feeHudZeroDot');
-    const label = document.getElementById('feeHudZeroLabel');
-    const valueEl = document.getElementById('feeHudZeroValue');
+    paintHudKpiAlert('feeHudZeroCard', {
+        mode: hasFailTodo ? 'alert' : 'ok',
+        pressed: onlyZeroActive,
+        glowId: 'feeHudZeroGlow',
+        pulseId: 'feeHudZeroDot',
+        titleId: 'feeHudZeroLabel',
+        valueWrapId: 'feeHudZeroValue',
+        hintId: 'feeHudZeroHint',
+    });
     const hint = document.getElementById('feeHudZeroHint');
-
-    if (card) {
-        card.setAttribute('aria-pressed', onlyZeroActive ? 'true' : 'false');
-        if (hasFailTodo) {
-            card.className = [
-                'text-left w-full p-3.5 relative overflow-hidden group transition-all duration-200 cursor-pointer',
-                'hud-kpi-card-glow bg-gradient-to-b from-brand-hud/15 to-app-deep border border-brand-hud/50',
-                onlyZeroActive ? 'ring-1 border-brand-hud/40' : '',
-                'hover:border-brand-hud/80 focus:outline-none focus-visible:border-brand-hud',
-            ].filter(Boolean).join(' ');
-        } else {
-            card.className = [
-                'text-left w-full p-3.5 relative overflow-hidden group transition-all duration-200 cursor-pointer',
-                'hud-kpi-aux-inset bg-app-main/80 border border-line-hud backdrop-blur-sm',
-                'hover:border-line-hud focus:outline-none focus-visible:border-ok/40/50',
-            ].join(' ');
-        }
-    }
-
-    glow?.classList.toggle('hidden', !hasFailTodo);
-    dot?.classList.toggle('hidden', !hasFailTodo);
-
-    if (label) {
-        label.className = hasFailTodo
-            ? 'text-brand-hud text-[10px] font-bold tracking-widest'
-            : 'text-ok text-[10px] font-bold tracking-widest';
-        label.textContent = '算费失败待办';
-    }
-    if (valueEl) {
-        valueEl.className = hasFailTodo
-            ? 'hud-kpi-num-glow text-[26px] font-black text-brand-hud font-mono mt-1 tracking-tight tabular-nums leading-none'
-            : 'text-[26px] font-black text-ok font-mono mt-1 tracking-tight tabular-nums leading-none';
-    }
     if (hint) {
-        if (hasFailTodo) {
-            hint.className = 'text-[9px] font-mono text-brand-hud/60 mt-2';
-            hint.textContent = onlyZeroActive ? '已定位异常行 · 再点取消' : '点击一键定位';
-        } else {
-            hint.className = 'text-[9px] font-mono text-ok/70 mt-2';
-            hint.textContent = '规则运行完备';
-        }
+        hint.textContent = hasFailTodo
+            ? (onlyZeroActive ? '已定位异常行 · 再点取消' : '点击一键定位')
+            : '规则运行完备';
     }
 
     const failCapsule = document.getElementById('feeCapsuleFailTodo');
@@ -600,7 +544,7 @@ function partNumberViewBlock(prefix) {
     return `<div class="min-w-0">
         <span class="block text-[9px] font-semibold text-ink-faint uppercase tracking-[0.1em] mb-1">零件号</span>
         <span id="${prefix}-part-short"
-              class="block text-xl font-mono font-bold tabular-nums text-white tracking-[0.14em] hud-kpi-num-glow"></span>
+              class="block text-xl font-mono font-bold tabular-nums text-ink tracking-[0.14em] hud-kpi-num-glow"></span>
         <span id="${prefix}-part-number" class="block text-[11px] font-mono text-ink-dim tracking-wider mt-0.5 truncate"></span>
     </div>`;
 }

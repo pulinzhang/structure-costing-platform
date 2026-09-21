@@ -3,12 +3,12 @@
  * 必填基地/年/月；中标基价叠厚度加减价后外发
  */
 
-import { filterSelect, filterInputWithDatalist, HUD_LED, BTN_GHOST, BTN_FILTER_SEARCH } from '../../../../ui/classes.js?v=8';
+import { filterSelect, filterInputWithDatalist, HUD_LED, BTN_GHOST, BTN_FILTER_SEARCH, DRAWER_BACKDROP } from '../../../../ui/classes.js?v=11';
 import {
     DEFAULT_PREVIEW_PAGE_SIZE,
     PREVIEW_PAGE_SIZE_OPTIONS,
     paginationBarHtml,
-} from '../../../../ui/page-size.js?v=5';
+} from '../../../../ui/page-size.js?v=6';
 
 export function winningThicknessDownloadTemplate() {
     return `
@@ -111,7 +111,7 @@ export function winningThicknessDownloadTemplate() {
             </div>
         </div>
 
-        <div id="winningThicknessDownloadLoading" class="hidden fixed inset-0 z-[80] bg-overlay/60 backdrop-blur-sm flex items-center justify-center">
+        <div id="winningThicknessDownloadLoading" class="hidden ${DRAWER_BACKDROP} flex items-center justify-center">
             <div class="bg-app-surface border border-line rounded p-6 flex flex-col items-center gap-3">
                 <div class="w-6 h-6 border-2 border-line border-brand rounded-full animate-spin"></div>
                 <span class="text-[11px] text-ink-muted">正在生成 Excel...</span>

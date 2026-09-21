@@ -3,11 +3,12 @@
  * 钢材价格计算结果浏览 —Brabus Carbon & Precision Dark
  */
 
-import { filterSelect, filterInput, HUD_SHELL, DRAWER_CLOSE, DRAWER_SHELL, DRAWER_BACKDROP, HUD_BAND, OPS_TH, HUD_KPI_FOCUS, TH_KEY, TH_TEXT, TH_NUM, TH_FOCUS, BTN_GHOST } from '../../../../ui/classes.js?v=8';
-import { filterBarHtml } from '../../../../ui/filter-bar.js?v=2';
-import { hudTableHtml, hudRowHtml, opsIconButtonHtml } from '../../../../ui/hud-table.js?v=1';
+import { filterSelect, filterInput, HUD_SHELL, DRAWER_CLOSE, DRAWER_SHELL, DRAWER_BACKDROP, HUD_BAND, OPS_TH, TH_KEY, TH_TEXT, TH_NUM, TH_FOCUS, BTN_GHOST, HUD_LED, BTN_SOLID, BTN_SOLID_DANGER } from '../../../../ui/classes.js?v=11';
+import { filterBarHtml } from '../../../../ui/filter-bar.js?v=3';
+import { hudTableHtml, hudRowHtml, opsIconButtonHtml } from '../../../../ui/hud-table.js?v=2';
+import { hudKpiCardHtml } from '../../../../ui/hud-kpi.js?v=1';
 
-import { moreMenuItemHtml, moreMenuShellHtml } from '../../../../ui/more-menu.js?v=3';
+import { moreMenuItemHtml, moreMenuShellHtml } from '../../../../ui/more-menu.js?v=5';
 
 export function steelPriceListTemplate() {
     return `
@@ -18,42 +19,31 @@ export function steelPriceListTemplate() {
                 <div class="${HUD_BAND}">
                     <div class="flex items-start justify-between gap-4 mb-3">
                         <div class="grid grid-cols-2 lg:grid-cols-4 gap-3 font-mono flex-1 min-w-0">
-                            <div class="bg-app-main/80 border border-line-hud p-3 backdrop-blur-sm">
-                                <div class="text-ink-faint text-[10px] tracking-wider">核价条数</div>
-                                <div class="text-[18px] font-bold text-ink mt-1 tabular-nums">
-                                    <span id="steelPriceHudTotal">—</span>
-                                    <span class="text-[10px] text-ink-faint ml-1">条</span>
-                                </div>
-                            </div>
-                            <!-- 巴博斯霓虹红全本期均价 -->
-                            <div class="hud-kpi-card-glow ${HUD_KPI_FOCUS} group">
-                                <div class="absolute top-0 left-0 right-0 h-[2px] bg-gradient-to-r from-transparent via-brand-hud to-transparent hud-kpi-line-glow"></div>
-                                <div class="flex justify-between items-start">
-                                    <span class="text-brand-hud text-[10px] font-bold tracking-widest">本期均价</span>
-                                    <span class="w-2 h-2 rounded-full bg-brand-hud animate-pulse hud-kpi-dot-glow"></span>
-                                </div>
-                                <div class="text-[26px] font-black text-brand-hud font-mono mt-1 tracking-tight tabular-nums">
-                                    ￥<span id="steelPriceHudAvg">—</span>
-                                </div>
-                                <div class="text-[9px] font-mono text-brand-hud/60 mt-1 flex justify-between">
-                                    <span>系统自动计算</span>
-                                    <span id="steelPriceHudSkuCount">— 条</span>
-                                </div>
-                            </div>
-                            <div class="bg-app-main/80 border border-line-hud p-3 backdrop-blur-sm">
-                                <div class="text-ink-faint text-[10px] tracking-wider">待审</div>
-                                <div class="text-[18px] font-bold text-ink mt-1 tabular-nums">
-                                    <span id="steelPriceHudPending">—</span>
-                                    <span class="text-[10px] text-ink-faint ml-1">条</span>
-                                </div>
-                            </div>
-                            <div class="bg-app-main/80 border border-line-hud p-3 backdrop-blur-sm">
-                                <div class="text-ink-faint text-[10px] tracking-wider">已审</div>
-                                <div class="text-[18px] font-bold text-ink mt-1 tabular-nums">
-                                    <span id="steelPriceHudApproved">—</span>
-                                    <span class="text-[10px] text-ink-faint ml-1">条</span>
-                                </div>
-                            </div>
+                            ${hudKpiCardHtml({
+                                title: '核价条数',
+                                valueHtml: '<span id="steelPriceHudTotal">—</span>',
+                                unit: '条',
+                            })}
+                            ${hudKpiCardHtml({
+                                variant: 'focus',
+                                title: '本期均价',
+                                pulse: true,
+                                valueHtml: '￥<span id="steelPriceHudAvg">—</span>',
+                                footer: [{
+                                    label: '系统自动计算',
+                                    valueHtml: '<span id="steelPriceHudSkuCount">— 条</span>',
+                                }],
+                            })}
+                            ${hudKpiCardHtml({
+                                title: '待审',
+                                valueHtml: '<span id="steelPriceHudPending">—</span>',
+                                unit: '条',
+                            })}
+                            ${hudKpiCardHtml({
+                                title: '已审',
+                                valueHtml: '<span id="steelPriceHudApproved">—</span>',
+                                unit: '条',
+                            })}
                         </div>
                         <div class="flex items-center gap-1.5 shrink-0">
                             ${moreMenuShellHtml({
@@ -139,7 +129,7 @@ export function steelPriceListTemplate() {
              id="editDrawer" style="display:none; max-height: 100vh">
             <div class="px-5 py-3.5 flex items-center justify-between shrink-0">
                 <h5 class="text-[11px] font-semibold tracking-wider text-ink-muted flex items-center gap-2.5 uppercase">
-                    <span class="hud-led"></span>
+                    <span class="${HUD_LED}"></span>
                     <span id="editDrawerTitle">编辑钢材价格</span>
                 </h5>
                 <button type="button" id="closeEditDrawer"
@@ -198,7 +188,7 @@ export function steelPriceListTemplate() {
 
             <div class="px-6 py-4 border-t border-app-elevated flex items-center justify-end gap-2 shrink-0">
                 <button type="button" id="cancelEditBtn" class="inline-flex items-center gap-1.5 bg-transparent text-ink-muted border border-line px-4 py-2 text-[11px] font-medium rounded hover:border-ink-muted hover:text-ink transition-all">取消</button>
-                <button type="button" id="submitEditBtn" class="inline-flex items-center gap-1.5 bg-brand text-white px-4 py-2 text-[11px] font-semibold rounded hover:bg-brand-hover transition-all">
+                <button type="button" id="submitEditBtn" class="${BTN_SOLID}">
                     ${window.svgIcon('archive', 'w-3.5 h-3.5')}
                     保存
                 </button>
@@ -212,7 +202,7 @@ export function steelPriceListTemplate() {
              id="viewDrawer" style="display:none; max-height: 100vh">
             <div class="px-5 py-3.5 flex items-center justify-between shrink-0">
                 <h5 class="text-[11px] font-semibold tracking-wider text-ink-muted flex items-center gap-2.5 uppercase">
-                    <span class="hud-led"></span>
+                    <span class="${HUD_LED}"></span>
                     价格详情
                 </h5>
                 <button type="button" id="closeViewDrawer"
@@ -288,7 +278,7 @@ export function steelPriceListTemplate() {
             </div>
 
             <div class="px-6 py-4 border-t border-app-elevated flex items-center justify-end gap-2 shrink-0 flex-wrap">
-                <button type="button" id="viewDrawerEditBtn" class="inline-flex items-center gap-1.5 bg-brand text-white px-4 py-2 text-[11px] font-semibold rounded hover:bg-brand-hover transition-all">
+                <button type="button" id="viewDrawerEditBtn" class="${BTN_SOLID}">
                     ${window.svgIcon('pencil', 'w-3.5 h-3.5')}
                     编辑
                 </button>
@@ -302,7 +292,7 @@ export function steelPriceListTemplate() {
              id="deleteDrawer" style="display:none; max-height: 100vh">
             <div class="px-5 py-3.5 flex items-center justify-between shrink-0">
                 <h5 class="text-[11px] font-semibold tracking-wider text-ink-muted flex items-center gap-2.5 uppercase">
-                    <span class="hud-led"></span>
+                    <span class="${HUD_LED}"></span>
                     确认删除
                 </h5>
                 <button type="button" id="closeDeleteDrawer"
@@ -320,7 +310,7 @@ export function steelPriceListTemplate() {
             </div>
             <div class="px-6 py-4 border-t border-app-elevated flex items-center justify-end gap-2 shrink-0">
                 <button type="button" id="cancelDeleteBtn" class="inline-flex items-center gap-1.5 bg-transparent text-ink-muted border border-line px-4 py-2 text-[11px] font-medium rounded hover:border-ink-muted hover:text-ink transition-all">取消</button>
-                <button type="button" id="confirmDeleteBtn" class="inline-flex items-center gap-1.5 bg-danger text-white px-4 py-2 text-[11px] font-semibold rounded hover:bg-brand-hover transition-all">
+                <button type="button" id="confirmDeleteBtn" class="${BTN_SOLID_DANGER}">
                     ${window.svgIcon('trash', 'w-3.5 h-3.5')}
                     删除
                 </button>
@@ -334,7 +324,7 @@ export function steelPriceListTemplate() {
              id="batchAuditDrawer" style="display:none; max-height: 100vh">
             <div class="px-5 py-3.5 flex items-center justify-between shrink-0">
                 <h5 class="text-[11px] font-semibold tracking-wider text-ink-muted flex items-center gap-2.5 uppercase">
-                    <span class="hud-led"></span>
+                    <span class="${HUD_LED}"></span>
                     <span id="batchAuditDrawerTitle">批量审核</span>
                 </h5>
                 <button type="button" id="closeBatchAuditDrawer"
@@ -364,7 +354,7 @@ export function steelPriceListTemplate() {
             </div>
             <div class="px-6 py-4 border-t border-app-elevated flex items-center justify-end gap-2 shrink-0">
                 <button type="button" id="cancelBatchAuditBtn" class="inline-flex items-center gap-1.5 bg-transparent text-ink-muted border border-line px-4 py-2 text-[11px] font-medium rounded hover:border-ink-muted hover:text-ink transition-all">取消</button>
-                <button type="button" id="confirmBatchAuditBtn" class="inline-flex items-center gap-1.5 bg-brand text-white px-4 py-2 text-[11px] font-semibold rounded hover:bg-brand-hover transition-all">
+                <button type="button" id="confirmBatchAuditBtn" class="${BTN_SOLID}">
                     确认提交
                 </button>
             </div>
@@ -413,15 +403,15 @@ export function renderSteelPriceRows(records) {
             attrs: `data-id="${esc(record.id)}"`,
             cellsHtml: `
             <td class="${cell} font-sans whitespace-nowrap">
-                <div class="font-bold text-white text-[12px] group-hover:text-brand-hud transition-colors">${period}</div>
+                <div class="font-bold text-ink text-[12px] group-hover:text-brand-hud transition-colors">${period}</div>
                 <div class="text-ink-faint text-[10px] mt-0.5">${location} · ${mill}</div>
             </td>
             <td class="${cell} ${muted} font-sans text-[11px]">${mill}</td>
             <td class="${cell} ${muted} font-sans text-[11px]">${esc(record.category_name)}</td>
             <td class="${cell} font-sans">
-                <span class="inline-block bg-app-hud text-white font-bold border border-line px-2 py-1 rounded text-[11px]">${esc(record.grade)}</span>
+                <span class="inline-block bg-app-hud text-ink font-bold border border-line px-2 py-1 rounded text-[11px]">${esc(record.grade)}</span>
             </td>
-            <td class="${cell} text-right font-bold text-white text-[13px] tabular-nums">${formatPrice(record.thickness, 2)}</td>
+            <td class="${cell} text-right font-bold text-ink text-[13px] tabular-nums">${formatPrice(record.thickness, 2)}</td>
             <td class="${cell} text-right ${mutedDeep} tabular-nums ${zoneEnd}">${formatWidth(record.width)}</td>
             <td class="${cell} text-right ${muted} tabular-nums">${formatPrice(record.base_price, 2)}</td>
             <td class="${cell} text-right tabular-nums">${formatAdjustment(record.thickness_adjustment)}</td>
@@ -561,7 +551,7 @@ function formatPriceOrDash(value, digits = 2) {
 
 /**
  * 厚度/宽度加价（单色冷灰）
- * 有值→#A1A1A6 带正负号；无值→#444 -
+ * 有值→text-ink-muted 带正负号；无值→text-ink-dim -
  */
 function formatAdjustment(value, digits = 2) {
     const fixed = formatDecimalFixed(value, digits, { allowNegative: true });

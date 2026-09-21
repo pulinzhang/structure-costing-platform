@@ -2,13 +2,7 @@
  * 工程变更上传 — 与冲压布点 / 工艺上传同一套舱体。
  */
 
-import {
-    BTN_FILE_SELECT,
-    BTN_GHOST,
-    BTN_UPLOAD_SUBMIT,
-    UPLOAD_DROPZONE,
-    UPLOAD_INPUT,
-} from '../../../ui/classes.js?v=8';
+import { BTN_FILE_SELECT, BTN_GHOST, BTN_UPLOAD_SUBMIT, UPLOAD_DROPZONE, UPLOAD_INPUT, HUD_LED } from '../../../ui/classes.js?v=11';
 
 export function engineeringChangeUploadTemplate() {
     return `
@@ -37,10 +31,10 @@ export function engineeringChangeUploadTemplate() {
                                 </div>
                                 <div class="ml-6">
                                     <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
-                                        <select id="ecUploadLocation" name="location" required class="${UPLOAD_INPUT}">
+                                        <select id="ecUploadLocation" name="location" required class="${UPLOAD_INPUT} hud-filter">
                                             <option value="">请选择采购基地</option>
                                         </select>
-                                        <select id="ecUploadVehicleModel" name="vehicle_model" required class="${UPLOAD_INPUT}">
+                                        <select id="ecUploadVehicleModel" name="vehicle_model" required class="${UPLOAD_INPUT} hud-filter">
                                             <option value="">请先选择采购基地</option>
                                         </select>
                                     </div>
@@ -58,9 +52,9 @@ export function engineeringChangeUploadTemplate() {
                                 <div class="ml-6">
                                     <div class="flex items-center gap-3">
                                         <select id="ecUploadYear" name="effective_year" required
-                                                class="${UPLOAD_INPUT} w-[140px]"></select>
+                                                class="${UPLOAD_INPUT} hud-filter w-[140px]"></select>
                                         <select id="ecUploadMonth" name="effective_month" required
-                                                class="${UPLOAD_INPUT} w-[120px]"></select>
+                                                class="${UPLOAD_INPUT} hud-filter w-[120px]"></select>
                                     </div>
                                     <p class="mt-2 text-[10px] text-ink-faint">须与工程变更单生效年月一致。从该月起用新树，前一月旧月账仍看见变更前总成。</p>
                                 </div>
@@ -110,7 +104,7 @@ export function engineeringChangeUploadTemplate() {
                                                 <span id="ecProgressPercent" class="text-xs font-mono tabular-nums text-brand shrink-0">0%</span>
                                             </div>
                                             <div class="h-1.5 w-full bg-app-deep border border-line overflow-hidden mb-3">
-                                                <div id="ecProgressBar" class="h-full bg-brand shadow-[0_0_8px_rgb(var(--brabus-red)/0.5)] transition-all duration-300" style="width: 0%"></div>
+                                                <div id="ecProgressBar" class="h-full bg-brand hud-brand-glow transition-all duration-300" style="width: 0%"></div>
                                             </div>
                                             <p id="ecProgressMsg" class="text-[11px] text-ink-muted leading-relaxed mb-0 whitespace-pre-wrap break-words max-h-48 overflow-y-auto">已提交解析队列</p>
                                         </div>
@@ -162,7 +156,7 @@ export function engineeringChangeUploadTemplate() {
                 <div class="bg-app-surface border border-line">
                     <div class="px-4 py-3 border-b border-line-subtle flex items-center justify-between">
                         <div class="flex items-center gap-2">
-                            <span class="hud-led"></span>
+                            <span class="${HUD_LED}"></span>
                             <h5 class="text-[11px] font-bold text-ink-muted mb-0 tracking-widest uppercase">说明</h5>
                         </div>
                     </div>
@@ -178,7 +172,7 @@ export function engineeringChangeUploadTemplate() {
                 <div class="bg-app-surface border border-line">
                     <div class="px-4 py-3 border-b border-line-subtle flex items-center justify-between">
                         <div class="flex items-center gap-2">
-                            <span class="hud-led"></span>
+                            <span class="${HUD_LED}"></span>
                             <h5 class="text-[11px] font-bold text-ink-muted mb-0 tracking-widest uppercase">最近上传</h5>
                         </div>
                     </div>

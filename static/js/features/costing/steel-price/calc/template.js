@@ -3,8 +3,8 @@
  * 冲压钢材：基准价与加减价联动计算
  */
 
-import { paginationBarHtml } from '../../../../ui/page-size.js?v=5';
-import { filterSelect } from '../../../../ui/classes.js?v=8';
+import { paginationBarHtml } from '../../../../ui/page-size.js?v=6';
+import { filterSelect, BTN_ABORT } from '../../../../ui/classes.js?v=11';
 
 
 export function steelPriceCalcTemplate() {
@@ -56,7 +56,7 @@ export function steelPriceCalcTemplate() {
                         统计可按项目看基价/政策/规格覆盖（一车多厂）；计算仍按基地全量牌号+料厚落库
                     </span>
                     <button id="startCalcBtn"
-                            class="h-7 px-4 text-[10px] bg-brand-hover hover:bg-danger text-white font-medium rounded-sm transition-colors disabled:opacity-30 disabled:cursor-not-allowed">
+                            class="${BTN_ABORT}">
                         开始计算
                     </button>
                 </div>
@@ -73,7 +73,7 @@ export function steelPriceCalcTemplate() {
                 </div>
                 <div class="h-1.5 w-full bg-app-deep border border-line overflow-hidden mb-2">
                     <div id="calcProgressBar"
-                         class="h-full bg-brand shadow-[0_0_8px_rgb(var(--brabus-red)/0.5)] transition-all duration-300"
+                         class="h-full bg-brand hud-brand-glow transition-all duration-300"
                          style="width: 0%"></div>
                 </div>
                 <p id="calcProgressMsg" class="text-[11px] text-ink-muted leading-relaxed mb-0">已提交计算队列</p>

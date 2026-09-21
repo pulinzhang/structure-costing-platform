@@ -1,13 +1,13 @@
-import { dieListTemplate } from './template.js?v=28';
-import { hudRowHtml, opsIconButtonHtml } from '../../../../ui/hud-table.js?v=1';
-import { bindMoreMenu } from '../../../../ui/more-menu.js?v=3';
-import { bindFilterBar } from '../../../../ui/filter-bar.js?v=2';
+import { dieListTemplate } from './template.js?v=29';
+import { hudRowHtml, opsIconButtonHtml } from '../../../../ui/hud-table.js?v=2';
+import { bindMoreMenu } from '../../../../ui/more-menu.js?v=5';
+import { bindFilterBar } from '../../../../ui/filter-bar.js?v=3';
 import {
     DEFAULT_PAGE_SIZE,
     bindPagination,
     paintPagination,
     normalizePageSize,
-} from '../../../../ui/page-size.js?v=5';
+} from '../../../../ui/page-size.js?v=6';
 import { setSearchBusy } from '../../../../ui/search-busy.js?v=3';
 import { partShortCodeCellHtml, partNumberNameCellHtml, shortPartNumber } from '../../../../domain/part-identity.js?v=5';
 import { fmtPeriodRange } from '../../../common/period-ui.js?v=4';

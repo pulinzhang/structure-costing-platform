@@ -1,5 +1,5 @@
-import { HUD_SHELL, DRAWER_SHELL, DRAWER_BACKDROP, HUD_BAND, OPS_TH } from '../../../ui/classes.js?v=8';
-import { hudTableHtml, hudRowHtml, opsIconButtonHtml } from '../../../ui/hud-table.js?v=1';
+import { HUD_SHELL, DRAWER_SHELL, DRAWER_BACKDROP, HUD_BAND, OPS_TH, BTN_HUD_CREATE, BTN_HUD_SAVE, BTN_HUD_CHIP } from '../../../ui/classes.js?v=11';
+import { hudTableHtml, hudRowHtml, opsIconButtonHtml } from '../../../ui/hud-table.js?v=2';
 /**
  * 基地主数据 — HUD 密表 + 抽屉（无 KPI / 搜索 / 分页）
  */
@@ -15,7 +15,7 @@ export function locationTemplate() {
                             <p class="mt-1 text-[11px] text-ink-faint">核价作用域锚点；别名吸收表头乱写；启用后才能写入</p>
                         </div>
                         <button id="btnAddLocation" type="button"
-                                class="inline-flex items-center gap-1.5 bg-brand-hud hover:bg-brand text-white px-3 py-1.5 text-[11px] font-semibold rounded-md transition-all shrink-0">
+                                class="${BTN_HUD_CREATE} shrink-0">
                             ${window.svgIcon('plus', 'w-3.5 h-3.5')}
                             新增
                         </button>
@@ -55,7 +55,7 @@ export function locationTemplate() {
             <div class="px-5 py-3.5 flex items-center justify-between border-b border-line bg-app-surface shrink-0">
                 <div class="flex items-center gap-2">
                     <span class="w-1 h-3.5 bg-brand-hud"></span>
-                    <h5 class="text-xs font-semibold text-white tracking-wider">新增基地</h5>
+                    <h5 class="text-xs font-semibold text-ink tracking-wider">新增基地</h5>
                 </div>
                 <button type="button" id="closeLocationCreateDrawer" class="text-ink-dim hover:text-ink w-6 h-6 flex items-center justify-center">✕</button>
             </div>
@@ -65,21 +65,21 @@ export function locationTemplate() {
                         <label class="text-[10px] font-semibold text-ink-dim tracking-wider mb-1 block">基地 <span class="text-brand-hud">*</span></label>
                         <input type="text" id="locationCreateName" required maxlength="50"
                                placeholder="例如：青岛"
-                               class="w-full h-8 px-3 text-xs bg-app-hud border border-line text-white placeholder:text-ink-dim focus:outline-none focus:border-brand-active">
+                               class="w-full h-8 px-3 text-xs bg-app-hud border border-line text-ink placeholder:text-ink-dim focus:outline-none focus:border-brand-active">
                         <p class="text-[10px] text-ink-faint mt-1">创建后不可改；默认启用</p>
                     </div>
                     <div>
                         <label class="text-[10px] font-semibold text-ink-dim tracking-wider mb-1 block">别名 <span class="text-brand-hud">*</span></label>
                         <textarea id="locationCreateAliases" required rows="3"
                                   placeholder="每行一个，例如：&#10;青岛基地&#10;青岛厂"
-                                  class="w-full px-3 py-2 text-xs bg-app-hud border border-line text-white placeholder:text-ink-dim focus:outline-none focus:border-brand-active resize-y"></textarea>
+                                  class="w-full px-3 py-2 text-xs bg-app-hud border border-line text-ink placeholder:text-ink-dim focus:outline-none focus:border-brand-active resize-y"></textarea>
                         <p class="text-[10px] text-ink-faint mt-1">至少一条</p>
                     </div>
                 </form>
             </div>
             <div class="px-5 py-3 border-t border-line flex items-center justify-end gap-2 bg-app-surface shrink-0">
                 <button type="button" id="cancelLocationCreateBtn" class="px-4 py-1.5 text-xs text-ink-muted border border-line hover:text-ink">取消</button>
-                <button type="button" id="submitLocationCreateBtn" class="bg-brand-hud hover:bg-brand text-white px-5 py-1.5 text-xs font-semibold">保存</button>
+                <button type="button" id="submitLocationCreateBtn" class="${BTN_HUD_SAVE}">保存</button>
             </div>
         </div>
 
@@ -89,7 +89,7 @@ export function locationTemplate() {
             <div class="px-5 py-3.5 flex items-center justify-between border-b border-line bg-app-surface shrink-0">
                 <div class="flex items-center gap-2">
                     <span class="w-1 h-3.5 bg-brand-hud"></span>
-                    <h5 class="text-xs font-semibold text-white tracking-wider">编辑基地</h5>
+                    <h5 class="text-xs font-semibold text-ink tracking-wider">编辑基地</h5>
                 </div>
                 <button type="button" id="closeLocationEditDrawer" class="text-ink-dim hover:text-ink w-6 h-6 flex items-center justify-center">✕</button>
             </div>
@@ -113,8 +113,8 @@ export function locationTemplate() {
             <div class="px-5 py-3 border-t border-line bg-app-surface shrink-0">
                 <form id="locationEditAliasForm" class="flex items-center gap-2">
                     <input type="text" id="locationEditAliasInput" maxlength="50" placeholder="新别名，例如：青岛厂"
-                           class="flex-1 min-w-0 h-8 px-3 text-xs bg-app-hud border border-line text-white placeholder:text-ink-dim focus:outline-none focus:border-brand-active">
-                    <button type="submit" id="submitLocationEditAliasBtn" class="h-8 px-4 bg-brand-hud hover:bg-brand text-white text-xs font-semibold shrink-0">添加</button>
+                           class="flex-1 min-w-0 h-8 px-3 text-xs bg-app-hud border border-line text-ink placeholder:text-ink-dim focus:outline-none focus:border-brand-active">
+                    <button type="submit" id="submitLocationEditAliasBtn" class="${BTN_HUD_CHIP} shrink-0">添加</button>
                 </form>
             </div>
         </div>
@@ -125,13 +125,13 @@ export function locationTemplate() {
             <div class="px-5 py-3.5 flex items-center justify-between border-b border-line bg-app-surface shrink-0">
                 <div class="flex items-center gap-2">
                     <span class="w-1 h-3.5 bg-brand-hud"></span>
-                    <h5 class="text-xs font-semibold text-white tracking-wider">删除基地</h5>
+                    <h5 class="text-xs font-semibold text-ink tracking-wider">删除基地</h5>
                 </div>
                 <button type="button" id="closeLocationDeleteDrawer" class="text-ink-dim hover:text-ink w-6 h-6 flex items-center justify-center">✕</button>
             </div>
             <div class="flex-1 p-5">
                 <p class="text-xs text-ink-muted mb-2">确认删除基地</p>
-                <p id="locationDeleteName" class="text-sm font-semibold text-white font-mono"></p>
+                <p id="locationDeleteName" class="text-sm font-semibold text-ink font-mono"></p>
                 <p class="text-[11px] text-ink-faint mt-3">仍被引用时无法删除。此操作不可恢复。</p>
             </div>
             <div class="px-5 py-3 border-t border-line flex items-center justify-end gap-2 bg-app-surface shrink-0">
@@ -146,18 +146,18 @@ export function locationTemplate() {
             <div class="px-5 py-3.5 flex items-center justify-between border-b border-line bg-app-surface shrink-0">
                 <div class="flex items-center gap-2">
                     <span class="w-1 h-3.5 bg-brand-hud"></span>
-                    <h5 class="text-xs font-semibold text-white tracking-wider" id="locationToggleTitle">确认禁用</h5>
+                    <h5 class="text-xs font-semibold text-ink tracking-wider" id="locationToggleTitle">确认禁用</h5>
                 </div>
                 <button type="button" id="closeLocationToggleDrawer" class="text-ink-dim hover:text-ink w-6 h-6 flex items-center justify-center">✕</button>
             </div>
             <div class="flex-1 p-5">
                 <p class="text-xs text-ink-muted mb-2" id="locationToggleLead">确认禁用基地</p>
-                <p id="locationToggleName" class="text-sm font-semibold text-white font-mono"></p>
+                <p id="locationToggleName" class="text-sm font-semibold text-ink font-mono"></p>
                 <p class="text-[11px] text-ink-faint mt-3" id="locationToggleHint">禁用后不能再按此基地写入或开引擎；列表筛选仍可见。</p>
             </div>
             <div class="px-5 py-3 border-t border-line flex items-center justify-end gap-2 bg-app-surface shrink-0">
                 <button type="button" id="cancelLocationToggleBtn" class="px-4 py-1.5 text-xs text-ink-muted border border-line">取消</button>
-                <button type="button" id="confirmLocationToggleBtn" class="bg-brand-hud hover:bg-brand text-white px-5 py-1.5 text-xs font-semibold">确认禁用</button>
+                <button type="button" id="confirmLocationToggleBtn" class="${BTN_HUD_SAVE}">确认禁用</button>
             </div>
         </div>
     `;

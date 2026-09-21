@@ -9,7 +9,7 @@ import {
     PREVIEW_PAGE_SIZE_OPTIONS,
     bindPagination,
     paintPagination,
-} from '../../../../ui/page-size.js?v=5';
+} from '../../../../ui/page-size.js?v=6';
 import { setSearchBusy } from '../../../../ui/search-busy.js?v=3';
 import {
     winningThicknessDownloadTemplate,

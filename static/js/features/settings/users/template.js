@@ -5,8 +5,8 @@
  * 抽屉：编辑新增、修改密码、删除确认、授权
  */
 
-import { paginationBarHtml } from '../../../ui/page-size.js?v=5';
-import { DRAWER_SHELL, DRAWER_BACKDROP, BTN_FILTER_SEARCH } from '../../../ui/classes.js?v=8';
+import { paginationBarHtml } from '../../../ui/page-size.js?v=6';
+import { DRAWER_SHELL, DRAWER_BACKDROP, BTN_FILTER_SEARCH, HUD_FILTER } from '../../../ui/classes.js?v=11';
 
 
 export function usersTemplate() {
@@ -19,7 +19,7 @@ export function usersTemplate() {
                     <div class="absolute left-0 top-0 bottom-0 w-[3px] bg-ink-faint"></div>
                     <div class="pl-2 space-y-0.5">
                         <div class="text-[10px] font-semibold text-ink-dim tracking-wider">总用户数</div>
-                        <div class="text-2xl font-mono font-bold text-white tracking-tight" id="statTotalUsers">-</div>
+                        <div class="text-2xl font-mono font-bold text-ink tracking-tight" id="statTotalUsers">-</div>
                     </div>
                     <div class="text-ink-dim pr-1">${window.svgIcon('user', 'w-4 h-4')}</div>
                 </div>
@@ -37,7 +37,7 @@ export function usersTemplate() {
                 </div>
 
                 <div class="bg-app-main border border-line p-3.5 flex items-center justify-between relative overflow-hidden hover:border-brand/50 transition-colors">
-                    <div class="absolute left-0 top-0 bottom-0 w-[3px] bg-brand shadow-[0_0_8px_rgb(var(--brabus-red)/0.5)]"></div>
+                    <div class="absolute left-0 top-0 bottom-0 w-[3px] bg-brand hud-brand-glow"></div>
                     <div class="pl-2 space-y-0.5">
                         <div class="text-[10px] font-semibold text-brand/90 tracking-wider">管理员</div>
                         <div class="text-2xl font-mono font-bold text-brand tracking-tight" id="statAdminUsers">-</div>
@@ -62,7 +62,7 @@ export function usersTemplate() {
                         </div>
 
                         <select id="filterIsActive"
-                                class="h-8 px-3 text-xs bg-app-hud border border-line text-ink-muted cursor-pointer focus:outline-none focus:border-brand-active transition-colors">
+                                class="${HUD_FILTER}">
                             <option value="">全部状态</option>
                             <option value="true">启用</option>
                             <option value="false">停用</option>
@@ -123,7 +123,7 @@ export function usersTemplate() {
             <div class="px-5 py-3.5 flex items-center justify-between border-b border-line bg-app-surface shrink-0">
                 <div class="flex items-center gap-2">
                     <span class="w-1 h-3.5 bg-brand"></span>
-                    <h5 class="text-xs font-semibold text-white tracking-wider" id="editDrawerTitle">编辑用户</h5>
+                    <h5 class="text-xs font-semibold text-ink tracking-wider" id="editDrawerTitle">编辑用户</h5>
                 </div>
                 <button type="button" id="closeEditDrawer" class="text-ink-dim hover:text-ink w-6 h-6 flex items-center justify-center">✕</button>
             </div>
@@ -134,41 +134,41 @@ export function usersTemplate() {
                     <div>
                         <label class="text-[10px] font-semibold text-ink-dim tracking-wider mb-1 block">登录账号 <span class="text-brand">*</span></label>
                         <input type="text" id="editUsername" required minlength="2" maxlength="50"
-                               class="w-full h-8 px-3 text-xs bg-app-hud border border-line text-white placeholder:text-ink-dim focus:outline-none focus:border-brand-active transition-colors">
+                               class="w-full h-8 px-3 text-xs bg-app-hud border border-line text-ink placeholder:text-ink-dim focus:outline-none focus:border-brand-active transition-colors">
                         <p id="editUsernameHint" class="hidden text-[10px] text-ink-dim mt-1">编辑时账号不可修改</p>
                     </div>
                     <div id="editPasswordGroup">
                         <label class="text-[10px] font-semibold text-ink-dim tracking-wider mb-1 block">登录密码 <span class="text-brand">*</span></label>
                         <input type="password" id="editPassword" minlength="4" maxlength="64"
-                               class="w-full h-8 px-3 text-xs bg-app-hud border border-line text-white focus:outline-none focus:border-brand-active transition-colors" autocomplete="new-password">
+                               class="w-full h-8 px-3 text-xs bg-app-hud border border-line text-ink focus:outline-none focus:border-brand-active transition-colors" autocomplete="new-password">
                     </div>
                     <div class="grid grid-cols-2 gap-3">
                         <div>
                             <label class="text-[10px] font-semibold text-ink-dim tracking-wider mb-1 block">姓名</label>
                             <input type="text" id="editRealName" maxlength="50"
-                                   class="w-full h-8 px-3 text-xs bg-app-hud border border-line text-white focus:outline-none focus:border-brand-active transition-colors">
+                                   class="w-full h-8 px-3 text-xs bg-app-hud border border-line text-ink focus:outline-none focus:border-brand-active transition-colors">
                         </div>
                         <div>
                             <label class="text-[10px] font-semibold text-ink-dim tracking-wider mb-1 block">所属部门</label>
                             <input type="text" id="editDepartment" maxlength="50"
-                                   class="w-full h-8 px-3 text-xs bg-app-hud border border-line text-white focus:outline-none focus:border-brand-active transition-colors">
+                                   class="w-full h-8 px-3 text-xs bg-app-hud border border-line text-ink focus:outline-none focus:border-brand-active transition-colors">
                         </div>
                     </div>
                     <div class="grid grid-cols-2 gap-3">
                         <div>
                             <label class="text-[10px] font-semibold text-ink-dim tracking-wider mb-1 block">邮箱</label>
                             <input type="email" id="editEmail" maxlength="100"
-                                   class="w-full h-8 px-3 text-xs bg-app-hud border border-line text-white focus:outline-none focus:border-brand-active transition-colors">
+                                   class="w-full h-8 px-3 text-xs bg-app-hud border border-line text-ink focus:outline-none focus:border-brand-active transition-colors">
                         </div>
                         <div>
                             <label class="text-[10px] font-semibold text-ink-dim tracking-wider mb-1 block">电话</label>
                             <input type="text" id="editPhone" maxlength="20"
-                                   class="w-full h-8 px-3 text-xs bg-app-hud border border-line text-white focus:outline-none focus:border-brand-active transition-colors">
+                                   class="w-full h-8 px-3 text-xs bg-app-hud border border-line text-ink focus:outline-none focus:border-brand-active transition-colors">
                         </div>
                     </div>
                     <div>
                         <label class="text-[10px] font-semibold text-ink-dim tracking-wider mb-1 block">账号状态</label>
-                        <select id="editIsActive" class="w-full h-8 px-3 text-xs bg-app-hud border border-line text-ink-muted focus:outline-none focus:border-brand-active transition-colors">
+                        <select id="editIsActive" class="w-full ${HUD_FILTER}">
                             <option value="true">启用</option>
                             <option value="false">停用</option>
                         </select>
@@ -189,7 +189,7 @@ export function usersTemplate() {
             <div class="px-5 py-3.5 flex items-center justify-between border-b border-line bg-app-surface">
                 <div class="flex items-center gap-2">
                     <span class="w-1 h-3.5 bg-warn"></span>
-                    <h5 class="text-xs font-semibold text-white tracking-wider">修改密码</h5>
+                    <h5 class="text-xs font-semibold text-ink tracking-wider">修改密码</h5>
                 </div>
                 <button type="button" id="closePasswordDrawer" class="text-ink-dim hover:text-ink">✕</button>
             </div>
@@ -203,12 +203,12 @@ export function usersTemplate() {
                     <div>
                         <label class="text-[10px] font-semibold text-ink-dim tracking-wider mb-1 block">新密码<span class="text-brand">*</span></label>
                         <input type="password" id="newPassword" required minlength="4" maxlength="64"
-                               class="w-full h-8 px-3 text-xs bg-app-hud border border-line text-white focus:outline-none focus:border-brand-active transition-colors" autocomplete="new-password">
+                               class="w-full h-8 px-3 text-xs bg-app-hud border border-line text-ink focus:outline-none focus:border-brand-active transition-colors" autocomplete="new-password">
                     </div>
                     <div>
                         <label class="text-[10px] font-semibold text-ink-dim tracking-wider mb-1 block">确认新密码<span class="text-brand">*</span></label>
                         <input type="password" id="confirmPassword" required minlength="4" maxlength="64"
-                               class="w-full h-8 px-3 text-xs bg-app-hud border border-line text-white focus:outline-none focus:border-brand-active transition-colors" autocomplete="new-password">
+                               class="w-full h-8 px-3 text-xs bg-app-hud border border-line text-ink focus:outline-none focus:border-brand-active transition-colors" autocomplete="new-password">
                     </div>
                 </form>
             </div>
@@ -225,7 +225,7 @@ export function usersTemplate() {
             <div class="px-5 py-3.5 flex items-center justify-between border-b border-line bg-app-surface">
                 <div class="flex items-center gap-2">
                     <span class="w-1 h-3.5 bg-danger"></span>
-                    <h5 class="text-xs font-semibold text-white tracking-wider">确认删除</h5>
+                    <h5 class="text-xs font-semibold text-ink tracking-wider">确认删除</h5>
                 </div>
                 <button type="button" id="closeDeleteDrawer" class="text-ink-dim hover:text-ink">✕</button>
             </div>
@@ -252,7 +252,7 @@ export function usersTemplate() {
                 <div class="flex items-center gap-2">
                     <span class="w-1 h-3.5 bg-ok"></span>
                     <div>
-                        <h5 class="text-xs font-semibold text-white tracking-wider">用户授权</h5>
+                        <h5 class="text-xs font-semibold text-ink tracking-wider">用户授权</h5>
                         <p class="text-[11px] text-ink-dim mt-0.5">用户<span id="grantUsername" class="text-ink font-mono font-semibold"></span></p>
                     </div>
                 </div>

@@ -2,8 +2,8 @@
  * 文件溯源 — HUD 密表 + 筛选 + 详情抽屉
  */
 
-import { HUD_SHELL, OPS_TH } from '../../ui/classes.js?v=8';
-import { hudTableHtml, hudRowHtml, opsIconButtonHtml } from '../../ui/hud-table.js?v=1';
+import { HUD_SHELL, OPS_TH, DRAWER_BACKDROP, HUD_FILTER } from '../../ui/classes.js?v=11';
+import { hudTableHtml, hudRowHtml, opsIconButtonHtml } from '../../ui/hud-table.js?v=2';
 
 
 const CATEGORY_BADGE = 'inline-flex items-center px-2 py-0.5 text-[9px] font-semibold tracking-[0.06em] border border-line-hud text-ink-muted bg-app-main';
@@ -15,22 +15,22 @@ export function fileTraceTemplate() {
 
                 <div class="px-5 pt-4 pb-3 border-b border-line-subtle bg-app-main">
                     <div class="grid grid-cols-2 md:grid-cols-3 xl:grid-cols-6 gap-2 mb-3">
-                        <select id="ftFilterCategory" class="h-9 px-3 text-xs bg-app-deep border border-line text-ink-muted focus:outline-none focus:border-brand-active">
+                        <select id="ftFilterCategory" class="${HUD_FILTER}">
                             <option value="">全部分类</option>
                         </select>
-                        <select id="ftFilterLocation" class="h-9 px-3 text-xs bg-app-deep border border-line text-ink-muted focus:outline-none focus:border-brand-active">
+                        <select id="ftFilterLocation" class="${HUD_FILTER}">
                             <option value="">全部基地</option>
                         </select>
-                        <select id="ftFilterYear" class="h-9 px-3 text-xs bg-app-deep border border-line text-ink-muted focus:outline-none focus:border-brand-active">
+                        <select id="ftFilterYear" class="${HUD_FILTER}">
                             <option value="">全部年度</option>
                         </select>
-                        <select id="ftFilterMonth" class="h-9 px-3 text-xs bg-app-deep border border-line text-ink-muted focus:outline-none focus:border-brand-active">
+                        <select id="ftFilterMonth" class="${HUD_FILTER}">
                             <option value="">全部月份</option>
                         </select>
-                        <select id="ftFilterVehicle" class="h-9 px-3 text-xs bg-app-deep border border-line text-ink-muted focus:outline-none focus:border-brand-active">
+                        <select id="ftFilterVehicle" class="${HUD_FILTER}">
                             <option value="">全部项目</option>
                         </select>
-                        <select id="ftFilterCreator" class="h-9 px-3 text-xs bg-app-deep border border-line text-ink-muted focus:outline-none focus:border-brand-active">
+                        <select id="ftFilterCreator" class="${HUD_FILTER}">
                             <option value="">全部上传人</option>
                         </select>
                     </div>
@@ -92,12 +92,12 @@ export function fileTraceTemplate() {
             </div>
         </div>
 
-        <div id="ftDrawerBackdrop" class="fixed inset-0 bg-overlay/60 z-[80] hidden"></div>
+        <div id="ftDrawerBackdrop" class="hidden ${DRAWER_BACKDROP}"></div>
         <aside id="ftDrawer" class="fixed top-0 right-0 h-full w-full max-w-md bg-app-main border-l border-line z-[85] translate-x-full transition-transform duration-200 overflow-y-auto">
             <div class="flex items-center justify-between px-5 py-4 border-b border-line-subtle">
                 <div>
                     <div class="text-xs text-ink-faint tracking-[0.1em]">FILE DETAIL</div>
-                    <h3 class="text-sm font-semibold text-white mt-1">文件详情</h3>
+                    <h3 class="text-sm font-semibold text-ink mt-1">文件详情</h3>
                 </div>
                 <button id="ftDrawerClose" type="button" class="w-8 h-8 inline-flex items-center justify-center text-ink-muted hover:text-ink border border-line rounded">×</button>
             </div>

@@ -2,21 +2,21 @@
  * 冲压零件价格一览
  */
 
-import { DRAWER_SHELL, DRAWER_BACKDROP } from '../../../../ui/classes.js?v=8';
+import { DRAWER_SHELL, DRAWER_BACKDROP, BTN_SOLID } from '../../../../ui/classes.js?v=11';
 import {
     partCostListTemplate,
     renderCostRows,
     updatePartCostHud,
     syncOptionalColumnVisibility,
-} from './template.js?v=85';
+} from './template.js?v=86';
 import { shortPartNumber } from '../../../../domain/part-identity.js?v=5';
 import {
     DEFAULT_PAGE_SIZE,
     bindPagination,
     paintPagination,
-} from '../../../../ui/page-size.js?v=5';
-import { bindMoreMenu } from '../../../../ui/more-menu.js?v=4';
-import { bindFilterBar } from '../../../../ui/filter-bar.js?v=2';
+} from '../../../../ui/page-size.js?v=6';
+import { bindMoreMenu } from '../../../../ui/more-menu.js?v=5';
+import { bindFilterBar } from '../../../../ui/filter-bar.js?v=3';
 import { setSearchBusy } from '../../../../ui/search-busy.js?v=3';
 import { setCurrentTableRow } from '../../../../ui/table-row.js?v=3';
 
@@ -591,7 +591,7 @@ function showDetailDrawer(row) {
             </div>
             <div class="flex items-center justify-end gap-2">
                 <button type="button" id="costManualSaveBtn"
-                        class="inline-flex items-center justify-center gap-1.5 bg-brand text-white px-4 py-2 text-[11px] font-semibold rounded hover:bg-brand-hover transition-all">
+                        class="${BTN_SOLID} justify-center">
                     保存最终成本
                 </button>
             </div>
@@ -900,7 +900,7 @@ function openBatchAuditDrawer(mode) {
     if (confirmBtn) {
         confirmBtn.textContent = isApprove ? '确认审核通过' : '确认反审核';
         confirmBtn.className =
-            'inline-flex items-center gap-1.5 bg-brand text-white px-4 py-2 text-[11px] font-semibold rounded hover:bg-brand-hover transition-all';
+            BTN_SOLID;
     }
 
     openDrawer('costBatchAuditDrawer', 'costBatchAuditDrawerBackdrop');

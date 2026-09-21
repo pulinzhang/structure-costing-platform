@@ -2,10 +2,10 @@
  * 供应商一览 — HUD 密表 + 抽屉；有搜索 / 分页 / 导出
  */
 
-import { HUD_SHELL, DRAWER_SHELL, DRAWER_BACKDROP, HUD_BAND, OPS_TH } from '../../../../ui/classes.js?v=8';
-import { hudTableHtml, hudRowHtml, opsIconButtonHtml } from '../../../../ui/hud-table.js?v=1';
+import { HUD_SHELL, DRAWER_SHELL, DRAWER_BACKDROP, HUD_BAND, OPS_TH, BTN_HUD_CREATE, BTN_HUD_SAVE, BTN_HUD_CHIP } from '../../../../ui/classes.js?v=11';
+import { hudTableHtml, hudRowHtml, opsIconButtonHtml } from '../../../../ui/hud-table.js?v=2';
 
-import { moreMenuItemHtml, moreMenuShellHtml } from '../../../../ui/more-menu.js?v=3';
+import { moreMenuItemHtml, moreMenuShellHtml } from '../../../../ui/more-menu.js?v=5';
 
 export function supplierListTemplate() {
     return `
@@ -25,7 +25,7 @@ export function supplierListTemplate() {
                                 itemsHtml: moreMenuItemHtml({ id: 'supplierBtnExport', label: '导出' }),
                             })}
                             <button id="supplierBtnCreate" type="button"
-                                    class="inline-flex items-center gap-1.5 bg-brand-hud hover:bg-brand text-white px-3 py-1.5 text-[11px] font-semibold rounded-md transition-all">
+                                    class="${BTN_HUD_CREATE}">
                                 ${window.svgIcon('plus', 'w-3.5 h-3.5')}
                                 新增
                             </button>
@@ -40,7 +40,7 @@ export function supplierListTemplate() {
                                    class="w-full h-8 pl-8 pr-3 text-[11px] font-mono bg-app-hud border border-line-hud text-ink placeholder:text-ink-faint focus:outline-none focus:border-brand-hud rounded-sm">
                         </div>
                         <div class="flex items-center gap-1.5">
-                            <button type="button" data-enabled-filter="" class="supplier-status-capsule px-2 py-0.5 text-[10px] font-mono rounded-md border border-brand-hud/50 bg-brand-hud/10 text-white">全部</button>
+                            <button type="button" data-enabled-filter="" class="supplier-status-capsule px-2 py-0.5 text-[10px] font-mono rounded-md border border-brand-hud/50 bg-brand-hud/10 text-ink">全部</button>
                             <button type="button" data-enabled-filter="true" class="supplier-status-capsule px-2 py-0.5 text-[10px] font-mono rounded-md border border-line-hud text-ink-muted hover:text-ink">已启用</button>
                             <button type="button" data-enabled-filter="false" class="supplier-status-capsule px-2 py-0.5 text-[10px] font-mono rounded-md border border-line-hud text-ink-muted hover:text-ink">已禁用</button>
                         </div>
@@ -83,7 +83,7 @@ export function supplierListTemplate() {
             <div class="px-5 py-3.5 flex items-center justify-between border-b border-line bg-app-surface shrink-0">
                 <div class="flex items-center gap-2">
                     <span class="w-1 h-3.5 bg-brand-hud"></span>
-                    <h5 class="text-xs font-semibold text-white tracking-wider">新增供应商</h5>
+                    <h5 class="text-xs font-semibold text-ink tracking-wider">新增供应商</h5>
                 </div>
                 <button type="button" id="closeSupplierCreateDrawer" class="text-ink-dim hover:text-ink w-6 h-6 flex items-center justify-center">✕</button>
             </div>
@@ -93,31 +93,31 @@ export function supplierListTemplate() {
                         <label class="text-[10px] font-semibold text-ink-dim tracking-wider mb-1 block">缩写 <span class="text-brand-hud">*</span></label>
                         <input type="text" id="supplierCreateAbbreviation" required maxlength="50"
                                placeholder="例如：常庆"
-                               class="w-full h-8 px-3 text-xs bg-app-hud border border-line text-white placeholder:text-ink-dim focus:outline-none focus:border-brand-active">
+                               class="w-full h-8 px-3 text-xs bg-app-hud border border-line text-ink placeholder:text-ink-dim focus:outline-none focus:border-brand-active">
                     </div>
                     <div>
                         <label class="text-[10px] font-semibold text-ink-dim tracking-wider mb-1 block">全称 <span class="text-brand-hud">*</span></label>
                         <input type="text" id="supplierCreateFullName" required maxlength="100"
                                placeholder="与营业执照一致"
-                               class="w-full h-8 px-3 text-xs bg-app-hud border border-line text-white placeholder:text-ink-dim focus:outline-none focus:border-brand-active">
+                               class="w-full h-8 px-3 text-xs bg-app-hud border border-line text-ink placeholder:text-ink-dim focus:outline-none focus:border-brand-active">
                     </div>
                     <div>
                         <label class="text-[10px] font-semibold text-ink-dim tracking-wider mb-1 block">对外代码 <span class="text-brand-hud">*</span></label>
                         <input type="text" id="supplierCreateErpCode" required maxlength="50"
                                placeholder="对外对接码"
-                               class="w-full h-8 px-3 text-xs bg-app-hud border border-line text-white placeholder:text-ink-dim focus:outline-none focus:border-brand-active">
+                               class="w-full h-8 px-3 text-xs bg-app-hud border border-line text-ink placeholder:text-ink-dim focus:outline-none focus:border-brand-active">
                     </div>
                     <div>
                         <label class="text-[10px] font-semibold text-ink-dim tracking-wider mb-1 block">别名</label>
                         <textarea id="supplierCreateAliases" rows="3"
                                   placeholder="每行一个，可空；吸收工艺表头乱写"
-                                  class="w-full px-3 py-2 text-xs bg-app-hud border border-line text-white placeholder:text-ink-dim focus:outline-none focus:border-brand-active resize-y"></textarea>
+                                  class="w-full px-3 py-2 text-xs bg-app-hud border border-line text-ink placeholder:text-ink-dim focus:outline-none focus:border-brand-active resize-y"></textarea>
                     </div>
                 </form>
             </div>
             <div class="px-5 py-3 border-t border-line flex items-center justify-end gap-2 bg-app-surface shrink-0">
                 <button type="button" id="cancelSupplierCreateBtn" class="px-4 py-1.5 text-xs text-ink-muted border border-line hover:text-ink">取消</button>
-                <button type="button" id="submitSupplierCreateBtn" class="bg-brand-hud hover:bg-brand text-white px-5 py-1.5 text-xs font-semibold">保存</button>
+                <button type="button" id="submitSupplierCreateBtn" class="${BTN_HUD_SAVE}">保存</button>
             </div>
         </div>
 
@@ -127,7 +127,7 @@ export function supplierListTemplate() {
             <div class="px-5 py-3.5 flex items-center justify-between border-b border-line bg-app-surface shrink-0">
                 <div class="flex items-center gap-2">
                     <span class="w-1 h-3.5 bg-brand-hud"></span>
-                    <h5 class="text-xs font-semibold text-white tracking-wider">编辑供应商</h5>
+                    <h5 class="text-xs font-semibold text-ink tracking-wider">编辑供应商</h5>
                 </div>
                 <button type="button" id="closeSupplierEditDrawer" class="text-ink-dim hover:text-ink w-6 h-6 flex items-center justify-center">✕</button>
             </div>
@@ -135,17 +135,17 @@ export function supplierListTemplate() {
                 <div>
                     <label class="text-[10px] font-semibold text-ink-dim tracking-wider mb-1 block">缩写</label>
                     <input type="text" id="supplierEditAbbreviation" maxlength="50"
-                           class="w-full h-8 px-3 text-xs bg-app-hud border border-line text-white focus:outline-none focus:border-brand-active">
+                           class="w-full h-8 px-3 text-xs bg-app-hud border border-line text-ink focus:outline-none focus:border-brand-active">
                 </div>
                 <div>
                     <label class="text-[10px] font-semibold text-ink-dim tracking-wider mb-1 block">全称</label>
                     <input type="text" id="supplierEditFullName" maxlength="100"
-                           class="w-full h-8 px-3 text-xs bg-app-hud border border-line text-white focus:outline-none focus:border-brand-active">
+                           class="w-full h-8 px-3 text-xs bg-app-hud border border-line text-ink focus:outline-none focus:border-brand-active">
                 </div>
                 <div>
                     <label class="text-[10px] font-semibold text-ink-dim tracking-wider mb-1 block">对外代码</label>
                     <input type="text" id="supplierEditErpCode" maxlength="50"
-                           class="w-full h-8 px-3 text-xs bg-app-hud border border-line text-white focus:outline-none focus:border-brand-active">
+                           class="w-full h-8 px-3 text-xs bg-app-hud border border-line text-ink focus:outline-none focus:border-brand-active">
                     <p class="text-[10px] text-ink-faint mt-1">改全称成功后旧名收成别名；仍被引用则不能改</p>
                 </div>
                 <div>
@@ -161,11 +161,11 @@ export function supplierListTemplate() {
             <div class="px-5 py-3 border-t border-line bg-app-surface shrink-0 space-y-2">
                 <form id="supplierEditAliasForm" class="flex items-center gap-2">
                     <input type="text" id="supplierEditAliasInput" maxlength="100" placeholder="新别名，例如：常庆汽配"
-                           class="flex-1 min-w-0 h-8 px-3 text-xs bg-app-hud border border-line text-white placeholder:text-ink-dim focus:outline-none focus:border-brand-active">
-                    <button type="submit" id="submitSupplierEditAliasBtn" class="h-8 px-4 bg-brand-hud hover:bg-brand text-white text-xs font-semibold shrink-0">添加</button>
+                           class="flex-1 min-w-0 h-8 px-3 text-xs bg-app-hud border border-line text-ink placeholder:text-ink-dim focus:outline-none focus:border-brand-active">
+                    <button type="submit" id="submitSupplierEditAliasBtn" class="${BTN_HUD_CHIP} shrink-0">添加</button>
                 </form>
                 <div class="flex justify-end">
-                    <button type="button" id="submitSupplierEditBtn" class="h-8 px-4 bg-brand-hud hover:bg-brand text-white text-xs font-semibold">保存资料</button>
+                    <button type="button" id="submitSupplierEditBtn" class="${BTN_HUD_CHIP}">保存资料</button>
                 </div>
             </div>
         </div>
@@ -176,18 +176,18 @@ export function supplierListTemplate() {
             <div class="px-5 py-3.5 flex items-center justify-between border-b border-line bg-app-surface shrink-0">
                 <div class="flex items-center gap-2">
                     <span class="w-1 h-3.5 bg-brand-hud"></span>
-                    <h5 class="text-xs font-semibold text-white tracking-wider" id="supplierToggleTitle">确认禁用</h5>
+                    <h5 class="text-xs font-semibold text-ink tracking-wider" id="supplierToggleTitle">确认禁用</h5>
                 </div>
                 <button type="button" id="closeSupplierToggleDrawer" class="text-ink-dim hover:text-ink w-6 h-6 flex items-center justify-center">✕</button>
             </div>
             <div class="flex-1 p-5">
                 <p class="text-xs text-ink-muted mb-2" id="supplierToggleLead">确认禁用供应商</p>
-                <p id="supplierToggleName" class="text-sm font-semibold text-white font-mono"></p>
+                <p id="supplierToggleName" class="text-sm font-semibold text-ink font-mono"></p>
                 <p class="text-[11px] text-ink-faint mt-3" id="supplierToggleHint">禁用后不能再按此供应商新引入；列表筛选仍可见。</p>
             </div>
             <div class="px-5 py-3 border-t border-line flex items-center justify-end gap-2 bg-app-surface shrink-0">
                 <button type="button" id="cancelSupplierToggleBtn" class="px-4 py-1.5 text-xs text-ink-muted border border-line">取消</button>
-                <button type="button" id="confirmSupplierToggleBtn" class="bg-brand-hud hover:bg-brand text-white px-5 py-1.5 text-xs font-semibold">确认禁用</button>
+                <button type="button" id="confirmSupplierToggleBtn" class="${BTN_HUD_SAVE}">确认禁用</button>
             </div>
         </div>
 
@@ -197,13 +197,13 @@ export function supplierListTemplate() {
             <div class="px-5 py-3.5 flex items-center justify-between border-b border-line bg-app-surface shrink-0">
                 <div class="flex items-center gap-2">
                     <span class="w-1 h-3.5 bg-brand-hud"></span>
-                    <h5 class="text-xs font-semibold text-white tracking-wider">删除供应商</h5>
+                    <h5 class="text-xs font-semibold text-ink tracking-wider">删除供应商</h5>
                 </div>
                 <button type="button" id="closeSupplierDeleteDrawer" class="text-ink-dim hover:text-ink w-6 h-6 flex items-center justify-center">✕</button>
             </div>
             <div class="flex-1 p-5">
                 <p class="text-xs text-ink-muted mb-2">确认删除供应商</p>
-                <p id="supplierDeleteName" class="text-sm font-semibold text-white font-mono"></p>
+                <p id="supplierDeleteName" class="text-sm font-semibold text-ink font-mono"></p>
                 <p class="text-[11px] text-ink-faint mt-3">仍被引用则不能删除。别名会一并删除。</p>
             </div>
             <div class="px-5 py-3 border-t border-line flex items-center justify-end gap-2 bg-app-surface shrink-0">

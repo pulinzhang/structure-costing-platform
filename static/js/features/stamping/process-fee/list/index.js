@@ -7,15 +7,15 @@ import {
     processFeeListTemplate,
     renderFeeRows,
     updateFeeHud,
-} from './template.js?v=64';
-import { bindMoreMenu } from '../../../../ui/more-menu.js?v=3';
-import { bindFilterBar } from '../../../../ui/filter-bar.js?v=2';
+} from './template.js?v=65';
+import { bindMoreMenu } from '../../../../ui/more-menu.js?v=5';
+import { bindFilterBar } from '../../../../ui/filter-bar.js?v=3';
 import { shortPartNumber } from '../../../../domain/part-identity.js?v=5';
 import {
     DEFAULT_PAGE_SIZE,
     bindPagination,
     paintPagination,
-} from '../../../../ui/page-size.js?v=5';
+} from '../../../../ui/page-size.js?v=6';
 import { setSearchBusy } from '../../../../ui/search-busy.js?v=3';
 
 const API_BASE = '/api/stamping/process-fees';
@@ -613,8 +613,7 @@ function fillPartNumberFields(prefix, partNumber) {
         shortEl.textContent = shortNo || (full || '—');
         shortEl.classList.toggle('text-xl', Boolean(shortNo));
         shortEl.classList.toggle('text-xs', !shortNo);
-        shortEl.classList.toggle('text-ink', !shortNo);
-        shortEl.classList.toggle('text-white', Boolean(shortNo));
+        shortEl.classList.add('text-ink');
     }
     if (fullEl) {
         fullEl.textContent = shortNo ? full : '';

@@ -2,11 +2,12 @@
  * 总成核价一览 — Brabus Carbon & Precision Dark（对齐冲压零件价格一览 HUD）
  */
 
-import { filterSelect, filterInput, HUD_SHELL, DRAWER_CLOSE, DRAWER_SHELL, DRAWER_BACKDROP, HUD_BAND, BTN_GHOST, TH_ROW, OPS_TH, HUD_KPI_FOCUS, HUD_KPI_AUX } from '../../../../ui/classes.js?v=8';
-import { filterBarHtml } from '../../../../ui/filter-bar.js?v=2';
-import { hudTableHtml, hudRowHtml, opsIconButtonHtml } from '../../../../ui/hud-table.js?v=1';
+import { filterSelect, filterInput, HUD_SHELL, DRAWER_CLOSE, DRAWER_SHELL, DRAWER_BACKDROP, HUD_BAND, BTN_GHOST, TH_ROW, OPS_TH, HUD_LED, BTN_SOLID } from '../../../../ui/classes.js?v=11';
+import { filterBarHtml } from '../../../../ui/filter-bar.js?v=3';
+import { hudTableHtml, hudRowHtml, opsIconButtonHtml } from '../../../../ui/hud-table.js?v=2';
+import { hudKpiCardHtml } from '../../../../ui/hud-kpi.js?v=1';
 
-import { moreMenuItemHtml, moreMenuShellHtml } from '../../../../ui/more-menu.js?v=3';
+import { moreMenuItemHtml, moreMenuShellHtml } from '../../../../ui/more-menu.js?v=5';
 import { CONFIRM_LABELS, KIND_LABELS } from '../../../bom/procurement-object/labels.js?v=4';
 import {
     partShortCodeCellHtml,
@@ -23,56 +24,32 @@ export function assemblyCostListTemplate() {
                 <div class="${HUD_BAND}">
                     <div class="flex items-start justify-between gap-4 mb-3">
                         <div class="grid grid-cols-2 lg:grid-cols-4 gap-3 font-mono flex-1 min-w-0">
-                            <!-- 1. 总成本：管理者靶心 -->
-                            <div class="hud-kpi-card-glow ${HUD_KPI_FOCUS}">
-                                <div class="absolute top-0 left-0 right-0 h-[2px] bg-gradient-to-r from-transparent via-brand-hud to-transparent hud-kpi-line-glow"></div>
-                                <div class="flex justify-between items-start">
-                                    <span class="text-brand-hud text-[10px] font-bold tracking-widest">总成本</span>
-                                    <span class="w-2 h-2 rounded-full bg-brand-hud animate-pulse hud-kpi-dot-glow"></span>
-                                </div>
-                                <div class="text-[26px] font-black text-brand-hud font-mono mt-1 tracking-tight tabular-nums leading-none hud-kpi-num-glow">
-                                    ¥ <span id="lacHudGrand">—</span>
-                                </div>
-                                <div class="text-[9px] font-mono text-brand-hud/60 mt-2">总费用合计</div>
-                            </div>
-                            <!-- 2. 总成规模 + 件均 -->
-                            <div class="${HUD_KPI_AUX} backdrop-blur-sm">
-                                <div class="text-ink-faint text-[10px] tracking-wider">总成</div>
-                                <div class="text-[22px] font-black text-ink mt-1 tracking-tight tabular-nums leading-none">
-                                    <span id="lacHudTotal">—</span>
-                                    <span class="text-[10px] text-ink-faint ml-1 font-bold">件</span>
-                                </div>
-                                <div class="text-[9px] font-mono text-ink-dim mt-2 flex items-center justify-between gap-2">
-                                    <span>件均</span>
-                                    <span class="text-ink-muted tabular-nums">¥ <span id="lacHudAvg">—</span></span>
-                                </div>
-                            </div>
-                            <!-- 3. 成本构成：材料费 / 焊接费 -->
-                            <div class="${HUD_KPI_AUX} backdrop-blur-sm">
-                                <div class="text-ink-faint text-[10px] tracking-wider">成本构成</div>
-                                <div class="text-[9px] font-mono text-ink-dim mt-2 space-y-1.5">
-                                    <div class="flex items-center justify-between gap-2">
-                                        <span>材料费</span>
-                                        <span class="text-ink-muted tabular-nums whitespace-nowrap">¥ <span id="lacHudMaterial">—</span> <span id="lacHudMaterialShare" class="text-ink-faint">—</span></span>
-                                    </div>
-                                    <div class="flex items-center justify-between gap-2">
-                                        <span>焊接费</span>
-                                        <span class="text-ink-muted tabular-nums whitespace-nowrap">¥ <span id="lacHudWelding">—</span> <span id="lacHudWeldingShare" class="text-ink-faint">—</span></span>
-                                    </div>
-                                </div>
-                            </div>
-                            <!-- 4. 审核进度：待审 / 已审合并 -->
-                            <div class="${HUD_KPI_AUX} backdrop-blur-sm">
-                                <div class="text-ink-faint text-[10px] tracking-wider">审核进度</div>
-                                <div class="text-[22px] font-black text-ink mt-1 tracking-tight tabular-nums leading-none">
-                                    <span id="lacHudPending">—</span>
-                                    <span class="text-[10px] text-ink-faint ml-1 font-bold">条待审</span>
-                                </div>
-                                <div class="text-[9px] font-mono text-ink-dim mt-2 flex items-center justify-between gap-2">
-                                    <span>已审</span>
-                                    <span class="text-ink-muted tabular-nums"><span id="lacHudApproved">—</span> 条</span>
-                                </div>
-                            </div>
+                            ${hudKpiCardHtml({
+                                variant: 'focus',
+                                title: '总成本',
+                                pulse: true,
+                                valueHtml: '¥ <span id="lacHudGrand">—</span>',
+                                meta: '总费用合计',
+                            })}
+                            ${hudKpiCardHtml({
+                                title: '总成',
+                                valueHtml: '<span id="lacHudTotal">—</span>',
+                                unit: '件',
+                                footer: [{ label: '件均', valueHtml: '¥ <span id="lacHudAvg">—</span>' }],
+                            })}
+                            ${hudKpiCardHtml({
+                                title: '成本构成',
+                                rows: [
+                                    { label: '材料费', valueHtml: '¥ <span id="lacHudMaterial">—</span> <span id="lacHudMaterialShare" class="text-ink-faint">—</span>' },
+                                    { label: '焊接费', valueHtml: '¥ <span id="lacHudWelding">—</span> <span id="lacHudWeldingShare" class="text-ink-faint">—</span>' },
+                                ],
+                            })}
+                            ${hudKpiCardHtml({
+                                title: '审核进度',
+                                valueHtml: '<span id="lacHudPending">—</span>',
+                                unit: '条待审',
+                                footer: [{ label: '已审', valueHtml: '<span id="lacHudApproved">—</span> 条' }],
+                            })}
                         </div>
                         <div class="flex flex-col items-end gap-2 shrink-0">
                             <div class="flex items-center gap-1.5">
@@ -194,7 +171,7 @@ function batchAuditDrawerHtml() {
              id="lacBatchAuditDrawer" style="display:none; max-height: 100vh">
             <div class="px-5 py-3.5 flex items-center justify-between shrink-0">
                 <h5 class="text-[11px] font-semibold tracking-wider text-ink-muted flex items-center gap-2.5 uppercase">
-                    <span class="hud-led"></span>
+                    <span class="${HUD_LED}"></span>
                     <span id="lacBatchAuditDrawerTitle">批量审核</span>
                 </h5>
                 <button type="button" id="closeLacBatchAuditDrawer"
@@ -225,7 +202,7 @@ function batchAuditDrawerHtml() {
             </div>
             <div class="px-6 py-4 border-t border-app-elevated flex items-center justify-end gap-2 shrink-0">
                 <button type="button" id="cancelLacBatchAuditBtn" class="inline-flex items-center gap-1.5 bg-transparent text-ink-muted border border-line px-4 py-2 text-[11px] font-medium rounded hover:border-ink-muted hover:text-ink transition-all">取消</button>
-                <button type="button" id="confirmLacBatchAuditBtn" class="inline-flex items-center gap-1.5 bg-brand text-white px-4 py-2 text-[11px] font-semibold rounded hover:bg-brand-hover transition-all">
+                <button type="button" id="confirmLacBatchAuditBtn" class="${BTN_SOLID}">
                     确认提交
                 </button>
             </div>

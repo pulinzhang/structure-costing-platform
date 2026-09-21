@@ -7,7 +7,7 @@ import {
     BTN_GHOST,
     BTN_UPLOAD_SUBMIT,
     UPLOAD_DROPZONE,
-} from '../../../../ui/classes.js?v=8';
+} from '../../../../ui/classes.js?v=11';
 
 export function supplierUploadTemplate() {
     return `

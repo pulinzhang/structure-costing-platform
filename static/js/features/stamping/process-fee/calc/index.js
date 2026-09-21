@@ -3,7 +3,7 @@
  * 对齐钢价计算：异步后台计算+ 进度轮询 + 历史过程日志
  */
 
-import { DRAWER_CLOSE, DRAWER_SHELL, DRAWER_BACKDROP } from '../../../../ui/classes.js?v=8';
+import { DRAWER_CLOSE, DRAWER_SHELL, DRAWER_BACKDROP } from '../../../../ui/classes.js?v=11';
 import {
     processFeeCalcTemplate,
 } from './template.js?v=32';
@@ -11,7 +11,7 @@ import {
     DEFAULT_PAGE_SIZE,
     bindPagination,
     paintPagination,
-} from '../../../../ui/page-size.js?v=5';
+} from '../../../../ui/page-size.js?v=6';
 import {
     formatDurationSeconds,
     formatTimingLine,
@@ -651,7 +651,7 @@ function updateProgress(progress, msg, status) {
         bar.className = 'h-full bg-danger transition-all duration-300';
         if (percentEl) percentEl.className = 'text-xs font-mono tabular-nums text-danger shrink-0';
     } else if (bar) {
-        bar.className = 'h-full bg-brand shadow-[0_0_8px_rgb(var(--brabus-red)/0.5)] transition-all duration-300';
+        bar.className = 'h-full bg-brand hud-brand-glow transition-all duration-300';
         if (percentEl) percentEl.className = 'text-xs font-mono tabular-nums text-brand shrink-0';
     }
 }

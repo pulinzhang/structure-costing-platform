@@ -3,7 +3,8 @@
  * 管理者看板 — 本期产出 / 待办决策 / 核价闭环就绪
  */
 
-import { HUD_KPI_FOCUS } from '../../ui/classes.js?v=8';
+import { HUD_FILTER } from '../../ui/classes.js?v=11';
+import { hudKpiCardHtml } from '../../ui/hud-kpi.js?v=1';
 
 function actionLink({ page, label, sub }) {
     return `
@@ -22,24 +23,24 @@ export function dashboardTemplate() {
             <div class="flex flex-col gap-1">
                 <label class="text-[9px] font-medium tracking-[0.08em] text-ink-faint uppercase" for="dashYear">核价年度</label>
                 <select id="dashYear"
-                    class="h-9 min-w-[6.5rem] px-3 text-xs bg-app-deep border border-line text-ink appearance-none cursor-pointer focus:outline-none focus:border-brand-active transition-all"></select>
+                    class="min-w-[6.5rem] ${HUD_FILTER}"></select>
             </div>
             <div class="flex flex-col gap-1">
                 <label class="text-[9px] font-medium tracking-[0.08em] text-ink-faint uppercase" for="dashMonth">核价月份</label>
                 <select id="dashMonth"
-                    class="h-9 min-w-[5.5rem] px-3 text-xs bg-app-deep border border-line text-ink appearance-none cursor-pointer focus:outline-none focus:border-brand-active transition-all"></select>
+                    class="min-w-[5.5rem] ${HUD_FILTER}"></select>
             </div>
             <div class="flex flex-col gap-1">
                 <label class="text-[9px] font-medium tracking-[0.08em] text-ink-faint uppercase" for="dashLocation">生产基地</label>
                 <select id="dashLocation"
-                    class="h-9 min-w-[8rem] px-3 text-xs bg-app-deep border border-line text-ink-muted appearance-none cursor-pointer focus:outline-none focus:border-brand-active transition-all">
+                    class="min-w-[8rem] ${HUD_FILTER}">
                     <option value="">全部基地</option>
                 </select>
             </div>
             <div class="flex flex-col gap-1">
                 <label class="text-[9px] font-medium tracking-[0.08em] text-ink-faint uppercase" for="dashVehicle">项目</label>
                 <select id="dashVehicle"
-                    class="h-9 min-w-[8rem] px-3 text-xs bg-app-deep border border-line text-ink-muted appearance-none cursor-pointer focus:outline-none focus:border-brand-active transition-all">
+                    class="min-w-[8rem] ${HUD_FILTER}">
                     <option value="">全部项目</option>
                 </select>
             </div>
@@ -55,37 +56,34 @@ export function dashboardTemplate() {
                     <span class="text-[10px] font-mono text-ink-faint" id="dashOutcomeSub">—</span>
                 </div>
                 <div class="grid grid-cols-2 lg:grid-cols-4 gap-3 font-mono">
-                    <div class="hud-kpi-card-glow ${HUD_KPI_FOCUS}">
-                        <div class="absolute top-0 left-0 right-0 h-[2px] bg-gradient-to-r from-transparent via-brand-hud to-transparent hud-kpi-line-glow"></div>
-                        <div class="text-brand-hud text-[10px] font-bold tracking-widest">冲压件均单价</div>
-                        <div class="text-[26px] font-black text-brand-hud mt-1 tracking-tight tabular-nums">
-                            ¥<span id="dashPartAvg">—</span>
-                        </div>
-                        <div class="text-[9px] text-brand-hud/60 mt-1" id="dashPartAvgMeta">已审 — · 待审 —</div>
-                    </div>
-                    <div class="bg-app-main/80 border border-line-hud p-3">
-                        <div class="text-ink-faint text-[10px] tracking-wider">待办合计</div>
-                        <div class="text-[22px] font-bold text-ink mt-1 tabular-nums">
-                            <span id="dashPendingTotal" class="text-warn">—</span>
-                            <span class="text-[10px] text-ink-faint ml-1">条</span>
-                        </div>
-                        <div class="text-[9px] text-ink-faint mt-1 font-mono" id="dashPendingBreakdown">加工费 — · 钢价 — · 冲压件 —</div>
-                    </div>
-                    <div class="bg-app-main/80 border border-line-hud p-3">
-                        <div class="text-ink-faint text-[10px] tracking-wider">加工费待补价</div>
-                        <div class="text-[22px] font-bold text-ink mt-1 tabular-nums">
-                            <span id="dashFeeZero">—</span>
-                            <span class="text-[10px] text-ink-faint ml-1">条</span>
-                        </div>
-                        <div class="text-[9px] text-ink-faint mt-1 font-mono" id="dashFeeAvg">件均 —</div>
-                    </div>
-                    <div class="bg-app-main/80 border border-line-hud p-3">
-                        <div class="text-ink-faint text-[10px] tracking-wider">钢材联动均价</div>
-                        <div class="text-[22px] font-bold text-ink mt-1 tabular-nums">
-                            ¥<span id="dashSteelAvg">—</span>
-                        </div>
-                        <div class="text-[9px] text-ink-faint mt-1 font-mono" id="dashSteelMeta">已审 — · 待审 —</div>
-                    </div>
+                    ${hudKpiCardHtml({
+                        variant: 'focus',
+                        title: '冲压件均单价',
+                        pulse: true,
+                        valueHtml: '¥<span id="dashPartAvg">—</span>',
+                        meta: '已审 — · 待审 —',
+                        metaId: 'dashPartAvgMeta',
+                    })}
+                    ${hudKpiCardHtml({
+                        title: '待办合计',
+                        valueHtml: '<span id="dashPendingTotal" class="text-warn">—</span>',
+                        unit: '条',
+                        metaHtml: '加工费 — · 钢价 — · 冲压件 —',
+                        metaId: 'dashPendingBreakdown',
+                    })}
+                    ${hudKpiCardHtml({
+                        title: '加工费待补价',
+                        valueHtml: '<span id="dashFeeZero">—</span>',
+                        unit: '条',
+                        metaHtml: '件均 —',
+                        metaId: 'dashFeeAvg',
+                    })}
+                    ${hudKpiCardHtml({
+                        title: '钢材联动均价',
+                        valueHtml: '¥<span id="dashSteelAvg">—</span>',
+                        metaHtml: '已审 — · 待审 —',
+                        metaId: 'dashSteelMeta',
+                    })}
                 </div>
             </div>
         </div>

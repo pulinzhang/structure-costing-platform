@@ -2,8 +2,8 @@
  * 采购对象清单 — 生成页（对齐冲压零件价格计算壳 + 焊接拆解历史）
  */
 
-import { paginationBarHtml } from '../../../../ui/page-size.js?v=5';
-import { filterSelect } from '../../../../ui/classes.js?v=8';
+import { paginationBarHtml } from '../../../../ui/page-size.js?v=6';
+import { filterSelect, BTN_ABORT } from '../../../../ui/classes.js?v=11';
 
 import { SECTION_LABELS } from '../labels.js?v=4';
 
@@ -64,7 +64,7 @@ export function procurementObjectGenerateTemplate() {
                         从材料清单树生成采购对象；同一版本再生成带回确认，已审须先反审核
                     </span>
                     <button id="poGenSubmitBtn"
-                            class="h-7 px-4 text-[10px] bg-brand-hover hover:bg-danger text-white font-medium rounded-sm transition-colors disabled:opacity-30 disabled:cursor-not-allowed">
+                            class="${BTN_ABORT}">
                         开始生成
                     </button>
                 </div>
@@ -84,7 +84,7 @@ export function procurementObjectGenerateTemplate() {
                 </div>
                 <div class="h-1.5 w-full bg-app-deep border border-line overflow-hidden mb-2">
                     <div id="poGenProgressBar"
-                         class="h-full bg-brand shadow-[0_0_8px_rgb(var(--brabus-red)/0.5)] transition-all duration-300"
+                         class="h-full bg-brand hud-brand-glow transition-all duration-300"
                          style="width: 0%"></div>
                 </div>
                 <p id="poGenProgressMsg" class="text-[11px] text-ink-muted leading-relaxed mb-0">正在读取材料清单树</p>

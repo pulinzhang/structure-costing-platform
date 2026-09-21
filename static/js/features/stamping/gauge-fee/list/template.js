@@ -3,11 +3,12 @@
  * 布局对齐零件列表：HUD + 胶囊筛选（默认收起）
  */
 
-import { filterSelect, filterInput, HUD_SHELL, DRAWER_SHELL, DRAWER_BACKDROP, HUD_FILTER, FILTER_LABEL, BTN_GHOST, HUD_BAND, OPS_TH, HUD_KPI_FOCUS } from '../../../../ui/classes.js?v=8';
-import { filterBarHtml } from '../../../../ui/filter-bar.js?v=2';
-import { hudTableHtml, hudRowHtml, opsIconButtonHtml } from '../../../../ui/hud-table.js?v=1';
+import { filterSelect, filterInput, HUD_SHELL, DRAWER_SHELL, DRAWER_BACKDROP, HUD_FILTER, FILTER_LABEL, BTN_GHOST, HUD_BAND, OPS_TH, BTN_HUD_SAVE } from '../../../../ui/classes.js?v=11';
+import { filterBarHtml } from '../../../../ui/filter-bar.js?v=3';
+import { hudTableHtml, hudRowHtml, opsIconButtonHtml } from '../../../../ui/hud-table.js?v=2';
+import { hudKpiCardHtml } from '../../../../ui/hud-kpi.js?v=1';
 
-import { moreMenuItemHtml, moreMenuShellHtml } from '../../../../ui/more-menu.js?v=3';
+import { moreMenuItemHtml, moreMenuShellHtml } from '../../../../ui/more-menu.js?v=5';
 import { partShortCodeCellHtml, partNumberNameCellHtml } from '../../../../domain/part-identity.js?v=5';
 
 function canOp(code) {
@@ -26,30 +27,20 @@ export function gaugeFeeListTemplate() {
                 <div class="${HUD_BAND}">
                     <div class="flex items-start justify-between gap-4 mb-3">
                         <div class="grid grid-cols-2 gap-3 font-mono flex-1 min-w-0">
-                            <div class="hud-kpi-card-glow ${HUD_KPI_FOCUS}">
-                                <div class="absolute top-0 left-0 right-0 h-[2px] bg-gradient-to-r from-transparent via-brand-hud to-transparent hud-kpi-line-glow"></div>
-                                <div class="flex justify-between items-start">
-                                    <span class="text-brand-hud text-[10px] font-bold tracking-widest">检具费合计</span>
-                                    <span class="w-2 h-2 rounded-full bg-brand-hud animate-pulse hud-kpi-dot-glow"></span>
-                                </div>
-                                <div class="text-[26px] font-black text-brand-hud font-mono mt-1 tracking-tight tabular-nums leading-none hud-kpi-num-glow">
-                                    <span id="gflHudTotalFee">—</span>
-                                    <span class="text-[10px] text-brand-hud/70 ml-1 font-bold">万</span>
-                                </div>
-                                <div class="text-[9px] font-mono text-brand-hud/60 mt-1">当前筛选</div>
-                            </div>
-                            <div class="bg-app-main/80 border border-line-hud p-3 backdrop-blur-sm">
-                                <div class="text-ink-faint text-[10px] tracking-wider">档案</div>
-                                <div class="text-[18px] font-bold text-ink mt-1 tabular-nums">
-                                    <span id="gflHudTotal">—</span>
-                                    <span class="text-[10px] text-ink-faint ml-1">条</span>
-                                </div>
-                                <div class="text-[9px] font-mono text-ink-dim mt-1">
-                                    生效 <span id="gflHudEffectiveCount">—</span>
-                                    <span class="text-ink-faint mx-1">/</span>
-                                    失效 <span id="gflHudInvalidCount">—</span>
-                                </div>
-                            </div>
+                            ${hudKpiCardHtml({
+                                variant: 'focus',
+                                title: '检具费合计',
+                                pulse: true,
+                                valueHtml: '<span id="gflHudTotalFee">—</span>',
+                                unit: '万',
+                                meta: '当前筛选',
+                            })}
+                            ${hudKpiCardHtml({
+                                title: '档案',
+                                valueHtml: '<span id="gflHudTotal">—</span>',
+                                unit: '条',
+                                metaHtml: '生效 <span id="gflHudEffectiveCount">—</span><span class="text-ink-faint mx-1">/</span>失效 <span id="gflHudInvalidCount">—</span>',
+                            })}
                         </div>
                         <div class="flex items-center gap-1.5 shrink-0">
                             ${canDelete ? moreMenuShellHtml({
@@ -138,7 +129,7 @@ export function gaugeFeeListTemplate() {
             <div class="px-5 py-3.5 flex items-center justify-between border-b border-line bg-app-surface shrink-0">
                 <div class="flex items-center gap-2">
                     <span class="w-1 h-3.5 bg-brand-hud"></span>
-                    <h5 class="text-xs font-semibold text-white tracking-wider">编辑检具费</h5>
+                    <h5 class="text-xs font-semibold text-ink tracking-wider">编辑检具费</h5>
                 </div>
                 <button type="button" id="gflCloseEdit" class="text-ink-dim hover:text-ink w-6 h-6 flex items-center justify-center">✕</button>
             </div>
@@ -149,19 +140,19 @@ export function gaugeFeeListTemplate() {
                     <div>
                         <label class="text-[10px] font-semibold text-ink-dim tracking-wider mb-1 block">检具费（万元） <span class="text-brand-hud">*</span></label>
                         <input type="text" id="gflEditGaugeFee" required inputmode="decimal"
-                               class="w-full h-8 px-3 text-xs font-mono bg-app-hud border border-line text-white placeholder:text-ink-dim focus:outline-none focus:border-brand-active"
+                               class="w-full h-8 px-3 text-xs font-mono bg-app-hud border border-line text-ink placeholder:text-ink-dim focus:outline-none focus:border-brand-active"
                                placeholder="如 0.8" autocomplete="off">
                     </div>
                     <div>
                         <label class="text-[10px] font-semibold text-ink-dim tracking-wider mb-1 block">项目分摊数量（万台） <span class="text-brand-hud">*</span></label>
                         <input type="text" id="gflEditAllocQty" required inputmode="numeric"
-                               class="w-full h-8 px-3 text-xs font-mono bg-app-hud border border-line text-white placeholder:text-ink-dim focus:outline-none focus:border-brand-active"
+                               class="w-full h-8 px-3 text-xs font-mono bg-app-hud border border-line text-ink placeholder:text-ink-dim focus:outline-none focus:border-brand-active"
                                placeholder="如 10" autocomplete="off">
                     </div>
                     <div>
                         <label class="text-[10px] font-semibold text-ink-dim tracking-wider mb-1 block">状态 <span class="text-brand-hud">*</span></label>
                         <select id="gflEditStatus" required
-                                class="w-full h-8 px-3 text-xs bg-app-hud border border-line text-ink-muted appearance-none cursor-pointer focus:outline-none focus:border-brand-active">
+                                class="w-full ${HUD_FILTER}">
                             <option value="effective">生效</option>
                             <option value="invalid">失效</option>
                         </select>
@@ -173,7 +164,7 @@ export function gaugeFeeListTemplate() {
                 <button type="button" id="gflCancelEdit"
                         class="px-4 py-1.5 text-xs text-ink-muted hover:text-ink border border-line hover:bg-app-elevated transition-all">取消</button>
                 <button type="button" id="gflSubmitEdit"
-                        class="bg-brand-hud hover:bg-brand text-white px-5 py-1.5 text-xs font-semibold transition-all">保存</button>
+                        class="${BTN_HUD_SAVE} transition-all">保存</button>
             </div>
         </div>
 
@@ -181,7 +172,7 @@ export function gaugeFeeListTemplate() {
         <div class="${DRAWER_SHELL} w-[380px] transform translate-x-full transition-transform duration-300 ease-in-out"
              id="gflDeleteDrawer" style="display:none;">
             <div class="px-5 py-3.5 border-b border-line bg-app-surface">
-                <h5 class="text-xs font-semibold text-white" id="gflDeleteTitle">确认删除</h5>
+                <h5 class="text-xs font-semibold text-ink" id="gflDeleteTitle">确认删除</h5>
             </div>
             <div class="p-5 text-[12px] text-ink-muted">
                 <input type="hidden" id="gflDeleteId" value="">

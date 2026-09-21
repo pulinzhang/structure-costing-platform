@@ -7,8 +7,8 @@ import {
     paintPagination,
     DEFAULT_PAGE_SIZE,
     normalizePageSize,
-} from '../../../../ui/page-size.js?v=5';
-import { bindMoreMenu } from '../../../../ui/more-menu.js?v=3';
+} from '../../../../ui/page-size.js?v=6';
+import { bindMoreMenu } from '../../../../ui/more-menu.js?v=5';
 import {
     renderAliasItems,
     renderSupplierRows,
@@ -89,7 +89,7 @@ function renderStatusCapsules() {
         const value = btn.getAttribute('data-enabled-filter') ?? '';
         const selected = value === listState.isEnabled;
         btn.className = selected
-            ? 'supplier-status-capsule px-2 py-0.5 text-[10px] font-mono rounded-md border border-brand-hud/50 bg-brand-hud/10 text-white'
+            ? 'supplier-status-capsule px-2 py-0.5 text-[10px] font-mono rounded-md border border-brand-hud/50 bg-brand-hud/10 text-ink'
             : 'supplier-status-capsule px-2 py-0.5 text-[10px] font-mono rounded-md border border-line-hud text-ink-muted hover:text-ink';
     });
 }

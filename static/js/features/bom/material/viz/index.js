@@ -6,7 +6,7 @@
  */
 
 import { can } from '../../../../core/permissions.js?v=10';
-import { HUD_LED } from '../../../../ui/classes.js?v=8';
+import { HUD_LED } from '../../../../ui/classes.js?v=11';
 import { bomVizTemplate } from './template.js?v=9';
 import { fmtPeriodRange, hasClosedPeriod } from '../../../common/period-ui.js?v=5';
 
@@ -755,7 +755,7 @@ const BomVizPage = {
 ">
                     ${imgBlock}
                     <p class="${shortSize} font-mono font-semibold tabular-nums tracking-[0.06em] text-ink leading-tight text-center break-all px-0.5
-                               drop-shadow-[0_0_12px_rgba(255,255,255,0.06)]">${esc(p.partNoLabel)}</p>
+                               drop-shadow-[0_0_12px_rgb(var(--text-main)/0.06)]">${esc(p.partNoLabel)}</p>
                     <p class="${qtySize} font-mono font-semibold tabular-nums tracking-wide mt-1.5 leading-none"
                        style="color:${lightenHex(color, 0.45)}">${esc(p.qtyLabel)}</p>
                     <p class="text-[10px] text-ink-faint mt-1.5 leading-tight text-center truncate w-full">${esc(p.displayName)}</p>
@@ -864,7 +864,7 @@ const BomVizPage = {
                 el.style.opacity = '1';
                 el.style.filter =
                     id === activeId
-                        ? 'drop-shadow(0 0 10px rgba(255,255,255,0.12))'
+                        ? 'drop-shadow(0 0 10px rgb(var(--text-main) / 0.12))'
                         : 'none';
             } else {
                 el.style.opacity = '0.28';

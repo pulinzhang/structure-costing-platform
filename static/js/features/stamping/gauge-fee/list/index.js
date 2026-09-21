@@ -7,15 +7,15 @@ import {
     renderTableRows,
     updateGaugeFeeHud,
     updateGaugeFeeHudScope,
-} from './template.js?v=29';
-import { bindMoreMenu } from '../../../../ui/more-menu.js?v=3';
-import { bindFilterBar } from '../../../../ui/filter-bar.js?v=2';
+} from './template.js?v=31';
+import { bindMoreMenu } from '../../../../ui/more-menu.js?v=5';
+import { bindFilterBar } from '../../../../ui/filter-bar.js?v=3';
 import {
     DEFAULT_PAGE_SIZE,
     bindPagination,
     paintPagination,
     normalizePageSize,
-} from '../../../../ui/page-size.js?v=5';
+} from '../../../../ui/page-size.js?v=6';
 import { setSearchBusy } from '../../../../ui/search-busy.js?v=3';
 
 const API_BASE = '/api/stamping/gauge-fees';
@@ -194,7 +194,7 @@ function openRowDeleteDrawer(recordId, scope) {
     document.getElementById('gflDeleteId').value = String(recordId);
     document.getElementById('gflDeleteTitle').textContent = '删除检具费';
     document.getElementById('gflDeleteHint').innerHTML =
-        `确定删除 <span class="font-mono text-white">${esc(scope)}</span> 这一条？`;
+        `确定删除 <span class="font-mono text-ink">${esc(scope)}</span> 这一条？`;
     openDrawer('gflDeleteDrawer', 'gflDeleteBackdrop');
 }
 
@@ -213,7 +213,7 @@ function openScopeDeleteDrawer() {
     document.getElementById('gflDeleteId').value = '';
     document.getElementById('gflDeleteTitle').textContent = '批量删除';
     document.getElementById('gflDeleteHint').innerHTML =
-        `将删除 <span class="font-mono text-white">${esc(`${location} / ${vehicle}`)}</span> 下全部检具费档案。`;
+        `将删除 <span class="font-mono text-ink">${esc(`${location} / ${vehicle}`)}</span> 下全部检具费档案。`;
     openDrawer('gflDeleteDrawer', 'gflDeleteBackdrop');
 }
 

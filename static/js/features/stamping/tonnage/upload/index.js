@@ -3,7 +3,7 @@
  * 同步导入：基地 + 年度必选，仅 .xlsx
  */
 
-import { tonnageUploadTemplate } from './template.js?v=12';
+import { tonnageUploadTemplate } from './template.js?v=13';
 import { can } from '../../../../core/permissions.js?v=10';
 import { bindSyncUploadProgress } from '../../../../ui/sync-upload-progress.js?v=3';
 

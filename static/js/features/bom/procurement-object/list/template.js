@@ -2,11 +2,12 @@
  * 采购对象清单列表 — HUD 密表（对齐冲压零件价格一览）
  */
 
-import { filterSelect, filterInput, HUD_SHELL, HUD_BAND, OPS_TH, HUD_KPI_FOCUS, HUD_KPI_AUX, BTN_GHOST } from '../../../../ui/classes.js?v=8';
-import { filterBarHtml } from '../../../../ui/filter-bar.js?v=2';
-import { hudTableHtml } from '../../../../ui/hud-table.js?v=1';
+import { filterSelect, filterInput, HUD_SHELL, HUD_BAND, OPS_TH, BTN_GHOST, DRAWER_BACKDROP, BTN_SOLID_DANGER, HUD_FILTER } from '../../../../ui/classes.js?v=11';
+import { filterBarHtml } from '../../../../ui/filter-bar.js?v=3';
+import { hudTableHtml } from '../../../../ui/hud-table.js?v=2';
+import { hudKpiCardHtml } from '../../../../ui/hud-kpi.js?v=1';
 
-import { moreMenuItemHtml, moreMenuShellHtml } from '../../../../ui/more-menu.js?v=3';
+import { moreMenuItemHtml, moreMenuShellHtml } from '../../../../ui/more-menu.js?v=5';
 import { AUDIT_LABELS, CONFIRM_LABELS, KIND_LABELS, SECTION_LABELS } from '../labels.js?v=4';
 import { partShortCodeCellHtml, partNumberNameCellHtml } from '../../../../domain/part-identity.js?v=5';
 import { fmtPeriodRange, hasClosedPeriod } from '../../../common/period-ui.js?v=5';
@@ -19,42 +20,29 @@ export function procurementObjectListTemplate() {
                 <div class="${HUD_BAND}">
                     <div class="flex items-start justify-between gap-4 mb-3">
                         <div class="grid grid-cols-2 lg:grid-cols-4 gap-3 font-mono flex-1 min-w-0">
-                            <div class="hud-kpi-card-glow ${HUD_KPI_FOCUS}">
-                                <div class="absolute top-0 left-0 right-0 h-[2px] bg-gradient-to-r from-transparent via-brand-hud to-transparent hud-kpi-line-glow"></div>
-                                <div class="flex justify-between items-start">
-                                    <span class="text-brand-hud text-[10px] font-bold tracking-widest">${SECTION_LABELS.object}</span>
-                                    <span class="w-2 h-2 rounded-full bg-brand-hud animate-pulse hud-kpi-dot-glow"></span>
-                                </div>
-                                <div class="text-[26px] font-black text-brand-hud font-mono mt-1 tracking-tight tabular-nums leading-none hud-kpi-num-glow">
-                                    <span id="poHudObject">—</span>
-                                    <span class="text-[10px] text-brand-hud/50 ml-1 font-semibold">条</span>
-                                </div>
-                            </div>
-                            <div class="${HUD_KPI_AUX} backdrop-blur-sm">
-                                <div class="text-ink-faint text-[10px] tracking-wider">${KIND_LABELS.l0_degenerate}</div>
-                                <div class="text-[22px] font-black text-ink mt-1 tracking-tight tabular-nums leading-none">
-                                    <span id="poHudDegenerate">—</span>
-                                    <span class="text-[10px] text-ink-faint ml-1 font-bold">件</span>
-                                </div>
-                            </div>
-                            <div class="${HUD_KPI_AUX} backdrop-blur-sm">
-                                <div class="text-ink-faint text-[10px] tracking-wider">${SECTION_LABELS.other_leaf}</div>
-                                <div class="text-[22px] font-black text-ink mt-1 tracking-tight tabular-nums leading-none">
-                                    <span id="poHudOther">—</span>
-                                    <span class="text-[10px] text-ink-faint ml-1 font-bold">条</span>
-                                </div>
-                            </div>
-                            <div class="${HUD_KPI_AUX} backdrop-blur-sm">
-                                <div class="text-ink-faint text-[10px] tracking-wider">审核进度</div>
-                                <div class="text-[22px] font-black text-ink mt-1 tracking-tight tabular-nums leading-none">
-                                    <span id="poHudPending">—</span>
-                                    <span class="text-[10px] text-ink-faint ml-1 font-bold">条待审</span>
-                                </div>
-                                <div class="text-[9px] font-mono text-ink-dim mt-2 flex items-center justify-between gap-2">
-                                    <span>已审</span>
-                                    <span class="text-ink-muted tabular-nums"><span id="poHudApproved">—</span> 条</span>
-                                </div>
-                            </div>
+                            ${hudKpiCardHtml({
+                                variant: 'focus',
+                                title: SECTION_LABELS.object,
+                                pulse: true,
+                                valueHtml: '<span id="poHudObject">—</span>',
+                                unit: '条',
+                            })}
+                            ${hudKpiCardHtml({
+                                title: KIND_LABELS.l0_degenerate,
+                                valueHtml: '<span id="poHudDegenerate">—</span>',
+                                unit: '件',
+                            })}
+                            ${hudKpiCardHtml({
+                                title: SECTION_LABELS.other_leaf,
+                                valueHtml: '<span id="poHudOther">—</span>',
+                                unit: '条',
+                            })}
+                            ${hudKpiCardHtml({
+                                title: '审核进度',
+                                valueHtml: '<span id="poHudPending">—</span>',
+                                unit: '条待审',
+                                footer: [{ label: '已审', valueHtml: '<span id="poHudApproved">—</span> 条' }],
+                            })}
                         </div>
                         <div class="flex items-center gap-1.5 shrink-0">
                             ${moreMenuShellHtml({
@@ -160,10 +148,10 @@ export function procurementObjectListTemplate() {
 
 function auditDrawerHtml() {
     return `
-        <div id="poBatchAuditDrawerBackdrop" class="hidden fixed inset-0 bg-overlay/60 z-[80]"></div>
+        <div id="poBatchAuditDrawerBackdrop" class="hidden ${DRAWER_BACKDROP}"></div>
         <div id="poBatchAuditDrawer" class="hidden fixed top-0 right-0 h-full w-[420px] max-w-full bg-app-main border-l border-line-hud z-[85] flex flex-col">
             <div class="px-6 py-4 border-b border-app-elevated flex items-center justify-between">
-                <h3 id="poBatchAuditDrawerTitle" class="text-sm font-semibold text-white">批量审核</h3>
+                <h3 id="poBatchAuditDrawerTitle" class="text-sm font-semibold text-ink">批量审核</h3>
                 <button type="button" id="poBatchAuditCloseBtn" class="text-ink-muted hover:text-ink">${window.svgIcon('x-lg', 'w-4 h-4')}</button>
             </div>
             <div class="flex-1 min-h-0 overflow-y-auto p-6 space-y-4">
@@ -186,10 +174,10 @@ function auditDrawerHtml() {
                 <button type="button" id="poBatchAuditConfirmBtn" class="inline-flex items-center gap-1.5 bg-brand-hud text-white px-4 py-2 text-[11px] font-semibold rounded hover:bg-brand-hover">确认提交</button>
             </div>
         </div>
-        <div id="poBatchDeleteDrawerBackdrop" class="hidden fixed inset-0 bg-overlay/60 z-[80]"></div>
+        <div id="poBatchDeleteDrawerBackdrop" class="hidden ${DRAWER_BACKDROP}"></div>
         <div id="poBatchDeleteDrawer" class="hidden fixed top-0 right-0 h-full w-[420px] max-w-full bg-app-main border-l border-line-hud z-[85] flex flex-col">
             <div class="px-6 py-4 border-b border-app-elevated flex items-center justify-between">
-                <h3 class="text-sm font-semibold text-white">批量删除</h3>
+                <h3 class="text-sm font-semibold text-ink">批量删除</h3>
                 <button type="button" id="poBatchDeleteCloseBtn" class="text-ink-muted hover:text-ink">${window.svgIcon('x-lg', 'w-4 h-4')}</button>
             </div>
             <div class="flex-1 p-6 space-y-4">
@@ -198,7 +186,7 @@ function auditDrawerHtml() {
             </div>
             <div class="px-6 py-4 border-t border-app-elevated flex items-center justify-end gap-2">
                 <button type="button" id="poBatchDeleteCancelBtn" class="inline-flex items-center gap-1.5 bg-transparent text-ink-muted border border-line px-4 py-2 text-[11px] font-medium rounded">取消</button>
-                <button type="button" id="poBatchDeleteConfirmBtn" class="inline-flex items-center gap-1.5 bg-danger text-white px-4 py-2 text-[11px] font-semibold rounded">确认删除</button>
+                <button type="button" id="poBatchDeleteConfirmBtn" class="${BTN_SOLID_DANGER}">确认删除</button>
             </div>
         </div>
     `;
@@ -206,10 +194,10 @@ function auditDrawerHtml() {
 
 function confirmDrawerHtml() {
     return `
-        <div id="poConfirmDrawerBackdrop" class="hidden fixed inset-0 bg-overlay/60 z-[80]"></div>
+        <div id="poConfirmDrawerBackdrop" class="hidden ${DRAWER_BACKDROP}"></div>
         <div id="poConfirmDrawer" class="hidden fixed top-0 right-0 h-full w-[420px] max-w-full bg-app-main border-l border-line-hud z-[85] flex flex-col">
             <div class="px-6 py-4 border-b border-app-elevated flex items-center justify-between">
-                <h3 class="text-sm font-semibold text-white">确认采购对象</h3>
+                <h3 class="text-sm font-semibold text-ink">确认采购对象</h3>
                 <button type="button" id="poConfirmCloseBtn" class="text-ink-muted hover:text-ink">${window.svgIcon('x-lg', 'w-4 h-4')}</button>
             </div>
             <div class="flex-1 p-6 space-y-4">
@@ -217,7 +205,7 @@ function confirmDrawerHtml() {
                 <div id="poConfirmPart" class="text-[12px] text-ink font-mono"></div>
                 <label class="space-y-1 block">
                     <span class="text-[10px] text-ink-dim">确认状态</span>
-                    <select id="poConfirmStatus" class="w-full h-9 px-3 text-xs bg-app-deep border border-line text-white focus:outline-none focus:border-brand-hud">
+                    <select id="poConfirmStatus" class="w-full ${HUD_FILTER}">
                         <option value="pending">待定</option>
                         <option value="outsourced">外发</option>
                         <option value="in_house">自制</option>
@@ -229,7 +217,7 @@ function confirmDrawerHtml() {
                     <div class="relative">
                         <input id="poConfirmSupplierSearch" type="text" autocomplete="off"
                                placeholder="输入缩写、工商名称或 ERP 匹配"
-                               class="w-full h-9 px-3 text-xs bg-app-deep border border-line text-white placeholder:text-ink-dim focus:outline-none focus:border-brand-hud disabled:text-ink-dim">
+                               class="w-full h-9 px-3 text-xs bg-app-deep border border-line text-ink placeholder:text-ink-dim focus:outline-none focus:border-brand-hud disabled:text-ink-dim">
                         <div id="poConfirmSupplierMenu"
                              class="hidden absolute left-0 right-0 top-full mt-1 max-h-48 overflow-y-auto bg-app-main border border-line z-[90]"></div>
                     </div>
@@ -237,7 +225,7 @@ function confirmDrawerHtml() {
                 </label>
                 <label class="space-y-1 block">
                     <span class="text-[10px] text-ink-dim">确认备注</span>
-                    <textarea id="poConfirmRemark" rows="3" class="w-full px-3 py-2 text-xs bg-app-deep border border-line text-white focus:outline-none focus:border-brand-hud rounded resize-none"></textarea>
+                    <textarea id="poConfirmRemark" rows="3" class="w-full px-3 py-2 text-xs bg-app-deep border border-line text-ink focus:outline-none focus:border-brand-hud rounded resize-none"></textarea>
                 </label>
             </div>
             <div class="px-6 py-4 border-t border-app-elevated flex justify-end gap-2">
@@ -250,10 +238,10 @@ function confirmDrawerHtml() {
 
 function detailDrawerHtml() {
     return `
-        <div id="poDetailDrawerBackdrop" class="hidden fixed inset-0 bg-overlay/60 z-[80]"></div>
+        <div id="poDetailDrawerBackdrop" class="hidden ${DRAWER_BACKDROP}"></div>
         <div id="poDetailDrawer" class="hidden fixed top-0 right-0 h-full w-[480px] max-w-full bg-app-main border-l border-line-hud z-[85] flex flex-col">
             <div class="px-6 py-4 border-b border-app-elevated flex items-center justify-between">
-                <h3 class="text-sm font-semibold text-white">采购对象详情</h3>
+                <h3 class="text-sm font-semibold text-ink">采购对象详情</h3>
                 <button type="button" id="poDetailCloseBtn" class="text-ink-muted hover:text-ink">${window.svgIcon('x-lg', 'w-4 h-4')}</button>
             </div>
             <div id="poDetailBody" class="flex-1 overflow-y-auto p-6 text-[12px] text-ink-muted space-y-2 font-mono"></div>

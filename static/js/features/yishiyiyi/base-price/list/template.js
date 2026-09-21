@@ -3,13 +3,13 @@
  * 基准价格列表页面
  */
 
-import { filterSelect, filterInputWithDatalist, HUD_LED, BTN_GHOST, BTN_FILTER_SEARCH } from '../../../../ui/classes.js?v=8';
+import { filterSelect, filterInputWithDatalist, HUD_LED, BTN_GHOST, BTN_FILTER_SEARCH, DRAWER_BACKDROP } from '../../../../ui/classes.js?v=11';
 import {
     DEFAULT_PREVIEW_PAGE_SIZE,
     PREVIEW_PAGE_SIZE_OPTIONS,
     paginationBarHtml,
-} from '../../../../ui/page-size.js?v=5';
-import { moreMenuItemHtml, moreMenuShellHtml } from '../../../../ui/more-menu.js?v=3';
+} from '../../../../ui/page-size.js?v=6';
+import { moreMenuItemHtml, moreMenuShellHtml } from '../../../../ui/more-menu.js?v=5';
 
 export function basePriceDownloadTemplate() {
     return `
@@ -121,7 +121,7 @@ export function basePriceDownloadTemplate() {
         </div>
 
         <!-- 加载遮罩 -->
-        <div id="basePriceDownloadLoading" class="hidden fixed inset-0 z-[80] bg-overlay/60 backdrop-blur-sm flex items-center justify-center">
+        <div id="basePriceDownloadLoading" class="hidden ${DRAWER_BACKDROP} flex items-center justify-center">
             <div class="bg-app-surface border border-line rounded p-6 flex flex-col items-center gap-3">
                 <div class="w-6 h-6 border-2 border-line border-brand rounded-full animate-spin"></div>
                 <span class="text-[11px] text-ink-muted">正在生成 Excel...</span>

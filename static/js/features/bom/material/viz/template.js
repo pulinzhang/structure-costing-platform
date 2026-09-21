@@ -1,7 +1,8 @@
-import { DRAWER_SHELL, DRAWER_CLOSE, HUD_LED } from '../../../../ui/classes.js?v=8';
 /**
  * 多层级 BOM — 产品结构可视化
  */
+
+import { DRAWER_SHELL, DRAWER_CLOSE, HUD_LED, DRAWER_BACKDROP } from '../../../../ui/classes.js?v=11';
 
 export function bomVizTemplate() {
     return `
@@ -80,7 +81,7 @@ export function bomVizTemplate() {
                 <div id="bomVizKnowledgeBody" class="flex-1 overflow-y-auto overscroll-contain p-5 space-y-5"></div>
             </aside>
             <div id="bomVizKnowledgeBackdrop"
-                 class="fixed inset-0 z-[80] bg-black/50 backdrop-blur-[2px] opacity-0 pointer-events-none transition-opacity duration-300"></div>
+                 class="${DRAWER_BACKDROP} opacity-0 pointer-events-none transition-opacity duration-300"></div>
         </div>
     `;
 }

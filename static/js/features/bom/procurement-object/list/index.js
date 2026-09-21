@@ -5,14 +5,14 @@
 import {
     procurementObjectListTemplate,
     renderProcurementObjectRows,
-} from './template.js?v=45';
+} from './template.js?v=47';
 import {
     DEFAULT_PAGE_SIZE,
     bindPagination,
     paintPagination,
-} from '../../../../ui/page-size.js?v=5';
-import { bindMoreMenu } from '../../../../ui/more-menu.js?v=3';
-import { bindFilterBar } from '../../../../ui/filter-bar.js?v=2';
+} from '../../../../ui/page-size.js?v=6';
+import { bindMoreMenu } from '../../../../ui/more-menu.js?v=5';
+import { bindFilterBar } from '../../../../ui/filter-bar.js?v=3';
 import { setSearchBusy } from '../../../../ui/search-busy.js?v=3';
 import { AUDIT_LABELS, CONFIRM_LABELS, KIND_LABELS, SECTION_LABELS } from '../labels.js?v=4';
 import { fmtPeriodRange } from '../../../common/period-ui.js?v=5';
@@ -298,7 +298,7 @@ function renderSupplierMenu() {
     if (supplierPicker.highlightIndex >= rows.length) supplierPicker.highlightIndex = rows.length - 1;
     menu.innerHTML = rows.map((item, index) => {
         const active = index === supplierPicker.highlightIndex
-            ? 'bg-brand-hud/15 text-white'
+            ? 'bg-brand-hud/15 text-ink'
             : 'text-ink-muted hover:bg-app-rowhover';
         const text = item.isClear ? '未指定' : supplierChoiceLabel(item);
         return `<button type="button" data-supplier-index="${index}"

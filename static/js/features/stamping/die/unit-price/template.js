@@ -2,9 +2,9 @@
  * 冲压模具单价档案 — HUD 密表 + 抽屉增改
  */
 
-import { HUD_SHELL, DRAWER_BACKDROP, DRAWER_SHELL, DRAWER_CLOSE, HUD_BAND, OPS_TH, filterSelect, BTN_GHOST, FILTER_LABEL, HUD_FILTER } from '../../../../ui/classes.js?v=8';
-import { filterBarHtml } from '../../../../ui/filter-bar.js?v=2';
-import { hudTableHtml, hudRowHtml, opsIconButtonHtml } from '../../../../ui/hud-table.js?v=1';
+import { HUD_SHELL, DRAWER_BACKDROP, DRAWER_SHELL, HUD_BAND, OPS_TH, filterSelect, BTN_GHOST, FILTER_LABEL, HUD_FILTER, BTN_SOLID_DANGER, BTN_HUD_SAVE } from '../../../../ui/classes.js?v=11';
+import { filterBarHtml } from '../../../../ui/filter-bar.js?v=3';
+import { hudTableHtml, hudRowHtml, opsIconButtonHtml } from '../../../../ui/hud-table.js?v=2';
 
 
 function canOp(code) {
@@ -100,7 +100,7 @@ export function dieUnitPriceTemplate() {
             <div class="px-5 py-3.5 flex items-center justify-between border-b border-line bg-app-surface shrink-0">
                 <div class="flex items-center gap-2">
                     <span class="w-1 h-3.5 bg-brand-hud"></span>
-                    <h5 class="text-xs font-semibold text-white tracking-wider" id="dupEditTitle">新增模具单价</h5>
+                    <h5 class="text-xs font-semibold text-ink tracking-wider" id="dupEditTitle">新增模具单价</h5>
                 </div>
                 <button type="button" id="dupCloseEdit" class="text-ink-dim hover:text-ink w-6 h-6 flex items-center justify-center">✕</button>
             </div>
@@ -110,7 +110,7 @@ export function dieUnitPriceTemplate() {
                     <div>
                         <label class="text-[10px] font-semibold text-ink-dim tracking-wider mb-1 block">基地 <span class="text-brand-hud">*</span></label>
                         <select id="dupEditLocation" required
-                                class="w-full h-8 px-3 text-xs bg-app-hud border border-line text-ink-muted appearance-none cursor-pointer focus:outline-none focus:border-brand-active">
+                                class="w-full ${HUD_FILTER}">
                             <option value="">请选择</option>
                         </select>
                     </div>
@@ -125,25 +125,25 @@ export function dieUnitPriceTemplate() {
                     <div>
                         <label class="text-[10px] font-semibold text-ink-dim tracking-wider mb-1 block">钢板模单价（万元/吨） <span class="text-brand-hud">*</span></label>
                         <input type="text" id="dupEditPlatePrice" required inputmode="decimal"
-                               class="w-full h-8 px-3 text-xs font-mono bg-app-hud border border-line text-white placeholder:text-ink-dim focus:outline-none focus:border-brand-active"
+                               class="w-full h-8 px-3 text-xs font-mono bg-app-hud border border-line text-ink placeholder:text-ink-dim focus:outline-none focus:border-brand-active"
                                placeholder="如 3.36" autocomplete="off">
                     </div>
                     <div>
                         <label class="text-[10px] font-semibold text-ink-dim tracking-wider mb-1 block">级进模单价（万元/吨） <span class="text-brand-hud">*</span></label>
                         <input type="text" id="dupEditProgressivePrice" required inputmode="decimal"
-                               class="w-full h-8 px-3 text-xs font-mono bg-app-hud border border-line text-white placeholder:text-ink-dim focus:outline-none focus:border-brand-active"
+                               class="w-full h-8 px-3 text-xs font-mono bg-app-hud border border-line text-ink placeholder:text-ink-dim focus:outline-none focus:border-brand-active"
                                placeholder="如 5.15" autocomplete="off">
                     </div>
                     <div>
                         <label class="text-[10px] font-semibold text-ink-dim tracking-wider mb-1 block">项目分摊数量（万台） <span class="text-brand-hud">*</span></label>
                         <input type="text" id="dupEditAllocQty" required inputmode="numeric"
-                               class="w-full h-8 px-3 text-xs font-mono bg-app-hud border border-line text-white placeholder:text-ink-dim focus:outline-none focus:border-brand-active"
+                               class="w-full h-8 px-3 text-xs font-mono bg-app-hud border border-line text-ink placeholder:text-ink-dim focus:outline-none focus:border-brand-active"
                                placeholder="如 10" value="10" autocomplete="off">
                     </div>
                     <div>
                         <label class="text-[10px] font-semibold text-ink-dim tracking-wider mb-1 block">状态 <span class="text-brand-hud">*</span></label>
                         <select id="dupEditStatus" required
-                                class="w-full h-8 px-3 text-xs bg-app-hud border border-line text-ink-muted appearance-none cursor-pointer focus:outline-none focus:border-brand-active">
+                                class="w-full ${HUD_FILTER}">
                             <option value="effective">生效</option>
                             <option value="invalid">失效</option>
                         </select>
@@ -154,7 +154,7 @@ export function dieUnitPriceTemplate() {
                 <button type="button" id="dupCancelEdit"
                         class="px-4 py-1.5 text-xs text-ink-muted hover:text-ink border border-line hover:bg-app-elevated transition-all">取消</button>
                 <button type="button" id="dupSubmitEdit"
-                        class="bg-brand-hud hover:bg-brand text-white px-5 py-1.5 text-xs font-semibold transition-all">保存</button>
+                        class="${BTN_HUD_SAVE} transition-all">保存</button>
             </div>
         </div>
 
@@ -170,14 +170,14 @@ export function dieUnitPriceTemplate() {
             </div>
             <div class="flex-1 p-6">
                 <input type="hidden" id="dupDeleteId" value="">
-                <p class="text-[12px] text-ink-muted mb-2">确定删除 <span id="dupDeleteScope" class="font-mono text-white"></span> 的模具单价？</p>
+                <p class="text-[12px] text-ink-muted mb-2">确定删除 <span id="dupDeleteScope" class="font-mono text-ink"></span> 的模具单价？</p>
                 <p class="text-[11px] text-ink-dim">只删档案，不影响模具布点。</p>
             </div>
             <div class="px-6 py-4 border-t border-app-elevated flex items-center justify-end gap-2 shrink-0">
                 <button type="button" id="dupCancelDelete"
                         class="inline-flex items-center bg-transparent text-ink-muted border border-line px-4 py-2 text-[11px] font-medium rounded hover:text-ink">取消</button>
                 <button type="button" id="dupConfirmDelete"
-                        class="inline-flex items-center bg-danger text-white px-4 py-2 text-[11px] font-semibold rounded hover:bg-brand-hover">删除</button>
+                        class="${BTN_SOLID_DANGER}">删除</button>
             </div>
         </div>
     `;

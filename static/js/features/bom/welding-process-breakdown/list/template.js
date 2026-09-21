@@ -2,11 +2,12 @@
  * BOM 焊接工艺拆解 — 列表模板（HUD 密表，可编辑）
  */
 
-import { filterSelect, filterInput, HUD_SHELL, DRAWER_CLOSE, DRAWER_SHELL, DRAWER_BACKDROP, HUD_BAND, OPS_TH, BTN_GHOST, HUD_LED } from '../../../../ui/classes.js?v=8';
-import { filterBarHtml } from '../../../../ui/filter-bar.js?v=2';
-import { hudTableHtml, hudRowHtml, opsIconButtonHtml } from '../../../../ui/hud-table.js?v=1';
+import { filterSelect, filterInput, HUD_SHELL, DRAWER_CLOSE, DRAWER_SHELL, DRAWER_BACKDROP, HUD_BAND, OPS_TH, BTN_GHOST, HUD_LED, BTN_SOLID, HUD_FILTER } from '../../../../ui/classes.js?v=11';
+import { filterBarHtml } from '../../../../ui/filter-bar.js?v=3';
+import { hudTableHtml, hudRowHtml, opsIconButtonHtml } from '../../../../ui/hud-table.js?v=2';
+import { hudKpiCardHtml } from '../../../../ui/hud-kpi.js?v=1';
 
-import { moreMenuItemHtml, moreMenuShellHtml } from '../../../../ui/more-menu.js?v=3';
+import { moreMenuItemHtml, moreMenuShellHtml } from '../../../../ui/more-menu.js?v=5';
 import {
     partShortCodeCellHtml,
     partNumberNameCellHtml,
@@ -58,11 +59,19 @@ export function weldingProcessBreakdownListTemplate() {
                 <div class="${HUD_BAND}">
                     <div class="flex items-start justify-between gap-4 mb-3">
                         <div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3 font-mono flex-1 min-w-0">
-                            ${hudCard('wpbHudTotal', '主表', '条')}
-                            ${hudCard('wpbHudL0', 'L0 总成', '条')}
-                            ${hudCard('wpbHudPending', '待审', '条')}
-                            ${hudCard('wpbHudApproved', '已审', '条')}
-                            ${hudCard('wpbHudZeroProcess', 'L0 · 工艺数=0', '条', true, 'filter-zero-process', 'wpbHudZeroProcessCard')}
+                            ${hudKpiCardHtml({ title: '主表', valueHtml: '<span id="wpbHudTotal">—</span>', unit: '条' })}
+                            ${hudKpiCardHtml({ title: 'L0 总成', valueHtml: '<span id="wpbHudL0">—</span>', unit: '条' })}
+                            ${hudKpiCardHtml({ title: '待审', valueHtml: '<span id="wpbHudPending">—</span>', unit: '条' })}
+                            ${hudKpiCardHtml({ title: '已审', valueHtml: '<span id="wpbHudApproved">—</span>', unit: '条' })}
+                            ${hudKpiCardHtml({
+                                title: 'L0 · 工艺数=0',
+                                tone: 'warn',
+                                id: 'wpbHudZeroProcessCard',
+                                attrs: 'data-action="filter-zero-process" data-clickable="0"',
+                                extraClass: 'opacity-60 cursor-default transition-colors',
+                                valueHtml: '<span id="wpbHudZeroProcess">—</span>',
+                                unit: '条',
+                            })}
                         </div>
                         <div class="flex items-center gap-1.5 shrink-0">
                             ${moreMenuShellHtml({
@@ -162,33 +171,12 @@ export function weldingProcessBreakdownListTemplate() {
     `;
 }
 
-function hudCard(id, label, unit, warn = false, action = null, cardId = null) {
-    const border = warn ? 'border-warn/40/30' : 'border-line-hud';
-    const labelCls = warn ? 'text-warn/80' : 'text-ink-faint';
-    const valueCls = warn ? 'text-warn' : 'text-ink';
-    const idAttr = cardId ? ` id="${cardId}"` : '';
-    // 可点卡片由 updateWpbHud 按 count 开关 data-clickable
-    const clickable = action
-        ? `${idAttr} data-action="${action}" data-clickable="0" class="bg-app-main/80 border ${border} p-3 backdrop-blur-sm opacity-60 cursor-default transition-colors"`
-        : `${idAttr} class="bg-app-main/80 border ${border} p-3 backdrop-blur-sm"`;
-    return `
-        <div${clickable}>
-            <div class="${labelCls} text-[10px] tracking-wider">${label}</div>
-            <div class="text-[18px] font-bold ${valueCls} mt-1 tabular-nums">
-                <span id="${id}">—</span>
-                <span class="text-[10px] text-ink-faint ml-1">${unit}</span>
-            </div>
-        </div>
-    `;
-}
-
-
 function levelFilterSelect() {
     return `
         <div class="flex flex-col gap-1">
             <label class="text-[9px] tracking-[0.08em] text-ink-faint" for="wpbLevelFilter">层级</label>
             <select id="wpbLevelFilter"
-                    class="h-9 px-3 text-xs bg-app-deep border border-line text-ink-muted appearance-none cursor-pointer focus:outline-none focus:border-brand-active transition-all min-w-[9rem]">
+                    class="min-w-[9rem] ${HUD_FILTER}">
                 <option value="">全部</option>
                 <option value="0" selected>L0 供货总成</option>
                 <option value="1">L1 分总成</option>
@@ -202,7 +190,7 @@ function processCountFilterSelect() {
         <div class="flex flex-col gap-1">
             <label class="text-[9px] tracking-[0.08em] text-ink-faint" for="wpbProcessCountFilter">工艺数</label>
             <select id="wpbProcessCountFilter"
-                    class="h-9 px-3 text-xs bg-app-deep border border-line text-ink-muted appearance-none cursor-pointer focus:outline-none focus:border-brand-active transition-all min-w-[9rem]">
+                    class="min-w-[9rem] ${HUD_FILTER}">
                 <option value="">全部</option>
                 <option value="0">= 0（异常）</option>
             </select>
@@ -253,7 +241,7 @@ function batchDrawerHtml() {
                 <div id="wpbBatchRemarkWrap">
                     <label class="text-[10px] text-ink-dim mb-1 block" id="wpbBatchRemarkLabel">审核意见</label>
                     <textarea id="wpbBatchRemark" rows="4" maxlength="500"
-                              class="w-full px-3 py-2 text-xs bg-app-deep border border-line text-white focus:outline-none focus:border-brand-active rounded resize-none"
+                              class="w-full px-3 py-2 text-xs bg-app-deep border border-line text-ink focus:outline-none focus:border-brand-active rounded resize-none"
                               placeholder=""></textarea>
                 </div>
             </div>
@@ -261,7 +249,7 @@ function batchDrawerHtml() {
                 <button type="button" id="wpbCancelBatch"
                         class="inline-flex items-center gap-1.5 bg-transparent text-ink-muted border border-line px-4 py-2 text-[11px] font-medium rounded hover:text-ink transition-all">取消</button>
                 <button type="button" id="wpbConfirmBatch"
-                        class="inline-flex items-center gap-1.5 bg-brand text-white px-4 py-2 text-[11px] font-semibold rounded hover:bg-brand-hover transition-all">确认</button>
+                        class="${BTN_SOLID}">确认</button>
             </div>
         </div>
     `;
@@ -419,7 +407,7 @@ function renderSaveBar(canSave) {
             <button type="button" id="wpbSaveAllLines" data-action="save-all-lines"
                     ${canSave ? '' : 'disabled'}
                     title="${canSave ? '' : '无编辑权限'}"
-                    class="inline-flex items-center gap-1.5 bg-brand text-white px-4 py-2 text-[11px] font-semibold rounded hover:bg-brand-hover transition-all disabled:opacity-40 disabled:cursor-not-allowed">
+                    class="${BTN_SOLID} disabled:opacity-40 disabled:cursor-not-allowed">
                 保存全部工艺
             </button>
         </div>
@@ -499,7 +487,7 @@ function renderProcessCard(ln, editable, processNames) {
         }))
         .join('');
 
-    const inputCls = 'h-7 px-1.5 text-xs font-mono bg-app-deep border border-line text-white focus:outline-none focus:border-brand-active';
+    const inputCls = 'h-7 px-1.5 text-xs font-mono bg-app-deep border border-line text-ink focus:outline-none focus:border-brand-active';
     return `
         <div class="border border-line-hud bg-app-deep px-3 py-2 flex flex-col gap-1.5" data-line-card="${ln.id}">
             <div class="flex items-baseline justify-between gap-2">
@@ -523,7 +511,7 @@ function renderProcessCard(ln, editable, processNames) {
 
                 <span class="text-ink-faint">标准工艺</span>
                 <select data-field="standard_process_name"
-                        class="h-7 px-1.5 text-[10px] bg-app-deep border border-line text-ink-muted focus:outline-none focus:border-brand-active w-full">
+                        class="w-full ${HUD_FILTER}">
                     ${stdOptions}
                 </select>
                 <span class="text-center font-mono text-[10px] text-ink-muted"

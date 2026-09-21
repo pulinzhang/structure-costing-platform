@@ -2,7 +2,7 @@
  * 采购对象清单生成页
  */
 
-import { DRAWER_CLOSE, DRAWER_SHELL, DRAWER_BACKDROP } from '../../../../ui/classes.js?v=8';
+import { DRAWER_CLOSE, DRAWER_SHELL, DRAWER_BACKDROP } from '../../../../ui/classes.js?v=11';
 import {
     procurementObjectGenerateTemplate,
 } from './template.js?v=13';
@@ -10,7 +10,7 @@ import {
     DEFAULT_PAGE_SIZE,
     bindPagination,
     paintPagination,
-} from '../../../../ui/page-size.js?v=5';
+} from '../../../../ui/page-size.js?v=6';
 import { SECTION_LABELS } from '../labels.js?v=4';
 import {
     formatDurationSeconds,
@@ -249,7 +249,7 @@ function updateProgress(progress, msg, status) {
         bar.className = 'h-full bg-danger transition-all duration-300';
         if (percentEl) percentEl.className = 'text-xs font-mono tabular-nums text-danger shrink-0';
     } else if (bar) {
-        bar.className = 'h-full bg-brand shadow-[0_0_8px_rgb(var(--brabus-red)/0.5)] transition-all duration-300';
+        bar.className = 'h-full bg-brand hud-brand-glow transition-all duration-300';
         if (percentEl) percentEl.className = 'text-xs font-mono tabular-nums text-brand shrink-0';
     }
 }

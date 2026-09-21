@@ -2,13 +2,7 @@
  * 冲压检具费上传 — 基地+项目必选，模板从模具布点带出零件
  */
 
-import {
-    BTN_FILE_SELECT,
-    BTN_GHOST,
-    BTN_UPLOAD_SUBMIT,
-    UPLOAD_DROPZONE,
-    UPLOAD_INPUT,
-} from '../../../../ui/classes.js?v=8';
+import { BTN_FILE_SELECT, BTN_GHOST, BTN_UPLOAD_SUBMIT, UPLOAD_DROPZONE, UPLOAD_INPUT, HUD_LED } from '../../../../ui/classes.js?v=11';
 
 export function gaugeFeeUploadTemplate() {
     return `
@@ -36,7 +30,7 @@ export function gaugeFeeUploadTemplate() {
                                     <span class="text-[13px] text-ink-dim font-medium tracking-wide uppercase">选择采购基地</span>
                                 </div>
                                 <div class="ml-6">
-                                    <select id="gfuLocation" name="location" required class="${UPLOAD_INPUT} w-[280px]">
+                                    <select id="gfuLocation" name="location" required class="${UPLOAD_INPUT} hud-filter w-[280px]">
                                         <option value="">请选择采购基地</option>
                                     </select>
                                 </div>
@@ -50,7 +44,7 @@ export function gaugeFeeUploadTemplate() {
                                     <span class="text-[13px] text-ink-dim font-medium tracking-wide uppercase">选择项目</span>
                                 </div>
                                 <div class="ml-6">
-                                    <select id="gfuVehicle" name="vehicle_model" required class="${UPLOAD_INPUT} w-[280px]">
+                                    <select id="gfuVehicle" name="vehicle_model" required class="${UPLOAD_INPUT} hud-filter w-[280px]">
                                         <option value="">请先选择基地</option>
                                     </select>
                                     <p class="mt-2 text-[10px] text-ink-faint">选项与模具布点相同。须先选基地和项目才能下载模板；模板零件来自已入库模具布点。</p>
@@ -88,7 +82,7 @@ export function gaugeFeeUploadTemplate() {
                                             </div>
                                             <div class="h-1.5 w-full bg-app-deep border border-line overflow-hidden mb-3">
                                                 <div id="gfuProgressBar"
-                                                     class="h-full bg-brand shadow-[0_0_8px_rgb(var(--brabus-red)/0.5)] transition-all duration-300 animate-pulse"
+                                                     class="h-full bg-brand hud-brand-glow transition-all duration-300 animate-pulse"
                                                      style="width: 60%"></div>
                                             </div>
                                             <p id="gfuProgressMsg" class="text-[11px] text-ink-muted leading-relaxed mb-0 whitespace-pre-wrap break-words max-h-48 overflow-y-auto">解析并写入数据库，请稍候</p>
@@ -107,7 +101,7 @@ export function gaugeFeeUploadTemplate() {
             </div>
             <div class="bg-app-surface border border-line">
                 <div class="px-4 py-3 border-b border-line-subtle flex items-center gap-2">
-                    <span class="hud-led"></span>
+                    <span class="${HUD_LED}"></span>
                     <h5 class="text-[11px] font-bold text-ink-muted mb-0 tracking-widest uppercase">说明</h5>
                 </div>
                 <div class="p-4 space-y-3 text-[11px] text-ink-muted leading-relaxed">

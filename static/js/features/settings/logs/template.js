@@ -2,8 +2,8 @@
  * 操作日志 — 与用户管理同一套设置页表格（非 HUD）
  */
 
-import { paginationBarHtml } from '../../../ui/page-size.js?v=5';
-import { HUD_FILTER, HUD_INPUT } from '../../../ui/classes.js?v=8';
+import { paginationBarHtml } from '../../../ui/page-size.js?v=6';
+import { HUD_FILTER, HUD_INPUT } from '../../../ui/classes.js?v=11';
 
 export function logsTemplate() {
     return `

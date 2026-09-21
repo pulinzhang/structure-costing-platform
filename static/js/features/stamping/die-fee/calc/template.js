@@ -2,8 +2,8 @@
  * 冲压模具费计算页模板
  */
 
-import { paginationBarHtml } from '../../../../ui/page-size.js?v=5';
-import { filterSelect } from '../../../../ui/classes.js?v=8';
+import { paginationBarHtml } from '../../../../ui/page-size.js?v=6';
+import { filterSelect, BTN_ABORT } from '../../../../ui/classes.js?v=11';
 
 
 export const CALC_HISTORY_COLSPAN = 14;
@@ -46,7 +46,7 @@ export function dieFeeCalcTemplate() {
                 <div class="flex items-center gap-3">
                     <span class="text-[9px] text-ink-dim">只算该年有效期内布点；共模按这些件的顺序继承。已审核禁止计算</span>
                     <button id="startCalcBtn"
-                            class="h-7 px-4 text-[10px] bg-brand-hover hover:bg-danger text-white font-medium rounded-sm transition-colors disabled:opacity-30 disabled:cursor-not-allowed">
+                            class="${BTN_ABORT}">
                         开始计算
                     </button>
                 </div>
@@ -60,7 +60,7 @@ export function dieFeeCalcTemplate() {
                     <span id="calcProgressPercent" class="text-xs font-mono tabular-nums text-brand shrink-0">0%</span>
                 </div>
                 <div class="h-1.5 w-full bg-app-deep border border-line overflow-hidden mb-2">
-                    <div id="calcProgressBar" class="h-full bg-brand shadow-[0_0_8px_rgb(var(--brabus-red)/0.5)] transition-all duration-300" style="width: 0%"></div>
+                    <div id="calcProgressBar" class="h-full bg-brand hud-brand-glow transition-all duration-300" style="width: 0%"></div>
                 </div>
                 <p id="calcProgressMsg" class="text-[11px] text-ink-muted leading-relaxed mb-0">已提交计算队列</p>
             </div>

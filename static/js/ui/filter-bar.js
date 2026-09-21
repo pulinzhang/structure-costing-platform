@@ -9,7 +9,7 @@ import {
     CAPSULE_IDLE,
     BTN_FILTER_SEARCH,
     capsuleClass,
-} from './classes.js?v=8';
+} from './classes.js?v=11';
 
 const TOGGLE_BTN_CLASS =
     'text-ink-dim hover:text-ink transition-colors flex items-center gap-1.5 text-[11px]';

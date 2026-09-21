@@ -2,11 +2,12 @@
  * BOM 焊接费列表模板 — HUD 密表
  */
 
-import { filterSelect, filterInput, HUD_SHELL, DRAWER_CLOSE, DRAWER_BACKDROP, DRAWER_SHELL, HUD_BAND, BTN_GHOST, TH_ROW, OPS_TH, HUD_KPI_AUX, HUD_LED } from '../../../../ui/classes.js?v=8';
-import { filterBarHtml } from '../../../../ui/filter-bar.js?v=2';
-import { hudTableHtml, hudRowHtml, opsIconButtonHtml } from '../../../../ui/hud-table.js?v=1';
+import { filterSelect, filterInput, HUD_SHELL, DRAWER_CLOSE, DRAWER_BACKDROP, DRAWER_SHELL, HUD_BAND, BTN_GHOST, TH_ROW, OPS_TH, HUD_LED, BTN_SOLID } from '../../../../ui/classes.js?v=11';
+import { filterBarHtml } from '../../../../ui/filter-bar.js?v=3';
+import { hudTableHtml, hudRowHtml, opsIconButtonHtml } from '../../../../ui/hud-table.js?v=2';
+import { hudKpiCardHtml, paintHudKpiAlert } from '../../../../ui/hud-kpi.js?v=1';
 
-import { moreMenuItemHtml, moreMenuShellHtml } from '../../../../ui/more-menu.js?v=3';
+import { moreMenuItemHtml, moreMenuShellHtml } from '../../../../ui/more-menu.js?v=5';
 import {
     partShortCodeCellHtml,
     partNumberNameCellHtml,
@@ -33,50 +34,35 @@ export function l0WeldingFeeListTemplate() {
                 <div class="${HUD_BAND}">
                     <div class="flex items-start justify-between gap-4 mb-3">
                         <div class="grid grid-cols-2 lg:grid-cols-4 gap-3 font-mono flex-1 min-w-0">
-                            <div class="${HUD_KPI_AUX}">
-                                <div class="text-ink-faint text-[10px] tracking-wider">焊接费合计</div>
-                                <div class="text-[22px] font-black text-ink mt-1 tracking-tight tabular-nums leading-none">
-                                    ¥ <span id="l0wfHudTotalFee">—</span>
-                                </div>
-                                <div class="text-[9px] font-mono text-ink-dim mt-2">系统计算 + 其它费用</div>
-                            </div>
-                            <div class="${HUD_KPI_AUX}">
-                                <div class="text-ink-faint text-[10px] tracking-wider">结果条数</div>
-                                <div class="text-[22px] font-black text-ink mt-1 tracking-tight tabular-nums leading-none">
-                                    <span id="l0wfHudTotal">—</span>
-                                    <span class="text-[10px] text-ink-faint ml-1 font-bold">条</span>
-                                </div>
-                                <div class="text-[9px] font-mono text-ink-dim mt-2 flex justify-between">
-                                    <span>版本</span>
-                                    <span id="l0wfHudVersion" class="text-ink-muted">—</span>
-                                </div>
-                            </div>
-                            <button type="button" id="l0wfHudPartialCard"
-                                    class="text-left w-full p-3.5 relative overflow-hidden group transition-all duration-200 cursor-pointer
-                                           bg-app-main/80 border border-line-hud hover:border-line-hud focus:outline-none"
-                                    title="点击筛选缺单价（partial）">
-                                <div id="l0wfHudPartialGlow" class="hidden absolute top-0 left-0 right-0 h-[2px] bg-gradient-to-r from-transparent via-brand-hud to-transparent hud-kpi-line-glow"></div>
-                                <div class="flex justify-between items-start">
-                                    <span class="text-ink-faint text-[10px] font-bold tracking-widest">缺单价待办</span>
-                                    <span id="l0wfHudPartialDot" class="hidden w-2 h-2 rounded-full bg-brand-hud animate-pulse hud-kpi-dot-glow"></span>
-                                </div>
-                                <div class="text-[26px] font-black text-ink-dim font-mono mt-1 tracking-tight tabular-nums leading-none">
-                                    <span id="l0wfHudPartial">—</span>
-                                    <span class="text-[10px] ml-1 font-bold opacity-70">条</span>
-                                </div>
-                                <div class="text-[9px] font-mono text-ink-faint mt-2">工艺行缺分年单价</div>
-                            </button>
-                            <div class="${HUD_KPI_AUX}">
-                                <div class="text-ink-faint text-[10px] tracking-wider">审核进度</div>
-                                <div class="text-[22px] font-black text-ink mt-1 tracking-tight tabular-nums leading-none">
-                                    <span id="l0wfHudPending">—</span>
-                                    <span class="text-[10px] text-ink-faint ml-1 font-bold">条待审</span>
-                                </div>
-                                <div class="text-[9px] font-mono text-ink-dim mt-2 flex justify-between">
-                                    <span>已审核</span>
-                                    <span class="text-ink-muted tabular-nums"><span id="l0wfHudApproved">—</span> 条</span>
-                                </div>
-                            </div>
+                            ${hudKpiCardHtml({
+                                title: '焊接费合计',
+                                valueHtml: '¥ <span id="l0wfHudTotalFee">—</span>',
+                                meta: '系统计算 + 其它费用',
+                            })}
+                            ${hudKpiCardHtml({
+                                title: '结果条数',
+                                valueHtml: '<span id="l0wfHudTotal">—</span>',
+                                unit: '条',
+                                footer: [{ label: '版本', valueHtml: '<span id="l0wfHudVersion" class="text-ink-muted">—</span>' }],
+                            })}
+                            ${hudKpiCardHtml({
+                                as: 'button',
+                                id: 'l0wfHudPartialCard',
+                                title: '缺单价待办',
+                                titleAttr: '点击筛选缺单价（partial）',
+                                valueWrapId: 'l0wfHudPartialValue',
+                                valueHtml: '<span id="l0wfHudPartial">—</span>',
+                                unit: '条',
+                                glowId: 'l0wfHudPartialGlow',
+                                pulseId: 'l0wfHudPartialDot',
+                                meta: '工艺行缺分年单价',
+                            })}
+                            ${hudKpiCardHtml({
+                                title: '审核进度',
+                                valueHtml: '<span id="l0wfHudPending">—</span>',
+                                unit: '条待审',
+                                footer: [{ label: '已审核', valueHtml: '<span id="l0wfHudApproved">—</span> 条' }],
+                            })}
                         </div>
                         <div class="flex items-center gap-1.5 shrink-0">
                             ${moreMenuShellHtml({
@@ -274,7 +260,7 @@ export function l0WeldingFeeListTemplate() {
                 </div>
                 <div class="px-6 py-4 border-t border-app-elevated flex items-center justify-end gap-2 shrink-0 flex-wrap">
                     <button type="button" id="l0wfViewEditBtn"
-                            class="inline-flex items-center gap-1.5 bg-brand text-white px-4 py-2 text-[11px] font-semibold rounded hover:bg-brand-hover transition-all">
+                            class="${BTN_SOLID}">
                         ${window.svgIcon('pencil', 'w-3.5 h-3.5')}
                         编辑
                     </button>
@@ -348,7 +334,7 @@ export function l0WeldingFeeListTemplate() {
                     <button type="button" id="l0wfEditCancel"
                             class="inline-flex items-center gap-1.5 bg-transparent text-ink-muted border border-line px-4 py-2 text-[11px] font-medium rounded hover:border-ink-muted hover:text-ink transition-all">取消</button>
                     <button type="button" id="l0wfEditSubmit"
-                            class="inline-flex items-center gap-1.5 bg-brand text-white px-4 py-2 text-[11px] font-semibold rounded hover:bg-brand-hover transition-all">
+                            class="${BTN_SOLID}">
                         ${window.svgIcon('archive', 'w-3.5 h-3.5')}
                         保存
                     </button>
@@ -380,7 +366,7 @@ export function l0WeldingFeeListTemplate() {
                     <button type="button" id="l0wfBatchAuditCancel"
                             class="h-8 px-4 text-[11px] text-ink-muted border border-line rounded hover:text-ink hover:border-ink-muted">取消</button>
                     <button type="button" id="l0wfBatchAuditSubmit"
-                            class="h-8 px-4 text-[11px] bg-brand text-white rounded hover:bg-brand-hover">确认</button>
+                            class="${BTN_SOLID}">确认</button>
                 </div>
             </div>
         </div>
@@ -400,7 +386,7 @@ function partNumberViewBlock(prefix) {
     return `<div class="min-w-0">
         <span class="block text-[9px] font-semibold text-ink-faint uppercase tracking-[0.1em] mb-1">零件号</span>
         <span id="${prefix}-part-short"
-              class="hud-kpi-num-glow block text-xl font-mono font-bold tabular-nums text-white tracking-[0.14em]">—</span>
+              class="hud-kpi-num-glow block text-xl font-mono font-bold tabular-nums text-ink tracking-[0.14em]">—</span>
         <span id="${prefix}-part-number" class="block text-[11px] font-mono text-ink-dim tracking-wider mt-0.5 truncate"></span>
     </div>`;
 }
@@ -421,13 +407,13 @@ export function updateL0WeldingFeeHud(summary = {}, versionLabel = '—') {
 
     const partial = Number(data.partial_count) || 0;
     set('l0wfHudPartial', String(partial));
-    document.getElementById('l0wfHudPartialGlow')?.classList.toggle('hidden', partial <= 0);
-    document.getElementById('l0wfHudPartialDot')?.classList.toggle('hidden', partial <= 0);
-    const partialValue = document.getElementById('l0wfHudPartial');
-    if (partialValue) {
-        partialValue.parentElement.classList.toggle('text-brand-hud', partial > 0);
-        partialValue.parentElement.classList.toggle('text-ink-dim', partial <= 0);
-    }
+    paintHudKpiAlert('l0wfHudPartialCard', {
+        mode: partial > 0 ? 'alert' : 'aux',
+        shell: false,
+        glowId: 'l0wfHudPartialGlow',
+        pulseId: 'l0wfHudPartialDot',
+        valueWrapId: 'l0wfHudPartialValue',
+    });
 }
 
 export function updateL0WeldingFeeFilterCapsules(state) {

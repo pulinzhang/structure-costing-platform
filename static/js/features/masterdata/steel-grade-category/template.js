@@ -2,10 +2,10 @@
  * 牌号分类档案 — HUD 密表 + 抽屉增改
  */
 
-import { HUD_SHELL, DRAWER_BACKDROP, DRAWER_SHELL, HUD_BAND, OPS_TH } from '../../../ui/classes.js?v=8';
-import { hudTableHtml, hudRowHtml, opsIconButtonHtml } from '../../../ui/hud-table.js?v=1';
+import { HUD_SHELL, DRAWER_BACKDROP, DRAWER_SHELL, HUD_BAND, OPS_TH, BTN_HUD_CREATE, BTN_HUD_SAVE, HUD_FILTER } from '../../../ui/classes.js?v=11';
+import { hudTableHtml, hudRowHtml, opsIconButtonHtml } from '../../../ui/hud-table.js?v=2';
 
-import { moreMenuItemHtml, moreMenuShellHtml } from '../../../ui/more-menu.js?v=3';
+import { moreMenuItemHtml, moreMenuShellHtml } from '../../../ui/more-menu.js?v=5';
 
 export const CATEGORY_TABS = Object.freeze([
     { id: 'all', label: '全部' },
@@ -51,7 +51,7 @@ export function steelGradeCategoryTemplate() {
                             })}
                             <input type="file" id="sgcImportFileInput" class="hidden" accept=".xlsx,.xls">
                             <button type="button" id="sgcAddBtn"
-                                    class="inline-flex items-center gap-1.5 bg-brand-hud hover:bg-brand text-white px-3 py-1.5 text-[11px] font-semibold rounded-md transition-all">
+                                    class="${BTN_HUD_CREATE}">
                                 ${window.svgIcon('plus', 'w-3.5 h-3.5')}
                                 新增
                             </button>
@@ -103,7 +103,7 @@ export function steelGradeCategoryTemplate() {
             <div class="px-5 py-3.5 flex items-center justify-between border-b border-line bg-app-surface shrink-0">
                 <div class="flex items-center gap-2">
                     <span class="w-1 h-3.5 bg-brand-hud"></span>
-                    <h5 class="text-xs font-semibold text-white tracking-wider" id="sgcEditTitle">新增牌号</h5>
+                    <h5 class="text-xs font-semibold text-ink tracking-wider" id="sgcEditTitle">新增牌号</h5>
                 </div>
                 <button type="button" id="sgcCloseEdit" class="text-ink-dim hover:text-ink w-6 h-6 flex items-center justify-center">✕</button>
             </div>
@@ -113,13 +113,13 @@ export function steelGradeCategoryTemplate() {
                     <div>
                         <label class="text-[10px] font-semibold text-ink-dim tracking-wider mb-1 block">牌号 <span class="text-brand-hud">*</span></label>
                         <input type="text" id="sgcEditGrade" required maxlength="50"
-                               class="w-full h-8 px-3 text-xs font-mono bg-app-hud border border-line text-white placeholder:text-ink-dim focus:outline-none focus:border-brand-active"
+                               class="w-full h-8 px-3 text-xs font-mono bg-app-hud border border-line text-ink placeholder:text-ink-dim focus:outline-none focus:border-brand-active"
                                placeholder="如 DC01、DC51D+Z" autocomplete="off">
                     </div>
                     <div>
                         <label class="text-[10px] font-semibold text-ink-dim tracking-wider mb-1 block">大类 <span class="text-brand-hud">*</span></label>
                         <select id="sgcEditCategory" required
-                                class="w-full h-8 px-3 text-xs bg-app-hud border border-line text-ink-muted appearance-none cursor-pointer focus:outline-none focus:border-brand-active">
+                                class="w-full ${HUD_FILTER}">
                             <option value="">请选择</option>
                             <option value="冷轧">冷轧</option>
                             <option value="镀锌">镀锌</option>
@@ -129,7 +129,7 @@ export function steelGradeCategoryTemplate() {
                     <div>
                         <label class="text-[10px] font-semibold text-ink-dim tracking-wider mb-1 block">备注</label>
                         <input type="text" id="sgcEditRemark" maxlength="200"
-                               class="w-full h-8 px-3 text-xs bg-app-hud border border-line text-white placeholder:text-ink-dim focus:outline-none focus:border-brand-active"
+                               class="w-full h-8 px-3 text-xs bg-app-hud border border-line text-ink placeholder:text-ink-dim focus:outline-none focus:border-brand-active"
                                placeholder="可选" autocomplete="off">
                     </div>
                 </form>
@@ -138,7 +138,7 @@ export function steelGradeCategoryTemplate() {
                     <button type="button" id="sgcCancelEdit"
                         class="px-4 py-1.5 text-xs text-ink-muted border border-line hover:text-ink">取消</button>
                 <button type="button" id="sgcSubmitEdit"
-                        class="bg-brand-hud hover:bg-brand text-white px-5 py-1.5 text-xs font-semibold transition-all">保存</button>
+                        class="${BTN_HUD_SAVE} transition-all">保存</button>
             </div>
         </div>
 
@@ -148,14 +148,14 @@ export function steelGradeCategoryTemplate() {
             <div class="px-5 py-3.5 flex items-center justify-between border-b border-line bg-app-surface shrink-0">
                 <div class="flex items-center gap-2">
                     <span class="w-1 h-3.5 bg-brand-hud"></span>
-                    <h5 class="text-xs font-semibold text-white tracking-wider">删除牌号</h5>
+                    <h5 class="text-xs font-semibold text-ink tracking-wider">删除牌号</h5>
                 </div>
                 <button type="button" id="sgcCloseDelete" class="text-ink-dim hover:text-ink w-6 h-6 flex items-center justify-center">✕</button>
             </div>
             <div class="flex-1 p-5">
                 <input type="hidden" id="sgcDeleteId" value="">
                 <p class="text-xs text-ink-muted mb-2">确认删除牌号</p>
-                <p id="sgcDeleteGrade" class="text-sm font-semibold text-white font-mono"></p>
+                <p id="sgcDeleteGrade" class="text-sm font-semibold text-ink font-mono"></p>
                 <p class="text-[11px] text-ink-faint mt-3">只删档案行，不改零件和基价。</p>
             </div>
             <div class="px-5 py-3 border-t border-line flex items-center justify-end gap-2 bg-app-surface shrink-0">
@@ -211,7 +211,7 @@ export function syncTabStyles(activeTab) {
     document.querySelectorAll('.sgc-tab').forEach((btn) => {
         const isActive = btn.getAttribute('data-tab') === activeTab;
         btn.className = isActive
-            ? 'sgc-tab px-2.5 py-1 text-[11px] font-mono rounded-md border transition-colors bg-brand-hud/10 border-brand-hud/50 text-white'
+            ? 'sgc-tab px-2.5 py-1 text-[11px] font-mono rounded-md border transition-colors bg-brand-hud/10 border-brand-hud/50 text-ink'
             : 'sgc-tab px-2.5 py-1 text-[11px] font-mono rounded-md border transition-colors bg-app-elevated border-line-hud text-ink-muted hover:text-ink';
     });
 }

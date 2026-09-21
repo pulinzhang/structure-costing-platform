@@ -3,11 +3,12 @@
  * 批量操作范围 = 基地 + 年度 + 项目
  */
 
-import { filterSelect, filterInput, HUD_SHELL, DRAWER_SHELL, DRAWER_BACKDROP, HUD_BAND, OPS_TH, BTN_GHOST } from '../../../../ui/classes.js?v=8';
-import { filterBarHtml } from '../../../../ui/filter-bar.js?v=2';
-import { hudTableHtml, hudRowHtml, opsIconButtonHtml } from '../../../../ui/hud-table.js?v=1';
+import { filterSelect, filterInput, HUD_SHELL, DRAWER_SHELL, DRAWER_BACKDROP, HUD_BAND, OPS_TH, BTN_GHOST, BTN_SOLID, BTN_SOLID_DANGER } from '../../../../ui/classes.js?v=11';
+import { filterBarHtml } from '../../../../ui/filter-bar.js?v=3';
+import { hudTableHtml, hudRowHtml, opsIconButtonHtml } from '../../../../ui/hud-table.js?v=2';
+import { hudKpiCardHtml } from '../../../../ui/hud-kpi.js?v=1';
 
-import { moreMenuItemHtml, moreMenuShellHtml } from '../../../../ui/more-menu.js?v=3';
+import { moreMenuItemHtml, moreMenuShellHtml } from '../../../../ui/more-menu.js?v=5';
 import { partShortCodeCellHtml, partNumberNameCellHtml } from '../../../../domain/part-identity.js?v=5';
 
 export function formatFee4(value) {
@@ -31,27 +32,9 @@ export function pkgTransportFeeTemplate() {
                 <div class="${HUD_BAND}">
                     <div class="flex items-start justify-between gap-4 mb-3">
                         <div class="grid grid-cols-2 lg:grid-cols-3 gap-3 font-mono flex-1 min-w-0">
-                            <div class="bg-app-main/80 border border-line-hud p-3">
-                                <div class="text-ink-faint text-[10px] tracking-wider">记录条数</div>
-                                <div class="text-[18px] font-bold text-ink mt-1 tabular-nums">
-                                    <span id="pkgHudTotal">—</span>
-                                    <span class="text-[10px] text-ink-faint ml-1">条</span>
-                                </div>
-                            </div>
-                            <div class="bg-app-main/80 border border-line-hud p-3">
-                                <div class="text-ink-faint text-[10px] tracking-wider">待审</div>
-                                <div class="text-[18px] font-bold text-ink mt-1 tabular-nums">
-                                    <span id="pkgHudPending">—</span>
-                                    <span class="text-[10px] text-ink-faint ml-1">条</span>
-                                </div>
-                            </div>
-                            <div class="bg-app-main/80 border border-line-hud p-3">
-                                <div class="text-ink-faint text-[10px] tracking-wider">已审</div>
-                                <div class="text-[18px] font-bold text-ink mt-1 tabular-nums">
-                                    <span id="pkgHudApproved">—</span>
-                                    <span class="text-[10px] text-ink-faint ml-1">条</span>
-                                </div>
-                            </div>
+                            ${hudKpiCardHtml({ title: '记录条数', valueHtml: '<span id="pkgHudTotal">—</span>', unit: '条' })}
+                            ${hudKpiCardHtml({ title: '待审', valueHtml: '<span id="pkgHudPending">—</span>', unit: '条' })}
+                            ${hudKpiCardHtml({ title: '已审', valueHtml: '<span id="pkgHudApproved">—</span>', unit: '条' })}
                         </div>
                         <div class="flex items-center gap-1.5 shrink-0">
                             ${moreMenuShellHtml({
@@ -174,13 +157,13 @@ function batchAuditDrawerHtml() {
                 <div>
                     <label class="text-[10px] text-ink-dim mb-1 block" id="pkgBatchAuditRemarkLabel">审核意见</label>
                     <textarea id="pkgBatchAuditRemark" rows="4" maxlength="500"
-                              class="w-full px-3 py-2 text-xs bg-app-deep border border-line text-white rounded resize-none focus:outline-none focus:border-brand-active"
+                              class="w-full px-3 py-2 text-xs bg-app-deep border border-line text-ink rounded resize-none focus:outline-none focus:border-brand-active"
                               placeholder="请填写审核意见（必填）"></textarea>
                 </div>
             </div>
             <div class="px-6 py-4 border-t border-app-elevated flex justify-end gap-2 shrink-0">
                 <button type="button" id="cancelPkgBatchAuditBtn" class="px-4 py-2 text-[11px] text-ink-muted border border-line rounded">取消</button>
-                <button type="button" id="confirmPkgBatchAuditBtn" class="px-4 py-2 text-[11px] bg-brand text-white rounded hover:bg-brand-hover">确认提交</button>
+                <button type="button" id="confirmPkgBatchAuditBtn" class="${BTN_SOLID}">确认提交</button>
             </div>
         </div>
     `;
@@ -220,28 +203,28 @@ function editDrawerHtml() {
                 <div class="text-[11px] text-ink-muted" id="pkgEditScopeHint"></div>
                 <div>
                     <label class="text-[10px] text-ink-dim mb-1 block">产品名称</label>
-                    <input id="pkgEditPartName" type="text" maxlength="200" class="w-full h-9 px-3 text-xs bg-app-deep border border-line text-white rounded focus:outline-none focus:border-brand-active">
+                    <input id="pkgEditPartName" type="text" maxlength="200" class="w-full h-9 px-3 text-xs bg-app-deep border border-line text-ink rounded focus:outline-none focus:border-brand-active">
                 </div>
                 <div>
                     <label class="text-[10px] text-ink-dim mb-1 block">包装类型</label>
-                    <input id="pkgEditPackagingType" type="text" maxlength="50" class="w-full h-9 px-3 text-xs bg-app-deep border border-line text-white rounded focus:outline-none focus:border-brand-active">
+                    <input id="pkgEditPackagingType" type="text" maxlength="50" class="w-full h-9 px-3 text-xs bg-app-deep border border-line text-ink rounded focus:outline-none focus:border-brand-active">
                 </div>
                 <div class="grid grid-cols-2 gap-3">
                     <div>
                         <label class="text-[10px] text-ink-dim mb-1 block">单件包装费 *</label>
-                        <input id="pkgEditPackagingFee" type="text" class="w-full h-9 px-3 text-xs bg-app-deep border border-line text-white rounded font-mono focus:outline-none focus:border-brand-active">
+                        <input id="pkgEditPackagingFee" type="text" class="w-full h-9 px-3 text-xs bg-app-deep border border-line text-ink rounded font-mono focus:outline-none focus:border-brand-active">
                     </div>
                     <div>
                         <label class="text-[10px] text-ink-dim mb-1 block">单件运输费 *</label>
-                        <input id="pkgEditTransportFee" type="text" class="w-full h-9 px-3 text-xs bg-app-deep border border-line text-white rounded font-mono focus:outline-none focus:border-brand-active">
+                        <input id="pkgEditTransportFee" type="text" class="w-full h-9 px-3 text-xs bg-app-deep border border-line text-ink rounded font-mono focus:outline-none focus:border-brand-active">
                     </div>
                     <div>
                         <label class="text-[10px] text-ink-dim mb-1 block">器具维护费 *</label>
-                        <input id="pkgEditMaintFee" type="text" class="w-full h-9 px-3 text-xs bg-app-deep border border-line text-white rounded font-mono focus:outline-none focus:border-brand-active">
+                        <input id="pkgEditMaintFee" type="text" class="w-full h-9 px-3 text-xs bg-app-deep border border-line text-ink rounded font-mono focus:outline-none focus:border-brand-active">
                     </div>
                     <div>
                         <label class="text-[10px] text-ink-dim mb-1 block">其它费用 *</label>
-                        <input id="pkgEditOtherFee" type="text" class="w-full h-9 px-3 text-xs bg-app-deep border border-line text-white rounded font-mono focus:outline-none focus:border-brand-active">
+                        <input id="pkgEditOtherFee" type="text" class="w-full h-9 px-3 text-xs bg-app-deep border border-line text-ink rounded font-mono focus:outline-none focus:border-brand-active">
                     </div>
                 </div>
                 <div>
@@ -250,12 +233,12 @@ function editDrawerHtml() {
                 </div>
                 <div>
                     <label class="text-[10px] text-ink-dim mb-1 block">备注</label>
-                    <textarea id="pkgEditRemark" rows="3" class="w-full px-3 py-2 text-xs bg-app-deep border border-line text-white rounded resize-none focus:outline-none focus:border-brand-active"></textarea>
+                    <textarea id="pkgEditRemark" rows="3" class="w-full px-3 py-2 text-xs bg-app-deep border border-line text-ink rounded resize-none focus:outline-none focus:border-brand-active"></textarea>
                 </div>
             </div>
             <div class="px-6 py-4 border-t border-app-elevated flex justify-end gap-2 shrink-0">
                 <button type="button" id="cancelPkgEditBtn" class="px-4 py-2 text-[11px] text-ink-muted border border-line rounded">取消</button>
-                <button type="button" id="confirmPkgEditBtn" class="px-4 py-2 text-[11px] bg-brand text-white rounded hover:bg-brand-hover">保存</button>
+                <button type="button" id="confirmPkgEditBtn" class="${BTN_SOLID}">保存</button>
             </div>
         </div>
     `;
@@ -279,7 +262,7 @@ function deleteDrawerHtml() {
             </div>
             <div class="px-6 py-4 border-t border-app-elevated flex justify-end gap-2 shrink-0">
                 <button type="button" id="cancelPkgDeleteBtn" class="px-4 py-2 text-[11px] text-ink-muted border border-line rounded">取消</button>
-                <button type="button" id="confirmPkgDeleteBtn" class="px-4 py-2 text-[11px] bg-danger text-white rounded hover:bg-brand-hover">确认删除</button>
+                <button type="button" id="confirmPkgDeleteBtn" class="${BTN_SOLID_DANGER}">确认删除</button>
             </div>
         </div>
     `;

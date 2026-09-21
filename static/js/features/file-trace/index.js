@@ -6,12 +6,12 @@ import {
     fileTraceTemplate,
     renderDrawerDetail,
     renderTableRows,
-} from './template.js?v=17';
+} from './template.js?v=18';
 import {
     DEFAULT_PAGE_SIZE,
     bindPagination,
     paintPagination,
-} from '../../ui/page-size.js?v=5';
+} from '../../ui/page-size.js?v=6';
 import { setSearchBusy } from '../../ui/search-busy.js?v=3';
 
 const ftState = {

@@ -6,10 +6,11 @@
  * 明细抽屉 / renderDetailContent 保持不变
  */
 
-import { moreMenuItemHtml, moreMenuShellHtml } from '../../../../ui/more-menu.js?v=3';
-import { BRABUS_PANEL, BRABUS_PANEL_HEADER, BRABUS_SECTION_HEADER, BRABUS_TABLE_WRAPPER, BTN_SAVE_DEFAULT, DIE_TYPE_SELECT, filterSelect, filterInput, HUD_SHELL, DRAWER_SHELL, DRAWER_BACKDROP, DRAWER_CLOSE, HUD_BAND, BTN_GHOST, OPS_TH, HUD_KPI_FOCUS, TH_KEY, TH_TEXT, TH_NUM, HUD_LED } from '../../../../ui/classes.js?v=8';
-import { filterBarHtml } from '../../../../ui/filter-bar.js?v=2';
-import { hudTableHtml } from '../../../../ui/hud-table.js?v=1';
+import { moreMenuItemHtml, moreMenuShellHtml } from '../../../../ui/more-menu.js?v=5';
+import { BRABUS_PANEL, BRABUS_PANEL_HEADER, BRABUS_SECTION_HEADER, BRABUS_TABLE_WRAPPER, BTN_SAVE_DEFAULT, DIE_TYPE_SELECT, filterSelect, filterInput, HUD_SHELL, DRAWER_SHELL, DRAWER_BACKDROP, DRAWER_CLOSE, HUD_BAND, BTN_GHOST, OPS_TH, TH_KEY, TH_TEXT, TH_NUM, HUD_LED } from '../../../../ui/classes.js?v=11';
+import { filterBarHtml } from '../../../../ui/filter-bar.js?v=3';
+import { hudTableHtml } from '../../../../ui/hud-table.js?v=2';
+import { hudKpiCardHtml } from '../../../../ui/hud-kpi.js?v=1';
 
 export function partsTemplate() {
     return `
@@ -20,46 +21,33 @@ export function partsTemplate() {
                 <div class="${HUD_BAND}">
                     <div class="flex items-start justify-between gap-4 mb-3">
                         <div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3 font-mono flex-1 min-w-0">
-                            <div class="bg-app-main/80 border border-line-hud p-3 backdrop-blur-sm">
-                                <div class="text-ink-faint text-[10px] tracking-wider">基地</div>
-                                <div class="text-[18px] font-bold text-ink mt-1 tabular-nums">
-                                    <span id="partsHudLocation">—</span>
-                                    <span class="text-[10px] text-ink-faint ml-1">个</span>
-                                </div>
-                            </div>
-                            <div class="bg-app-main/80 border border-line-hud p-3 backdrop-blur-sm">
-                                <div class="text-ink-faint text-[10px] tracking-wider">项目</div>
-                                <div class="text-[18px] font-bold text-ink mt-1 tabular-nums">
-                                    <span id="partsHudVehicle">—</span>
-                                    <span class="text-[10px] text-ink-faint ml-1">种</span>
-                                </div>
-                            </div>
-                            <div class="bg-app-main/80 border border-line-hud p-3 backdrop-blur-sm">
-                                <div class="text-ink-faint text-[10px] tracking-wider">版本</div>
-                                <div class="text-[18px] font-bold text-ink mt-1 tabular-nums">
-                                    <span id="partsHudVersion">—</span>
-                                    <span class="text-[10px] text-ink-faint ml-1">个</span>
-                                </div>
-                            </div>
-                            <!-- 零件号：重点指标 -->
-                            <div class="hud-kpi-card-glow ${HUD_KPI_FOCUS}">
-                                <div class="absolute top-0 left-0 right-0 h-[2px] bg-gradient-to-r from-transparent via-brand-hud to-transparent hud-kpi-line-glow"></div>
-                                <div class="flex justify-between items-start">
-                                    <span class="text-brand-hud text-[10px] font-bold tracking-widest">零件号</span>
-                                    <span class="w-2 h-2 rounded-full bg-brand-hud animate-pulse hud-kpi-dot-glow"></span>
-                                </div>
-                                <div class="text-[26px] font-black text-brand-hud font-mono mt-1 tracking-tight tabular-nums">
-                                    <span id="partsHudPartNumber">—</span>
-                                </div>
-                                <div class="text-[9px] font-mono text-brand-hud/60 mt-1">去重后件数</div>
-                            </div>
-                            <div class="bg-app-main/80 border border-line-hud p-3 backdrop-blur-sm">
-                                <div class="text-ink-faint text-[10px] tracking-wider">冲压工厂</div>
-                                <div class="text-[18px] font-bold text-ink mt-1 tabular-nums">
-                                    <span id="partsHudSupplier">—</span>
-                                    <span class="text-[10px] text-ink-faint ml-1">个</span>
-                                </div>
-                            </div>
+                            ${hudKpiCardHtml({
+                                title: '基地',
+                                valueHtml: '<span id="partsHudLocation">—</span>',
+                                unit: '个',
+                            })}
+                            ${hudKpiCardHtml({
+                                title: '项目',
+                                valueHtml: '<span id="partsHudVehicle">—</span>',
+                                unit: '种',
+                            })}
+                            ${hudKpiCardHtml({
+                                title: '版本',
+                                valueHtml: '<span id="partsHudVersion">—</span>',
+                                unit: '个',
+                            })}
+                            ${hudKpiCardHtml({
+                                variant: 'focus',
+                                title: '零件号',
+                                pulse: true,
+                                valueHtml: '<span id="partsHudPartNumber">—</span>',
+                                meta: '去重后件数',
+                            })}
+                            ${hudKpiCardHtml({
+                                title: '冲压工厂',
+                                valueHtml: '<span id="partsHudSupplier">—</span>',
+                                unit: '个',
+                            })}
                         </div>
                         <div class="flex items-center gap-1.5 shrink-0">
                             ${moreMenuShellHtml({
@@ -150,7 +138,7 @@ export function partsTemplate() {
             <!-- 头部（固定不滚动）-->
             <div class="px-5 py-3.5 flex items-center justify-between shrink-0">
                 <h5 class="text-[11px] font-semibold tracking-wider text-ink-muted flex items-center gap-2.5 uppercase" id="partDrawerTitle">
-                    <span class="hud-led"></span>
+                    <span class="${HUD_LED}"></span>
                     零件详情
                 </h5>
                 <button type="button" id="closePartDrawer"
@@ -340,7 +328,7 @@ function renderProcessRow(p, idx) {
                     <td class="px-4 py-4 text-right text-[11px] font-mono text-ink-dim tracking-[0.06em]">${p.tonnage ? `${p.tonnage}T` : '—'}</td>
                     <td class="px-4 py-4">
                         <div class="flex items-center gap-2">
-                            <select class="${DIE_TYPE_SELECT}" data-original-die-type="${currentDieType}">
+                            <select class="${DIE_TYPE_SELECT} hud-filter" data-original-die-type="${currentDieType}">
                                 ${DIE_TYPE_OPTIONS.map(o => `<option value="${o.value}" ${o.value === currentDieType ? 'selected' : ''}>${o.label}</option>`).join('')}
                             </select>
                             <span class="text-[9px] font-mono text-ink-faint tracking-[0.05em]" title="模具成本比例">${p.cost_ratio != null ? `${(p.cost_ratio * 100).toFixed(0)}%` : '—'}</span>
@@ -421,7 +409,7 @@ export function renderDetailContent(part, options = {}) {
                         <span class="text-[9px] font-semibold text-ink-faint uppercase tracking-[0.22em]">工序列表</span>
                     </div>
                     <div class="flex items-center gap-2">
-                        <select id="batchDieTypeSelect" class="${DIE_TYPE_SELECT}" style="width:148px;">
+                        <select id="batchDieTypeSelect" class="${DIE_TYPE_SELECT} hud-filter" style="width:148px;">
                             <option value="">批量修改模具类型</option>
                             ${DIE_TYPE_OPTIONS.map(o => `<option value="${o.value}">${o.label}</option>`).join('')}
                         </select>

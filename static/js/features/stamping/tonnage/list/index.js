@@ -9,14 +9,14 @@ import {
     pricePerStrokeInputValue,
     parsePricePerStrokeInput,
     updateTonnageHud,
-} from './template.js?v=39';
-import { bindMoreMenu } from '../../../../ui/more-menu.js?v=3';
-import { bindFilterBar } from '../../../../ui/filter-bar.js?v=2';
+} from './template.js?v=40';
+import { bindMoreMenu } from '../../../../ui/more-menu.js?v=5';
+import { bindFilterBar } from '../../../../ui/filter-bar.js?v=3';
 import {
     DEFAULT_PAGE_SIZE,
     bindPagination,
     paintPagination,
-} from '../../../../ui/page-size.js?v=5';
+} from '../../../../ui/page-size.js?v=6';
 import { setSearchBusy } from '../../../../ui/search-busy.js?v=3';
 
 /** @type {{ setOpen: (isOpen: boolean) => void, close: () => void, unbind: () => void } | null} */

@@ -3,8 +3,8 @@
  * 各页只传表头/列宽/单元格，禁止再复制 wrap / paginationBarHtml / 行 LED。
  */
 
-import { TH_ROW, TR_HUD, ROW_LED, OPS_TD, OPS_ICON, OPS_ICON_DANGER } from './classes.js?v=8';
-import { paginationBarHtml } from './page-size.js?v=5';
+import { TH_ROW, TR_HUD, ROW_LED, OPS_TD, OPS_ICON, OPS_ICON_DANGER } from './classes.js?v=11';
+import { paginationBarHtml } from './page-size.js?v=6';
 
 /**
  * @param {string} prefix

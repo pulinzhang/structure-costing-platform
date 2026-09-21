@@ -1,4 +1,4 @@
-import { DRAWER_SHELL, DRAWER_BACKDROP } from '../../../../ui/classes.js?v=8';
+import { DRAWER_SHELL, DRAWER_BACKDROP } from '../../../../ui/classes.js?v=11';
 import {
     dieFeeCalcTemplate,
     CALC_HISTORY_COLSPAN,
@@ -7,7 +7,7 @@ import {
     DEFAULT_PAGE_SIZE,
     bindPagination,
     paintPagination,
-} from '../../../../ui/page-size.js?v=5';
+} from '../../../../ui/page-size.js?v=6';
 import {
     formatDurationSeconds,
     formatTimingLine,

@@ -2,9 +2,9 @@
  * 项目一览 — HUD 密表，按基地分卡 / 分段
  */
 
-import { moreMenuItemHtml, moreMenuShellHtml } from '../../../../ui/more-menu.js?v=3';
-import { HUD_SHELL, DRAWER_SHELL, DRAWER_BACKDROP, HUD_BAND, OPS_TH } from '../../../../ui/classes.js?v=8';
-import { hudTableHtml, hudRowHtml, opsIconButtonHtml } from '../../../../ui/hud-table.js?v=1';
+import { moreMenuItemHtml, moreMenuShellHtml } from '../../../../ui/more-menu.js?v=5';
+import { HUD_SHELL, DRAWER_SHELL, DRAWER_BACKDROP, HUD_BAND, OPS_TH, BTN_HUD_CREATE, BTN_HUD_SAVE, HUD_FILTER } from '../../../../ui/classes.js?v=11';
+import { hudTableHtml, hudRowHtml, opsIconButtonHtml } from '../../../../ui/hud-table.js?v=2';
 
 
 function monthOptionsHtml(selected) {
@@ -46,7 +46,7 @@ export function vehicleModelListTemplate() {
                                 itemsHtml: moreMenuItemHtml({ id: 'vmBtnExport', label: '导出' }),
                             })}
                             <button id="vmBtnCreate" type="button"
-                                    class="inline-flex items-center gap-1.5 bg-brand-hud hover:bg-brand text-white px-3 py-1.5 text-[11px] font-semibold rounded-md transition-all">
+                                    class="${BTN_HUD_CREATE}">
                                 ${window.svgIcon('plus', 'w-3.5 h-3.5')}
                                 新增
                             </button>
@@ -95,7 +95,7 @@ export function vehicleModelListTemplate() {
             <div class="px-5 py-3.5 flex items-center justify-between border-b border-line bg-app-surface shrink-0">
                 <div class="flex items-center gap-2">
                     <span class="w-1 h-3.5 bg-brand-hud"></span>
-                    <h5 class="text-xs font-semibold text-white tracking-wider">新增项目</h5>
+                    <h5 class="text-xs font-semibold text-ink tracking-wider">新增项目</h5>
                 </div>
                 <button type="button" id="vmCloseCreate" class="text-ink-dim hover:text-ink w-6 h-6 flex items-center justify-center">✕</button>
             </div>
@@ -104,33 +104,33 @@ export function vehicleModelListTemplate() {
                     <div>
                         <label class="text-[10px] font-semibold text-ink-dim tracking-wider mb-1 block">基地 <span class="text-brand-hud">*</span></label>
                         <select id="vmCreateLocation" required
-                                class="w-full h-8 px-3 text-xs bg-app-hud border border-line text-white focus:outline-none focus:border-brand-active"></select>
+                                class="w-full ${HUD_FILTER}"></select>
                     </div>
                     <div>
                         <label class="text-[10px] font-semibold text-ink-dim tracking-wider mb-1 block">项目代号 <span class="text-brand-hud">*</span></label>
                         <input type="text" id="vmCreateCode" required maxlength="50" placeholder="例如：T13J"
-                               class="w-full h-8 px-3 text-xs bg-app-hud border border-line text-white placeholder:text-ink-dim focus:outline-none focus:border-brand-active">
+                               class="w-full h-8 px-3 text-xs bg-app-hud border border-line text-ink placeholder:text-ink-dim focus:outline-none focus:border-brand-active">
                     </div>
                     <div class="grid grid-cols-2 gap-3">
                         <div>
                             <label class="text-[10px] font-semibold text-ink-dim tracking-wider mb-1 block">生效年 <span class="text-brand-hud">*</span></label>
-                            <select id="vmCreateEffectiveYear" class="w-full h-8 px-3 text-xs bg-app-hud border border-line text-white focus:outline-none focus:border-brand-active"></select>
+                            <select id="vmCreateEffectiveYear" class="w-full ${HUD_FILTER}"></select>
                         </div>
                         <div>
                             <label class="text-[10px] font-semibold text-ink-dim tracking-wider mb-1 block">生效月 <span class="text-brand-hud">*</span></label>
-                            <select id="vmCreateEffectiveMonth" class="w-full h-8 px-3 text-xs bg-app-hud border border-line text-white focus:outline-none focus:border-brand-active"></select>
+                            <select id="vmCreateEffectiveMonth" class="w-full ${HUD_FILTER}"></select>
                         </div>
                     </div>
                     <div class="grid grid-cols-2 gap-3">
                         <div>
                             <label class="text-[10px] font-semibold text-ink-dim tracking-wider mb-1 block">失效年</label>
-                            <select id="vmCreateExpiryYear" class="w-full h-8 px-3 text-xs bg-app-hud border border-line text-white focus:outline-none focus:border-brand-active">
+                            <select id="vmCreateExpiryYear" class="w-full ${HUD_FILTER}">
                                 <option value="">尚未失效</option>
                             </select>
                         </div>
                         <div>
                             <label class="text-[10px] font-semibold text-ink-dim tracking-wider mb-1 block">失效月</label>
-                            <select id="vmCreateExpiryMonth" class="w-full h-8 px-3 text-xs bg-app-hud border border-line text-white focus:outline-none focus:border-brand-active">
+                            <select id="vmCreateExpiryMonth" class="w-full ${HUD_FILTER}">
                                 <option value="">—</option>
                             </select>
                         </div>
@@ -138,14 +138,14 @@ export function vehicleModelListTemplate() {
                     <div>
                         <label class="text-[10px] font-semibold text-ink-dim tracking-wider mb-1 block">当前供货台数 <span class="text-brand-hud">*</span></label>
                         <input type="number" id="vmCreateSuppliedUnits" min="0" step="1" value="0"
-                               class="w-full h-8 px-3 text-xs bg-app-hud border border-line text-white placeholder:text-ink-dim focus:outline-none focus:border-brand-active">
+                               class="w-full h-8 px-3 text-xs bg-app-hud border border-line text-ink placeholder:text-ink-dim focus:outline-none focus:border-brand-active">
                         <p class="text-[10px] text-ink-faint mt-1">单位：台。日后模具费等分摊到达上限后不再摊。</p>
                     </div>
                 </form>
             </div>
             <div class="px-5 py-3 border-t border-line flex items-center justify-end gap-2 bg-app-surface shrink-0">
                 <button type="button" id="vmCancelCreate" class="px-4 py-1.5 text-xs text-ink-muted border border-line hover:text-ink">取消</button>
-                <button type="button" id="vmSubmitCreate" class="bg-brand-hud hover:bg-brand text-white px-5 py-1.5 text-xs font-semibold">保存</button>
+                <button type="button" id="vmSubmitCreate" class="${BTN_HUD_SAVE}">保存</button>
             </div>
         </div>
 
@@ -155,7 +155,7 @@ export function vehicleModelListTemplate() {
             <div class="px-5 py-3.5 flex items-center justify-between border-b border-line bg-app-surface shrink-0">
                 <div class="flex items-center gap-2">
                     <span class="w-1 h-3.5 bg-brand-hud"></span>
-                    <h5 class="text-xs font-semibold text-white tracking-wider">编辑项目</h5>
+                    <h5 class="text-xs font-semibold text-ink tracking-wider">编辑项目</h5>
                 </div>
                 <button type="button" id="vmCloseEdit" class="text-ink-dim hover:text-ink w-6 h-6 flex items-center justify-center">✕</button>
             </div>
@@ -173,33 +173,33 @@ export function vehicleModelListTemplate() {
                 <div class="grid grid-cols-2 gap-3">
                     <div>
                         <label class="text-[10px] font-semibold text-ink-dim tracking-wider mb-1 block">生效年</label>
-                        <select id="vmEditEffectiveYear" class="w-full h-8 px-3 text-xs bg-app-hud border border-line text-white focus:outline-none focus:border-brand-active"></select>
+                        <select id="vmEditEffectiveYear" class="w-full ${HUD_FILTER}"></select>
                     </div>
                     <div>
                         <label class="text-[10px] font-semibold text-ink-dim tracking-wider mb-1 block">生效月</label>
-                        <select id="vmEditEffectiveMonth" class="w-full h-8 px-3 text-xs bg-app-hud border border-line text-white focus:outline-none focus:border-brand-active"></select>
+                        <select id="vmEditEffectiveMonth" class="w-full ${HUD_FILTER}"></select>
                     </div>
                 </div>
                 <div class="grid grid-cols-2 gap-3">
                     <div>
                         <label class="text-[10px] font-semibold text-ink-dim tracking-wider mb-1 block">失效年</label>
-                        <select id="vmEditExpiryYear" class="w-full h-8 px-3 text-xs bg-app-hud border border-line text-white focus:outline-none focus:border-brand-active"></select>
+                        <select id="vmEditExpiryYear" class="w-full ${HUD_FILTER}"></select>
                     </div>
                     <div>
                         <label class="text-[10px] font-semibold text-ink-dim tracking-wider mb-1 block">失效月</label>
-                        <select id="vmEditExpiryMonth" class="w-full h-8 px-3 text-xs bg-app-hud border border-line text-white focus:outline-none focus:border-brand-active"></select>
+                        <select id="vmEditExpiryMonth" class="w-full ${HUD_FILTER}"></select>
                     </div>
                 </div>
                 <div>
                     <label class="text-[10px] font-semibold text-ink-dim tracking-wider mb-1 block">当前供货台数</label>
                     <input type="number" id="vmEditSuppliedUnits" min="0" step="1"
-                           class="w-full h-8 px-3 text-xs bg-app-hud border border-line text-white focus:outline-none focus:border-brand-active">
+                           class="w-full ${HUD_FILTER}">
                     <p class="text-[10px] text-ink-faint mt-1">单位：台。日后模具费等分摊到达上限后不再摊。</p>
                 </div>
             </div>
             <div class="px-5 py-3 border-t border-line flex items-center justify-end gap-2 bg-app-surface shrink-0">
                 <button type="button" id="vmCancelEdit" class="px-4 py-1.5 text-xs text-ink-muted border border-line hover:text-ink">取消</button>
-                <button type="button" id="vmSubmitEdit" class="bg-brand-hud hover:bg-brand text-white px-5 py-1.5 text-xs font-semibold">保存</button>
+                <button type="button" id="vmSubmitEdit" class="${BTN_HUD_SAVE}">保存</button>
             </div>
         </div>
 
@@ -209,13 +209,13 @@ export function vehicleModelListTemplate() {
             <div class="px-5 py-3.5 flex items-center justify-between border-b border-line bg-app-surface shrink-0">
                 <div class="flex items-center gap-2">
                     <span class="w-1 h-3.5 bg-brand-hud"></span>
-                    <h5 class="text-xs font-semibold text-white tracking-wider">删除项目</h5>
+                    <h5 class="text-xs font-semibold text-ink tracking-wider">删除项目</h5>
                 </div>
                 <button type="button" id="vmCloseDelete" class="text-ink-dim hover:text-ink w-6 h-6 flex items-center justify-center">✕</button>
             </div>
             <div class="flex-1 p-5">
                 <p class="text-xs text-ink-muted mb-2">确认删除项目</p>
-                <p id="vmDeleteLead" class="text-sm font-semibold text-white"></p>
+                <p id="vmDeleteLead" class="text-sm font-semibold text-ink"></p>
                 <p class="text-[11px] text-ink-faint mt-3">仍被引用时无法删除。</p>
             </div>
             <div class="px-5 py-3 border-t border-line flex items-center justify-end gap-2 bg-app-surface shrink-0">

@@ -1,16 +1,17 @@
+import { DRAWER_BACKDROP, BTN_SOLID } from '../../../../ui/classes.js?v=11';
 import {
     assemblyCostListTemplate,
     renderLacRows,
     updateLacHud,
     updateLacTableHead,
-} from './template.js?v=51';
+} from './template.js?v=52';
 import {
     DEFAULT_PAGE_SIZE,
     bindPagination,
     paintPagination,
-} from '../../../../ui/page-size.js?v=5';
-import { bindMoreMenu } from '../../../../ui/more-menu.js?v=3';
-import { bindFilterBar } from '../../../../ui/filter-bar.js?v=2';
+} from '../../../../ui/page-size.js?v=6';
+import { bindMoreMenu } from '../../../../ui/more-menu.js?v=5';
+import { bindFilterBar } from '../../../../ui/filter-bar.js?v=3';
 import { setSearchBusy } from '../../../../ui/search-busy.js?v=3';
 
 /** @type {{ setOpen: (isOpen: boolean) => void, close: () => void, unbind: () => void } | null} */
@@ -622,7 +623,7 @@ function openBatchAuditDrawer(mode) {
     if (confirmBtn) {
         confirmBtn.textContent = isApprove ? '确认审核通过' : '确认反审核';
         confirmBtn.className =
-            'inline-flex items-center gap-1.5 bg-brand text-white px-4 py-2 text-[11px] font-semibold rounded hover:bg-brand-hover transition-all';
+            BTN_SOLID;
     }
 
     openDrawer('lacBatchAuditDrawer', 'lacBatchAuditDrawerBackdrop');
@@ -812,7 +813,7 @@ async function openDetail(costId) {
         closeDetailDrawer();
         const overlay = document.createElement('div');
         overlay.id = 'lacDetailOverlay';
-        overlay.className = 'fixed inset-0 z-[80] bg-overlay/60';
+        overlay.className = DRAWER_BACKDROP;
         overlay.addEventListener('click', closeDetailDrawer);
         const panel = document.createElement('div');
         panel.id = 'lacDetailPanel';

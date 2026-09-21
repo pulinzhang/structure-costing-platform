@@ -2,9 +2,10 @@
  * 工程变更单列表 — HUD 密表；按变更单行；删除即整本回滚并物理删除
  */
 
-import { filterSelect, HUD_SHELL, DRAWER_CLOSE, DRAWER_BACKDROP, DRAWER_SHELL, HUD_FILTER, FILTER_LABEL, HUD_BAND, OPS_TH, BTN_GHOST } from '../../../ui/classes.js?v=8';
-import { filterBarHtml } from '../../../ui/filter-bar.js?v=2';
-import { hudTableHtml, hudRowHtml, opsIconButtonHtml } from '../../../ui/hud-table.js?v=1';
+import { filterSelect, HUD_SHELL, DRAWER_CLOSE, DRAWER_BACKDROP, DRAWER_SHELL, HUD_FILTER, FILTER_LABEL, HUD_BAND, OPS_TH, BTN_GHOST } from '../../../ui/classes.js?v=11';
+import { filterBarHtml } from '../../../ui/filter-bar.js?v=3';
+import { hudTableHtml, hudRowHtml, opsIconButtonHtml } from '../../../ui/hud-table.js?v=2';
+import { hudKpiCardHtml } from '../../../ui/hud-kpi.js?v=1';
 
 
 const STATUS_LABELS = {
@@ -19,15 +20,18 @@ export function engineeringChangeListTemplate() {
             <div class="${HUD_SHELL}">
                 <div class="${HUD_BAND}">
                     <div class="grid grid-cols-2 gap-3 font-mono">
-                        <div class="bg-app-main/80 border border-line-hud p-3">
-                            <div class="text-ink-faint text-[10px] tracking-wider">查询范围</div>
-                            <div class="text-[14px] font-bold text-ink mt-1 truncate" id="ecListHudScope">全部范围</div>
-                        </div>
-                        <div class="bg-app-main/80 border border-line-hud p-3">
-                                <div class="text-ink-faint text-[10px] tracking-wider">变更单行</div>
-                                <div class="text-[18px] font-bold text-ink mt-1 tabular-nums" id="ecListHudTotal">—</div>
-                                <div class="text-[9px] text-ink-dim mt-2 leading-snug">变化记录条数，不是换树数量，也不是采购件数量</div>
-                        </div>
+                        ${hudKpiCardHtml({
+                            title: '查询范围',
+                            valueKind: 'text',
+                            valueId: 'ecListHudScope',
+                            valueHtml: '全部范围',
+                        })}
+                        ${hudKpiCardHtml({
+                            title: '变更单行',
+                            valueId: 'ecListHudTotal',
+                            valueHtml: '—',
+                            meta: '变化记录条数，不是换树数量，也不是采购件数量',
+                        })}
                     </div>
                     <p class="mt-3 text-[10px] text-ink-dim leading-snug tracking-wide">
                         变更单 → 树坑 → 树 → 换树 → 盖章 → 数采购件（分总成和冲压件以新版本号存在了新树上）

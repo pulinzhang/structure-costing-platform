@@ -5,6 +5,7 @@
  * 顶部摘要与表单同源渲染，避免展示/编辑数据冲突
  */
 
+import { BTN_SOLID } from '../../../ui/classes.js?v=11';
 import { updateUserSession } from '../../login/index.js';
 import { profileLoadingTemplate, profileTemplate } from './template.js?v=3';
 
@@ -87,7 +88,7 @@ async function loadProfile() {
                 <div class="flex flex-col items-center justify-center py-20">
                     <p class="text-xs text-ink-muted mb-3">加载失败，请重试</p>
                     <button type="button" id="btnRetryProfile"
-                            class="inline-flex items-center gap-1.5 bg-brand text-white px-4 py-2 text-xs font-semibold rounded-sm hover:bg-brand-hover transition-all">
+                            class="${BTN_SOLID}">
                         重新加载
                     </button>
                 </div>

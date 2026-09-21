@@ -6,11 +6,12 @@
  * 单价一律按十进制字符串处理（不经 Number/parseFloat）。
  */
 
-import { filterSelect, filterInput, HUD_SHELL, DRAWER_CLOSE, DRAWER_SHELL, DRAWER_BACKDROP, HUD_BAND, OPS_TH, BTN_GHOST } from '../../../../ui/classes.js?v=8';
-import { filterBarHtml } from '../../../../ui/filter-bar.js?v=2';
-import { hudTableHtml, hudRowHtml, opsIconButtonHtml } from '../../../../ui/hud-table.js?v=1';
+import { filterSelect, filterInput, HUD_SHELL, DRAWER_CLOSE, DRAWER_SHELL, DRAWER_BACKDROP, HUD_BAND, OPS_TH, BTN_GHOST, HUD_LED, BTN_SOLID, BTN_SOLID_DANGER, HUD_FILTER } from '../../../../ui/classes.js?v=11';
+import { filterBarHtml } from '../../../../ui/filter-bar.js?v=3';
+import { hudTableHtml, hudRowHtml, opsIconButtonHtml } from '../../../../ui/hud-table.js?v=2';
+import { hudKpiCardHtml } from '../../../../ui/hud-kpi.js?v=1';
 
-import { moreMenuItemHtml, moreMenuShellHtml } from '../../../../ui/more-menu.js?v=3';
+import { moreMenuItemHtml, moreMenuShellHtml } from '../../../../ui/more-menu.js?v=5';
 import { partShortCodeCellHtml, partNumberNameCellHtml } from '../../../../domain/part-identity.js?v=5';
 
 /** 格式化为固定 4 位小数字符串；非法值返回 '-'。 */
@@ -61,27 +62,9 @@ export function annualPartPriceTemplate() {
                 <div class="${HUD_BAND}">
                     <div class="flex items-start justify-between gap-4 mb-3">
                         <div class="grid grid-cols-2 lg:grid-cols-3 gap-3 font-mono flex-1 min-w-0">
-                            <div class="bg-app-main/80 border border-line-hud p-3 backdrop-blur-sm">
-                                <div class="text-ink-faint text-[10px] tracking-wider">记录条数</div>
-                                <div class="text-[18px] font-bold text-ink mt-1 tabular-nums">
-                                    <span id="annualHudTotal">—</span>
-                                    <span class="text-[10px] text-ink-faint ml-1">条</span>
-                                </div>
-                            </div>
-                            <div class="bg-app-main/80 border border-line-hud p-3 backdrop-blur-sm">
-                                <div class="text-ink-faint text-[10px] tracking-wider">待审</div>
-                                <div class="text-[18px] font-bold text-ink mt-1 tabular-nums">
-                                    <span id="annualHudPending">—</span>
-                                    <span class="text-[10px] text-ink-faint ml-1">条</span>
-                                </div>
-                            </div>
-                            <div class="bg-app-main/80 border border-line-hud p-3 backdrop-blur-sm">
-                                <div class="text-ink-faint text-[10px] tracking-wider">已审</div>
-                                <div class="text-[18px] font-bold text-ink mt-1 tabular-nums">
-                                    <span id="annualHudApproved">—</span>
-                                    <span class="text-[10px] text-ink-faint ml-1">条</span>
-                                </div>
-                            </div>
+                            ${hudKpiCardHtml({ title: '记录条数', valueHtml: '<span id="annualHudTotal">—</span>', unit: '条' })}
+                            ${hudKpiCardHtml({ title: '待审', valueHtml: '<span id="annualHudPending">—</span>', unit: '条' })}
+                            ${hudKpiCardHtml({ title: '已审', valueHtml: '<span id="annualHudApproved">—</span>', unit: '条' })}
                         </div>
                         <div class="flex items-center gap-1.5 shrink-0">
                             ${moreMenuShellHtml({
@@ -192,7 +175,7 @@ function batchAuditDrawerHtml(prefix) {
              id="${prefix}BatchAuditDrawer" style="display:none; max-height: 100vh">
             <div class="px-5 py-3.5 flex items-center justify-between shrink-0">
                 <h5 class="text-[11px] font-semibold tracking-wider text-ink-muted flex items-center gap-2.5 uppercase">
-                    <span class="hud-led"></span>
+                    <span class="${HUD_LED}"></span>
                     <span id="${prefix}BatchAuditDrawerTitle">批量审核</span>
                 </h5>
                 <button type="button" id="close${prefix.charAt(0).toUpperCase() + prefix.slice(1)}BatchAuditDrawer"
@@ -221,7 +204,7 @@ function batchAuditDrawerHtml(prefix) {
             </div>
             <div class="px-6 py-4 border-t border-app-elevated flex items-center justify-end gap-2 shrink-0">
                 <button type="button" id="cancel${prefix.charAt(0).toUpperCase() + prefix.slice(1)}BatchAuditBtn" class="inline-flex items-center gap-1.5 bg-transparent text-ink-muted border border-line px-4 py-2 text-[11px] font-medium rounded hover:border-ink-muted hover:text-ink transition-all">取消</button>
-                <button type="button" id="confirm${prefix.charAt(0).toUpperCase() + prefix.slice(1)}BatchAuditBtn" class="inline-flex items-center gap-1.5 bg-brand text-white px-4 py-2 text-[11px] font-semibold rounded hover:bg-brand-hover transition-all">确认提交</button>
+                <button type="button" id="confirm${prefix.charAt(0).toUpperCase() + prefix.slice(1)}BatchAuditBtn" class="${BTN_SOLID}">确认提交</button>
             </div>
         </div>
     `;
@@ -235,7 +218,7 @@ function editDrawerHtml() {
              id="annualEditDrawer" style="display:none; max-height: 100vh">
             <div class="px-5 py-3.5 flex items-center justify-between shrink-0">
                 <h5 class="text-[11px] font-semibold tracking-wider text-ink-muted flex items-center gap-2.5 uppercase" id="annualEditDrawerTitle">
-                    <span class="hud-led"></span>
+                    <span class="${HUD_LED}"></span>
                     编辑零件价
                 </h5>
                 <button type="button" id="closeAnnualEditDrawer"
@@ -325,7 +308,7 @@ function editDrawerHtml() {
                     <div>
                         <label class="text-[10px] text-ink-dim mb-1 block">供应商</label>
                         <select id="annualEditSupplierName"
-                               class="w-full h-9 px-3 text-xs bg-app-deep border border-line text-ink rounded focus:outline-none focus:border-brand-active">
+                               class="w-full ${HUD_FILTER}">
                             <option value="">（空）</option>
                         </select>
                     </div>
@@ -339,7 +322,7 @@ function editDrawerHtml() {
             </div>
             <div class="px-6 py-4 border-t border-app-elevated flex items-center justify-end gap-2 shrink-0">
                 <button type="button" id="cancelAnnualEditBtn" class="inline-flex items-center gap-1.5 bg-transparent text-ink-muted border border-line px-4 py-2 text-[11px] font-medium rounded hover:border-ink-muted hover:text-ink transition-all">取消</button>
-                <button type="button" id="submitAnnualEditBtn" class="inline-flex items-center gap-1.5 bg-brand text-white px-4 py-2 text-[11px] font-semibold rounded hover:bg-brand-hover transition-all">
+                <button type="button" id="submitAnnualEditBtn" class="${BTN_SOLID}">
                     ${window.svgIcon('archive', 'w-3.5 h-3.5')}
                     保存
                 </button>
@@ -356,7 +339,7 @@ function deleteDrawerHtml() {
              id="annualDeleteDrawer" style="display:none; max-height: 100vh">
             <div class="px-5 py-3.5 flex items-center justify-between shrink-0">
                 <h5 class="text-[11px] font-semibold tracking-wider text-ink-muted flex items-center gap-2.5 uppercase">
-                    <span class="hud-led"></span>
+                    <span class="${HUD_LED}"></span>
                     确认删除
                 </h5>
                 <button type="button" id="closeAnnualDeleteDrawer"
@@ -373,7 +356,7 @@ function deleteDrawerHtml() {
             </div>
             <div class="px-6 py-4 border-t border-app-elevated flex items-center justify-end gap-2 shrink-0">
                 <button type="button" id="cancelAnnualDeleteBtn" class="inline-flex items-center gap-1.5 bg-transparent text-ink-muted border border-line px-4 py-2 text-[11px] font-medium rounded hover:border-ink-muted hover:text-ink transition-all">取消</button>
-                <button type="button" id="confirmAnnualDeleteBtn" class="inline-flex items-center gap-1.5 bg-danger text-white px-4 py-2 text-[11px] font-semibold rounded hover:bg-brand-hover transition-all">
+                <button type="button" id="confirmAnnualDeleteBtn" class="${BTN_SOLID_DANGER}">
                     ${window.svgIcon('trash', 'w-3.5 h-3.5')}
                     删除
                 </button>

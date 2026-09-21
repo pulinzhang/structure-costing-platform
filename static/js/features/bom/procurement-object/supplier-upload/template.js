@@ -2,7 +2,7 @@
  * 采购对象批量上传供应商
  */
 
-import { BTN_FILE_SELECT, BTN_GHOST, BTN_UPLOAD_SUBMIT, UPLOAD_DROPZONE, UPLOAD_INPUT, UPLOAD_LABEL, HUD_LED } from '../../../../ui/classes.js?v=8';
+import { BTN_FILE_SELECT, BTN_GHOST, BTN_UPLOAD_SUBMIT, UPLOAD_DROPZONE, UPLOAD_INPUT, UPLOAD_LABEL, HUD_LED } from '../../../../ui/classes.js?v=11';
 
 export function procurementObjectSupplierUploadTemplate() {
     return `
@@ -35,7 +35,7 @@ export function procurementObjectSupplierUploadTemplate() {
                                         <label for="poSupplierUploadLocation" class="${UPLOAD_LABEL}">
                                             采购基地 <span class="text-brand">*</span>
                                         </label>
-                                        <select id="poSupplierUploadLocation" required class="${UPLOAD_INPUT} w-full">
+                                        <select id="poSupplierUploadLocation" required class="${UPLOAD_INPUT} hud-filter w-full">
                                             <option value="">请选择采购基地</option>
                                         </select>
                                     </div>
@@ -43,7 +43,7 @@ export function procurementObjectSupplierUploadTemplate() {
                                         <label for="poSupplierUploadModel" class="${UPLOAD_LABEL}">
                                             项目 <span class="text-brand">*</span>
                                         </label>
-                                        <select id="poSupplierUploadModel" required class="${UPLOAD_INPUT} w-full">
+                                        <select id="poSupplierUploadModel" required class="${UPLOAD_INPUT} hud-filter w-full">
                                             <option value="">请先选择采购基地</option>
                                         </select>
                                     </div>
@@ -51,7 +51,7 @@ export function procurementObjectSupplierUploadTemplate() {
                                         <label for="poSupplierUploadVersion" class="${UPLOAD_LABEL}">
                                             版本 <span class="text-brand">*</span>
                                         </label>
-                                        <select id="poSupplierUploadVersion" required class="${UPLOAD_INPUT} w-full">
+                                        <select id="poSupplierUploadVersion" required class="${UPLOAD_INPUT} hud-filter w-full">
                                             <option value="">请先选择项目</option>
                                         </select>
                                     </div>
@@ -88,7 +88,7 @@ export function procurementObjectSupplierUploadTemplate() {
                                             </div>
                                             <div class="h-1.5 w-full bg-app-deep border border-line overflow-hidden mb-3">
                                                 <div id="poSupplierUploadProgressBar"
-                                                     class="h-full bg-brand shadow-[0_0_8px_rgb(var(--brabus-red)/0.5)] transition-all duration-300 animate-pulse"
+                                                     class="h-full bg-brand hud-brand-glow transition-all duration-300 animate-pulse"
                                                      style="width: 60%"></div>
                                             </div>
                                             <p id="poSupplierUploadProgressMsg" class="text-[11px] text-ink-muted leading-relaxed mb-0 whitespace-pre-wrap break-words max-h-48 overflow-y-auto">解析并写入数据库，请稍候</p>

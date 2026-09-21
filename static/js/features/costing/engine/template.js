@@ -3,13 +3,13 @@
  * 视觉原则：唯一焦点 + 异常优先 + 渐进披露；中文为主
  */
 
-import { paginationBarHtml } from '../../../ui/page-size.js?v=5';
+import { paginationBarHtml } from '../../../ui/page-size.js?v=6';
 
 const engineMotionStyles = `
 <style id="engineConsoleMotion">
 @keyframes engine-ignite-breathe {
-  0%, 100% { opacity: 0.45; box-shadow: 0 0 4px rgba(255, 30, 39, 0.3); }
-  50% { opacity: 1; box-shadow: 0 0 10px rgba(255, 30, 39, 0.7); }
+  0%, 100% { opacity: 0.45; box-shadow: 0 0 4px rgb(var(--hud-red) / 0.3); }
+  50% { opacity: 1; box-shadow: 0 0 10px rgb(var(--hud-red) / 0.7); }
 }
 @keyframes engine-ignite-flash {
   0%, 100% { opacity: 1; }
@@ -60,7 +60,7 @@ const engineMotionStyles = `
   height: 40px;
   padding: 0 12px;
   background: rgb(var(--bg-deep));
-  border: 1px solid rgba(255, 255, 255, 0.12);
+  border: 1px solid rgb(var(--text-main) / 0.12);
   color: rgb(var(--text-main));
   font-size: 12px;
   font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
@@ -76,11 +76,11 @@ const engineMotionStyles = `
   color: rgb(var(--text-muted));
 }
 .engine-select-trigger:hover {
-  border-color: rgba(255, 255, 255, 0.22);
+  border-color: rgb(var(--text-main) / 0.22);
 }
 .engine-select-wrap.is-open .engine-select-trigger,
 .engine-select-trigger:focus {
-  border-color: rgba(255, 30, 39, 0.55);
+  border-color: rgb(var(--hud-red) / 0.55);
 }
 .engine-select-caret {
   width: 0;
@@ -99,8 +99,8 @@ const engineMotionStyles = `
   max-height: 240px;
   overflow-y: auto;
   background: rgb(var(--bg-deep));
-  border: 1px solid rgba(255, 255, 255, 0.12);
-  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.55);
+  border: 1px solid rgb(var(--text-main) / 0.12);
+  box-shadow: 0 8px 24px rgb(var(--overlay) / 0.55);
 }
 .engine-select-wrap.is-sm .engine-select-menu {
   right: auto;
@@ -147,7 +147,7 @@ ${engineMotionStyles}
       <div class="flex items-start gap-3">
         <div class="w-0.5 h-8 bg-brand-hud mt-0.5 shrink-0"></div>
         <div>
-          <h1 class="text-xl font-semibold tracking-[0.1em] text-white">月度核价控制台</h1>
+          <h1 class="text-xl font-semibold tracking-[0.1em] text-ink">月度核价控制台</h1>
           <p class="text-[11px] text-ink-dim mt-1.5">引擎控制 · 校验与审计</p>
         </div>
       </div>
@@ -181,7 +181,7 @@ ${engineMotionStyles}
           ${Array.from({ length: 12 }, (_, i) => `<option value="${i + 1}">${fmtMonth(i + 1)}</option>`).join('')}
         </select>
       </div>
-      <button id="engineReadyBtn" type="button" class="h-10 px-4 border border-ink/10 text-ink text-xs hover:border-white/20 hover:text-ink transition-colors disabled:opacity-40 disabled:cursor-not-allowed disabled:pointer-events-none">
+      <button id="engineReadyBtn" type="button" class="h-10 px-4 border border-ink/10 text-ink text-xs hover:border-ink/20 hover:text-ink transition-colors disabled:opacity-40 disabled:cursor-not-allowed disabled:pointer-events-none">
         检查就绪
       </button>
       <button id="engineStartBtn" type="button" class="h-10 px-6 bg-brand-hud hover:bg-brand-hud/15 text-white text-sm font-semibold tracking-[0.08em] flex items-center gap-2.5 disabled:bg-transparent disabled:text-ink-dim disabled:border disabled:border-ink/10 disabled:opacity-40 disabled:cursor-not-allowed disabled:pointer-events-none transition-colors">
@@ -206,7 +206,7 @@ ${engineMotionStyles}
     <div class="flex items-center justify-between mb-2">
       <div class="flex items-center gap-2">
         <span id="engineProgressSpinner" class="w-1.5 h-1.5 bg-brand-hud animate-ping"></span>
-        <span id="engineProgressTitle" class="text-xs text-white">引擎运行中</span>
+        <span id="engineProgressTitle" class="text-xs text-ink">引擎运行中</span>
       </div>
       <span id="engineProgressPercent" class="text-sm font-mono text-brand-hud tabular-nums">0%</span>
     </div>
@@ -218,7 +218,7 @@ ${engineMotionStyles}
 
   <div id="engineResultPanel" class="hidden mb-8">
     <div class="text-[10px] text-ink-dim">执行结果</div>
-    <div id="engineResultStatus" class="text-sm font-medium text-white mt-0.5">—</div>
+    <div id="engineResultStatus" class="text-sm font-medium text-ink mt-0.5">—</div>
     <div id="engineResultTiming" class="hidden text-[10px] font-mono text-ink-dim mt-1 tabular-nums"></div>
     <p id="engineResultHeadline" class="text-[11px] text-ink-muted mt-1 leading-relaxed"></p>
     <div id="engineResultSteps" class="mt-4"></div>

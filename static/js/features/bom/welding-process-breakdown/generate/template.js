@@ -2,8 +2,8 @@
  * BOM 焊接工艺拆解 — 生成页模板（对齐钢价计算布局）
  */
 
-import { paginationBarHtml } from '../../../../ui/page-size.js?v=5';
-import { filterSelect } from '../../../../ui/classes.js?v=8';
+import { paginationBarHtml } from '../../../../ui/page-size.js?v=6';
+import { filterSelect, BTN_ABORT } from '../../../../ui/classes.js?v=11';
 
 
 export function weldingProcessBreakdownGenerateTemplate() {
@@ -53,7 +53,7 @@ export function weldingProcessBreakdownGenerateTemplate() {
                         再次拆解将覆盖未审核数据；已审核范围须先反审核
                     </span>
                     <button id="wpbGenSubmitBtn" type="button"
-                            class="h-7 px-4 text-[10px] bg-brand-hover hover:bg-danger text-white font-medium rounded-sm transition-colors disabled:opacity-30 disabled:cursor-not-allowed">
+                            class="${BTN_ABORT}">
                         开始拆解
                     </button>
                 </div>
@@ -69,7 +69,7 @@ export function weldingProcessBreakdownGenerateTemplate() {
                 </div>
                 <div class="h-1.5 w-full bg-app-deep border border-line overflow-hidden mb-2">
                     <div id="calcProgressBar"
-                         class="h-full bg-brand shadow-[0_0_8px_rgb(var(--brabus-red)/0.5)] transition-all duration-300"
+                         class="h-full bg-brand hud-brand-glow transition-all duration-300"
                          style="width: 0%"></div>
                 </div>
                 <p id="calcProgressMsg" class="text-[11px] text-ink-muted leading-relaxed mb-0">已提交拆解队列</p>

@@ -3,18 +3,19 @@
  * 钢材价格计算结果浏览 / 手工维护 / 审核
  */
 
+import { BTN_SOLID } from '../../../../ui/classes.js?v=11';
 import {
     steelPriceListTemplate,
     renderSteelPriceRows,
     updateSteelPriceHud,
-} from './template.js?v=67';
+} from './template.js?v=68';
 import {
     DEFAULT_PAGE_SIZE,
     bindPagination,
     paintPagination,
-} from '../../../../ui/page-size.js?v=5';
-import { bindMoreMenu } from '../../../../ui/more-menu.js?v=3';
-import { bindFilterBar } from '../../../../ui/filter-bar.js?v=2';
+} from '../../../../ui/page-size.js?v=6';
+import { bindMoreMenu } from '../../../../ui/more-menu.js?v=5';
+import { bindFilterBar } from '../../../../ui/filter-bar.js?v=3';
 import { setSearchBusy } from '../../../../ui/search-busy.js?v=3';
 
 /** @type {{ setOpen: (isOpen: boolean) => void, close: () => void, unbind: () => void } | null} */
@@ -551,7 +552,7 @@ function openBatchAuditDrawer(mode) {
     if (confirmBtn) {
         confirmBtn.textContent = isApprove ? '确认审核通过' : '确认反审核';
         confirmBtn.className =
-            'inline-flex items-center gap-1.5 bg-brand text-white px-4 py-2 text-[11px] font-semibold rounded hover:bg-brand-hover transition-all';
+            BTN_SOLID;
     }
 
     openDrawer('batchAuditDrawer', 'batchAuditDrawerBackdrop');

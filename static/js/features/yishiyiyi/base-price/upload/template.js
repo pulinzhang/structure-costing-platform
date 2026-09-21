@@ -8,7 +8,7 @@ import {
     UPLOAD_INPUT,
     UPLOAD_LABEL,
     BTN_GHOST,
-} from '../../../../ui/classes.js?v=8';
+} from '../../../../ui/classes.js?v=11';
 
 export function basePriceUploadTemplate() {
     return `
@@ -83,7 +83,7 @@ export function basePriceUploadTemplate() {
                                 </div>
                                 <div class="h-1.5 w-full bg-app-deep border border-line overflow-hidden mb-3">
                                     <div id="basePriceProgressBar"
-                                         class="h-full bg-brand shadow-[0_0_8px_rgb(var(--brabus-red)/0.5)] transition-all duration-300"
+                                         class="h-full bg-brand hud-brand-glow transition-all duration-300"
                                          style="width: 0%"></div>
                                 </div>
                                 <p id="basePriceProgressMsg" class="text-[11px] text-ink-muted leading-relaxed mb-0 whitespace-pre-wrap break-words max-h-48 overflow-y-auto">已提交解析队列</p>

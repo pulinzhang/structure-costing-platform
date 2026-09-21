@@ -3,7 +3,7 @@
  * 个人资料 + 安全设置（两张独立卡片，操作物理隔离）
  */
 
-import { HUD_LED } from '../../../ui/classes.js?v=8';
+import { HUD_LED } from '../../../ui/classes.js?v=11';
 
 export function profileLoadingTemplate() {
     return `
@@ -40,7 +40,7 @@ export function profileTemplate(user = {}) {
                                 <img id="profileAvatarImg" src="${esc(hasCustomAvatar ? avatar : '')}" alt=""
                                      class="absolute inset-0 w-full h-full object-cover ${hasCustomAvatar ? '' : 'hidden'}">
                                 <span id="profileAvatarInitial" class="${hasCustomAvatar ? 'hidden' : ''}">${esc(initial)}</span>
-                                <span class="absolute inset-0 bg-overlay/55 opacity-0 group-hover:opacity-100 flex items-center justify-center text-[10px] text-white tracking-wide transition-opacity">
+                                <span class="absolute inset-0 bg-overlay/55 opacity-0 group-hover:opacity-100 flex items-center justify-center text-[10px] text-ink tracking-wide transition-opacity">
                                     更换
                                 </span>
                             </button>
@@ -48,7 +48,7 @@ export function profileTemplate(user = {}) {
                         </div>
                         <div class="space-y-1">
                             <div class="flex items-center gap-3">
-                                <h2 class="text-sm font-semibold text-white tracking-wide" id="headerRealName">${esc(displayName)}</h2>
+                                <h2 class="text-sm font-semibold text-ink tracking-wide" id="headerRealName">${esc(displayName)}</h2>
                                 <span id="headerStatus" class="px-2 py-0.5 text-[10px] font-semibold ${isActive ? 'bg-ok/20 text-ok' : 'bg-danger/20 text-danger'} rounded">
                                     ${isActive ? '启用' : '停用'}
                                 </span>

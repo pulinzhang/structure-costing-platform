@@ -1,11 +1,11 @@
-import { DRAWER_BACKDROP } from '../../../ui/classes.js?v=8';
+import { DRAWER_BACKDROP } from '../../../ui/classes.js?v=11';
 /**
  * 废料月度销售价 — 价格矩阵视觉层（非表格填表）
  * 基地锚点 · 净价 Hero · 扣费弱化 · 备注隐式 · 中文极简
  * DOM ID / 字段 / 事件契约保持不变
  */
 
-import { moreMenuItemHtml, moreMenuShellHtml } from '../../../ui/more-menu.js?v=3';
+import { moreMenuItemHtml, moreMenuShellHtml } from '../../../ui/more-menu.js?v=5';
 
 /** 金额展示：固定 2 位小数 + 千分位（输入框用，空值返回 ''） */
 export function fmtPrice(value) {

@@ -2,7 +2,7 @@
  * 冲压零件价格计算页
  */
 
-import { DRAWER_CLOSE, DRAWER_SHELL, DRAWER_BACKDROP } from '../../../../ui/classes.js?v=8';
+import { DRAWER_CLOSE, DRAWER_SHELL, DRAWER_BACKDROP } from '../../../../ui/classes.js?v=11';
 import {
     partCostCalcTemplate,
 } from './template.js?v=19';
@@ -10,7 +10,7 @@ import {
     DEFAULT_PAGE_SIZE,
     bindPagination,
     paintPagination,
-} from '../../../../ui/page-size.js?v=5';
+} from '../../../../ui/page-size.js?v=6';
 import {
     formatDurationSeconds,
     formatTimingLine,

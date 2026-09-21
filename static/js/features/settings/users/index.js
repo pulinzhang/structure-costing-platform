@@ -8,12 +8,12 @@
  * - 删除确认  →deleteDrawer
  */
 
-import { usersTemplate, renderTableRows } from './template.js?v=16';
+import { usersTemplate, renderTableRows } from './template.js?v=17';
 import {
     DEFAULT_PAGE_SIZE,
     bindPagination,
     paintPagination,
-} from '../../../ui/page-size.js?v=5';
+} from '../../../ui/page-size.js?v=6';
 import { setSearchBusy } from '../../../ui/search-busy.js?v=3';
 
 const usersState = {

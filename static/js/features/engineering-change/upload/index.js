@@ -2,7 +2,7 @@
  * 工程变更上传页 — 异步 task_id + 拖拽区原位进度（对齐布点 / 工艺上传）
  */
 
-import { engineeringChangeUploadTemplate } from './template.js?v=17';
+import { engineeringChangeUploadTemplate } from './template.js?v=18';
 import { can } from '../../../core/permissions.js?v=8';
 import {
     setDropzoneDragActive,
@@ -183,7 +183,7 @@ const EngineeringChangeUploadPage = {
                 <div class="flex items-center gap-3 p-3 bg-app-main border border-line">
                     <span class="text-ok">${svgIcon('file-earmark-excel')}</span>
                     <div class="flex-1 min-w-0">
-                        <div class="text-xs font-medium text-white truncate">${esc(file.name)}</div>
+                        <div class="text-xs font-medium text-ink truncate">${esc(file.name)}</div>
                         <div class="text-[10px] text-ink-dim">${window.formatFileSize(file.size)}</div>
                     </div>
                     <button type="button" id="ecRemoveFileBtn" class="p-1.5 text-ink-dim hover:text-brand hover:bg-app-elevated rounded-sm transition-all">
@@ -354,7 +354,7 @@ const EngineeringChangeUploadPage = {
         } else if (status === 'failed' && bar) {
             bar.className = 'h-full bg-danger transition-all duration-300';
         } else if (bar) {
-            bar.className = 'h-full bg-brand shadow-[0_0_8px_rgb(var(--brabus-red)/0.5)] transition-all duration-300';
+            bar.className = 'h-full bg-brand hud-brand-glow transition-all duration-300';
         }
     },
 

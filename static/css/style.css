@@ -25,6 +25,7 @@
     --filter-search-to: 45 15 15;
 
     --text-main: 255 255 255;
+    --text-on-brand: 255 255 255;
     --text-muted: 158 158 158;
     --text-disabled: 97 97 97;
     --text-faint: 85 85 85;
@@ -47,6 +48,7 @@
     --shadow-hud: 0 4px 24px rgb(var(--overlay) / 0.7), inset 0 1px 0 rgb(var(--text-main) / 0.02);
     --shadow-drawer: -20px 0 60px rgb(var(--overlay) / 0.9);
     --glow-hud: 0 0 30px rgb(var(--hud-red) / 0.15), inset 0 1px 0 rgb(var(--hud-red) / 0.12);
+    --glow-brand: 0 0 8px rgb(var(--brabus-red) / 0.5);
 }
 
 /* ====== 全局基础样式 ====== */
@@ -781,6 +783,46 @@ textarea:-webkit-autofill:active {
     border-radius: var(--radius-ctl);
 }
 
+.hud-select-menu {
+    position: fixed;
+    max-height: 14rem;
+    overflow-y: auto;
+    background: rgb(var(--bg-hud));
+    border: 1px solid rgb(var(--border-subtle));
+    border-radius: var(--radius-ctl);
+    padding: 0.25rem 0;
+    box-shadow: 0 8px 24px rgb(var(--overlay) / 0.55);
+}
+
+#hudSelectMenu {
+    z-index: 90;
+}
+
+.hud-select-menu [role="option"] {
+    color: rgb(var(--text-muted));
+    background-color: transparent;
+}
+
+.hud-select-menu [role="option"][aria-selected="true"] {
+    background-color: rgb(var(--hud-red));
+    color: rgb(var(--text-on-brand));
+}
+
+.hud-select-menu:hover [role="option"][aria-selected="true"]:not(:hover) {
+    background-color: transparent;
+    color: rgb(var(--text-muted));
+}
+
+.hud-select-menu [role="option"]:hover {
+    background-color: rgb(var(--hud-red));
+    color: rgb(var(--text-on-brand));
+}
+
+.hud-select-menu [role="option"][disabled] {
+    opacity: 0.4;
+    pointer-events: none;
+}
+
 .hud-led {
     width: 2px;
     height: 12px;
@@ -789,6 +831,14 @@ textarea:-webkit-autofill:active {
     display: inline-block;
     box-shadow: 0 0 6px rgb(var(--brabus-red) / 0.4);
     flex-shrink: 0;
+}
+
+.hud-brand-glow {
+    box-shadow: var(--glow-brand);
+}
+
+.group:hover .hud-brand-glow-hover {
+    box-shadow: var(--glow-brand);
 }
 
 .hud-kpi-line-glow { box-shadow: 0 0 10px rgb(var(--hud-red)); }

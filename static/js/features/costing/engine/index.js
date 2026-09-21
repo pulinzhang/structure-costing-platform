@@ -7,7 +7,7 @@ import {
     DEFAULT_PAGE_SIZE,
     bindPagination,
     paintPagination,
-} from '../../../ui/page-size.js?v=5';
+} from '../../../ui/page-size.js?v=6';
 import {
     formatDurationSeconds,
     formatTimingLine,
@@ -865,7 +865,7 @@ function renderGateRow(item) {
     }
 
     const accent = hardFail ? 'border-brand-hud' : 'border-l-amber-500/60';
-    const titleClass = hardFail ? 'text-white' : 'text-ink';
+    const titleClass = 'text-ink';
     const badge = hardFail
         ? '<span class="inline-flex items-center px-1.5 py-px text-[9px] tracking-wide text-brand-hud border border-brand-hud/45">需处理</span>'
         : '<span class="inline-flex items-center px-1.5 py-px text-[9px] tracking-wide text-warn/90 border border-warn/40">提示</span>';
@@ -1158,7 +1158,7 @@ function renderPlanScope() {
                         data-action="scope-select"
                         data-scope-key="${esc(key)}"
                         class="w-full pl-5 py-1 flex items-center gap-2 text-left ${
-                            selected ? 'text-white' : 'text-ink-muted hover:text-ink'
+                            selected ? 'text-ink' : 'text-ink-muted hover:text-ink'
                         }">
                     <span class="text-[10px] font-mono text-ink-faint tabular-nums shrink-0">${String(idx + 1).padStart(2, '0')}</span>
                     <span class="text-[11px] font-mono truncate" title="${esc(name)}">${esc(name)}</span>
@@ -1193,7 +1193,7 @@ function renderPlanScope() {
                             data-action="scope-toggle"
                             data-scope-key="${esc(key)}"
                             class="w-full pl-5 py-1 flex items-center justify-between gap-2 text-left ${
-                                selected ? 'text-white' : 'text-ink-muted hover:text-ink'
+                                selected ? 'text-ink' : 'text-ink-muted hover:text-ink'
                             }">
                         <div class="flex items-center gap-2 min-w-0">
                             <span class="font-mono text-[9px] text-ink-faint shrink-0">${open ? '▼' : '▶'}</span>
@@ -1433,7 +1433,7 @@ function showResult(result) {
     const panel = document.getElementById('engineResultPanel');
     panel?.classList.remove('hidden');
     const status = result?.status || '—';
-    const meta = STATUS_META[status] || { label: status, className: 'text-white' };
+    const meta = STATUS_META[status] || { label: status, className: 'text-ink' };
     const statusEl = document.getElementById('engineResultStatus');
     if (statusEl) {
         statusEl.textContent = meta.label;

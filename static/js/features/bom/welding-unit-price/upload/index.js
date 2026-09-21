@@ -1,10 +1,10 @@
-import { HUD_LED } from '../../../../ui/classes.js?v=8';
+import { HUD_LED } from '../../../../ui/classes.js?v=11';
 /**
  * 焊接单价上传页
  * 同步导入：基地 + 年度必选，仅 .xlsx
  */
 
-import { weldingUnitPriceUploadTemplate } from './template.js?v=13';
+import { weldingUnitPriceUploadTemplate } from './template.js?v=14';
 import { bindSyncUploadProgress } from '../../../../ui/sync-upload-progress.js?v=3';
 
 const API_BASE = '/api/bom/welding-unit-price';

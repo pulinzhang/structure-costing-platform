@@ -2,7 +2,7 @@
  * 采购价格 — BRABUS 800 中控交车（协议黑匣）
  */
 
-import { paginationBarHtml } from '../../../ui/page-size.js?v=5';
+import { paginationBarHtml } from '../../../ui/page-size.js?v=6';
 
 const HUD_SHELL_STYLE = 'background:#0D0D11;border:1px solid rgba(255,255,255,0.08);';
 
@@ -69,10 +69,7 @@ const CHIP_FACE = 'pcr-chip flex items-center gap-1 rounded px-2 h-7 shrink-0';
 const CHIP_TRIGGER =
     'pcr-chip-trigger min-w-0 truncate text-left text-[11px] font-medium bg-transparent border-0 p-0 cursor-pointer focus:outline-none text-ink-muted disabled:opacity-40';
 const CHIP_ITEM =
-    'pcr-chip-item block w-full text-left px-2.5 py-1.5 text-[11px] text-ink-muted bg-transparent';
-const PCR_CHIP_MENU_CSS = `#pcrChipMenu [role="option"][aria-selected="true"]{background-color:#FF1E27;color:#fff}`
-    + `#pcrChipMenu:hover [role="option"][aria-selected="true"]:not(:hover){background-color:transparent;color:#C8C8D0}`
-    + `#pcrChipMenu [role="option"]:hover{background-color:#FF1E27;color:#fff}`;
+    'pcr-chip-item block w-full text-left px-2.5 py-1.5 text-[11px] bg-transparent';
 const CHIP_CHEVRON = `<svg class="w-3 h-3 text-ink-faint shrink-0 pointer-events-none" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M19 9l-7 7-7-7"></path></svg>`;
 
 export function procurementContractReportTemplate() {
@@ -282,16 +279,9 @@ function ensureChipMenu() {
     if (chipMenuEl) return chipMenuEl;
     chipMenuEl = document.createElement('div');
     chipMenuEl.id = 'pcrChipMenu';
-    chipMenuEl.className = 'hidden fixed z-[70] max-h-56 overflow-y-auto bg-app-hud border border-line-subtle rounded py-1';
-    chipMenuEl.style.boxShadow = '0 8px 24px rgb(var(--overlay) / 0.55)';
+    chipMenuEl.className = 'hud-select-menu hidden fixed z-[70] max-h-56 overflow-y-auto py-1';
     chipMenuEl.setAttribute('role', 'listbox');
     document.body.appendChild(chipMenuEl);
-    if (!document.getElementById('pcrChipMenuSkin')) {
-        const skin = document.createElement('style');
-        skin.id = 'pcrChipMenuSkin';
-        skin.textContent = PCR_CHIP_MENU_CSS;
-        document.head.appendChild(skin);
-    }
     chipMenuEl.addEventListener('click', (event) => {
         const item = event.target.closest('[data-pcr-chip-value]');
         if (!item || !openChipId) return;
@@ -384,7 +374,6 @@ export function unbindPcrChipMenus() {
     window.removeEventListener('scroll', closePcrChipMenu, true);
     chipMenuEl?.remove();
     chipMenuEl = null;
-    document.getElementById('pcrChipMenuSkin')?.remove();
 }
 
 export function updatePcrViewButtons(view) {
