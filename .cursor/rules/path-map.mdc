@@ -1,0 +1,18 @@
+---
+description: 路径以磁盘为准；Glob 可能仍报已删的 *_service.py / {feature}/crud.py，禁止按检索复活邻文件
+alwaysApply: true
+---
+
+# 路径地图（磁盘优先）
+
+路径形状正文 → 架构宪法 §二。本文件只拦**检索幽灵**。
+
+`{dir}_service.py`、`export_service.py`、单职责 `{feature}/crud.py`（如 `auth/crud.py`）已迁走。Glob/Grep/索引仍可能冒出这些旧名；**Read 打不开 = 文件不在**，禁止按检索结果 import、新建或当邻路由来抄。
+
+| 检索可能冒出 | 现网 |
+|---|---|
+| `{slice}/{slice}_service.py` | `{slice}/service.py` |
+| `{slice}_export_service.py` / `export/export_service.py` | `{slice}/export/service.py` |
+| 单职责 `{feature}/crud.py`（包内只有 crud） | `{feature}.py` |
+
+抄邻路由前必须 Read 到现文件。邻文件若解匿名元组或 `data=XxxVO(`，按类型安全，不要抄。

@@ -73,7 +73,7 @@ JSON 业务接口必须 `response_model=ApiResponse[T]` 且 `-> ApiResponse[T]`�
 | DELETE | `None` | `deleted` | `ApiResponse[None]` |
 | GET 下载 | `(bytes, filename)` | Stream/File | 无 |
 
-不要为每个动词复制一整段 Router 示例；按本表套现网相邻路由。邻路由若在解匿名元组或 `data=XxxVO(`，按本表，不要抄。
+不要为每个动词复制一整段 Router 示例；按本表套现网相邻路由。抄之前必须 Read 到该文件（Glob 可能仍报已删的 `{feature}/crud.py`，见 `path-map.mdc`）。邻路由若在解匿名元组或 `data=XxxVO(`，按本表，不要抄。
 
 ## 6. 路径参数与静态路由（零例外）
 

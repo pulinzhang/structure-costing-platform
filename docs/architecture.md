@@ -309,6 +309,7 @@ ApiResponse[AsyncTaskAcceptedVO]
 | 文档 | 位置 | 用途 |
 |------|------|------|
 | **架构宪法** | [`.cursor/rules/architecture-constitution.mdc`](../.cursor/rules/architecture-constitution.mdc) | 分层、切片依赖、外键、事务、异常通道、长任务 / 同步 Excel / 旁路 Session |
+| **路径地图** | [`.cursor/rules/path-map.mdc`](../.cursor/rules/path-map.mdc) | 磁盘优先；禁止按检索复活已删 `*_service.py` / `{feature}/crud.py`（always-apply） |
 | **指挥家宪法** | [`.cursor/rules/orchestrator-constitution.mdc`](../.cursor/rules/orchestrator-constitution.mdc) | Orchestrator 主方法只编排 |
 | **前端规范** | [`.cursor/rules/front-end.mdc`](../.cursor/rules/front-end.mdc) | SPA / Brabus / HUD；改 `static/` 时按 glob 加载 |
 | **浅色主题** | [light-theme-design.md](light-theme-design.md) | 浅色主题改造（设计） |
