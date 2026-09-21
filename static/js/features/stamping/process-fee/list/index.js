@@ -9,14 +9,14 @@ import {
     updateFeeHud,
 } from './template.js?v=66';
 import { bindMoreMenu } from '../../../../ui/more-menu.js?v=5';
-import { bindFilterBar } from '../../../../ui/filter-bar.js?v=3';
+import { bindFilterBar } from '../../../../ui/filter-bar.js?v=4';
 import { shortPartNumber } from '../../../../domain/part-identity.js?v=5';
 import {
     DEFAULT_PAGE_SIZE,
     bindPagination,
     paintPagination,
 } from '../../../../ui/page-size.js?v=6';
-import { setSearchBusy } from '../../../../ui/search-busy.js?v=3';
+import { setSearchBusy } from '../../../../ui/search-busy.js?v=4';
 
 const API_BASE = '/api/stamping/process-fees';
 const DRAWER_ANIMATION_MS = 300;

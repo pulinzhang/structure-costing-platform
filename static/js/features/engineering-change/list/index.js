@@ -13,8 +13,8 @@ import {
     paintPagination,
 } from '../../../ui/page-size.js?v=6';
 import { can } from '../../../core/permissions.js?v=8';
-import { setSearchBusy } from '../../../ui/search-busy.js?v=3';
-import { bindFilterBar } from '../../../ui/filter-bar.js?v=3';
+import { setSearchBusy } from '../../../ui/search-busy.js?v=4';
+import { bindFilterBar } from '../../../ui/filter-bar.js?v=4';
 import { monthOptionsHtml, yearOptionsHtml } from '../../common/period-ui.js?v=4';
 
 const API = '/api/engineering-change';

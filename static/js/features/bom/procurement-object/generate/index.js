@@ -2,7 +2,7 @@
  * 采购对象清单生成页
  */
 
-import { DRAWER_CLOSE, DRAWER_SHELL, DRAWER_BACKDROP } from '../../../../ui/classes.js?v=12';
+import { DRAWER_CLOSE, DRAWER_SHELL, DRAWER_BACKDROP } from '../../../../ui/classes.js?v=13';
 import {
     procurementObjectGenerateTemplate,
 } from './template.js?v=13';

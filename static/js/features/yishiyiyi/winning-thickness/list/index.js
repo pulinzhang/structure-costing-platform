@@ -10,11 +10,11 @@ import {
     bindPagination,
     paintPagination,
 } from '../../../../ui/page-size.js?v=6';
-import { setSearchBusy } from '../../../../ui/search-busy.js?v=3';
+import { setSearchBusy } from '../../../../ui/search-busy.js?v=4';
 import {
     winningThicknessDownloadTemplate,
     renderWinningThicknessRows,
-} from './template.js?v=23';
+} from './template.js?v=24';
 import {
     requireExportYearMonth,
     selectDefaultYear,

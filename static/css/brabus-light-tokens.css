@@ -12,8 +12,9 @@
  * 骨架仍是平台 HUD（密表、2px、左 LED）。壳层红跟官网；靶心 --hud-red
  * 仍为现网 #FF1E27（官网无此色）。Carbon :root 本文件不动。
  *
- * --hud-filter-chevron 浅色不必另烤 SVG；接线时箭头走 --text-disabled。
- * glow / --shadow-hud 公式不改 style.css；浅色把 glow alpha 收轻即可。
+ * --hud-filter-chevron 用 mask，色走 --text-disabled。
+ * --hairline 浅色填 1 1 1（Carbon 为 255 255 255）。
+ * glow 浅色把 alpha 收轻。
  *
  * html[data-theme="light"] {
  *     --brabus-red: 183 8 38;
@@ -30,8 +31,6 @@
  *     --bg-row-hover: 245 245 245;
  *     --sidebar-from: 255 255 255;
  *     --sidebar-to: 245 245 245;
- *     --filter-search-from: 249 235 238;
- *     --filter-search-to: 242 214 220;
  *
  *     --text-main: 1 1 1;
  *     --text-on-brand: 255 255 255;
@@ -46,6 +45,7 @@
  *     --border-hud: 204 204 204;
  *     --border-active: 183 8 38;
  *     --grid-line: 1 1 1;
+ *     --hairline: 1 1 1;
  *
  *     --success-color: 46 125 50;
  *     --warning-color: 245 127 23;

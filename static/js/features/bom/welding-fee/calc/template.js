@@ -4,7 +4,7 @@
  */
 
 import { paginationBarHtml } from '../../../../ui/page-size.js?v=6';
-import { filterSelect, BTN_ABORT } from '../../../../ui/classes.js?v=12';
+import { filterSelect, BTN_ABORT } from '../../../../ui/classes.js?v=13';
 
 
 export function l0WeldingFeeCalcTemplate() {

@@ -3,7 +3,7 @@
  * 各页只传标题、数字槽、脚注；禁止再复制扫光线与 HUD_KPI_* 壳。
  */
 
-import { HUD_KPI_FOCUS, HUD_KPI_AUX } from './classes.js?v=12';
+import { HUD_KPI_FOCUS, HUD_KPI_AUX } from './classes.js?v=13';
 
 const SCANLINE =
     'absolute top-0 left-0 right-0 h-[2px] bg-gradient-to-r from-transparent via-brand-hud to-transparent hud-kpi-line-glow';

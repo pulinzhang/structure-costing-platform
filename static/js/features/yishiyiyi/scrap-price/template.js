@@ -1,4 +1,4 @@
-import { DRAWER_BACKDROP } from '../../../ui/classes.js?v=12';
+import { DRAWER_BACKDROP } from '../../../ui/classes.js?v=13';
 /**
  * 废料月度销售价 — 价格矩阵视觉层（非表格填表）
  * 基地锚点 · 净价 Hero · 扣费弱化 · 备注隐式 · 中文极简

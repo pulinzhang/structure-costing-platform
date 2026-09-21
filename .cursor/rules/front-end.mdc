@@ -23,7 +23,7 @@ alwaysApply: false
 - 禁止 Jinja2。禁止往 `style.css` 加业务 class（壳层：sidebar / page-header / 滚动条 / `@keyframes` / `.sr-only` / `.toast-shell` / `.brabus-bg-grid` / `.brabus-check` / `.hud-filter` / `.hud-select-menu` / `.hud-led` / `.hud-brand-glow` / `.hud-brand-glow-hover` / `.hud-kpi-*-glow` / `.hud-kpi-aux-inset` 可留）。
 - 内联 `style` 仅阴影/渐变等 Tailwind 表达不了的；历史抽屉不追溯。
 
-`:root` 色板在 `style.css`（RGB 通道）。另有 `--grid-size` / `--radius-ctl` / `--shadow-hud` / `--shadow-drawer` / `--glow-hud`。业务用 Tailwind 语义色：`bg-app-deep` / `bg-app-main` / `bg-app-surface` / `bg-app-elevated` / `bg-app-hud`；字 `text-ink` / `text-ink-muted` / `text-ink-dim` / `text-ink-faint`；实心底上的字 `text-ink-onbrand`（`--text-on-brand`，禁止再用 `text-white`）；边 `border-line` / `border-line-hud`；红 `brand`（`#b70826`）与 HUD `brand-hud`（`#FF1E27`）。**禁止新写主题 hex 任意值**（`bg-[#0a0a0a]`）。同表不得两套红混用。原语在 `static/js/ui/classes.js`。
+`:root` 色板在 `style.css`（RGB 通道）。另有 `--grid-size` / `--radius-ctl` / `--shadow-hud` / `--shadow-drawer` / `--glow-hud` / `--hairline`。业务用 Tailwind 语义色：`bg-app-deep` / `bg-app-main` / `bg-app-surface` / `bg-app-elevated` / `bg-app-hud`；字 `text-ink` / `text-ink-muted` / `text-ink-dim` / `text-ink-faint`；实心底上的字 `text-ink-onbrand`（`--text-on-brand`，禁止再用 `text-white`）；边 `border-line` / `border-line-hud`；红 `brand`（`#b70826`）与 HUD `brand-hud`（`#FF1E27`）。**禁止新写主题 hex 任意值**（`bg-[#0a0a0a]`）。同表不得两套红混用。原语在 `static/js/ui/classes.js`。
 
 新页必须同时：`pageMeta`、`app.js` 注册、侧栏 `data-page`（若需菜单）、权限码（`docs/permission-design.md`）。
 
@@ -39,7 +39,7 @@ JS 标识符：camelCase；页面对象 PascalCase；常量 `UPPER_SNAKE`；与�
 
 - 外框 `HUD_SHELL`（`bg-app-hud border-line-hud`）。密表走 `static/js/ui/hud-table.js`（`hudTableHtml` 含表区 + 分页 + 空态/加载；`hudRowHtml` / `opsIconButtonHtml` 行壳）。列与单元格仍由各页传入。禁止 HUD 列表再复制 wrap / 空态 / 行壳，也禁止再单独拼 `paginationBarHtml`。主数据列表（基地 / 项目 / 供应商 / 牌号分类）同样走该控件。calc/generate 历史表、一事一议、设置用户/日志仍直接用 `page-size.js`。
 - 表上指标走 `static/js/ui/hud-kpi.js`（`hudKpiCardHtml` 靶心/辅卡；待办切态 `paintHudKpiAlert`）。禁止再复制扫光线 / `hud-kpi-card-glow`。采购价格协议 KPI 仍走指挥舱，不接此控件。
-- 过滤：胶囊条 + 高级筛选一体，走 `static/js/ui/filter-bar.js`（`filterBarHtml` / `bindFilterBar`）。字段仍用 `filterSelect` / `filterInput` / `filterInputWithDatalist`（`ui/classes.js`）；查询钮在控件内用 `BTN_FILTER_SEARCH`；重置/Excel `BTN_GHOST`。禁止各页再复制 `FILTER_STRIP` + 展开面板。`period-ui.js` 的年+月筛同样走 `HUD_FILTER`。禁止各页再复制 select 函数。可见原生 `<select>` 展开菜单走 `static/js/ui/hud-select.js`（与采购价格协议芯片共用 `.hud-select-menu` token 壳）。禁止再写系统蓝底 option，也禁止 `text-white` / 主题 hex 做选项字色。
+- 过滤：胶囊条 + 高级筛选一体，走 `static/js/ui/filter-bar.js`（`filterBarHtml` / `bindFilterBar`）。字段仍用 `filterSelect` / `filterInput` / `filterInputWithDatalist`（`ui/classes.js`）；查询钮在控件内用 `BTN_FILTER_SEARCH`（idle 描边，hover/focus 官网红底 + `text-ink-onbrand`；高度由调用方写 `h-7` 等）；重置/Excel `BTN_GHOST`。禁止各页再复制 `FILTER_STRIP` + 展开面板。`period-ui.js` 的年+月筛同样走 `HUD_FILTER`。禁止各页再复制 select 函数。可见原生 `<select>` 展开菜单走 `static/js/ui/hud-select.js`（与采购价格协议芯片共用 `.hud-select-menu` token 壳）。禁止再写系统蓝底 option，也禁止 `text-white` / 主题 hex 做选项字色。
 - 表头 `TH_TEXT` / `TH_NUM`（`text-[9px] text-ink-faint`）；文本左、金额右、状态中。靶心列才 `TH_FOCUS`。列多用 `table-fixed` + `colgroup`；无 colgroup 的宽表用 `minWidth`。
 - 行 `TR_HUD`（含 `data-current` 底）；左 2px `ROW_LED`。当前行 `setCurrentTableRow` / `bindCurrentRowOnOps`；换页 `clearCurrentTableRows`（`page-size` 已接）。操作格 `OPS_TD` 跟底。禁止整行 `cursor-pointer`。
 - **操作只走操作列按钮**（`data-action` 或现网 `.edit-btn` / `.delete-btn` / `.view-btn`）。操作列必须是最后一列；`OPS_TH` 纯色不铺格；`OPS_TD` 同格 sticky；钮 `OPS_ICON`（hover/focus 才显）。禁止阴影。

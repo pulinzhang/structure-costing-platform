@@ -3,7 +3,7 @@
  * 个人资料 + 安全设置（两张独立卡片，操作物理隔离）
  */
 
-import { HUD_LED } from '../../../ui/classes.js?v=12';
+import { HUD_LED } from '../../../ui/classes.js?v=13';
 
 export function profileLoadingTemplate() {
     return `

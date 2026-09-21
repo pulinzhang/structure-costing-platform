@@ -2,7 +2,7 @@
  * 工程变更上传 — 与冲压布点 / 工艺上传同一套舱体。
  */
 
-import { BTN_FILE_SELECT, BTN_GHOST, BTN_UPLOAD_SUBMIT, UPLOAD_DROPZONE, UPLOAD_INPUT, HUD_LED } from '../../../ui/classes.js?v=12';
+import { BTN_FILE_SELECT, BTN_GHOST, BTN_UPLOAD_SUBMIT, UPLOAD_DROPZONE, UPLOAD_INPUT, HUD_LED } from '../../../ui/classes.js?v=13';
 
 export function engineeringChangeUploadTemplate() {
     return `

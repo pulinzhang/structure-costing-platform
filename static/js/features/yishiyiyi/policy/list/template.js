@@ -4,7 +4,7 @@
  * 用于测试部门核对数据，主子表联合查询Excel
  */
 
-import { filterSelect, filterInputWithDatalist, HUD_LED, BTN_GHOST, BTN_FILTER_SEARCH, DRAWER_BACKDROP } from '../../../../ui/classes.js?v=12';
+import { filterSelect, filterInputWithDatalist, HUD_LED, BTN_GHOST, BTN_FILTER_SEARCH, DRAWER_BACKDROP } from '../../../../ui/classes.js?v=13';
 import {
     DEFAULT_PREVIEW_PAGE_SIZE,
     PREVIEW_PAGE_SIZE_OPTIONS,
@@ -56,7 +56,7 @@ export function policyDownloadTemplate() {
                     </div>
                     <div class="flex items-center gap-2">
                         <button id="btnPreview"
-                                class="${BTN_FILTER_SEARCH}">
+                                class="${BTN_FILTER_SEARCH} h-7">
                             ${window.svgIcon('search', 'w-3 h-3')}
                             查询
                         </button>

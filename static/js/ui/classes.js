@@ -187,7 +187,7 @@ export const BTN_UPLOAD_SUBMIT =
     'inline-flex items-center gap-2 bg-brand text-ink-onbrand border border-brand px-7 h-11 rounded-[2px] text-[11px] font-bold tracking-[0.1em] transition-all duration-150 hover:bg-brand-hover hover:border-brand-hover disabled:bg-app-elevated disabled:border-line disabled:text-ink-dim disabled:cursor-not-allowed disabled:opacity-30 disabled:pointer-events-none';
 
 export const BTN_FILTER_SEARCH =
-    'inline-flex items-center gap-1.5 h-7 px-3 text-[11px] font-semibold rounded-[2px] text-ink border border-brand/40 bg-gradient-to-b from-[rgb(var(--filter-search-from))] to-[rgb(var(--filter-search-to))] shadow-[0_1px_3px_rgb(var(--overlay)/0.4),inset_0_1px_0_rgb(var(--brabus-red)/0.1)] hover:text-ink transition-all duration-200';
+    'inline-flex items-center gap-1.5 px-3 text-[11px] font-semibold rounded-[2px] bg-transparent text-ink border border-brand hover:bg-brand hover:border-brand hover:text-ink-onbrand focus-visible:outline-none focus-visible:bg-brand focus-visible:border-brand focus-visible:text-ink-onbrand active:bg-brand-hover active:border-brand-hover disabled:opacity-40 disabled:cursor-not-allowed disabled:pointer-events-none';
 
 export const BTN_FILE_SELECT =
     'inline-flex items-center gap-1.5 bg-app-deep text-ink-dim border border-line px-4 h-9 rounded-[2px] text-[10px] font-semibold tracking-[0.08em] transition-all duration-150 hover:border-brand hover:text-brand';

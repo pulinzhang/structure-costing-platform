@@ -2,8 +2,8 @@
  * 采购对象清单列表 — HUD 密表（对齐冲压零件价格一览）
  */
 
-import { filterSelect, filterInput, HUD_SHELL, HUD_BAND, OPS_TH, BTN_GHOST, DRAWER_BACKDROP, BTN_SOLID_DANGER, HUD_FILTER } from '../../../../ui/classes.js?v=12';
-import { filterBarHtml } from '../../../../ui/filter-bar.js?v=3';
+import { filterSelect, filterInput, HUD_SHELL, HUD_BAND, OPS_TH, BTN_GHOST, DRAWER_BACKDROP, BTN_SOLID_DANGER, HUD_FILTER } from '../../../../ui/classes.js?v=13';
+import { filterBarHtml } from '../../../../ui/filter-bar.js?v=4';
 import { hudTableHtml } from '../../../../ui/hud-table.js?v=2';
 import { hudKpiCardHtml } from '../../../../ui/hud-kpi.js?v=1';
 

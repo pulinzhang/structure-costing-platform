@@ -6,7 +6,7 @@
  */
 
 import { paginationBarHtml } from '../../../ui/page-size.js?v=6';
-import { DRAWER_SHELL, DRAWER_BACKDROP, BTN_FILTER_SEARCH, HUD_FILTER } from '../../../ui/classes.js?v=12';
+import { DRAWER_SHELL, DRAWER_BACKDROP, BTN_FILTER_SEARCH, HUD_FILTER } from '../../../ui/classes.js?v=13';
 
 
 export function usersTemplate() {
@@ -69,7 +69,7 @@ export function usersTemplate() {
                         </select>
 
                         <button id="btnFilter"
-                                class="${BTN_FILTER_SEARCH}">
+                                class="${BTN_FILTER_SEARCH} h-7">
                             ${window.svgIcon('search', 'w-3 h-3')}
                             查询
                         </button>

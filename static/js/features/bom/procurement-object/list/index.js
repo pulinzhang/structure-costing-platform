@@ -12,8 +12,8 @@ import {
     paintPagination,
 } from '../../../../ui/page-size.js?v=6';
 import { bindMoreMenu } from '../../../../ui/more-menu.js?v=5';
-import { bindFilterBar } from '../../../../ui/filter-bar.js?v=3';
-import { setSearchBusy } from '../../../../ui/search-busy.js?v=3';
+import { bindFilterBar } from '../../../../ui/filter-bar.js?v=4';
+import { setSearchBusy } from '../../../../ui/search-busy.js?v=4';
 import { AUDIT_LABELS, CONFIRM_LABELS, KIND_LABELS, SECTION_LABELS } from '../labels.js?v=4';
 import { fmtPeriodRange } from '../../../common/period-ui.js?v=5';
 

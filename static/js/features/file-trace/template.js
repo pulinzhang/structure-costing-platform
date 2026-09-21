@@ -2,7 +2,7 @@
  * 文件溯源 — HUD 密表 + 筛选 + 详情抽屉
  */
 
-import { HUD_SHELL, OPS_TH, DRAWER_BACKDROP, HUD_FILTER } from '../../ui/classes.js?v=12';
+import { HUD_SHELL, OPS_TH, DRAWER_BACKDROP, HUD_FILTER, BTN_FILTER_SEARCH } from '../../ui/classes.js?v=13';
 import { hudTableHtml, hudRowHtml, opsIconButtonHtml } from '../../ui/hud-table.js?v=2';
 
 
@@ -51,7 +51,7 @@ export function fileTraceTemplate() {
                                    class="h-9 px-3 text-xs bg-app-deep border border-line text-ink-muted focus:outline-none focus:border-brand-active">
                         </div>
                         <button id="ftBtnSearch" type="button"
-                                class="inline-flex items-center justify-center h-9 px-4 text-xs font-semibold bg-brand-hud text-ink-onbrand rounded hover:bg-brand-hover transition-all">
+                                class="${BTN_FILTER_SEARCH} h-9">
                             查询
                         </button>
                         <button id="ftBtnReset" type="button"

@@ -7,8 +7,8 @@
  */
 
 import { moreMenuItemHtml, moreMenuShellHtml } from '../../../../ui/more-menu.js?v=5';
-import { BRABUS_PANEL, BRABUS_PANEL_HEADER, BRABUS_SECTION_HEADER, BRABUS_TABLE_WRAPPER, BTN_SAVE_DEFAULT, DIE_TYPE_SELECT, filterSelect, filterInput, HUD_SHELL, DRAWER_SHELL, DRAWER_BACKDROP, DRAWER_CLOSE, HUD_BAND, BTN_GHOST, OPS_TH, TH_KEY, TH_TEXT, TH_NUM, HUD_LED } from '../../../../ui/classes.js?v=12';
-import { filterBarHtml } from '../../../../ui/filter-bar.js?v=3';
+import { BRABUS_PANEL, BRABUS_PANEL_HEADER, BRABUS_SECTION_HEADER, BRABUS_TABLE_WRAPPER, BTN_SAVE_DEFAULT, DIE_TYPE_SELECT, filterSelect, filterInput, HUD_SHELL, DRAWER_SHELL, DRAWER_BACKDROP, DRAWER_CLOSE, HUD_BAND, BTN_GHOST, OPS_TH, TH_KEY, TH_TEXT, TH_NUM, HUD_LED } from '../../../../ui/classes.js?v=13';
+import { filterBarHtml } from '../../../../ui/filter-bar.js?v=4';
 import { hudTableHtml } from '../../../../ui/hud-table.js?v=2';
 import { hudKpiCardHtml } from '../../../../ui/hud-kpi.js?v=1';
 

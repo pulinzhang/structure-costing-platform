@@ -4,7 +4,7 @@
  */
 
 const SEARCH_BUSY_HTML =
-    '<div class="w-3 h-3 border border-brand-hud border-t-transparent rounded-full animate-spin"></div>查询中';
+    '<div class="w-3 h-3 border border-brand border-t-transparent rounded-full animate-spin"></div>查询中';
 
 export function setSearchBusy(buttonId, isBusy) {
     const btn = document.getElementById(buttonId);

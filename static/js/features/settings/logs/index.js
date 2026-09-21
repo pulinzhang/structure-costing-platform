@@ -2,13 +2,13 @@
  * 操作日志 — 对接 /api/settings/logs，筛选项来自权限目录
  */
 
-import { logsTemplate, renderTableRows } from './template.js?v=17';
+import { logsTemplate, renderTableRows } from './template.js?v=18';
 import {
     DEFAULT_PAGE_SIZE,
     bindPagination,
     paintPagination,
 } from '../../../ui/page-size.js?v=6';
-import { setSearchBusy } from '../../../ui/search-busy.js?v=3';
+import { setSearchBusy } from '../../../ui/search-busy.js?v=4';
 
 const logsState = {
     records: [],

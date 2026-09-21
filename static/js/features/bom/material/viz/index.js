@@ -6,7 +6,7 @@
  */
 
 import { can } from '../../../../core/permissions.js?v=10';
-import { HUD_LED } from '../../../../ui/classes.js?v=12';
+import { HUD_LED } from '../../../../ui/classes.js?v=13';
 import { bomVizTemplate } from './template.js?v=9';
 import { fmtPeriodRange, hasClosedPeriod } from '../../../common/period-ui.js?v=5';
 
