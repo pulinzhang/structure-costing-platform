@@ -3,7 +3,7 @@
  * 基准价格列表页面
  */
 
-import { filterSelect, filterInputWithDatalist, HUD_LED, BTN_GHOST, BTN_FILTER_SEARCH, DRAWER_BACKDROP } from '../../../../ui/classes.js?v=11';
+import { filterSelect, filterInputWithDatalist, HUD_LED, BTN_GHOST, BTN_FILTER_SEARCH, DRAWER_BACKDROP } from '../../../../ui/classes.js?v=12';
 import {
     DEFAULT_PREVIEW_PAGE_SIZE,
     PREVIEW_PAGE_SIZE_OPTIONS,

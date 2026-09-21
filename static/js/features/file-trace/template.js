@@ -2,7 +2,7 @@
  * 文件溯源 — HUD 密表 + 筛选 + 详情抽屉
  */
 
-import { HUD_SHELL, OPS_TH, DRAWER_BACKDROP, HUD_FILTER } from '../../ui/classes.js?v=11';
+import { HUD_SHELL, OPS_TH, DRAWER_BACKDROP, HUD_FILTER } from '../../ui/classes.js?v=12';
 import { hudTableHtml, hudRowHtml, opsIconButtonHtml } from '../../ui/hud-table.js?v=2';
 
 
@@ -51,7 +51,7 @@ export function fileTraceTemplate() {
                                    class="h-9 px-3 text-xs bg-app-deep border border-line text-ink-muted focus:outline-none focus:border-brand-active">
                         </div>
                         <button id="ftBtnSearch" type="button"
-                                class="inline-flex items-center justify-center h-9 px-4 text-xs font-semibold bg-brand-hud text-white rounded hover:bg-brand-hover transition-all">
+                                class="inline-flex items-center justify-center h-9 px-4 text-xs font-semibold bg-brand-hud text-ink-onbrand rounded hover:bg-brand-hover transition-all">
                             查询
                         </button>
                         <button id="ftBtnReset" type="button"
@@ -171,7 +171,7 @@ export function renderDrawerDetail(item) {
         </dl>
         ${canDownload ? `
             <button id="ftDrawerDownload" type="button" data-id="${item.id}"
-                    class="w-full inline-flex items-center justify-center gap-2 bg-brand-hud text-white px-4 py-2 text-xs font-semibold rounded hover:bg-brand-hover transition-all mt-4">
+                    class="w-full inline-flex items-center justify-center gap-2 bg-brand-hud text-ink-onbrand px-4 py-2 text-xs font-semibold rounded hover:bg-brand-hover transition-all mt-4">
                 ${window.svgIcon('download', 'w-3.5 h-3.5')}
                 下载原件
             </button>

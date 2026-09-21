@@ -3,7 +3,7 @@
  */
 
 import { can } from '../../../../core/permissions.js?v=14';
-import { filterSelect, HUD_SHELL, HUD_INPUT, HUD_BAND, BTN_GHOST } from '../../../../ui/classes.js?v=11';
+import { filterSelect, HUD_SHELL, HUD_INPUT, HUD_BAND, BTN_GHOST } from '../../../../ui/classes.js?v=12';
 import { filterBarHtml } from '../../../../ui/filter-bar.js?v=3';
 import { hudKpiCardHtml } from '../../../../ui/hud-kpi.js?v=1';
 

@@ -2,7 +2,7 @@
  * 多层级 BOM — 产品结构可视化
  */
 
-import { DRAWER_SHELL, DRAWER_CLOSE, HUD_LED, DRAWER_BACKDROP } from '../../../../ui/classes.js?v=11';
+import { DRAWER_SHELL, DRAWER_CLOSE, HUD_LED, DRAWER_BACKDROP } from '../../../../ui/classes.js?v=12';
 
 export function bomVizTemplate() {
     return `

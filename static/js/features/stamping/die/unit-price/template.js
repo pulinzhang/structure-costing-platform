@@ -2,7 +2,7 @@
  * 冲压模具单价档案 — HUD 密表 + 抽屉增改
  */
 
-import { HUD_SHELL, DRAWER_BACKDROP, DRAWER_SHELL, HUD_BAND, OPS_TH, filterSelect, BTN_GHOST, FILTER_LABEL, HUD_FILTER, BTN_SOLID_DANGER, BTN_HUD_SAVE } from '../../../../ui/classes.js?v=11';
+import { HUD_SHELL, DRAWER_BACKDROP, DRAWER_SHELL, HUD_BAND, OPS_TH, filterSelect, BTN_GHOST, FILTER_LABEL, HUD_FILTER, BTN_SOLID_DANGER, BTN_HUD_SAVE } from '../../../../ui/classes.js?v=12';
 import { filterBarHtml } from '../../../../ui/filter-bar.js?v=3';
 import { hudTableHtml, hudRowHtml, opsIconButtonHtml } from '../../../../ui/hud-table.js?v=2';
 
@@ -22,7 +22,7 @@ export function dieUnitPriceTemplate() {
                             <p class="text-[11px] text-ink-faint">按基地 + 项目维护钢板模 / 级进模单价与分摊台数，不必先有冲压工艺</p>
                         </div>
                         <button type="button" id="dupAddBtn"
-                                class="inline-flex items-center gap-1.5 bg-brand-hud text-white px-3 py-1.5 text-[11px] font-semibold rounded hover:bg-brand transition-all">
+                                class="inline-flex items-center gap-1.5 bg-brand-hud text-ink-onbrand px-3 py-1.5 text-[11px] font-semibold rounded hover:bg-brand transition-all">
                             ${window.svgIcon('plus', 'w-3 h-3')}
                             新增
                         </button>

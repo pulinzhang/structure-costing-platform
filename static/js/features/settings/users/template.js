@@ -6,7 +6,7 @@
  */
 
 import { paginationBarHtml } from '../../../ui/page-size.js?v=6';
-import { DRAWER_SHELL, DRAWER_BACKDROP, BTN_FILTER_SEARCH, HUD_FILTER } from '../../../ui/classes.js?v=11';
+import { DRAWER_SHELL, DRAWER_BACKDROP, BTN_FILTER_SEARCH, HUD_FILTER } from '../../../ui/classes.js?v=12';
 
 
 export function usersTemplate() {
@@ -75,7 +75,7 @@ export function usersTemplate() {
                         </button>
                     </div>
 
-                    <button id="btnAddUser" class="h-8 inline-flex items-center gap-1.5 bg-brand hover:bg-brand-hover text-white px-4 text-xs font-semibold transition-all">
+                    <button id="btnAddUser" class="h-8 inline-flex items-center gap-1.5 bg-brand hover:bg-brand-hover text-ink-onbrand px-4 text-xs font-semibold transition-all">
                         ${window.svgIcon('plus', 'w-3.5 h-3.5')}
                         <span>新增用户</span>
                     </button>
@@ -178,7 +178,7 @@ export function usersTemplate() {
 
             <div class="px-5 py-3 border-t border-line flex items-center justify-end gap-2 bg-app-surface shrink-0">
                 <button type="button" id="cancelEditBtn" class="px-4 py-1.5 text-xs text-ink-muted hover:text-ink border border-line hover:bg-app-elevated transition-all">取消</button>
-                <button type="button" id="submitEditBtn" class="bg-brand hover:bg-brand-hover text-white px-5 py-1.5 text-xs font-semibold transition-all">保存</button>
+                <button type="button" id="submitEditBtn" class="bg-brand hover:bg-brand-hover text-ink-onbrand px-5 py-1.5 text-xs font-semibold transition-all">保存</button>
             </div>
         </div>
 
@@ -214,7 +214,7 @@ export function usersTemplate() {
             </div>
             <div class="px-5 py-3 border-t border-line flex items-center justify-end gap-2 bg-app-surface">
                 <button type="button" id="cancelPasswordBtn" class="px-4 py-1.5 text-xs text-ink-muted hover:text-ink border border-line">取消</button>
-                <button type="button" id="submitPasswordBtn" class="bg-brand hover:bg-brand-hover text-white font-semibold px-4 py-1.5 text-xs">确认修改</button>
+                <button type="button" id="submitPasswordBtn" class="bg-brand hover:bg-brand-hover text-ink-onbrand font-semibold px-4 py-1.5 text-xs">确认修改</button>
             </div>
         </div>
 
@@ -240,7 +240,7 @@ export function usersTemplate() {
             </div>
             <div class="px-5 py-3 border-t border-line flex items-center justify-end gap-2 bg-app-surface">
                 <button type="button" id="cancelDeleteBtn" class="px-4 py-1.5 text-xs text-ink-muted hover:text-ink border border-line">取消</button>
-                <button type="button" id="confirmDeleteBtn" class="bg-danger hover:bg-brand-hover text-white font-semibold px-4 py-1.5 text-xs">确认删除</button>
+                <button type="button" id="confirmDeleteBtn" class="bg-danger hover:bg-brand-hover text-ink-onbrand font-semibold px-4 py-1.5 text-xs">确认删除</button>
             </div>
         </div>
 
@@ -271,7 +271,7 @@ export function usersTemplate() {
 
             <div class="px-5 py-3 border-t border-line flex items-center justify-end gap-2 bg-app-surface">
                 <button type="button" id="cancelGrantBtn" class="px-4 py-1.5 text-xs text-ink-muted hover:text-ink border border-line">取消</button>
-                <button type="button" id="submitGrantBtn" class="bg-brand hover:bg-brand-hover text-white font-semibold px-5 py-1.5 text-xs">保存授权</button>
+                <button type="button" id="submitGrantBtn" class="bg-brand hover:bg-brand-hover text-ink-onbrand font-semibold px-5 py-1.5 text-xs">保存授权</button>
             </div>
         </div>
     `;

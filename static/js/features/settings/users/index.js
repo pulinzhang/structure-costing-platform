@@ -8,7 +8,7 @@
  * - 删除确认  →deleteDrawer
  */
 
-import { usersTemplate, renderTableRows } from './template.js?v=17';
+import { usersTemplate, renderTableRows } from './template.js?v=18';
 import {
     DEFAULT_PAGE_SIZE,
     bindPagination,

@@ -13,7 +13,7 @@ import {
     renderAliasItems,
     renderSupplierRows,
     supplierListTemplate,
-} from './template.js?v=22';
+} from './template.js?v=23';
 
 const API_BASE = '/api/masterdata/suppliers';
 const DRAWER_ANIMATION_MS = 300;

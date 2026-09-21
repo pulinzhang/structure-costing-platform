@@ -5,7 +5,7 @@
 import {
     dieUnitPriceTemplate,
     renderTableRows,
-} from './template.js?v=24';
+} from './template.js?v=25';
 import { bindFilterBar } from '../../../../ui/filter-bar.js?v=3';
 import {
     DEFAULT_PAGE_SIZE,

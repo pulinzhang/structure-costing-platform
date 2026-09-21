@@ -3,7 +3,7 @@
  * 异步后台计算 + 进度轮询 + 历史过程日志
  */
 
-import { DRAWER_CLOSE, DRAWER_SHELL, DRAWER_BACKDROP } from '../../../../ui/classes.js?v=11';
+import { DRAWER_CLOSE, DRAWER_SHELL, DRAWER_BACKDROP } from '../../../../ui/classes.js?v=12';
 import {
     l0WeldingFeeCalcTemplate,
 } from './template.js?v=19';

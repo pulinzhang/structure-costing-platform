@@ -2,7 +2,7 @@
  * 采购对象清单列表 — HUD 密表（对齐冲压零件价格一览）
  */
 
-import { filterSelect, filterInput, HUD_SHELL, HUD_BAND, OPS_TH, BTN_GHOST, DRAWER_BACKDROP, BTN_SOLID_DANGER, HUD_FILTER } from '../../../../ui/classes.js?v=11';
+import { filterSelect, filterInput, HUD_SHELL, HUD_BAND, OPS_TH, BTN_GHOST, DRAWER_BACKDROP, BTN_SOLID_DANGER, HUD_FILTER } from '../../../../ui/classes.js?v=12';
 import { filterBarHtml } from '../../../../ui/filter-bar.js?v=3';
 import { hudTableHtml } from '../../../../ui/hud-table.js?v=2';
 import { hudKpiCardHtml } from '../../../../ui/hud-kpi.js?v=1';
@@ -171,7 +171,7 @@ function auditDrawerHtml() {
             </div>
             <div class="px-6 py-4 border-t border-app-elevated flex items-center justify-end gap-2">
                 <button type="button" id="poBatchAuditCancelBtn" class="inline-flex items-center gap-1.5 bg-transparent text-ink-muted border border-line px-4 py-2 text-[11px] font-medium rounded hover:text-ink">取消</button>
-                <button type="button" id="poBatchAuditConfirmBtn" class="inline-flex items-center gap-1.5 bg-brand-hud text-white px-4 py-2 text-[11px] font-semibold rounded hover:bg-brand-hover">确认提交</button>
+                <button type="button" id="poBatchAuditConfirmBtn" class="inline-flex items-center gap-1.5 bg-brand-hud text-ink-onbrand px-4 py-2 text-[11px] font-semibold rounded hover:bg-brand-hover">确认提交</button>
             </div>
         </div>
         <div id="poBatchDeleteDrawerBackdrop" class="hidden ${DRAWER_BACKDROP}"></div>
@@ -230,7 +230,7 @@ function confirmDrawerHtml() {
             </div>
             <div class="px-6 py-4 border-t border-app-elevated flex justify-end gap-2">
                 <button type="button" id="poConfirmCancelBtn" class="inline-flex items-center bg-transparent text-ink-muted border border-line px-4 py-2 text-[11px] rounded">取消</button>
-                <button type="button" id="poConfirmSaveBtn" class="inline-flex items-center bg-brand-hud text-white px-4 py-2 text-[11px] font-semibold rounded">保存确认</button>
+                <button type="button" id="poConfirmSaveBtn" class="inline-flex items-center bg-brand-hud text-ink-onbrand px-4 py-2 text-[11px] font-semibold rounded">保存确认</button>
             </div>
         </div>
     `;

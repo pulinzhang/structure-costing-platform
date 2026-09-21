@@ -3,7 +3,7 @@
  * 批量操作范围 = 基地 + 年度 + 项目
  */
 
-import { filterSelect, filterInput, HUD_SHELL, DRAWER_SHELL, DRAWER_BACKDROP, HUD_BAND, OPS_TH, BTN_GHOST, BTN_SOLID, BTN_SOLID_DANGER } from '../../../../ui/classes.js?v=11';
+import { filterSelect, filterInput, HUD_SHELL, DRAWER_SHELL, DRAWER_BACKDROP, HUD_BAND, OPS_TH, BTN_GHOST, BTN_SOLID, BTN_SOLID_DANGER } from '../../../../ui/classes.js?v=12';
 import { filterBarHtml } from '../../../../ui/filter-bar.js?v=3';
 import { hudTableHtml, hudRowHtml, opsIconButtonHtml } from '../../../../ui/hud-table.js?v=2';
 import { hudKpiCardHtml } from '../../../../ui/hud-kpi.js?v=1';

@@ -3,7 +3,7 @@
  * 管理者看板 — 本期产出 / 待办决策 / 核价闭环就绪
  */
 
-import { HUD_FILTER } from '../../ui/classes.js?v=11';
+import { HUD_FILTER } from '../../ui/classes.js?v=12';
 import { hudKpiCardHtml } from '../../ui/hud-kpi.js?v=1';
 
 function actionLink({ page, label, sub }) {

@@ -5,7 +5,7 @@
 
 import { createReport, getReport } from './api.js';
 import { mountChips, setChipsDisabled, setChipsVisible } from './chat/chips.js?v=4';
-import { mountComposer, setComposerBusy, setComposerCarry } from './chat/composer.js?v=5';
+import { mountComposer, setComposerBusy, setComposerCarry } from './chat/composer.js?v=6';
 import { humanizeUserFacingError } from './errors.js';
 import { renderThread } from './chat/thread.js?v=14';
 import { printAssistantMessage, closePrintPreview } from './export/print.js?v=13';

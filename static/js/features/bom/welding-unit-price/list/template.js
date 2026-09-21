@@ -6,7 +6,7 @@
  * 单价一律按十进制字符串处理（不经 Number/parseFloat）。
  */
 
-import { filterSelect, HUD_SHELL, DRAWER_CLOSE, DRAWER_SHELL, DRAWER_BACKDROP, HUD_BAND, OPS_TH, BTN_GHOST, HUD_LED, BTN_SOLID, BTN_SOLID_DANGER } from '../../../../ui/classes.js?v=11';
+import { filterSelect, HUD_SHELL, DRAWER_CLOSE, DRAWER_SHELL, DRAWER_BACKDROP, HUD_BAND, OPS_TH, BTN_GHOST, HUD_LED, BTN_SOLID, BTN_SOLID_DANGER } from '../../../../ui/classes.js?v=12';
 import { filterBarHtml } from '../../../../ui/filter-bar.js?v=3';
 import { hudTableHtml, hudRowHtml, opsIconButtonHtml } from '../../../../ui/hud-table.js?v=2';
 import { hudKpiCardHtml } from '../../../../ui/hud-kpi.js?v=1';

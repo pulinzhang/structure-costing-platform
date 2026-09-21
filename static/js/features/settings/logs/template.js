@@ -3,7 +3,7 @@
  */
 
 import { paginationBarHtml } from '../../../ui/page-size.js?v=6';
-import { HUD_FILTER, HUD_INPUT } from '../../../ui/classes.js?v=11';
+import { HUD_FILTER, HUD_INPUT } from '../../../ui/classes.js?v=12';
 
 export function logsTemplate() {
     return `

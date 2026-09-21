@@ -1,4 +1,4 @@
-import { DRAWER_BACKDROP, BTN_SOLID } from '../../../../ui/classes.js?v=11';
+import { DRAWER_BACKDROP, BTN_SOLID } from '../../../../ui/classes.js?v=12';
 import {
     assemblyCostListTemplate,
     renderLacRows,

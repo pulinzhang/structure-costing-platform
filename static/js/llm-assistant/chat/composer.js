@@ -22,7 +22,7 @@ export function mountComposer(root, options) {
             class="flex-1 resize-none px-2 py-1.5 text-[11px] leading-relaxed bg-app-deep border border-line text-ink placeholder:text-ink-faint focus:outline-none focus:border-brand-active rounded-sm disabled:opacity-50"
             ${!canRun || busy ? 'disabled' : ''}></textarea>
   <button type="button" id="llmComposerSend"
-          class="shrink-0 h-9 px-3 text-[11px] font-medium bg-brand text-white hover:bg-brand-hover disabled:opacity-40 disabled:cursor-not-allowed rounded-sm transition-colors"
+          class="shrink-0 h-9 px-3 text-[11px] font-medium bg-brand text-ink-onbrand hover:bg-brand-hover disabled:opacity-40 disabled:cursor-not-allowed rounded-sm transition-colors"
           ${!canRun || busy ? 'disabled' : ''}>发送</button>
 </div>`;
 

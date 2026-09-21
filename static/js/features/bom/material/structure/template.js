@@ -3,7 +3,7 @@
  * 项目卡片 → 供货总成选择
  */
 
-import { HUD_LED } from '../../../../ui/classes.js?v=11';
+import { HUD_LED } from '../../../../ui/classes.js?v=12';
 
 export function bomStructureTemplate() {
     return `

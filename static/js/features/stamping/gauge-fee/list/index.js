@@ -7,7 +7,7 @@ import {
     renderTableRows,
     updateGaugeFeeHud,
     updateGaugeFeeHudScope,
-} from './template.js?v=31';
+} from './template.js?v=32';
 import { bindMoreMenu } from '../../../../ui/more-menu.js?v=5';
 import { bindFilterBar } from '../../../../ui/filter-bar.js?v=3';
 import {

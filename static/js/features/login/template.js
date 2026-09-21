@@ -36,7 +36,7 @@ export function loginTemplate() {
                 </label>
 
                 <button type="submit" id="btnLogin"
-                    class="w-full h-9 mt-1 bg-brand hover:bg-brand-hover text-white text-xs font-semibold rounded-[2px] transition-colors disabled:opacity-50 disabled:pointer-events-none">
+                    class="w-full h-9 mt-1 bg-brand hover:bg-brand-hover text-ink-onbrand text-xs font-semibold rounded-[2px] transition-colors disabled:opacity-50 disabled:pointer-events-none">
                     登录
                 </button>
             </form>

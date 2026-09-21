@@ -166,25 +166,25 @@ export const BTN_GHOST =
     'inline-flex items-center gap-1.5 bg-transparent text-ink-muted border border-line px-3 py-1.5 rounded-[2px] text-[11px] font-medium transition-all duration-200 hover:text-brand-hud hover:border-brand-hud/50 hover:bg-brand-hud/10';
 
 export const BTN_SOLID =
-    'inline-flex items-center gap-1.5 bg-brand text-white px-4 py-2 text-[11px] font-semibold rounded-[2px] hover:bg-brand-hover transition-all';
+    'inline-flex items-center gap-1.5 bg-brand text-ink-onbrand px-4 py-2 text-[11px] font-semibold rounded-[2px] hover:bg-brand-hover transition-all';
 
 export const BTN_SOLID_DANGER =
-    'inline-flex items-center gap-1.5 bg-danger text-white px-4 py-2 text-[11px] font-semibold rounded-[2px] hover:bg-brand-hover transition-all';
+    'inline-flex items-center gap-1.5 bg-danger text-ink-onbrand px-4 py-2 text-[11px] font-semibold rounded-[2px] hover:bg-brand-hover transition-all';
 
 export const BTN_HUD_SAVE =
-    'bg-brand-hud hover:bg-brand text-white px-5 py-1.5 text-xs font-semibold';
+    'bg-brand-hud hover:bg-brand text-ink-onbrand px-5 py-1.5 text-xs font-semibold';
 
 export const BTN_HUD_CREATE =
-    'inline-flex items-center gap-1.5 bg-brand-hud hover:bg-brand text-white px-3 py-1.5 text-[11px] font-semibold rounded-[2px] transition-all';
+    'inline-flex items-center gap-1.5 bg-brand-hud hover:bg-brand text-ink-onbrand px-3 py-1.5 text-[11px] font-semibold rounded-[2px] transition-all';
 
 export const BTN_HUD_CHIP =
-    'h-8 px-4 bg-brand-hud hover:bg-brand text-white text-xs font-semibold';
+    'h-8 px-4 bg-brand-hud hover:bg-brand text-ink-onbrand text-xs font-semibold';
 
 export const BTN_ABORT =
-    'h-7 px-4 text-[10px] bg-brand-hover hover:bg-danger text-white font-medium rounded-[2px] transition-colors disabled:opacity-30 disabled:cursor-not-allowed';
+    'h-7 px-4 text-[10px] bg-brand-hover hover:bg-danger text-ink-onbrand font-medium rounded-[2px] transition-colors disabled:opacity-30 disabled:cursor-not-allowed';
 
 export const BTN_UPLOAD_SUBMIT =
-    'inline-flex items-center gap-2 bg-brand text-white border border-brand px-7 h-11 rounded-[2px] text-[11px] font-bold tracking-[0.1em] transition-all duration-150 hover:bg-brand-hover hover:border-brand-hover disabled:bg-app-elevated disabled:border-line disabled:text-ink-dim disabled:cursor-not-allowed disabled:opacity-30 disabled:pointer-events-none';
+    'inline-flex items-center gap-2 bg-brand text-ink-onbrand border border-brand px-7 h-11 rounded-[2px] text-[11px] font-bold tracking-[0.1em] transition-all duration-150 hover:bg-brand-hover hover:border-brand-hover disabled:bg-app-elevated disabled:border-line disabled:text-ink-dim disabled:cursor-not-allowed disabled:opacity-30 disabled:pointer-events-none';
 
 export const BTN_FILTER_SEARCH =
     'inline-flex items-center gap-1.5 h-7 px-3 text-[11px] font-semibold rounded-[2px] text-ink border border-brand/40 bg-gradient-to-b from-[rgb(var(--filter-search-from))] to-[rgb(var(--filter-search-to))] shadow-[0_1px_3px_rgb(var(--overlay)/0.4),inset_0_1px_0_rgb(var(--brabus-red)/0.1)] hover:text-ink transition-all duration-200';
@@ -193,13 +193,13 @@ export const BTN_FILE_SELECT =
     'inline-flex items-center gap-1.5 bg-app-deep text-ink-dim border border-line px-4 h-9 rounded-[2px] text-[10px] font-semibold tracking-[0.08em] transition-all duration-150 hover:border-brand hover:text-brand';
 
 export const BTN_SAVE_DEFAULT =
-    'inline-flex items-center justify-center gap-2 max-w-[260px] h-10 px-8 bg-app-main border border-app-elevated rounded-[2px] text-ink-dim text-[11px] font-medium tracking-[0.15em] uppercase cursor-pointer transition-all duration-200 hover:bg-brand hover:border-brand hover:text-ink';
+    'inline-flex items-center justify-center gap-2 max-w-[260px] h-10 px-8 bg-app-main border border-app-elevated rounded-[2px] text-ink-dim text-[11px] font-medium tracking-[0.15em] uppercase cursor-pointer transition-all duration-200 hover:bg-brand hover:border-brand hover:text-ink-onbrand';
 
 export const BTN_SAVE_ACTIVE =
-    'inline-flex items-center justify-center gap-2 w-full h-10 bg-app-surface border border-brand rounded-[2px] text-ink text-[11px] font-medium tracking-[0.15em] uppercase cursor-pointer transition-all duration-200 hover:bg-brand hover:text-white';
+    'inline-flex items-center justify-center gap-2 w-full h-10 bg-app-surface border border-brand rounded-[2px] text-ink text-[11px] font-medium tracking-[0.15em] uppercase cursor-pointer transition-all duration-200 hover:bg-brand hover:text-ink-onbrand';
 
 export const BTN_PAGINATION_CURRENT =
-    'flex items-center justify-center w-6 h-6 text-[10px] bg-brand-hud text-white';
+    'flex items-center justify-center w-6 h-6 text-[10px] bg-brand-hud text-ink-onbrand';
 
 export const BTN_MORE =
     'w-8 h-8 flex items-center justify-center text-ink-faint hover:text-ink transition-colors rounded-[2px]';

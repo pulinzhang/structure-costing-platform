@@ -2,7 +2,7 @@
  * BOM 焊接工艺拆解 — 列表模板（HUD 密表，可编辑）
  */
 
-import { filterSelect, filterInput, HUD_SHELL, DRAWER_CLOSE, DRAWER_SHELL, DRAWER_BACKDROP, HUD_BAND, OPS_TH, BTN_GHOST, HUD_LED, BTN_SOLID, HUD_FILTER } from '../../../../ui/classes.js?v=11';
+import { filterSelect, filterInput, HUD_SHELL, DRAWER_CLOSE, DRAWER_SHELL, DRAWER_BACKDROP, HUD_BAND, OPS_TH, BTN_GHOST, HUD_LED, BTN_SOLID, HUD_FILTER } from '../../../../ui/classes.js?v=12';
 import { filterBarHtml } from '../../../../ui/filter-bar.js?v=3';
 import { hudTableHtml, hudRowHtml, opsIconButtonHtml } from '../../../../ui/hud-table.js?v=2';
 import { hudKpiCardHtml } from '../../../../ui/hud-kpi.js?v=1';

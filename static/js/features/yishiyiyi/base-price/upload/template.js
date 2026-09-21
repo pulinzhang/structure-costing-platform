@@ -8,7 +8,7 @@ import {
     UPLOAD_INPUT,
     UPLOAD_LABEL,
     BTN_GHOST,
-} from '../../../../ui/classes.js?v=11';
+} from '../../../../ui/classes.js?v=12';
 
 export function basePriceUploadTemplate() {
     return `

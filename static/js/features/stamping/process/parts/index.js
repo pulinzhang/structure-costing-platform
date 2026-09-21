@@ -20,7 +20,7 @@ import {
     SKETCH_PLACEHOLDER,
     SKETCH_THUMBNAIL,
     ZOOM_OVERLAY,
-} from '../../../../ui/classes.js?v=11';
+} from '../../../../ui/classes.js?v=12';
 import {
     DEFAULT_PAGE_SIZE,
     PAGE_SIZE_OPTIONS,
@@ -674,7 +674,7 @@ export const PartsPage = {
         const btn = document.getElementById('saveOffalBtn');
         if (!btn || btn.dataset.active === 'true') return;
         btn.dataset.active = 'true';
-        btn.className = 'h-7 px-3 text-[10px] text-white bg-brand border border-brand rounded-sm hover:bg-brand-hover transition-all tracking-wide';
+        btn.className = 'h-7 px-3 text-[10px] text-ink-onbrand bg-brand border border-brand rounded-sm hover:bg-brand-hover transition-all tracking-wide';
     },
 
     _activateSaveButton() {

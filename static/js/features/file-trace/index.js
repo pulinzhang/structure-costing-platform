@@ -6,7 +6,7 @@ import {
     fileTraceTemplate,
     renderDrawerDetail,
     renderTableRows,
-} from './template.js?v=18';
+} from './template.js?v=19';
 import {
     DEFAULT_PAGE_SIZE,
     bindPagination,

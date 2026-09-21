@@ -26,10 +26,10 @@ import {
     canAccessPage,
     fallbackPageName,
 } from './core/permissions.js?v=15';
-import { bootLlmAssistant } from './llm-assistant/boot.js?v=40';
+import { bootLlmAssistant } from './llm-assistant/boot.js?v=41';
 import { pageConfig as dashboardPage }      from './features/dashboard/index.js?v=19';
 import { pageConfig as stampingUploadPage } from './features/stamping/process/upload/index.js?v=69';
-import { pageConfig as stampingPartsPage }  from './features/stamping/process/parts/index.js?v=78';
+import { pageConfig as stampingPartsPage }  from './features/stamping/process/parts/index.js?v=79';
 import { pageConfig as stampingDieUploadPage } from './features/stamping/die/upload/index.js?v=23';
 import { pageConfig as stampingDieListPage } from './features/stamping/die/list/index.js?v=39';
 import { pageConfig as stampingDieUnitPricePage } from './features/stamping/die/unit-price/index.js?v=26';
@@ -54,7 +54,7 @@ import { pageConfig as basePriceUploadPage } from './features/yishiyiyi/base-pri
 import { pageConfig as basePriceDownloadPage } from './features/yishiyiyi/base-price/list/index.js?v=51';
 import { pageConfig as winningThicknessDownloadPage } from './features/yishiyiyi/winning-thickness/list/index.js?v=28';
 import { pageConfig as steelGradeCategoryPage } from './features/masterdata/steel-grade-category/index.js?v=28';
-import { pageConfig as scrapPricePage } from './features/yishiyiyi/scrap-price/index.js?v=29';
+import { pageConfig as scrapPricePage } from './features/yishiyiyi/scrap-price/index.js?v=30';
 import { pageConfig as bomStructurePage }  from './features/bom/material/structure/index.js?v=19';
 import { pageConfig as bomWhereUsedPage } from './features/bom/material/where-used/index.js?v=22';
 import { pageConfig as bomVizPage }        from './features/bom/material/viz/index.js?v=38';
