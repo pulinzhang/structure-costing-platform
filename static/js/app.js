@@ -20,7 +20,7 @@ import { bindHudSelects, closeHudSelectMenu } from './ui/hud-select.js?v=1';
 import { pageMeta } from './features/index.js?v=49';
 
 // 页面导入（路径与 index.html 菜单树 / features 目录对齐）
-import { getUserSession, initUserMenu, startTokenHeartbeat, updateUserSession } from './features/login/index.js?v=18';
+import { getUserSession, initUserMenu, startTokenHeartbeat, updateUserSession } from './features/login/index.js?v=19';
 import {
     applySidebarPermissions,
     canAccessPage,
