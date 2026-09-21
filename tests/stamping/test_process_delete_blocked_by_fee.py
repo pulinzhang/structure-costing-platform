@@ -24,8 +24,8 @@ from app.repositories.masterdata.location.location_repository import LocationRep
 from app.schemas.dto.location_dto import LocationInsert
 from app.schemas.dto.stamping_part_dto import StampingPartBatchDeleteDTO
 from app.schemas.dto.vehicle_model_dto import VehicleModelCreateDTO
-from app.services.masterdata.vehicle_model.vehicle_model_service import VehicleModelService
-from app.services.stamping.part.crud.service import StampingPartService
+from app.services.masterdata.vehicle_model.service import VehicleModelService
+from app.services.stamping.part.service import StampingPartService
 
 LOCATION = "芜湖"
 VEHICLE = "T13J"

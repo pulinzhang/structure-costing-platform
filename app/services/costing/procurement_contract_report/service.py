@@ -51,7 +51,7 @@ from app.services.costing.procurement_contract_report.assemble import (
 )
 from app.services.costing.procurement_contract_report.qty import l0_node_of
 from app.services.costing.procurement_contract_report.window import expand_months, month_header
-from app.services.masterdata.supplier.supplier_service import SupplierService
+from app.services.masterdata.supplier.service import SupplierService
 
 _SECTION_OBJECT = "object"
 _EMPTY_OBJECT_HINT = "当前范围没有采购对象行"

@@ -26,7 +26,7 @@ from app.services.costing.stamping_part_cost.calc.orchestrator.rates import (
 )
 from app.services.costing.stamping_part_cost.calc.orchestrator.ready import collect_calc_ready
 from app.services.costing.stamping_part_cost.calc.scope import require_calc_scope
-from app.services.masterdata.vehicle_model.vehicle_model_service import VehicleModelService
+from app.services.masterdata.vehicle_model.service import VehicleModelService
 
 
 @dataclass(frozen=True, slots=True)

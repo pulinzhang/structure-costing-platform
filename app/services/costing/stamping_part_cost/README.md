@@ -2,7 +2,7 @@
 
 列表 / 审核门面。计算编排在 `calc/`。
 
-对外入口：`StampingPartCostService`（`stamping_part_cost_service.py`）。
+对外入口：`StampingPartCostService`（`service.py`）。
 
 ## 架构
 
@@ -12,7 +12,7 @@
 
 | 模块 | 职责 |
 |------|------|
-| `stamping_part_cost_service.py` | 对外入口 |
+| `service.py` | 对外入口 |
 | `queries.py` | 列表分页、展示字段（拼焊尺寸/钢价） |
 | `audit.py` | 手工改价、范围删除/审核/反审核 |
 | `calc_ops.py` | 计算入队、计算日志 |

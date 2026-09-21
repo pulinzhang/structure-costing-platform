@@ -17,7 +17,7 @@ from app.schemas.vo.stamping_part_cost_vo import (
     StampingPartCostCalcResultVO,
 )
 from app.schemas.vo.user_vo import UserVO
-from app.services.async_task.async_task_service import (
+from app.services.async_task.service import (
     TASK_TYPE_STAMPING_PART_COST_CALC,
     AsyncTaskService,
 )
@@ -27,10 +27,10 @@ from app.services.async_task.worker_runner import (
     outcome_from_calc_status,
 )
 from app.services.costing.stamping_part_cost.calc.models import ProgressCallback
-from app.services.masterdata.vehicle_model.vehicle_model_service import VehicleModelService
+from app.services.masterdata.vehicle_model.service import VehicleModelService
 
 if TYPE_CHECKING:
-    from app.services.costing.stamping_part_cost.stamping_part_cost_service import (
+    from app.services.costing.stamping_part_cost.service import (
         StampingPartCostService,
     )
 

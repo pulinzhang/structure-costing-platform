@@ -14,7 +14,7 @@ from app.common.audit import SYSTEM_USER
 from app.database import DatabaseConfig
 from app.exceptions.base import BusinessException
 from app.schemas.dto.supplier_dto import SupplierCreateDTO
-from app.services.masterdata.supplier.supplier_service import SupplierService
+from app.services.masterdata.supplier.service import SupplierService
 
 # 缩写只给人看；全称对齐现网工艺列；别名吃短写/曾用名。
 CURRENT_SUPPLIERS: tuple[tuple[str, str, str, tuple[str, ...]], ...] = (

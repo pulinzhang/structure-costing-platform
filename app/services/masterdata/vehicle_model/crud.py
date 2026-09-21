@@ -28,7 +28,7 @@ from app.schemas.vo.vehicle_model_vo import (
     VehicleModelListVO,
     VehicleModelVO,
 )
-from app.services.masterdata.location.location_service import LocationService
+from app.services.masterdata.location.service import LocationService
 from app.services.masterdata.vehicle_model.identity import (
     normalize,
     period_status,

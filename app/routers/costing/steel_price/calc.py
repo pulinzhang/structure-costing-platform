@@ -15,7 +15,7 @@ from app.schemas.dto.steel_price_dto import SteelPriceCalcDTO
 from app.schemas.vo.async_task_vo import AsyncTaskAcceptedVO, AsyncTaskProgressVO
 from app.schemas.vo.steel_price_vo import SteelPriceCalcLogVO, SteelPriceCalcResultVO
 from app.schemas.vo.user_vo import UserVO
-from app.services.async_task.async_task_service import (
+from app.services.async_task.service import (
     STATUS_PENDING,
     TASK_TYPE_STEEL_PRICE_CALC,
     AsyncTaskService,

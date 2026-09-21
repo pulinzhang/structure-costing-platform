@@ -21,8 +21,8 @@ from app.schemas.vo.stamping_gauge_fee_vo import StampingGaugeFeeImportResultVO
 from app.schemas.vo.user_vo import UserVO
 from app.services.file_trace.path_utils import to_upload_relpath
 from app.services.file_trace.register import register_existing
-from app.services.masterdata.location.location_service import LocationService
-from app.services.masterdata.vehicle_model.vehicle_model_service import VehicleModelService
+from app.services.masterdata.location.service import LocationService
+from app.services.masterdata.vehicle_model.service import VehicleModelService
 from app.services.stamping.gauge_fee.upload.template_builder import build_gauge_fee_template
 
 logger = logging.getLogger("service.stamping_gauge_fee_upload")

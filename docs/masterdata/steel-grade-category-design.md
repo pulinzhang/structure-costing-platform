@@ -226,7 +226,7 @@ CANONICAL_CATEGORIES: tuple[tuple[int, str], ...] = (
 app/models/masterdata/steel_grade_category.py
 app/repositories/masterdata/steel_grade_category/
 app/services/masterdata/steel_grade_category/   # CRUD；写入 require_matched_grade(s)；筛选 match_by_grade_key
-app/routers/masterdata/steel_grade_category/crud.py
+app/routers/masterdata/steel_grade_category.py
 app/common/steel_grade_category.py              # 大类常量；Parser 可读
 app/schemas/dto/steel_grade_category_dto.py
 app/schemas/vo/steel_grade_category_vo.py

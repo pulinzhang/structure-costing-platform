@@ -4,7 +4,7 @@
 
 | 你要做什么 | 调 |
 |---|---|
-| 列表 / 详情 / 分摊比例 / 按项目删除 | `crud.service.StampingDieService` |
+| 列表 / 详情 / 分摊比例 / 按项目删除 | `service.StampingDieService` |
 | 工程变更当月命中、改图抄行、插行、回滚 | `engineering.service.StampingDieEngineeringService` |
 | 模具清单导出 | `export.service.StampingDieExportService` |
 | 布点 Excel 导入 / 下载模板 | `upload.upload_service.StampingDieUploadService` |
@@ -14,9 +14,9 @@
 
 ## 目录
 
-| 目录 | 职责 |
+| 目录 / 文件 | 职责 |
 |------|------|
-| `crud/` | 列表与增删改入口 |
+| `service.py` | 列表与增删改入口 |
 | `engineering/` | 工程变更：`service.py` 入口，`change.py` 插行 / 回滚算法 |
 | `upload/` | 布点 Excel：入队、模板、补模具号、分摊比例回写 |
 | `export/` | 模具清单 Excel |

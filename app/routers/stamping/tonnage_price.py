@@ -29,10 +29,10 @@ from app.schemas.vo.stamping_tonnage_price_vo import (
     StampingTonnagePriceResponse,
 )
 from app.schemas.vo.user_vo import UserVO
-from app.services.stamping.tonnage_price.crud.service import StampingTonnagePriceService
 from app.services.stamping.tonnage_price.export.service import (
     StampingTonnagePriceExportService,
 )
+from app.services.stamping.tonnage_price.service import StampingTonnagePriceService
 from app.services.stamping.tonnage_price.upload.import_service import (
     StampingTonnagePriceImportService,
 )

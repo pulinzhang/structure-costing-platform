@@ -35,8 +35,8 @@ from app.services.bom.packaging_transport_fee.engineering_change import (
 from app.services.bom.packaging_transport_fee.engineering_change import (
     delete_for_engineering_change_rollback as delete_packaging_fee_for_rollback,
 )
-from app.services.masterdata.location.location_service import LocationService
-from app.services.masterdata.vehicle_model.vehicle_model_service import VehicleModelService
+from app.services.masterdata.location.service import LocationService
+from app.services.masterdata.vehicle_model.service import VehicleModelService
 
 logger = logging.getLogger("service.bom")
 

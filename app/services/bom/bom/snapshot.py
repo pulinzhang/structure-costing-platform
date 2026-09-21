@@ -21,8 +21,8 @@ from app.schemas.dto.bom_dto import (
 )
 from app.schemas.vo.bom_vo import BomCascadeFilterOptionsVO, BomSnapshotVO
 from app.schemas.vo.user_vo import UserVO
-from app.services.masterdata.location.location_service import LocationService
-from app.services.masterdata.vehicle_model.vehicle_model_service import VehicleModelService
+from app.services.masterdata.location.service import LocationService
+from app.services.masterdata.vehicle_model.service import VehicleModelService
 
 logger = logging.getLogger("service.bom.snapshot")
 

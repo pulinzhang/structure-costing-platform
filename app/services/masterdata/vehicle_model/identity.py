@@ -26,7 +26,7 @@ from app.schemas.vo.vehicle_model_vo import (
     PERIOD_PENDING,
     VehicleModelVO,
 )
-from app.services.masterdata.location.location_service import LocationService
+from app.services.masterdata.location.service import LocationService
 
 PLACEHOLDER_CODES = frozenset({"UNKNOWN"})
 PAGE_HINT = "请到项目一览手工增加或上传（#/vehicle-model-list）"

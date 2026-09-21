@@ -13,7 +13,7 @@ from app.repositories.costing.steel_price.steel_price_repository import SteelPri
 from app.repositories.yishiyiyi.scrap_price.scrap_price_repository import (
     StampingScrapPriceRepository,
 )
-from app.services.masterdata.location.location_service import LocationService
+from app.services.masterdata.location.service import LocationService
 
 
 class PriceResolver:

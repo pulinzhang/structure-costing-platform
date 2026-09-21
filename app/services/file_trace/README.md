@@ -4,7 +4,7 @@
 
 | 你要做什么 | 调 |
 |---|---|
-| 列表 / 下载元数据 | `upload_file_service.UploadFileService` |
+| 列表 / 下载元数据 | `service.UploadFileService` |
 | 导入后登记 | `register.register_existing` |
 | 允许的文件类别 | `categories` |
 | 相对路径换算 | `path_utils` |
@@ -15,7 +15,7 @@
 
 | 文件 | 职责 |
 |------|------|
-| `upload_file_service.py` | 查询门面 |
+| `service.py` | 查询门面 |
 | `register.py` | 写入登记 |
 | `categories.py` | 类别白名单 |
 | `path_utils.py` | 路径规范化 |

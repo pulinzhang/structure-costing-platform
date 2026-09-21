@@ -21,7 +21,7 @@ from app.schemas.dto.location_dto import (
     LocationCreateDTO,
     LocationUpdateDTO,
 )
-from app.services.masterdata.location.location_service import LocationService
+from app.services.masterdata.location.service import LocationService
 from tests.masterdata.location_fixtures import insert_sample_locations
 
 

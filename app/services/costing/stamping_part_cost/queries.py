@@ -22,9 +22,9 @@ from app.services.costing.stamping_part_cost.export.tailor_weld_display import (
     load_blanks_by_part_id,
     resolve_part_cost_display,
 )
-from app.services.masterdata.location.location_service import LocationService
-from app.services.masterdata.supplier.supplier_service import SupplierService
-from app.services.masterdata.vehicle_model.vehicle_model_service import VehicleModelService
+from app.services.masterdata.location.service import LocationService
+from app.services.masterdata.supplier.service import SupplierService
+from app.services.masterdata.vehicle_model.service import VehicleModelService
 
 
 def to_cost_vos(

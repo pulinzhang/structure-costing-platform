@@ -19,8 +19,8 @@ from app.schemas.vo.stamping_gauge_fee_vo import (
     StampingGaugeFeeVO,
 )
 from app.schemas.vo.user_vo import UserVO
-from app.services.stamping.gauge_fee.crud.service import StampingGaugeFeeService
 from app.services.stamping.gauge_fee.export.service import StampingGaugeFeeExportService
+from app.services.stamping.gauge_fee.service import StampingGaugeFeeService
 from app.services.stamping.gauge_fee.upload.upload_service import StampingGaugeFeeUploadService
 from app.utils.response import ApiResponse
 

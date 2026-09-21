@@ -26,7 +26,7 @@ from app.schemas.dto.steel_grade_category_dto import (
     SteelGradeCategoryUpdate,
 )
 from app.services.masterdata.steel_grade_category.seed import SEED_STEEL_GRADE_CATEGORIES
-from app.services.masterdata.steel_grade_category.steel_grade_category_service import (
+from app.services.masterdata.steel_grade_category.service import (
     SteelGradeCategoryService,
 )
 

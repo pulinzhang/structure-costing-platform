@@ -29,7 +29,7 @@ from app.schemas.vo.user_vo import UserVO
 from app.services.costing.stamping_part_cost.export.service import (
     StampingPartCostExportService,
 )
-from app.services.costing.stamping_part_cost.stamping_part_cost_service import (
+from app.services.costing.stamping_part_cost.service import (
     StampingPartCostService,
 )
 from app.utils.response import ApiResponse

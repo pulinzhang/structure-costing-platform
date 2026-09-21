@@ -15,8 +15,8 @@ Repository / Model / Router / Schema 不在这里。
 
 | 能力 | 落点 | 说明 |
 |------|------|------|
-| 列表 / 明细 / 审核 / 删除 | `assembly_cost_service.py` | 财务 / 采购视图筛选项不同；写操作走本门面 |
-| 计算就绪 / 入队 / worker | `assembly_cost_service.py` → `calc/` | 锁 scope、异步任务、委托编排器 |
+| 列表 / 明细 / 审核 / 删除 | `service.py` | 财务 / 采购视图筛选项不同；写操作走本门面 |
+| 计算就绪 / 入队 / worker | `service.py` → `calc/` | 锁 scope、异步任务、委托编排器 |
 | 逐卡 rollup | `calc/rollup.py` + `calc/orchestrator/` | 指挥家只编排，不算账 |
 | 计算日志 | `calc/calc_log_service.py` + `process_log.py` | 给人看的过程 + 可筛选核价卡 JSON |
 | 结果表 Excel | `export/` | 财务对账册 / 采购零件成本册；月度核对导出可叠 Sheet |
@@ -25,7 +25,7 @@ Repository / Model / Router / Schema 不在这里。
 **Router 入口（按职责拆文件，类名保持稳定）：**
 
 ```python
-from app.services.costing.assembly_cost.assembly_cost_service import AssemblyCostService
+from app.services.costing.assembly_cost.service import AssemblyCostService
 from app.services.costing.assembly_cost.export.service import (
     AssemblyCostExportService,
 )
@@ -71,10 +71,10 @@ from app.services.costing.assembly_cost.calc_report.service import (
 assembly_cost/
 ├── README.md                         # 本说明
 ├── __init__.py                       # 包标记（不汇总导出）
-├── assembly_cost_service.py          # HTTP 门面：列表/审核 + 计算委托
+├── service.py                          # HTTP 门面：列表/审核 + 计算委托
 ├── codes.py                          # part_short_code / item_short_code
 ├── calc/
-│   ├── __init__.py                   # 再导出 rollup 常量/函数（给本切片用）
+│   ├── __init__.py                   # 只作包标记，不汇总导出
 │   ├── rollup.py                     # 单卡金额公式
 │   ├── process_log.py                # 过程说明 / 核价卡 JSON 形态
 │   ├── calc_log_service.py           # 计算日志 + scope 锁
@@ -104,7 +104,7 @@ assembly_cost/
 
 | 文件 / 包 | 负责 | 不负责 |
 |-----------|------|--------|
-| `assembly_cost_service.py` | 分页 VO、审核、`start_calc`、把计算交给 orchestrator | 单元格、rollup 循环 |
+| `service.py` | 分页 VO、审核、`start_calc`、把计算交给 orchestrator | 单元格、rollup 循环 |
 | `codes.py` | 零件/子件短码规则 | 查库 |
 | `calc/rollup.py` | 单卡公式 | Session、Excel |
 | `calc/orchestrator/` | 一次计算的编排与落库 | HTTP、xlsx 版式 |
@@ -198,7 +198,7 @@ log_id + keyword/status/level/tree_root
 
 | 模块 | 职责 |
 |------|------|
-| `assembly_cost_service.py` + Repository | 列表筛选项、审核 |
+| `service.py` + Repository | 列表筛选项、审核 |
 | `calc/rollup.py` | 单卡公式、公式版本号 |
 | `orchestrator/ready.py` / `prep.py` | 上游是否齐、拉哪些价表 |
 | `batch_engine.py` | 逐卡落库、SAVEPOINT |

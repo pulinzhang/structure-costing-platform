@@ -45,8 +45,8 @@ from app.services.bom.packaging_transport_fee.service import BomPackagingTranspo
 from app.services.bom.procurement_object.service import BomProcurementObjectService
 from app.services.bom.welding_process_breakdown.service import BomWeldingProcessBreakdownService
 from app.services.stamping.die.engineering.service import StampingDieEngineeringService
-from app.services.stamping.die_fee.crud.service import StampingDieFeeService
-from app.services.stamping.gauge_fee.crud.service import StampingGaugeFeeService
+from app.services.stamping.die_fee.service import StampingDieFeeService
+from app.services.stamping.gauge_fee.service import StampingGaugeFeeService
 from app.services.stamping.part.engineering.service import StampingEngineeringService
 
 logger = logging.getLogger("service.engineering_change.rollback")

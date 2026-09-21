@@ -4,7 +4,7 @@
 
 | 你要做什么 | 调 |
 |---|---|
-| 列表 / CRUD / 材料规格 | `crud.service.StampingPartService` |
+| 列表 / CRUD / 材料规格 | `service.StampingPartService` |
 | 工程变更当月命中、改图抄行、插行、回滚 | `engineering.service.StampingEngineeringService` |
 | 拼焊子片 | `tailor_weld.service.StampingTailorWeldBlankService` |
 | 工艺确认表 / 钢材测算导出 | `export.service.StampingPartExportService` |
@@ -14,9 +14,10 @@
 
 ## 目录
 
-| 目录 | 职责 |
+| 目录 / 文件 | 职责 |
 |------|------|
-| `crud/` | 列表与增删改：`service.py` 入口，`list` / `materials` / `mutations` 实现 |
+| `service.py` | 列表与增删改入口 |
+| `list.py` / `materials.py` / `mutations.py` | 列表、材料规格、写操作 |
 | `engineering/` | 工程变更：`service.py` 入口，`change.py` 插行 / 回滚算法 |
 | `rules/` | 零件序号、同一零件下工序号不得重复（上传与模具布点共用） |
 | `tailor_weld/` | 拼焊子片 |

@@ -65,7 +65,7 @@ from app.services.costing.assembly_cost.restore.money import _money
 from app.services.costing.assembly_cost.restore.stamping import RestoreStamping
 from app.services.costing.assembly_cost.restore.tree import RestoreTree
 from app.services.costing.assembly_cost.restore.welding import RestoreWelding
-from app.services.settings.system.settings_service import SettingsService
+from app.services.settings.system.service import SettingsService
 
 
 class AssemblyCostRestoreService:

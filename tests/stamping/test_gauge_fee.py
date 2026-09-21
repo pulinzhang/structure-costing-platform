@@ -40,9 +40,9 @@ from app.repositories.masterdata.location.location_repository import LocationRep
 from app.schemas.dto.location_dto import LocationAliasInsert, LocationInsert
 from app.schemas.dto.stamping_gauge_fee_dto import StampingGaugeFeeQuery, StampingGaugeFeeUpdate
 from app.schemas.dto.vehicle_model_dto import VehicleModelCreateDTO
-from app.services.masterdata.vehicle_model.vehicle_model_service import VehicleModelService
-from app.services.stamping.gauge_fee.crud.service import StampingGaugeFeeService
+from app.services.masterdata.vehicle_model.service import VehicleModelService
 from app.services.stamping.gauge_fee.export.service import StampingGaugeFeeExportService
+from app.services.stamping.gauge_fee.service import StampingGaugeFeeService
 from app.services.stamping.gauge_fee.upload.upload_service import StampingGaugeFeeUploadService
 
 LOCATION = "芜湖"

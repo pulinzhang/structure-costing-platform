@@ -8,7 +8,7 @@ from app.services.costing.steel_price.calc.calc_log_service import CalcLogServic
 from app.services.costing.steel_price.calc.steps.apply_adjustments import AdjustmentApplier
 from app.services.costing.steel_price.calc.steps.enrich_base_price import BasePriceEnricher
 from app.services.costing.steel_price.calc.steps.load_materials import MaterialThicknessLoader
-from app.services.costing.steel_price.steel_price_service import SteelPriceService
+from app.services.costing.steel_price.service import SteelPriceService
 
 
 @dataclass(frozen=True, slots=True)

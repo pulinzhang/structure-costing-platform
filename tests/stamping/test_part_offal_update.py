@@ -10,7 +10,7 @@ from app.exceptions import NotFoundException
 from app.schemas.dto.stamping_part_dto import StampingPartOffalUpdateDTO
 from app.schemas.vo.stamping_vo import StampingPartResponse
 from app.schemas.vo.user_vo import UserVO
-from app.services.stamping.part.crud.service import StampingPartService
+from app.services.stamping.part.service import StampingPartService
 
 
 def _user() -> UserVO:

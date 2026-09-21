@@ -18,7 +18,7 @@ from app.repositories.costing.stamping_part_cost.stamping_part_cost_repository i
 from app.services.costing.assembly_cost.calc.calc_log_service import (
     AssemblyCostCalcLogService,
 )
-from app.services.settings.system.settings_service import SettingsService
+from app.services.settings.system.service import SettingsService
 
 
 @dataclass(frozen=True, slots=True)

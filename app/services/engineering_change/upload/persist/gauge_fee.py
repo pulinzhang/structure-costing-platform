@@ -13,7 +13,7 @@ from app.repositories.engineering_change.effect_link_repository import (
     EngineeringChangeEffectLinkInsert,
 )
 from app.schemas.vo.user_vo import UserVO
-from app.services.stamping.gauge_fee.crud.service import StampingGaugeFeeService
+from app.services.stamping.gauge_fee.service import StampingGaugeFeeService
 
 
 def persist_gauge_fees(

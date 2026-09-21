@@ -16,7 +16,7 @@ from app.repositories.masterdata.vehicle_model.vehicle_model_repository import (
 from app.schemas.dto.vehicle_model_dto import VehicleModelInsert
 from app.schemas.vo.user_vo import UserVO
 from app.schemas.vo.vehicle_model_vo import VehicleModelUploadResultVO
-from app.services.masterdata.location.location_service import LocationService
+from app.services.masterdata.location.service import LocationService
 from app.services.masterdata.vehicle_model.identity import normalize, validate_period
 
 logger = logging.getLogger("service.vehicle_model")

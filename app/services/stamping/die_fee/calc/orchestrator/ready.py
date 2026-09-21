@@ -10,7 +10,7 @@ from app.exceptions.base import BusinessException
 from app.repositories.stamping.die.repository import StampingDiePartRepository
 from app.repositories.stamping.die_fee.repository import StampingDieFeeRepository
 from app.schemas.vo.stamping_die_fee_vo import StampingDieFeeCalcReadyVO
-from app.services.masterdata.vehicle_model.vehicle_model_service import VehicleModelService
+from app.services.masterdata.vehicle_model.service import VehicleModelService
 from app.services.stamping.die_fee.calc.orchestrator.deps import DieFeeCalcDeps
 from app.services.stamping.die_fee.calc.orchestrator.identity import (
     matches_part,

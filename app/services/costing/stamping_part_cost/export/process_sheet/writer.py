@@ -44,7 +44,7 @@ from app.services.costing.stamping_part_cost.export.process_sheet.rows import (
     write_process_data_rows,
 )
 from app.services.costing.stamping_part_cost.helpers import to_decimal
-from app.services.settings.system.settings_service import SettingsService
+from app.services.settings.system.service import SettingsService
 
 logger = logging.getLogger("service.stamping_part_cost_export")
 

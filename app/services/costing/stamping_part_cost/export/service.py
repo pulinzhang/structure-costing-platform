@@ -23,7 +23,7 @@ from app.services.costing.stamping_part_cost.export.process_sheet.writer import 
     export_process_sheet,
     write_process_sheet_to_workbook,
 )
-from app.services.masterdata.supplier.supplier_service import SupplierService
+from app.services.masterdata.supplier.service import SupplierService
 
 EXPORT_VEHICLE_REQUIRED_MESSAGE = "导出须选定项目。"
 

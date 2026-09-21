@@ -23,7 +23,7 @@ from app.services.bom.bom.period import BomPeriodService
 from app.services.bom.procurement_object.classify import SECTION_OBJECT, classify_nodes
 from app.services.costing.assembly_cost.calc.orchestrator.deps import AssemblyCalcDeps
 from app.services.costing.stamping_part_cost.calc.constants import ALL_SUPPLIERS_LOCK
-from app.services.masterdata.vehicle_model.vehicle_model_service import VehicleModelService
+from app.services.masterdata.vehicle_model.service import VehicleModelService
 
 
 class WeldingCoverage(NamedTuple):

@@ -14,7 +14,7 @@ from app.repositories.stamping.process_fee.repository import (
     StampingProcessFeeRepository,
 )
 from app.schemas.vo.user_vo import UserVO
-from app.services.masterdata.supplier.supplier_service import SupplierService
+from app.services.masterdata.supplier.service import SupplierService
 from app.services.stamping.process_fee.export.styles import build_sheet_style
 from app.services.stamping.process_fee.export.values import build_filename, filter_text
 from app.services.stamping.process_fee.export.workbook import fill_sheet

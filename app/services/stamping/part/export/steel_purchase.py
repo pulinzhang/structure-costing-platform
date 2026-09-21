@@ -17,7 +17,7 @@ from app.common.money import Q2, Q4
 from app.common.timezone import now
 from app.models.stamping import StampingPart, StampingProcess, StampingTailorWeldBlank
 from app.schemas.vo.user_vo import UserVO
-from app.services.settings.system.settings_service import SettingsService
+from app.services.settings.system.service import SettingsService
 from app.services.stamping.part.export.constants import (
     _FONT_NAME,
     _HEADER_FILL,

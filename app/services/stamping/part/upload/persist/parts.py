@@ -17,8 +17,8 @@ from app.repositories.stamping.part.process import StampingProcessRepository
 from app.repositories.stamping.part.repository import StampingPartRepository
 from app.schemas.dto.stamping_upload_dto import FileInfo, PartData, ProcessData
 from app.schemas.vo.user_vo import UserVO
-from app.services.masterdata.supplier.supplier_service import SupplierService
-from app.services.masterdata.vehicle_model.vehicle_model_service import VehicleModelService
+from app.services.masterdata.supplier.service import SupplierService
+from app.services.masterdata.vehicle_model.service import VehicleModelService
 
 logger = logging.getLogger("service.stamping_upload")
 

@@ -13,7 +13,7 @@ from app.exceptions.base import BusinessException
 from app.models.stamping.die import StampingDiePart
 from app.models.stamping.die_unit_price import StampingDieUnitPrice
 from app.schemas.dto.stamping_die_fee_dto import StampingDieFeeCalcDTO
-from app.services.masterdata.vehicle_model.vehicle_model_service import VehicleModelService
+from app.services.masterdata.vehicle_model.service import VehicleModelService
 from app.services.stamping.die_fee.calc.constants import APPROVED_SCOPE_MESSAGE
 from app.services.stamping.die_fee.calc.orchestrator.deps import DieFeeCalcDeps
 from app.services.stamping.die_fee.calc.orchestrator.identity import parts_for_identity

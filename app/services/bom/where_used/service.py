@@ -19,7 +19,7 @@ from app.schemas.vo.bom_where_used_vo import (
     BomWhereUsedVO,
 )
 from app.services.bom.where_used.match import HIT_LIMIT, SHORT_CODE_CANDIDATE_LIMIT, plan_match
-from app.services.masterdata.location.location_service import LocationService
+from app.services.masterdata.location.service import LocationService
 
 _ONE = Decimal("1")
 _PARENT_WALK_LIMIT = 8

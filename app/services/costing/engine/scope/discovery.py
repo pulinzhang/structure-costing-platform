@@ -8,8 +8,8 @@ from sqlalchemy.orm import Session
 
 from app.repositories.bom.bom.snapshot import BomSnapshotRepository
 from app.repositories.stamping.part.repository import StampingPartRepository
-from app.services.masterdata.location.location_service import LocationService
-from app.services.masterdata.vehicle_model.vehicle_model_service import VehicleModelService
+from app.services.masterdata.location.service import LocationService
+from app.services.masterdata.vehicle_model.service import VehicleModelService
 
 
 @dataclass(frozen=True)

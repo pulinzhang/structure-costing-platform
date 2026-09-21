@@ -24,7 +24,7 @@ from app.schemas.vo.bom_welding_fee_vo import (
     BomWeldingFeeCalcResultVO,
 )
 from app.schemas.vo.user_vo import UserVO
-from app.services.async_task.async_task_service import (
+from app.services.async_task.service import (
     TASK_TYPE_BOM_WELDING_FEE_CALC,
     AsyncTaskService,
 )
@@ -47,7 +47,7 @@ from app.services.bom.welding_fee.calc.orchestrator.progress import (
 )
 from app.services.bom.welding_fee.calc.orchestrator.ready import collect_calc_ready
 from app.services.bom.welding_fee.calc.staff_report import calc_finish_toast
-from app.services.masterdata.vehicle_model.vehicle_model_service import VehicleModelService
+from app.services.masterdata.vehicle_model.service import VehicleModelService
 
 
 class BomWeldingFeeCalcOrchestrator:

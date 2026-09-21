@@ -32,7 +32,7 @@ from app.schemas.vo.llm_analysis_vo import (
     LlmAnalysisTimeRangeVO,
 )
 from app.schemas.vo.user_vo import UserVO
-from app.services.async_task.async_task_service import (
+from app.services.async_task.service import (
     STATUS_COMPLETED,
     AsyncTaskService,
 )

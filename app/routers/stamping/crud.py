@@ -33,8 +33,8 @@ from app.schemas.vo.stamping_vo import (
     StampingProcessResponse,
 )
 from app.schemas.vo.user_vo import UserVO
-from app.services.stamping.part.crud.service import StampingPartService
 from app.services.stamping.part.export.service import StampingPartExportService
+from app.services.stamping.part.service import StampingPartService
 from app.utils.response import ApiResponse
 
 router = APIRouter(prefix="/api/stamping", tags=["冲压工艺 API"])

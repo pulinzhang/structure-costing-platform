@@ -24,13 +24,13 @@ from app.schemas.vo.stamping_die_vo import (
     StampingDieScopeFilterVO,
 )
 from app.schemas.vo.user_vo import UserVO
-from app.services.async_task.async_task_service import (
+from app.services.async_task.service import (
     STATUS_PENDING,
     TASK_TYPE_STAMPING_DIE_UPLOAD,
     AsyncTaskService,
 )
-from app.services.stamping.die.crud.service import StampingDieService
 from app.services.stamping.die.export.service import StampingDieExportService
+from app.services.stamping.die.service import StampingDieService
 from app.services.stamping.die.upload.upload_service import StampingDieUploadService
 from app.utils.response import ApiResponse
 

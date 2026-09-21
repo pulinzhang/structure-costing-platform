@@ -21,7 +21,7 @@ from app.services.costing.steel_price.calc.models import (
 )
 from app.services.costing.steel_price.calc.steps.apply_adjustments import AdjustmentApplier
 from app.services.costing.steel_price.calc.steps.enrich_base_price import BasePriceEnricher
-from app.services.settings.system.settings_service import SettingsService
+from app.services.settings.system.service import SettingsService
 
 YEAR = 2026
 MONTH = 1

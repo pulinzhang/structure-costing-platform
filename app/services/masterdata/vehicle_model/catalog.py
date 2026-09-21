@@ -26,7 +26,7 @@ from app.repositories.masterdata.vehicle_model.vehicle_model_repository import (
     VehicleModelRepository,
 )
 from app.schemas.vo.user_vo import UserVO
-from app.services.masterdata.location.location_service import LocationService
+from app.services.masterdata.location.service import LocationService
 
 IMPORT_HEADERS = (
     HEADER_LOCATION,

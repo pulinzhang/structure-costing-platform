@@ -12,7 +12,7 @@ from app.common.permissions.codes import Perm
 from app.deps.permissions import require_perm
 from app.schemas.vo.async_task_vo import AsyncTaskAcceptedVO, AsyncTaskProgressVO
 from app.schemas.vo.user_vo import UserVO
-from app.services.async_task.async_task_service import (
+from app.services.async_task.service import (
     STATUS_PENDING,
     TASK_TYPE_STAMPING_UPLOAD,
     AsyncTaskService,

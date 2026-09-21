@@ -19,12 +19,12 @@ from app.schemas.vo.stamping_part_cost_vo import (
     StampingPartCostCalcResultVO,
 )
 from app.schemas.vo.user_vo import UserVO
-from app.services.async_task.async_task_service import (
+from app.services.async_task.service import (
     STATUS_PENDING,
     TASK_TYPE_STAMPING_PART_COST_CALC,
     AsyncTaskService,
 )
-from app.services.costing.stamping_part_cost.stamping_part_cost_service import (
+from app.services.costing.stamping_part_cost.service import (
     StampingPartCostService,
 )
 from app.utils.response import ApiResponse

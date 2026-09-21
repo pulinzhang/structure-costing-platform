@@ -119,7 +119,7 @@ suppliers.full_name
 | 项 | 定稿 |
 |---|------|
 | 切片 | `masterdata`（与基地、项目同一切片）。宪法 §4.1 上游 / 基础数据已含 `masterdata` |
-| 代码 | `app/models/masterdata/supplier.py` · `routers/masterdata/supplier/` · `services/masterdata/supplier/` · `repositories/masterdata/supplier/` · `parsers/masterdata/supplier_parser.py`；前端 `static/js/features/masterdata/supplier/{upload,list}/` |
+| 代码 | `app/models/masterdata/supplier.py` · `routers/masterdata/supplier.py` · `services/masterdata/supplier/` · `repositories/masterdata/supplier/` · `parsers/masterdata/supplier_parser.py`；前端 `static/js/features/masterdata/supplier/{upload,list}/` |
 | 表 | `suppliers`（主键 `full_name`，`String(100)`，与年度价 `supplier_name` 同宽）· `supplier_aliases`（附属行）。凡存规范全称的业务列统一 `String(100)`，见 §5.6 |
 | HTTP | `/api/masterdata/suppliers` **只给供应商两页**。下游上传/计算/列表下拉**不另开**这套 HTTP：各切片沿用现有接口，Service 内调本切片。避免工艺上传权限绑 `menu:supplier-upload` |
 | 前端 | 侧栏 **供应商** 二级分组：叶子 **上传** + **一览表**。Hash `#/supplier-upload` / `#/supplier-list`；兼容 `#/supplier` → `supplier-list` |

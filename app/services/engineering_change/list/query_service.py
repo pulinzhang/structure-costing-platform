@@ -17,7 +17,7 @@ from app.repositories.engineering_change.upload_log_repository import (
 from app.schemas.dto.engineering_change_dto import EngineeringChangeOrderQueryDTO
 from app.schemas.vo.engineering_change_vo import EngineeringChangeListRowVO
 from app.schemas.vo.user_vo import UserVO
-from app.services.file_trace.upload_file_service import UploadFileService
+from app.services.file_trace.service import UploadFileService
 
 
 class EngineeringChangeQueryService:

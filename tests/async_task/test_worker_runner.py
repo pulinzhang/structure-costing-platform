@@ -7,7 +7,7 @@ from unittest.mock import MagicMock
 import pytest
 from sqlalchemy.orm import Session
 
-from app.services.async_task.async_task_service import (
+from app.services.async_task.service import (
     STATUS_COMPLETED,
     STATUS_FAILED,
     AsyncTaskService,
@@ -19,7 +19,7 @@ def _service_with_mocks(monkeypatch: pytest.MonkeyPatch) -> tuple[AsyncTaskServi
     db = MagicMock()
     factory = MagicMock(return_value=db)
     monkeypatch.setattr(
-        "app.services.async_task.async_task_service.DatabaseConfig.get_session_factory",
+        "app.services.async_task.service.DatabaseConfig.get_session_factory",
         lambda: factory,
     )
     service = AsyncTaskService()

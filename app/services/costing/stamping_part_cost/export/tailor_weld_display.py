@@ -23,7 +23,7 @@ from app.services.costing.stamping_part_cost.helpers import (
     join_slash_formatted,
     join_slash_ton_prices,
 )
-from app.services.masterdata.location.location_service import LocationService
+from app.services.masterdata.location.service import LocationService
 
 SteelPriceKey = tuple[int, int, str, str, Decimal]
 

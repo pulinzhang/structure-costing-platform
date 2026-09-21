@@ -17,7 +17,7 @@ from app.services.costing.stamping_part_cost.calc.constants import (
     quantize,
 )
 from app.services.costing.stamping_part_cost.calc.fees.match import location_and_vehicle_keys
-from app.services.masterdata.location.location_service import LocationService
+from app.services.masterdata.location.service import LocationService
 
 ZERO = Decimal("0")
 

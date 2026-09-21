@@ -57,7 +57,7 @@ from app.services.bom.welding_process_breakdown.generate_log_service import (
 )
 from app.services.bom.welding_process_breakdown.process_log import ProcessLogBuilder
 from app.services.bom.welding_process_breakdown.rollup import apply_rollup_flags
-from app.services.masterdata.vehicle_model.vehicle_model_service import VehicleModelService
+from app.services.masterdata.vehicle_model.service import VehicleModelService
 
 logger = logging.getLogger("service.bom.welding_process_breakdown.generate")
 

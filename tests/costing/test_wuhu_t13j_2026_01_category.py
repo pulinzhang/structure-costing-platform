@@ -19,7 +19,7 @@ from app.services.costing.steel_price.calc.models import (
 from app.services.costing.steel_price.calc.steps.apply_adjustments import AdjustmentApplier
 from app.services.costing.steel_price.calc.steps.enrich_base_price import BasePriceEnricher
 from app.services.costing.steel_price.calc.steps.load_materials import MaterialThicknessLoader
-from app.services.masterdata.steel_grade_category.steel_grade_category_service import (
+from app.services.masterdata.steel_grade_category.service import (
     SteelGradeCategoryService,
 )
 

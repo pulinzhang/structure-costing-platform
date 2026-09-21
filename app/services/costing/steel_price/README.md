@@ -2,7 +2,7 @@
 
 查询 / 手工维护 / 审核 / 计算落库。联动计算编排在 `calc/`。
 
-对外入口：`SteelPriceService`（`steel_price_service.py`）。
+对外入口：`SteelPriceService`（`service.py`）。
 
 ## 架构
 
@@ -12,7 +12,7 @@
 
 | 模块 | 职责 |
 |------|------|
-| `steel_price_service.py` | 对外入口、公式版本常量 |
+| `service.py` | 对外入口、公式版本常量 |
 | `paginate.py` | 列表分页、筛选下拉、HUD 汇总 |
 | `crud.py` | 单条增删改、按条件批量删除 |
 | `audit.py` | 单条/批量审核、驳回、反审核 |

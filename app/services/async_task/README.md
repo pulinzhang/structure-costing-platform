@@ -4,7 +4,7 @@
 
 | 你要做什么 | 调 |
 |---|---|
-| 创建 / 查进度 / 解析结果 JSON | `async_task_service.AsyncTaskService` |
+| 创建 / 查进度 / 解析结果 JSON | `service.AsyncTaskService` |
 | worker 循环 | `worker_runner` |
 
 任务进度 HTTP 挂在各业务路由的 `/tasks/{task_id}`，没有独立 `/api/async-task`。禁止本包 `__init__.py` 再导出。
@@ -13,5 +13,5 @@
 
 | 文件 | 职责 |
 |------|------|
-| `async_task_service.py` | 状态机与快照 |
+| `service.py` | 状态机与快照 |
 | `worker_runner.py` | 进程内 worker |

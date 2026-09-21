@@ -18,7 +18,7 @@ from app.repositories.engineering_change.upload_log_repository import (
 )
 from app.schemas.vo.async_task_vo import AsyncTaskAcceptedVO
 from app.schemas.vo.user_vo import UserVO
-from app.services.async_task.async_task_service import (
+from app.services.async_task.service import (
     STATUS_COMPLETED,
     STATUS_FAILED,
     TASK_TYPE_ENGINEERING_CHANGE_UPLOAD,
@@ -33,7 +33,7 @@ from app.services.engineering_change.upload.orchestrator.types import (
 )
 from app.services.file_trace.path_utils import to_upload_relpath
 from app.services.file_trace.register import register_existing
-from app.services.masterdata.vehicle_model.vehicle_model_service import VehicleModelService
+from app.services.masterdata.vehicle_model.service import VehicleModelService
 
 logger = logging.getLogger("service.engineering_change.start_upload")
 

@@ -28,8 +28,8 @@ from app.services.engineering_change.list.rollback_service import (
 )
 from app.services.engineering_change.upload.persist.die_fee import persist_die_fees
 from app.services.engineering_change.upload.persist.gauge_fee import persist_gauge_fees
-from app.services.stamping.die_fee.crud.service import StampingDieFeeService
-from app.services.stamping.gauge_fee.crud.service import StampingGaugeFeeService
+from app.services.stamping.die_fee.service import StampingDieFeeService
+from app.services.stamping.gauge_fee.service import StampingGaugeFeeService
 
 LOCATION = "芜湖"
 VEHICLE = "T13J"

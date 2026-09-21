@@ -20,7 +20,7 @@ from app.repositories.yishiyiyi.policy.steel_price_policy_repository import (
     SteelPricePolicyRepository,
 )
 from app.schemas.vo.winning_thickness_vo import WinningThicknessRowVO
-from app.services.masterdata.location.location_service import LocationService
+from app.services.masterdata.location.service import LocationService
 from app.services.yishiyiyi.policy.export.excel_exporter import format_interval
 from app.services.yishiyiyi.policy.match.adjustment_common import (
     PolicyMatchContext,

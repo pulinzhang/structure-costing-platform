@@ -25,7 +25,7 @@ from app.services.engineering_change.upload.orchestrator.types import (  # noqa:
 )
 from app.services.file_trace.path_utils import to_upload_relpath  # noqa: E402
 from app.services.file_trace.register import register_existing  # noqa: E402
-from app.services.masterdata.vehicle_model.vehicle_model_service import (  # noqa: E402
+from app.services.masterdata.vehicle_model.service import (  # noqa: E402
     VehicleModelService,
 )
 

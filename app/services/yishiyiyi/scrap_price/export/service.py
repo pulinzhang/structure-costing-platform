@@ -8,7 +8,7 @@ from app.repositories.yishiyiyi.scrap_price.scrap_price_repository import (
     StampingScrapPriceRepository,
 )
 from app.schemas.vo.user_vo import UserVO
-from app.services.masterdata.location.location_service import LocationService
+from app.services.masterdata.location.service import LocationService
 from app.services.yishiyiyi.scrap_price.export.excel_exporter import (
     StampingScrapPriceExporter,
 )

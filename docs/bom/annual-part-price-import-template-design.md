@@ -65,6 +65,6 @@
 空 `rows` 仍出表头，拒单在 Service。  
 文件名：`年度零件价导入模板_{location}_{vehicle_model}_{year}.xlsx`。
 
-与 `export_service`：列表导出另含基地/年份/审核与审计列，但核心列与本模板同契约，可再导入（基地/年度以上传页为准）。
+与 `export/service.py`：列表导出另含基地/年份/审核与审计列，但核心列与本模板同契约，可再导入（基地/年度以上传页为准）。
 
 回归：`tests/bom/test_annual_part_price_template.py`、`tests/bom/test_annual_part_price_parser.py`。

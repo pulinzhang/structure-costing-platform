@@ -10,8 +10,8 @@ from app.config import settings
 from app.exceptions.base import BusinessException
 from app.parsers.stamping.models.part import Part
 from app.parsers.stamping.models.process import Process
-from app.services.masterdata.supplier.supplier_service import SupplierService
-from app.services.masterdata.vehicle_model.vehicle_model_service import VehicleModelService
+from app.services.masterdata.supplier.service import SupplierService
+from app.services.masterdata.vehicle_model.service import VehicleModelService
 from app.services.stamping.part.rules.part_seq_validator import (
     PartSeqOccurrence,
     format_part_seq_issues,

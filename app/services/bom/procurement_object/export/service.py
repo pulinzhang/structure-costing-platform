@@ -19,7 +19,7 @@ from app.services.bom.procurement_object.mapping import (
 from app.services.bom.procurement_object.styles import SHEETS
 from app.services.bom.procurement_object.values import build_filename
 from app.services.bom.procurement_object.workbook import write_data_sheet
-from app.services.masterdata.supplier.supplier_service import SupplierService
+from app.services.masterdata.supplier.service import SupplierService
 
 
 class BomProcurementObjectExportService:

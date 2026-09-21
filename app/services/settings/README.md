@@ -7,8 +7,8 @@
 | 登录 | `users.auth_service.AuthService` |
 | 用户 | `users.user_service.UserService` |
 | 权限 | `users.permission_service.PermissionService` |
-| 系统参数 | `system.settings_service.SettingsService` |
-| 操作日志 | `logs.operation_log_service.OperationLogService` |
+| 系统参数 | `system.service.SettingsService` |
+| 操作日志 | `logs.service.OperationLogService` |
 
 禁止本包 `__init__.py` 再导出。
 

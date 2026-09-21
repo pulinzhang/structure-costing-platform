@@ -32,7 +32,7 @@ from app.schemas.dto.stamping_tailor_weld_blank_dto import (
 from app.schemas.dto.stamping_upload_dto import StampingPartPatch
 from app.schemas.vo.stamping_tailor_weld_blank_vo import StampingTailorWeldBlankVO
 from app.schemas.vo.user_vo import UserVO
-from app.services.masterdata.steel_grade_category.steel_grade_category_service import (
+from app.services.masterdata.steel_grade_category.service import (
     SteelGradeCategoryService,
 )
 

@@ -13,7 +13,7 @@ from app.schemas.vo.steel_price_vo import (
     SteelPriceListSummaryVO,
     SteelPriceResponse,
 )
-from app.services.masterdata.location.location_service import LocationService
+from app.services.masterdata.location.service import LocationService
 
 
 def paginate_steel_prices(

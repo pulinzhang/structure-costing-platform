@@ -47,7 +47,7 @@ from app.schemas.dto.supplier_dto import SupplierCreateDTO
 from app.services.bom.procurement_object.export.service import BomProcurementObjectExportService
 from app.services.bom.procurement_object.insert_service import BomProcurementObjectInsertService
 from app.services.bom.procurement_object.service import BomProcurementObjectService
-from app.services.masterdata.supplier.supplier_service import SupplierService
+from app.services.masterdata.supplier.service import SupplierService
 
 
 @pytest.fixture()

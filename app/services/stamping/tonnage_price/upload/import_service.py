@@ -30,7 +30,7 @@ from app.schemas.vo.stamping_tonnage_price_vo import StampingTonnagePriceImportR
 from app.schemas.vo.user_vo import UserVO
 from app.services.file_trace.path_utils import to_upload_relpath
 from app.services.file_trace.register import register_existing
-from app.services.masterdata.location.location_service import LocationService
+from app.services.masterdata.location.service import LocationService
 from app.utils.stamping_tonnage_price_archive import save_tonnage_price_upload
 
 logger = logging.getLogger("service.stamping_tonnage_price_import")

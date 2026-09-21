@@ -12,7 +12,7 @@ from app.repositories.stamping.process_fee.repository import (
     StampingProcessFeeRepository,
 )
 from app.schemas.vo.stamping_process_fee_vo import StampingProcessFeeCalcReadyVO
-from app.services.masterdata.vehicle_model.vehicle_model_service import VehicleModelService
+from app.services.masterdata.vehicle_model.service import VehicleModelService
 from app.services.stamping.process_fee.calc.orchestrator.deps import ProcessFeeCalcDeps
 
 

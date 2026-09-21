@@ -20,7 +20,7 @@
 **对外入口**（Router 只依赖此名）：
 
 ```python
-from app.services.bom.welding_process_breakdown.export import (
+from app.services.bom.welding_process_breakdown.export.orchestrator import (
     BomWeldingProcessBreakdownExportOrchestrator,
 )
 ```
@@ -54,7 +54,7 @@ from app.services.bom.welding_process_breakdown.export import (
 ```text
 export/
 ├── README.md                 # 本说明
-├── __init__.py               # 对外导出 Orchestrator
+├── __init__.py               # 只作包标记，不汇总导出
 ├── orchestrator.py           # 编排：prepare → workbook → persist
 ├── prep.py                   # 筛选取数、表头摘要
 ├── persist.py                # 文件名、导出日志（不写库）
@@ -175,5 +175,5 @@ Router (welding_process_breakdown.py)
 ## 9. 本地冒烟（可选）
 
 ```powershell
-python -X utf8 -c "from app.database import DatabaseConfig; from app.services.bom.welding_process_breakdown.export import BomWeldingProcessBreakdownExportOrchestrator; from app.repositories.bom.welding_process_breakdown_repository import BomWeldingProcessBreakdownRepository; db=DatabaseConfig.get_session_factory()(); n=BomWeldingProcessBreakdownRepository().list_l0_for_export(db)[0]; data,name=BomWeldingProcessBreakdownExportOrchestrator().export(db, location=n.location, vehicle_model=n.vehicle_model, bom_version=n.bom_version); print(name, len(data)); db.close()"
+python -X utf8 -c "from app.database import DatabaseConfig; from app.services.bom.welding_process_breakdown.export.orchestrator import BomWeldingProcessBreakdownExportOrchestrator; from app.repositories.bom.welding_process_breakdown_repository import BomWeldingProcessBreakdownRepository; db=DatabaseConfig.get_session_factory()(); n=BomWeldingProcessBreakdownRepository().list_l0_for_export(db)[0]; data,name=BomWeldingProcessBreakdownExportOrchestrator().export(db, location=n.location, vehicle_model=n.vehicle_model, bom_version=n.bom_version); print(name, len(data)); db.close()"
 ```

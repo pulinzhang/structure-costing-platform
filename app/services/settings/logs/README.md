@@ -4,7 +4,7 @@
 
 | 你要做什么 | 调 |
 |---|---|
-| 列表 / 筛选 | `operation_log_service.OperationLogService` |
+| 列表 / 筛选 | `service.OperationLogService` |
 
 禁止本包 `__init__.py` 再导出。HTTP 仍在 `/api/settings/logs`。
 
@@ -12,4 +12,4 @@
 
 | 文件 | 职责 |
 |------|------|
-| `operation_log_service.py` | 查询入口 |
+| `service.py` | 查询入口 |

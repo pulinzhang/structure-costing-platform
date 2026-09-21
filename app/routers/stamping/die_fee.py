@@ -31,7 +31,7 @@ from app.schemas.vo.stamping_die_fee_vo import (
     StampingDieFeeVO,
 )
 from app.schemas.vo.user_vo import UserVO
-from app.services.async_task.async_task_service import (
+from app.services.async_task.service import (
     STATUS_PENDING,
     TASK_TYPE_STAMPING_DIE_FEE_CALC,
     AsyncTaskService,
@@ -39,8 +39,8 @@ from app.services.async_task.async_task_service import (
 from app.services.stamping.die_fee.calc.orchestrator.orchestrator import (
     StampingDieFeeCalcOrchestrator,
 )
-from app.services.stamping.die_fee.crud.service import StampingDieFeeService
 from app.services.stamping.die_fee.export.service import StampingDieFeeExportService
+from app.services.stamping.die_fee.service import StampingDieFeeService
 from app.utils.response import ApiResponse
 
 router = APIRouter(prefix="/api/stamping/die-fees", tags=["冲压模具费 API"])

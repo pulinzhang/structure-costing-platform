@@ -32,7 +32,7 @@ from app.schemas.vo.stamping_process_fee_vo import (
     StampingProcessFeeVO,
 )
 from app.schemas.vo.user_vo import UserVO
-from app.services.async_task.async_task_service import (
+from app.services.async_task.service import (
     STATUS_PENDING,
     TASK_TYPE_STAMPING_PROCESS_FEE_CALC,
     AsyncTaskService,
@@ -40,11 +40,11 @@ from app.services.async_task.async_task_service import (
 from app.services.stamping.process_fee.calc.orchestrator.orchestrator import (
     StampingProcessFeeCalcOrchestrator,
 )
-from app.services.stamping.process_fee.crud.service import (
-    StampingProcessFeeService,
-)
 from app.services.stamping.process_fee.export.service import (
     StampingProcessFeeExportService,
+)
+from app.services.stamping.process_fee.service import (
+    StampingProcessFeeService,
 )
 from app.utils.response import ApiResponse
 

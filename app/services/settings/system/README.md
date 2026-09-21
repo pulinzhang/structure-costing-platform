@@ -4,7 +4,7 @@
 
 | 你要做什么 | 调 |
 |---|---|
-| 读取 / 更新 | `settings_service.SettingsService` |
+| 读取 / 更新 | `service.SettingsService` |
 
 禁止本包 `__init__.py` 再导出。HTTP 仍在 `/api/settings/system`。
 
@@ -12,4 +12,4 @@
 
 | 文件 | 职责 |
 |------|------|
-| `settings_service.py` | 对外入口 |
+| `service.py` | 对外入口 |

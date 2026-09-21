@@ -33,7 +33,7 @@ from app.schemas.vo.bom_welding_fee_vo import (
     BomWeldingFeeVO,
 )
 from app.schemas.vo.user_vo import UserVO
-from app.services.async_task.async_task_service import (
+from app.services.async_task.service import (
     STATUS_PENDING,
     TASK_TYPE_BOM_WELDING_FEE_CALC,
     AsyncTaskService,

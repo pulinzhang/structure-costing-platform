@@ -6,7 +6,7 @@ import json
 import sys
 
 from app.database import DatabaseConfig
-from app.services.costing.engine.crud.service import CostingEngineService
+from app.services.costing.engine.service import CostingEngineService
 
 
 def main() -> int:

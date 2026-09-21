@@ -8,12 +8,12 @@ from unittest.mock import MagicMock, patch
 import pytest
 
 from app.schemas.vo.costing_engine_vo import CostingEngineAnnualItemVO, CostingEngineGateItemVO
-from app.services.costing.engine.crud.service import SOFT_UPLOAD_GATE_CODES
 from app.services.costing.engine.gate.navigate import build_navigate
 from app.services.costing.engine.orchestrator.progress import map_progress
 from app.services.costing.engine.orchestrator.run_orchestrator import RunOrchestrator
 from app.services.costing.engine.plan.annual import AnnualCalcPlanner
 from app.services.costing.engine.scope.discovery import DiscoveryResult, L0Scope, ScopeDiscovery
+from app.services.costing.engine.service import SOFT_UPLOAD_GATE_CODES
 
 
 def _plan_item(items: list[CostingEngineAnnualItemVO], code: str) -> CostingEngineAnnualItemVO:
@@ -403,7 +403,7 @@ def test_run_orchestrator_does_not_submit_nested_async_task() -> None:
         patch.object(orch.part_cost_orch, "calculate", return_value=part_result),
         patch.object(orch.assembly_orch, "calculate", return_value=l0_result),
         patch(
-            "app.services.async_task.async_task_service.AsyncTaskService.submit",
+            "app.services.async_task.service.AsyncTaskService.submit",
             side_effect=fake_submit,
         ),
     ):
@@ -424,7 +424,7 @@ def test_run_orchestrator_does_not_submit_nested_async_task() -> None:
 
 
 def test_delete_all_runs_marks_parent_tasks() -> None:
-    from app.services.costing.engine.crud.service import CostingEngineService
+    from app.services.costing.engine.service import CostingEngineService
 
     service = CostingEngineService()
     db = MagicMock()
@@ -441,7 +441,7 @@ def test_delete_all_runs_marks_parent_tasks() -> None:
 
 def test_delete_running_allows_new_key(monkeypatch: pytest.MonkeyPatch) -> None:
     """删除 running 后同键不再视为进行中。"""
-    from app.services.costing.engine.crud.service import CostingEngineService
+    from app.services.costing.engine.service import CostingEngineService
 
     service = CostingEngineService()
     db = MagicMock()

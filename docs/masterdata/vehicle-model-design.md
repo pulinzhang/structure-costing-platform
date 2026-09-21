@@ -75,7 +75,7 @@ stamping / bom / costing / dashboard
 | 项 | 定稿 |
 |---|------|
 | 切片 | `masterdata`（与基地同一切片）。宪法 §4.1 上游 / 基础数据已含 `masterdata` |
-| 代码 | `app/models/masterdata/vehicle_model.py` · `routers/masterdata/vehicle_model/` · `services/masterdata/vehicle_model/` · `repositories/masterdata/vehicle_model/` · `parsers/masterdata/vehicle_model_parser.py`；前端 `static/js/features/masterdata/vehicle-model/{upload,list}/` |
+| 代码 | `app/models/masterdata/vehicle_model.py` · `routers/masterdata/vehicle_model.py` · `services/masterdata/vehicle_model/` · `repositories/masterdata/vehicle_model/` · `parsers/masterdata/vehicle_model_parser.py`；前端 `static/js/features/masterdata/vehicle-model/{upload,list}/` |
 | 表 | `vehicle_models`（复合主键 `(location, vehicle_model)`，两列皆 `String(50)`，与现网业务列同宽） |
 | HTTP | `/api/masterdata/vehicle-models` **只给项目两页**：列表 / 手工创建 / 改生效失效与当前供货台数 / 删除 / **下载模板 / 上传 / 一览导出**。`GET ""` → `ApiResponse[VehicleModelListVO]`（基地卡 + 全部行，服务端不按 `location` 裁切）；`POST ""` 创建（主键冲突 → 「该基地已有此项目」）；`GET /template`；`POST /upload`；`GET /export`（可选 `location=`，列与模板相同）；`PATCH` / `DELETE /{location}/{vehicle_model}`（路径编码中文基地）。下游上传/计算/列表下拉**不另开**这套 HTTP：各切片沿用现有接口，Service 内调本切片。避免工艺上传权限绑 `menu:vehicle-model-upload`。一览表**禁止**再打基地页 HTTP |
 | 前端 | 见本节 4.1～4.6。侧栏 **项目** 是二级分组：叶子 **上传** + **一览表**（对齐加减价政策 / 基准价格） |

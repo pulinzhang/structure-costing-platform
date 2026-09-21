@@ -10,7 +10,7 @@ from app.exceptions.base import BusinessException
 from app.schemas.vo.bom_welding_fee_vo import BomWeldingFeeCalcReadyVO, WeldingFeeLevelReadyVO
 from app.services.bom.bom.period import BomPeriodService
 from app.services.bom.welding_fee.calc.orchestrator.deps import WeldingFeeCalcDeps
-from app.services.masterdata.vehicle_model.vehicle_model_service import VehicleModelService
+from app.services.masterdata.vehicle_model.service import VehicleModelService
 
 
 def collect_calc_ready(

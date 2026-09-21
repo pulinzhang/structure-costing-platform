@@ -4,7 +4,7 @@
 
 | 你要做什么 | 调 |
 |---|---|
-| 列表 / 增删改 | `steel_grade_category_service.SteelGradeCategoryService` |
+| 列表 / 增删改 | `service.SteelGradeCategoryService` |
 | 一览导出 | `export.service.SteelGradeCategoryExportService` |
 | 种子数据 | `seed` |
 
@@ -14,7 +14,7 @@
 
 | 文件 | 职责 |
 |------|------|
-| `steel_grade_category_service.py` | 对外入口 |
+| `service.py` | 对外入口 |
 | `catalog.py` | 下拉与展示名 |
 | `export/service.py` | Excel |
 | `seed.py` | 初始分类 |

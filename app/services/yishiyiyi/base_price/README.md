@@ -21,7 +21,7 @@
 **对外入口**：
 
 ```python
-from app.services.yishiyiyi.base_price.steel_base_price_service import SteelBasePriceService
+from app.services.yishiyiyi.base_price.service import SteelBasePriceService
 from app.services.yishiyiyi.base_price.export.service import SteelBasePriceExportService
 ```
 
@@ -41,7 +41,7 @@ from app.services.yishiyiyi.base_price.export.service import SteelBasePriceExpor
    `SteelBasePriceService` 不写业务细节，只转发。对外能力在门面，细节在子包。
 
 3. **查询组装与 Excel 生成分离（导出）**  
-   `export_service` 负责查库与扁平行；`excel_exporter` 负责 openpyxl。样式变更不搅进查询。
+   `export/service.py` 负责查库与扁平行；`excel_exporter` 负责 openpyxl。样式变更不搅进查询。
 
 4. **仍遵守项目分层**  
    子包是 Service 内部拆分。写库走 Repository；解析只由 importing 调 Parser；Router 不直接碰 Parser / Repository。
@@ -57,8 +57,8 @@ from app.services.yishiyiyi.base_price.export.service import SteelBasePriceExpor
 ```text
 app/services/yishiyiyi/base_price/
 ├── README.md
-├── __init__.py                         # re-export Service / ExportService
-├── steel_base_price_service.py         # 薄门面：只委托
+├── __init__.py                         # 只作包标记，不汇总导出
+├── service.py                          # 薄门面：只委托
 ├── crud/
 │   ├── __init__.py
 │   └── base_price_crud.py              # CRUD、批量删除、核价取数、统计
@@ -140,7 +140,7 @@ parsers.yishiyiyi.base_price     （仅 importing 调用）
 
 | 层级 | 路径 |
 |------|------|
-| Router | `app/routers/yishiyiyi/base_price/` |
+| Router | `app/routers/yishiyiyi/base_price.py` |
 | Service（本目录） | `app/services/yishiyiyi/base_price/` |
 | Repository | `app/repositories/yishiyiyi/base_price/` |
 | Parser | `app/parsers/yishiyiyi/base_price/` |

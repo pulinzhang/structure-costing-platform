@@ -33,7 +33,7 @@ from app.schemas.vo.bom_welding_unit_price_vo import (
     BomWeldingUnitPriceResponse,
 )
 from app.schemas.vo.user_vo import UserVO
-from app.services.masterdata.location.location_service import LocationService
+from app.services.masterdata.location.service import LocationService
 
 logger = logging.getLogger("service.bom")
 

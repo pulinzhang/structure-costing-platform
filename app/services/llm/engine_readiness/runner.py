@@ -8,7 +8,7 @@ from app.repositories.llm.scope_options_repository import ScopeOptionsRepository
 from app.schemas.llm.analysis_payload import EngineReadinessGate, EngineReadinessPayload
 from app.schemas.llm.analysis_query import AnalysisQuery
 from app.schemas.vo.costing_engine_vo import CostingEngineGateItemVO, CostingEngineReadyVO
-from app.services.costing.engine.crud.service import (
+from app.services.costing.engine.service import (
     SOFT_UPLOAD_GATE_CODES,
     CostingEngineService,
 )

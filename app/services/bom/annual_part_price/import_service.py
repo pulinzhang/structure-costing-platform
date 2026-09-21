@@ -40,7 +40,7 @@ from app.services.bom.annual_part_price.template_source import (
 from app.services.bom.procurement_object.classify import SECTION_OTHER_LEAF
 from app.services.file_trace.path_utils import to_upload_relpath
 from app.services.file_trace.register import register_existing
-from app.services.masterdata.location.location_service import LocationService
+from app.services.masterdata.location.service import LocationService
 from app.utils.bom_annual_part_price_archive import save_annual_part_price_upload
 
 logger = logging.getLogger("service.bom_annual_part_price_import")

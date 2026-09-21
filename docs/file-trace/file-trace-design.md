@@ -3,7 +3,7 @@
 > 状态：**已上线（MVP）**  
 > 历史：侧栏「报价」占位页（`#/quotation`）已替换为 **文件溯源**（`#/file-trace`）；quotation 代码与权限码已移除。  
 > 关联：`docs/architecture.md`、`docs/permission-design.md`、`docs/api-type-safety.md`  
-> 现网：`app/routers/file_trace/`、`app/services/file_trace/`、`static/js/features/file-trace/`、`tests/file_trace/test_register.py`
+> 现网：`app/routers/file_trace.py`、`app/services/file_trace/`、`static/js/features/file-trace/`、`tests/file_trace/test_register.py`
 
 ---
 
@@ -199,9 +199,9 @@ static/js/features/file-trace/
 ```text
 app/models/file_trace/upload_file.py
 app/repositories/file_trace/upload_file_repository.py
-app/services/file_trace/upload_file_service.py
+app/services/file_trace/service.py
 app/services/file_trace/register.py          # 供各 upload Service 调用
-app/routers/file_trace/crud.py
+app/routers/file_trace.py
 app/schemas/dto/file_trace_dto.py
 app/schemas/vo/file_trace_vo.py
 ```

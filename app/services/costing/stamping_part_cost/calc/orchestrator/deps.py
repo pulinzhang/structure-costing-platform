@@ -31,7 +31,7 @@ from app.services.costing.stamping_part_cost.calc.resolvers import PriceResolver
 from app.services.costing.stamping_part_cost.calc.tailor_weld_calculator import (
     TailorWeldPartCostCalculator,
 )
-from app.services.settings.system.settings_service import SettingsService
+from app.services.settings.system.service import SettingsService
 
 
 @dataclass(frozen=True, slots=True)

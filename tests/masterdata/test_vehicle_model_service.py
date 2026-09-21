@@ -24,8 +24,8 @@ from app.models.stamping.gauge_fee import StampingGaugeFee
 from app.parsers.masterdata.vehicle_model_parser import parse_vehicle_model_excel
 from app.schemas.dto.location_dto import LocationUpdateDTO
 from app.schemas.dto.vehicle_model_dto import VehicleModelCreateDTO, VehicleModelUpdateDTO
-from app.services.masterdata.location.location_service import LocationService
-from app.services.masterdata.vehicle_model.vehicle_model_service import VehicleModelService
+from app.services.masterdata.location.service import LocationService
+from app.services.masterdata.vehicle_model.service import VehicleModelService
 from tests.masterdata.location_fixtures import insert_sample_locations
 
 

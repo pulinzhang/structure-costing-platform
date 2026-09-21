@@ -10,7 +10,7 @@ from app.deps.permissions import require_any_perm, require_perm
 from app.schemas.vo.async_task_vo import AsyncTaskAcceptedVO, AsyncTaskProgressVO
 from app.schemas.vo.bom_vo import BomImportResultVO
 from app.schemas.vo.user_vo import UserVO
-from app.services.async_task.async_task_service import (
+from app.services.async_task.service import (
     STATUS_PENDING,
     TASK_TYPE_BOM_UPLOAD,
     AsyncTaskService,

@@ -10,7 +10,7 @@ from app.common.audit import display_name
 from app.exceptions.base import BusinessException
 from app.schemas.vo.async_task_vo import AsyncTaskAcceptedVO
 from app.schemas.vo.user_vo import UserVO
-from app.services.async_task.async_task_service import (
+from app.services.async_task.service import (
     STATUS_COMPLETED,
     STATUS_FAILED,
     TASK_TYPE_BOM_UPLOAD,

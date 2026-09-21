@@ -9,7 +9,7 @@ from app.parsers.stamping.models.tailor_weld import (
     TailorWeldAssemblyParsed,
     TailorWeldBlankParsed,
 )
-from app.services.masterdata.steel_grade_category.steel_grade_category_service import (
+from app.services.masterdata.steel_grade_category.service import (
     SteelGradeCategoryService,
 )
 

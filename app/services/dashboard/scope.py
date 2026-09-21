@@ -10,10 +10,10 @@ from app.common.scrap_categories import SCRAP_CATEGORY_STEEL
 from app.common.timezone import now
 from app.schemas.dto.stamping_part_dto import StampingCascadeFilterQuery
 from app.schemas.vo.dashboard_vo import DashboardScopeVO
-from app.services.masterdata.location.location_service import LocationService
+from app.services.masterdata.location.service import LocationService
 
 if TYPE_CHECKING:
-    from app.services.dashboard.dashboard_service import DashboardService
+    from app.services.dashboard.service import DashboardService
 
 
 def preferred_months(svc: DashboardService, db: Session, year: int) -> list[int]:

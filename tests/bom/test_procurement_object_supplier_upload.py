@@ -46,7 +46,7 @@ from app.schemas.dto.bom_procurement_object_dto import (
 from app.schemas.dto.location_dto import LocationAliasInsert, LocationInsert
 from app.schemas.dto.supplier_dto import SupplierCreateDTO, SupplierUpdateDTO
 from app.services.bom.procurement_object.service import BomProcurementObjectService
-from app.services.masterdata.supplier.supplier_service import SupplierService
+from app.services.masterdata.supplier.service import SupplierService
 
 FULL_NAME = "安庆常庆汽车部件有限公司"
 

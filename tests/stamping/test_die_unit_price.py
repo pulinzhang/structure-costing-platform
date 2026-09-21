@@ -30,7 +30,7 @@ from app.schemas.dto.stamping_die_unit_price_dto import (
     StampingDieUnitPriceUpdate,
 )
 from app.schemas.dto.vehicle_model_dto import VehicleModelCreateDTO
-from app.services.masterdata.vehicle_model.vehicle_model_service import VehicleModelService
+from app.services.masterdata.vehicle_model.service import VehicleModelService
 from app.services.stamping.die.unit_price.service import StampingDieUnitPriceService
 
 _SEED_LOCATIONS: tuple[tuple[str, int, str], ...] = (

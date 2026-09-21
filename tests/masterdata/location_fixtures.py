@@ -4,7 +4,7 @@ from sqlalchemy.orm import Session
 
 from app.common.audit import SYSTEM_USER
 from app.schemas.dto.location_dto import LocationCreateDTO
-from app.services.masterdata.location.location_service import LocationService
+from app.services.masterdata.location.service import LocationService
 
 _SAMPLE: tuple[tuple[str, str], ...] = (
     ("大连", "大连基地"),

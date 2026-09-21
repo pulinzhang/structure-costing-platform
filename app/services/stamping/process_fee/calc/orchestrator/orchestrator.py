@@ -24,7 +24,7 @@ from app.schemas.vo.stamping_process_fee_vo import (
     StampingProcessFeeCalcResultVO,
 )
 from app.schemas.vo.user_vo import UserVO
-from app.services.async_task.async_task_service import (
+from app.services.async_task.service import (
     TASK_TYPE_STAMPING_PROCESS_FEE_CALC,
     AsyncTaskService,
 )
@@ -32,7 +32,7 @@ from app.services.async_task.worker_runner import (
     WorkerTaskOutcome,
     outcome_from_calc_status,
 )
-from app.services.masterdata.vehicle_model.vehicle_model_service import VehicleModelService
+from app.services.masterdata.vehicle_model.service import VehicleModelService
 from app.services.stamping.process_fee.calc.models import ProgressCallback
 from app.services.stamping.process_fee.calc.orchestrator.batch_engine import (
     BatchCalculationEngine,

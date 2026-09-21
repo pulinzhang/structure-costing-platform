@@ -610,9 +610,9 @@ can_start: bool   # = not hard_stop 且存在可执行路径（该月命中冲�
 | 零件价编排 | `app/services/costing/stamping_part_cost/calc/orchestrator/` |
 | 总成编排 | `app/services/costing/assembly_cost/calc/orchestrator/` |
 | 月度核对导出 | `app/services/costing/monthly_bundle_export/` |
-| 引擎实现 | `app/routers/costing/engine/`、`app/services/costing/engine/`（指挥：`engine/orchestrator/`；年度子算：`orchestrator/runners.py`）、`static/js/features/costing/engine/` |
+| 引擎实现 | `app/routers/costing/engine.py`、`app/services/costing/engine/`（指挥：`engine/orchestrator/`；年度子算：`orchestrator/runners.py`）、`static/js/features/costing/engine/` |
 | 焊接拆解 generate / 门禁钥匙 | `app/services/bom/welding_process_breakdown/generate_service.py`、`app/common/engineering_change_gates.py`（`snapshot_blocks_full_generate`） |
-| 异步任务 | `app/services/async_task/async_task_service.py` |
+| 异步任务 | `app/services/async_task/service.py` |
 | 进度 VO | `app/schemas/vo/async_task_vo.py` |
 
 ---

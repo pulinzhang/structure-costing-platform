@@ -24,8 +24,8 @@ from app.schemas.vo.steel_base_price_vo import (
     SteelBasePriceResponse,
 )
 from app.schemas.vo.user_vo import UserVO
-from app.services.masterdata.location.location_service import LocationService
-from app.services.masterdata.steel_grade_category.steel_grade_category_service import (
+from app.services.masterdata.location.service import LocationService
+from app.services.masterdata.steel_grade_category.service import (
     SteelGradeCategoryService,
 )
 

@@ -17,7 +17,7 @@ from app.schemas.dto.bom_dto import BomNodeCreate, BomNodeWrite
 from app.schemas.vo.bom_vo import BomNodeTreeVO, BomNodeVO
 from app.schemas.vo.user_vo import UserVO
 from app.services.bom.bom.snapshot import BomSnapshotService
-from app.services.masterdata.vehicle_model.vehicle_model_service import VehicleModelService
+from app.services.masterdata.vehicle_model.service import VehicleModelService
 
 logger = logging.getLogger("service.bom.node")
 

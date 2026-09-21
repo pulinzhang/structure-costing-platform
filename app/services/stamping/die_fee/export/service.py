@@ -16,7 +16,7 @@ from app.models.stamping.die_fee import StampingDieFee
 from app.repositories.stamping.die.repository import StampingDieProcessRepository
 from app.repositories.stamping.die_fee.repository import StampingDieFeeRepository
 from app.schemas.vo.user_vo import UserVO
-from app.services.masterdata.location.location_service import LocationService
+from app.services.masterdata.location.service import LocationService
 from app.services.stamping.die_fee.export.styles import build_sheet_style
 from app.services.stamping.die_fee.export.values import build_filename, filter_text
 from app.services.stamping.die_fee.export.workbook import fill_sheet

@@ -12,7 +12,7 @@ from app.common.timezone import now
 from app.exceptions.base import BusinessException
 from app.models.stamping import StampingPart
 from app.schemas.dto.stamping_process_fee_dto import StampingProcessFeeCalcDTO
-from app.services.masterdata.vehicle_model.vehicle_model_service import VehicleModelService
+from app.services.masterdata.vehicle_model.service import VehicleModelService
 from app.services.stamping.process_fee.calc.models import TonnageRateInfo
 from app.services.stamping.process_fee.calc.orchestrator.deps import ProcessFeeCalcDeps
 from app.services.stamping.process_fee.calc.orchestrator.messages import (
