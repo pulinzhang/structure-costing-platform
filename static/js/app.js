@@ -34,14 +34,14 @@ import { pageConfig as stampingDieUploadPage } from './features/stamping/die/upl
 import { pageConfig as stampingDieListPage } from './features/stamping/die/list/index.js?v=39';
 import { pageConfig as stampingDieUnitPricePage } from './features/stamping/die/unit-price/index.js?v=26';
 import { pageConfig as stampingDieFeeCalcPage } from './features/stamping/die-fee/calc/index.js?v=26';
-import { pageConfig as stampingDieFeePage } from './features/stamping/die-fee/list/index.js?v=37';
+import { pageConfig as stampingDieFeePage } from './features/stamping/die-fee/list/index.js?v=38';
 import { pageConfig as stampingGaugeFeeUploadPage } from './features/stamping/gauge-fee/upload/index.js?v=14';
 import { pageConfig as stampingGaugeFeePage } from './features/stamping/gauge-fee/list/index.js?v=34';
 import { pageConfig as stampingTonnagePage } from './features/stamping/tonnage/list/index.js?v=45';
 import { pageConfig as stampingTonnageUploadPage } from './features/stamping/tonnage/upload/index.js?v=18';
 import { pageConfig as stampingProcessFeeCalcPage } from './features/stamping/process-fee/calc/index.js?v=51';
-import { pageConfig as stampingProcessFeePage } from './features/stamping/process-fee/list/index.js?v=76';
-import { pageConfig as steelPriceListPage }   from './features/costing/steel-price/list/index.js?v=82';
+import { pageConfig as stampingProcessFeePage } from './features/stamping/process-fee/list/index.js?v=77';
+import { pageConfig as steelPriceListPage }   from './features/costing/steel-price/list/index.js?v=83';
 import { pageConfig as steelPriceCalcPage }    from './features/costing/steel-price/calc/index.js?v=33';
 import { pageConfig as stampingPartCostCalcPage } from './features/costing/stamping-part-cost/calc/index.js?v=34';
 import { pageConfig as stampingPartCostPage } from './features/costing/stamping-part-cost/list/index.js?v=100';

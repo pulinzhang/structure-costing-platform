@@ -7,7 +7,7 @@ import {
     processFeeListTemplate,
     renderFeeRows,
     updateFeeHud,
-} from './template.js?v=65';
+} from './template.js?v=66';
 import { bindMoreMenu } from '../../../../ui/more-menu.js?v=5';
 import { bindFilterBar } from '../../../../ui/filter-bar.js?v=3';
 import { shortPartNumber } from '../../../../domain/part-identity.js?v=5';

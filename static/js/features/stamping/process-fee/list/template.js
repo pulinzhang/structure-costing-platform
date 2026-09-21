@@ -414,10 +414,9 @@ export function renderFeeRows(records) {
         const mutedDeep = 'text-ink-dim';
         const zoneEnd = 'border-r border-line-hud';
         const finalCell = [
-            'p-3 text-right font-mono font-bold tabular-nums text-[13px]',
-            'text-ink bg-app-hud',
-            'border-b border-line-subtle border-l border-r border-line-subtle',
-            'group-hover:bg-app-surface transition-colors',
+            'p-3 text-right font-mono font-black tabular-nums text-[13px]',
+            'text-brand-hud bg-brand-hud/10 border-x border-brand-hud/20',
+            'border-b border-line-subtle',
         ].join(' ');
         const canUpdate = typeof can === 'function' ? can('op:stamping-process-fee:update') : true;
         const otherFee = row.other_fee != null && Number(row.other_fee) !== 0

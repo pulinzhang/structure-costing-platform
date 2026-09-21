@@ -8,7 +8,7 @@ import {
     steelPriceListTemplate,
     renderSteelPriceRows,
     updateSteelPriceHud,
-} from './template.js?v=68';
+} from './template.js?v=69';
 import {
     DEFAULT_PAGE_SIZE,
     bindPagination,
