@@ -12,6 +12,7 @@ class BatchAuditCountsVO(BaseModel):
 class BatchDeleteCountsVO(BaseModel):
     deleted_count: int = 0
     skipped_approved_count: int = 0
+    message: str = ""
 
 
 def batch_approve_message(updated_count: int, skipped_count: int) -> str:

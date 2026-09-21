@@ -4,6 +4,19 @@
 > 路径：`app/services/costing/assembly_cost/`  
 > 口径与表结构：[`docs/costing/assembly-costing-design.md`](../../../../docs/costing/assembly-costing-design.md)
 
+| 模块 | 职责 |
+|------|------|
+| `service.py` | 列表分页、计算入队、委托编排器 |
+| `audit/service.py` | 范围删除 / 审核 / 反审核 |
+| `calc/orchestrator/` | 齐套检查与一次计算：prepare → engine → persist |
+| `export/` | 已落库结果表 Excel |
+| `calc_report/` | 计算日志过程报告 Excel（禁止 import `export/`） |
+| `restore/` | 核价卡还原 |
+
+下文是目录与数据流附录。
+
+---
+
 本目录是 **Service 垂直包**：列表/审核、异步计算、结果表 Excel、计算过程报告。  
 Repository / Model / Router / Schema 不在这里。
 

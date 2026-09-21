@@ -2,11 +2,8 @@
 
 from __future__ import annotations
 
-from decimal import Decimal
-
 from sqlalchemy.orm import Session
 
-from app.models.costing import SteelPrice
 from app.repositories.costing.steel_price.steel_price_repository import (
     SteelPriceRepository,
 )
@@ -44,12 +41,7 @@ from app.services.costing.steel_price.crud import (
     update_steel_price,
 )
 from app.services.costing.steel_price.paginate import paginate_steel_prices
-from app.services.costing.steel_price.pricing import (
-    FORMULA_VERSION,
-    build_spec_or_none,
-    compute_final_price,
-    ensure_not_approved,
-)
+from app.services.costing.steel_price.pricing import FORMULA_VERSION
 
 __all__ = ["FORMULA_VERSION", "SteelPriceService"]
 
@@ -59,32 +51,6 @@ class SteelPriceService:
 
     def __init__(self) -> None:
         self.repository = SteelPriceRepository()
-
-    @staticmethod
-    def _compute_final_price(
-        *,
-        base_price: Decimal,
-        thickness_adjustment: Decimal,
-        width_adjustment: Decimal,
-        zinc_adjustment: Decimal,
-        processing_fee: Decimal,
-        other_adjustment: Decimal,
-    ) -> Decimal:
-        return compute_final_price(
-            base_price=base_price,
-            thickness_adjustment=thickness_adjustment,
-            width_adjustment=width_adjustment,
-            zinc_adjustment=zinc_adjustment,
-            processing_fee=processing_fee,
-            other_adjustment=other_adjustment,
-        )
-
-    @staticmethod
-    def _build_spec(thickness: Decimal, width: Decimal, spec: str | None) -> str | None:
-        return build_spec_or_none(thickness, width, spec)
-
-    def _ensure_not_approved(self, record: SteelPrice) -> None:
-        ensure_not_approved(record)
 
     def paginate(
         self, db: Session, query: SteelPriceQuery

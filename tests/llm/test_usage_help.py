@@ -27,6 +27,7 @@ from app.services.llm.usage.runner import UsageHelpRunner
         ("为什么新版本采购对象有 17 个", "usage_help"),
         ("变更单只有 5 条采购对象怎么这么多", "usage_help"),
         ("青岛 1 月成品价多少？", "analysis"),
+        ("青岛 T13J 2025年1月成品核价缺价风险", "analysis"),
         ("501006875AA 多少钱", "analysis"),
         ("2026年01月 T13J 项目总成核价有没有异常", "analysis"),
         ("2026年01月，冲压核价的异常", "analysis"),

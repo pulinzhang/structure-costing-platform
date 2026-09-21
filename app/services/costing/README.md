@@ -15,6 +15,23 @@
 
 HTTP：`/api/costing/engine`、`/api/costing/steel-price`、`/api/costing/stamping-part-cost`、`/api/costing/assembly-costs`、`/api/costing/procurement-contract-report`、`/api/costing/monthly-bundle`。
 
+## 改 X → 打开 Y
+
+门面都是切片根 `service.py`（入队也在这里，没有 `calc_ops.py`）。引擎指挥文件例外：`engine/orchestrator/run_orchestrator.py`（别人叫 `orchestrator.py`）。
+
+| 意图 | 冲压零件核价 | 成品月核价 |
+|---|---|---|
+| 列表 / 单条 | `service.py` → `queries.py` | `service.py` |
+| 批量删除 / 审核 / 反审 | `audit/service.py` | `audit/service.py` |
+| HTTP 导出 Excel | `export/service.py` → `export/process_sheet/` | `export/service.py` → `export/workbook/` |
+| 计算过程报告 Excel | 没有 | `calc_report/service.py`（禁止 import `export/`） |
+| 开始计算 / 计算日志 | `service.py` → `calc/orchestrator/` | `service.py` → `calc/orchestrator/` |
+| 计算前齐套检查 | `calc/orchestrator/ready.py` | `calc/orchestrator/ready.py` |
+| 核价卡还原 | 没有 | `restore/service.py` |
+| 月度核对一本账 | `monthly_bundle_export/export/service.py` | 同一入口，叠成品 finance 视图 |
+
+采购价格导出是 `procurement_contract_report/export/orchestrator.py` + `workbook.py`，没有 `workbook/` 包。
+
 ## 目录
 
 | 目录 | 职责 |

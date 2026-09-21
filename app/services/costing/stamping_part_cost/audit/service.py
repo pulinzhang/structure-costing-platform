@@ -99,6 +99,9 @@ def batch_delete_costs(
         version=scope.version,
     )
     db.commit()
+    message = f"已删除 {deleted} 条"
+    if skipped:
+        message += f"，跳过已审核 {skipped} 条"
     return StampingPartCostBatchDeleteResultVO(
         deleted_count=deleted,
         skipped_approved_count=skipped,
@@ -108,6 +111,7 @@ def batch_delete_costs(
         vehicle_model=scope.vehicle_model,
         version=scope.version,
         stamping_supplier=scope.stamping_supplier,
+        message=message,
     )
 
 
@@ -145,15 +149,20 @@ def batch_approve_costs(
         - updated
     )
     db.commit()
+    skipped_count = max(skipped, 0)
+    message = f"已审核通过 {updated} 条"
+    if skipped_count:
+        message += f"，跳过 {skipped_count} 条"
     return StampingPartCostBatchAuditResultVO(
         updated_count=updated,
-        skipped_count=max(skipped, 0),
+        skipped_count=skipped_count,
         year=scope.year,
         month=scope.month,
         location=scope.location,
         vehicle_model=scope.vehicle_model,
         version=scope.version,
         stamping_supplier=scope.stamping_supplier,
+        message=message,
     )
 
 
@@ -187,4 +196,5 @@ def batch_reverse_audit_costs(
         vehicle_model=scope.vehicle_model,
         version=scope.version,
         stamping_supplier=scope.stamping_supplier,
+        message=f"已反审核 {updated} 条",
     )

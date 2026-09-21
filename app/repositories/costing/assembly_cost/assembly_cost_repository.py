@@ -139,25 +139,6 @@ class AssemblyCostRepository:
             view=view,
         )
 
-    def count_approved_by_scope(
-        self,
-        db: Session,
-        *,
-        year: int,
-        month: int,
-        location: str,
-        vehicle_model: str,
-        bom_version: str | None = None,
-    ) -> int:
-        return self._queries.count_approved_by_scope(
-            db,
-            year=year,
-            month=month,
-            location=location,
-            vehicle_model=vehicle_model,
-            bom_version=bom_version,
-        )
-
     def count_approved_by_ids(self, db: Session, ids: list[int]) -> int:
         return self._queries.count_approved_by_ids(db, ids)
 

@@ -133,10 +133,7 @@ def batch_delete_costs(
     current_user: UserVO = Depends(require_perm(Perm.STAMPING_PART_COST_DELETE)),
 ) -> ApiResponse[StampingPartCostBatchDeleteResultVO]:
     result = _service.batch_delete(db, dto)
-    message = f"已删除 {result.deleted_count} 条"
-    if result.skipped_approved_count:
-        message += f"，跳过已审核 {result.skipped_approved_count} 条"
-    return ApiResponse.ok(data=result, message=message)
+    return ApiResponse.ok(data=result, message=result.message)
 
 
 @router.post(
@@ -149,10 +146,7 @@ def batch_approve_costs(
     current_user: UserVO = Depends(require_perm(Perm.STAMPING_PART_COST_APPROVE)),
 ) -> ApiResponse[StampingPartCostBatchAuditResultVO]:
     result = _service.batch_approve(db, dto, current_user=current_user)
-    message = f"已审核通过 {result.updated_count} 条"
-    if result.skipped_count:
-        message += f"，跳过 {result.skipped_count} 条"
-    return ApiResponse.ok(data=result, message=message)
+    return ApiResponse.ok(data=result, message=result.message)
 
 
 @router.post(
@@ -165,7 +159,4 @@ def batch_reverse_audit_costs(
     current_user: UserVO = Depends(require_perm(Perm.STAMPING_PART_COST_REVERSE)),
 ) -> ApiResponse[StampingPartCostBatchAuditResultVO]:
     result = _service.batch_reverse_audit(db, dto, current_user=current_user)
-    message = f"已反审核 {result.updated_count} 条"
-    if result.skipped_count:
-        message += f"，跳过 {result.skipped_count} 条"
-    return ApiResponse.ok(data=result, message=message)
+    return ApiResponse.ok(data=result, message=result.message)
