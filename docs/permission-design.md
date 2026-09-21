@@ -22,7 +22,7 @@
 | 1 | 目录 | 在树中增加 `menu:*` / `op:*`（及分组） | `app/common/permissions/catalog.json` |
 | 2 | 常量 | 重新生成 `Perm.*` | `python -X utf8 -m scripts.generate_perm_codes` → `codes.py` |
 | 3 | 后端路由 | 每个业务端点挂权限依赖 | `Depends(require_perm(Perm.XXX))` 等 |
-| 4 | 后端写操作 | Service 收 `current_user=`；**默认不再二次 `require_permission`**（见 §0.2 例外） | 对应 `*_service.py` |
+| 4 | 后端写操作 | Service 收 `current_user=`；**默认不再二次 `require_permission`**（见 §0.2 例外） | 对应切片 `service.py` |
 | 5 | 前端菜单 | 侧栏增加 `data-page="{page-key}"`；page-key 默认对应 `menu:{page-key}`（系统设置页例外见 §4.1） | `static/index.html` |
 | 6 | 前端路由 | `app.js` 的 `pages` 注册新 page；`canAccessPage` 自动拦无权限直链 | `static/js/app.js` |
 | 7 | 前端按钮 | 同 `op` 码：`can('op:…')` 或模板条件渲染 | 对应 `features/**/index.js`、`template.js` |

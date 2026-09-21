@@ -7,7 +7,7 @@ alwaysApply: false
 # 架构宪法
 
 > 导读（为什么）：`docs/architecture.md`。本文件只写**谁做什么、谁不能依赖谁**。  
-> 切片内路径形状（`service.py` / `export/` / `__init__`）→ 本文 §二  
+> 切片内路径形状（`service.py` / `export/` / `__init__`）→ 本文 §二；检索幽灵路径 → `path-map.mdc`  
 > JSON/`ApiResponse`/Decimal/`Any`/`Perm.*`/路径 `/{name:int}`（零例外）→ `api-type-safety.mdc`  
 > Orchestrator 主方法行数与 `for` → `orchestrator-constitution.mdc`  
 > `main.py` 装配与扫描顺序 → `main-structure.mdc`  
@@ -54,6 +54,7 @@ app/
 
 - Router：单职责 `{feature}.py`，禁止 `{feature}/crud.py` 空包。仅拆职责才成包：列表审核 `crud.py`（禁止 `list.py`）、`calc.py`、`upload.py`、`export.py`。
 - 垂直切片把能力写在目录上：目录名就是服务，文件只标角色（`service.py`、`export/service.py`）。禁止 `{目录名}_service.py` 与目录口吃。类名仍带领域（`BomWeldingFeeService`）。
+- 迁完后 Glob 仍可能报旧名。**以 Read 能打开的路径为准**；禁止按索引把已删的 `*_service.py` / `{feature}/crud.py` 当邻文件抄回去（`path-map.mdc`）。
 - `services` / `repositories` / `parsers` / `schemas` **任意层级** `__init__.py` 只作包标记，禁止 `from` / `__all__` 汇总。调用方写到模块，禁止用包根藏路径。
 - `models/` 根与切片 `__init__.py` 仍可再导出，仅供 `create_all`（业务代码仍 `from app.models.{feature} import …`）。
 - 切片内拆文件以 `app/services/bom/` **整棵**为准。新切片跟 BOM。

@@ -11,4 +11,4 @@ alwaysApply: true
 - 正确：`python -X utf8 test_magang_import.py 2>&1`
 - 错误：`python test_magang_import.py -x utf8`（`-X` 必须紧跟解释器）
 
-标识符命名见 `naming-convention.mdc`。分层与 API 形态不在本文件。
+标识符命名见 `naming-convention.mdc`。分层与 API 形态不在本文件。路径以磁盘为准见 `path-map.mdc`。
