@@ -42,7 +42,7 @@ a:hover { color: #ffcdd2; text-decoration: underline; }
 
 .layout {
   display: grid;
-  grid-template-columns: 250px 1fr;
+  grid-template-columns: 250px minmax(0, 1fr);
   min-height: 100vh;
 }
 
@@ -150,8 +150,10 @@ a:hover { color: #ffcdd2; text-decoration: underline; }
 }
 
 .main {
-  max-width: 920px;
-  padding: 36px 44px 72px;
+  min-width: 0;
+  width: 100%;
+  max-width: none;
+  padding: 36px 48px 72px 44px;
 }
 
 .hero {
@@ -531,11 +533,12 @@ figure.shot figcaption {
 
 .dr-body {
   display: grid;
-  grid-template-columns: 72px 1fr 72px;
+  grid-template-columns: 72px minmax(0, 1fr) 72px;
   gap: 8px;
   align-items: stretch;
-  max-width: 720px;
-  margin: 0 auto;
+  width: 100%;
+  max-width: none;
+  margin: 0;
 }
 
 .dr-rail {
@@ -977,7 +980,8 @@ figure.shot figcaption {
   display: flex;
   flex-direction: column;
   gap: 0;
-  max-width: 440px;
+  width: 100%;
+  max-width: none;
 }
 .ec-flow-box {
   border: 1px solid var(--border);
