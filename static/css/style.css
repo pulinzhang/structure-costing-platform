@@ -6,8 +6,8 @@
 
 /* ====== 全局主题变量（RGB 通道，供 rgb(var(--x) / <alpha>)） ====== */
 :root {
-    --brabus-red: 211 47 47;
-    --brabus-red-hover: 183 28 28;
+    --brabus-red: 183 8 38;
+    --brabus-red-hover: 110 5 23;
     --brabus-red-glow: rgb(var(--brabus-red) / 0.25);
     --hud-red: 255 30 39;
     --brand-glow: rgb(var(--brabus-red) / 0.25);
@@ -35,7 +35,7 @@
     --border-subtle: 34 34 34;
     --border-color: 44 44 44;
     --border-hud: 26 26 34;
-    --border-active: 255 82 82;
+    --border-active: 183 8 38;
     --grid-line: 255 255 255;
 
     --success-color: 46 125 50;
