@@ -1,16 +1,17 @@
+import { DRAWER_SHELL, DRAWER_BACKDROP } from '../../../../ui/classes.js?v=11';
 import {
     dieFeeCalcTemplate,
     CALC_HISTORY_COLSPAN,
-} from './template.js?v=12';
+} from './template.js?v=17';
 import {
     DEFAULT_PAGE_SIZE,
     bindPagination,
     paintPagination,
-} from '../../../../page-size.js?v=3';
+} from '../../../../ui/page-size.js?v=6';
 import {
     formatDurationSeconds,
     formatTimingLine,
-} from '../../../../duration.js?v=1';
+} from '../../../../domain/duration.js?v=3';
 
 const API_BASE = '/api/stamping/die-fees';
 const DIE_FILTERS_API = '/api/stamping/die/filters';
@@ -24,9 +25,9 @@ const READY_FALLBACK =
     '须选定年度、基地、项目。零件按布点有效期与该年有交集的才算，不是按项目档案期。并确保有生效模具单价。版本可选；计算覆盖该项目各供应商。';
 
 const STATUS_META = {
-    processing: { label: '计算中', className: 'text-[#64b5f6]' },
-    success: { label: '成功', className: 'text-[#66bb6a]' },
-    failed: { label: '失败', className: 'text-[#ef5350]' },
+    processing: { label: '计算中', className: 'text-ink-muted' },
+    success: { label: '成功', className: 'text-ok' },
+    failed: { label: '失败', className: 'text-danger' },
 };
 
 const calcState = {
@@ -219,7 +220,7 @@ function setReady(parts, calculable, hasUnitPrice, message) {
     const priceEl = document.getElementById('cntUnitPrice');
     if (priceEl) {
         priceEl.textContent = hasUnitPrice ? '有' : '无';
-        priceEl.className = `text-xs font-mono font-bold ${hasUnitPrice ? 'text-[#dddddd]' : 'text-[#ef5350]'}`;
+        priceEl.className = `text-xs font-mono font-bold ${hasUnitPrice ? 'text-ink' : 'text-danger'}`;
     }
     validateReady();
 }
@@ -227,7 +228,7 @@ function setReady(parts, calculable, hasUnitPrice, message) {
 function setCountHtml(id, count, unit) {
     const el = document.getElementById(id);
     if (!el) return;
-    el.innerHTML = `${Number(count).toLocaleString('zh-CN')} <span class="text-[9px] font-normal text-[#555]">${unit}</span>`;
+    el.innerHTML = `${Number(count).toLocaleString('zh-CN')} <span class="text-[9px] font-normal text-ink-faint">${unit}</span>`;
 }
 
 function validateReady() {
@@ -257,7 +258,7 @@ function validateReady() {
 async function loadCalcHistory(page = calcState.history.page) {
     const body = document.getElementById('calcHistoryBody');
     if (!body) return;
-            body.innerHTML = `<tr><td colspan="${CALC_HISTORY_COLSPAN}" class="py-8 text-center text-[#555]">加载中..</td></tr>`;
+            body.innerHTML = `<tr><td colspan="${CALC_HISTORY_COLSPAN}" class="py-8 text-center text-ink-faint">加载中..</td></tr>`;
     try {
         const res = await HttpClient.get(CALC_LOGS_API, {
             params: { page, size: calcState.history.size },
@@ -276,7 +277,7 @@ async function loadCalcHistory(page = calcState.history.page) {
                 calcState.history.totalPages,
             );
     } catch (error) {
-            body.innerHTML = `<tr><td colspan="${CALC_HISTORY_COLSPAN}" class="py-8 text-center text-[#ef5350]">加载失败</td></tr>`;
+            body.innerHTML = `<tr><td colspan="${CALC_HISTORY_COLSPAN}" class="py-8 text-center text-danger">加载失败</td></tr>`;
     }
 }
 
@@ -295,38 +296,38 @@ function renderHistoryRows(items) {
     const body = document.getElementById('calcHistoryBody');
     if (!body) return;
     if (!items.length) {
-        body.innerHTML = `<tr><td colspan="${CALC_HISTORY_COLSPAN}" class="py-8 text-center text-[#555]">暂无计算记录</td></tr>`;
+        body.innerHTML = `<tr><td colspan="${CALC_HISTORY_COLSPAN}" class="py-8 text-center text-ink-faint">暂无计算记录</td></tr>`;
         return;
     }
     body.innerHTML = items.map((item) => {
         const status = STATUS_META[item.status] || STATUS_META.failed;
         const isProcessing = item.status === 'processing';
         return `
-            <tr class="hover:bg-[#ffffff]/[0.02] text-[#999]">
-                <td class="py-2 px-2 font-mono text-[#666] whitespace-nowrap">${esc(formatDateTime(item.started_at))}</td>
-                <td class="py-2 px-2 font-mono text-[#666] whitespace-nowrap">${esc(formatDateTime(item.finished_at))}</td>
-                <td class="py-2 px-2 font-mono text-right tabular-nums text-[#777] whitespace-nowrap">${esc(formatDurationSeconds(item))}</td>
-                <td class="py-2 px-2 text-[#ccc] whitespace-nowrap">${esc(item.created_by || item.operator_name || '-')}</td>
-                <td class="py-2 px-2 font-mono text-[#ccc]">${esc(fmtYear(item.year))}</td>
-                <td class="py-2 px-2 text-[#ccc]">${esc(item.location || '-')}</td>
-                <td class="py-2 px-2 text-[#ccc]">${esc(item.vehicle_model || '-')}</td>
-                <td class="py-2 px-2 text-[#ccc] whitespace-nowrap">${esc(item.stamping_supplier || '全部工厂')}</td>
-                <td class="py-2 px-2 text-[#ccc] whitespace-nowrap">${esc(item.version || '全部')}</td>
+            <tr class="hover:bg-ink/[0.02] text-ink-muted">
+                <td class="py-2 px-2 font-mono text-ink-dim whitespace-nowrap">${esc(formatDateTime(item.started_at))}</td>
+                <td class="py-2 px-2 font-mono text-ink-dim whitespace-nowrap">${esc(formatDateTime(item.finished_at))}</td>
+                <td class="py-2 px-2 font-mono text-right tabular-nums text-ink-dim whitespace-nowrap">${esc(formatDurationSeconds(item))}</td>
+                <td class="py-2 px-2 text-ink-muted whitespace-nowrap">${esc(item.created_by || item.operator_name || '-')}</td>
+                <td class="py-2 px-2 font-mono text-ink-muted">${esc(fmtYear(item.year))}</td>
+                <td class="py-2 px-2 text-ink-muted">${esc(item.location || '-')}</td>
+                <td class="py-2 px-2 text-ink-muted">${esc(item.vehicle_model || '-')}</td>
+                <td class="py-2 px-2 text-ink-muted whitespace-nowrap">${esc(item.stamping_supplier || '全部工厂')}</td>
+                <td class="py-2 px-2 text-ink-muted whitespace-nowrap">${esc(item.version || '全部')}</td>
                 <td class="py-2 px-2 text-center text-[9px] ${status.className}">${status.label}</td>
-                <td class="py-2 px-2 font-mono text-right tabular-nums text-[#777]">${fmtInt(item.total_parts)}</td>
-                <td class="py-2 px-2 font-mono text-right tabular-nums text-[#777]">${fmtInt(item.success_count)}</td>
-                <td class="py-2 px-2 font-mono text-right tabular-nums text-[#777]">${fmtInt(item.skipped_no_die_count)}</td>
+                <td class="py-2 px-2 font-mono text-right tabular-nums text-ink-dim">${fmtInt(item.total_parts)}</td>
+                <td class="py-2 px-2 font-mono text-right tabular-nums text-ink-dim">${fmtInt(item.success_count)}</td>
+                <td class="py-2 px-2 font-mono text-right tabular-nums text-ink-dim">${fmtInt(item.skipped_no_die_count)}</td>
                 <td class="py-2 px-2 text-right whitespace-nowrap">
-                    ${isProcessing ? '<span class="text-[9px] text-[#555]">进行中</span>' : `
-                    <button type="button" class="calc-view-process-btn text-[9px] text-[#777] hover:text-white mr-2" data-log-id="${esc(item.id)}">过程</button>
+                    ${isProcessing ? '<span class="text-[9px] text-ink-faint">进行中</span>' : `
+                    <button type="button" class="calc-view-process-btn text-[9px] text-ink-dim hover:text-ink mr-2" data-log-id="${esc(item.id)}">过程</button>
                     ${item.status === 'failed' ? '' : `
-                    <button type="button" class="calc-view-result-btn text-[9px] text-[#777] hover:text-white mr-2"
+                    <button type="button" class="calc-view-result-btn text-[9px] text-ink-dim hover:text-ink mr-2"
                         data-year="${esc(item.year)}" data-location="${esc(item.location || '')}"
                         data-vehicle="${esc(item.vehicle_model || '')}"
                         data-version="${esc(item.version || '')}">结果</button>`}
                     `}
                     ${calcState.canDelete !== false && !isProcessing ? `
-                    <button type="button" class="calc-delete-log-btn text-[9px] text-[#777] hover:text-[#ef5350]" data-log-id="${esc(item.id)}">删除</button>` : ''}
+                    <button type="button" class="calc-delete-log-btn text-[9px] text-ink-dim hover:text-danger" data-log-id="${esc(item.id)}">删除</button>` : ''}
                 </td>
             </tr>`;
     }).join('');
@@ -383,31 +384,31 @@ async function openProcessDrawer(logId) {
         const status = STATUS_META[log.status] || STATUS_META.failed;
         const backdrop = document.createElement('div');
         backdrop.id = 'calcProcessBackdrop';
-        backdrop.className = 'fixed inset-0 z-[80] bg-black/70';
+        backdrop.className = DRAWER_BACKDROP;
         const drawer = document.createElement('div');
         drawer.id = 'calcProcessDrawer';
-        drawer.className = 'fixed inset-y-0 right-0 z-[85] w-[640px] max-w-[95vw] bg-[#1a1a1a] border-l border-[#2a2a2a] flex flex-col';
+        drawer.className = `${DRAWER_SHELL} w-[640px]`;
         drawer.innerHTML = `
-            <div class="px-5 py-3.5 flex items-center justify-between shrink-0 bg-[#1f1f1f] border-b border-[#333333]">
-                <h5 class="text-[11px] font-semibold tracking-wider text-[#b0b0b0] uppercase">计算过程
+            <div class="px-5 py-3.5 flex items-center justify-between shrink-0 bg-app-surface border-b border-line">
+                <h5 class="text-[11px] font-semibold tracking-wider text-ink-muted uppercase">计算过程
                     <span class="ml-2 normal-case ${status.className}">${status.label}</span>
                 </h5>
                 <div class="flex items-center gap-0.5 shrink-0">
                     ${window.copyProcessReportButtonHtml()}
-                    <button type="button" id="closeCalcProcessDrawer" class="w-8 h-8 text-[#707070] hover:text-white">×</button>
+                    <button type="button" id="closeCalcProcessDrawer" class="w-8 h-8 text-ink-dim hover:text-ink">×</button>
                 </div>
             </div>
-            <div class="px-5 py-3 border-b border-[#222] text-[10px] text-[#777] shrink-0">
+            <div class="px-5 py-3 border-b border-line-subtle text-[10px] text-ink-dim shrink-0">
                 <div>${esc(formatTimingLine(log, formatDateTime) || '-')}</div>
                 <div class="mt-1">
                 入库 ${fmtInt(log.success_count)} · 跳过 ${fmtInt(log.skipped_no_die_count)}
                 ${String(log.detail_text || '').includes('有尺寸但无模具编号')
-                    ? ' · <span class="text-[#ffb74d]">有长宽高无模具号（仅提示）</span>'
+                    ? ' · <span class="text-warn">有长宽高无模具号（仅提示）</span>'
                     : ''}
                 </div>
             </div>
             <div class="flex-1 overflow-y-auto p-5">
-                <pre class="text-[11px] font-mono text-[#9e9e9e] whitespace-pre-wrap bg-[#111111] border border-[#262626] p-4">${esc(log.detail_text || '（无过程文本）')}</pre>
+                <pre class="text-[11px] font-mono text-ink-muted whitespace-pre-wrap bg-app-main border border-app-elevated p-4">${esc(log.detail_text || '（无过程文本）')}</pre>
             </div>`;
         document.body.appendChild(backdrop);
         document.body.appendChild(drawer);

@@ -5,12 +5,12 @@
 import { getReport } from '../api.js';
 import { applyReportToMessage } from '../report/apply-report.js';
 import { analysesKeyLabelZh } from '../report/labels.js';
-import { renderMarkdown } from '../markdown/render.js?v=2';
+import { renderMarkdown } from '../markdown/render.js?v=4';
 import {
     buildAssistantDocumentHtml,
     buildExportFilename,
     canExportAssistantMessage,
-} from '../export/document.js?v=7';
+} from '../export/document.js?v=9';
 
 const state = {
     reportId: 0,

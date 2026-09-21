@@ -7,52 +7,64 @@
 import {
     partsTemplate,
     renderDetailContent,
-    updatePartsFilterCapsules,
+    updatePartsHudScope,
     updatePartsHud,
-} from './template.js?v=48';
-import { bindMoreMenu } from '../../../../more-menu.js?v=1';
-import { fmtPeriodRange } from '../../../common/period-ui.js?v=2';
+} from './template.js?v=58';
+import { hudRowHtml, opsIconButtonHtml } from '../../../../ui/hud-table.js?v=2';
+import { bindMoreMenu } from '../../../../ui/more-menu.js?v=5';
+import { bindFilterBar } from '../../../../ui/filter-bar.js?v=3';
+import { fmtPeriodRange } from '../../../common/period-ui.js?v=4';
 import {
     BTN_SAVE_ACTIVE,
     BTN_SAVE_DEFAULT,
     SKETCH_PLACEHOLDER,
     SKETCH_THUMBNAIL,
     ZOOM_OVERLAY,
-} from '../../../../ui-classes.js?v=2';
+} from '../../../../ui/classes.js?v=11';
 import {
     DEFAULT_PAGE_SIZE,
     PAGE_SIZE_OPTIONS,
     bindPagination,
     paintPagination,
     normalizePageSize,
-} from '../../../../page-size.js?v=3';
-import { setSearchBusy } from '../../../../search-busy.js?v=1';
-import { partShortCodeCellHtml, partNumberNameCellHtml } from '../../../../part-identity.js?v=3';
+} from '../../../../ui/page-size.js?v=6';
+import { setSearchBusy } from '../../../../ui/search-busy.js?v=3';
+import { partShortCodeCellHtml, partNumberNameCellHtml } from '../../../../domain/part-identity.js?v=5';
 
 /** @type {{ setOpen: (isOpen: boolean) => void, close: () => void, unbind: () => void } | null} */
 let moreMenu = null;
+/** @type {{ paint: () => void, setOpen: (isOpen: boolean) => void, unbind: () => void } | null} */
+let filterBar = null;
+
+const PARTS_FILTER_FIELD_IDS = [
+    'locationFilter',
+    'vehicleModelFilter',
+    'versionFilter',
+    'supplierFilter',
+    'searchInput',
+];
 
 function offalCell(part) {
     if (!part.is_offal_nested) {
-        return '<span class="text-[#555555]">—</span>';
+        return '<span class="text-ink-faint">—</span>';
     }
     const source = part.offal_source ? esc(part.offal_source) : '';
     const label = source || '利废';
-    return `<span class="inline-flex items-center px-1.5 py-0.5 text-[9px] tracking-wide text-[#ffb74d] bg-[#2a1a0a] border border-[#ffb74d]/30" title="是否利废">${label}</span>`;
+    return `<span class="inline-flex items-center px-1.5 py-0.5 text-[9px] tracking-wide text-warn bg-app-hud border border-warn/40/30" title="是否利废">${label}</span>`;
 }
 
 function scrapByproductCell(part) {
     if (!part.is_scrap_byproduct) {
-        return '<span class="text-[#555555]">—</span>';
+        return '<span class="text-ink-faint">—</span>';
     }
-    return '<span class="inline-flex items-center px-1.5 py-0.5 text-[9px] tracking-wide text-[#8E8E93] bg-[#161620] border border-[#2A2A35]" title="废料副产品，不算冲压费">是</span>';
+    return '<span class="inline-flex items-center px-1.5 py-0.5 text-[9px] tracking-wide text-ink-muted bg-app-rowhover border border-line-hud" title="废料副产品，不算冲压费">是</span>';
 }
 
 function swingShearCell(part) {
     if (!part.has_swing_shear) {
-        return '<span class="text-[#555555]">—</span>';
+        return '<span class="text-ink-faint">—</span>';
     }
-    return '<span class="inline-flex items-center px-1.5 py-0.5 text-[9px] tracking-wide text-[#90caf9] bg-[#0d1a24] border border-[#90caf9]/30" title="含摆剪工序">是</span>';
+    return '<span class="inline-flex items-center px-1.5 py-0.5 text-[9px] tracking-wide text-ink-muted bg-app-deep border border-ink-muted/30" title="含摆剪工序">是</span>';
 }
 
 
@@ -104,7 +116,8 @@ function applyPendingFiltersToSelects() {
     const searchEl = document.getElementById('searchInput');
     if (searchEl && pending.part_number) searchEl.value = pending.part_number;
     partsState.pendingFilters = null;
-    updatePartsFilterCapsules();
+    filterBar?.paint();
+    updatePartsHudScope();
 }
 
 const partsState = {
@@ -123,7 +136,6 @@ export const PartsPage = {
         this.bindDrawerEvents();
         this.applyPermissionUi();
         partsState.pendingFilters = readHashFilters();
-        if (partsState.pendingFilters) this.setAdvancedOpen(true);
         this.loadCascadeFilters().then(() => {
             applyPendingFiltersToSelects();
             this.loadParts(1);
@@ -150,7 +162,7 @@ export const PartsPage = {
 
         bindPagination({
             selectId: 'partsPageSize',
-            buttonsId: 'pagination',
+            buttonsId: 'partsPagination',
             getSize: () => partsState.pageSize,
             setSize: (size) => {
                 partsState.pageSize = size;
@@ -160,20 +172,21 @@ export const PartsPage = {
         });
     },
 
-    setAdvancedOpen(isOpen) {
-        partsState.advancedOpen = isOpen;
-        document.getElementById('partsAdvancedFilterPanel')?.classList.toggle('hidden', !isOpen);
-        const label = document.getElementById('partsAdvancedFilterLabel');
-        if (label) label.textContent = isOpen ? '收起高级筛选' : '展开高级筛选';
-    },
-
     bindEvents() {
         const pageContent = document.getElementById('pageContent');
-
-        document.getElementById('partsSearchBtn')?.addEventListener('click', () => this.loadParts(1));
-        document.getElementById('partsResetBtn')?.addEventListener('click', () => this.resetFilters());
-        document.getElementById('partsToggleAdvancedFilter')?.addEventListener('click', () => {
-            this.setAdvancedOpen(!partsState.advancedOpen);
+        filterBar = bindFilterBar({
+            prefix: 'parts',
+            capsules: [
+                { capsuleId: 'partsCapsuleLocation', fieldId: 'locationFilter', idleLabel: '全部基地' },
+                { capsuleId: 'partsCapsuleVehicle', fieldId: 'vehicleModelFilter', idleLabel: '全部项目' },
+                { capsuleId: 'partsCapsuleVersion', fieldId: 'versionFilter', idleLabel: '全部版本' },
+                { capsuleId: 'partsCapsuleSupplier', fieldId: 'supplierFilter', idleLabel: '全部工厂' },
+            ],
+            countFieldIds: PARTS_FILTER_FIELD_IDS,
+            resetId: 'partsResetBtn',
+            enterFieldIds: ['searchInput'],
+            onSearch: () => this.loadParts(1),
+            onReset: () => this.resetFilters(),
         });
         document.getElementById('partsBatchDeleteBtn')?.addEventListener('click', () => {
             moreMenu?.close();
@@ -199,20 +212,10 @@ export const PartsPage = {
                 return;
             }
             if (e.target.id === 'supplierFilter') {
-                updatePartsFilterCapsules();
+                filterBar?.paint();
+                updatePartsHudScope();
                 this.loadParts(1);
                 return;
-            }
-        });
-
-        pageContent?.addEventListener('input', (e) => {
-            if (e.target.id === 'searchInput') updatePartsFilterCapsules();
-        });
-
-        pageContent?.addEventListener('keydown', (e) => {
-            if (e.target.id === 'searchInput' && e.key === 'Enter') {
-                e.preventDefault();
-                this.loadParts(1);
             }
         });
 
@@ -262,7 +265,8 @@ export const PartsPage = {
             this.fillSelect('supplierFilter', filters.stamping_suppliers || []);
             this.fillSelect('vehicleModelFilter', filters.vehicle_models || []);
             this.fillSelect('versionFilter', filters.versions || []);
-            updatePartsFilterCapsules();
+            filterBar?.paint();
+            updatePartsHudScope();
         } catch (error) {
             console.error('加载级联筛选失败', error);
             showToast(error.message || '加载筛选失败', 'error');
@@ -291,7 +295,7 @@ export const PartsPage = {
     requireScope(actionLabel) {
         const filters = this.collectScopeFilters();
         if (!filters.location || !filters.vehicle_model || !filters.version) {
-            this.setAdvancedOpen(true);
+            filterBar?.setOpen(true);
             showToast(`${actionLabel}须同时选择基地、项目和版本；冲压工厂可选`, 'warning');
             return null;
         }
@@ -305,7 +309,7 @@ export const PartsPage = {
     requireLocationForExport() {
         const filters = this.collectScopeFilters();
         if (!filters.location) {
-            this.setAdvancedOpen(true);
+            filterBar?.setOpen(true);
             showToast('导出须选择基地', 'warning');
             return null;
         }
@@ -359,7 +363,7 @@ export const PartsPage = {
 
             updatePartsHud(pageInfo.filters?.summary || null);
 
-            const totalLabel = document.getElementById('partsTotalLabel');
+            const totalLabel = document.getElementById('partsPageInfo');
             if (totalLabel) {
                 const partCount = pageInfo.filters?.summary?.part_number_count;
                 const displayCount = partCount != null ? partCount : total;
@@ -372,7 +376,7 @@ export const PartsPage = {
                 this.renderParts(items);
             }
 
-            paintPagination('pagination', page, totalPages);
+            paintPagination('partsPagination', page, totalPages);
         } catch (error) {
             console.error('加载零件列表失败:', error);
             showToast(error.message || '加载失败', 'error');
@@ -397,25 +401,36 @@ export const PartsPage = {
         const partWeight = fmtNum(part.part_weight, 3);
         const processCount = part.process_count != null ? part.process_count : '—';
         const sketchUrl = part.sketch_url || '';
-        const cell = 'px-3 py-3 border-b border-[#17171C] font-mono text-[11px]';
-        const muted = 'text-[#8E8E93]';
+        const cell = 'px-3 py-3 border-b border-line-subtle font-mono text-[11px]';
+        const muted = 'text-ink-muted';
 
         const thumbnailCell = sketchUrl
             ? `<div class="${SKETCH_THUMBNAIL}" title="图纸预览">
                     <img class="w-full h-full object-cover" src="/uploads/${esc(sketchUrl)}" alt="零件图纸" onerror="this.style.display='none';this.nextElementSibling&&(this.nextElementSibling.style.display='flex')">
                     <div class="${ZOOM_OVERLAY}">${window.svgIcon('search')}</div>
                </div>`
-            : `<div class="${SKETCH_PLACEHOLDER}" title="无图级>
+            : `<div class="${SKETCH_PLACEHOLDER}" title="无图纸">
                     ${window.svgIcon('file-earmark')}
                </div>`;
 
-        return `
-            <tr class="group relative font-mono text-[11px] border-b border-[#17171C] hover:bg-gradient-to-r hover:from-[#FF1E27]/10 hover:via-[#121218] hover:to-transparent transition-all duration-150"
-                data-id="${esc(part.id)}">
-                <td class="p-0 w-0 relative">
-                    <div class="absolute left-0 top-0 bottom-0 w-[3px] bg-[#FF1E27] opacity-0 group-hover:opacity-100 transition-all"
-                         style="box-shadow: 0 0 10px #FF1E27;"></div>
-                </td>
+        const detailBtn = opsIconButtonHtml({
+            action: 'detail',
+            title: '查看详情',
+            icon: window.svgIcon('eye', 'w-3.5 h-3.5'),
+            attrs: `data-id="${part.id}"`,
+        });
+        const deleteBtn = this.canDelete !== false
+            ? opsIconButtonHtml({
+                action: 'delete',
+                danger: true,
+                title: '删除',
+                icon: window.svgIcon('trash', 'w-3.5 h-3.5'),
+                attrs: `data-id="${part.id}"`,
+            })
+            : '';
+        return hudRowHtml({
+            attrs: `data-id="${esc(part.id)}"`,
+            cellsHtml: `
                 <td class="${cell}">
                     <div class="flex items-center justify-center">${thumbnailCell}</div>
                 </td>
@@ -428,7 +443,7 @@ export const PartsPage = {
                 <td class="${cell} ${muted}">${esc(part.location) || '—'}</td>
                 <td class="${cell} ${muted}">${esc(part.vehicle_model) || '—'}</td>
                 <td class="${cell} ${muted}">${esc(part.version) || '—'}</td>
-                <td class="${cell} ${muted} font-sans border-r border-[#22222A]">${esc(part.stamping_supplier) || '—'}</td>
+                <td class="${cell} ${muted} font-sans border-r border-line-hud">${esc(part.stamping_supplier) || '—'}</td>
                 <td class="${cell} ${muted} font-sans">${esc(part.material) || '—'}</td>
                 <td class="${cell}">${offalCell(part)}</td>
                 <td class="${cell}">${scrapByproductCell(part)}</td>
@@ -437,20 +452,9 @@ export const PartsPage = {
                 <td class="${cell} text-right tabular-nums ${muted}">${partWeight}</td>
                 <td class="${cell} text-right tabular-nums ${muted}">${processCount}</td>
                 <td class="${cell} ${muted} whitespace-nowrap">${esc(fmtPeriodRange(part.effective_year, part.effective_month, part.expiry_year, part.expiry_month))}</td>
-                <td class="${cell} text-[10px] text-[#555555] max-w-[160px] truncate" title="${esc(part.excel_filename || '')}">${esc(part.excel_filename) || '—'}</td>
-                <td class="px-1 py-2 text-center align-middle sticky right-0 z-[2] brabus-bg-grid group-hover:bg-[#161620]">
-                    <div class="inline-flex items-center justify-center gap-0.5 opacity-0 pointer-events-none group-hover:opacity-100 group-hover:pointer-events-auto focus-within:opacity-100 focus-within:pointer-events-auto transition-opacity duration-100">
-                        <button type="button" class="inline-flex items-center justify-center w-7 h-7 rounded-sm text-[#555555] hover:text-[#C8C8D0] hover:bg-[#161620] transition-all" data-action="detail" data-id="${part.id}" title="查看详情" aria-label="查看详情">
-                            ${window.svgIcon('eye', 'w-3.5 h-3.5')}
-                        </button>
-                        ${this.canDelete !== false ? `
-                        <button type="button" class="inline-flex items-center justify-center w-7 h-7 rounded-sm text-[#555555] hover:text-[#ef5350] hover:bg-[#161620] transition-all" data-action="delete" data-id="${part.id}" title="删除" aria-label="删除">
-                            ${window.svgIcon('trash', 'w-3.5 h-3.5')}
-                        </button>` : ''}
-                    </div>
-                </td>
-            </tr>
-        `;
+                <td class="${cell} text-[10px] text-ink-faint max-w-[160px] truncate" title="${esc(part.excel_filename || '')}">${esc(part.excel_filename) || '—'}</td>`,
+            opsHtml: `${detailBtn}${deleteBtn}`,
+        });
     },
 
     async batchDelete() {
@@ -472,7 +476,7 @@ export const PartsPage = {
         if (btn) {
             btn.disabled = true;
             btn.innerHTML = `
-                <div class="w-3 h-3 border border-[#ef5350] border-t-transparent rounded-full animate-spin"></div>
+                <div class="w-3 h-3 border border-danger border-t-transparent rounded-full animate-spin"></div>
                 删除中..
             `;
         }
@@ -518,7 +522,7 @@ export const PartsPage = {
 
         contentEl.innerHTML = `
             <div class="flex items-center justify-center py-16">
-                <div class="w-7 h-7 border-2 border-[#2a2a2a] border-t-[#d32f2f] rounded-full animate-spin"></div>
+                <div class="w-7 h-7 border-2 border-line border-brand rounded-full animate-spin"></div>
             </div>
         `;
 
@@ -550,8 +554,8 @@ export const PartsPage = {
             this._bindSketchModal(part);
         } catch (error) {
             contentEl.innerHTML = `
-                <div class="p-4 m-4 bg-[#0a0a0a] border border-[#2c2c2c]">
-                    <div class="flex items-center gap-2 text-[#d32f2f]">
+                <div class="p-4 m-4 bg-app-deep border border-line">
+                    <div class="flex items-center gap-2 text-brand">
                         ${window.svgIcon('exclamation-circle')}
                         <span class="text-xs font-medium">${esc(error.message) || '加载失败'}</span>
                     </div>
@@ -570,13 +574,13 @@ export const PartsPage = {
             modal.id = 'sketchModal';
             modal.className = 'fixed inset-0 z-[100] flex items-center justify-center';
             modal.innerHTML = `
-                <div class="absolute inset-0 bg-black/90 backdrop-blur-sm" id="sketchModalBackdrop"></div>
+                <div class="absolute inset-0 bg-overlay/70 backdrop-blur-sm" id="sketchModalBackdrop"></div>
                 <div class="relative z-10 max-w-4xl w-full mx-8 max-h-[85vh] flex flex-col">
-                    <button type="button" id="closeSketchModal" class="absolute -top-10 right-0 flex items-center gap-1.5 text-[10px] text-[#555555] hover:text-white transition-colors tracking-wider group">
-                        <span class="group-hover:text-[#d32f2f] transition-colors">关闭</span>
-                        ${window.svgIcon('x-lg', 'w-3.5 h-3.5 group-hover:text-[#d32f2f] transition-colors')}
+                    <button type="button" id="closeSketchModal" class="absolute -top-10 right-0 flex items-center gap-1.5 text-[10px] text-ink-faint hover:text-ink transition-colors tracking-wider group">
+                        <span class="group-hover:text-brand transition-colors">关闭</span>
+                        ${window.svgIcon('x-lg', 'w-3.5 h-3.5 group-hover:text-brand transition-colors')}
                     </button>
-                    <div class="flex-1 overflow-auto bg-[#0d0d0d] border border-[#222222] rounded-sm shadow-2xl">
+                    <div class="flex-1 overflow-auto bg-app-deep border border-line-subtle rounded-sm shadow-2xl">
                         <img src="${fullSketchUrl}" alt="零件图纸" class="w-full h-full object-contain">
                     </div>
                 </div>
@@ -642,8 +646,8 @@ export const PartsPage = {
         if (!toggle) return;
         const isOn = toggle.dataset.on === '1';
         toggle.setAttribute('aria-checked', isOn ? 'true' : 'false');
-        toggle.style.background = isOn ? '#d32f2f' : '#1a1a1a';
-        toggle.style.borderColor = isOn ? '#d32f2f' : '#2c2c2c';
+        toggle.style.background = isOn ? 'rgb(var(--brabus-red))' : 'rgb(var(--bg-hud))';
+        toggle.style.borderColor = isOn ? 'rgb(var(--brabus-red))' : 'rgb(var(--border-color))';
         if (knob) knob.style.transform = `translateX(${isOn ? '16px' : '2px'})`;
         if (label) label.textContent = isOn ? '是' : '否';
         if (sourceRow) sourceRow.classList.toggle('hidden', !isOn);
@@ -670,7 +674,7 @@ export const PartsPage = {
         const btn = document.getElementById('saveOffalBtn');
         if (!btn || btn.dataset.active === 'true') return;
         btn.dataset.active = 'true';
-        btn.className = 'h-7 px-3 text-[10px] text-white bg-[#d32f2f] border border-[#d32f2f] rounded-sm hover:bg-[#b71c1c] transition-all tracking-wide';
+        btn.className = 'h-7 px-3 text-[10px] text-white bg-brand border border-brand rounded-sm hover:bg-brand-hover transition-all tracking-wide';
     },
 
     _activateSaveButton() {
@@ -794,7 +798,7 @@ export const PartsPage = {
         if (btn) {
             btn.disabled = true;
             btn.innerHTML = `
-                <div class="w-3 h-3 border border-[#ef5350] border-t-transparent rounded-full animate-spin"></div>
+                <div class="w-3 h-3 border border-danger border-t-transparent rounded-full animate-spin"></div>
                 导出中..
             `;
         }
@@ -868,5 +872,7 @@ export const pageConfig = {
     destroy() {
         moreMenu?.unbind();
         moreMenu = null;
+        filterBar?.unbind();
+        filterBar = null;
     },
 };

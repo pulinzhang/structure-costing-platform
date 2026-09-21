@@ -3,22 +3,25 @@
  * 钢材价格计算结果浏览 / 手工维护 / 审核
  */
 
+import { BTN_SOLID } from '../../../../ui/classes.js?v=11';
 import {
     steelPriceListTemplate,
     renderSteelPriceRows,
     updateSteelPriceHud,
-    updateActiveFilterCapsules,
-} from './template.js?v=58';
+} from './template.js?v=69';
 import {
     DEFAULT_PAGE_SIZE,
     bindPagination,
     paintPagination,
-} from '../../../../page-size.js?v=3';
-import { bindMoreMenu } from '../../../../more-menu.js?v=1';
-import { setSearchBusy } from '../../../../search-busy.js?v=1';
+} from '../../../../ui/page-size.js?v=6';
+import { bindMoreMenu } from '../../../../ui/more-menu.js?v=5';
+import { bindFilterBar } from '../../../../ui/filter-bar.js?v=3';
+import { setSearchBusy } from '../../../../ui/search-busy.js?v=3';
 
 /** @type {{ setOpen: (isOpen: boolean) => void, close: () => void, unbind: () => void } | null} */
 let moreMenu = null;
+/** @type {{ paint: () => void, setOpen: (isOpen: boolean) => void, unbind: () => void } | null} */
+let filterBar = null;
 
 const steelPriceState = {
     records: [],
@@ -30,7 +33,6 @@ const steelPriceState = {
     currentViewId: null,
     pendingFilters: null,
     batchAuditSubmitting: false,
-    advancedFilterOpen: false,
     isLoading: false,
 };
 
@@ -160,7 +162,7 @@ async function loadData(page = 1) {
             }
         }
 
-        const total = document.getElementById('steelPriceTotal');
+        const total = document.getElementById('steelPricePageInfo');
         if (total) total.textContent = `全${steelPriceState.total} 条`;
         updateSteelPriceHud(steelPriceState.total, payload.filters?.summary || null);
 
@@ -174,14 +176,14 @@ async function loadData(page = 1) {
             applyPendingFiltersToSelects();
             steelPriceState.filtersLoaded = true;
         }
-        updateActiveFilterCapsules();
+        filterBar?.paint();
     } catch (error) {
         console.error('加载钢材价格失败:', error);
         updateSteelPriceHud(0, null);
         if (tableBody) {
             tableBody.innerHTML = `
                 <tr>
-                    <td colspan="22" class="px-4 py-8 text-center text-[#9e9e9e] text-xs">加载数据失败，请重试</td>
+                    <td colspan="22" class="px-4 py-8 text-center text-ink-muted text-xs">加载数据失败，请重试</td>
                 </tr>`;
         }
     } finally {
@@ -218,9 +220,7 @@ function applyPendingFiltersToSelects() {
     setSelectValue('steelPriceMonth', pending.month);
     setSelectValue('steelPriceLocation', pending.location);
     steelPriceState.pendingFilters = null;
-    if (pending.year || pending.month || pending.location) {
-        if (!steelPriceState.advancedFilterOpen) toggleAdvancedFilter();
-    }
+    filterBar?.paint();
 }
 
 function setSelectValue(id, value) {
@@ -248,22 +248,7 @@ function resetFilters() {
         const element = document.getElementById(id);
         if (element) element.value = '';
     });
-    updateActiveFilterCapsules();
     loadData(1);
-}
-
-function toggleAdvancedFilter() {
-    steelPriceState.advancedFilterOpen = !steelPriceState.advancedFilterOpen;
-    const panel = document.getElementById('steelPriceAdvancedFilterPanel');
-    const label = document.getElementById('steelPriceAdvancedFilterLabel');
-    if (panel) {
-        panel.classList.toggle('hidden', !steelPriceState.advancedFilterOpen);
-    }
-    if (label) {
-        label.textContent = steelPriceState.advancedFilterOpen
-            ? '[-] 收起高级筛选'
-            : '[+] 展开高级筛选';
-    }
 }
 
 function bindRowEvents() {
@@ -294,19 +279,28 @@ function bindRowEvents() {
 }
 
 function bindEvents() {
-    document.getElementById('steelPriceSearchButton')?.addEventListener('click', () => {
-        updateActiveFilterCapsules();
-        loadData(1);
+    filterBar = bindFilterBar({
+        prefix: 'steelPrice',
+        searchId: 'steelPriceSearchButton',
+        resetId: 'steelPriceResetFilterButton',
+        capsules: [
+            {
+                capsuleId: 'steelCapsulePeriod',
+                fieldIds: ['steelPriceYear', 'steelPriceMonth'],
+                idleLabel: '全部期间',
+                display: () => fmtPeriod(
+                    document.getElementById('steelPriceYear')?.value,
+                    document.getElementById('steelPriceMonth')?.value,
+                ) || '',
+            },
+            { capsuleId: 'steelCapsuleLocation', fieldId: 'steelPriceLocation', idleLabel: '全部基地' },
+            { capsuleId: 'steelCapsuleMill', fieldId: 'steelPriceMill', idleLabel: '全部钢厂' },
+        ],
+        countFieldIds: ['steelPriceCategory', 'steelPriceGrade'],
+        enterFieldIds: ['steelPriceGrade'],
+        onSearch: () => loadData(1),
+        onReset: resetFilters,
     });
-    document.getElementById('steelPriceToggleAdvancedFilter')?.addEventListener('click', () => toggleAdvancedFilter());
-    document.getElementById('steelPriceGrade')?.addEventListener('keydown', event => {
-        if (event.key === 'Enter') {
-            event.preventDefault();
-            updateActiveFilterCapsules();
-            loadData(1);
-        }
-    });
-    document.getElementById('steelPriceGrade')?.addEventListener('input', () => updateActiveFilterCapsules());
     [
         'steelPriceYear',
         'steelPriceMonth',
@@ -315,11 +309,9 @@ function bindEvents() {
         'steelPriceMill',
     ].forEach(id => {
         document.getElementById(id)?.addEventListener('change', () => {
-            updateActiveFilterCapsules();
             loadData(1);
         });
     });
-    document.getElementById('steelPriceResetFilterButton')?.addEventListener('click', () => resetFilters());
     moreMenu = bindMoreMenu({
         wrapId: 'steelPriceMoreWrap',
         btnId: 'steelPriceMoreBtn',
@@ -394,7 +386,7 @@ async function exportExcel() {
     if (btn) {
         btn.disabled = true;
         btn.innerHTML = `
-            <div class="w-3 h-3 border border-[#ef5350] border-t-transparent rounded-full animate-spin"></div>
+            <div class="w-3 h-3 border border-danger border-t-transparent rounded-full animate-spin"></div>
             导出中..
         `;
     }
@@ -460,7 +452,7 @@ async function batchDeleteByFilters() {
     if (btn) {
         btn.disabled = true;
         btn.innerHTML = `
-            <div class="w-3 h-3 border border-[#ef5350] border-t-transparent rounded-full animate-spin"></div>
+            <div class="w-3 h-3 border border-danger border-t-transparent rounded-full animate-spin"></div>
             删除中..
         `;
     }
@@ -547,8 +539,8 @@ function openBatchAuditDrawer(mode) {
     }
     if (remarkLabel) {
         remarkLabel.innerHTML = isApprove
-            ? '审核意见<span class="text-[#d32f2f]">*</span>'
-            : '反审核意见<span class="text-[#d32f2f]">*</span>';
+            ? '审核意见<span class="text-brand">*</span>'
+            : '反审核意见<span class="text-brand">*</span>';
     }
     if (remarkEl) {
         remarkEl.value = '';
@@ -560,7 +552,7 @@ function openBatchAuditDrawer(mode) {
     if (confirmBtn) {
         confirmBtn.textContent = isApprove ? '确认审核通过' : '确认反审核';
         confirmBtn.className =
-            'inline-flex items-center gap-1.5 bg-[#d32f2f] text-white px-4 py-2 text-[11px] font-semibold rounded hover:bg-[#b71c1c] transition-all';
+            BTN_SOLID;
     }
 
     openDrawer('batchAuditDrawer', 'batchAuditDrawerBackdrop');
@@ -655,10 +647,6 @@ function bindViewDrawerEvents() {
         close();
         if (record) setTimeout(() => openEditDrawer(record), DRAWER_ANIMATION_MS);
     });
-
-    document.getElementById('viewDrawerApproveBtn')?.addEventListener('click', () => handleApprove());
-    document.getElementById('viewDrawerRejectBtn')?.addEventListener('click', () => handleReject());
-    document.getElementById('viewDrawerReverseBtn')?.addEventListener('click', () => handleReverseAudit());
 }
 
 function bindDeleteDrawerEvents() {
@@ -710,7 +698,7 @@ function formatTrace(prefix, record) {
     const ladderId = prefix === 'base' ? null : record[`${prefix}_ladder_item_id`];
 
     if (filename == null && refId == null && ladderId == null && row == null && col == null) {
-        return `<span class="text-[#616161]">${prefixLabel(prefix)}：未匹配</span>`;
+        return `<span class="text-ink-dim">${prefixLabel(prefix)}：未匹配</span>`;
     }
 
     const idLines = prefix === 'base'
@@ -728,8 +716,8 @@ function formatTrace(prefix, record) {
 
     return `
         <div>
-            <div class="text-[#777777] mb-1">${prefixLabel(prefix)}</div>
-            <div class="font-mono text-[10px] text-[#9e9e9e] space-y-0.5">
+            <div class="text-ink-dim mb-1">${prefixLabel(prefix)}</div>
+            <div class="font-mono text-[10px] text-ink-muted space-y-0.5">
                 ${idLines.map(line => `<div>${line}</div>`).join('')}
                 <div>${excelLine}</div>
             </div>
@@ -781,15 +769,7 @@ function openViewDrawer(record) {
     document.getElementById('view-trace-zinc').innerHTML = formatTrace('zinc', record);
 
     const approved = record.audit_status === 'approved';
-    const pending = record.audit_status === 'pending';
-    const rejected = record.audit_status === 'rejected';
-    const canApprove = typeof can === 'function' ? can('op:steel-price-list:approve') : true;
-    const canReject = typeof can === 'function' ? can('op:steel-price-list:reject') : true;
-    const canReverse = typeof can === 'function' ? can('op:steel-price-list:reverse') : true;
     const canUpdate = typeof can === 'function' ? can('op:steel-price-list:update') : true;
-    toggleHidden('viewDrawerApproveBtn', !(canApprove && (pending || rejected)));
-    toggleHidden('viewDrawerRejectBtn', !(canReject && pending));
-    toggleHidden('viewDrawerReverseBtn', !(canReverse && approved));
     toggleHidden('viewDrawerEditBtn', !(canUpdate && !approved));
 
     openDrawer('viewDrawer', 'viewDrawerBackdrop');
@@ -810,9 +790,9 @@ function openDeleteDrawer(record) {
     const summary = document.getElementById('deleteSummary');
     if (summary) {
         summary.innerHTML = `
-            <span class="text-[#d32f2f] font-mono">${esc(fmtPeriod(record.year, record.month))}</span>
-            <span class="text-[#9e9e9e]"> / ${esc(record.location)} / ${esc(record.steel_mill)} / ${esc(record.grade)}</span>
-            <span class="text-[#9e9e9e]"> / ${esc(formatDecimal(record.thickness, 2))}*${esc(formatWidthPlain(record.width))}</span>
+            <span class="text-brand font-mono">${esc(fmtPeriod(record.year, record.month))}</span>
+            <span class="text-ink-muted"> / ${esc(record.location)} / ${esc(record.steel_mill)} / ${esc(record.grade)}</span>
+            <span class="text-ink-muted"> / ${esc(formatDecimal(record.thickness, 2))}*${esc(formatWidthPlain(record.width))}</span>
         `;
     }
     openDrawer('deleteDrawer', 'deleteDrawerBackdrop');
@@ -882,66 +862,6 @@ async function deleteRecord(id) {
     }
 }
 
-async function handleApprove() {
-    const id = steelPriceState.currentViewId;
-    if (!id) return;
-    const auditRemark = window.prompt('请输入审核意见（必填）');
-    if (auditRemark === null) return;
-    if (!auditRemark.trim()) {
-        showToast('审核意见必填', 'warning');
-        return;
-    }
-    try {
-        const body = { audit_remark: auditRemark.trim() };
-        await HttpClient.post(`${API_BASE}/${id}/approve`, body);
-        showToast('审核通过', 'success');
-        closeDrawer('viewDrawer', 'viewDrawerBackdrop');
-        steelPriceState.filtersLoaded = false;
-        loadData(steelPriceState.page);
-    } catch (error) {
-        console.error('审核通过失败:', error);
-    }
-}
-
-async function handleReject() {
-    const id = steelPriceState.currentViewId;
-    if (!id) return;
-    const auditRemark = window.prompt('驳回原因（可选，可留空）');
-    if (auditRemark === null) return;
-    try {
-        const body = {};
-        if (auditRemark.trim()) body.audit_remark = auditRemark.trim();
-        await HttpClient.post(`${API_BASE}/${id}/reject`, body);
-        showToast('已驳回', 'success');
-        closeDrawer('viewDrawer', 'viewDrawerBackdrop');
-        steelPriceState.filtersLoaded = false;
-        loadData(steelPriceState.page);
-    } catch (error) {
-        console.error('审核驳回失败:', error);
-    }
-}
-
-async function handleReverseAudit() {
-    const id = steelPriceState.currentViewId;
-    if (!id) return;
-    const reverseAuditRemark = window.prompt('反审核原因（必填）');
-    if (!reverseAuditRemark || !reverseAuditRemark.trim()) {
-        showToast('反审核原因必填', 'warning');
-        return;
-    }
-    try {
-        await HttpClient.post(`${API_BASE}/${id}/reverse-audit`, {
-            reverse_audit_remark: reverseAuditRemark.trim(),
-        });
-        showToast('反审核成功', 'success');
-        closeDrawer('viewDrawer', 'viewDrawerBackdrop');
-        steelPriceState.filtersLoaded = false;
-        loadData(steelPriceState.page);
-    } catch (error) {
-        console.error('反审核失败', error);
-    }
-}
-
 function setEditDrawerTitle(text) {
     const title = document.getElementById('editDrawerTitle');
     if (title) title.textContent = text;
@@ -978,21 +898,21 @@ function fillAdjustmentViewField(id, value) {
     if (!element) return;
     element.textContent = formatAdjustmentSigned(value);
     element.classList.remove(
-        'text-[#cccccc]',
-        'text-[#4caf50]',
-        'text-[#ef5350]',
-        'text-[#9e9e9e]',
-        'text-[#E0E0E0]',
-        'text-[#C62828]',
-        'text-[#444444]'
+        'text-ink',
+        'text-ok',
+        'text-danger',
+        'text-ink-muted',
+        'text-ink',
+        'text-danger',
+        'text-ink-dim'
     );
     const cmp = compareDecimalStrings(value, '0', 4);
     if (value === null || value === undefined || value === '' || cmp == null || cmp === 0) {
-        element.classList.add('text-[#444444]');
+        element.classList.add('text-ink-dim');
     } else if (cmp > 0) {
-        element.classList.add('text-[#E0E0E0]');
+        element.classList.add('text-ink');
     } else {
-        element.classList.add('text-[#C62828]');
+        element.classList.add('text-danger');
     }
 }
 
@@ -1043,5 +963,7 @@ export const pageConfig = {
     destroy() {
         moreMenu?.unbind();
         moreMenu = null;
+        filterBar?.unbind();
+        filterBar = null;
     },
 };

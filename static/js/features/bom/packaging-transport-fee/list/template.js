@@ -3,9 +3,13 @@
  * 批量操作范围 = 基地 + 年度 + 项目
  */
 
-import { paginationBarHtml } from '../../../../page-size.js?v=3';
-import { moreMenuItemHtml, moreMenuShellHtml } from '../../../../more-menu.js?v=1';
-import { partShortCodeCellHtml, partNumberNameCellHtml } from '../../../../part-identity.js?v=3';
+import { filterSelect, filterInput, HUD_SHELL, DRAWER_SHELL, DRAWER_BACKDROP, HUD_BAND, OPS_TH, BTN_GHOST, BTN_SOLID, BTN_SOLID_DANGER } from '../../../../ui/classes.js?v=11';
+import { filterBarHtml } from '../../../../ui/filter-bar.js?v=3';
+import { hudTableHtml, hudRowHtml, opsIconButtonHtml } from '../../../../ui/hud-table.js?v=2';
+import { hudKpiCardHtml } from '../../../../ui/hud-kpi.js?v=1';
+
+import { moreMenuItemHtml, moreMenuShellHtml } from '../../../../ui/more-menu.js?v=5';
+import { partShortCodeCellHtml, partNumberNameCellHtml } from '../../../../domain/part-identity.js?v=5';
 
 export function formatFee4(value) {
     return formatDecimalFixed(value, 4) ?? '-';
@@ -19,48 +23,18 @@ export function parseFeeInput(raw) {
     return parseDecimalInput(raw, 4);
 }
 
-function filterSelect(id, label) {
-    return `
-        <div class="flex flex-col gap-1 min-w-[120px]">
-            <label class="text-[9px] text-[#555555] tracking-wider" for="${id}">${label}</label>
-            <select id="${id}"
-                    class="h-8 px-2 text-[11px] bg-[#0A0A0E] border border-[#2A2A35] text-[#8E8E93] rounded-md appearance-none cursor-pointer focus:outline-none focus:border-[#FF1E27]">
-                <option value="">全部</option>
-            </select>
-        </div>`;
-}
 
 export function pkgTransportFeeTemplate() {
     return `
         <div class="space-y-2 w-full max-w-full">
-            <div class="bg-[#0A0A0C] border border-[#1A1A22] overflow-hidden w-full max-w-full"
-                 style="box-shadow: 0 4px 24px rgba(0,0,0,0.7), inset 0 1px 0 rgba(255,255,255,0.02);">
+            <div class="${HUD_SHELL}">
 
-                <div class="px-5 pt-4 pb-3.5 border-b border-[#14141A]"
-                     style="background: linear-gradient(135deg, #0E0E12 0%, #121218 45%, #0C0C10 100%);">
+                <div class="${HUD_BAND}">
                     <div class="flex items-start justify-between gap-4 mb-3">
                         <div class="grid grid-cols-2 lg:grid-cols-3 gap-3 font-mono flex-1 min-w-0">
-                            <div class="bg-[#0D0D11]/80 border border-[#1E1E26] p-3">
-                                <div class="text-[#555555] text-[10px] tracking-wider">记录条数</div>
-                                <div class="text-[18px] font-bold text-[#FFFFFF] mt-1 tabular-nums">
-                                    <span id="pkgHudTotal">—</span>
-                                    <span class="text-[10px] text-[#555555] ml-1">条</span>
-                                </div>
-                            </div>
-                            <div class="bg-[#0D0D11]/80 border border-[#1E1E26] p-3">
-                                <div class="text-[#555555] text-[10px] tracking-wider">待审</div>
-                                <div class="text-[18px] font-bold text-[#FFFFFF] mt-1 tabular-nums">
-                                    <span id="pkgHudPending">—</span>
-                                    <span class="text-[10px] text-[#555555] ml-1">条</span>
-                                </div>
-                            </div>
-                            <div class="bg-[#0D0D11]/80 border border-[#1E1E26] p-3">
-                                <div class="text-[#555555] text-[10px] tracking-wider">已审</div>
-                                <div class="text-[18px] font-bold text-[#FFFFFF] mt-1 tabular-nums">
-                                    <span id="pkgHudApproved">—</span>
-                                    <span class="text-[10px] text-[#555555] ml-1">条</span>
-                                </div>
-                            </div>
+                            ${hudKpiCardHtml({ title: '记录条数', valueHtml: '<span id="pkgHudTotal">—</span>', unit: '条' })}
+                            ${hudKpiCardHtml({ title: '待审', valueHtml: '<span id="pkgHudPending">—</span>', unit: '条' })}
+                            ${hudKpiCardHtml({ title: '已审', valueHtml: '<span id="pkgHudApproved">—</span>', unit: '条' })}
                         </div>
                         <div class="flex items-center gap-1.5 shrink-0">
                             ${moreMenuShellHtml({
@@ -74,61 +48,44 @@ export function pkgTransportFeeTemplate() {
                                 ].join(''),
                             })}
                             <button id="btnExportPkg" type="button"
-                                    class="inline-flex items-center gap-1.5 bg-transparent text-[#6E6E73] border border-[#2A2A35] px-3 py-1.5 text-[11px] font-medium rounded-md hover:border-[#FF1E27]/50 hover:text-[#FF1E27] transition-all">
+                                    class="inline-flex items-center gap-1.5 bg-transparent text-ink-dim border border-line-hud px-3 py-1.5 text-[11px] font-medium rounded-md hover:border-brand-hud/50 hover:text-brand-hud transition-all">
                                 ${window.svgIcon('download', 'w-3 h-3')} Excel
                             </button>
                         </div>
                     </div>
                 </div>
 
-                <div class="px-5 py-3 border-b border-[#14141A]" style="background: linear-gradient(180deg, #0C0C10 0%, #0A0A0E 100%);">
-                    <div class="flex items-center justify-between gap-4 bg-[#0C0C10] border border-[#1E1E26] px-4 py-2.5 rounded-md font-mono text-[11px]">
-                        <div class="flex items-center gap-3 min-w-0 flex-1">
-                            <span class="text-[#555555] shrink-0 tracking-wider">当前筛选：</span>
-                            <div class="flex items-center gap-2 flex-wrap">
-                                <span id="pkgCapsuleYear" class="bg-[#1A1A22] border border-[#2A2A35] text-[#8E8E93] px-2.5 py-1 rounded-md">全部年度</span>
-                                <span id="pkgCapsuleLocation" class="bg-[#1A1A22] border border-[#2A2A35] text-[#8E8E93] px-2.5 py-1 rounded-md">全部基地</span>
-                                <span id="pkgCapsuleVehicle" class="bg-[#1A1A22] border border-[#2A2A35] text-[#8E8E93] px-2.5 py-1 rounded-md">全部项目</span>
-                                <span id="pkgCapsuleAudit" class="bg-[#1A1A22] border border-[#2A2A35] text-[#8E8E93] px-2.5 py-1 rounded-md">全部审核</span>
-                                <span id="pkgCapsuleKeyword" class="bg-[#1A1A22] border border-[#2A2A35] text-[#8E8E93] px-2.5 py-1 rounded-md">零件号/名称</span>
-                            </div>
-                        </div>
-                        <div class="flex items-center gap-3 shrink-0">
-                            <button type="button" id="pkgToggleAdvancedFilter"
-                                    class="text-[#6E6E73] hover:text-white transition-colors flex items-center gap-1.5 text-[11px]">
-                                <span id="pkgAdvancedFilterLabel">展开高级筛选</span>
-                            </button>
-                            <button type="button" id="btnFilterPkg"
-                                    class="inline-flex items-center gap-1.5 h-7 px-3 text-[11px] font-semibold rounded-sm text-[#c8c8c8] border border-[#8a2020]"
-                                    style="background: linear-gradient(180deg, #3d1515 0%, #2d0f0f 100%);">
-                                ${window.svgIcon('search', 'w-3 h-3')} 查询
-                            </button>
-                        </div>
-                    </div>
-
-                    <div id="pkgAdvancedFilterPanel" class="hidden mt-3 pt-3 border-t border-[#1A1A22]">
-                        <div class="flex items-end gap-3 flex-wrap">
-                            ${filterSelect('pkgYearFilter', '年度')}
-                            ${filterSelect('pkgLocationFilter', '基地')}
-                            ${filterSelect('pkgVehicleFilter', '项目')}
-                            ${filterSelect('pkgAuditStatusFilter', '审核状态')}
-                            <div class="flex flex-col gap-1 min-w-[160px]">
-                                <label class="text-[9px] text-[#555555] tracking-wider" for="pkgKeywordFilter">零件号/名称</label>
-                                <input id="pkgKeywordFilter" type="text" maxlength="100" placeholder="模糊搜索"
-                                       class="h-8 px-2 text-[11px] bg-[#0A0A0E] border border-[#2A2A35] text-[#8E8E93] rounded-md focus:outline-none focus:border-[#FF1E27]">
-                            </div>
-                            <button id="pkgResetFilterBtn" type="button"
-                                    class="inline-flex items-center gap-1.5 h-8 px-3 text-[11px] font-medium rounded-md bg-transparent text-[#6E6E73] border border-[#2A2A35] hover:text-[#FF1E27] hover:border-[#FF1E27]/50 transition-all">
-                                ${window.svgIcon('refresh', 'w-3 h-3')} 重置
-                            </button>
-                        </div>
-                        <p class="mt-2 text-[10px] text-[#555555]">批量删除 / 审核 / 反审核须同时选定基地、年度和项目。已审核不可删除、不可修改。</p>
-                    </div>
+                <div class="px-5 py-3 border-b border-line-subtle bg-gradient-to-b from-app-hud to-app-deep">
+                    ${filterBarHtml({
+                        prefix: 'pkg',
+                        searchId: 'btnFilterPkg',
+                        capsules: [
+                            { capsuleId: 'pkgCapsuleYear', idleLabel: '全部年度' },
+                            { capsuleId: 'pkgCapsuleLocation', idleLabel: '全部基地' },
+                            { capsuleId: 'pkgCapsuleVehicle', idleLabel: '全部项目' },
+                            { capsuleId: 'pkgCapsuleAudit', idleLabel: '全部审核' },
+                            { capsuleId: 'pkgCapsuleKeyword', idleLabel: '零件号/名称' },
+                        ],
+                        fieldsHtml: [
+                            filterSelect('pkgYearFilter', '年度'),
+                            filterSelect('pkgLocationFilter', '基地'),
+                            filterSelect('pkgVehicleFilter', '项目'),
+                            filterSelect('pkgAuditStatusFilter', '审核状态'),
+                            filterInput('pkgKeywordFilter', '零件号/名称', '模糊搜索', { widthClass: 'w-40' }),
+                            `<button id="pkgResetFilterBtn" type="button" class="${BTN_GHOST}">
+                                ${window.svgIcon('refresh', 'w-3 h-3')}
+                                重置
+                            </button>`,
+                        ].join(''),
+                        hintHtml: '批量删除 / 审核 / 反审核须同时选定基地、年度和项目。已审核不可删除、不可修改。',
+                    })}
                 </div>
 
-                <div class="overflow-x-auto brabus-bg-grid">
-                    <table class="w-full min-w-[1400px] bg-transparent table-fixed border-separate border-spacing-0">
-                        <colgroup>
+                ${hudTableHtml({
+                    prefix: 'pkg',
+                    bodyId: 'pkgTransportFeeTableBody',
+                    minWidth: '1400px',
+                    colgroupHtml: `
                             <col style="width:2px">
                             <col style="width:7%">
                             <col style="width:5%">
@@ -143,40 +100,30 @@ export function pkgTransportFeeTemplate() {
                             <col style="width:7%">
                             <col style="width:8%">
                             <col style="width:6%">
-                            <col style="width:5%">
-                        </colgroup>
-                        <thead>
-                            <tr class="border-b border-[#17171C] bg-[#0B0B0D]/95">
+                            <col style="width:5%">`,
+                    headHtml: `
                                 <th class="p-0"></th>
-                                <th class="px-2 py-2 text-left text-[9px] font-medium tracking-[0.08em] text-[#555555]">基地</th>
-                                <th class="px-2 py-2 text-left text-[9px] font-medium tracking-[0.08em] text-[#555555]">年份</th>
-                                <th class="px-2 py-2 text-left text-[9px] font-medium tracking-[0.08em] text-[#555555]">项目</th>
-                                <th class="px-2 py-2 text-left text-[9px] font-medium tracking-[0.08em] text-[#A1A1A6]">短代码</th>
-                                <th class="px-2 py-2 text-left text-[9px] font-medium tracking-[0.08em] text-[#555555]">零件</th>
-                                <th class="px-2 py-2 text-left text-[9px] font-medium tracking-[0.08em] text-[#555555]">包装类型</th>
-                                <th class="px-2 py-2 text-right text-[9px] font-medium tracking-[0.06em] text-[#555555]">包装费</th>
-                                <th class="px-2 py-2 text-right text-[9px] font-medium tracking-[0.06em] text-[#555555]">运输费</th>
-                                <th class="px-2 py-2 text-right text-[9px] font-medium tracking-[0.06em] text-[#555555]">维护费</th>
-                                <th class="px-2 py-2 text-right text-[9px] font-medium tracking-[0.06em] text-[#555555]">其它</th>
-                                <th class="px-2 py-2 text-right text-[9px] font-semibold tracking-[0.06em] text-[#FF1E27]/90 bg-[#1A080A]">合计</th>
-                                <th class="px-2 py-2 text-center text-[9px] font-medium tracking-[0.06em] text-[#555555]">审核</th>
-                                <th class="px-2 py-2 text-left text-[9px] font-normal tracking-[0.08em] text-[#3a3a3a]">创建人</th>
-                                <th class="p-0 w-9 sticky right-0 z-[3] bg-[#0B0B0D]" aria-label="操作"></th>
-                            </tr>
-                        </thead>
-                        <tbody id="pkgTransportFeeTableBody" class="bg-transparent"></tbody>
-                    </table>
-                </div>
-
-                ${paginationBarHtml({ infoId: 'pkgTotalCountPagination', selectId: 'pkgTransportFeePageSize', buttonsId: 'pkgPaginationBtns', wrapperId: 'pkgPaginationContainer' })}
-
-                <div id="pkgEmptyState" class="hidden flex flex-col items-center justify-center py-14">
-                    <h5 class="text-[11px] font-medium text-[#8E8E93] mb-1">暂无包装运输费数据</h5>
-                    <p class="text-[10px] text-[#555555]">请先在「包装运输费上传」中导入 Excel</p>
-                </div>
-                <div id="pkgLoadingState" class="hidden flex items-center justify-center py-14">
-                    <div class="w-5 h-5 border-2 border-[#2A2A35] border-t-[#FF1E27] rounded-full animate-spin"></div>
-                </div>
+                                <th class="px-2 py-2 text-left text-[9px] font-medium tracking-[0.08em] text-ink-faint">基地</th>
+                                <th class="px-2 py-2 text-left text-[9px] font-medium tracking-[0.08em] text-ink-faint">年份</th>
+                                <th class="px-2 py-2 text-left text-[9px] font-medium tracking-[0.08em] text-ink-faint">项目</th>
+                                <th class="px-2 py-2 text-left text-[9px] font-medium tracking-[0.08em] text-ink-muted">短代码</th>
+                                <th class="px-2 py-2 text-left text-[9px] font-medium tracking-[0.08em] text-ink-faint">零件</th>
+                                <th class="px-2 py-2 text-left text-[9px] font-medium tracking-[0.08em] text-ink-faint">包装类型</th>
+                                <th class="px-2 py-2 text-right text-[9px] font-medium tracking-[0.06em] text-ink-faint">包装费</th>
+                                <th class="px-2 py-2 text-right text-[9px] font-medium tracking-[0.06em] text-ink-faint">运输费</th>
+                                <th class="px-2 py-2 text-right text-[9px] font-medium tracking-[0.06em] text-ink-faint">维护费</th>
+                                <th class="px-2 py-2 text-right text-[9px] font-medium tracking-[0.06em] text-ink-faint">其它</th>
+                                <th class="px-2 py-2 text-right text-[9px] font-semibold tracking-[0.06em] text-brand-hud/90 bg-brand-hud/10">合计</th>
+                                <th class="px-2 py-2 text-center text-[9px] font-medium tracking-[0.06em] text-ink-faint">审核</th>
+                                <th class="px-2 py-2 text-left text-[9px] font-normal tracking-[0.08em] text-ink-faint">创建人</th>
+                                <th class="${OPS_TH}" aria-label="操作"></th>`,
+                    empty: {
+                        showIcon: false,
+                        title: '暂无包装运输费数据',
+                        hint: '请先在「包装运输费上传」中导入 Excel',
+                    },
+                    loading: true,
+                })}
             </div>
         </div>
 
@@ -189,34 +136,34 @@ export function pkgTransportFeeTemplate() {
 
 function batchAuditDrawerHtml() {
     return `
-        <div class="fixed inset-0 z-[80] bg-black/70 backdrop-blur-sm" id="pkgBatchAuditDrawerBackdrop" style="display:none"></div>
-        <div class="fixed inset-y-0 right-0 z-[85] w-[420px] bg-[#1a1a1a] border-l border-[#2a2a2a] transform translate-x-full transition-transform duration-300 ease-in-out flex flex-col"
-             id="pkgBatchAuditDrawer" style="display:none; max-height:100vh; box-shadow:-20px 0 60px rgba(0,0,0,0.95);">
-            <div class="px-5 py-3.5 flex items-center justify-between shrink-0 border-b border-[#333333]">
-                <h5 class="text-[11px] font-semibold tracking-wider text-[#b0b0b0] uppercase flex items-center gap-2.5">
-                    <span style="width:3px;height:14px;background:#d32f2f;display:inline-block;"></span>
+        <div class="${DRAWER_BACKDROP}" id="pkgBatchAuditDrawerBackdrop" style="display:none"></div>
+        <div class="${DRAWER_SHELL} w-[420px] transform translate-x-full transition-transform duration-300 ease-in-out"
+             id="pkgBatchAuditDrawer" style="display:none; max-height:100vh">
+            <div class="px-5 py-3.5 flex items-center justify-between shrink-0 border-b border-line">
+                <h5 class="text-[11px] font-semibold tracking-wider text-ink-muted uppercase flex items-center gap-2.5">
+                    <span style="width:3px;height:14px;display:inline-block"></span>
                     <span id="pkgBatchAuditDrawerTitle">批量审核</span>
                 </h5>
-                <button type="button" id="closePkgBatchAuditDrawer" class="w-8 h-8 text-[#707070] hover:text-white hover:bg-[#d32f2f] rounded-md">×</button>
+                <button type="button" id="closePkgBatchAuditDrawer" class="w-8 h-8 text-ink-dim hover:text-ink hover:bg-brand rounded-md">×</button>
             </div>
             <div class="flex-1 min-h-0 overflow-y-auto p-6 space-y-4">
                 <input type="hidden" id="pkgBatchAuditMode" value="approve">
-                <div class="bg-[#0c0c0c] border border-[#1a1a1a] rounded p-3 text-[11px] text-[#9e9e9e]" id="pkgBatchAuditFilterSummary"></div>
-                <p id="pkgBatchAuditHint" class="text-[11px] text-[#616161]"></p>
+                <div class="bg-app-deep border border-line-subtle rounded p-3 text-[11px] text-ink-muted" id="pkgBatchAuditFilterSummary"></div>
+                <p id="pkgBatchAuditHint" class="text-[11px] text-ink-dim"></p>
                 <div>
-                    <label class="text-[10px] text-[#777777] mb-1 block">操作人</label>
-                    <div id="pkgBatchAuditOperatorDisplay" class="w-full h-9 px-3 flex items-center text-xs bg-[#0a0a0a] border border-[#2c2c2c] text-[#9e9e9e] rounded">—</div>
+                    <label class="text-[10px] text-ink-dim mb-1 block">操作人</label>
+                    <div id="pkgBatchAuditOperatorDisplay" class="w-full h-9 px-3 flex items-center text-xs bg-app-deep border border-line text-ink-muted rounded">—</div>
                 </div>
                 <div>
-                    <label class="text-[10px] text-[#777777] mb-1 block" id="pkgBatchAuditRemarkLabel">审核意见</label>
+                    <label class="text-[10px] text-ink-dim mb-1 block" id="pkgBatchAuditRemarkLabel">审核意见</label>
                     <textarea id="pkgBatchAuditRemark" rows="4" maxlength="500"
-                              class="w-full px-3 py-2 text-xs bg-[#0a0a0a] border border-[#2c2c2c] text-white rounded resize-none focus:outline-none focus:border-[#ff5252]"
+                              class="w-full px-3 py-2 text-xs bg-app-deep border border-line text-ink rounded resize-none focus:outline-none focus:border-brand-active"
                               placeholder="请填写审核意见（必填）"></textarea>
                 </div>
             </div>
-            <div class="px-6 py-4 border-t border-[#262626] flex justify-end gap-2 shrink-0">
-                <button type="button" id="cancelPkgBatchAuditBtn" class="px-4 py-2 text-[11px] text-[#9e9e9e] border border-[#2c2c2c] rounded">取消</button>
-                <button type="button" id="confirmPkgBatchAuditBtn" class="px-4 py-2 text-[11px] bg-[#d32f2f] text-white rounded hover:bg-[#b71c1c]">确认提交</button>
+            <div class="px-6 py-4 border-t border-app-elevated flex justify-end gap-2 shrink-0">
+                <button type="button" id="cancelPkgBatchAuditBtn" class="px-4 py-2 text-[11px] text-ink-muted border border-line rounded">取消</button>
+                <button type="button" id="confirmPkgBatchAuditBtn" class="${BTN_SOLID}">确认提交</button>
             </div>
         </div>
     `;
@@ -224,15 +171,15 @@ function batchAuditDrawerHtml() {
 
 function detailDrawerHtml() {
     return `
-        <div class="fixed inset-0 z-[80] bg-black/70 backdrop-blur-sm" id="pkgDetailDrawerBackdrop" style="display:none"></div>
-        <div class="fixed inset-y-0 right-0 z-[85] w-[520px] bg-[#1a1a1a] border-l border-[#2a2a2a] transform translate-x-full transition-transform duration-300 ease-in-out flex flex-col"
-             id="pkgDetailDrawer" style="display:none; max-height:100vh; box-shadow:-20px 0 60px rgba(0,0,0,0.95);">
-            <div class="px-5 py-3.5 flex items-center justify-between shrink-0 border-b border-[#333333]">
-                <h5 class="text-[11px] font-semibold tracking-wider text-[#b0b0b0] uppercase flex items-center gap-2.5">
-                    <span style="width:3px;height:14px;background:#d32f2f;display:inline-block;"></span>
+        <div class="${DRAWER_BACKDROP}" id="pkgDetailDrawerBackdrop" style="display:none"></div>
+        <div class="${DRAWER_SHELL} w-[520px] transform translate-x-full transition-transform duration-300 ease-in-out"
+             id="pkgDetailDrawer" style="display:none; max-height:100vh">
+            <div class="px-5 py-3.5 flex items-center justify-between shrink-0 border-b border-line">
+                <h5 class="text-[11px] font-semibold tracking-wider text-ink-muted uppercase flex items-center gap-2.5">
+                    <span style="width:3px;height:14px;display:inline-block"></span>
                     包装运输费明细
                 </h5>
-                <button type="button" id="closePkgDetailDrawer" class="w-8 h-8 text-[#707070] hover:text-white hover:bg-[#d32f2f] rounded-md">×</button>
+                <button type="button" id="closePkgDetailDrawer" class="w-8 h-8 text-ink-dim hover:text-ink hover:bg-brand rounded-md">×</button>
             </div>
             <div class="flex-1 min-h-0 overflow-y-auto p-6" id="pkgDetailDrawerBody"></div>
         </div>
@@ -241,57 +188,57 @@ function detailDrawerHtml() {
 
 function editDrawerHtml() {
     return `
-        <div class="fixed inset-0 z-[80] bg-black/70 backdrop-blur-sm" id="pkgEditDrawerBackdrop" style="display:none"></div>
-        <div class="fixed inset-y-0 right-0 z-[85] w-[520px] bg-[#1a1a1a] border-l border-[#2a2a2a] transform translate-x-full transition-transform duration-300 ease-in-out flex flex-col"
-             id="pkgEditDrawer" style="display:none; max-height:100vh; box-shadow:-20px 0 60px rgba(0,0,0,0.95);">
-            <div class="px-5 py-3.5 flex items-center justify-between shrink-0 border-b border-[#333333]">
-                <h5 class="text-[11px] font-semibold tracking-wider text-[#b0b0b0] uppercase flex items-center gap-2.5">
-                    <span style="width:3px;height:14px;background:#d32f2f;display:inline-block;"></span>
+        <div class="${DRAWER_BACKDROP}" id="pkgEditDrawerBackdrop" style="display:none"></div>
+        <div class="${DRAWER_SHELL} w-[520px] transform translate-x-full transition-transform duration-300 ease-in-out"
+             id="pkgEditDrawer" style="display:none; max-height:100vh">
+            <div class="px-5 py-3.5 flex items-center justify-between shrink-0 border-b border-line">
+                <h5 class="text-[11px] font-semibold tracking-wider text-ink-muted uppercase flex items-center gap-2.5">
+                    <span style="width:3px;height:14px;display:inline-block"></span>
                     编辑包装运输费
                 </h5>
-                <button type="button" id="closePkgEditDrawer" class="w-8 h-8 text-[#707070] hover:text-white hover:bg-[#d32f2f] rounded-md">×</button>
+                <button type="button" id="closePkgEditDrawer" class="w-8 h-8 text-ink-dim hover:text-ink hover:bg-brand rounded-md">×</button>
             </div>
             <div class="flex-1 min-h-0 overflow-y-auto p-6 space-y-3">
                 <input type="hidden" id="pkgEditId">
-                <div class="text-[11px] text-[#9e9e9e]" id="pkgEditScopeHint"></div>
+                <div class="text-[11px] text-ink-muted" id="pkgEditScopeHint"></div>
                 <div>
-                    <label class="text-[10px] text-[#777777] mb-1 block">产品名称</label>
-                    <input id="pkgEditPartName" type="text" maxlength="200" class="w-full h-9 px-3 text-xs bg-[#0a0a0a] border border-[#2c2c2c] text-white rounded focus:outline-none focus:border-[#ff5252]">
+                    <label class="text-[10px] text-ink-dim mb-1 block">产品名称</label>
+                    <input id="pkgEditPartName" type="text" maxlength="200" class="w-full h-9 px-3 text-xs bg-app-deep border border-line text-ink rounded focus:outline-none focus:border-brand-active">
                 </div>
                 <div>
-                    <label class="text-[10px] text-[#777777] mb-1 block">包装类型</label>
-                    <input id="pkgEditPackagingType" type="text" maxlength="50" class="w-full h-9 px-3 text-xs bg-[#0a0a0a] border border-[#2c2c2c] text-white rounded focus:outline-none focus:border-[#ff5252]">
+                    <label class="text-[10px] text-ink-dim mb-1 block">包装类型</label>
+                    <input id="pkgEditPackagingType" type="text" maxlength="50" class="w-full h-9 px-3 text-xs bg-app-deep border border-line text-ink rounded focus:outline-none focus:border-brand-active">
                 </div>
                 <div class="grid grid-cols-2 gap-3">
                     <div>
-                        <label class="text-[10px] text-[#777777] mb-1 block">单件包装费 *</label>
-                        <input id="pkgEditPackagingFee" type="text" class="w-full h-9 px-3 text-xs bg-[#0a0a0a] border border-[#2c2c2c] text-white rounded font-mono focus:outline-none focus:border-[#ff5252]">
+                        <label class="text-[10px] text-ink-dim mb-1 block">单件包装费 *</label>
+                        <input id="pkgEditPackagingFee" type="text" class="w-full h-9 px-3 text-xs bg-app-deep border border-line text-ink rounded font-mono focus:outline-none focus:border-brand-active">
                     </div>
                     <div>
-                        <label class="text-[10px] text-[#777777] mb-1 block">单件运输费 *</label>
-                        <input id="pkgEditTransportFee" type="text" class="w-full h-9 px-3 text-xs bg-[#0a0a0a] border border-[#2c2c2c] text-white rounded font-mono focus:outline-none focus:border-[#ff5252]">
+                        <label class="text-[10px] text-ink-dim mb-1 block">单件运输费 *</label>
+                        <input id="pkgEditTransportFee" type="text" class="w-full h-9 px-3 text-xs bg-app-deep border border-line text-ink rounded font-mono focus:outline-none focus:border-brand-active">
                     </div>
                     <div>
-                        <label class="text-[10px] text-[#777777] mb-1 block">器具维护费 *</label>
-                        <input id="pkgEditMaintFee" type="text" class="w-full h-9 px-3 text-xs bg-[#0a0a0a] border border-[#2c2c2c] text-white rounded font-mono focus:outline-none focus:border-[#ff5252]">
+                        <label class="text-[10px] text-ink-dim mb-1 block">器具维护费 *</label>
+                        <input id="pkgEditMaintFee" type="text" class="w-full h-9 px-3 text-xs bg-app-deep border border-line text-ink rounded font-mono focus:outline-none focus:border-brand-active">
                     </div>
                     <div>
-                        <label class="text-[10px] text-[#777777] mb-1 block">其它费用 *</label>
-                        <input id="pkgEditOtherFee" type="text" class="w-full h-9 px-3 text-xs bg-[#0a0a0a] border border-[#2c2c2c] text-white rounded font-mono focus:outline-none focus:border-[#ff5252]">
+                        <label class="text-[10px] text-ink-dim mb-1 block">其它费用 *</label>
+                        <input id="pkgEditOtherFee" type="text" class="w-full h-9 px-3 text-xs bg-app-deep border border-line text-ink rounded font-mono focus:outline-none focus:border-brand-active">
                     </div>
                 </div>
                 <div>
-                    <label class="text-[10px] text-[#777777] mb-1 block">包装运输费合计 *</label>
-                    <input id="pkgEditTotal" type="text" class="w-full h-9 px-3 text-xs bg-[#0a0a0a] border border-[#2c2c2c] text-[#FF1E27] rounded font-mono font-semibold focus:outline-none focus:border-[#ff5252]">
+                    <label class="text-[10px] text-ink-dim mb-1 block">包装运输费合计 *</label>
+                    <input id="pkgEditTotal" type="text" class="w-full h-9 px-3 text-xs bg-app-deep border border-line text-brand-hud rounded font-mono font-semibold focus:outline-none focus:border-brand-active">
                 </div>
                 <div>
-                    <label class="text-[10px] text-[#777777] mb-1 block">备注</label>
-                    <textarea id="pkgEditRemark" rows="3" class="w-full px-3 py-2 text-xs bg-[#0a0a0a] border border-[#2c2c2c] text-white rounded resize-none focus:outline-none focus:border-[#ff5252]"></textarea>
+                    <label class="text-[10px] text-ink-dim mb-1 block">备注</label>
+                    <textarea id="pkgEditRemark" rows="3" class="w-full px-3 py-2 text-xs bg-app-deep border border-line text-ink rounded resize-none focus:outline-none focus:border-brand-active"></textarea>
                 </div>
             </div>
-            <div class="px-6 py-4 border-t border-[#262626] flex justify-end gap-2 shrink-0">
-                <button type="button" id="cancelPkgEditBtn" class="px-4 py-2 text-[11px] text-[#9e9e9e] border border-[#2c2c2c] rounded">取消</button>
-                <button type="button" id="confirmPkgEditBtn" class="px-4 py-2 text-[11px] bg-[#d32f2f] text-white rounded hover:bg-[#b71c1c]">保存</button>
+            <div class="px-6 py-4 border-t border-app-elevated flex justify-end gap-2 shrink-0">
+                <button type="button" id="cancelPkgEditBtn" class="px-4 py-2 text-[11px] text-ink-muted border border-line rounded">取消</button>
+                <button type="button" id="confirmPkgEditBtn" class="${BTN_SOLID}">保存</button>
             </div>
         </div>
     `;
@@ -299,23 +246,23 @@ function editDrawerHtml() {
 
 function deleteDrawerHtml() {
     return `
-        <div class="fixed inset-0 z-[80] bg-black/70 backdrop-blur-sm" id="pkgDeleteDrawerBackdrop" style="display:none"></div>
-        <div class="fixed inset-y-0 right-0 z-[85] w-[420px] bg-[#1a1a1a] border-l border-[#2a2a2a] transform translate-x-full transition-transform duration-300 ease-in-out flex flex-col"
-             id="pkgDeleteDrawer" style="display:none; max-height:100vh; box-shadow:-20px 0 60px rgba(0,0,0,0.95);">
-            <div class="px-5 py-3.5 flex items-center justify-between shrink-0 border-b border-[#333333]">
-                <h5 class="text-[11px] font-semibold tracking-wider text-[#b0b0b0] uppercase flex items-center gap-2.5">
-                    <span style="width:3px;height:14px;background:#d32f2f;display:inline-block;"></span>
+        <div class="${DRAWER_BACKDROP}" id="pkgDeleteDrawerBackdrop" style="display:none"></div>
+        <div class="${DRAWER_SHELL} w-[420px] transform translate-x-full transition-transform duration-300 ease-in-out"
+             id="pkgDeleteDrawer" style="display:none; max-height:100vh">
+            <div class="px-5 py-3.5 flex items-center justify-between shrink-0 border-b border-line">
+                <h5 class="text-[11px] font-semibold tracking-wider text-ink-muted uppercase flex items-center gap-2.5">
+                    <span style="width:3px;height:14px;display:inline-block"></span>
                     删除确认
                 </h5>
-                <button type="button" id="closePkgDeleteDrawer" class="w-8 h-8 text-[#707070] hover:text-white hover:bg-[#d32f2f] rounded-md">×</button>
+                <button type="button" id="closePkgDeleteDrawer" class="w-8 h-8 text-ink-dim hover:text-ink hover:bg-brand rounded-md">×</button>
             </div>
             <div class="flex-1 p-6">
                 <input type="hidden" id="pkgDeleteId">
-                <p class="text-xs text-[#9e9e9e]" id="pkgDeleteHint">确定删除该条包装运输费吗？此操作不可恢复。</p>
+                <p class="text-xs text-ink-muted" id="pkgDeleteHint">确定删除该条包装运输费吗？此操作不可恢复。</p>
             </div>
-            <div class="px-6 py-4 border-t border-[#262626] flex justify-end gap-2 shrink-0">
-                <button type="button" id="cancelPkgDeleteBtn" class="px-4 py-2 text-[11px] text-[#9e9e9e] border border-[#2c2c2c] rounded">取消</button>
-                <button type="button" id="confirmPkgDeleteBtn" class="px-4 py-2 text-[11px] bg-[#c62828] text-white rounded hover:bg-[#b71c1c]">确认删除</button>
+            <div class="px-6 py-4 border-t border-app-elevated flex justify-end gap-2 shrink-0">
+                <button type="button" id="cancelPkgDeleteBtn" class="px-4 py-2 text-[11px] text-ink-muted border border-line rounded">取消</button>
+                <button type="button" id="confirmPkgDeleteBtn" class="${BTN_SOLID_DANGER}">确认删除</button>
             </div>
         </div>
     `;
@@ -331,35 +278,14 @@ export function updatePkgHud(summary = {}) {
     set('pkgHudApproved', summary.approved_count);
 }
 
-export function updatePkgFilterCapsules(state) {
-    const setCap = (id, text, active) => {
-        const el = document.getElementById(id);
-        if (!el) return;
-        el.textContent = text;
-        el.className = active
-            ? 'bg-[#1A080A] border border-[#FF1E27]/40 text-[#FF1E27] px-2.5 py-1 rounded-md'
-            : 'bg-[#1A1A22] border border-[#2A2A35] text-[#8E8E93] px-2.5 py-1 rounded-md';
-    };
-    setCap('pkgCapsuleYear', state.selectedYear ? fmtYear(state.selectedYear) : '全部年度', !!state.selectedYear);
-    setCap('pkgCapsuleLocation', state.selectedLocation || '全部基地', !!state.selectedLocation);
-    setCap('pkgCapsuleVehicle', state.selectedVehicleModel || '全部项目', !!state.selectedVehicleModel);
-    const auditLabel = state.selectedAuditStatus === 'pending'
-        ? '待审'
-        : state.selectedAuditStatus === 'approved'
-            ? '已通过'
-            : '全部审核';
-    setCap('pkgCapsuleAudit', auditLabel, !!state.selectedAuditStatus);
-    setCap('pkgCapsuleKeyword', state.selectedKeyword || '零件号/名称', !!state.selectedKeyword);
-}
-
 function auditBadge(status) {
     if (status === 'approved') {
-        return '<span class="inline-flex px-1.5 py-0.5 text-[9px] font-medium rounded bg-[#2e7d32]/20 text-[#4caf50]">已通过</span>';
+        return '<span class="inline-flex px-1.5 py-0.5 text-[9px] font-medium rounded bg-ok/20 text-ok">已通过</span>';
     }
-    return '<span class="inline-flex px-1.5 py-0.5 text-[9px] font-medium rounded bg-[#f57f17]/20 text-[#ffb74d]">待审</span>';
+    return '<span class="inline-flex px-1.5 py-0.5 text-[9px] font-medium rounded bg-warn/20 text-warn">待审</span>';
 }
 
-const numCell = 'px-2 py-2 font-mono text-[10px] text-right tabular-nums text-[#8E8E93]';
+const numCell = 'px-2 py-2 font-mono text-[10px] text-right tabular-nums text-ink-muted';
 
 export function renderTableRows(records) {
     const canUpdate = typeof can === 'function' ? can('op:bom-packaging-transport-fee:update') : true;
@@ -368,52 +294,64 @@ export function renderTableRows(records) {
     return records.map((record) => {
         const approved = record.audit_status === 'approved';
         const editBtn = canUpdate && !approved
-            ? `<button type="button" data-action="edit" data-id="${record.id}"
-                       class="pkg-edit-btn w-7 h-7 inline-flex items-center justify-center text-[#6E6E73] hover:text-[#FF1E27] opacity-0 group-hover:opacity-100 focus:opacity-100 transition-opacity"
-                       title="编辑">${window.svgIcon('pencil', 'w-3.5 h-3.5')}</button>`
+            ? opsIconButtonHtml({
+                action: 'edit',
+                extraClass: 'pkg-edit-btn',
+                title: '编辑',
+                icon: window.svgIcon('pencil', 'w-3.5 h-3.5'),
+                attrs: `data-id="${record.id}"`,
+            })
             : '';
         const delBtn = canDelete && !approved
-            ? `<button type="button" data-action="delete" data-id="${record.id}"
-                       class="pkg-delete-btn w-7 h-7 inline-flex items-center justify-center text-[#6E6E73] hover:text-[#ef5350] opacity-0 group-hover:opacity-100 focus:opacity-100 transition-opacity"
-                       title="删除">${window.svgIcon('trash', 'w-3.5 h-3.5')}</button>`
+            ? opsIconButtonHtml({
+                action: 'delete',
+                extraClass: 'pkg-delete-btn',
+                danger: true,
+                title: '删除',
+                icon: window.svgIcon('trash', 'w-3.5 h-3.5'),
+                attrs: `data-id="${record.id}"`,
+            })
             : '';
-        const detailBtn = `<button type="button" data-action="detail" data-id="${record.id}"
-                       class="pkg-detail-btn w-7 h-7 inline-flex items-center justify-center text-[#6E6E73] hover:text-white opacity-0 group-hover:opacity-100 focus:opacity-100 transition-opacity"
-                       title="明细">${window.svgIcon('eye', 'w-3.5 h-3.5')}</button>`;
+        const detailBtn = opsIconButtonHtml({
+            action: 'detail',
+            extraClass: 'pkg-detail-btn',
+            title: '明细',
+            icon: window.svgIcon('eye', 'w-3.5 h-3.5'),
+            attrs: `data-id="${record.id}"`,
+        });
 
-        return `
-        <tr class="group relative font-mono text-[11px] border-b border-[#141418] hover:bg-[#161620] transition-colors duration-100">
-            <td class="p-0 relative"><div class="absolute left-0 top-0 bottom-0 w-[2px] bg-[#FF1E27] opacity-0 group-hover:opacity-70 transition-opacity"></div></td>
-            <td class="px-2 py-2 text-[#F0F0F2] overflow-hidden truncate">${esc(record.location)}</td>
-            <td class="px-2 py-2 text-[#8E8E93]">${esc(fmtYear(record.year))}</td>
-            <td class="px-2 py-2 text-[#F0F0F2] overflow-hidden truncate">${esc(record.vehicle_model)}</td>
+        return hudRowHtml({
+            cellsHtml: `
+            <td class="px-2 py-2 text-ink overflow-hidden truncate">${esc(record.location)}</td>
+            <td class="px-2 py-2 text-ink-muted">${esc(fmtYear(record.year))}</td>
+            <td class="px-2 py-2 text-ink overflow-hidden truncate">${esc(record.vehicle_model)}</td>
             <td class="px-2 py-2 overflow-hidden whitespace-nowrap">
                 ${partShortCodeCellHtml(record.part_number)}
             </td>
             <td class="px-2 py-2 overflow-hidden">
                 ${partNumberNameCellHtml(record.part_number, record.part_name)}
             </td>
-            <td class="px-2 py-2 text-[#8E8E93] overflow-hidden truncate">${esc(record.packaging_type || '—')}</td>
+            <td class="px-2 py-2 text-ink-muted overflow-hidden truncate">${esc(record.packaging_type || '—')}</td>
             <td class="${numCell}">${esc(formatFee4(record.unit_packaging_fee))}</td>
             <td class="${numCell}">${esc(formatFee4(record.unit_transport_fee))}</td>
             <td class="${numCell}">${esc(formatFee4(record.fixture_maint_fee))}</td>
             <td class="${numCell}">${esc(formatFee4(record.other_fee))}</td>
-            <td class="px-2 py-1.5 text-right font-mono font-black tabular-nums text-[12px] text-[#FF1E27] bg-[#1A080A] border-x border-[#FF1E27]/20">
+            <td class="px-2 py-1.5 text-right font-mono font-black tabular-nums text-[12px] text-brand-hud bg-brand-hud/10 border-x border-brand-hud/20">
                 ${esc(formatFee4(record.packaging_transport_total))}
             </td>
             <td class="px-1 py-2 text-center">${auditBadge(record.audit_status)}</td>
-            <td class="px-2 py-2 text-[9px] text-[#3a3a3a] truncate">${esc(record.created_by || '—')}</td>
-            <td class="px-1 py-2 text-center whitespace-nowrap sticky right-0 z-[2] brabus-bg-grid group-hover:bg-[#161620]">${detailBtn}${editBtn}${delBtn}</td>
-        </tr>`;
+            <td class="px-2 py-2 text-[9px] text-ink-faint truncate">${esc(record.created_by || '—')}</td>`,
+            opsHtml: `${detailBtn}${editBtn}${delBtn}`,
+        });
     }).join('');
 }
 
 
 export function renderDetailBody(record) {
     const row = (label, value) => `
-        <div class="flex justify-between gap-3 border-b border-[#1a1a1a] py-2">
-            <span class="text-[10px] text-[#616161] shrink-0">${label}</span>
-            <span class="text-[11px] text-[#e0e0e0] text-right font-mono break-all">${esc(value ?? '—')}</span>
+        <div class="flex justify-between gap-3 border-b border-line-subtle py-2">
+            <span class="text-[10px] text-ink-dim shrink-0">${label}</span>
+            <span class="text-[11px] text-ink text-right font-mono break-all">${esc(value ?? '—')}</span>
         </div>`;
     return `
         <div class="space-y-1">

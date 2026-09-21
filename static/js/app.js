@@ -3,85 +3,89 @@
  *
  * 架构说明：
  * - 采用关注点分离（SoC）原则
- * - features/      : 功能模块（每个功能一个子目录）
- *   ├── template.js : HTML 模板函数
- *   └── index.js    : 页面逻辑模块
- * - ui/            : 可复用 UI 组件
- * - app.js         : SPA 核心（Hash 路由、渲染、页面注册）
+ * - app.js / main.js : 入口（HTML 直接加载；根目录只留这两份）
+ * - core/            : 权限等横切
+ * - domain/          : 跨页领域展示（零件身份、耗时）
+ * - ui/              : HUD 原语 classes.js + 可复用控件
+ * - features/        : 功能模块（template.js + index.js）
+ * - llm-assistant/   : 采购助理
+ * - vendor/          : 第三方
  *
  * 缓存说明：所有子模块走裸路径依赖图，由 index.html 中 <script src="app.js?v=…">
  * 入口 URL 的 query 串驱动整体刷新；每次脚本更新后需要同步递增 ?v= 版本号。
  */
 
-import { pageMeta } from './features/index.js?v=46';
+import { bindCurrentRowOnOps } from './ui/table-row.js?v=3';
+import { bindHudSelects, closeHudSelectMenu } from './ui/hud-select.js?v=1';
+import { pageMeta } from './features/index.js?v=49';
 
 // 页面导入（路径与 index.html 菜单树 / features 目录对齐）
-import { getUserSession, initUserMenu, startTokenHeartbeat, updateUserSession } from './features/login/index.js?v=15';
+import { getUserSession, initUserMenu, startTokenHeartbeat, updateUserSession } from './features/login/index.js?v=18';
 import {
     applySidebarPermissions,
     canAccessPage,
     fallbackPageName,
-} from './permissions.js?v=12';
-import { bootLlmAssistant } from './llm-assistant/boot.js?v=37';
-import { pageConfig as dashboardPage }      from './features/dashboard/index.js?v=12';
-import { pageConfig as stampingUploadPage } from './features/stamping/process/upload/index.js?v=64';
-import { pageConfig as stampingPartsPage }  from './features/stamping/process/parts/index.js?v=67';
-import { pageConfig as stampingDieUploadPage } from './features/stamping/die/upload/index.js?v=17';
-import { pageConfig as stampingDieListPage } from './features/stamping/die/list/index.js?v=30';
-import { pageConfig as stampingDieUnitPricePage } from './features/stamping/die/unit-price/index.js?v=17';
-import { pageConfig as stampingDieFeeCalcPage } from './features/stamping/die-fee/calc/index.js?v=21';
-import { pageConfig as stampingDieFeePage } from './features/stamping/die-fee/list/index.js?v=28';
-import { pageConfig as stampingGaugeFeeUploadPage } from './features/stamping/gauge-fee/upload/index.js?v=8';
-import { pageConfig as stampingGaugeFeePage } from './features/stamping/gauge-fee/list/index.js?v=24';
-import { pageConfig as stampingTonnagePage } from './features/stamping/tonnage/list/index.js?v=36';
-import { pageConfig as stampingTonnageUploadPage } from './features/stamping/tonnage/upload/index.js?v=12';
-import { pageConfig as stampingProcessFeeCalcPage } from './features/stamping/process-fee/calc/index.js?v=45';
-import { pageConfig as stampingProcessFeePage } from './features/stamping/process-fee/list/index.js?v=67';
-import { pageConfig as steelPriceListPage }   from './features/costing/steel-price/list/index.js?v=72';
-import { pageConfig as steelPriceCalcPage }    from './features/costing/steel-price/calc/index.js?v=28';
-import { pageConfig as stampingPartCostCalcPage } from './features/costing/stamping-part-cost/calc/index.js?v=28';
-import { pageConfig as stampingPartCostPage } from './features/costing/stamping-part-cost/list/index.js?v=90';
-import { pageConfig as assemblyCostCalcPage } from './features/costing/assembly-cost/calc/index.js?v=16';
-import { pageConfig as assemblyCostPage } from './features/costing/assembly-cost/list/index.js?v=52';
-import { pageConfig as procurementContractReportPage } from './features/costing/procurement-contract-report/index.js?v=41';
-import { pageConfig as steelPricePolicyUploadPage } from './features/yishiyiyi/policy/upload/index.js?v=42';
-import { pageConfig as steelPricePolicyDownloadPage } from './features/yishiyiyi/policy/list/index.js?v=50';
-import { pageConfig as basePriceUploadPage } from './features/yishiyiyi/base-price/upload/index.js?v=45';
-import { pageConfig as basePriceDownloadPage } from './features/yishiyiyi/base-price/list/index.js?v=44';
-import { pageConfig as winningThicknessDownloadPage } from './features/yishiyiyi/winning-thickness/list/index.js?v=22';
-import { pageConfig as steelGradeCategoryPage } from './features/masterdata/steel-grade-category/index.js?v=20';
-import { pageConfig as scrapPricePage } from './features/yishiyiyi/scrap-price/index.js?v=24';
-import { pageConfig as bomStructurePage }  from './features/bom/material/structure/index.js?v=14';
-import { pageConfig as bomWhereUsedPage } from './features/bom/material/where-used/index.js?v=14';
-import { pageConfig as bomVizPage }        from './features/bom/material/viz/index.js?v=34';
-import { pageConfig as bomUploadPage }     from './features/bom/material/upload/index.js?v=17';
-import { pageConfig as bomMaterialListPage } from './features/bom/material/list/index.js?v=15';
-import { pageConfig as bomWeldingUnitPriceUploadPage } from './features/bom/welding-unit-price/upload/index.js?v=16';
-import { pageConfig as bomWeldingUnitPricePage } from './features/bom/welding-unit-price/list/index.js?v=28';
-import { pageConfig as bomAnnualPartPriceUploadPage } from './features/bom/annual-part-price/upload/index.js?v=18';
-import { pageConfig as bomAnnualPartPricePage } from './features/bom/annual-part-price/list/index.js?v=28';
-import { pageConfig as bomPackagingTransportFeeUploadPage } from './features/bom/packaging-transport-fee/upload/index.js?v=10';
-import { pageConfig as bomPackagingTransportFeePage } from './features/bom/packaging-transport-fee/list/index.js?v=21';
-import { pageConfig as bomProcurementObjectGeneratePage } from './features/bom/procurement-object/generate/index.js?v=14';
-import { pageConfig as bomProcurementObjectSupplierUploadPage } from './features/bom/procurement-object/supplier-upload/index.js?v=20';
-import { pageConfig as bomProcurementObjectListPage } from './features/bom/procurement-object/list/index.js?v=44';
-import { pageConfig as bomWeldingProcessBreakdownGeneratePage } from './features/bom/welding-process-breakdown/generate/index.js?v=11';
-import { pageConfig as bomWeldingProcessBreakdownListPage } from './features/bom/welding-process-breakdown/list/index.js?v=54';
-import { pageConfig as bomWeldingFeeCalcPage } from './features/bom/welding-fee/calc/index.js?v=16';
-import { pageConfig as bomWeldingFeeListPage } from './features/bom/welding-fee/list/index.js?v=25';
-import { pageConfig as engineeringChangeUploadPage } from './features/engineering-change/upload/index.js?v=15';
-import { pageConfig as engineeringChangeListPage } from './features/engineering-change/list/index.js?v=27';
-import { pageConfig as costingPage }        from './features/costing/engine/index.js?v=42';
-import { pageConfig as fileTracePage }       from './features/file-trace/index.js?v=17';
-import { pageConfig as locationPage }        from './features/masterdata/location/index.js?v=16';
-import { pageConfig as vehicleModelUploadPage } from './features/masterdata/vehicle-model/upload/index.js?v=7';
-import { pageConfig as vehicleModelListPage } from './features/masterdata/vehicle-model/list/index.js?v=16';
-import { pageConfig as supplierUploadPage } from './features/masterdata/supplier/upload/index.js?v=7';
-import { pageConfig as supplierListPage } from './features/masterdata/supplier/list/index.js?v=19';
-import { pageConfig as settingsPage }       from './features/settings/system/index.js?v=25';
-import { pageConfig as settingsUsersPage }  from './features/settings/users/index.js?v=19';
-import { pageConfig as settingsLogsPage }   from './features/settings/logs/index.js?v=18';
-import { pageConfig as settingsProfilePage } from './features/settings/profile/index.js?v=9';
+} from './core/permissions.js?v=15';
+import { bootLlmAssistant } from './llm-assistant/boot.js?v=40';
+import { pageConfig as dashboardPage }      from './features/dashboard/index.js?v=19';
+import { pageConfig as stampingUploadPage } from './features/stamping/process/upload/index.js?v=69';
+import { pageConfig as stampingPartsPage }  from './features/stamping/process/parts/index.js?v=78';
+import { pageConfig as stampingDieUploadPage } from './features/stamping/die/upload/index.js?v=23';
+import { pageConfig as stampingDieListPage } from './features/stamping/die/list/index.js?v=39';
+import { pageConfig as stampingDieUnitPricePage } from './features/stamping/die/unit-price/index.js?v=26';
+import { pageConfig as stampingDieFeeCalcPage } from './features/stamping/die-fee/calc/index.js?v=26';
+import { pageConfig as stampingDieFeePage } from './features/stamping/die-fee/list/index.js?v=38';
+import { pageConfig as stampingGaugeFeeUploadPage } from './features/stamping/gauge-fee/upload/index.js?v=14';
+import { pageConfig as stampingGaugeFeePage } from './features/stamping/gauge-fee/list/index.js?v=34';
+import { pageConfig as stampingTonnagePage } from './features/stamping/tonnage/list/index.js?v=45';
+import { pageConfig as stampingTonnageUploadPage } from './features/stamping/tonnage/upload/index.js?v=18';
+import { pageConfig as stampingProcessFeeCalcPage } from './features/stamping/process-fee/calc/index.js?v=51';
+import { pageConfig as stampingProcessFeePage } from './features/stamping/process-fee/list/index.js?v=77';
+import { pageConfig as steelPriceListPage }   from './features/costing/steel-price/list/index.js?v=83';
+import { pageConfig as steelPriceCalcPage }    from './features/costing/steel-price/calc/index.js?v=33';
+import { pageConfig as stampingPartCostCalcPage } from './features/costing/stamping-part-cost/calc/index.js?v=34';
+import { pageConfig as stampingPartCostPage } from './features/costing/stamping-part-cost/list/index.js?v=100';
+import { pageConfig as assemblyCostCalcPage } from './features/costing/assembly-cost/calc/index.js?v=21';
+import { pageConfig as assemblyCostPage } from './features/costing/assembly-cost/list/index.js?v=61';
+import { pageConfig as procurementContractReportPage } from './features/costing/procurement-contract-report/index.js?v=46';
+import { pageConfig as steelPricePolicyUploadPage } from './features/yishiyiyi/policy/upload/index.js?v=46';
+import { pageConfig as steelPricePolicyDownloadPage } from './features/yishiyiyi/policy/list/index.js?v=57';
+import { pageConfig as basePriceUploadPage } from './features/yishiyiyi/base-price/upload/index.js?v=49';
+import { pageConfig as basePriceDownloadPage } from './features/yishiyiyi/base-price/list/index.js?v=51';
+import { pageConfig as winningThicknessDownloadPage } from './features/yishiyiyi/winning-thickness/list/index.js?v=28';
+import { pageConfig as steelGradeCategoryPage } from './features/masterdata/steel-grade-category/index.js?v=28';
+import { pageConfig as scrapPricePage } from './features/yishiyiyi/scrap-price/index.js?v=29';
+import { pageConfig as bomStructurePage }  from './features/bom/material/structure/index.js?v=19';
+import { pageConfig as bomWhereUsedPage } from './features/bom/material/where-used/index.js?v=22';
+import { pageConfig as bomVizPage }        from './features/bom/material/viz/index.js?v=38';
+import { pageConfig as bomUploadPage }     from './features/bom/material/upload/index.js?v=22';
+import { pageConfig as bomMaterialListPage } from './features/bom/material/list/index.js?v=24';
+import { pageConfig as bomWeldingUnitPriceUploadPage } from './features/bom/welding-unit-price/upload/index.js?v=23';
+import { pageConfig as bomWeldingUnitPricePage } from './features/bom/welding-unit-price/list/index.js?v=37';
+import { pageConfig as bomAnnualPartPriceUploadPage } from './features/bom/annual-part-price/upload/index.js?v=24';
+import { pageConfig as bomAnnualPartPricePage } from './features/bom/annual-part-price/list/index.js?v=38';
+import { pageConfig as bomPackagingTransportFeeUploadPage } from './features/bom/packaging-transport-fee/upload/index.js?v=16';
+import { pageConfig as bomPackagingTransportFeePage } from './features/bom/packaging-transport-fee/list/index.js?v=30';
+import { pageConfig as bomProcurementObjectGeneratePage } from './features/bom/procurement-object/generate/index.js?v=20';
+import { pageConfig as bomProcurementObjectSupplierUploadPage } from './features/bom/procurement-object/supplier-upload/index.js?v=26';
+import { pageConfig as bomProcurementObjectListPage } from './features/bom/procurement-object/list/index.js?v=55';
+import { pageConfig as bomWeldingProcessBreakdownGeneratePage } from './features/bom/welding-process-breakdown/generate/index.js?v=17';
+import { pageConfig as bomWeldingProcessBreakdownListPage } from './features/bom/welding-process-breakdown/list/index.js?v=64';
+import { pageConfig as bomWeldingFeeCalcPage } from './features/bom/welding-fee/calc/index.js?v=22';
+import { pageConfig as bomWeldingFeeListPage } from './features/bom/welding-fee/list/index.js?v=35';
+import { pageConfig as engineeringChangeUploadPage } from './features/engineering-change/upload/index.js?v=21';
+import { pageConfig as engineeringChangeListPage } from './features/engineering-change/list/index.js?v=36';
+import { pageConfig as costingPage }        from './features/costing/engine/index.js?v=47';
+import { pageConfig as fileTracePage }       from './features/file-trace/index.js?v=25';
+import { pageConfig as locationPage }        from './features/masterdata/location/index.js?v=22';
+import { pageConfig as vehicleModelUploadPage } from './features/masterdata/vehicle-model/upload/index.js?v=12';
+import { pageConfig as vehicleModelListPage } from './features/masterdata/vehicle-model/list/index.js?v=24';
+import { pageConfig as supplierUploadPage } from './features/masterdata/supplier/upload/index.js?v=12';
+import { pageConfig as supplierListPage } from './features/masterdata/supplier/list/index.js?v=26';
+import { pageConfig as settingsPage }       from './features/settings/system/index.js?v=28';
+import { pageConfig as settingsUsersPage }  from './features/settings/users/index.js?v=27';
+import { pageConfig as settingsLogsPage }   from './features/settings/logs/index.js?v=23';
+import { pageConfig as settingsProfilePage } from './features/settings/profile/index.js?v=15';
 
 // 未登录禁止进入主应用：不渲染业务页，避免请求 dashboard 等后端
 const hasSession = !!getUserSession();
@@ -245,7 +249,7 @@ function renderBreadcrumb(pageName, meta) {
     const brand = `
         <li>
             <span class="breadcrumb-brand-badge">
-                <span class="w-1.5 h-1.5 rounded-full bg-[#d32f2f] shadow-[0_0_6px_#d32f2f]"></span>
+                <span class="w-1.5 h-1.5 rounded-full bg-brand shadow-[0_0_6px_rgb(var(--brabus-red))]"></span>
                 STAMPING
             </span>
         </li>
@@ -273,7 +277,7 @@ function renderPage(pageName) {
     let targetPage = pageName;
     if (!pages[targetPage]) {
         document.getElementById('pageContent').innerHTML =
-            '<div class="text-center text-[#616161] py-12">页面不存在</div>';
+            '<div class="text-center text-ink-dim py-12">页面不存在</div>';
         return;
     }
 
@@ -287,7 +291,7 @@ function renderPage(pageName) {
             return;
         }
         document.getElementById('pageContent').innerHTML =
-            '<div class="text-center text-[#616161] py-12">无访问权限</div>';
+            '<div class="text-center text-ink-dim py-12">无访问权限</div>';
         return;
     }
 
@@ -301,6 +305,8 @@ function renderPage(pageName) {
             console.error('页面销毁失败:', error);
         }
     }
+
+    closeHudSelectMenu();
 
     const content = document.getElementById('pageContent');
     const title   = document.getElementById('pageTitle');
@@ -321,7 +327,7 @@ function renderPage(pageName) {
     } catch (error) {
         console.error('渲染页面失败:', error);
         currentPageName = null;
-        content.innerHTML = `<div class="p-4 bg-[#0a0a0a] border border-[#2c2c2c] text-[#d32f2f]">加载失败: ${esc(error.message)}</div>`;
+        content.innerHTML = `<div class="p-4 bg-app-deep border border-line text-brand">加载失败: ${esc(error.message)}</div>`;
     }
 }
 
@@ -356,6 +362,8 @@ window.addEventListener('hashchange', function() {
 // Global Menu → Compact Overlay Menu（复用 #sidebar 菜单 DOM）
 document.addEventListener('DOMContentLoaded', function() {
     if (!hasSession) return;
+    bindCurrentRowOnOps(document);
+    bindHudSelects();
 
     const sidebar         = document.getElementById('sidebar');
     const sidebarToggle   = document.getElementById('sidebarToggle');

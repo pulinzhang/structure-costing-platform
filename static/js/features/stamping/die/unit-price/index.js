@@ -5,18 +5,22 @@
 import {
     dieUnitPriceTemplate,
     renderTableRows,
-} from './template.js?v=14';
+} from './template.js?v=24';
+import { bindFilterBar } from '../../../../ui/filter-bar.js?v=3';
 import {
     DEFAULT_PAGE_SIZE,
     bindPagination,
     paintPagination,
     normalizePageSize,
-} from '../../../../page-size.js?v=3';
-import { setSearchBusy } from '../../../../search-busy.js?v=1';
+} from '../../../../ui/page-size.js?v=6';
+import { setSearchBusy } from '../../../../ui/search-busy.js?v=3';
 
 const API_BASE = '/api/stamping/die-unit-prices';
 const STORAGE_KEY = 'dieUnitPricePageSize';
 const DRAWER_ANIMATION_MS = 300;
+
+/** @type {{ paint: () => void, setOpen: (isOpen: boolean) => void, unbind: () => void } | null} */
+let filterBar = null;
 
 const pageState = {
     page: 1,
@@ -93,6 +97,7 @@ async function loadListFilters(resetVehicle = false) {
         data.vehicle_models || [],
         location ? '全部' : '全部'
     );
+    filterBar?.paint();
 }
 
 function fillDatalist(id, values) {
@@ -139,8 +144,8 @@ function buildQueryParams() {
 function setLoading(isLoading) {
     pageState.isLoading = isLoading;
     setSearchBusy('dupListSearchBtn', isLoading);
-    const loading = document.getElementById('dupLoadingState');
-    const empty = document.getElementById('dupEmptyState');
+    const loading = document.getElementById('dupListLoading');
+    const empty = document.getElementById('dupListEmpty');
     const body = document.getElementById('dupTableBody');
     if (loading) loading.classList.toggle('hidden', !isLoading);
     if (isLoading) {
@@ -172,12 +177,12 @@ async function loadData(page = pageState.page) {
 
 function renderList() {
     const body = document.getElementById('dupTableBody');
-    const empty = document.getElementById('dupEmptyState');
-    const totalEl = document.getElementById('dupTotalCount');
+    const empty = document.getElementById('dupListEmpty');
+    const totalEl = document.getElementById('dupListPageInfo');
     if (body) body.innerHTML = renderTableRows(pageState.records);
     empty?.classList.toggle('hidden', pageState.records.length > 0 || pageState.isLoading);
     if (totalEl) totalEl.textContent = `共 ${pageState.total} 条`;
-    paintPagination('dupPaginationBtns', pageState.page, pageState.totalPages);
+    paintPagination('dupListPagination', pageState.page, pageState.totalPages);
 }
 
 async function openCreateDrawer() {
@@ -296,9 +301,28 @@ async function confirmDelete() {
     }
 }
 
+function resetListFilters() {
+    ['dupListLocation', 'dupListVehicle', 'dupListStatus'].forEach((id) => {
+        const el = document.getElementById(id);
+        if (el) el.value = '';
+    });
+    loadListFilters().then(() => loadData(1)).catch(() => loadData(1));
+}
+
 function bindEvents() {
     document.getElementById('dupAddBtn')?.addEventListener('click', () => openCreateDrawer());
-    document.getElementById('dupListSearchBtn')?.addEventListener('click', () => loadData(1));
+    filterBar = bindFilterBar({
+        prefix: 'dupList',
+        capsules: [
+            { capsuleId: 'dupListCapsuleLocation', fieldId: 'dupListLocation', idleLabel: '全部基地' },
+            { capsuleId: 'dupListCapsuleModel', fieldId: 'dupListVehicle', idleLabel: '全部项目' },
+            { capsuleId: 'dupListCapsuleStatus', fieldId: 'dupListStatus', idleLabel: '全部状态' },
+        ],
+        countFieldIds: ['dupListLocation', 'dupListVehicle', 'dupListStatus'],
+        resetId: 'dupListResetBtn',
+        onSearch: () => loadData(1),
+        onReset: resetListFilters,
+    });
     document.getElementById('dupListLocation')?.addEventListener('change', () => {
         loadListFilters(true).then(() => loadData(1)).catch(() => {});
     });
@@ -359,8 +383,8 @@ function init() {
     applyPermissionUi();
     bindEvents();
     bindPagination({
-        selectId: 'dupPageSize',
-        buttonsId: 'dupPaginationBtns',
+        selectId: 'dupListPageSize',
+        buttonsId: 'dupListPagination',
         getSize: () => pageState.pageSize,
         setSize: (size) => {
             pageState.pageSize = size;
@@ -374,4 +398,8 @@ function init() {
 export const pageConfig = {
     render: dieUnitPriceTemplate,
     init,
+    destroy() {
+        filterBar?.unbind();
+        filterBar = null;
+    },
 };

@@ -2,7 +2,7 @@
  * 采购价格 — BRABUS 800 中控交车（协议黑匣）
  */
 
-import { paginationBarHtml } from '../../../page-size.js?v=3';
+import { paginationBarHtml } from '../../../ui/page-size.js?v=6';
 
 const HUD_SHELL_STYLE = 'background:#0D0D11;border:1px solid rgba(255,255,255,0.08);';
 
@@ -18,9 +18,9 @@ const RING_SELECT_IDS = [
 ];
 
 const DRIVE_ACTIVE =
-    'flex-1 h-full text-[10px] rounded-sm bg-[#121218] border border-[#2A2A35] text-[#A1A1A6] font-medium';
+    'flex-1 h-full text-[10px] rounded-sm bg-app-main border border-line-hud text-ink-muted font-medium';
 const DRIVE_IDLE =
-    'flex-1 h-full text-[10px] rounded-sm border border-transparent text-[#555560] hover:text-[#8E8E93] font-medium';
+    'flex-1 h-full text-[10px] rounded-sm border border-transparent text-ink-dim hover:text-ink-muted font-medium';
 
 const IGNITION_STYLE =
     'background-image:linear-gradient(90deg,#380A0E 0%,#1F0507 50%,#380A0E 100%);'
@@ -57,7 +57,7 @@ const PCR_FX_CSS = `@keyframes pcr-laser-sweep{0%{left:-72px;opacity:1}100%{left
     + `@media (prefers-reduced-motion:reduce){.pcr-laser-spot,.pcr-ignition-pulse{animation:none!important}.pcr-bento{transition:none}}`;
 
 function cornerMarks() {
-    const arm = 'pointer-events-none absolute w-1 h-1 border-[#FF1E27]';
+    const arm = 'pointer-events-none absolute w-1 h-1 border-brand-hud';
     return `
         <span class="${arm} top-0 left-0 border-t border-l" aria-hidden="true"></span>
         <span class="${arm} top-0 right-0 border-t border-r" aria-hidden="true"></span>
@@ -67,13 +67,10 @@ function cornerMarks() {
 
 const CHIP_FACE = 'pcr-chip flex items-center gap-1 rounded px-2 h-7 shrink-0';
 const CHIP_TRIGGER =
-    'pcr-chip-trigger min-w-0 truncate text-left text-[11px] font-medium bg-transparent border-0 p-0 cursor-pointer focus:outline-none text-[#8E8E93] disabled:opacity-40';
+    'pcr-chip-trigger min-w-0 truncate text-left text-[11px] font-medium bg-transparent border-0 p-0 cursor-pointer focus:outline-none text-ink-muted disabled:opacity-40';
 const CHIP_ITEM =
-    'pcr-chip-item block w-full text-left px-2.5 py-1.5 text-[11px] text-[#C8C8D0] bg-transparent';
-const PCR_CHIP_MENU_CSS = `#pcrChipMenu [role="option"][aria-selected="true"]{background-color:#FF1E27;color:#fff}`
-    + `#pcrChipMenu:hover [role="option"][aria-selected="true"]:not(:hover){background-color:transparent;color:#C8C8D0}`
-    + `#pcrChipMenu [role="option"]:hover{background-color:#FF1E27;color:#fff}`;
-const CHIP_CHEVRON = `<svg class="w-3 h-3 text-[#555555] shrink-0 pointer-events-none" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path></svg>`;
+    'pcr-chip-item block w-full text-left px-2.5 py-1.5 text-[11px] bg-transparent';
+const CHIP_CHEVRON = `<svg class="w-3 h-3 text-ink-faint shrink-0 pointer-events-none" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M19 9l-7 7-7-7"></path></svg>`;
 
 export function procurementContractReportTemplate() {
     return `
@@ -93,7 +90,7 @@ export function procurementContractReportTemplate() {
                         <span id="pcrSupplierFilterWrap">${ringChip('pcrSupplierFilter', '供应商', 'max-w-[14rem]')}</span>
                     </div>
                     <button id="pcrResetBtn" type="button"
-                            class="shrink-0 inline-flex items-center gap-1 px-2 h-7 text-[11px] text-[#666666] hover:text-white">
+                            class="shrink-0 inline-flex items-center gap-1 px-2 h-7 text-[11px] text-ink-muted hover:text-ink">
                         ${window.svgIcon('refresh', 'w-3 h-3')}
                         重置
                     </button>
@@ -108,7 +105,7 @@ export function procurementContractReportTemplate() {
                             <span id="pcrHudVehicleTotal" style="${KPI_NUM_STYLE}">—</span>
                             <span class="pcr-label align-top ml-0.5">元</span>
                         </div>
-                        <div id="pcrHudVehicleTotalHint" class="text-[9px] text-[#666666] truncate leading-none mt-0.5">窗口内各月 · 数量×结算价</div>
+                        <div id="pcrHudVehicleTotalHint" class="text-[9px] text-ink-muted truncate leading-none mt-0.5">窗口内各月 · 数量×结算价</div>
                     </div>
 
                     <div class="col-span-4 grid grid-cols-2 gap-2">
@@ -122,7 +119,7 @@ export function procurementContractReportTemplate() {
                                     <span class="pcr-label">种</span>
                                 </div>
                             </div>
-                            <div class="text-[9px] text-[#666666] truncate leading-none mt-0.5">未出结算价 <span id="pcrHudMissing" class="pcr-num" style="${MECH_NUM_STYLE}">—</span></div>
+                            <div class="text-[9px] text-ink-muted truncate leading-none mt-0.5">未出结算价 <span id="pcrHudMissing" class="pcr-num" style="${MECH_NUM_STYLE}">—</span></div>
                         </div>
                         <div id="pcrHudSupplierCard" class="pcr-bento rounded min-w-0 flex flex-col justify-center"
                              style="${BENTO_H}">
@@ -135,48 +132,48 @@ export function procurementContractReportTemplate() {
                     </div>
 
                     <div class="col-span-4 rounded flex flex-col justify-between min-w-0"
-                         style="${BENTO_H};background:#121218;border:1px solid rgba(255,255,255,.08)">
-                        <div class="flex w-full h-6 bg-[#030305] border pcr-hairline rounded p-0.5" role="group" aria-label="价目视图">
+                         style="${BENTO_H};border:1px solid rgba(255,255,255,.08)">
+                        <div class="flex w-full h-6 bg-app-deep border pcr-hairline rounded p-0.5" role="group" aria-label="价目视图">
                             <button id="pcrViewProcurementBtn" type="button" class="${DRIVE_ACTIVE}">采购对象</button>
                             <button id="pcrViewAssemblyBtn" type="button" class="${DRIVE_IDLE}">总成</button>
                         </div>
                         <button id="pcrExportBtn" type="button"
                                 style="${IGNITION_STYLE}"
-                                class="pcr-export relative w-full h-8 inline-flex items-center justify-center gap-2 border border-[#FF1E27] [border-top-color:rgba(255,255,255,0.35)] text-[#FF1E27] text-[12px] font-black tracking-widest uppercase rounded active:scale-[0.99] transition-all"
+                                class="pcr-export relative w-full h-8 inline-flex items-center justify-center gap-2 border border-brand-hud [border-top-color:rgba(255,255,255,0.35)] text-brand-hud text-[12px] font-black tracking-widest uppercase rounded active:scale-[0.99] transition-all"
                                 title="导出《批量零部件价格协议》（不分页、无水印）">
                             ${cornerMarks()}
-                            <span class="pcr-ignition-pulse w-2 h-2 rounded-full bg-[#FF1E27] shrink-0 shadow-[0_0_10px_#FF1E27]"></span>
-                            <span style="text-shadow:0 0 6px rgba(255,30,39,0.8)">导出协议</span>
+                            <span class="pcr-ignition-pulse w-2 h-2 rounded-full bg-brand-hud shrink-0 shadow-[0_0_10px_#FF1E27]"></span>
+                            <span>导出协议</span>
                         </button>
                     </div>
                 </div>
             </div>
 
-            <div class="overflow-hidden w-full max-w-full" style="background:#0D0D11;border:1px solid rgba(255,255,255,.08)">
+            <div class="overflow-hidden w-full max-w-full" style="border:1px solid rgba(255,255,255,.08)">
                 <div class="flex items-center gap-2 h-8 px-3 border-b pcr-hairline">
-                    <span class="pointer-events-none text-[#666666] shrink-0">
+                    <span class="pointer-events-none text-ink-muted shrink-0">
                         ${window.svgIcon('search', 'w-3 h-3')}
                     </span>
                     <input id="pcrPartFilter" type="text" maxlength="100" placeholder="零件号 / 名称"
                            title="打开即加载最近一次核价范围。模糊匹配零件号或名称。" aria-label="零件号或名称"
-                           class="h-7 w-56 max-w-[40%] min-w-0 bg-transparent text-[11px] text-[#C8C8D0] placeholder:text-[#666666] focus:outline-none">
-                    <span id="pcrIdentityHint" class="hidden sm:inline text-[9px] text-[#666666] truncate min-w-0 flex-1 text-right">${pcrIdentityHintHtml(false)}</span>
+                           class="h-7 w-56 max-w-[40%] min-w-0 bg-transparent text-[11px] text-ink-muted placeholder:text-ink-muted focus:outline-none">
+                    <span id="pcrIdentityHint" class="hidden sm:inline text-[9px] text-ink-muted truncate min-w-0 flex-1 text-right">${pcrIdentityHintHtml(false)}</span>
                 </div>
-                <div id="pcrQaBanner" class="hidden px-5 py-2 border-b border-[#FF1E27]/30 bg-[#1A080A] text-[11px] text-[#FF1E27] font-mono"></div>
+                <div id="pcrQaBanner" class="hidden px-5 py-2 border-b border-brand-hud/30 bg-brand-hud/10 text-[11px] text-brand-hud font-mono"></div>
 
                 <div class="relative">
-                    <div id="pcrLoading" class="hidden absolute inset-0 z-10 flex items-center justify-center bg-[#0A0A0C]/70">
-                        <div class="w-6 h-6 border-2 border-[#FF1E27] border-t-transparent rounded-full animate-spin"></div>
+                    <div id="pcrLoading" class="hidden absolute inset-0 z-10 flex items-center justify-center bg-app-hud/70">
+                        <div class="w-6 h-6 border-2 border-brand-hud border-t-transparent rounded-full animate-spin"></div>
                     </div>
                     <div class="overflow-x-auto brabus-bg-grid pr-4">
                         <table id="pcrTable" class="w-full table-fixed text-left border-collapse bg-transparent tabular-nums"
                                style="min-width: 1100px;">
                             <colgroup id="pcrColgroup"></colgroup>
-                            <thead id="pcrTableHead" class="text-[9px] text-[#666666] uppercase tracking-wider"></thead>
+                            <thead id="pcrTableHead" class="text-[9px] text-ink-muted uppercase tracking-wider"></thead>
                             <tbody id="pcrTableBody"></tbody>
                         </table>
                     </div>
-                    <div id="pcrEmpty" class="hidden px-5 py-10 text-center text-[12px] text-[#555555] font-mono">
+                    <div id="pcrEmpty" class="hidden px-5 py-10 text-center text-[12px] text-ink-faint font-mono">
                         <div id="pcrEmptyText">正在加载…</div>
                     </div>
                 </div>
@@ -185,7 +182,7 @@ export function procurementContractReportTemplate() {
                     infoId: 'pcrPageInfo',
                     selectId: 'pcrPageSize',
                     buttonsId: 'pcrPagination',
-                    wrapperClass: 'px-5 py-2.5 border-t border-[#14141A] flex items-center justify-between gap-3',
+                    wrapperClass: 'px-5 py-2.5 border-t border-line-subtle flex items-center justify-between gap-3',
                 })}
             </div>
         </div>
@@ -201,7 +198,7 @@ const PERIOD_SELECT_IDS = new Set([
 
 function ringChip(id, label, triggerClass = 'max-w-[10rem]') {
     return `<div class="${CHIP_FACE}" data-pcr-ring="${id}">
-        <span class="text-[#666666] text-[10px] shrink-0">${label}</span>
+        <span class="text-ink-muted text-[10px] shrink-0">${label}</span>
         <select id="${id}" class="sr-only" tabindex="-1" aria-hidden="true">
             <option value="">请选择</option>
         </select>
@@ -215,7 +212,7 @@ function ringChip(id, label, triggerClass = 'max-w-[10rem]') {
 
 function ringPeriodChip(yearId, monthId, label) {
     return `<div class="${CHIP_FACE}" data-pcr-period="${yearId}">
-        <span class="text-[#666666] text-[10px] shrink-0">${label}</span>
+        <span class="text-ink-muted text-[10px] shrink-0">${label}</span>
         <span data-pcr-ring="${yearId}" class="inline-flex items-center gap-0.5">
             <select id="${yearId}" class="sr-only" tabindex="-1" aria-hidden="true">
                 <option value="">年</option>
@@ -242,7 +239,7 @@ function pcrIdentityHintHtml(isAssembly) {
     if (isAssembly) {
         return '打开即加载最近一次核价的基地 / 项目 / 月份（版本默认全部）。总成整包一份协议，不筛供应商。导出须选全部版本。';
     }
-    return '打开即加载最近一次核价的基地 / 项目 / 月份（版本默认全部）。采购对象导出<span class="text-[#FF1E27]/70">必须选定供应商</span>，且须选全部版本。';
+    return '打开即加载最近一次核价的基地 / 项目 / 月份（版本默认全部）。采购对象导出<span class="text-brand-hud/70">必须选定供应商</span>，且须选全部版本。';
 }
 
 export function updateRingIndicators() {
@@ -253,14 +250,14 @@ export function updateRingIndicators() {
         const isSet = Boolean((select.value || '').trim());
         syncPcrChipFace(id);
         if (PERIOD_SELECT_IDS.has(id)) return;
-        wrap.classList.remove('border-[#FF1E27]/40', 'border-[#22222E]');
-        wrap.classList.add(isSet ? 'border-[#FF1E27]/40' : 'border-[#22222E]');
+        wrap.classList.remove('border-brand-hud/40', 'border-line-subtle');
+        wrap.classList.add(isSet ? 'border-brand-hud/40' : 'border-line-subtle');
     });
     document.querySelectorAll('[data-pcr-period]').forEach((wrap) => {
         const selects = wrap.querySelectorAll('select');
         const isSet = Array.from(selects).some((el) => Boolean((el.value || '').trim()));
-        wrap.classList.remove('border-[#FF1E27]/40', 'border-[#22222E]');
-        wrap.classList.add(isSet ? 'border-[#FF1E27]/40' : 'border-[#22222E]');
+        wrap.classList.remove('border-brand-hud/40', 'border-line-subtle');
+        wrap.classList.add(isSet ? 'border-brand-hud/40' : 'border-line-subtle');
     });
 }
 
@@ -271,8 +268,8 @@ export function syncPcrChipFace(id) {
     const opt = select.selectedOptions[0];
     const label = trigger.querySelector('[data-pcr-chip-label]') || trigger;
     label.textContent = opt ? opt.textContent : '请选择';
-    trigger.classList.remove('text-white', 'text-[#8E8E93]');
-    trigger.classList.add((select.value || '').trim() ? 'text-white' : 'text-[#8E8E93]');
+    trigger.classList.remove('text-white', 'text-ink-muted');
+    trigger.classList.add((select.value || '').trim() ? 'text-white' : 'text-ink-muted');
 }
 
 let chipMenuEl = null;
@@ -282,16 +279,9 @@ function ensureChipMenu() {
     if (chipMenuEl) return chipMenuEl;
     chipMenuEl = document.createElement('div');
     chipMenuEl.id = 'pcrChipMenu';
-    chipMenuEl.className = 'hidden fixed z-[70] max-h-56 overflow-y-auto bg-[#101018] border border-[#22222E] rounded py-1';
-    chipMenuEl.style.boxShadow = '0 8px 24px rgba(0,0,0,0.55)';
+    chipMenuEl.className = 'hud-select-menu hidden fixed z-[70] max-h-56 overflow-y-auto py-1';
     chipMenuEl.setAttribute('role', 'listbox');
     document.body.appendChild(chipMenuEl);
-    if (!document.getElementById('pcrChipMenuSkin')) {
-        const skin = document.createElement('style');
-        skin.id = 'pcrChipMenuSkin';
-        skin.textContent = PCR_CHIP_MENU_CSS;
-        document.head.appendChild(skin);
-    }
     chipMenuEl.addEventListener('click', (event) => {
         const item = event.target.closest('[data-pcr-chip-value]');
         if (!item || !openChipId) return;
@@ -384,7 +374,6 @@ export function unbindPcrChipMenus() {
     window.removeEventListener('scroll', closePcrChipMenu, true);
     chipMenuEl?.remove();
     chipMenuEl = null;
-    document.getElementById('pcrChipMenuSkin')?.remove();
 }
 
 export function updatePcrViewButtons(view) {
@@ -518,7 +507,7 @@ export function renderPcrTableHead(months, showSupplier = true) {
         colgroup.innerHTML = widths.map((width) => `<col style="width:${width}">`).join('');
     }
 
-    const th = 'px-2 py-2 font-semibold text-center border-b pcr-hairline text-[#666666]';
+    const th = 'px-2 py-2 font-semibold text-center border-b pcr-hairline text-ink-muted';
     const monthHeaders = monthCols.map((col) => {
         const label = String(col.header || '').replace(/\n/g, ' ');
         return `<th class="${th} text-right">${esc(label)}</th>`;
@@ -548,11 +537,11 @@ export function renderPcrTableHead(months, showSupplier = true) {
 function supplierBadgeCell(row) {
     const full = (row.supplier_name || '').trim();
     if (!full) {
-        return '<td class="px-2 py-2 text-[#555555]">—</td>';
+        return '<td class="px-2 py-2 text-ink-faint">—</td>';
     }
     const shortName = (row.supplier_abbreviation || '').trim() || full;
     return `<td class="px-1.5 py-2">
-        <span class="inline-block max-w-full truncate px-1.5 py-0.5 text-[10px] text-[#8E8E93] bg-[#101018] border border-[#22222E] rounded"
+        <span class="inline-block max-w-full truncate px-1.5 py-0.5 text-[10px] text-ink-muted bg-app-hud border border-line-subtle rounded"
               title="${esc(full)}">${esc(shortName)}</span>
     </td>`;
 }
@@ -570,8 +559,8 @@ function amountCell(value) {
     const text = cellValue(value);
     const isMissing = text === '/';
     const cls = isMissing
-        ? 'px-2 py-2 text-center text-[#555555]'
-        : 'px-2 py-2 text-right text-[#C8C8D0]';
+        ? 'px-2 py-2 text-center text-ink-faint'
+        : 'px-2 py-2 text-right text-ink-muted';
     return `<td class="${cls}">${isMissing ? esc(text) : mechNum(text)}</td>`;
 }
 
@@ -583,7 +572,7 @@ function moneyCell(value) {
         ? formatDecimalFixed(value, 2, { allowNegative: true })
         : null;
     if (fixed == null) return amountCell('/');
-    return `<td class="px-2 py-2 text-right text-[#C8C8D0]">${mechNum(fixed)}</td>`;
+    return `<td class="px-2 py-2 text-right text-ink-muted">${mechNum(fixed)}</td>`;
 }
 
 function restoreHit(row, year, month) {
@@ -596,34 +585,34 @@ function restoreHit(row, year, month) {
             data-part-number="${esc(partNumber)}"
             title="计算过程"
             aria-label="计算过程"></button>
-        <span class="pcr-amt-mark pointer-events-none absolute right-0 bottom-0 w-1.5 h-1.5 border-r border-b border-[#FF1E27]"
+        <span class="pcr-amt-mark pointer-events-none absolute right-0 bottom-0 w-1.5 h-1.5 border-r border-b border-brand-hud"
               aria-hidden="true"></span>`;
 }
 
 function monthAmountCell(value, row, year, month) {
     const hit = restoreHit(row, year, month);
     if (value == null || value === '' || value === '/') {
-        return `<td class="pcr-amt-cell relative px-2 py-2 text-center text-[#555555]">${esc('/')}${hit}</td>`;
+        return `<td class="pcr-amt-cell relative px-2 py-2 text-center text-ink-faint">${esc('/')}${hit}</td>`;
     }
     const fixed = typeof formatDecimalFixed === 'function'
         ? formatDecimalFixed(value, 2, { allowNegative: true })
         : null;
     if (fixed == null) {
-        return `<td class="pcr-amt-cell relative px-2 py-2 text-center text-[#555555]">${esc('/')}${hit}</td>`;
+        return `<td class="pcr-amt-cell relative px-2 py-2 text-center text-ink-faint">${esc('/')}${hit}</td>`;
     }
-    return `<td class="pcr-amt-cell relative px-2 py-2 text-right text-[#C8C8D0]">${mechNum(fixed)}${hit}</td>`;
+    return `<td class="pcr-amt-cell relative px-2 py-2 text-right text-ink-muted">${mechNum(fixed)}${hit}</td>`;
 }
 
 function toolingFeeCell(value) {
     if (value == null || value === '' || value === '/') {
-        return `<td class="px-2 py-2 pr-4 text-center text-[#555555]">/</td>`;
+        return `<td class="px-2 py-2 pr-4 text-center text-ink-faint">/</td>`;
     }
     const fixed = typeof formatDecimalFixed === 'function'
         ? formatDecimalFixed(value, 2, { allowNegative: true })
         : null;
-    if (fixed == null) return `<td class="px-2 py-2 pr-4 text-center text-[#555555]">/</td>`;
+    if (fixed == null) return `<td class="px-2 py-2 pr-4 text-center text-ink-faint">/</td>`;
     const text = typeof withThousandsSep === 'function' ? withThousandsSep(fixed) : fixed;
-    return `<td class="px-2 py-2 pr-4 text-right text-[#C8C8D0]">${mechNum(text)}</td>`;
+    return `<td class="px-2 py-2 pr-4 text-right text-ink-muted">${mechNum(text)}</td>`;
 }
 
 export function renderPcrRows(rows, months, showSupplier = true) {
@@ -648,23 +637,23 @@ export function renderPcrRows(rows, months, showSupplier = true) {
                 row.month_amounts?.[0]?.month,
             );
         return `
-        <tr class="group relative text-[11px] border-b border-[#141418] hover:bg-[#161620] transition-colors duration-100">
-            <td class="px-2 py-2 text-center text-[#F0F0F2] relative">
-                <div class="absolute left-0 top-0 bottom-0 w-[2px] bg-[#FF1E27] opacity-0 group-hover:opacity-70 transition-opacity"></div>
+        <tr class="group relative text-[11px] border-b border-line-subtle hover:bg-app-rowhover transition-colors duration-100">
+            <td class="px-2 py-2 text-center text-ink relative">
+                <div class="absolute left-0 top-0 bottom-0 w-[2px] bg-brand-hud opacity-0 group-hover:opacity-70 transition-opacity"></div>
                 ${mechNum(row.seq_label || '')}
             </td>
-            <td class="px-2 py-2 text-[#8E8E93] truncate" title="${esc(row.internal_number || '')}">${esc(row.internal_number || '—')}</td>
-            <td class="px-2 py-2 text-[#F0F0F2] truncate" title="${esc(row.part_number || '')}">${esc(row.part_number || '')}</td>
-            <td class="px-2 py-2 text-[#8E8E93] truncate" title="${esc(row.part_name || '')}">${esc(row.part_name || '—')}</td>
+            <td class="px-2 py-2 text-ink-muted truncate" title="${esc(row.internal_number || '')}">${esc(row.internal_number || '—')}</td>
+            <td class="px-2 py-2 text-ink truncate" title="${esc(row.part_number || '')}">${esc(row.part_number || '')}</td>
+            <td class="px-2 py-2 text-ink-muted truncate" title="${esc(row.part_name || '')}">${esc(row.part_name || '—')}</td>
             ${showSupplier ? supplierBadgeCell(row) : ''}
-            <td class="px-2 py-2 text-right text-[#C8C8D0]">${mechNum(cellValue(row.vehicle_qty))}</td>
-            <td class="px-2 py-2 text-center text-[#8E8E93]">${esc(row.qty_unit || '件')}</td>
+            <td class="px-2 py-2 text-right text-ink-muted">${mechNum(cellValue(row.vehicle_qty))}</td>
+            <td class="px-2 py-2 text-center text-ink-muted">${esc(row.qty_unit || '件')}</td>
             ${monthHtml}
-            <td class="px-2 py-2 text-center text-[#8E8E93]">${esc(row.pay_tooling_separately || 'N')}</td>
+            <td class="px-2 py-2 text-center text-ink-muted">${esc(row.pay_tooling_separately || 'N')}</td>
             ${moneyCell(row.tooling_alloc_price)}
             ${toolingFeeCell(row.tooling_fee)}
             ${amountCell(row.tooling_alloc_qty)}
-            <td class="px-2 py-2 text-center text-[#555555]">—</td>
+            <td class="px-2 py-2 text-center text-ink-faint">—</td>
         </tr>`;
     }).join('');
 }

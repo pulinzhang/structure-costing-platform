@@ -7,16 +7,16 @@ import {
     processFeeListTemplate,
     renderFeeRows,
     updateFeeHud,
-    updateFeeFilterCapsules,
-} from './template.js?v=56';
-import { bindMoreMenu } from '../../../../more-menu.js?v=1';
-import { shortPartNumber } from '../../../../part-identity.js?v=3';
+} from './template.js?v=66';
+import { bindMoreMenu } from '../../../../ui/more-menu.js?v=5';
+import { bindFilterBar } from '../../../../ui/filter-bar.js?v=3';
+import { shortPartNumber } from '../../../../domain/part-identity.js?v=5';
 import {
     DEFAULT_PAGE_SIZE,
     bindPagination,
     paintPagination,
-} from '../../../../page-size.js?v=3';
-import { setSearchBusy } from '../../../../search-busy.js?v=1';
+} from '../../../../ui/page-size.js?v=6';
+import { setSearchBusy } from '../../../../ui/search-busy.js?v=3';
 
 const API_BASE = '/api/stamping/process-fees';
 const DRAWER_ANIMATION_MS = 300;
@@ -25,6 +25,18 @@ const SCOPE_REQUIRED_MESSAGE = '须选定年度、基地、项目。';
 
 /** @type {{ setOpen: (isOpen: boolean) => void, close: () => void, unbind: () => void } | null} */
 let moreMenu = null;
+/** @type {{ paint: () => void, setOpen: (isOpen: boolean) => void, unbind: () => void } | null} */
+let filterBar = null;
+
+const FEE_FILTER_FIELD_IDS = [
+    'feeYearFilter',
+    'feeLocationFilter',
+    'feeVehicleFilter',
+    'feeVersionFilter',
+    'feeSupplierFilter',
+    'feeAuditStatusFilter',
+    'feePartNumberFilter',
+];
 
 const TONNAGE_SOURCE_LABEL = {
     self: '自有',
@@ -39,7 +51,6 @@ const feeState = {
     pageSize: DEFAULT_PAGE_SIZE,
     totalPages: 1,
     canUpdate: true,
-    advancedOpen: false,
     onlyZero: false,
     zeroCount: 0,
     batchAuditSubmitting: false,
@@ -87,7 +98,7 @@ function init() {
     applyHashFilters();
     fillAuditStatusOptions();
     loadFilterOptions().then(() => {
-        updateFeeFilterCapsules();
+        filterBar?.paint();
         loadData(1);
     });
 }
@@ -140,9 +151,6 @@ function applyHashFilters() {
         const versionEl = document.getElementById('feeVersionFilter');
         if (versionEl) versionEl.dataset.pending = version;
     }
-    if (year || location || supplier || vehicle || version) {
-        setAdvancedOpen(true);
-    }
 }
 
 function fillAuditStatusOptions() {
@@ -156,18 +164,30 @@ function fillAuditStatusOptions() {
     `;
 }
 
-function setAdvancedOpen(isOpen) {
-    feeState.advancedOpen = isOpen;
-    document.getElementById('feeAdvancedFilterPanel')?.classList.toggle('hidden', !isOpen);
-    const label = document.getElementById('feeAdvancedFilterLabel');
-    if (label) label.textContent = isOpen ? '收起高级筛选' : '展开高级筛选';
-}
-
 function bindEvents() {
-    document.getElementById('feeSearchBtn')?.addEventListener('click', () => loadData(1));
-    document.getElementById('feeResetBtn')?.addEventListener('click', resetFilters);
-    document.getElementById('feeToggleAdvancedFilter')?.addEventListener('click', () => {
-        setAdvancedOpen(!feeState.advancedOpen);
+    filterBar = bindFilterBar({
+        prefix: 'fee',
+        searchId: 'feeSearchBtn',
+        capsules: [
+            {
+                capsuleId: 'feeCapsuleYear',
+                fieldId: 'feeYearFilter',
+                idleLabel: '全部年度',
+                display: () => {
+                    const y = document.getElementById('feeYearFilter')?.value;
+                    return y && typeof fmtYear === 'function' ? fmtYear(y) : '';
+                },
+            },
+            { capsuleId: 'feeCapsuleLocation', fieldId: 'feeLocationFilter', idleLabel: '全部基地' },
+            { capsuleId: 'feeCapsuleVehicle', fieldId: 'feeVehicleFilter', idleLabel: '全部项目' },
+            { capsuleId: 'feeCapsuleVersion', fieldId: 'feeVersionFilter', idleLabel: '全部版本' },
+            { capsuleId: 'feeCapsuleSupplier', fieldId: 'feeSupplierFilter', idleLabel: '全部工厂' },
+        ],
+        countFieldIds: FEE_FILTER_FIELD_IDS,
+        resetId: 'feeResetBtn',
+        enterFieldIds: ['feePartNumberFilter'],
+        onSearch: () => loadData(1),
+        onReset: resetFilters,
     });
     document.getElementById('feeHudZeroCard')?.addEventListener('click', () => {
         if (feeState.onlyZero) {
@@ -203,52 +223,37 @@ function bindEvents() {
 
     document.getElementById('feeYearFilter')?.addEventListener('change', () => {
         resetDependentFilters(['feeLocationFilter', 'feeVehicleFilter', 'feeVersionFilter', 'feeSupplierFilter']);
-        updateFeeFilterCapsules();
         reloadCascadeFromLocation().then(() => {
-            updateFeeFilterCapsules();
+            filterBar?.paint();
             loadData(1);
         });
     });
     document.getElementById('feeLocationFilter')?.addEventListener('change', () => {
         resetDependentFilters(['feeVehicleFilter', 'feeVersionFilter', 'feeSupplierFilter']);
-        updateFeeFilterCapsules();
         reloadCascadeFromVehicle().then(() => {
-            updateFeeFilterCapsules();
+            filterBar?.paint();
             loadData(1);
         });
     });
     document.getElementById('feeVehicleFilter')?.addEventListener('change', () => {
         resetDependentFilters(['feeVersionFilter', 'feeSupplierFilter']);
-        updateFeeFilterCapsules();
         reloadCascadeFromVersion().then(() => {
-            updateFeeFilterCapsules();
+            filterBar?.paint();
             loadData(1);
         });
     });
     document.getElementById('feeVersionFilter')?.addEventListener('change', () => {
         resetDependentFilters(['feeSupplierFilter']);
-        updateFeeFilterCapsules();
         loadSupplierOptions().then(() => {
-            updateFeeFilterCapsules();
+            filterBar?.paint();
             loadData(1);
         });
     });
     document.getElementById('feeSupplierFilter')?.addEventListener('change', () => {
-        updateFeeFilterCapsules();
         loadData(1);
     });
     document.getElementById('feeAuditStatusFilter')?.addEventListener('change', () => {
-        updateFeeFilterCapsules();
         loadData(1);
-    });
-    document.getElementById('feePartNumberFilter')?.addEventListener('keydown', (event) => {
-        if (event.key !== 'Enter') return;
-        event.preventDefault();
-        updateFeeFilterCapsules();
-        loadData(1);
-    });
-    document.getElementById('feePartNumberFilter')?.addEventListener('input', () => {
-        updateFeeFilterCapsules();
     });
 
 
@@ -469,7 +474,7 @@ function resetFilters() {
     if (partEl) partEl.value = '';
     feeState.onlyZero = false;
     loadLocationOptions().then(() => reloadCascadeFromVehicle().then(() => {
-        updateFeeFilterCapsules();
+        filterBar?.paint();
         loadData(1);
     }));
 }
@@ -496,7 +501,7 @@ function collectListFilters() {
 function requireWorkScope() {
     const filters = collectScopeFilters();
     if (!filters.year || !filters.location || !filters.vehicle_model) {
-        setAdvancedOpen(true);
+        filterBar?.setOpen(true);
         showToast(SCOPE_REQUIRED_MESSAGE, 'warning');
         return null;
     }
@@ -547,7 +552,7 @@ async function loadData(page = 1) {
     if (body) body.innerHTML = '';
     empty?.classList.add('hidden');
     loading?.classList.remove('hidden');
-    updateFeeFilterCapsules();
+    filterBar?.paint();
 
     try {
         const filters = collectListFilters();
@@ -571,7 +576,7 @@ async function loadData(page = 1) {
         feeState.pageSize = data.page_size || feeState.pageSize;
         feeState.totalPages = data.total_pages || Math.ceil(feeState.total / feeState.pageSize) || 1;
 
-        const totalLabel = document.getElementById('feeTotalLabel');
+        const totalLabel = document.getElementById('feePageInfo');
         if (totalLabel) {
             totalLabel.textContent = feeState.onlyZero
                 ? `待补价 ${feeState.total} 条`
@@ -608,8 +613,7 @@ function fillPartNumberFields(prefix, partNumber) {
         shortEl.textContent = shortNo || (full || '—');
         shortEl.classList.toggle('text-xl', Boolean(shortNo));
         shortEl.classList.toggle('text-xs', !shortNo);
-        shortEl.classList.toggle('text-[#cccccc]', !shortNo);
-        shortEl.classList.toggle('text-white', Boolean(shortNo));
+        shortEl.classList.add('text-ink');
     }
     if (fullEl) {
         fullEl.textContent = shortNo ? full : '';
@@ -695,7 +699,7 @@ function fillViewFieldsFromRecord(record) {
 async function loadFeeDetail(feeId) {
     const container = document.getElementById('feeViewProcessItems');
     if (container) {
-        container.innerHTML = '<div class="px-4 py-6 text-[11px] text-[#616161]">加载中..</div>';
+        container.innerHTML = '<div class="px-4 py-6 text-[11px] text-ink-dim">加载中..</div>';
     }
     try {
         const res = await HttpClient.get(`${API_BASE}/${feeId}`);
@@ -705,7 +709,7 @@ async function loadFeeDetail(feeId) {
         renderProcessItems(detail.process_items || []);
     } catch (error) {
         if (container && feeState.viewingId === feeId) {
-            container.innerHTML = `<div class="px-4 py-6 text-[11px] text-[#ef5350]">${esc(error.message || '加载溯源失败')}</div>`;
+            container.innerHTML = `<div class="px-4 py-6 text-[11px] text-danger">${esc(error.message || '加载溯源失败')}</div>`;
         }
     }
 }
@@ -714,7 +718,7 @@ function renderProcessItems(items) {
     const container = document.getElementById('feeViewProcessItems');
     if (!container) return;
     if (!items || !items.length) {
-        container.innerHTML = '<div class="px-4 py-6 text-[11px] text-[#616161]">暂无工序溯源（请重新计算后生成）</div>';
+        container.innerHTML = '<div class="px-4 py-6 text-[11px] text-ink-dim">暂无工序溯源（请重新计算后生成）</div>';
         return;
     }
     const rows = items.map((item) => {
@@ -723,32 +727,32 @@ function renderProcessItems(items) {
             ? `${esc(item.inherited_from_part_number || '')} / ${esc(item.inherited_from_process_seq || '')}`
             : '—';
         return `
-            <tr class="hover:bg-[#ffffff]/[0.02] transition-colors">
-                <td class="px-3 py-2 text-[11px] font-mono text-[#9e9e9e] whitespace-nowrap">${esc(item.process_seq || '—')}</td>
-                <td class="px-3 py-2 text-[11px] text-[#cccccc] whitespace-nowrap">${esc(item.process_code || '—')}</td>
-                <td class="px-3 py-2 text-[11px] text-right font-mono tabular-nums text-[#9e9e9e]">${esc(item.resolved_tonnage != null ? `${item.resolved_tonnage}T` : '—')}</td>
-                <td class="px-3 py-2 text-[11px] text-[#9e9e9e] whitespace-nowrap">${esc(sourceLabel)}</td>
-                <td class="px-3 py-2 text-[11px] text-right font-mono tabular-nums text-[#9e9e9e]">${formatDecimal(item.cost_ratio, 2)}</td>
-                <td class="px-3 py-2 text-[11px] text-right font-mono tabular-nums text-[#9e9e9e]">${formatDecimal(item.price_per_stroke, 3)}</td>
-                <td class="px-3 py-2 text-[11px] text-right font-mono tabular-nums text-[#ffffff]">${formatDecimal(item.line_fee, 3)}</td>
-                <td class="px-3 py-2 text-[11px] text-[#888888] min-w-[180px]">${esc(item.basis_text || inheritHint)}</td>
+            <tr class="hover:bg-ink/[0.02] transition-colors">
+                <td class="px-3 py-2 text-[11px] font-mono text-ink-muted whitespace-nowrap">${esc(item.process_seq || '—')}</td>
+                <td class="px-3 py-2 text-[11px] text-ink whitespace-nowrap">${esc(item.process_code || '—')}</td>
+                <td class="px-3 py-2 text-[11px] text-right font-mono tabular-nums text-ink-muted">${esc(item.resolved_tonnage != null ? `${item.resolved_tonnage}T` : '—')}</td>
+                <td class="px-3 py-2 text-[11px] text-ink-muted whitespace-nowrap">${esc(sourceLabel)}</td>
+                <td class="px-3 py-2 text-[11px] text-right font-mono tabular-nums text-ink-muted">${formatDecimal(item.cost_ratio, 2)}</td>
+                <td class="px-3 py-2 text-[11px] text-right font-mono tabular-nums text-ink-muted">${formatDecimal(item.price_per_stroke, 3)}</td>
+                <td class="px-3 py-2 text-[11px] text-right font-mono tabular-nums text-ink">${formatDecimal(item.line_fee, 3)}</td>
+                <td class="px-3 py-2 text-[11px] text-ink-muted min-w-[180px]">${esc(item.basis_text || inheritHint)}</td>
             </tr>`;
     }).join('');
     container.innerHTML = `
         <table class="w-full">
             <thead>
-                <tr class="bg-[#0a0a0a] border-b border-[#2c2c2c]">
-                    <th class="px-3 py-2 text-left text-[10px] font-semibold uppercase tracking-[0.12em] text-[#616161]">工序</th>
-                    <th class="px-3 py-2 text-left text-[10px] font-semibold uppercase tracking-[0.12em] text-[#616161]">代码</th>
-                    <th class="px-3 py-2 text-right text-[10px] font-semibold uppercase tracking-[0.12em] text-[#616161]">吨位</th>
-                    <th class="px-3 py-2 text-left text-[10px] font-semibold uppercase tracking-[0.12em] text-[#616161]">来源</th>
-                    <th class="px-3 py-2 text-right text-[10px] font-semibold uppercase tracking-[0.12em] text-[#616161]">比例</th>
-                    <th class="px-3 py-2 text-right text-[10px] font-semibold uppercase tracking-[0.12em] text-[#616161]">冲次单价</th>
-                    <th class="px-3 py-2 text-right text-[10px] font-semibold uppercase tracking-[0.12em] text-[#616161]">本序败</th>
-                    <th class="px-3 py-2 text-left text-[10px] font-semibold uppercase tracking-[0.12em] text-[#616161]">计算依据</th>
+                <tr class="bg-app-deep border-b border-line">
+                    <th class="px-3 py-2 text-left text-[10px] font-semibold uppercase tracking-[0.12em] text-ink-dim">工序</th>
+                    <th class="px-3 py-2 text-left text-[10px] font-semibold uppercase tracking-[0.12em] text-ink-dim">代码</th>
+                    <th class="px-3 py-2 text-right text-[10px] font-semibold uppercase tracking-[0.12em] text-ink-dim">吨位</th>
+                    <th class="px-3 py-2 text-left text-[10px] font-semibold uppercase tracking-[0.12em] text-ink-dim">来源</th>
+                    <th class="px-3 py-2 text-right text-[10px] font-semibold uppercase tracking-[0.12em] text-ink-dim">比例</th>
+                    <th class="px-3 py-2 text-right text-[10px] font-semibold uppercase tracking-[0.12em] text-ink-dim">冲次单价</th>
+                    <th class="px-3 py-2 text-right text-[10px] font-semibold uppercase tracking-[0.12em] text-ink-dim">本序败</th>
+                    <th class="px-3 py-2 text-left text-[10px] font-semibold uppercase tracking-[0.12em] text-ink-dim">计算依据</th>
                 </tr>
             </thead>
-            <tbody class="divide-y divide-[#222222]">${rows}</tbody>
+            <tbody class="divide-y divide-line-subtle">${rows}</tbody>
         </table>`;
 }
 
@@ -840,7 +844,7 @@ function applyEditPriceUi(isTailorWelded) {
     if (hint) hint.classList.toggle('hidden', !isTailorWelded);
     if (otherHint) {
         otherHint.textContent = isTailorWelded ? '（必填，如拼焊费）' : '（可正可负，留空视为 0）';
-        otherHint.className = isTailorWelded ? 'text-[#FF1E27]' : 'text-[#616161]';
+        otherHint.className = isTailorWelded ? 'text-brand-hud' : 'text-ink-dim';
     }
     if (otherInput) {
         otherInput.required = Boolean(isTailorWelded);
@@ -901,7 +905,7 @@ async function exportExcel() {
     if (btn) {
         btn.disabled = true;
         btn.innerHTML = `
-            <div class="w-3 h-3 border border-[#ef5350] border-t-transparent rounded-full animate-spin"></div>
+            <div class="w-3 h-3 border border-danger border-t-transparent rounded-full animate-spin"></div>
             导出中..
         `;
     }
@@ -956,7 +960,7 @@ async function batchDelete() {
     if (btn) {
         btn.disabled = true;
         btn.innerHTML = `
-            <div class="w-3 h-3 border border-[#ef5350] border-t-transparent rounded-full animate-spin"></div>
+            <div class="w-3 h-3 border border-danger border-t-transparent rounded-full animate-spin"></div>
             删除中..
         `;
     }
@@ -1020,8 +1024,8 @@ function openBatchAuditDrawer(mode) {
     }
     if (remarkLabel) {
         remarkLabel.innerHTML = isApprove
-            ? '审核意见<span class="text-[#d32f2f]">*</span>'
-            : '反审核意见<span class="text-[#d32f2f]">*</span>';
+            ? '审核意见<span class="text-brand">*</span>'
+            : '反审核意见<span class="text-brand">*</span>';
     }
     if (remarkEl) {
         remarkEl.value = '';
@@ -1094,5 +1098,7 @@ export const pageConfig = {
     destroy() {
         moreMenu?.unbind();
         moreMenu = null;
+        filterBar?.unbind();
+        filterBar = null;
     },
 };

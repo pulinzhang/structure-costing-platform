@@ -5,16 +5,17 @@
 import {
     procurementObjectListTemplate,
     renderProcurementObjectRows,
-} from './template.js?v=37';
+} from './template.js?v=47';
 import {
     DEFAULT_PAGE_SIZE,
     bindPagination,
     paintPagination,
-} from '../../../../page-size.js?v=3';
-import { bindMoreMenu } from '../../../../more-menu.js?v=1';
-import { setSearchBusy } from '../../../../search-busy.js?v=1';
-import { AUDIT_LABELS, CONFIRM_LABELS, KIND_LABELS, SECTION_LABELS } from '../labels.js?v=2';
-import { fmtPeriodRange } from '../../../common/period-ui.js?v=3';
+} from '../../../../ui/page-size.js?v=6';
+import { bindMoreMenu } from '../../../../ui/more-menu.js?v=5';
+import { bindFilterBar } from '../../../../ui/filter-bar.js?v=3';
+import { setSearchBusy } from '../../../../ui/search-busy.js?v=3';
+import { AUDIT_LABELS, CONFIRM_LABELS, KIND_LABELS, SECTION_LABELS } from '../labels.js?v=4';
+import { fmtPeriodRange } from '../../../common/period-ui.js?v=5';
 
 const API_BASE = '/api/bom/procurement-objects';
 const CASCADE_API = '/api/bom/filters/cascade';
@@ -22,6 +23,21 @@ const SCOPE_REQUIRED_MESSAGE = '批量操作须选定基地、项目';
 
 /** @type {{ setOpen: (isOpen: boolean) => void, close: () => void, unbind: () => void } | null} */
 let moreMenu = null;
+/** @type {{ paint: () => void, setOpen: (isOpen: boolean) => void, unbind: () => void } | null} */
+let filterBar = null;
+
+const PO_FILTER_FIELD_IDS = [
+    'poLocationFilter',
+    'poModelFilter',
+    'poVersionFilter',
+    'poKindFilter',
+    'poConfirmFilter',
+    'poAuditFilter',
+    'poSupplierFilter',
+    'poHasSupplierFilter',
+    'poIncludeExpiredFilter',
+    'poPartFilter',
+];
 
 const listState = {
     page: 1,
@@ -85,10 +101,18 @@ function applyPermissionUi() {
 }
 
 function bindEvents() {
-    document.getElementById('poSearchBtn')?.addEventListener('click', () => loadList(1));
-    document.getElementById('poResetBtn')?.addEventListener('click', resetFilters);
-    document.getElementById('poToggleAdvancedFilter')?.addEventListener('click', () => {
-        document.getElementById('poAdvancedFilterPanel')?.classList.toggle('hidden');
+    filterBar = bindFilterBar({
+        prefix: 'po',
+        capsules: [
+            { capsuleId: 'poCapsuleLocation', fieldId: 'poLocationFilter', idleLabel: '全部基地' },
+            { capsuleId: 'poCapsuleModel', fieldId: 'poModelFilter', idleLabel: '全部项目' },
+            { capsuleId: 'poCapsuleVersion', fieldId: 'poVersionFilter', idleLabel: '全部版本' },
+        ],
+        countFieldIds: PO_FILTER_FIELD_IDS,
+        resetId: 'poResetBtn',
+        enterFieldIds: ['poPartFilter', 'poSupplierFilter'],
+        onSearch: () => loadList(1),
+        onReset: resetFilters,
     });
     document.getElementById('poLocationFilter')?.addEventListener('change', () => {
         loadCascade().then(() => loadList(1));
@@ -108,16 +132,6 @@ function bindEvents() {
     document.getElementById('poConfirmSupplierSearch')?.addEventListener('keydown', onSupplierSearchKeydown);
     document.getElementById('poConfirmSupplierMenu')?.addEventListener('mousedown', onSupplierMenuMouseDown);
     document.addEventListener('click', onSupplierPickerDocumentClick);
-    document.getElementById('poPartFilter')?.addEventListener('keydown', (event) => {
-        if (event.key !== 'Enter') return;
-        event.preventDefault();
-        loadList(1);
-    });
-    document.getElementById('poSupplierFilter')?.addEventListener('keydown', (event) => {
-        if (event.key !== 'Enter') return;
-        event.preventDefault();
-        loadList(1);
-    });
     document.querySelectorAll('.po-section-tab').forEach((btn) => {
         btn.addEventListener('click', () => {
             listState.section = btn.dataset.section || '';
@@ -284,8 +298,8 @@ function renderSupplierMenu() {
     if (supplierPicker.highlightIndex >= rows.length) supplierPicker.highlightIndex = rows.length - 1;
     menu.innerHTML = rows.map((item, index) => {
         const active = index === supplierPicker.highlightIndex
-            ? 'bg-[#FF1E27]/15 text-white'
-            : 'text-[#C8C8D0] hover:bg-[#161620]';
+            ? 'bg-brand-hud/15 text-ink'
+            : 'text-ink-muted hover:bg-app-rowhover';
         const text = item.isClear ? '未指定' : supplierChoiceLabel(item);
         return `<button type="button" data-supplier-index="${index}"
                 class="block w-full text-left px-3 py-1.5 text-[11px] font-mono ${active}">${esc(text)}</button>`;
@@ -420,7 +434,7 @@ function syncConfirmSupplierEnabled() {
 function setListLoading(isLoading) {
     listState.isLoading = isLoading;
     setSearchBusy('poSearchBtn', isLoading);
-    document.getElementById('poLoadingState')?.classList.toggle('hidden', !isLoading);
+    document.getElementById('poLoading')?.classList.toggle('hidden', !isLoading);
     if (isLoading) {
         const body = document.getElementById('poTableBody');
         if (body) body.innerHTML = '';
@@ -430,7 +444,7 @@ function setListLoading(isLoading) {
 async function loadList(page) {
     if (listState.isLoading) return;
     listState.page = page || 1;
-    updateCapsules();
+    filterBar?.paint();
     syncTabs();
     setListLoading(true);
     try {
@@ -445,7 +459,7 @@ async function loadList(page) {
         setText('poHudOther', Number(summary.other_leaf_count ?? 0).toLocaleString('zh-CN'));
         setText('poHudPending', Number(summary.pending_count ?? 0).toLocaleString('zh-CN'));
         setText('poHudApproved', Number(summary.approved_count ?? 0).toLocaleString('zh-CN'));
-        setText('poTotalLabel', `共 ${listState.total} 条`);
+        setText('poPageInfo', `共 ${listState.total} 条`);
         const body = document.getElementById('poTableBody');
         if (body) body.innerHTML = renderProcurementObjectRows(listState.items);
         paintPagination('poPagination', listState.page, listState.totalPages);
@@ -487,44 +501,20 @@ function setText(id, value) {
     if (el) el.textContent = value;
 }
 
-function updateCapsules() {
-    const active = 'bg-[#1A1A22] border border-[#2A2A35] text-white px-2.5 py-1 rounded-md font-bold';
-    const idle = 'bg-[#1A1A22] border border-[#2A2A35] text-[#8E8E93] px-2.5 py-1 rounded-md';
-    const loc = val('poLocationFilter');
-    const model = val('poModelFilter');
-    const ver = val('poVersionFilter');
-    const locEl = document.getElementById('poCapsuleLocation');
-    const modelEl = document.getElementById('poCapsuleModel');
-    const verEl = document.getElementById('poCapsuleVersion');
-    if (locEl) {
-        locEl.textContent = loc || '全部基地';
-        locEl.className = loc ? active : idle;
-    }
-    if (modelEl) {
-        modelEl.textContent = model || '全部项目';
-        modelEl.className = model ? active : idle;
-    }
-    if (verEl) {
-        verEl.textContent = ver || '全部版本';
-        verEl.className = ver ? active : idle;
-    }
-}
-
 function syncTabs() {
     document.querySelectorAll('.po-section-tab').forEach((btn) => {
         const on = btn.dataset.section === listState.section;
         btn.className = on
-            ? 'po-section-tab h-7 px-3 text-[11px] font-semibold rounded-md border border-[#FF1E27] text-[#FF1E27] bg-[#FF1E27]/10'
-            : 'po-section-tab h-7 px-3 text-[11px] font-medium rounded-md border border-[#2A2A35] text-[#8E8E93]';
+            ? 'po-section-tab h-7 px-3 text-[11px] font-semibold rounded-md border border-brand-hud text-brand-hud bg-brand-hud/10'
+            : 'po-section-tab h-7 px-3 text-[11px] font-medium rounded-md border border-line-hud text-ink-muted';
     });
 }
 
 function resetFilters() {
-    ['poLocationFilter', 'poModelFilter', 'poVersionFilter', 'poKindFilter', 'poConfirmFilter', 'poAuditFilter', 'poSupplierFilter', 'poHasSupplierFilter', 'poIncludeExpiredFilter', 'poPartFilter']
-        .forEach((id) => {
-            const el = document.getElementById(id);
-            if (el) el.value = '';
-        });
+    PO_FILTER_FIELD_IDS.forEach((id) => {
+        const el = document.getElementById(id);
+        if (el) el.value = '';
+    });
     loadCascade().then(() => loadList(1));
 }
 
@@ -570,8 +560,8 @@ function openAuditDrawer(mode) {
         : '按当前基地·项目（可选版本）反审核已通过记录。';
     document.getElementById('poBatchAuditOperatorDisplay').textContent = sessionName() || '当前登录用户';
     document.getElementById('poBatchAuditRemarkLabel').innerHTML = mode === 'approve'
-        ? '审核意见<span class="text-[#FF1E27]">*</span>'
-        : '反审核原因<span class="text-[#FF1E27]">*</span>';
+        ? '审核意见<span class="text-brand-hud">*</span>'
+        : '反审核原因<span class="text-brand-hud">*</span>';
     document.getElementById('poBatchAuditRemark').value = '';
     document.getElementById('poBatchAuditFilterSummary').textContent =
         `${scope.location} · ${scope.vehicle_model} · ${scope.bom_version || '全部版本'}`;
@@ -646,7 +636,7 @@ function openConfirmDrawer(id) {
     document.getElementById('poConfirmPart').innerHTML = `
         <div>${esc(row.part_number)} ${esc(row.part_name || '')}</div>
         ${row.internal_number
-            ? `<div class="text-[10px] text-[#555555] mt-1" title="内部号（ERP）">${esc(row.internal_number)}</div>`
+            ? `<div class="text-[10px] text-ink-faint mt-1" title="内部号（ERP）">${esc(row.internal_number)}</div>`
             : ''}
     `;
     document.getElementById('poConfirmStatus').value = row.confirm_status || 'pending';
@@ -707,7 +697,7 @@ function openDetailDrawer(id) {
             ['供应商', row.supplier_name || '未指定'],
             ['审核', AUDIT_LABELS[row.audit_status] || row.audit_status],
             ['生失效', fmtPeriodRange(row.effective_year, row.effective_month, row.expiry_year, row.expiry_month)],
-        ].map(([k, v]) => `<div><span class="text-[#555555]">${esc(k)}</span> ${esc(v)}</div>`).join('');
+        ].map(([k, v]) => `<div><span class="text-ink-faint">${esc(k)}</span> ${esc(v)}</div>`).join('');
     }
     openDrawer('poDetailDrawer');
 }
@@ -722,7 +712,7 @@ async function exportExcel() {
     const originalHtml = btn ? btn.innerHTML : '';
     if (btn) {
         btn.disabled = true;
-        btn.innerHTML = `<div class="w-3 h-3 border border-[#FF1E27] border-t-transparent rounded-full animate-spin"></div>导出中..`;
+        btn.innerHTML = `<div class="w-3 h-3 border border-brand-hud border-t-transparent rounded-full animate-spin"></div>导出中..`;
     }
     const params = queryParams();
     delete params.page;
@@ -757,5 +747,7 @@ export const pageConfig = {
     destroy() {
         moreMenu?.unbind();
         moreMenu = null;
+        filterBar?.unbind();
+        filterBar = null;
     },
 };

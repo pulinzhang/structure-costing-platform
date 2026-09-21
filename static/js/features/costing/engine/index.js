@@ -2,16 +2,16 @@
  * 月度智能自动核价引擎 — 页面逻辑 (BRABUS Pure Industrial Spec)
  */
 
-import { costingTemplate } from './template.js?v=28';
+import { costingTemplate } from './template.js?v=32';
 import {
     DEFAULT_PAGE_SIZE,
     bindPagination,
     paintPagination,
-} from '../../../page-size.js?v=3';
+} from '../../../ui/page-size.js?v=6';
 import {
     formatDurationSeconds,
     formatTimingLine,
-} from '../../../duration.js?v=1';
+} from '../../../domain/duration.js?v=3';
 
 const READY_API = '/api/costing/engine/ready';
 const RUNS_API = '/api/costing/engine/runs';
@@ -90,12 +90,12 @@ const GATE_LABELS = {
 };
 
 const STATUS_META = {
-    running: { label: '运行中', className: 'text-neutral-300' },
-    succeeded: { label: '核算完成', className: 'text-neutral-400' },
-    partial: { label: '部分完成', className: 'text-amber-500/80' },
-    failed: { label: '核算失败', className: 'text-[#FF1E27]' },
-    blocked: { label: '强约束阻断', className: 'text-[#FF1E27]' },
-    deleted: { label: '已删除', className: 'text-neutral-700' },
+    running: { label: '运行中', className: 'text-ink' },
+    succeeded: { label: '核算完成', className: 'text-ink-muted' },
+    partial: { label: '部分完成', className: 'text-warn/80' },
+    failed: { label: '核算失败', className: 'text-brand-hud' },
+    blocked: { label: '强约束阻断', className: 'text-brand-hud' },
+    deleted: { label: '已删除', className: 'text-ink-faint' },
 };
 
 const STEP_STAGE_META = {
@@ -487,33 +487,33 @@ function resetReadyPanels() {
     const badge = document.getElementById('engineHardStopBadge');
     if (badge) {
         badge.textContent = '未检查';
-        badge.className = 'text-[10px] text-neutral-600';
+        badge.className = 'text-[10px] text-ink-dim';
     }
     const hardList = document.getElementById('engineGateHardList');
     if (hardList) {
         hardList.innerHTML =
-            '<div class="py-6 text-[10px] text-neutral-700">请先点击「检查就绪」</div>';
+            '<div class="py-6 text-[10px] text-ink-faint">请先点击「检查就绪」</div>';
     }
     const annualBadge = document.getElementById('engineAnnualBadge');
     if (annualBadge) {
         annualBadge.textContent = '未检查';
-        annualBadge.className = 'text-[10px] text-neutral-600';
+        annualBadge.className = 'text-[10px] text-ink-dim';
     }
     const annualList = document.getElementById('engineGateAnnualList');
     if (annualList) {
         annualList.innerHTML =
-            '<div class="py-6 text-[10px] text-neutral-700">请先点击「检查就绪」</div>';
+            '<div class="py-6 text-[10px] text-ink-faint">请先点击「检查就绪」</div>';
     }
     const scopeSummary = document.getElementById('engineScopeSummary');
     if (scopeSummary) {
         scopeSummary.textContent = '节点 0';
         scopeSummary.className =
-            'text-[10px] font-mono text-neutral-600 tabular-nums';
+            'text-[10px] font-mono text-ink-dim tabular-nums';
     }
     const tree = document.getElementById('enginePlanTree');
     if (tree) {
         tree.innerHTML =
-            '<div class="py-6 text-[10px] text-neutral-700">请先检查就绪</div>';
+            '<div class="py-6 text-[10px] text-ink-faint">请先检查就绪</div>';
     }
 }
 
@@ -671,13 +671,13 @@ function renderReady(ready) {
     if (badge) {
         if (hardStop) {
             badge.textContent = '需处理';
-            badge.className = 'text-[10px] text-[#FF1E27]';
+            badge.className = 'text-[10px] text-brand-hud';
         } else if (ready) {
             badge.textContent = softTipCount ? '有提示' : '已就绪';
-            badge.className = 'text-[10px] text-neutral-600';
+            badge.className = 'text-[10px] text-ink-dim';
         } else {
             badge.textContent = '未检查';
-            badge.className = 'text-[10px] text-neutral-600';
+            badge.className = 'text-[10px] text-ink-dim';
         }
     }
 
@@ -693,24 +693,24 @@ function renderReady(ready) {
             ? `${willCalc.length} 项`
             : '无待补算';
         annualBadge.className = willCalc.length
-            ? 'text-[10px] text-amber-500/80'
-            : 'text-[10px] text-neutral-600';
+            ? 'text-[10px] text-warn/80'
+            : 'text-[10px] text-ink-dim';
     }
     const annualList = document.getElementById('engineGateAnnualList');
     if (annualList) {
         if (!willCalc.length) {
             annualList.innerHTML =
-                '<div class="text-[11px] text-neutral-600 py-1">年度派生数据已齐备</div>';
+                '<div class="text-[11px] text-ink-dim py-1">年度派生数据已齐备</div>';
         } else {
             annualList.innerHTML = willCalc
                 .map(
                     (item) => `
-                <div class="flex items-center justify-between gap-3 py-2 border-b border-white/5">
+                <div class="flex items-center justify-between gap-3 py-2 border-b border-ink/5">
                     <div class="min-w-0">
-                        <div class="text-[12px] text-amber-500/90">${esc(gateLabel(item.code))}</div>
-                        <div class="text-[10px] text-neutral-600 truncate mt-0.5">${esc(formatAnnualScopeKey(item.scope_key))}</div>
+                        <div class="text-[12px] text-warn/90">${esc(gateLabel(item.code))}</div>
+                        <div class="text-[10px] text-ink-dim truncate mt-0.5">${esc(formatAnnualScopeKey(item.scope_key))}</div>
                     </div>
-                    <span class="text-[10px] text-amber-500/70 shrink-0">待补算</span>
+                    <span class="text-[10px] text-warn/70 shrink-0">待补算</span>
                 </div>`
                 )
                 .join('');
@@ -729,7 +729,7 @@ function renderReady(ready) {
     if (scopeSummary) {
         const nodeCount = vehicles.length + l0Scopes.length;
         scopeSummary.textContent = `节点 ${nodeCount}`;
-        scopeSummary.className = 'text-[10px] font-mono text-neutral-600 tabular-nums';
+        scopeSummary.className = 'text-[10px] font-mono text-ink-dim tabular-nums';
     }
 
     updateReadyStatus();
@@ -744,7 +744,7 @@ function renderGateHardList(ready) {
     const items = sortGateItems(ready?.gates?.upload_or_config || []);
     if (!items.length) {
         hardList.innerHTML =
-            '<div class="py-6 text-[10px] text-neutral-700">暂无检查项</div>';
+            '<div class="py-6 text-[10px] text-ink-faint">暂无检查项</div>';
         return;
     }
 
@@ -760,10 +760,10 @@ function renderGateHardList(ready) {
         ? `
         <button type="button"
                 data-action="toggle-gates-detail"
-                class="w-full text-left py-2 text-[11px] text-neutral-500 hover:text-neutral-300 transition-colors">
+                class="w-full text-left py-2 text-[11px] text-ink-muted hover:text-ink transition-colors">
             <span class="inline-block w-1.5 h-1.5 rounded-full bg-emerald-500/70 mr-2 align-middle"></span>
             ${passed.length} 项基础约束已校验通过
-            <span class="text-neutral-700 ml-2">${open ? '收起明细' : '展开明细'}</span>
+            <span class="text-ink-faint ml-2">${open ? '收起明细' : '展开明细'}</span>
         </button>`
         : '';
 
@@ -774,7 +774,7 @@ function renderGateHardList(ready) {
 
     if (!attention.length && !passed.length) {
         hardList.innerHTML =
-            '<div class="py-6 text-[10px] text-neutral-700">暂无检查项</div>';
+            '<div class="py-6 text-[10px] text-ink-faint">暂无检查项</div>';
         return;
     }
 
@@ -845,45 +845,45 @@ function renderGateRow(item) {
                         data-action="navigate"
                         data-page="${esc(nav.page)}"
                         data-query='${esc(JSON.stringify(nav.query || {}))}'
-                        class="shrink-0 text-[10px] ${hardFail ? 'text-[#FF1E27] hover:text-white' : 'text-amber-500/80 hover:text-amber-400'}">
+                        class="shrink-0 text-[10px] ${hardFail ? 'text-brand-hud hover:text-ink' : 'text-warn/80 hover:text-warn'}">
                     去处理 →
                 </button>`;
         } else {
-            actionHtml = '<span class="shrink-0 text-[9px] text-neutral-700">无权限</span>';
+            actionHtml = '<span class="shrink-0 text-[9px] text-ink-faint">无权限</span>';
         }
     }
 
     if (!hardFail && !soft) {
         return `
         <div data-gate-role="${role}" data-gate-code="${esc(item.code)}"
-             class="flex items-center justify-between gap-3 py-1.5 border-b border-white/5">
+             class="flex items-center justify-between gap-3 py-1.5 border-b border-ink/5">
             <div class="min-w-0 flex-1">
-                <span class="text-[11px] text-neutral-500">${esc(zhTitle)}</span>
-                <span class="text-[10px] text-neutral-700 ml-2 truncate">${esc(reason)}</span>
+                <span class="text-[11px] text-ink-muted">${esc(zhTitle)}</span>
+                <span class="text-[10px] text-ink-faint ml-2 truncate">${esc(reason)}</span>
             </div>
         </div>`;
     }
 
-    const accent = hardFail ? 'border-l-[#FF1E27]' : 'border-l-amber-500/60';
-    const titleClass = hardFail ? 'text-white' : 'text-neutral-200';
+    const accent = hardFail ? 'border-brand-hud' : 'border-l-amber-500/60';
+    const titleClass = 'text-ink';
     const badge = hardFail
-        ? '<span class="inline-flex items-center px-1.5 py-px text-[9px] tracking-wide text-[#FF1E27] border border-[#FF1E27]/45">需处理</span>'
-        : '<span class="inline-flex items-center px-1.5 py-px text-[9px] tracking-wide text-amber-500/90 border border-amber-500/40">提示</span>';
+        ? '<span class="inline-flex items-center px-1.5 py-px text-[9px] tracking-wide text-brand-hud border border-brand-hud/45">需处理</span>'
+        : '<span class="inline-flex items-center px-1.5 py-px text-[9px] tracking-wide text-warn/90 border border-warn/40">提示</span>';
     const copyIcon =
         typeof window.svgIcon === 'function' ? window.svgIcon('copy', 'w-3.5 h-3.5') : '复制';
 
     return `
         <div data-gate-role="${role}" data-gate-code="${esc(item.code)}"
-             class="flex items-start justify-between gap-3 py-2.5 border-b border-white/5 border-l-2 ${accent} pl-3 -ml-0.5">
+             class="flex items-start justify-between gap-3 py-2.5 border-b border-ink/5 border-l-2 ${accent} pl-3 -ml-0.5">
             <div class="min-w-0 flex-1">
                 <div class="flex items-center gap-1.5 flex-wrap">
                     <span data-gate-title class="text-[12px] ${titleClass}">${esc(zhTitle)}</span>
                     ${badge}
                     <button type="button" data-action="copy-gate-reason"
-                            class="shrink-0 w-6 h-6 inline-flex items-center justify-center text-neutral-500 hover:text-white transition-colors"
+                            class="shrink-0 w-6 h-6 inline-flex items-center justify-center text-ink-muted hover:text-ink transition-colors"
                             title="复制原因" aria-label="复制原因">${copyIcon}</button>
                 </div>
-                <p data-gate-reason class="text-[10px] text-neutral-400 mt-1 leading-relaxed whitespace-pre-wrap break-all select-text">${esc(reason)}</p>
+                <p data-gate-reason class="text-[10px] text-ink-muted mt-1 leading-relaxed whitespace-pre-wrap break-all select-text">${esc(reason)}</p>
             </div>
             ${actionHtml}
         </div>`;
@@ -899,26 +899,26 @@ function updateReadyStatus() {
     const canStart = !!ready?.can_start;
 
     if (engineState.isRunning || engineState.isStarting) {
-        led.className = 'w-1.5 h-1.5 bg-[#FF1E27] shrink-0';
+        led.className = 'w-1.5 h-1.5 bg-brand-hud shrink-0';
         text.textContent = '引擎点火';
-        text.className = 'text-[10px] text-[#FF1E27]/80';
+        text.className = 'text-[10px] text-brand-hud/80';
         return;
     }
     if (!ready) {
-        led.className = 'w-1.5 h-1.5 bg-neutral-700 shrink-0';
+        led.className = 'w-1.5 h-1.5 bg-app-elevated shrink-0';
         text.textContent = '待命';
-        text.className = 'text-[10px] text-neutral-500';
+        text.className = 'text-[10px] text-ink-muted';
         return;
     }
     if (hardStop || !canStart) {
-        led.className = 'w-1.5 h-1.5 bg-[#FF1E27] shrink-0';
+        led.className = 'w-1.5 h-1.5 bg-brand-hud shrink-0';
         text.textContent = '强约束阻断';
-        text.className = 'text-[10px] text-[#FF1E27]/80';
+        text.className = 'text-[10px] text-brand-hud/80';
         return;
     }
     led.className = 'w-1.5 h-1.5 bg-emerald-500/70 shrink-0';
     text.textContent = '系统就绪';
-    text.className = 'text-[10px] text-neutral-500';
+    text.className = 'text-[10px] text-ink-muted';
 }
 
 function updateIgnitionLed() {
@@ -940,16 +940,16 @@ function updateIgnitionLed() {
 
     if (canIgnite) {
         led.className =
-            'w-2 h-2 rounded-full bg-[#FF1E27] shrink-0 engine-ignition-ready';
+            'w-2 h-2 rounded-full bg-brand-hud shrink-0 engine-ignition-ready';
         return;
     }
 
     if (matchesReadyInputs() && !engineState.ready.can_start) {
-        led.className = 'w-2 h-2 rounded-full bg-[#FF1E27]/35 shrink-0';
+        led.className = 'w-2 h-2 rounded-full bg-brand-hud/35 shrink-0';
         return;
     }
 
-    led.className = 'w-2 h-2 rounded-full bg-neutral-700 shrink-0';
+    led.className = 'w-2 h-2 rounded-full bg-app-elevated shrink-0';
 }
 
 /**
@@ -1061,30 +1061,30 @@ function renderPipeline() {
     if (statusEl) {
         if (engineState.isRunning || engineState.isStarting) {
             statusEl.textContent = '运行中';
-            statusEl.className = 'text-[10px] text-neutral-500';
+            statusEl.className = 'text-[10px] text-ink-muted';
         } else if (hasFailed) {
             statusEl.textContent = '阻断';
-            statusEl.className = 'text-[10px] text-[#FF1E27]/70';
+            statusEl.className = 'text-[10px] text-brand-hud/70';
         } else if (allPassed && engineState.ready?.can_start) {
             statusEl.textContent = '已放行';
-            statusEl.className = 'text-[10px] text-neutral-600';
+            statusEl.className = 'text-[10px] text-ink-dim';
         } else if (engineState.ready) {
             statusEl.textContent = '待放行';
-            statusEl.className = 'text-[10px] text-neutral-600';
+            statusEl.className = 'text-[10px] text-ink-dim';
         } else {
             statusEl.textContent = '待命';
-            statusEl.className = 'text-[10px] text-neutral-700';
+            statusEl.className = 'text-[10px] text-ink-faint';
         }
     }
 
     // 默认极暗；仅失败/运行中节点略提亮
     const stateStyle = {
-        idle: { dot: 'bg-neutral-800', label: 'text-neutral-700', line: 'bg-neutral-800' },
-        pending: { dot: 'bg-neutral-800', label: 'text-neutral-600', line: 'bg-neutral-800' },
-        active: { dot: 'bg-[#FF1E27]/80', label: 'text-neutral-300', line: 'bg-neutral-800' },
-        passed: { dot: 'bg-neutral-700', label: 'text-neutral-600', line: 'bg-neutral-800' },
-        soft: { dot: 'bg-amber-700/60', label: 'text-neutral-500', line: 'bg-neutral-800' },
-        failed: { dot: 'bg-[#FF1E27]', label: 'text-[#FF1E27]/80', line: 'bg-neutral-800' },
+        idle: { dot: 'bg-app-surface', label: 'text-ink-faint', line: 'bg-app-surface' },
+        pending: { dot: 'bg-app-surface', label: 'text-ink-dim', line: 'bg-app-surface' },
+        active: { dot: 'bg-brand-hud/80', label: 'text-ink', line: 'bg-app-surface' },
+        passed: { dot: 'bg-app-elevated', label: 'text-ink-dim', line: 'bg-app-surface' },
+        soft: { dot: 'bg-warn/60', label: 'text-ink-muted', line: 'bg-app-surface' },
+        failed: { dot: 'bg-brand-hud', label: 'text-brand-hud/80', line: 'bg-app-surface' },
     };
 
     track.className = 'relative flex items-stretch gap-0 overflow-x-auto py-1';
@@ -1114,7 +1114,7 @@ function renderPlanScope() {
     const ready = engineState.ready;
     if (!ready) {
         tree.innerHTML =
-            '<div class="py-6 text-[10px] text-neutral-700">请先检查就绪</div>';
+            '<div class="py-6 text-[10px] text-ink-faint">请先检查就绪</div>';
         return;
     }
 
@@ -1126,7 +1126,7 @@ function renderPlanScope() {
 
     if (!vehicles.length && !l0Scopes.length) {
         tree.innerHTML =
-            '<div class="py-6 text-[10px] text-neutral-700">暂无覆盖节点</div>';
+            '<div class="py-6 text-[10px] text-ink-faint">暂无覆盖节点</div>';
         return;
     }
 
@@ -1139,12 +1139,12 @@ function renderPlanScope() {
         <button type="button"
                 data-action="scope-toggle"
                 data-scope-key="${esc(key)}"
-                class="w-full flex items-center justify-between gap-2 py-1.5 text-left hover:text-neutral-200 transition-colors">
+                class="w-full flex items-center justify-between gap-2 py-1.5 text-left hover:text-ink transition-colors">
             <div class="flex items-center gap-2 min-w-0">
-                <span class="font-mono text-[9px] text-neutral-600 shrink-0">${open ? '▼' : '▶'}</span>
-                <span class="text-[12px] text-neutral-300 truncate">${esc(title)}</span>
+                <span class="font-mono text-[9px] text-ink-dim shrink-0">${open ? '▼' : '▶'}</span>
+                <span class="text-[12px] text-ink truncate">${esc(title)}</span>
             </div>
-            <span class="text-[10px] font-mono text-neutral-600 tabular-nums shrink-0">${count}</span>
+            <span class="text-[10px] font-mono text-ink-dim tabular-nums shrink-0">${count}</span>
         </button>`;
 
     const vehicleChildren = vehicleOpen
@@ -1158,9 +1158,9 @@ function renderPlanScope() {
                         data-action="scope-select"
                         data-scope-key="${esc(key)}"
                         class="w-full pl-5 py-1 flex items-center gap-2 text-left ${
-                            selected ? 'text-white' : 'text-neutral-500 hover:text-neutral-300'
+                            selected ? 'text-ink' : 'text-ink-muted hover:text-ink'
                         }">
-                    <span class="text-[10px] font-mono text-neutral-700 tabular-nums shrink-0">${String(idx + 1).padStart(2, '0')}</span>
+                    <span class="text-[10px] font-mono text-ink-faint tabular-nums shrink-0">${String(idx + 1).padStart(2, '0')}</span>
                     <span class="text-[11px] font-mono truncate" title="${esc(name)}">${esc(name)}</span>
                 </button>`;
               })
@@ -1175,16 +1175,16 @@ function renderPlanScope() {
                   const selected = engineState.scopeSelected === key;
                   const detail = open
                       ? `
-                    <div class="pl-8 py-1.5 space-y-0.5 text-[10px] text-neutral-600">
+                    <div class="pl-8 py-1.5 space-y-0.5 text-[10px] text-ink-dim">
                         <div class="flex justify-between gap-2">
                             <span>项目</span>
-                            <span class="font-mono text-neutral-400">${esc(s.vehicle_model)}</span>
+                            <span class="font-mono text-ink-muted">${esc(s.vehicle_model)}</span>
                         </div>
                         <div class="flex justify-between gap-2">
                             <span>BOM 版本</span>
-                            <span class="font-mono text-neutral-400">${esc(s.bom_version)}</span>
+                            <span class="font-mono text-ink-muted">${esc(s.bom_version)}</span>
                         </div>
-                        <div class="font-mono text-neutral-700">成品节点 × 1</div>
+                        <div class="font-mono text-ink-faint">成品节点 × 1</div>
                     </div>`
                       : '';
                   return `
@@ -1193,10 +1193,10 @@ function renderPlanScope() {
                             data-action="scope-toggle"
                             data-scope-key="${esc(key)}"
                             class="w-full pl-5 py-1 flex items-center justify-between gap-2 text-left ${
-                                selected ? 'text-white' : 'text-neutral-500 hover:text-neutral-300'
+                                selected ? 'text-ink' : 'text-ink-muted hover:text-ink'
                             }">
                         <div class="flex items-center gap-2 min-w-0">
-                            <span class="font-mono text-[9px] text-neutral-700 shrink-0">${open ? '▼' : '▶'}</span>
+                            <span class="font-mono text-[9px] text-ink-faint shrink-0">${open ? '▼' : '▶'}</span>
                             <span class="text-[11px] font-mono truncate">${esc(s.vehicle_model)} / ${esc(s.bom_version)}</span>
                         </div>
                     </button>
@@ -1210,12 +1210,12 @@ function renderPlanScope() {
         <div class="space-y-1">
             <div class="flex items-baseline justify-between gap-3 py-1 mb-2">
                 <div class="min-w-0">
-                    <div class="text-[10px] text-neutral-700">生产基地</div>
-                    <div class="text-[13px] font-mono text-neutral-200 truncate">${esc(location)}</div>
+                    <div class="text-[10px] text-ink-faint">生产基地</div>
+                    <div class="text-[13px] font-mono text-ink truncate">${esc(location)}</div>
                 </div>
                 <div class="text-right shrink-0">
-                    <div class="text-[10px] text-neutral-700">账期</div>
-                    <div class="text-[12px] font-mono text-neutral-400 tabular-nums">${esc(period)}</div>
+                    <div class="text-[10px] text-ink-faint">账期</div>
+                    <div class="text-[12px] font-mono text-ink-muted tabular-nums">${esc(period)}</div>
                 </div>
             </div>
             <div>
@@ -1312,8 +1312,8 @@ function updateStartButton() {
             hint.textContent = hintText;
             hint.classList.remove('hidden');
             hint.className = canStart
-                ? 'mt-3 text-[10px] text-neutral-500'
-                : 'mt-3 text-[10px] text-neutral-600';
+                ? 'mt-3 text-[10px] text-ink-muted'
+                : 'mt-3 text-[10px] text-ink-dim';
         } else {
             hint.textContent = '';
             hint.classList.add('hidden');
@@ -1433,7 +1433,7 @@ function showResult(result) {
     const panel = document.getElementById('engineResultPanel');
     panel?.classList.remove('hidden');
     const status = result?.status || '—';
-    const meta = STATUS_META[status] || { label: status, className: 'text-white' };
+    const meta = STATUS_META[status] || { label: status, className: 'text-ink' };
     const statusEl = document.getElementById('engineResultStatus');
     if (statusEl) {
         statusEl.textContent = meta.label;
@@ -1565,14 +1565,14 @@ function renderStepRows(result, steps, toneClass) {
                         data-query='${esc(JSON.stringify(query))}'
                         class="shrink-0 text-[10px] ${toneClass}">${esc(meta.action || '去查看')} →</button>`
                 : meta.page
-                  ? '<span class="shrink-0 text-[9px] text-neutral-700">无权限</span>'
+                  ? '<span class="shrink-0 text-[9px] text-ink-faint">无权限</span>'
                   : '';
             const reason = step.message ? esc(step.message) : '';
             return `
-            <div class="flex items-start justify-between gap-3 py-2.5 border-b border-white/5">
+            <div class="flex items-start justify-between gap-3 py-2.5 border-b border-ink/5">
                 <div class="min-w-0">
-                    <div class="text-[11px] text-neutral-200">${esc(formatStepTitle(step))}</div>
-                    ${reason ? `<div class="text-[10px] text-neutral-600 mt-0.5 leading-relaxed">${reason}</div>` : ''}
+                    <div class="text-[11px] text-ink">${esc(formatStepTitle(step))}</div>
+                    ${reason ? `<div class="text-[10px] text-ink-dim mt-0.5 leading-relaxed">${reason}</div>` : ''}
                 </div>
                 ${action}
             </div>`;
@@ -1585,27 +1585,27 @@ function renderEngineStepGroups(result, groups) {
     if (groups.failed.length) {
         blocks.push(`
             <div class="mb-4">
-                <div class="text-[10px] text-[#FF1E27] mb-1">需要处理 · 失败 ${groups.failed.length}</div>
-                ${renderStepRows(result, groups.failed, 'text-[#FF1E27] hover:text-white')}
+                <div class="text-[10px] text-brand-hud mb-1">需要处理 · 失败 ${groups.failed.length}</div>
+                ${renderStepRows(result, groups.failed, 'text-brand-hud hover:text-ink')}
             </div>`);
     }
     if (groups.blocked.length) {
         blocks.push(`
             <div class="mb-4">
-                <div class="text-[10px] text-amber-500/80 mb-1">未执行 · 上游未完成 ${groups.blocked.length}</div>
-                ${renderStepRows(result, groups.blocked, 'text-amber-500/80 hover:text-amber-400')}
+                <div class="text-[10px] text-warn/80 mb-1">未执行 · 上游未完成 ${groups.blocked.length}</div>
+                ${renderStepRows(result, groups.blocked, 'text-warn/80 hover:text-warn')}
             </div>`);
     }
     if (groups.review.length) {
         blocks.push(`
             <div class="mb-4">
-                <div class="text-[10px] text-amber-500/80 mb-1">需要核对 · 部分成功 ${groups.review.length}</div>
-                ${renderStepRows(result, groups.review, 'text-amber-500/80 hover:text-amber-400')}
+                <div class="text-[10px] text-warn/80 mb-1">需要核对 · 部分成功 ${groups.review.length}</div>
+                ${renderStepRows(result, groups.review, 'text-warn/80 hover:text-warn')}
             </div>`);
     }
     if (groups.done.length && (groups.failed.length || groups.blocked.length || groups.review.length)) {
         blocks.push(`
-            <div class="text-[10px] text-neutral-700">其余 ${groups.done.length} 项已完成或已有结果，无需处理。</div>`);
+            <div class="text-[10px] text-ink-faint">其余 ${groups.done.length} 项已完成或已有结果，无需处理。</div>`);
     }
     return blocks.join('');
 }
@@ -1703,7 +1703,7 @@ async function loadHistory(page) {
     } catch (_) {
         const body = document.getElementById('engineHistoryBody');
         if (body) {
-            body.innerHTML = `<tr><td colspan="9" class="px-2 py-8 text-center text-[10px] text-[#FF1E27]/80">历史加载失败</td></tr>`;
+            body.innerHTML = `<tr><td colspan="9" class="px-2 py-8 text-center text-[10px] text-brand-hud/80">历史加载失败</td></tr>`;
         }
     }
 }
@@ -1716,7 +1716,7 @@ function renderHistory() {
 
     const items = engineState.history.items;
     if (!items.length) {
-        body.innerHTML = `<tr><td colspan="9" class="px-2 py-8 text-center text-[10px] text-neutral-700">暂无运行记录</td></tr>`;
+        body.innerHTML = `<tr><td colspan="9" class="px-2 py-8 text-center text-[10px] text-ink-faint">暂无运行记录</td></tr>`;
         renderPager();
         return;
     }
@@ -1725,31 +1725,31 @@ function renderHistory() {
         .map((row) => {
             const meta = STATUS_META[row.status] || {
                 label: row.status,
-                className: 'text-neutral-600',
+                className: 'text-ink-dim',
             };
             const fingerprint = auditFingerprint(row);
             const viewBtn = `<button type="button" data-action="open-run" data-run-id="${row.id}"
-                        class="px-2 py-1 text-[10px] text-neutral-500 hover:text-white transition-colors">查看</button>`;
+                        class="px-2 py-1 text-[10px] text-ink-muted hover:text-ink transition-colors">查看</button>`;
             const deleteBtn = engineState.canDelete
                 ? `<button type="button" data-action="delete-run" data-run-id="${row.id}"
-                        class="px-2 py-1 text-[10px] text-neutral-600 hover:text-[#FF1E27] transition-colors"
+                        class="px-2 py-1 text-[10px] text-ink-dim hover:text-brand-hud transition-colors"
                         title="删除记录（不撤销已算价格）">删除</button>`
                 : '';
             return `
-            <tr class="engine-history-row group font-mono text-[11px] border-b border-white/5 hover:bg-white/[0.02] transition-colors">
+            <tr class="engine-history-row group font-mono text-[11px] border-b border-ink/5 hover:bg-ink/[0.02] transition-colors">
                 <td class="px-2 py-2.5 overflow-hidden">
-                    <div class="text-[13px] text-neutral-200 tabular-nums">#${esc(row.id)}</div>
-                    <div class="engine-audit-hash text-[9px] text-neutral-700 mt-0.5 truncate" title="${esc(fingerprint)}">
+                    <div class="text-[13px] text-ink tabular-nums">#${esc(row.id)}</div>
+                    <div class="engine-audit-hash text-[9px] text-ink-faint mt-0.5 truncate" title="${esc(fingerprint)}">
                         ${esc(fingerprint)}
                     </div>
                 </td>
-                <td class="px-2 py-2.5 text-neutral-400 overflow-hidden truncate" title="${esc(row.location)}">${esc(row.location)}</td>
-                <td class="px-2 py-2.5 text-right text-[10px] text-neutral-500 tabular-nums">${esc(fmtPeriod(row.year, row.month))}</td>
+                <td class="px-2 py-2.5 text-ink-muted overflow-hidden truncate" title="${esc(row.location)}">${esc(row.location)}</td>
+                <td class="px-2 py-2.5 text-right text-[10px] text-ink-muted tabular-nums">${esc(fmtPeriod(row.year, row.month))}</td>
                 <td class="px-2 py-2.5 text-center text-[10px] ${meta.className}">${esc(meta.label)}</td>
-                <td class="px-2 py-2.5 text-[10px] text-neutral-500 overflow-hidden truncate">${esc(row.created_by || '-')}</td>
-                <td class="px-2 py-2.5 text-[10px] text-neutral-600 tabular-nums">${esc(formatTs(row.started_at))}</td>
-                <td class="px-2 py-2.5 text-[10px] text-neutral-600 tabular-nums">${esc(formatTs(row.finished_at))}</td>
-                <td class="px-2 py-2.5 text-right text-[10px] text-neutral-400 tabular-nums">${esc(formatDurationSeconds(row))}</td>
+                <td class="px-2 py-2.5 text-[10px] text-ink-muted overflow-hidden truncate">${esc(row.created_by || '-')}</td>
+                <td class="px-2 py-2.5 text-[10px] text-ink-dim tabular-nums">${esc(formatTs(row.started_at))}</td>
+                <td class="px-2 py-2.5 text-[10px] text-ink-dim tabular-nums">${esc(formatTs(row.finished_at))}</td>
+                <td class="px-2 py-2.5 text-right text-[10px] text-ink-muted tabular-nums">${esc(formatDurationSeconds(row))}</td>
                 <td class="px-2 py-2.5 text-center">${viewBtn}${deleteBtn}</td>
             </tr>`;
         })

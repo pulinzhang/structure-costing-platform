@@ -8,13 +8,13 @@
  * - 删除确认  →deleteDrawer
  */
 
-import { usersTemplate, renderTableRows } from './template.js?v=10';
+import { usersTemplate, renderTableRows } from './template.js?v=17';
 import {
     DEFAULT_PAGE_SIZE,
     bindPagination,
     paintPagination,
-} from '../../../page-size.js?v=3';
-import { setSearchBusy } from '../../../search-busy.js?v=1';
+} from '../../../ui/page-size.js?v=6';
+import { setSearchBusy } from '../../../ui/search-busy.js?v=3';
 
 const usersState = {
     records: [],
@@ -129,7 +129,7 @@ async function loadData(page = 1) {
         if (tableBody) {
             tableBody.innerHTML = `
                 <tr>
-                    <td colspan="6" class="px-4 py-8 text-center text-[#9e9e9e] text-xs">
+                    <td colspan="6" class="px-4 py-8 text-center text-ink-muted text-xs">
                         加载数据失败，请重试
                     </td>
                 </tr>
@@ -514,7 +514,7 @@ async function openGrantDrawer(record) {
     if (container) {
         container.innerHTML = `
             <div class="flex items-center justify-center py-10">
-                <div class="w-4 h-4 border border-[#252525] border-t-[#d32f2f] rounded-full animate-spin"></div>
+                <div class="w-4 h-4 border border-line border-brand rounded-full animate-spin"></div>
             </div>`;
     }
     openDrawer('grantDrawer', 'grantDrawerBackdrop');
@@ -533,7 +533,7 @@ async function openGrantDrawer(record) {
     } catch (error) {
         console.error('加载权限树失败', error);
         if (container) {
-            container.innerHTML = `<p class="text-[11px] text-[#ef5350]">加载权限树失败</p>`;
+            container.innerHTML = `<p class="text-[11px] text-danger">加载权限树失败</p>`;
         }
     }
 }
@@ -549,14 +549,14 @@ function renderPermissionTree(nodes, checked, depth = 0) {
         const typeHint = node.type === 'op' ? '操作' : (node.type === 'group' ? '分组' : '菜单');
         return `
             <div class="grant-node" data-code="${esc(code)}" data-mandatory="${isMandatory ? '1' : '0'}">
-                <label class="flex items-center gap-2 py-1.5 hover:bg-[#ffffff]/[0.02] cursor-pointer ${isMandatory ? 'opacity-70' : ''}"
+                <label class="flex items-center gap-2 py-1.5 hover:bg-ink/[0.02] cursor-pointer ${isMandatory ? 'opacity-70' : ''}"
                        style="padding-left:${pad}px">
-                    <input type="checkbox" class="grant-check accent-[#d32f2f]"
+                    <input type="checkbox" class="grant-check brabus-check">
                            data-code="${esc(code)}"
                            ${isChecked ? 'checked' : ''}
                            ${isMandatory ? 'disabled' : ''}>
-                    <span class="text-[11px] ${isMandatory ? 'text-[#888888]' : 'text-[#c0c0c0]'}">${esc(node.label || code)}</span>
-                    <span class="text-[9px] text-[#484848] uppercase tracking-wider">${typeHint}${isMandatory ? ' · 必选' : ''}</span>
+                    <span class="text-[11px] ${isMandatory ? 'text-ink-muted' : 'text-ink'}">${esc(node.label || code)}</span>
+                    <span class="text-[9px] text-ink-faint uppercase tracking-wider">${typeHint}${isMandatory ? ' · 必选' : ''}</span>
                 </label>
                 ${childrenHtml}
             </div>`;

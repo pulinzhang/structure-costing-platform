@@ -6,23 +6,33 @@ import {
     gaugeFeeListTemplate,
     renderTableRows,
     updateGaugeFeeHud,
-    updateGaugeFeeFilterCapsules,
-} from './template.js?v=21';
-import { bindMoreMenu } from '../../../../more-menu.js?v=1';
+    updateGaugeFeeHudScope,
+} from './template.js?v=31';
+import { bindMoreMenu } from '../../../../ui/more-menu.js?v=5';
+import { bindFilterBar } from '../../../../ui/filter-bar.js?v=3';
 import {
     DEFAULT_PAGE_SIZE,
     bindPagination,
     paintPagination,
     normalizePageSize,
-} from '../../../../page-size.js?v=3';
-import { setSearchBusy } from '../../../../search-busy.js?v=1';
+} from '../../../../ui/page-size.js?v=6';
+import { setSearchBusy } from '../../../../ui/search-busy.js?v=3';
 
 const API_BASE = '/api/stamping/gauge-fees';
 const STORAGE_KEY = 'gaugeFeePageSize';
 
 /** @type {{ setOpen: (isOpen: boolean) => void, close: () => void, unbind: () => void } | null} */
 let moreMenu = null;
+/** @type {{ paint: () => void, setOpen: (isOpen: boolean) => void, unbind: () => void } | null} */
+let filterBar = null;
 const DRAWER_MS = 300;
+
+const GFL_FILTER_FIELD_IDS = [
+    'gflLocation',
+    'gflVehicle',
+    'gflPartNumber',
+    'gflStatus',
+];
 
 const pageState = {
     page: 1,
@@ -33,7 +43,6 @@ const pageState = {
     isLoading: false,
     isSaving: false,
     summary: null,
-    advancedOpen: false,
 };
 
 function canOp(code) {
@@ -115,9 +124,9 @@ function buildQueryParams() {
 function setLoading(isLoading) {
     pageState.isLoading = isLoading;
     setSearchBusy('gflSearchBtn', isLoading);
-    document.getElementById('gflLoadingState')?.classList.toggle('hidden', !isLoading);
+    document.getElementById('gflLoading')?.classList.toggle('hidden', !isLoading);
     if (isLoading) {
-        document.getElementById('gflEmptyState')?.classList.add('hidden');
+        document.getElementById('gflEmpty')?.classList.add('hidden');
         const body = document.getElementById('gflTableBody');
         if (body) body.innerHTML = '';
     }
@@ -126,15 +135,15 @@ function setLoading(isLoading) {
 function renderList() {
     const body = document.getElementById('gflTableBody');
     if (body) body.innerHTML = renderTableRows(pageState.records);
-    document.getElementById('gflEmptyState')?.classList.toggle(
+    document.getElementById('gflEmpty')?.classList.toggle(
         'hidden',
         pageState.records.length > 0 || pageState.isLoading
     );
-    const totalEl = document.getElementById('gflTotalCount');
+    const totalEl = document.getElementById('gflPageInfo');
     if (totalEl) totalEl.textContent = `共 ${pageState.total} 条`;
-    paintPagination('gflPaginationBtns', pageState.page, pageState.totalPages);
+    paintPagination('gflPagination', pageState.page, pageState.totalPages);
     updateGaugeFeeHud(pageState.summary);
-    updateGaugeFeeFilterCapsules();
+    filterBar?.paint();
 }
 
 async function loadData(page = pageState.page) {
@@ -185,7 +194,7 @@ function openRowDeleteDrawer(recordId, scope) {
     document.getElementById('gflDeleteId').value = String(recordId);
     document.getElementById('gflDeleteTitle').textContent = '删除检具费';
     document.getElementById('gflDeleteHint').innerHTML =
-        `确定删除 <span class="font-mono text-white">${esc(scope)}</span> 这一条？`;
+        `确定删除 <span class="font-mono text-ink">${esc(scope)}</span> 这一条？`;
     openDrawer('gflDeleteDrawer', 'gflDeleteBackdrop');
 }
 
@@ -204,7 +213,7 @@ function openScopeDeleteDrawer() {
     document.getElementById('gflDeleteId').value = '';
     document.getElementById('gflDeleteTitle').textContent = '批量删除';
     document.getElementById('gflDeleteHint').innerHTML =
-        `将删除 <span class="font-mono text-white">${esc(`${location} / ${vehicle}`)}</span> 下全部检具费档案。`;
+        `将删除 <span class="font-mono text-ink">${esc(`${location} / ${vehicle}`)}</span> 下全部检具费档案。`;
     openDrawer('gflDeleteDrawer', 'gflDeleteBackdrop');
 }
 
@@ -282,7 +291,7 @@ async function exportExcel() {
     const originalHtml = btn ? btn.innerHTML : '';
     if (btn) {
         btn.disabled = true;
-        btn.innerHTML = `<div class="w-3 h-3 border border-[#ef5350] border-t-transparent rounded-full animate-spin"></div>导出中`;
+        btn.innerHTML = `<div class="w-3 h-3 border border-danger border-t-transparent rounded-full animate-spin"></div>导出中`;
     }
     try {
         const params = buildQueryParams();
@@ -311,13 +320,6 @@ async function exportExcel() {
     }
 }
 
-function setAdvancedOpen(isOpen) {
-    pageState.advancedOpen = isOpen;
-    document.getElementById('gflAdvancedFilterPanel')?.classList.toggle('hidden', !isOpen);
-    const label = document.getElementById('gflAdvancedFilterLabel');
-    if (label) label.textContent = isOpen ? '收起高级筛选' : '展开高级筛选';
-}
-
 async function resetFilters() {
     const location = document.getElementById('gflLocation');
     const vehicle = document.getElementById('gflVehicle');
@@ -328,40 +330,41 @@ async function resetFilters() {
     if (partNumber) partNumber.value = '';
     if (status) status.value = '';
     await loadListFilters(true);
-    updateGaugeFeeFilterCapsules();
+    filterBar?.paint();
+    updateGaugeFeeHudScope();
     await loadData(1);
 }
 
 function bindEvents() {
-    document.getElementById('gflSearchBtn')?.addEventListener('click', () => loadData(1));
-    document.getElementById('gflResetBtn')?.addEventListener('click', () => {
-        resetFilters().catch(() => {});
-    });
-    document.getElementById('gflToggleAdvancedFilter')?.addEventListener('click', () => {
-        setAdvancedOpen(!pageState.advancedOpen);
+    filterBar = bindFilterBar({
+        prefix: 'gfl',
+        searchId: 'gflSearchBtn',
+        capsules: [
+            { capsuleId: 'gflCapsuleLocation', fieldId: 'gflLocation', idleLabel: '全部基地' },
+            { capsuleId: 'gflCapsuleVehicle', fieldId: 'gflVehicle', idleLabel: '全部项目' },
+            { capsuleId: 'gflCapsuleStatus', fieldId: 'gflStatus', idleLabel: '全部状态' },
+        ],
+        countFieldIds: GFL_FILTER_FIELD_IDS,
+        resetId: 'gflResetBtn',
+        enterFieldIds: ['gflPartNumber'],
+        onSearch: () => loadData(1),
+        onReset: () => {
+            resetFilters().catch(() => {});
+        },
     });
     document.getElementById('gflLocation')?.addEventListener('change', () => {
         loadListFilters(true)
             .then(() => {
-                updateGaugeFeeFilterCapsules();
+                filterBar?.paint();
+                updateGaugeFeeHudScope();
                 return loadData(1);
             })
             .catch(() => {});
     });
     document.getElementById('gflVehicle')?.addEventListener('change', () => {
-        updateGaugeFeeFilterCapsules();
         loadData(1);
     });
     document.getElementById('gflStatus')?.addEventListener('change', () => {
-        updateGaugeFeeFilterCapsules();
-        loadData(1);
-    });
-    document.getElementById('gflPartNumber')?.addEventListener('input', () => {
-        updateGaugeFeeFilterCapsules();
-    });
-    document.getElementById('gflPartNumber')?.addEventListener('keydown', (event) => {
-        if (event.key !== 'Enter') return;
-        event.preventDefault();
         loadData(1);
     });
     document.getElementById('gflTableBody')?.addEventListener('click', (event) => {
@@ -419,7 +422,7 @@ function init() {
     bindEvents();
     bindPagination({
         selectId: 'gflPageSize',
-        buttonsId: 'gflPaginationBtns',
+        buttonsId: 'gflPagination',
         getSize: () => pageState.pageSize,
         setSize: (size) => {
             pageState.pageSize = size;
@@ -427,7 +430,11 @@ function init() {
         },
         onPage: (page) => loadData(page),
     });
-    loadListFilters().then(() => loadData(1)).catch(() => loadData(1));
+    loadListFilters().then(() => {
+        filterBar?.paint();
+        updateGaugeFeeHudScope();
+        return loadData(1);
+    }).catch(() => loadData(1));
 }
 
 export const pageConfig = {
@@ -436,5 +443,7 @@ export const pageConfig = {
     destroy() {
         moreMenu?.unbind();
         moreMenu = null;
+        filterBar?.unbind();
+        filterBar = null;
     },
 };

@@ -2,24 +2,28 @@
  * 冲压零件价格一览
  */
 
+import { DRAWER_SHELL, DRAWER_BACKDROP, BTN_SOLID } from '../../../../ui/classes.js?v=11';
 import {
     partCostListTemplate,
     renderCostRows,
     updatePartCostHud,
-    updateCostFilterCapsules,
     syncOptionalColumnVisibility,
-} from './template.js?v=76';
-import { shortPartNumber } from '../../../../part-identity.js?v=3';
+} from './template.js?v=86';
+import { shortPartNumber } from '../../../../domain/part-identity.js?v=5';
 import {
     DEFAULT_PAGE_SIZE,
     bindPagination,
     paintPagination,
-} from '../../../../page-size.js?v=3';
-import { bindMoreMenu } from '../../../../more-menu.js?v=1';
-import { setSearchBusy } from '../../../../search-busy.js?v=1';
+} from '../../../../ui/page-size.js?v=6';
+import { bindMoreMenu } from '../../../../ui/more-menu.js?v=5';
+import { bindFilterBar } from '../../../../ui/filter-bar.js?v=3';
+import { setSearchBusy } from '../../../../ui/search-busy.js?v=3';
+import { setCurrentTableRow } from '../../../../ui/table-row.js?v=3';
 
 /** @type {{ setOpen: (isOpen: boolean) => void, close: () => void, unbind: () => void } | null} */
 let moreMenu = null;
+/** @type {{ paint: () => void, setOpen: (isOpen: boolean) => void, unbind: () => void } | null} */
+let filterBar = null;
 
 const API_BASE = '/api/costing/stamping-part-cost';
 const CASCADE_API = '/api/stamping/filters/cascade';
@@ -35,6 +39,7 @@ const FILTER_IDS = [
     'costVersionFilter',
     'costSupplierFilter',
     'costAuditFilter',
+    'costPartNumberFilter',
 ];
 
 const listState = {
@@ -51,7 +56,6 @@ const listState = {
     massColsOpen: false,
     breakdownColsOpen: false,
     feeColsOpen: false,
-    advancedOpen: false,
     pendingFilters: null,
     batchAuditSubmitting: false,
     isLoading: false,
@@ -104,13 +108,11 @@ function init() {
     fillMonthOptions();
     fillAuditOptions();
     listState.pendingFilters = readHashFilters();
-    if (listState.pendingFilters) setAdvancedOpen(true);
-    updateCostFilterCapsules();
     syncOptionalColumnVisibility(optionalColumnFlags());
     loadYearOptions().then(async () => {
         await loadCascadeFilters();
         applyPendingFiltersToSelects();
-        updateCostFilterCapsules();
+        filterBar?.paint();
         loadList(1);
     });
 }
@@ -118,6 +120,8 @@ function init() {
 function destroy() {
     moreMenu?.unbind();
     moreMenu = null;
+    filterBar?.unbind();
+    filterBar = null;
     closeDetailDrawer();
 }
 
@@ -142,10 +146,7 @@ function applyPermissionUi() {
 }
 
 function setAdvancedOpen(isOpen) {
-    listState.advancedOpen = isOpen;
-    document.getElementById('costAdvancedFilterPanel')?.classList.toggle('hidden', !isOpen);
-    const label = document.getElementById('costAdvancedFilterLabel');
-    if (label) label.textContent = isOpen ? '收起高级筛选' : '展开高级筛选';
+    filterBar?.setOpen(isOpen);
 }
 
 function readHashFilters() {
@@ -207,17 +208,30 @@ function setListEmpty(isEmpty) {
     if (empty) empty.classList.toggle('hidden', !isEmpty);
 }
 
-function onFilterChange() {
-    updateCostFilterCapsules();
-}
-
 function bindEvents() {
-    document.getElementById('costSearchBtn')?.addEventListener('click', () => {
-        updateCostFilterCapsules();
-        loadList(1);
-    });
-    document.getElementById('costToggleAdvancedFilter')?.addEventListener('click', () => {
-        setAdvancedOpen(!listState.advancedOpen);
+    filterBar = bindFilterBar({
+        prefix: 'cost',
+        searchId: 'costSearchBtn',
+        capsules: [
+            {
+                capsuleId: 'costCapsulePeriod',
+                fieldIds: ['costYearFilter', 'costMonthFilter'],
+                idleLabel: '全部期间',
+                display: () => window.fmtPeriod(
+                    document.getElementById('costYearFilter')?.value,
+                    document.getElementById('costMonthFilter')?.value,
+                ),
+            },
+            { capsuleId: 'costCapsuleLocation', fieldId: 'costLocationFilter', idleLabel: '全部基地' },
+            { capsuleId: 'costCapsuleVehicle', fieldId: 'costVehicleModelFilter', idleLabel: '全部项目' },
+            { capsuleId: 'costCapsuleVersion', fieldId: 'costVersionFilter', idleLabel: '全部版本' },
+            { capsuleId: 'costCapsuleSupplier', fieldId: 'costSupplierFilter', idleLabel: '全部工厂' },
+        ],
+        countFieldIds: FILTER_IDS,
+        resetId: 'costResetBtn',
+        enterFieldIds: ['costPartNumberFilter'],
+        onSearch: () => loadList(1),
+        onReset: () => resetFilters(),
     });
     [
         ['costToggleMassCols', 'massColsOpen'],
@@ -230,29 +244,17 @@ function bindEvents() {
             toggleOptionalColumnGroup(stateKey);
         });
     });
-    document.getElementById('costResetBtn')?.addEventListener('click', () => resetFilters());
-    document.getElementById('costPartNumberFilter')?.addEventListener('keydown', (event) => {
-        if (event.key === 'Enter') {
-            event.preventDefault();
-            updateCostFilterCapsules();
-            loadList(1);
-        }
-    });
-    document.getElementById('costPartNumberFilter')?.addEventListener('input', onFilterChange);
 
     document.getElementById('costYearFilter')?.addEventListener('change', () => {
-        onFilterChange();
         loadCascadeFilters().then(() => {
-            updateCostFilterCapsules();
+            filterBar?.paint();
             loadList(1);
         });
     });
     document.getElementById('costMonthFilter')?.addEventListener('change', () => {
-        onFilterChange();
         loadList(1);
     });
     document.getElementById('costLocationFilter')?.addEventListener('change', () => {
-        onFilterChange();
         const vehicleEl = document.getElementById('costVehicleModelFilter');
         const versionEl = document.getElementById('costVersionFilter');
         const supplierEl = document.getElementById('costSupplierFilter');
@@ -260,36 +262,32 @@ function bindEvents() {
         if (versionEl) versionEl.value = '';
         if (supplierEl) supplierEl.value = '';
         loadCascadeFilters().then(() => {
-            updateCostFilterCapsules();
+            filterBar?.paint();
             loadList(1);
         });
     });
     document.getElementById('costVehicleModelFilter')?.addEventListener('change', () => {
-        onFilterChange();
         const versionEl = document.getElementById('costVersionFilter');
         const supplierEl = document.getElementById('costSupplierFilter');
         if (versionEl) versionEl.value = '';
         if (supplierEl) supplierEl.value = '';
         loadCascadeFilters().then(() => {
-            updateCostFilterCapsules();
+            filterBar?.paint();
             loadList(1);
         });
     });
     document.getElementById('costVersionFilter')?.addEventListener('change', () => {
-        onFilterChange();
         const supplierEl = document.getElementById('costSupplierFilter');
         if (supplierEl) supplierEl.value = '';
         loadCascadeFilters().then(() => {
-            updateCostFilterCapsules();
+            filterBar?.paint();
             loadList(1);
         });
     });
     document.getElementById('costSupplierFilter')?.addEventListener('change', () => {
-        onFilterChange();
         loadList(1);
     });
     document.getElementById('costAuditFilter')?.addEventListener('change', () => {
-        onFilterChange();
         loadList(1);
     });
 
@@ -378,6 +376,7 @@ async function loadCascadeFilters() {
         fillSelect('costVehicleModelFilter', filters.vehicle_models || [], pending?.vehicle_model || null);
         fillSelect('costVersionFilter', filters.versions || [], pending?.version || null);
         fillSelect('costSupplierFilter', filters.stamping_suppliers || [], pending?.stamping_supplier || null);
+        filterBar?.paint();
     } catch (error) {
         console.error(error);
     }
@@ -388,10 +387,7 @@ function resetFilters() {
         const el = document.getElementById(id);
         if (el) el.value = '';
     });
-    const partEl = document.getElementById('costPartNumberFilter');
-    if (partEl) partEl.value = '';
-    updateCostFilterCapsules();
-    loadCascadeFilters().then(() => updateCostFilterCapsules());
+    loadCascadeFilters().then(() => filterBar?.paint());
     loadList(1);
 }
 
@@ -443,7 +439,7 @@ async function loadList(page = 1) {
     if (listState.isLoading) return;
     setListLoading(true);
     body.innerHTML = '';
-    updateCostFilterCapsules();
+    filterBar?.paint();
     try {
         const filters = getFilters();
         const res = await HttpClient.get(API_BASE, {
@@ -476,13 +472,13 @@ async function loadList(page = 1) {
                 fillSelect('costSupplierFilter', pageData.filters.suppliers, filters.stamping_supplier);
             }
         }
-        updateCostFilterCapsules();
+        filterBar?.paint();
     } catch (error) {
         setListLoading(false);
         body.innerHTML = '';
         setListEmpty(true);
         updatePartCostHud(0, null);
-        updateCostFilterCapsules();
+        filterBar?.paint();
         showToast(error.message || '加载失败', 'error');
     } finally {
         setListLoading(false);
@@ -505,6 +501,7 @@ function renderRows(items) {
             event.stopPropagation();
             const costId = Number(btn.dataset.id);
             if (costId) openDetail(costId);
+            setCurrentTableRow(body.closest('table'), btn.closest('tr'));
         });
     });
 }
@@ -524,12 +521,11 @@ function showDetailDrawer(row) {
 
     const backdrop = document.createElement('div');
     backdrop.id = 'costDetailBackdrop';
-    backdrop.className = 'fixed inset-0 z-[80] bg-black/80 backdrop-blur-sm transition-opacity duration-200';
+    backdrop.className = DRAWER_BACKDROP;
 
     const drawer = document.createElement('div');
     drawer.id = 'costDetailDrawer';
-    drawer.className =
-        'fixed inset-y-0 right-0 z-[85] w-[620px] max-w-[95vw] bg-[#0A0A0E] border-l border-[#1F1F2A] shadow-[-24px_0_60px_rgba(0,0,0,0.9)] flex flex-col font-mono text-[11px]';
+    drawer.className = `${DRAWER_SHELL} w-[620px] font-mono text-[11px]`;
 
     const failStatus = row.calc_status === 'failed';
     const isApproved = row.audit_status === 'approved';
@@ -542,10 +538,10 @@ function showDetailDrawer(row) {
               : '待审核';
     const auditBadgeColor =
         row.audit_status === 'approved'
-            ? 'text-[#8E8E93] bg-[#161620] border-[#2A2A38]'
+            ? 'text-ink-muted bg-app-rowhover border-line'
             : row.audit_status === 'rejected'
-              ? 'text-[#ef5350] bg-[#1A080A] border-[#ef5350]/30'
-              : 'text-[#FF1E27] bg-[#1A080A] border-[#FF1E27]/30';
+              ? 'text-danger bg-brand-hud/10 border-danger/30'
+              : 'text-brand-hud bg-brand-hud/10 border-brand-hud/30';
 
     const unitCostDisplay =
         row.unit_cost == null || row.unit_cost === ''
@@ -555,20 +551,19 @@ function showDetailDrawer(row) {
     const heroCostHtml = canEditUnitCost
         ? `
             <div class="text-right shrink-0 w-[200px]">
-                <label class="block text-[9px] text-[#6E6E73] mb-1 tracking-wider">最终成本（元）</label>
+                <label class="block text-[9px] text-ink-dim mb-1 tracking-wider">最终成本（元）</label>
                 <div class="flex items-center justify-end gap-1">
-                    <span class="text-[#FF1E27] text-sm font-bold">￥</span>
+                    <span class="text-brand-hud text-sm font-bold">￥</span>
                     <input type="number" id="costManualUnitCost" min="0" step="0.000001"
                            value="${row.unit_cost == null ? '' : esc(String(row.unit_cost))}"
-                           class="w-full h-9 px-2 text-right text-[16px] font-black tabular-nums bg-[#0A0A0E] border border-[#FF1E27]/40 text-[#FF1E27] placeholder:text-[#3A3A42] focus:outline-none focus:border-[#FF1E27] rounded-sm"
+                           class="w-full h-9 px-2 text-right text-[16px] font-black tabular-nums bg-app-hud border border-brand-hud/40 text-brand-hud placeholder:text-ink-faint focus:outline-none focus:border-brand-hud rounded-sm"
                            placeholder="0.0000">
                 </div>
             </div>
         `
         : `
             <div class="text-right shrink-0">
-                <div class="text-[28px] font-black tabular-nums text-[#FF1E27] leading-none"
-                     style="text-shadow: 0 0 14px rgba(255,30,39,0.5);">
+                <div class="text-[28px] font-black tabular-nums text-brand-hud leading-none">
                     ${unitCostDisplay}
                 </div>
             </div>
@@ -576,27 +571,27 @@ function showDetailDrawer(row) {
 
     const editPanelHtml = canEditUnitCost
         ? `
-        <div class="px-6 py-4 border-b border-[#1A1A24] bg-[#0C0C10] shrink-0 space-y-3">
-            <div class="flex items-center gap-2 text-[10px] text-[#FF1E27]">
-                <span class="w-1.5 h-1.5 bg-[#FF1E27] rounded-full"></span>
+        <div class="px-6 py-4 border-b border-line-subtle bg-app-hud shrink-0 space-y-3">
+            <div class="flex items-center gap-2 text-[10px] text-brand-hud">
+                <span class="w-1.5 h-1.5 bg-brand-hud rounded-full"></span>
                 <span class="font-bold tracking-wider">计算失败 · 可手工录入最终成本</span>
             </div>
             ${row.calc_fail_reason ? `
-                <div class="text-[10px] text-[#8E8E93] leading-relaxed bg-[#1A080A] border border-[#FF1E27]/20 px-3 py-2 rounded-sm">
+                <div class="text-[10px] text-ink-muted leading-relaxed bg-brand-hud/10 border border-brand-hud/20 px-3 py-2 rounded-sm">
                     失败原因：${esc(row.calc_fail_reason)}
                 </div>
             ` : ''}
             <div>
-                <label class="block text-[9px] text-[#6E6E73] mb-1.5 tracking-wider">
-                    备注 <span class="text-[#FF1E27]">*</span>
+                <label class="block text-[9px] text-ink-dim mb-1.5 tracking-wider">
+                    备注 <span class="text-brand-hud">*</span>
                 </label>
                 <textarea id="costManualRemark" rows="3" maxlength="500"
-                          class="w-full px-3 py-2 text-[11px] bg-[#0A0A0E] border border-[#2A2A38] text-[#E8E8ED] placeholder:text-[#555555] focus:outline-none focus:border-[#FF1E27] rounded-sm resize-none"
+                          class="w-full px-3 py-2 text-[11px] bg-app-hud border border-line text-ink placeholder:text-ink-faint focus:outline-none focus:border-brand-hud rounded-sm resize-none"
                           placeholder="必填：说明手工改价原因">${esc(row.remark || '')}</textarea>
             </div>
             <div class="flex items-center justify-end gap-2">
                 <button type="button" id="costManualSaveBtn"
-                        class="inline-flex items-center justify-center gap-1.5 bg-[#d32f2f] text-white px-4 py-2 text-[11px] font-semibold rounded hover:bg-[#b71c1c] transition-all">
+                        class="${BTN_SOLID} justify-center">
                     保存最终成本
                 </button>
             </div>
@@ -604,54 +599,53 @@ function showDetailDrawer(row) {
         `
         : failStatus && isApproved
           ? `
-        <div class="px-6 py-3 border-b border-[#1A1A24] bg-[#0C0C10] shrink-0 text-[10px] text-[#8E8E93]">
+        <div class="px-6 py-3 border-b border-line-subtle bg-app-hud shrink-0 text-[10px] text-ink-muted">
             已审核通过，请先反审核后再手工改价。
         </div>
         `
           : '';
 
     drawer.innerHTML = `
-        <div class="px-6 py-4 flex items-center justify-between shrink-0 bg-[#0E0E12] border-b border-[#1A1A24]">
+        <div class="px-6 py-4 flex items-center justify-between shrink-0 bg-app-main border-b border-line-subtle">
             <div class="flex items-center gap-3 min-w-0">
                 ${shortNo ? `
-                    <div class="flex items-center justify-center px-2.5 py-1 bg-[#1A080A] border border-[#FF1E27]/40 text-[#FF1E27] font-black text-[14px] tracking-widest tabular-nums rounded-sm shrink-0"
-                         style="text-shadow: 0 0 10px rgba(255,30,39,0.45);">
+                    <div class="flex items-center justify-center px-2.5 py-1 bg-brand-hud/10 border border-brand-hud/40 text-brand-hud font-black text-[14px] tracking-widest tabular-nums rounded-sm shrink-0">
                         ${esc(shortNo)}
                     </div>
                 ` : ''}
                 <div class="min-w-0">
                     <div class="flex items-center gap-2">
-                        <h5 class="text-[13px] font-bold tracking-wide text-[#F0F0F2] truncate">${esc(row.part_name || '零件核算详情')}</h5>
+                        <h5 class="text-[13px] font-bold tracking-wide text-ink truncate">${esc(row.part_name || '零件核算详情')}</h5>
                         <span class="text-[9px] px-1.5 py-0.5 border ${auditBadgeColor} rounded-sm shrink-0">${auditText}</span>
                     </div>
-                    <div class="text-[10px] text-[#555555] tracking-wide mt-0.5 truncate">${esc(row.part_number || '—')}</div>
+                    <div class="text-[10px] text-ink-faint tracking-wide mt-0.5 truncate">${esc(row.part_number || '—')}</div>
                 </div>
             </div>
             <button type="button" id="closeCostDetailDrawer"
-                    class="w-7 h-7 flex items-center justify-center bg-[#121216] border border-[#22222A] text-[#6E6E73] hover:text-[#F0F0F2] hover:border-[#FF1E27]/50 hover:bg-[#1A080A] rounded-sm transition-all shrink-0 ml-4"
+                    class="w-7 h-7 flex items-center justify-center bg-app-main border border-line-hud text-ink-dim hover:text-ink hover:border-brand-hud/50 hover:bg-brand-hud/10 rounded-sm transition-all shrink-0 ml-4"
                     title="关闭">
                 ✕
             </button>
         </div>
 
-        <div class="px-6 py-4 border-b border-[#1A1A24] bg-[#0F0708] relative overflow-hidden shrink-0">
-            <div class="absolute right-0 top-0 bottom-0 w-40 bg-gradient-to-l from-[#FF1E27]/[0.12] to-transparent pointer-events-none"></div>
+        <div class="px-6 py-4 border-b border-line-subtle bg-app-deep relative overflow-hidden shrink-0">
+            <div class="absolute right-0 top-0 bottom-0 w-40 bg-gradient-to-l from-brand-hud/[0.12] to-transparent pointer-events-none"></div>
             <div class="flex items-end justify-between relative z-10 gap-4">
                 <div class="min-w-0">
-                    <div class="text-[9px] font-bold tracking-widest text-[#FF1E27] mb-1.5 flex items-center gap-1.5">
-                        <span class="w-1.5 h-1.5 bg-[#FF1E27] rounded-full animate-pulse"></span>
+                    <div class="text-[9px] font-bold tracking-widest text-brand-hud mb-1.5 flex items-center gap-1.5">
+                        <span class="w-1.5 h-1.5 bg-brand-hud rounded-full animate-pulse"></span>
                         单件核算成本
                     </div>
-                    <div class="text-[10px] text-[#6E6E73] font-mono">
-                        直接成本 <span class="text-[#E8E8ED]">￥${fmtNum(row.direct_cost, 2)}</span>
-                        <span class="text-[#3A3A42] mx-1">=</span>
-                        R <span class="text-[#E8E8ED]">￥${fmtNum(row.material_net_per_part, 2)}</span>
-                        <span class="text-[#3A3A42] mx-1">+</span>
-                        加工费 <span class="text-[#E8E8ED]">￥${fmtNum(row.process_fee_amount, 2)}</span>
-                        <span class="text-[#3A3A42] mx-1">+</span>
-                        模具费 <span class="text-[#E8E8ED]">￥${fmtNum(row.die_fee_amount, 2)}</span>
-                        <span class="text-[#3A3A42] mx-1">+</span>
-                        检具费 <span class="text-[#E8E8ED]">￥${fmtNum(row.gauge_fee_amount, 2)}</span>
+                    <div class="text-[10px] text-ink-dim font-mono">
+                        直接成本 <span class="text-ink">￥${fmtNum(row.direct_cost, 2)}</span>
+                        <span class="text-ink-faint mx-1">=</span>
+                        R <span class="text-ink">￥${fmtNum(row.material_net_per_part, 2)}</span>
+                        <span class="text-ink-faint mx-1">+</span>
+                        加工费 <span class="text-ink">￥${fmtNum(row.process_fee_amount, 2)}</span>
+                        <span class="text-ink-faint mx-1">+</span>
+                        模具费 <span class="text-ink">￥${fmtNum(row.die_fee_amount, 2)}</span>
+                        <span class="text-ink-faint mx-1">+</span>
+                        检具费 <span class="text-ink">￥${fmtNum(row.gauge_fee_amount, 2)}</span>
                     </div>
                 </div>
                 ${heroCostHtml}
@@ -660,7 +654,7 @@ function showDetailDrawer(row) {
 
         ${editPanelHtml}
 
-        <div class="flex-1 overflow-y-auto p-6 space-y-4 text-[#8E8E93] bg-[#0A0A0E]">
+        <div class="flex-1 overflow-y-auto p-6 space-y-4 text-ink-muted bg-app-hud">
             ${detailBlock('基础属总', [
                 ['零件号', row.part_number || '—'],
                 ['短号', shortNo || '—'],
@@ -688,7 +682,7 @@ function showDetailDrawer(row) {
                 ['废料重量 O', `${fmtNum(row.scrap_weight_kg, 7)} kg`],
                 [
                     '材料利用率',
-                    `<span class="text-[#F0F0F2] font-bold">${fmtNum(row.material_utilization_pct, 2)} %</span>`,
+                    `<span class="text-ink font-bold">${fmtNum(row.material_utilization_pct, 2)} %</span>`,
                 ],
             ])}
 
@@ -705,7 +699,7 @@ function showDetailDrawer(row) {
                 ['废料扣除小计（② + ③）', `￥${fmtNum(row.scrap_amount_sheet, 4)}`],
                 [
                     '原材料净成本 R',
-                    `<span class="text-[#FF1E27] font-semibold">￥${fmtNum(row.material_net_per_part, 4)}</span>`,
+                    `<span class="text-brand-hud font-semibold">￥${fmtNum(row.material_net_per_part, 4)}</span>`,
                 ],
                 ['加工费', `￥${fmtNum(row.process_fee_amount, 3)}`],
                 ['模具费', `￥${fmtNum(row.die_fee_amount, 4)}`],
@@ -715,15 +709,15 @@ function showDetailDrawer(row) {
             ${detailBlock('成品费率费用', [
                 [
                     '直接成本（R + 加工费 + 模具费 + 检具费）',
-                    `<span class="text-[#E8E8ED] font-semibold">￥${fmtNum(row.direct_cost, 4)}</span>`,
+                    `<span class="text-ink font-semibold">￥${fmtNum(row.direct_cost, 4)}</span>`,
                 ],
-                ['仓储+包装管理费用', `<span class="text-[#6E6E73]">￥${fmtNum(row.finished_warehouse_packaging_fee, 4)}</span>`],
-                ['管理费', `<span class="text-[#6E6E73]">￥${fmtNum(row.finished_management_fee, 4)}</span>`],
-                ['财务费', `<span class="text-[#6E6E73]">￥${fmtNum(row.finished_finance_fee, 4)}</span>`],
-                ['税前利润', `<span class="text-[#6E6E73]">￥${fmtNum(row.finished_pretax_profit_fee, 4)}</span>`],
+                ['仓储+包装管理费用', `<span class="text-ink-dim">￥${fmtNum(row.finished_warehouse_packaging_fee, 4)}</span>`],
+                ['管理费', `<span class="text-ink-dim">￥${fmtNum(row.finished_management_fee, 4)}</span>`],
+                ['财务费', `<span class="text-ink-dim">￥${fmtNum(row.finished_finance_fee, 4)}</span>`],
+                ['税前利润', `<span class="text-ink-dim">￥${fmtNum(row.finished_pretax_profit_fee, 4)}</span>`],
                 [
                     '单件成本',
-                    `<span class="text-[#FF1E27] font-semibold">￥${fmtNum(row.unit_cost, 4)}</span>`,
+                    `<span class="text-brand-hud font-semibold">￥${fmtNum(row.unit_cost, 4)}</span>`,
                 ],
             ])}
 
@@ -731,8 +725,8 @@ function showDetailDrawer(row) {
                 [
                     '计算状态',
                     failStatus
-                        ? `<span class="text-[#FF1E27] font-bold bg-[#FF1E27]/10 px-1.5 py-0.5 border border-[#FF1E27]/30">失败（${esc(row.calc_fail_reason || '未知原因')}）</span>`
-                        : '<span class="text-[#E8E8ED]">正常</span>',
+                        ? `<span class="text-brand-hud font-bold bg-brand-hud/10 px-1.5 py-0.5 border border-brand-hud/30">失败（${esc(row.calc_fail_reason || '未知原因')}）</span>`
+                        : '<span class="text-ink">正常</span>',
                 ],
                 ['备注', row.remark || '—'],
                 ['来源文件', row.excel_filename || '—'],
@@ -811,22 +805,22 @@ async function saveManualUnitCost(costId) {
 
 function detailBlock(title, rows) {
     return `
-        <div class="bg-[#0C0C10] border border-[#1A1A24] overflow-hidden rounded-sm">
-            <div class="px-4 py-2 bg-[#121218] border-b border-[#1A1A24] text-[10px] font-bold text-[#A0A0AB] tracking-wider flex items-center justify-between">
+        <div class="bg-app-hud border border-line-subtle overflow-hidden rounded-sm">
+            <div class="px-4 py-2 bg-app-main border-b border-line-subtle text-[10px] font-bold text-ink-muted tracking-wider flex items-center justify-between">
                 <div class="flex items-center gap-2">
-                    <span class="w-1 h-3 bg-[#FF1E27] shrink-0"></span>
+                    <span class="w-1 h-3 bg-brand-hud shrink-0"></span>
                     <span>${esc(title)}</span>
                 </div>
             </div>
-            <div class="divide-y divide-[#14141C]">
+            <div class="divide-y divide-line-hud">
                 ${rows
                     .map(([k, v]) => {
                         const isHtml =
                             typeof v === 'string' && (v.startsWith('<span') || v.includes('</span>'));
                         return `
-                        <div class="flex items-center justify-between gap-4 px-4 py-2 hover:bg-[#121218] transition-colors">
-                            <span class="text-[#555555] shrink-0 text-[10px]">${esc(k)}</span>
-                            <span class="text-[#D1D1D6] text-right font-mono text-[10px] break-all tabular-nums">${isHtml ? v : esc(String(v))}</span>
+                        <div class="flex items-center justify-between gap-4 px-4 py-2 hover:bg-app-main transition-colors">
+                            <span class="text-ink-faint shrink-0 text-[10px]">${esc(k)}</span>
+                            <span class="text-ink text-right font-mono text-[10px] break-all tabular-nums">${isHtml ? v : esc(String(v))}</span>
                         </div>`;
                     })
                     .join('')}
@@ -891,8 +885,8 @@ function openBatchAuditDrawer(mode) {
     }
     if (remarkLabel) {
         remarkLabel.innerHTML = isApprove
-            ? '审核意见<span class="text-[#d32f2f]">*</span>'
-            : '反审核意见<span class="text-[#d32f2f]">*</span>';
+            ? '审核意见<span class="text-brand">*</span>'
+            : '反审核意见<span class="text-brand">*</span>';
     }
     if (remarkEl) {
         remarkEl.value = '';
@@ -906,7 +900,7 @@ function openBatchAuditDrawer(mode) {
     if (confirmBtn) {
         confirmBtn.textContent = isApprove ? '确认审核通过' : '确认反审核';
         confirmBtn.className =
-            'inline-flex items-center gap-1.5 bg-[#d32f2f] text-white px-4 py-2 text-[11px] font-semibold rounded hover:bg-[#b71c1c] transition-all';
+            BTN_SOLID;
     }
 
     openDrawer('costBatchAuditDrawer', 'costBatchAuditDrawerBackdrop');

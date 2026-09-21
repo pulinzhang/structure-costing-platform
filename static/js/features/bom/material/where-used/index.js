@@ -2,12 +2,16 @@
  * 零件用在哪
  */
 
-import { can } from '../../../../permissions.js?v=12';
-import { shortPartNumber } from '../../../../part-identity.js?v=3';
-import { bomWhereUsedTemplate } from './template.js?v=12';
+import { can } from '../../../../core/permissions.js?v=14';
+import { shortPartNumber } from '../../../../domain/part-identity.js?v=5';
+import { bindFilterBar } from '../../../../ui/filter-bar.js?v=3';
+import { bomWhereUsedTemplate } from './template.js?v=20';
 
 const API_BASE = '/api/bom/where-used';
 const CASCADE_API = '/api/bom/filters/cascade';
+
+/** @type {{ paint: () => void, setOpen: (isOpen: boolean) => void, unbind: () => void } | null} */
+let filterBar = null;
 
 const LEVEL_LABEL = {
     0: '供货总成',
@@ -17,7 +21,6 @@ const LEVEL_LABEL = {
 
 const wuState = {
     canExport: false,
-    advancedOpen: false,
 };
 
 function val(id) {
@@ -38,7 +41,7 @@ function sketchSrc(sketchUrl) {
 
 function sketchThumbHtml(src, alt) {
     if (!src) {
-        return `<span class="wu-sketch-thumb inline-flex items-center justify-center text-[9px] text-[#3a3a3a]">暂无图</span>`;
+        return `<span class="wu-sketch-thumb inline-flex items-center justify-center text-[9px] text-ink-faint">暂无图</span>`;
     }
     return `<img src="${esc(src)}" alt="${esc(alt || '')}" width="40" height="32"
              class="wu-sketch-thumb" loading="lazy" draggable="false">`;
@@ -71,7 +74,7 @@ async function loadCascade(changed) {
         fillSelect('wuVehicle', data.vehicle_models || [], vehicleModel, '全部');
     }
     fillSelect('wuVersion', data.bom_versions || [], val('wuVersion'), '全部');
-    updateCapsules();
+    filterBar?.paint();
 }
 
 function fillSelect(id, values, selected, emptyLabel) {
@@ -86,21 +89,25 @@ function fillSelect(id, values, selected, emptyLabel) {
     el.innerHTML = html;
 }
 
-function updateCapsules() {
-    const setCap = (id, value) => {
-        const el = document.getElementById(id);
-        if (!el) return;
-        if (!value) {
-            el.textContent = '';
-            el.classList.add('hidden');
-            return;
-        }
-        el.textContent = value;
-        el.classList.remove('hidden');
-    };
-    setCap('wuCapsuleLocation', val('wuLocation'));
-    setCap('wuCapsuleModel', val('wuVehicle'));
-    setCap('wuCapsuleVersion', val('wuVersion'));
+function bindEvents() {
+    filterBar = bindFilterBar({
+        prefix: 'wu',
+        searchId: 'wuSearchBtn',
+        capsules: [
+            { capsuleId: 'wuCapsuleLocation', fieldId: 'wuLocation', idleLabel: '全部基地', hideWhenIdle: true },
+            { capsuleId: 'wuCapsuleModel', fieldId: 'wuVehicle', idleLabel: '全部项目', hideWhenIdle: true },
+            { capsuleId: 'wuCapsuleVersion', fieldId: 'wuVersion', idleLabel: '全部版本', hideWhenIdle: true },
+        ],
+        countFieldIds: ['wuLocation', 'wuVehicle', 'wuVersion'],
+        resetId: 'wuResetFilterBtn',
+        enterFieldIds: ['wuQuery'],
+        startOpen: false,
+        onSearch: () => runSearch(),
+        onReset: () => resetFilters(),
+    });
+    document.getElementById('wuExportBtn')?.addEventListener('click', () => exportExcel());
+    document.getElementById('wuLocation')?.addEventListener('change', () => loadCascade('location'));
+    document.getElementById('wuVehicle')?.addEventListener('change', () => loadCascade('vehicle'));
 }
 
 function updateHud(summary) {
@@ -116,10 +123,10 @@ function updateHud(summary) {
 function emptyHtml(message) {
     return `
         <div class="flex flex-col items-center justify-center py-14">
-            <div class="w-10 h-10 flex items-center justify-center mb-3 rounded-md bg-[#121218] border border-[#2A2A35]">
-                ${window.svgIcon('clipboard-list', 'w-4 h-4 text-[#555555]')}
+            <div class="w-10 h-10 flex items-center justify-center mb-3 rounded-md bg-app-main border border-line-hud">
+                ${window.svgIcon('clipboard-list', 'w-4 h-4 text-ink-faint')}
             </div>
-            <p class="text-[11px] text-[#8E8E93]">${esc(message)}</p>
+            <p class="text-[11px] text-ink-muted">${esc(message)}</p>
         </div>
     `;
 }
@@ -134,14 +141,14 @@ function renderPaths(paths) {
     panel.innerHTML = paths.map((path) => {
         const head = `${esc(path.location)} · ${esc(path.vehicle_model)} · ${esc(path.bom_version)}`;
         const cards = (path.nodes || []).map((node, nodeIndex) => nodeCardHtml(path, node, nodeIndex === 0)).join(
-            '<div class="text-[#555555] text-lg px-1">→</div>',
+            '<div class="text-ink-faint text-lg px-1">→</div>',
         );
         return `
-            <div class="wu-open-path border border-[#1E1E26] bg-[#0D0D11] p-3 cursor-pointer hover:border-[#FF1E27]/40"
+            <div class="wu-open-path border border-line-hud bg-app-main p-3 cursor-pointer hover:border-brand-hud/40"
                  data-snapshot-id="${esc(String(path.snapshot_id))}"
                  data-node-id="${esc(String(path.l0_node_id))}"
                  title="打开该供货总成">
-                <div class="text-[10px] text-[#555555] mb-3 font-mono">${head}</div>
+                <div class="text-[10px] text-ink-faint mb-3 font-mono">${head}</div>
                 <div class="flex flex-wrap items-stretch gap-2">${cards}</div>
             </div>
         `;
@@ -174,16 +181,16 @@ function nodeCardHtml(path, node, isHit) {
         isHit,
     }));
     return `
-        <div class="wu-node-card w-32 shrink-0 bg-[#111111] border border-[#2c2c2c] text-left"
+        <div class="wu-node-card w-32 shrink-0 bg-app-main border border-line text-left"
              data-payload="${payload}">
             <div class="flex items-center gap-1 px-2 pt-1.5">
-                <span class="text-[9px] text-[#555555] shrink-0">${esc(levelText)}</span>
+                <span class="text-[9px] text-ink-faint shrink-0">${esc(levelText)}</span>
                 ${sketchThumbHtml(src, node.part_name || node.part_number)}
             </div>
-            <div class="px-2 py-1.5 border-t border-[#1A1A22]">
-                <div class="text-[13px] font-mono font-bold text-[#F0F0F2] truncate">${esc(shortNo)}</div>
-                <div class="text-[9px] text-[#555555] truncate">${esc(node.part_name || '')}</div>
-                <div class="text-[9px] font-mono text-[#6E6E73] mt-1">
+            <div class="px-2 py-1.5 border-t border-line-hud">
+                <div class="text-[13px] font-mono font-bold text-ink truncate">${esc(shortNo)}</div>
+                <div class="text-[9px] text-ink-faint truncate">${esc(node.part_name || '')}</div>
+                <div class="text-[9px] font-mono text-ink-dim mt-1">
                     ${esc(isHit ? `单车 ${path.path_qty}` : (node.qty_text || node.qty || ''))}
                 </div>
             </div>
@@ -215,7 +222,7 @@ function showHover(card, event) {
     const lines = [];
     const push = (label, value) => {
         if (value === null || value === undefined || value === '') return;
-        lines.push(`<div class="mb-1"><span class="text-[#555555]">${esc(label)}</span> ${esc(String(value))}</div>`);
+        lines.push(`<div class="mb-1"><span class="text-ink-faint">${esc(label)}</span> ${esc(String(value))}</div>`);
     };
     push('层级', LEVEL_LABEL[node.level] || node.level);
     push('短码', shortPartNumber(node.part_number));
@@ -311,29 +318,11 @@ function resetFilters() {
     loadCascade();
 }
 
-function bindEvents() {
-    document.getElementById('wuSearchBtn')?.addEventListener('click', () => runSearch());
-    document.getElementById('wuExportBtn')?.addEventListener('click', () => exportExcel());
-    document.getElementById('wuResetFilterBtn')?.addEventListener('click', () => resetFilters());
-    document.getElementById('wuQuery')?.addEventListener('keydown', (event) => {
-        if (event.key === 'Enter') runSearch();
-    });
-    document.getElementById('wuLocation')?.addEventListener('change', () => loadCascade('location'));
-    document.getElementById('wuVehicle')?.addEventListener('change', () => loadCascade('vehicle'));
-    document.getElementById('wuVersion')?.addEventListener('change', () => updateCapsules());
-    document.getElementById('wuToggleAdvancedFilter')?.addEventListener('click', () => {
-        wuState.advancedOpen = !wuState.advancedOpen;
-        document.getElementById('wuAdvancedFilterPanel')?.classList.toggle('hidden', !wuState.advancedOpen);
-        const label = document.getElementById('wuAdvancedFilterLabel');
-        if (label) label.textContent = wuState.advancedOpen ? '收起高级筛选' : '展开高级筛选';
-    });
-}
-
 function init() {
     if (!can('op:bom-where-used:view')) {
         const root = document.getElementById('pageContent');
         if (root) {
-            root.innerHTML = `<div class="py-16 text-center text-[11px] text-[#616161]">需要权限 op:bom-where-used:view</div>`;
+            root.innerHTML = `<div class="py-16 text-center text-[11px] text-ink-dim">需要权限 op:bom-where-used:view</div>`;
         }
         return;
     }
@@ -346,6 +335,8 @@ function init() {
 
 function destroy() {
     hideHover();
+    filterBar?.unbind();
+    filterBar = null;
 }
 
 export const pageConfig = {

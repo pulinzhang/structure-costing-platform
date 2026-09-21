@@ -2,7 +2,7 @@
  * 常见问题胶囊
  */
 
-import { PROMPT_CATALOG } from '../prompts/catalog.js?v=5';
+import { PROMPT_CATALOG } from '../prompts/catalog.js?v=7';
 
 /**
  * @param {HTMLElement} root
@@ -21,7 +21,7 @@ export function mountChips(root, options) {
             : item.label;
         const short = shorten(label, 18);
         return `<button type="button"
-          class="shrink-0 px-2 py-1 text-[10px] border border-[#2c2c2c] text-[#9e9e9e] hover:border-[#ff5252] hover:text-[#F5F5F5] transition-colors disabled:opacity-40 disabled:cursor-not-allowed rounded-sm"
+          class="shrink-0 px-2 py-1 text-[10px] border border-line text-ink-muted hover:border-brand-active hover:text-ink transition-colors disabled:opacity-40 disabled:cursor-not-allowed rounded-sm"
           data-prompt-id="${item.id}"
           title="${escAttr(label)}"
           ${disabled ? 'disabled' : ''}>${esc(short)}</button>`;

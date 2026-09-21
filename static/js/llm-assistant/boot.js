@@ -2,9 +2,9 @@
  * 采购助理入口：就绪队列 + 顶栏挂载 + 权限门禁
  */
 
-import { can } from '../permissions.js?v=10';
-import { getUserSession } from '../features/login/index.js?v=15';
-import { createShell } from './shell.js?v=36';
+import { can } from '../core/permissions.js?v=12';
+import { getUserSession } from '../features/login/index.js?v=17';
+import { createShell } from './shell.js?v=38';
 
 const QUEUE_KEY = '_q';
 

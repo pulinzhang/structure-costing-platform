@@ -6,7 +6,7 @@ import {
     locationTemplate,
     renderLocationRows,
     renderAliasItems,
-} from './template.js?v=16';
+} from './template.js?v=22';
 
 const API_BASE = '/api/masterdata/locations';
 const DRAWER_ANIMATION_MS = 300;
@@ -54,8 +54,8 @@ function applyPermissionUi() {
 
 function setLoading(isLoading) {
     locationState.isLoading = isLoading;
-    const loading = document.getElementById('locationLoadingState');
-    const empty = document.getElementById('locationEmptyState');
+    const loading = document.getElementById('locationLoading');
+    const empty = document.getElementById('locationEmpty');
     const body = document.getElementById('locationTableBody');
     if (loading) loading.classList.toggle('hidden', !isLoading);
     if (isLoading) {
@@ -66,7 +66,7 @@ function setLoading(isLoading) {
 
 function renderList() {
     const body = document.getElementById('locationTableBody');
-    const empty = document.getElementById('locationEmptyState');
+    const empty = document.getElementById('locationEmpty');
     const hasRows = locationState.records.length > 0;
     if (body) body.innerHTML = renderLocationRows(locationState.records);
     empty?.classList.toggle('hidden', hasRows || locationState.isLoading);

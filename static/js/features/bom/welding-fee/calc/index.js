@@ -3,18 +3,19 @@
  * 异步后台计算 + 进度轮询 + 历史过程日志
  */
 
+import { DRAWER_CLOSE, DRAWER_SHELL, DRAWER_BACKDROP } from '../../../../ui/classes.js?v=11';
 import {
     l0WeldingFeeCalcTemplate,
-} from './template.js?v=14';
+} from './template.js?v=19';
 import {
     DEFAULT_PAGE_SIZE,
     bindPagination,
     paintPagination,
-} from '../../../../page-size.js?v=3';
+} from '../../../../ui/page-size.js?v=6';
 import {
     formatDurationSeconds,
     formatTimingLine,
-} from '../../../../duration.js?v=1';
+} from '../../../../domain/duration.js?v=3';
 
 const API_BASE = '/api/bom/welding-fees';
 const UNIT_PRICE_YEARS_API = '/api/bom/welding-unit-price/filters/years';
@@ -30,10 +31,10 @@ const READY_FALLBACK =
     '提示：须选定年度、基地、项目；并确保存在有效期内的焊接工艺拆解与该年焊接单价。';
 
 const STATUS_META = {
-    processing: { label: '计算中', className: 'text-[#64b5f6]' },
-    success: { label: '成功', className: 'text-[#66bb6a]' },
-    partial: { label: '部分成功', className: 'text-[#ffb74d]' },
-    failed: { label: '失败', className: 'text-[#ef5350]' },
+    processing: { label: '计算中', className: 'text-ink-muted' },
+    success: { label: '成功', className: 'text-ok' },
+    partial: { label: '部分成功', className: 'text-warn' },
+    failed: { label: '失败', className: 'text-danger' },
 };
 
 const calcState = {
@@ -270,9 +271,9 @@ function setReadyCounts(l0, prices, processLines, zeroProcess) {
     const zeroEl = document.getElementById('l0wfCntZeroProcess');
     if (zeroEl) {
         const n = Number(zeroProcess) || 0;
-        const color = n > 0 ? 'text-[#ffb74d]' : 'text-[#dddddd]';
+        const color = n > 0 ? 'text-warn' : 'text-ink';
         zeroEl.className = `text-xs font-mono font-bold ${color}`;
-        zeroEl.innerHTML = `${n.toLocaleString('zh-CN')} <span class="text-[9px] font-normal text-[#555]">条</span>`;
+        zeroEl.innerHTML = `${n.toLocaleString('zh-CN')} <span class="text-[9px] font-normal text-ink-faint">条</span>`;
     }
 }
 
@@ -280,13 +281,13 @@ function setCountHtml(id, count, unit) {
     const el = document.getElementById(id);
     if (!el) return;
     const display = Number.isFinite(count) ? Number(count).toLocaleString('zh-CN') : '-';
-    el.innerHTML = `${display} <span class="text-[9px] font-normal text-[#555]">${unit}</span>`;
+    el.innerHTML = `${display} <span class="text-[9px] font-normal text-ink-faint">${unit}</span>`;
 }
 
 async function loadCalcHistory(page = calcState.history.page) {
     const body = document.getElementById('l0wfCalcHistoryBody');
     if (!body) return;
-    body.innerHTML = `<tr><td colspan="16" class="py-8 text-center text-[#555]">加载中..</td></tr>`;
+    body.innerHTML = `<tr><td colspan="16" class="py-8 text-center text-ink-faint">加载中..</td></tr>`;
 
     try {
         const res = await HttpClient.get(CALC_LOGS_API, {
@@ -309,7 +310,7 @@ async function loadCalcHistory(page = calcState.history.page) {
             );
     } catch (error) {
         console.error('加载计算历史失败:', error);
-        body.innerHTML = `<tr><td colspan="16" class="py-8 text-center text-[#ef5350]">加载失败</td></tr>`;
+        body.innerHTML = `<tr><td colspan="16" class="py-8 text-center text-danger">加载失败</td></tr>`;
     }
 }
 
@@ -328,7 +329,7 @@ function renderHistoryRows(items) {
     const body = document.getElementById('l0wfCalcHistoryBody');
     if (!body) return;
     if (!items.length) {
-        body.innerHTML = `<tr><td colspan="16" class="py-8 text-center text-[#555]">暂无计算记录</td></tr>`;
+        body.innerHTML = `<tr><td colspan="16" class="py-8 text-center text-ink-faint">暂无计算记录</td></tr>`;
         return;
     }
 
@@ -336,34 +337,34 @@ function renderHistoryRows(items) {
         const status = STATUS_META[item.status] || STATUS_META.failed;
         const isProcessing = item.status === 'processing';
         return `
-            <tr class="hover:bg-[#ffffff]/[0.02] transition-colors text-[#999]">
-                <td class="py-2 px-2 font-mono text-[#666] whitespace-nowrap">${esc(formatDateTime(item.started_at))}</td>
-                <td class="py-2 px-2 font-mono text-[#666] whitespace-nowrap">${esc(formatDateTime(item.finished_at))}</td>
-                <td class="py-2 px-2 font-mono text-right tabular-nums text-[#777] whitespace-nowrap">${esc(formatDurationSeconds(item))}</td>
-                <td class="py-2 px-2 text-[#ccc] whitespace-nowrap">${esc(item.created_by || item.operator_name || '-')}</td>
-                <td class="py-2 px-2 font-mono text-[#ccc] whitespace-nowrap">${esc(fmtYear(item.year))}</td>
-                <td class="py-2 px-2 text-[#ccc] whitespace-nowrap">${esc(item.location || '-')}</td>
-                <td class="py-2 px-2 text-[#ccc] whitespace-nowrap">${esc(item.vehicle_model || '-')}</td>
-                <td class="py-2 px-2 text-[#ccc] whitespace-nowrap">${esc(item.bom_version || '-')}</td>
+            <tr class="hover:bg-ink/[0.02] transition-colors text-ink-muted">
+                <td class="py-2 px-2 font-mono text-ink-dim whitespace-nowrap">${esc(formatDateTime(item.started_at))}</td>
+                <td class="py-2 px-2 font-mono text-ink-dim whitespace-nowrap">${esc(formatDateTime(item.finished_at))}</td>
+                <td class="py-2 px-2 font-mono text-right tabular-nums text-ink-dim whitespace-nowrap">${esc(formatDurationSeconds(item))}</td>
+                <td class="py-2 px-2 text-ink-muted whitespace-nowrap">${esc(item.created_by || item.operator_name || '-')}</td>
+                <td class="py-2 px-2 font-mono text-ink-muted whitespace-nowrap">${esc(fmtYear(item.year))}</td>
+                <td class="py-2 px-2 text-ink-muted whitespace-nowrap">${esc(item.location || '-')}</td>
+                <td class="py-2 px-2 text-ink-muted whitespace-nowrap">${esc(item.vehicle_model || '-')}</td>
+                <td class="py-2 px-2 text-ink-muted whitespace-nowrap">${esc(item.bom_version || '-')}</td>
                 <td class="py-2 px-2 text-center text-[9px] ${status.className}">${status.label}</td>
-                <td class="py-2 px-2 font-mono text-right tabular-nums text-[#777]">${fmtInt(item.l0_count)}</td>
-                <td class="py-2 px-2 font-mono text-right tabular-nums text-[#777]">${fmtInt(item.created_count)}</td>
-                <td class="py-2 px-2 font-mono text-right tabular-nums text-[#777]">${fmtInt(item.updated_count)}</td>
-                <td class="py-2 px-2 font-mono text-right tabular-nums ${Number(item.failed_count) > 0 ? 'text-[#ef5350]' : 'text-[#777]'}">${fmtInt(item.failed_count)}</td>
-                <td class="py-2 px-2 font-mono text-right tabular-nums ${Number(item.missing_price_count) > 0 ? 'text-[#ffb74d]' : 'text-[#777]'}">${fmtInt(item.missing_price_count)}</td>
-                <td class="py-2 px-2 font-mono text-right tabular-nums text-[#777]">${fmtInt(item.skipped_approved_count)}</td>
+                <td class="py-2 px-2 font-mono text-right tabular-nums text-ink-dim">${fmtInt(item.l0_count)}</td>
+                <td class="py-2 px-2 font-mono text-right tabular-nums text-ink-dim">${fmtInt(item.created_count)}</td>
+                <td class="py-2 px-2 font-mono text-right tabular-nums text-ink-dim">${fmtInt(item.updated_count)}</td>
+                <td class="py-2 px-2 font-mono text-right tabular-nums ${Number(item.failed_count) > 0 ? 'text-danger' : 'text-ink-dim'}">${fmtInt(item.failed_count)}</td>
+                <td class="py-2 px-2 font-mono text-right tabular-nums ${Number(item.missing_price_count) > 0 ? 'text-warn' : 'text-ink-dim'}">${fmtInt(item.missing_price_count)}</td>
+                <td class="py-2 px-2 font-mono text-right tabular-nums text-ink-dim">${fmtInt(item.skipped_approved_count)}</td>
                 <td class="py-2 px-2 text-right whitespace-nowrap">
-                    ${isProcessing ? `<span class="text-[9px] text-[#555] mr-2">进行中</span>` : `
-                    <button type="button" class="wf-calc-view-process-btn text-[9px] text-[#777] hover:text-white mr-2" data-log-id="${esc(item.id)}">过程</button>
+                    ${isProcessing ? `<span class="text-[9px] text-ink-faint mr-2">进行中</span>` : `
+                    <button type="button" class="wf-calc-view-process-btn text-[9px] text-ink-dim hover:text-ink mr-2" data-log-id="${esc(item.id)}">过程</button>
                     ${item.status === 'failed' ? '' : `
-                    <button type="button" class="wf-calc-view-result-btn text-[9px] text-[#777] hover:text-white mr-2"
+                    <button type="button" class="wf-calc-view-result-btn text-[9px] text-ink-dim hover:text-ink mr-2"
                             data-year="${esc(item.year)}"
                             data-location="${esc(item.location || '')}"
                             data-vehicle-model="${esc(item.vehicle_model || '')}"
                             data-bom-version="${esc(item.bom_version || '')}">结果</button>`}
                     `}
                     ${calcState.canDelete !== false ? `
-                    <button type="button" class="wf-calc-delete-log-btn text-[9px] text-[#777] hover:text-[#ef5350]" data-log-id="${esc(item.id)}" title="含计算中：删除可释放锁">删除</button>` : ''}
+                    <button type="button" class="wf-calc-delete-log-btn text-[9px] text-ink-dim hover:text-danger" data-log-id="${esc(item.id)}" title="含计算中：删除可释放锁">删除</button>` : ''}
                 </td>
             </tr>
         `;
@@ -441,35 +442,35 @@ function showProcessDrawer(log) {
     const scope = `${log.year || '-'} · ${log.location || '-'} · ${log.vehicle_model || '-'} · ${log.bom_version || '-'}`;
     const backdrop = document.createElement('div');
     backdrop.id = 'l0wfCalcProcessBackdrop';
-    backdrop.className = 'fixed inset-0 z-[80] bg-black/70 backdrop-blur-sm';
+    backdrop.className = DRAWER_BACKDROP;
 
     const drawer = document.createElement('div');
     drawer.id = 'l0wfCalcProcessDrawer';
     drawer.className =
-        'fixed inset-y-0 right-0 z-[85] w-[640px] max-w-[95vw] bg-[#1a1a1a] border-l border-[#2a2a2a] flex flex-col';
+        `${DRAWER_SHELL} w-[640px]`;
     drawer.innerHTML = `
-        <div class="px-5 py-3.5 flex items-center justify-between shrink-0 bg-[#1f1f1f] border-b border-[#333333]">
-            <h5 class="text-[11px] font-semibold tracking-wider text-[#b0b0b0] uppercase">
+        <div class="px-5 py-3.5 flex items-center justify-between shrink-0 bg-app-surface border-b border-line">
+            <h5 class="text-[11px] font-semibold tracking-wider text-ink-muted uppercase">
                 计算过程 · ${esc(scope)}
                 <span class="ml-2 normal-case ${status.className}">${status.label}</span>
             </h5>
             <div class="flex items-center gap-0.5 shrink-0">
                 ${window.copyProcessReportButtonHtml()}
                 <button type="button" id="l0wfCloseCalcProcessDrawer"
-                    class="flex items-center justify-center w-8 h-8 rounded-md text-[#707070] hover:text-white hover:bg-[#d32f2f] transition-all">
+                    class="${DRAWER_CLOSE}">
                     <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M6 18L18 6M6 6l12 12"></path>
                     </svg>
                 </button>
             </div>
         </div>
-        <div class="px-5 py-3 border-b border-[#222] text-[10px] text-[#777] space-y-1 shrink-0">
-            <div>批次 <span class="font-mono text-[#999]">${esc(log.calc_batch_id || '-')}</span></div>
+        <div class="px-5 py-3 border-b border-line-subtle text-[10px] text-ink-dim space-y-1 shrink-0">
+            <div>批次 <span class="font-mono text-ink-muted">${esc(log.calc_batch_id || '-')}</span></div>
             <div>${esc(formatTimingLine(log, formatDateTime) || '-')}</div>
             <div>汇总：节点 ${fmtInt(log.l0_count)} · 新增 ${fmtInt(log.created_count)} · 更新 ${fmtInt(log.updated_count)} · 失败 ${fmtInt(log.failed_count)} · 缺单价 ${fmtInt(log.missing_price_count)} · 跳过 ${fmtInt(log.skipped_approved_count)}</div>
         </div>
         <div class="flex-1 overflow-y-auto overscroll-contain p-5">
-            <pre class="text-[11px] leading-5 font-mono text-[#9e9e9e] whitespace-pre-wrap break-words bg-[#111111] border border-[#262626] p-4">${esc(log.detail_text || '（无过程文本）')}</pre>
+            <pre class="text-[11px] leading-5 font-mono text-ink-muted whitespace-pre-wrap break-words bg-app-main border border-app-elevated p-4">${esc(log.detail_text || '（无过程文本）')}</pre>
         </div>
     `;
 
@@ -554,25 +555,25 @@ function updateProgress(progress, msg, status) {
     if (titleEl) {
         if (status === 'completed') {
             titleEl.textContent = '计算完成';
-            titleEl.className = 'text-xs font-medium text-[#4caf50] truncate mb-0';
+            titleEl.className = 'text-xs font-medium text-ok truncate mb-0';
         } else if (status === 'failed') {
             titleEl.textContent = '计算失败';
-            titleEl.className = 'text-xs font-medium text-[#ef5350] truncate mb-0';
+            titleEl.className = 'text-xs font-medium text-danger truncate mb-0';
         } else {
             titleEl.textContent = '正在计算焊接费…';
-            titleEl.className = 'text-xs font-medium text-[#ffffff] truncate mb-0';
+            titleEl.className = 'text-xs font-medium text-ink truncate mb-0';
         }
     }
 
     if (status === 'completed' && bar) {
-        bar.className = 'h-full bg-[#2e7d32] transition-all duration-300';
-        if (percentEl) percentEl.className = 'text-xs font-mono tabular-nums text-[#4caf50] shrink-0';
+        bar.className = 'h-full bg-ok transition-all duration-300';
+        if (percentEl) percentEl.className = 'text-xs font-mono tabular-nums text-ok shrink-0';
     } else if (status === 'failed' && bar) {
-        bar.className = 'h-full bg-[#c62828] transition-all duration-300';
-        if (percentEl) percentEl.className = 'text-xs font-mono tabular-nums text-[#ef5350] shrink-0';
+        bar.className = 'h-full bg-danger transition-all duration-300';
+        if (percentEl) percentEl.className = 'text-xs font-mono tabular-nums text-danger shrink-0';
     } else if (bar) {
-        bar.className = 'h-full bg-[#d32f2f] shadow-[0_0_8px_rgba(211,47,47,0.5)] transition-all duration-300';
-        if (percentEl) percentEl.className = 'text-xs font-mono tabular-nums text-[#d32f2f] shrink-0';
+        bar.className = 'h-full bg-brand hud-brand-glow transition-all duration-300';
+        if (percentEl) percentEl.className = 'text-xs font-mono tabular-nums text-brand shrink-0';
     }
 }
 

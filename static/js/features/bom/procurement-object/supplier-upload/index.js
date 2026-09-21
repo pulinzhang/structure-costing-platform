@@ -2,9 +2,9 @@
  * 采购对象批量上传供应商
  */
 
-import { procurementObjectSupplierUploadTemplate } from './template.js?v=8';
-import { bindSyncUploadProgress } from '../../../../sync-upload-progress.js?v=1';
-import { loadSnapshotCascade } from '../snapshot-cascade.js?v=3';
+import { procurementObjectSupplierUploadTemplate } from './template.js?v=13';
+import { bindSyncUploadProgress } from '../../../../ui/sync-upload-progress.js?v=3';
+import { loadSnapshotCascade } from '../snapshot-cascade.js?v=5';
 
 const API_BASE = '/api/bom/procurement-objects';
 const MAX_FILE_SIZE = 5 * 1024 * 1024;
@@ -98,12 +98,12 @@ function bindEvents() {
     });
     zone?.addEventListener('dragover', (event) => {
         event.preventDefault();
-        zone.classList.add('border-[#d32f2f]');
+        zone.classList.add('border-brand');
     });
-    zone?.addEventListener('dragleave', () => zone.classList.remove('border-[#d32f2f]'));
+    zone?.addEventListener('dragleave', () => zone.classList.remove('border-brand'));
     zone?.addEventListener('drop', (event) => {
         event.preventDefault();
-        zone.classList.remove('border-[#d32f2f]');
+        zone.classList.remove('border-brand');
         if (!uploadState.canUpload || uploadState.isUploading) return;
         const file = event.dataTransfer?.files?.[0];
         if (file) setSelectedFile(file);
@@ -138,7 +138,7 @@ function setSelectedFile(file) {
     const preview = document.getElementById('poSupplierUploadFilePreview');
     if (preview) {
         preview.classList.remove('hidden');
-        preview.innerHTML = `<div class="text-[11px] text-[#9e9e9e] border border-[#2c2c2c] px-3 py-2">${esc(file.name)}</div>`;
+        preview.innerHTML = `<div class="text-[11px] text-ink-muted border border-line px-3 py-2">${esc(file.name)}</div>`;
     }
     const submitBtn = document.getElementById('poSupplierUploadSubmitBtn');
     if (submitBtn) submitBtn.disabled = uploadState.isUploading;

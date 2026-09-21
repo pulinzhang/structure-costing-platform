@@ -7,8 +7,8 @@ import {
     renderHudCards,
     renderTableBody,
     vehicleModelListTemplate,
-} from './template.js?v=14';
-import { bindMoreMenu } from '../../../../more-menu.js?v=1';
+} from './template.js?v=22';
+import { bindMoreMenu } from '../../../../ui/more-menu.js?v=5';
 
 const API_BASE = '/api/masterdata/vehicle-models';
 const DRAWER_ANIMATION_MS = 300;
@@ -85,9 +85,9 @@ function applyPermissionUi() {
 
 function setLoading(isLoading) {
     listState.isLoading = isLoading;
-    document.getElementById('vmLoadingState')?.classList.toggle('hidden', !isLoading);
+    document.getElementById('vmLoading')?.classList.toggle('hidden', !isLoading);
     if (isLoading) {
-        document.getElementById('vmEmptyState')?.classList.add('hidden');
+        document.getElementById('vmEmpty')?.classList.add('hidden');
         const body = document.getElementById('vmTableBody');
         if (body) body.innerHTML = '';
     }
@@ -121,7 +121,7 @@ function renderAll() {
         canOp('op:vehicle-model-list:delete'),
     );
     if (body) body.innerHTML = html;
-    const empty = document.getElementById('vmEmptyState');
+    const empty = document.getElementById('vmEmpty');
     const hasRows = visibleItems().length > 0;
     empty?.classList.toggle('hidden', hasRows || listState.isLoading);
 }

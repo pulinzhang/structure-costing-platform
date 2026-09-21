@@ -6,16 +6,19 @@ import {
     bomMaterialListTemplate,
     renderBomMatTableRows,
     updateBomMatHud,
-    updateBomMatCapsules,
-} from './template.js?v=10';
+} from './template.js?v=19';
+import { bindFilterBar } from '../../../../ui/filter-bar.js?v=3';
 import {
     DEFAULT_PAGE_SIZE,
     bindPagination,
     paintPagination,
-} from '../../../../page-size.js?v=3';
-import { setSearchBusy } from '../../../../search-busy.js?v=1';
+} from '../../../../ui/page-size.js?v=6';
+import { setSearchBusy } from '../../../../ui/search-busy.js?v=3';
 
 const API_BASE = '/api/bom';
+
+/** @type {{ paint: () => void, setOpen: (isOpen: boolean) => void, unbind: () => void } | null} */
+let filterBar = null;
 
 const bomMatState = {
     records: [],
@@ -40,7 +43,7 @@ function init() {
     bindEvents();
     bindPagination({
         selectId: 'bomMatPageSize',
-        buttonsId: 'bomMatPaginationBtns',
+        buttonsId: 'bomMatPagination',
         getSize: () => bomMatState.pageSize,
         setSize: (size) => {
             bomMatState.pageSize = size;
@@ -48,13 +51,7 @@ function init() {
         onPage: (page) => loadData(page),
     });
     applyPermissionUi();
-    if (bomMatState.advancedOpen) {
-        document.getElementById('bomMatAdvancedFilterPanel')?.classList.remove('hidden');
-        const label = document.getElementById('bomMatAdvancedFilterLabel');
-        if (label) label.textContent = '收起高级筛选';
-    }
     loadData(1);
-    updateBomMatCapsules(bomMatState);
 }
 
 function applyHashQuery() {
@@ -78,22 +75,28 @@ function applyPermissionUi() {
 }
 
 function bindEvents() {
-    document.getElementById('btnBomMatFilter')?.addEventListener('click', () => {
-        readFiltersFromDom();
-        loadData(1);
+    filterBar = bindFilterBar({
+        prefix: 'bomMat',
+        searchId: 'btnBomMatFilter',
+        resetId: 'bomMatResetFilterBtn',
+        startOpen: bomMatState.advancedOpen,
+        capsules: [
+            { capsuleId: 'bomMatCapsuleLocation', fieldId: 'bomMatLocationFilter', idleLabel: '全部基地' },
+            { capsuleId: 'bomMatCapsuleModel', fieldId: 'bomMatModelFilter', idleLabel: '全部项目' },
+            { capsuleId: 'bomMatCapsuleVersion', fieldId: 'bomMatVersionFilter', idleLabel: '全部版本' },
+            { capsuleId: 'bomMatCapsuleStatus', fieldId: 'bomMatStatusFilter', idleLabel: '全部状态' },
+        ],
+        onSearch: () => {
+            readFiltersFromDom();
+            loadData(1);
+        },
+        onReset: resetFilters,
     });
     ['bomMatLocationFilter', 'bomMatModelFilter', 'bomMatVersionFilter', 'bomMatStatusFilter'].forEach((id) => {
         document.getElementById(id)?.addEventListener('change', () => {
             readFiltersFromDom();
             loadData(1);
         });
-    });
-    document.getElementById('bomMatResetFilterBtn')?.addEventListener('click', resetFilters);
-    document.getElementById('bomMatToggleAdvancedFilter')?.addEventListener('click', () => {
-        bomMatState.advancedOpen = !bomMatState.advancedOpen;
-        document.getElementById('bomMatAdvancedFilterPanel')?.classList.toggle('hidden', !bomMatState.advancedOpen);
-        const label = document.getElementById('bomMatAdvancedFilterLabel');
-        if (label) label.textContent = bomMatState.advancedOpen ? '收起高级筛选' : '展开高级筛选';
     });
 
     document.getElementById('bomMatTableBody')?.addEventListener('click', (event) => {
@@ -118,7 +121,6 @@ function readFiltersFromDom() {
     bomMatState.vehicleModel = val('bomMatModelFilter') || null;
     bomMatState.bomVersion = val('bomMatVersionFilter') || null;
     bomMatState.status = val('bomMatStatusFilter') || null;
-    updateBomMatCapsules(bomMatState);
 }
 
 function val(id) {
@@ -169,8 +171,8 @@ async function loadData(page = 1) {
     bomMatState.isLoading = true;
     setSearchBusy('btnBomMatFilter', true);
     const tbody = document.getElementById('bomMatTableBody');
-    const empty = document.getElementById('bomMatEmptyState');
-    const loading = document.getElementById('bomMatLoadingState');
+    const empty = document.getElementById('bomMatEmpty');
+    const loading = document.getElementById('bomMatLoading');
     if (tbody) tbody.innerHTML = '';
     empty?.classList.add('hidden');
     loading?.classList.remove('hidden');
@@ -199,9 +201,9 @@ async function loadData(page = 1) {
         fillSelect('bomMatVersionFilter', filters.bom_versions);
         fillSelect('bomMatStatusFilter', filters.statuses);
         syncFilterSelects();
+        filterBar?.paint();
 
         updateBomMatHud(bomMatState.summary);
-        updateBomMatCapsules(bomMatState);
 
         if (tbody) {
             tbody.innerHTML = renderBomMatTableRows(bomMatState.records, {
@@ -209,9 +211,9 @@ async function loadData(page = 1) {
                 canDelete: bomMatState.canDelete,
             });
         }
-        const totalEl = document.getElementById('bomMatTotalCount');
+        const totalEl = document.getElementById('bomMatPageInfo');
         if (totalEl) totalEl.textContent = `共 ${bomMatState.total} 条`;
-        paintPagination('bomMatPaginationBtns', bomMatState.page, bomMatState.totalPages);
+        paintPagination('bomMatPagination', bomMatState.page, bomMatState.totalPages);
 
         if (!bomMatState.records.length) empty?.classList.remove('hidden');
     } catch (error) {
@@ -256,4 +258,8 @@ async function deleteOne(deleteBtn) {
 export const pageConfig = {
     render: bomMaterialListTemplate,
     init: () => init(),
+    destroy() {
+        filterBar?.unbind();
+        filterBar = null;
+    },
 };

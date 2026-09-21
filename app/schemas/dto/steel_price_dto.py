@@ -94,18 +94,6 @@ class SteelPriceUpdate(BaseModel):
         return optional_quantize_money(value, Q4, allow_negative=True)
 
 
-class SteelPriceAuditDTO(BaseModel):
-    """审核通过 / 驳回请求 DTO（审核人取自 current_user）"""
-
-    audit_remark: str | None = Field(None, description="审核意见")
-
-
-class SteelPriceReverseAuditDTO(BaseModel):
-    """反审核请求 DTO（反审核人取自 current_user）"""
-
-    reverse_audit_remark: str = Field(..., min_length=1, description="反审核原因（必填）")
-
-
 class SteelPriceCalcDTO(BaseModel):
     """钢价批量计算请求 DTO"""
 

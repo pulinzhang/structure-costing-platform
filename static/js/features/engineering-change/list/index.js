@@ -6,16 +6,16 @@ import {
     engineeringChangeListTemplate,
     renderEcDetailBody,
     renderEcListRows,
-    updateEcFilterCapsules,
-} from './template.js?v=27';
+} from './template.js?v=36';
 import {
     DEFAULT_PAGE_SIZE,
     bindPagination,
     paintPagination,
-} from '../../../page-size.js?v=3';
-import { can } from '../../../permissions.js?v=6';
-import { setSearchBusy } from '../../../search-busy.js?v=1';
-import { monthOptionsHtml, yearOptionsHtml } from '../../common/period-ui.js?v=2';
+} from '../../../ui/page-size.js?v=6';
+import { can } from '../../../core/permissions.js?v=8';
+import { setSearchBusy } from '../../../ui/search-busy.js?v=3';
+import { bindFilterBar } from '../../../ui/filter-bar.js?v=3';
+import { monthOptionsHtml, yearOptionsHtml } from '../../common/period-ui.js?v=4';
 
 const API = '/api/engineering-change';
 const CASCADE_API = '/api/bom/filters/cascade';
@@ -27,6 +27,9 @@ const FILTER_IDS = [
     'ecListStatusFilter',
     'ecListChangeTypeFilter',
 ];
+
+/** @type {{ paint: () => void, setOpen: (isOpen: boolean) => void, unbind: () => void } | null} */
+let filterBar = null;
 
 const state = {
     records: [],
@@ -45,19 +48,20 @@ function init() {
     fillPeriodFilters();
     bindEvents();
     bindPagination({
-        selectId: 'ecListPageSize',
-        buttonsId: 'ecListPagination',
+        selectId: 'ecPageSize',
+        buttonsId: 'ecPagination',
         getSize: () => state.pageSize,
         setSize: (size) => {
             state.pageSize = size;
         },
         onPage: (page) => loadData(page),
     });
-    updateEcFilterCapsules();
     loadScopeOptions().then(() => loadData(1));
 }
 
 function destroy() {
+    filterBar?.unbind();
+    filterBar = null;
     closeDrawer();
 }
 
@@ -72,13 +76,6 @@ function fillPeriodFilters() {
         monthEl.innerHTML = `<option value="">全部</option>${monthOptionsHtml(null)}`;
         monthEl.value = '';
     }
-}
-
-function setAdvancedOpen(isOpen) {
-    state.advancedOpen = isOpen;
-    document.getElementById('ecAdvancedFilterPanel')?.classList.toggle('hidden', !isOpen);
-    const label = document.getElementById('ecAdvancedFilterLabel');
-    if (label) label.textContent = isOpen ? '收起高级筛选' : '展开高级筛选';
 }
 
 function fillSelect(id, values) {
@@ -121,24 +118,40 @@ async function loadScopeOptions() {
         fillSelect('ecListLocationFilter', []);
         fillSelect('ecListVehicleFilter', []);
     }
-    updateEcFilterCapsules();
+    filterBar?.paint();
 }
 
 function bindEvents() {
-    document.getElementById('ecListSearchBtn')?.addEventListener('click', () => {
-        updateEcFilterCapsules();
-        loadData(1);
-    });
-    document.getElementById('ecToggleAdvancedFilter')?.addEventListener('click', () => {
-        setAdvancedOpen(!state.advancedOpen);
-    });
-    document.getElementById('ecListResetBtn')?.addEventListener('click', () => {
-        FILTER_IDS.forEach((id) => {
-            const el = document.getElementById(id);
-            if (el) el.value = '';
-        });
-        updateEcFilterCapsules();
-        loadScopeOptions().then(() => loadData(1));
+    filterBar = bindFilterBar({
+        prefix: 'ec',
+        searchId: 'ecListSearchBtn',
+        resetId: 'ecListResetBtn',
+        capsules: [
+            {
+                capsuleId: 'ecCapsulePeriod',
+                fieldIds: ['ecListYearFilter', 'ecListMonthFilter'],
+                idleLabel: '全部期间',
+                display: () => {
+                    const year = document.getElementById('ecListYearFilter')?.value || '';
+                    const month = document.getElementById('ecListMonthFilter')?.value || '';
+                    if (year && month && typeof fmtPeriod === 'function') return fmtPeriod(year, month);
+                    if (year && typeof fmtYear === 'function') return fmtYear(year);
+                    return year;
+                },
+            },
+            { capsuleId: 'ecCapsuleLocation', fieldId: 'ecListLocationFilter', idleLabel: '全部基地' },
+            { capsuleId: 'ecCapsuleVehicle', fieldId: 'ecListVehicleFilter', idleLabel: '全部项目' },
+            { capsuleId: 'ecCapsuleStatus', fieldId: 'ecListStatusFilter', idleLabel: '全部状态' },
+            { capsuleId: 'ecCapsuleChangeType', fieldId: 'ecListChangeTypeFilter', idleLabel: '全部变更类型' },
+        ],
+        onSearch: () => loadData(1),
+        onReset: () => {
+            FILTER_IDS.forEach((id) => {
+                const el = document.getElementById(id);
+                if (el) el.value = '';
+            });
+            loadScopeOptions().then(() => loadData(1));
+        },
     });
     ['ecListYearFilter', 'ecListMonthFilter', 'ecListLocationFilter'].forEach((id) => {
         document.getElementById(id)?.addEventListener('change', () => {
@@ -147,11 +160,10 @@ function bindEvents() {
     });
     ['ecListVehicleFilter', 'ecListStatusFilter', 'ecListChangeTypeFilter'].forEach((id) => {
         document.getElementById(id)?.addEventListener('change', () => {
-            updateEcFilterCapsules();
             loadData(1);
         });
     });
-    document.getElementById('ecListTableBody')?.addEventListener('click', (event) => {
+    document.getElementById('ecTableBody')?.addEventListener('click', (event) => {
         handleActionClick(event);
     });
     document.getElementById('ecDetailCloseBtn')?.addEventListener('click', closeDrawer);
@@ -214,17 +226,17 @@ function updateHud(filters) {
 }
 
 function renderEmpty(title, hint) {
-    const empty = document.getElementById('ecListEmpty');
-    const body = document.getElementById('ecListTableBody');
+    const empty = document.getElementById('ecEmpty');
+    const body = document.getElementById('ecTableBody');
     if (body) body.innerHTML = '';
     empty?.classList.remove('hidden');
-    const titleEl = document.getElementById('ecListEmptyTitle');
-    const hintEl = document.getElementById('ecListEmptyHint');
+    const titleEl = document.getElementById('ecEmptyTitle');
+    const hintEl = document.getElementById('ecEmptyHint');
     if (titleEl) titleEl.textContent = title;
     if (hintEl) hintEl.textContent = hint;
-    const info = document.getElementById('ecListTotalLabel');
+    const info = document.getElementById('ecPageInfo');
     if (info) info.textContent = '';
-    const pager = document.getElementById('ecListPagination');
+    const pager = document.getElementById('ecPagination');
     if (pager) pager.innerHTML = '';
 }
 
@@ -233,12 +245,11 @@ async function loadData(page) {
     state.page = page;
     state.isLoading = true;
     setSearchBusy('ecListSearchBtn', true);
-    const empty = document.getElementById('ecListEmpty');
-    const loading = document.getElementById('ecListLoading');
+    const empty = document.getElementById('ecEmpty');
+    const loading = document.getElementById('ecLoading');
     empty?.classList.add('hidden');
     loading?.classList.remove('hidden');
     const filters = collectFilters();
-    updateEcFilterCapsules();
     const params = {
         page: state.page,
         size: state.pageSize,
@@ -255,14 +266,14 @@ async function loadData(page) {
         state.records = Array.isArray(data.items) ? data.items : [];
         state.total = Number(data.total || 0);
         updateHud(filters);
-        const body = document.getElementById('ecListTableBody');
+        const body = document.getElementById('ecTableBody');
         if (body) {
             body.innerHTML = renderEcListRows(state.records, { canDelete: state.canDelete });
         }
-        const info = document.getElementById('ecListTotalLabel');
+        const info = document.getElementById('ecPageInfo');
         if (info) info.textContent = `共 ${state.total} 条`;
         paintPagination(
-            'ecListPagination',
+            'ecPagination',
             state.page,
             state.total > 0 ? Math.ceil(state.total / state.pageSize) : 0,
         );

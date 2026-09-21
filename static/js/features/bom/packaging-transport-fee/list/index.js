@@ -8,19 +8,21 @@ import {
     feeInputValue,
     parseFeeInput,
     updatePkgHud,
-    updatePkgFilterCapsules,
     renderDetailBody,
-} from './template.js?v=16';
-import { bindMoreMenu } from '../../../../more-menu.js?v=1';
+} from './template.js?v=25';
+import { bindMoreMenu } from '../../../../ui/more-menu.js?v=5';
+import { bindFilterBar } from '../../../../ui/filter-bar.js?v=3';
 import {
     DEFAULT_PAGE_SIZE,
     bindPagination,
     paintPagination,
-} from '../../../../page-size.js?v=3';
-import { setSearchBusy } from '../../../../search-busy.js?v=1';
+} from '../../../../ui/page-size.js?v=6';
+import { setSearchBusy } from '../../../../ui/search-busy.js?v=3';
 
 /** @type {{ setOpen: (isOpen: boolean) => void, close: () => void, unbind: () => void } | null} */
 let moreMenu = null;
+/** @type {{ paint: () => void, setOpen: (isOpen: boolean) => void, unbind: () => void } | null} */
+let filterBar = null;
 
 const pkgState = {
     records: [],
@@ -73,8 +75,8 @@ function init() {
     loadFilterOptions().then(() => loadData());
     bindEvents();
     bindPagination({
-        selectId: 'pkgTransportFeePageSize',
-        buttonsId: 'pkgPaginationBtns',
+        selectId: 'pkgPageSize',
+        buttonsId: 'pkgPagination',
         getSize: () => pkgState.pageSize,
         setSize: (size) => {
             pkgState.pageSize = size;
@@ -82,7 +84,6 @@ function init() {
         onPage: (page) => loadData(page),
     });
     applyPermissionUi();
-    updatePkgFilterCapsules(pkgState);
 }
 
 function applyPermissionUi() {
@@ -100,13 +101,6 @@ function applyPermissionUi() {
     if (!moreItems.length) {
         document.getElementById('pkgMoreWrap')?.classList.add('hidden');
     }
-}
-
-function setAdvancedOpen(open) {
-    pkgState.advancedOpen = open;
-    document.getElementById('pkgAdvancedFilterPanel')?.classList.toggle('hidden', !open);
-    const label = document.getElementById('pkgAdvancedFilterLabel');
-    if (label) label.textContent = open ? '收起高级筛选' : '展开高级筛选';
 }
 
 async function loadFilterOptions() {
@@ -154,6 +148,7 @@ async function loadFilterOptions() {
                 <option value="approved">已通过</option>`;
             if (pkgState.selectedAuditStatus) auditFilter.value = pkgState.selectedAuditStatus;
         }
+        filterBar?.paint();
     } catch (error) {
         console.error('加载筛选项失败:', error);
     }
@@ -165,7 +160,6 @@ function readFiltersFromDom() {
     pkgState.selectedVehicleModel = document.getElementById('pkgVehicleFilter')?.value || null;
     pkgState.selectedAuditStatus = document.getElementById('pkgAuditStatusFilter')?.value || null;
     pkgState.selectedKeyword = document.getElementById('pkgKeywordFilter')?.value?.trim() || null;
-    updatePkgFilterCapsules(pkgState);
 }
 
 function collectScopeFilters() {
@@ -186,8 +180,8 @@ async function loadData(page = 1) {
     setSearchBusy('btnFilterPkg', true);
 
     const tableBody = document.getElementById('pkgTransportFeeTableBody');
-    const emptyState = document.getElementById('pkgEmptyState');
-    const loadingState = document.getElementById('pkgLoadingState');
+    const emptyState = document.getElementById('pkgEmpty');
+    const loadingState = document.getElementById('pkgLoading');
     if (tableBody) tableBody.innerHTML = '';
     emptyState?.classList.add('hidden');
     loadingState?.classList.remove('hidden');
@@ -218,9 +212,9 @@ async function loadData(page = 1) {
             }
         }
 
-        const totalCountPagination = document.getElementById('pkgTotalCountPagination');
+        const totalCountPagination = document.getElementById('pkgPageInfo');
         if (totalCountPagination) totalCountPagination.textContent = `共 ${pkgState.total} 条`;
-        paintPagination('pkgPaginationBtns', pkgState.page, pkgState.totalPages);
+        paintPagination('pkgPagination', pkgState.page, pkgState.totalPages);
 
         // refresh vehicle options from filters if present
         const filters = pageResult.filters || {};
@@ -232,11 +226,12 @@ async function loadData(page = 1) {
                 vehicleFilter.innerHTML = `<option value="">全部</option>${pkgState.vehicleModels.map((v) => `<option value="${esc(v)}">${esc(v)}</option>`).join('')}`;
                 vehicleFilter.value = current;
             }
+            filterBar?.paint();
         }
     } catch (error) {
         console.error('加载数据失败:', error);
         if (tableBody) {
-            tableBody.innerHTML = `<tr><td colspan="15" class="px-4 py-8 text-center text-[#9e9e9e] text-xs">加载数据失败，请重试</td></tr>`;
+            tableBody.innerHTML = `<tr><td colspan="15" class="px-4 py-8 text-center text-ink-muted text-xs">加载数据失败，请重试</td></tr>`;
         }
     } finally {
         pkgState.isLoading = false;
@@ -246,33 +241,36 @@ async function loadData(page = 1) {
 }
 
 function bindEvents() {
-    document.getElementById('pkgToggleAdvancedFilter')?.addEventListener('click', () => {
-        setAdvancedOpen(!pkgState.advancedOpen);
-    });
-    document.getElementById('btnFilterPkg')?.addEventListener('click', () => {
-        readFiltersFromDom();
-        loadData(1);
+    filterBar = bindFilterBar({
+        prefix: 'pkg',
+        searchId: 'btnFilterPkg',
+        resetId: 'pkgResetFilterBtn',
+        capsules: [
+            { capsuleId: 'pkgCapsuleYear', fieldId: 'pkgYearFilter', idleLabel: '全部年度' },
+            { capsuleId: 'pkgCapsuleLocation', fieldId: 'pkgLocationFilter', idleLabel: '全部基地' },
+            { capsuleId: 'pkgCapsuleVehicle', fieldId: 'pkgVehicleFilter', idleLabel: '全部项目' },
+            { capsuleId: 'pkgCapsuleAudit', fieldId: 'pkgAuditStatusFilter', idleLabel: '全部审核' },
+            { capsuleId: 'pkgCapsuleKeyword', fieldId: 'pkgKeywordFilter', idleLabel: '零件号/名称' },
+        ],
+        enterFieldIds: ['pkgKeywordFilter'],
+        onSearch: () => {
+            readFiltersFromDom();
+            loadData(1);
+        },
+        onReset: () => {
+            ['pkgLocationFilter', 'pkgYearFilter', 'pkgVehicleFilter', 'pkgAuditStatusFilter', 'pkgKeywordFilter'].forEach((id) => {
+                const el = document.getElementById(id);
+                if (el) el.value = '';
+            });
+            readFiltersFromDom();
+            loadData(1);
+        },
     });
     ['pkgLocationFilter', 'pkgYearFilter', 'pkgVehicleFilter', 'pkgAuditStatusFilter'].forEach((id) => {
         document.getElementById(id)?.addEventListener('change', () => {
             readFiltersFromDom();
             loadData(1);
         });
-    });
-    document.getElementById('pkgKeywordFilter')?.addEventListener('keydown', (e) => {
-        if (e.key === 'Enter') {
-            e.preventDefault();
-            readFiltersFromDom();
-            loadData(1);
-        }
-    });
-    document.getElementById('pkgResetFilterBtn')?.addEventListener('click', () => {
-        ['pkgLocationFilter', 'pkgYearFilter', 'pkgVehicleFilter', 'pkgAuditStatusFilter', 'pkgKeywordFilter'].forEach((id) => {
-            const el = document.getElementById(id);
-            if (el) el.value = '';
-        });
-        readFiltersFromDom();
-        loadData(1);
     });
 
 
@@ -437,7 +435,7 @@ async function batchDelete() {
     const filters = collectScopeFilters();
     if (!hasFullScope(filters)) {
         showToast(SCOPE_REQUIRED_MESSAGE, 'warning');
-        setAdvancedOpen(true);
+        filterBar?.setOpen(true);
         return;
     }
     const year = Number(filters.year);
@@ -467,7 +465,7 @@ function openBatchAudit(mode) {
     const filters = collectScopeFilters();
     if (!hasFullScope(filters)) {
         showToast(SCOPE_REQUIRED_MESSAGE, 'warning');
-        setAdvancedOpen(true);
+        filterBar?.setOpen(true);
         return;
     }
     document.getElementById('pkgBatchAuditMode').value = mode;
@@ -534,5 +532,7 @@ export const pageConfig = {
     destroy() {
         moreMenu?.unbind();
         moreMenu = null;
+        filterBar?.unbind();
+        filterBar = null;
     },
 };

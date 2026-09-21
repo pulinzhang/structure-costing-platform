@@ -4,15 +4,15 @@
  */
 
 import { createReport, getReport } from './api.js';
-import { mountChips, setChipsDisabled, setChipsVisible } from './chat/chips.js?v=2';
-import { mountComposer, setComposerBusy, setComposerCarry } from './chat/composer.js?v=3';
+import { mountChips, setChipsDisabled, setChipsVisible } from './chat/chips.js?v=4';
+import { mountComposer, setComposerBusy, setComposerCarry } from './chat/composer.js?v=5';
 import { humanizeUserFacingError } from './errors.js';
-import { renderThread } from './chat/thread.js?v=12';
-import { printAssistantMessage, closePrintPreview } from './export/print.js?v=11';
-import { downloadWordDocument } from './export/word.js?v=6';
-import { findPrompt, fillPromptTemplate } from './prompts/catalog.js?v=5';
-import { applyReportToMessage } from './report/apply-report.js?v=2';
-import { openHistoryPanel } from './report/history.js?v=7';
+import { renderThread } from './chat/thread.js?v=14';
+import { printAssistantMessage, closePrintPreview } from './export/print.js?v=13';
+import { downloadWordDocument } from './export/word.js?v=8';
+import { findPrompt, fillPromptTemplate } from './prompts/catalog.js?v=7';
+import { applyReportToMessage } from './report/apply-report.js?v=4';
+import { openHistoryPanel } from './report/history.js?v=9';
 import {
     buildStorageKey,
     clearConversation,
@@ -20,7 +20,7 @@ import {
     saveConversation,
 } from './storage/conversation.js';
 import { pollTask } from './task/poller.js';
-import { entryButtonHtml, shellHtml } from './template.js?v=5';
+import { entryButtonHtml, shellHtml } from './template.js?v=8';
 
 /** @typedef {'closed'|'panel'|'maximized'|'docked'} AssistantMode */
 
@@ -226,13 +226,13 @@ export function createShell(options) {
         if (els.panel) {
             if (mode === 'maximized') {
                 els.panel.className =
-                    'fixed z-[110] flex flex-col overflow-hidden border border-[#2c2c2c] bg-[#121212] ' +
-                    'left-4 right-4 top-4 bottom-4 w-auto h-auto shadow-[0_16px_48px_rgba(0,0,0,0.65)]';
+                    'fixed z-[110] flex flex-col overflow-hidden border border-line bg-app-main ' +
+                    'left-4 right-4 top-4 bottom-4 w-auto h-auto shadow-[0_16px_48px_rgb(var(--overlay)/0.65)]';
             } else {
                 els.panel.className =
-                    'fixed z-[110] flex flex-col overflow-hidden border border-[#2c2c2c] bg-[#121212] ' +
+                    'fixed z-[110] flex flex-col overflow-hidden border border-line bg-app-main ' +
                     'w-[min(420px,calc(100vw-1.5rem))] top-4 bottom-4 right-4 h-auto ' +
-                    'shadow-[0_16px_48px_rgba(0,0,0,0.65)]';
+                    'shadow-[0_16px_48px_rgb(var(--overlay)/0.65)]';
             }
             if (!showPanel) els.panel.classList.add('hidden');
         }

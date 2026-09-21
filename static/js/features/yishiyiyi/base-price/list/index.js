@@ -3,19 +3,19 @@
  * 基准价格列表页面逻辑
  */
 
-import { basePriceDownloadTemplate } from './template.js?v=37';
-import { bindMoreMenu } from '../../../../more-menu.js?v=1';
+import { basePriceDownloadTemplate } from './template.js?v=44';
+import { bindMoreMenu } from '../../../../ui/more-menu.js?v=5';
 import {
     DEFAULT_PREVIEW_PAGE_SIZE,
     PREVIEW_PAGE_SIZE_OPTIONS,
     bindPagination,
     paintPagination,
-} from '../../../../page-size.js?v=3';
-import { setSearchBusy } from '../../../../search-busy.js?v=1';
+} from '../../../../ui/page-size.js?v=6';
+import { setSearchBusy } from '../../../../ui/search-busy.js?v=3';
 import {
     requireExportYearMonth,
     selectDefaultYear,
-} from '../../../common/period-ui.js?v=4';
+} from '../../../common/period-ui.js?v=6';
 
 /** @type {{ setOpen: (isOpen: boolean) => void, close: () => void, unbind: () => void } | null} */
 let moreMenu = null;
@@ -249,8 +249,8 @@ async function previewData(page = 1) {
             <tr>
 <td colspan="16" class="px-4 py-8 text-center">
                             <div class="flex items-center justify-center">
-                                <div class="w-4 h-4 border border-[#252525] border-t-[#d32f2f] rounded-full animate-spin mr-2"></div>
-                                <span class="text-[11px] text-[#616161]">加载中...</span>
+                                <div class="w-4 h-4 border border-line border-brand rounded-full animate-spin mr-2"></div>
+                                <span class="text-[11px] text-ink-dim">加载中...</span>
                             </div>
                         </td>
             </tr>
@@ -286,7 +286,7 @@ async function previewData(page = 1) {
                 ? renderBasePriceRows(records)
                 : `
                 <tr>
-                    <td colspan="16" class="px-4 py-8 text-center text-[#616161] text-xs">
+                    <td colspan="16" class="px-4 py-8 text-center text-ink-dim text-xs">
                         当前筛选下暂无数据
                     </td>
                 </tr>
@@ -302,7 +302,7 @@ async function previewData(page = 1) {
         if (tableBody) {
             tableBody.innerHTML = `
                 <tr>
-                    <td colspan="16" class="px-4 py-8 text-center text-[#d32f2f] text-xs">
+                    <td colspan="16" class="px-4 py-8 text-center text-brand text-xs">
                         加载失败: ${esc(error.message || '未知错误')}
                     </td>
                 </tr>
@@ -401,7 +401,7 @@ async function batchDeleteBasePrices() {
     if (btnDelete) {
         btnDelete.disabled = true;
         btnDelete.innerHTML = `
-            <div class="w-3 h-3 border border-[#ef5350] border-t-transparent rounded-full animate-spin"></div>
+            <div class="w-3 h-3 border border-danger border-t-transparent rounded-full animate-spin"></div>
             删除中...
         `;
     }
@@ -426,8 +426,8 @@ async function batchDeleteBasePrices() {
                 <tr>
                     <td colspan="16" class="px-4 py-8 text-center">
                         <div class="flex items-center justify-center">
-                            <div class="w-4 h-4 border border-[#252525] border-t-[#d32f2f] rounded-full animate-spin mr-2"></div>
-                            <span class="text-[11px] text-[#616161]">正在刷新...</span>
+                            <div class="w-4 h-4 border border-line border-brand rounded-full animate-spin mr-2"></div>
+                            <span class="text-[11px] text-ink-dim">正在刷新...</span>
                         </div>
                     </td>
                 </tr>
@@ -473,30 +473,30 @@ function renderBasePriceRows(records) {
     if (!records || !Array.isArray(records) || records.length === 0) {
         return `
             <tr>
-                <td colspan="16" class="px-4 py-8 text-center text-[#616161] text-xs">
+                <td colspan="16" class="px-4 py-8 text-center text-ink-dim text-xs">
                     无数据
                 </td>
             </tr>
         `;
     }
     return records.map((record, index) => `
-        <tr class="group border-b border-[#181818] transition-colors duration-150 hover:bg-[#ffffff]/[0.015]">
-            <td class="px-3 py-2 text-[11px] text-[#505050] whitespace-nowrap font-mono text-right tabular-nums">${index + 1}</td>
-            <td class="px-3 py-2 text-[11px] text-[#606060] whitespace-nowrap font-mono text-right tabular-nums">${esc(fmtYear(record.year))}</td>
-            <td class="px-3 py-2 text-[11px] text-[#606060] whitespace-nowrap font-mono text-right tabular-nums">${esc(fmtMonth(record.month))}</td>
-            <td class="px-3 py-2 text-[11px] text-[#888888] whitespace-nowrap">${esc(record.location || '')}</td>
-            <td class="px-3 py-2 text-[11px] text-[#888888] whitespace-nowrap">${esc(record.steel_mill || '')}</td>
-            <td class="px-3 py-2 text-[11px] text-[#888888] whitespace-nowrap">${esc(record.category_name || '')}</td>
-            <td class="px-3 py-2 text-[11px] font-medium text-[#a0a0a0] whitespace-nowrap">${esc(record.grade || '')}</td>
-            <td class="px-3 py-2 text-[11px] text-[#686868] whitespace-nowrap">${esc(record.spec || '')}</td>
-            <td class="px-3 py-2 text-[11px] text-[#686868] whitespace-nowrap font-mono text-right tabular-nums">${formatDecimal(record.thick, 2)}</td>
-            <td class="px-3 py-2 text-[11px] text-[#686868] whitespace-nowrap font-mono text-right tabular-nums">${formatInteger(record.width)}</td>
-            <td class="px-3 py-2 text-[11px] text-[#888888] whitespace-nowrap font-mono text-right tabular-nums">${formatDecimal(record.base_price, 2)}</td>
-            <td class="px-3 py-2 text-[11px] text-[#686868] whitespace-nowrap font-mono text-right tabular-nums">${formatDecimal(record.processing_fee, 2)}</td>
-            <td class="px-3 py-2 text-[11px] text-[#505050] whitespace-nowrap truncate max-w-[200px]">${esc(record.excel_filename || '—')}</td>
-            <td class="px-3 py-2 text-[11px] text-[#505050] whitespace-nowrap">${esc(record.sheet_name || '—')}</td>
-            <td class="px-3 py-2 text-[11px] text-[#505050] whitespace-nowrap font-mono text-right tabular-nums">${esc(record.excel_row ?? '—')}</td>
-            <td class="px-3 py-2 text-[11px] text-[#505050] whitespace-nowrap font-mono text-right tabular-nums">${esc(record.excel_col ?? '—')}</td>
+        <tr class="group border-b border-line-subtle transition-colors duration-150 hover:bg-ink/[0.015]">
+            <td class="px-3 py-2 text-[11px] text-ink-faint whitespace-nowrap font-mono text-right tabular-nums">${index + 1}</td>
+            <td class="px-3 py-2 text-[11px] text-ink-dim whitespace-nowrap font-mono text-right tabular-nums">${esc(fmtYear(record.year))}</td>
+            <td class="px-3 py-2 text-[11px] text-ink-dim whitespace-nowrap font-mono text-right tabular-nums">${esc(fmtMonth(record.month))}</td>
+            <td class="px-3 py-2 text-[11px] text-ink-muted whitespace-nowrap">${esc(record.location || '')}</td>
+            <td class="px-3 py-2 text-[11px] text-ink-muted whitespace-nowrap">${esc(record.steel_mill || '')}</td>
+            <td class="px-3 py-2 text-[11px] text-ink-muted whitespace-nowrap">${esc(record.category_name || '')}</td>
+            <td class="px-3 py-2 text-[11px] font-medium text-ink-muted whitespace-nowrap">${esc(record.grade || '')}</td>
+            <td class="px-3 py-2 text-[11px] text-ink-muted whitespace-nowrap">${esc(record.spec || '')}</td>
+            <td class="px-3 py-2 text-[11px] text-ink-muted whitespace-nowrap font-mono text-right tabular-nums">${formatDecimal(record.thick, 2)}</td>
+            <td class="px-3 py-2 text-[11px] text-ink-muted whitespace-nowrap font-mono text-right tabular-nums">${formatInteger(record.width)}</td>
+            <td class="px-3 py-2 text-[11px] text-ink-muted whitespace-nowrap font-mono text-right tabular-nums">${formatDecimal(record.base_price, 2)}</td>
+            <td class="px-3 py-2 text-[11px] text-ink-muted whitespace-nowrap font-mono text-right tabular-nums">${formatDecimal(record.processing_fee, 2)}</td>
+            <td class="px-3 py-2 text-[11px] text-ink-faint whitespace-nowrap truncate max-w-[200px]">${esc(record.excel_filename || '—')}</td>
+            <td class="px-3 py-2 text-[11px] text-ink-faint whitespace-nowrap">${esc(record.sheet_name || '—')}</td>
+            <td class="px-3 py-2 text-[11px] text-ink-faint whitespace-nowrap font-mono text-right tabular-nums">${esc(record.excel_row ?? '—')}</td>
+            <td class="px-3 py-2 text-[11px] text-ink-faint whitespace-nowrap font-mono text-right tabular-nums">${esc(record.excel_col ?? '—')}</td>
         </tr>`).join('');
 }
 

@@ -3,18 +3,19 @@
  * 冲压钢材：基准价与加减价联动计算
  */
 
-import { paginationBarHtml } from '../../../../page-size.js?v=3';
+import { paginationBarHtml } from '../../../../ui/page-size.js?v=6';
+import { filterSelect, BTN_ABORT } from '../../../../ui/classes.js?v=11';
+
 
 export function steelPriceCalcTemplate() {
     return `
-        <div class="space-y-4 w-full font-sans antialiased text-[#bbb]">
+        <div class="space-y-4 w-full font-sans antialiased text-ink">
             
-            <div class="flex items-center justify-between pb-2 border-b border-[#222]">
-                <h1 class="text-xs font-bold text-[#e0e0e0] tracking-wider">冲压钢材基准价与加减价联动计算</h1>
+            <div class="flex items-center justify-between pb-2 border-b border-line-subtle">
+                <h1 class="text-xs font-bold text-ink tracking-wider">冲压钢材基准价与加减价联动计算</h1>
             </div>
 
-            <div class="flex items-center justify-between py-2.5 border-y border-[#1e1e1e]"
-                 style="background: linear-gradient(180deg, #181818 0%, #161616 100%);">
+            <div class="flex items-center justify-between py-2.5 border-y border-app-surface">
                 <div class="flex items-end gap-3 flex-wrap px-1">
                     ${filterSelect('calcYear', '年度')}
                     ${filterSelect('calcMonth', '月份')}
@@ -22,86 +23,86 @@ export function steelPriceCalcTemplate() {
                     ${filterSelect('calcVehicle', '项目')}
 
                     <button id="calcResetBtn"
-                            class="inline-flex items-center gap-1 h-7 px-3 text-[11px] font-medium text-[#616161] hover:text-[#9e9e9e] transition-all duration-150">
+                            class="inline-flex items-center gap-1 h-7 px-3 text-[11px] font-medium text-ink-dim hover:text-ink-muted transition-all duration-150">
                         重置
                     </button>
                 </div>
             </div>
 
-            <div class="flex items-center justify-between border-b border-[#222] py-2.5">
+            <div class="flex items-center justify-between border-b border-line-subtle py-2.5">
                 <div class="flex items-center gap-8">
                     <a href="javascript:void(0)" onclick="openDetailModal('basePrice')" class="group">
-                        <span class="text-[9px] text-[#666] block group-hover:text-[#888]">中标基价库</span>
-                        <span id="cntBasePrice" class="text-xs font-mono font-bold text-[#dddddd] group-hover:text-[#fff]">- <span class="text-[9px] font-normal text-[#555]">条</span></span>
+                        <span class="text-[9px] text-ink-dim block group-hover:text-ink-muted">中标基价库</span>
+                        <span id="cntBasePrice" class="text-xs font-mono font-bold text-ink group-hover:text-ink">- <span class="text-[9px] font-normal text-ink-faint">条</span></span>
                     </a>
                     
-                    <div class="w-px h-5 bg-[#222]"></div>
+                    <div class="w-px h-5 bg-app-surface"></div>
 
                     <a href="javascript:void(0)" onclick="openDetailModal('adjustRule')" class="group">
-                        <span class="text-[9px] text-[#666] block group-hover:text-[#888]">厚/宽调价规则</span>
-                        <span id="cntAdjustment" class="text-xs font-mono font-bold text-[#dddddd] group-hover:text-[#fff]">- <span class="text-[9px] font-normal text-[#555]">条</span></span>
+                        <span class="text-[9px] text-ink-dim block group-hover:text-ink-muted">厚/宽调价规则</span>
+                        <span id="cntAdjustment" class="text-xs font-mono font-bold text-ink group-hover:text-ink">- <span class="text-[9px] font-normal text-ink-faint">条</span></span>
                     </a>
 
-                    <div class="w-px h-5 bg-[#222]"></div>
+                    <div class="w-px h-5 bg-app-surface"></div>
 
                     <a href="javascript:void(0)" onclick="openDetailModal('specs')" class="group">
-                        <span class="text-[9px] text-[#666] block group-hover:text-[#888]">厚度规格行数</span>
-                        <span id="cntThicknessRows" class="text-xs font-mono font-bold text-[#dddddd] group-hover:text-[#fff]">- <span class="text-[9px] font-normal text-[#555]">表</span></span>
+                        <span class="text-[9px] text-ink-dim block group-hover:text-ink-muted">厚度规格行数</span>
+                        <span id="cntThicknessRows" class="text-xs font-mono font-bold text-ink group-hover:text-ink">- <span class="text-[9px] font-normal text-ink-faint">表</span></span>
                     </a>
                 </div>
 
                 <div class="flex items-center gap-3">
-                    <span id="reCalcNotice" class="text-[9px] text-[#666]">
+                    <span id="reCalcNotice" class="text-[9px] text-ink-dim">
                         统计可按项目看基价/政策/规格覆盖（一车多厂）；计算仍按基地全量牌号+料厚落库
                     </span>
                     <button id="startCalcBtn"
-                            class="h-7 px-4 text-[10px] bg-[#b71c1c] hover:bg-[#c62828] text-white font-medium rounded-sm transition-colors disabled:opacity-30 disabled:cursor-not-allowed">
+                            class="${BTN_ABORT}">
                         开始计算
                     </button>
                 </div>
             </div>
 
             <!-- 后台计算进度 -->
-            <div id="calcProgressPanel" class="hidden border border-[#2c2c2c] bg-[#1a1a1a] px-4 py-3">
+            <div id="calcProgressPanel" class="hidden border border-line bg-app-surface px-4 py-3">
                 <div class="flex items-center justify-between gap-3 mb-2.5">
                     <div class="flex items-center gap-2 min-w-0">
-                        <div id="calcProgressSpinner" class="w-3.5 h-3.5 border-2 border-[#2c2c2c] border-t-[#d32f2f] rounded-full animate-spin shrink-0"></div>
-                        <h5 id="calcProgressTitle" class="text-xs font-medium text-[#ffffff] truncate mb-0">正在计算联动钢价...</h5>
+                        <div id="calcProgressSpinner" class="w-3.5 h-3.5 border-2 border-line border-brand rounded-full animate-spin shrink-0"></div>
+                        <h5 id="calcProgressTitle" class="text-xs font-medium text-ink truncate mb-0">正在计算联动钢价...</h5>
                     </div>
-                    <span id="calcProgressPercent" class="text-xs font-mono tabular-nums text-[#d32f2f] shrink-0">0%</span>
+                    <span id="calcProgressPercent" class="text-xs font-mono tabular-nums text-brand shrink-0">0%</span>
                 </div>
-                <div class="h-1.5 w-full bg-[#0a0a0a] border border-[#2c2c2c] overflow-hidden mb-2">
+                <div class="h-1.5 w-full bg-app-deep border border-line overflow-hidden mb-2">
                     <div id="calcProgressBar"
-                         class="h-full bg-[#d32f2f] shadow-[0_0_8px_rgba(211,47,47,0.5)] transition-all duration-300"
+                         class="h-full bg-brand hud-brand-glow transition-all duration-300"
                          style="width: 0%"></div>
                 </div>
-                <p id="calcProgressMsg" class="text-[11px] text-[#9e9e9e] leading-relaxed mb-0">已提交计算队列</p>
+                <p id="calcProgressMsg" class="text-[11px] text-ink-muted leading-relaxed mb-0">已提交计算队列</p>
             </div>
 
-            <div id="dataReadyErrorBanner" class="hidden text-[10px] text-[#d69e2e] bg-[#1a1710] px-2.5 py-1.5 border-l-2 border-[#d69e2e]">
+            <div id="dataReadyErrorBanner" class="hidden text-[10px] text-warn bg-app-hud px-2.5 py-1.5 border-l-2 border-warn/40">
                 提示：当前所选年月缺失中标基价或调价规则，无法计算。
             </div>
 
             <!-- 计算历史：对齐批次日志字段-->
             <div class="pt-2">
                 <div class="flex items-center justify-between mb-1.5">
-                    <div class="text-[10px] text-[#666] font-medium">计算历史</div>
+                    <div class="text-[10px] text-ink-dim font-medium">计算历史</div>
                     <div class="flex items-center gap-3">
                         <button id="calcHistoryDeleteAllBtn" type="button"
-                                class="hidden text-[9px] text-[#c62828] hover:text-[#ef5350] transition-colors">
+                                class="hidden text-[9px] text-danger hover:text-danger transition-colors">
                             删除全部
                         </button>
                         <button id="calcHistoryRefreshBtn"
-                                class="text-[9px] text-[#616161] hover:text-[#9e9e9e] transition-colors">
+                                class="text-[9px] text-ink-dim hover:text-ink-muted transition-colors">
                             刷新
                         </button>
                     </div>
                 </div>
-                <div class="bg-[#1e1e1e] border border-[#2c2c2c] overflow-hidden">
-                    <div class="overflow-x-auto">
+                <div class="bg-app-surface border border-line overflow-hidden">
+                    <div class="overflow-x-auto brabus-bg-grid">
                         <table id="calcHistoryTable" class="w-full text-left border-collapse">
                             <thead>
-                                <tr class="bg-[#0a0a0a] border-b border-[#2c2c2c] text-[9px] text-[#555] uppercase tracking-[0.08em]">
+                                <tr class="bg-app-deep border-b border-line text-[9px] text-ink-faint uppercase tracking-[0.08em]">
                                     <th class="py-2 px-2 font-normal whitespace-nowrap">开始</th>
                                     <th class="py-2 px-2 font-normal whitespace-nowrap">结束</th>
                                     <th class="py-2 px-2 font-normal text-right whitespace-nowrap">耗时</th>
@@ -118,14 +119,14 @@ export function steelPriceCalcTemplate() {
                                     <th class="py-2 px-2 font-normal text-right whitespace-nowrap">操作</th>
                                 </tr>
                             </thead>
-                            <tbody id="calcHistoryBody" class="text-[10px] divide-y divide-[#222222]">
+                            <tbody id="calcHistoryBody" class="text-[10px] divide-y divide-line-subtle">
                                 <tr>
-                                    <td colspan="14" class="py-8 text-center text-[#555]">加载中..</td>
+                                    <td colspan="14" class="py-8 text-center text-ink-faint">加载中..</td>
                                 </tr>
                             </tbody>
                         </table>
                     </div>
-                    ${paginationBarHtml({ infoId: 'calcHistoryTotal', selectId: 'steelCalcHistoryPageSize', buttonsId: 'calcHistoryPagination', wrapperClass: 'flex items-center justify-between px-3 py-2 border-t border-[#1e1e1e] bg-[#141414]' })}
+                    ${paginationBarHtml({ infoId: 'calcHistoryTotal', selectId: 'steelCalcHistoryPageSize', buttonsId: 'calcHistoryPagination', wrapperClass: 'flex items-center justify-between px-3 py-2 border-t border-app-surface bg-app-main' })}
                 </div>
             </div>
 
@@ -133,12 +134,4 @@ export function steelPriceCalcTemplate() {
     `;
 }
 
-function filterSelect(id, label) {
-    return `<label class="space-y-1">
-        <span class="block text-[9px] font-semibold text-[#484848] uppercase tracking-[0.12em]">${label}</span>
-        <select id="${id}" class="w-32 h-7 pl-2.5 pr-7 text-[11px] bg-[#0d0d0d] border border-[#272727] text-[#909090] appearance-none cursor-pointer focus:outline-none focus:border-[#ff5252] rounded-sm">
-            <option value="">全部</option>
-        </select>
-    </label>`;
-}
 

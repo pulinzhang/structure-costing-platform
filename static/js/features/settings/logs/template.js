@@ -2,63 +2,63 @@
  * 操作日志 — 与用户管理同一套设置页表格（非 HUD）
  */
 
-import { paginationBarHtml } from '../../../page-size.js?v=3';
+import { paginationBarHtml } from '../../../ui/page-size.js?v=6';
+import { HUD_FILTER, HUD_INPUT } from '../../../ui/classes.js?v=11';
 
 export function logsTemplate() {
     return `
-        <div class="space-y-3 w-full max-w-full text-[#9e9e9e]">
-            <div class="bg-[#121215] border border-[#2c2c2c]">
+        <div class="space-y-3 w-full max-w-full text-ink-muted">
+            <div class="bg-app-main border border-line">
 
-                <div class="p-3 border-b border-[#222222] flex flex-wrap items-center justify-between gap-3 bg-[#16161a]">
+                <div class="p-3 border-b border-line-subtle flex flex-wrap items-center justify-between gap-3 bg-app-surface">
                     <div class="flex items-center gap-2 flex-wrap flex-1 min-w-0">
                         <input type="text" id="filterUsername" placeholder="账号 / 操作人"
-                               class="w-36 h-8 px-3 text-xs bg-[#0a0a0c] border border-[#2c2c2c] text-[#ffffff] placeholder:text-[#616161] focus:outline-none focus:border-[#ff5252] transition-colors">
+                               class="w-36 ${HUD_INPUT}">
 
                         <select id="filterMenu"
-                                class="h-8 max-w-[220px] px-2 text-xs bg-[#0a0a0c] border border-[#2c2c2c] text-[#9e9e9e] cursor-pointer focus:outline-none focus:border-[#ff5252] transition-colors">
+                                class="max-w-[220px] ${HUD_FILTER}">
                             <option value="">全部功能</option>
                         </select>
 
                         <select id="filterPermission"
-                                class="h-8 max-w-[180px] px-2 text-xs bg-[#0a0a0c] border border-[#2c2c2c] text-[#9e9e9e] cursor-pointer focus:outline-none focus:border-[#ff5252] transition-colors">
+                                class="max-w-[180px] ${HUD_FILTER}">
                             <option value="">全部动作</option>
                         </select>
 
                         <select id="filterSuccess"
-                                class="h-8 px-2 text-xs bg-[#0a0a0c] border border-[#2c2c2c] text-[#9e9e9e] cursor-pointer focus:outline-none focus:border-[#ff5252] transition-colors">
+                                class="${HUD_FILTER}">
                             <option value="">全部结果</option>
                             <option value="true">成功</option>
                             <option value="false">失败</option>
                         </select>
 
                         <input type="datetime-local" id="filterCreatedFrom"
-                               class="h-8 px-2 text-xs bg-[#0a0a0c] border border-[#2c2c2c] text-[#9e9e9e] focus:outline-none focus:border-[#ff5252] transition-colors">
+                               class="${HUD_INPUT}">
                         <input type="datetime-local" id="filterCreatedTo"
-                               class="h-8 px-2 text-xs bg-[#0a0a0c] border border-[#2c2c2c] text-[#9e9e9e] focus:outline-none focus:border-[#ff5252] transition-colors">
+                               class="${HUD_INPUT}">
 
                         <button id="btnFilter"
-                                class="inline-flex items-center gap-1.5 h-8 px-3 text-[11px] font-semibold text-[#c8c8c8] border border-[#8a2020] hover:text-white transition-all"
-                                style="background: linear-gradient(180deg, #3d1515 0%, #2d0f0f 100%);">
+                                class="inline-flex items-center gap-1.5 h-8 px-3 text-[11px] font-semibold text-ink-muted border border-brand/40 hover:text-ink transition-all">
                             ${window.svgIcon('search', 'w-3 h-3')}
                             查询
                         </button>
                         <button id="btnResetFilter"
-                                class="h-8 px-3 text-[11px] text-[#616161] hover:text-[#9e9e9e] transition-all">
+                                class="h-8 px-3 text-[11px] text-ink-dim hover:text-ink-muted transition-all">
                             重置
                         </button>
                     </div>
 
                     <button id="btnExportLogs"
-                            class="h-8 inline-flex items-center gap-1.5 bg-transparent text-[#9e9e9e] border border-[#2c2c2c] px-3 text-xs hover:border-[#d32f2f] hover:text-[#d32f2f] transition-all">
+                            class="h-8 inline-flex items-center gap-1.5 bg-transparent text-ink-muted border border-line px-3 text-xs hover:border-brand hover:text-brand transition-all">
                         ${window.svgIcon('download', 'w-3.5 h-3.5')}
                         导出
                     </button>
                 </div>
 
-                <div class="overflow-x-auto">
+                <div class="overflow-x-auto brabus-bg-grid">
                     <table class="w-full text-left text-xs border-collapse">
                         <thead>
-                            <tr class="bg-[#0e0e11] border-b border-[#2c2c2c] text-[#9e9e9e]">
+                            <tr class="bg-app-deep border-b border-line text-ink-muted">
                                 <th class="px-4 py-3 text-[10px] font-semibold tracking-wider whitespace-nowrap">时间</th>
                                 <th class="px-4 py-3 text-[10px] font-semibold tracking-wider whitespace-nowrap">操作人</th>
                                 <th class="px-4 py-3 text-[10px] font-semibold tracking-wider">操作</th>
@@ -67,23 +67,23 @@ export function logsTemplate() {
                                 <th class="px-4 py-3 text-[10px] font-semibold tracking-wider whitespace-nowrap">IP</th>
                             </tr>
                         </thead>
-                        <tbody id="logsTableBody" class="divide-y divide-[#222222]"></tbody>
+                        <tbody id="logsTableBody" class="divide-y divide-line-subtle"></tbody>
                     </table>
                 </div>
 
-                ${paginationBarHtml({ infoId: 'totalCountPagination', selectId: 'logsPageSize', buttonsId: 'paginationBtns', wrapperId: 'paginationContainer', wrapperClass: 'flex items-center justify-between px-4 py-2.5 border-t border-[#222222] bg-[#0e0e11]' })}
+                ${paginationBarHtml({ infoId: 'totalCountPagination', selectId: 'logsPageSize', buttonsId: 'paginationBtns', wrapperId: 'paginationContainer', wrapperClass: 'flex items-center justify-between px-4 py-2.5 border-t border-line-subtle bg-app-deep' })}
 
                 <div id="emptyState" class="hidden flex flex-col items-center justify-center py-16 text-center">
-                    <div class="p-3 bg-[#1e1e1e] border border-[#2c2c2c] text-[#616161] mb-2">
+                    <div class="p-3 bg-app-surface border border-line text-ink-dim mb-2">
                         ${window.svgIcon('clipboard-list', 'w-6 h-6')}
                     </div>
-                    <p class="text-xs text-[#9e9e9e] mb-1">暂无操作日志</p>
-                    <p class="text-[11px] text-[#616161]">登录、写操作、导出和查看计算过程会出现在此</p>
+                    <p class="text-xs text-ink-muted mb-1">暂无操作日志</p>
+                    <p class="text-[11px] text-ink-dim">登录、写操作、导出和查看计算过程会出现在此</p>
                 </div>
 
                 <div id="loadingState" class="hidden flex flex-col items-center justify-center py-16 gap-2">
-                    <div class="w-5 h-5 border-2 border-[#2c2c2c] border-t-[#d32f2f] rounded-full animate-spin"></div>
-                    <span class="text-[11px] text-[#616161]">加载中..</span>
+                    <div class="w-5 h-5 border-2 border-line border-brand rounded-full animate-spin"></div>
+                    <span class="text-[11px] text-ink-dim">加载中..</span>
                 </div>
             </div>
         </div>
@@ -171,11 +171,11 @@ export function renderTableRows(records, catalogByCode) {
     const catalog = catalogByCode || {};
     return records.map((record) => {
         const successBadge = record.success
-            ? `<span class="inline-flex items-center gap-1.5 px-2 py-0.5 text-[11px] text-[#4caf50] bg-[#2e7d32]/20 border border-[#2e7d32]/40">成功</span>`
-            : `<span class="inline-flex items-center gap-1.5 px-2 py-0.5 text-[11px] text-[#ef5350] bg-[#c62828]/20 border border-[#c62828]/40">失败 ${esc(record.status_code)}</span>`;
+            ? `<span class="inline-flex items-center gap-1.5 px-2 py-0.5 text-[11px] text-ok bg-ok/20 border border-ok/40/40">成功</span>`
+            : `<span class="inline-flex items-center gap-1.5 px-2 py-0.5 text-[11px] text-danger bg-danger/20 border border-brand-hud/40/40">失败 ${esc(record.status_code)}</span>`;
         const operator = record.operator_name || record.username || '-';
         const operatorSub = record.username && record.operator_name && record.username !== record.operator_name
-            ? `<div class="text-[11px] text-[#616161] font-mono">${esc(record.username)}</div>`
+            ? `<div class="text-[11px] text-ink-dim font-mono">${esc(record.username)}</div>`
             : '';
         const catalogHit = record.permission_code ? catalog[record.permission_code] : null;
         const split = splitLogDisplay(record.summary, record.detail);
@@ -185,35 +185,35 @@ export function renderTableRows(records, catalogByCode) {
         const objectText = split.objectText;
         const locationParts = [record.ip_country, record.ip_province, record.ip_city].filter((part) => part);
         const locationHint = locationParts.length
-            ? `<div class="text-[11px] text-[#616161]">${esc(locationParts.join(' / '))}</div>`
+            ? `<div class="text-[11px] text-ink-dim">${esc(locationParts.join(' / '))}</div>`
             : '';
 
         const errorText = !record.success && record.error_message
             ? String(record.error_message)
             : '';
         const errorLine = errorText
-            ? `<div class="max-w-[160px] mx-auto truncate text-[10px] text-[#9e9e9e] mt-1" title="${esc(errorText)}">${esc(errorText)}</div>`
+            ? `<div class="max-w-[160px] mx-auto truncate text-[10px] text-ink-muted mt-1" title="${esc(errorText)}">${esc(errorText)}</div>`
             : '';
 
         return `
-        <tr class="hover:bg-[#ffffff]/[0.02] transition-colors border-b border-[#222222]">
-            <td class="px-4 py-2.5 text-[11px] text-[#616161] font-mono whitespace-nowrap align-top">${esc(formatDateTime(record.created_at))}</td>
+        <tr class="hover:bg-ink/[0.02] transition-colors border-b border-line-subtle">
+            <td class="px-4 py-2.5 text-[11px] text-ink-dim font-mono whitespace-nowrap align-top">${esc(formatDateTime(record.created_at))}</td>
             <td class="px-4 py-2.5 whitespace-nowrap align-top">
-                <div class="text-xs text-[#ffffff]">${esc(operator)}</div>
+                <div class="text-xs text-ink">${esc(operator)}</div>
                 ${operatorSub}
             </td>
             <td class="px-4 py-2.5 align-top">
-                <div class="text-xs text-[#c8c8c8] leading-5 break-words">${esc(whatMain)}</div>
+                <div class="text-xs text-ink-muted leading-5 break-words">${esc(whatMain)}</div>
             </td>
             <td class="px-4 py-2.5 w-[132px] max-w-[132px] align-top">
-                <div class="text-[11px] text-[#9e9e9e] truncate" title="${esc(objectText)}">${esc(objectText || '-')}</div>
+                <div class="text-[11px] text-ink-muted truncate" title="${esc(objectText)}">${esc(objectText || '-')}</div>
             </td>
             <td class="px-4 py-2.5 text-center align-top">
                 <div class="inline-flex whitespace-nowrap">${successBadge}</div>
                 ${errorLine}
             </td>
             <td class="px-4 py-2.5 whitespace-nowrap align-top">
-                <div class="text-[11px] text-[#9e9e9e] font-mono">${esc(record.client_ip || '-')}</div>
+                <div class="text-[11px] text-ink-muted font-mono">${esc(record.client_ip || '-')}</div>
                 ${locationHint}
             </td>
         </tr>

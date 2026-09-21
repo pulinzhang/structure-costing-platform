@@ -1,14 +1,14 @@
-import { dieUploadTemplate } from './template.js?v=12';
+import { dieUploadTemplate } from './template.js?v=17';
 import {
     setDropzoneDragActive,
     setDropzoneFileSelected,
-} from '../../../../upload-dropzone.js?v=1';
+} from '../../../../ui/upload-dropzone.js?v=3';
 import {
     SOP_INTRO,
     loadProjectPeriod,
     renderSopBanner,
     sopBannerHtml,
-} from '../../../common/period-ui.js?v=5';
+} from '../../../common/period-ui.js?v=7';
 
 const MAX_RECENT_UPLOADS = 8;
 const POLL_INTERVAL_MS = 2000;
@@ -213,13 +213,13 @@ export const DieUploadPage = {
         if (preview) {
             preview.classList.remove('hidden');
             preview.innerHTML = `
-                <div class="flex items-center gap-3 p-3 bg-[#121212] border border-[#2c2c2c]">
-                    <span class="text-[#2e7d32]">${svgIcon('file-earmark-excel')}</span>
+                <div class="flex items-center gap-3 p-3 bg-app-main border border-line">
+                    <span class="text-ok">${svgIcon('file-earmark-excel')}</span>
                     <div class="flex-1 min-w-0">
-                        <div class="text-xs font-medium text-white truncate">${esc(file.name)}</div>
-                        <div class="text-[10px] text-[#616161]">${window.formatFileSize(file.size)}</div>
+                        <div class="text-xs font-medium text-ink truncate">${esc(file.name)}</div>
+                        <div class="text-[10px] text-ink-dim">${window.formatFileSize(file.size)}</div>
                     </div>
-                    <button type="button" id="dieRemoveFileBtn" class="p-1.5 text-[#616161] hover:text-[#d32f2f] hover:bg-[#262626] rounded-sm transition-all">
+                    <button type="button" id="dieRemoveFileBtn" class="p-1.5 text-ink-dim hover:text-brand hover:bg-app-elevated rounded-sm transition-all">
                         ${svgIcon('trash')}
                     </button>
                 </div>
@@ -270,16 +270,16 @@ export const DieUploadPage = {
         const container = document.getElementById('dieRecentUploads');
         if (!container) return;
         if (this.recentUploads.length === 0) {
-            container.innerHTML = '<p class="text-[10px] text-[#4a4a4a] text-center py-5">暂无上传记录</p>';
+            container.innerHTML = '<p class="text-[10px] text-ink-faint text-center py-5">暂无上传记录</p>';
             return;
         }
         container.innerHTML = this.recentUploads.map((item) => `
-            <div class="flex items-start gap-2.5 p-2.5 bg-[#121212] border border-[#2c2c2c] mb-2 last:mb-0">
-                <span class="text-[#2e7d32] shrink-0 mt-0.5">${svgIcon('file-earmark-excel')}</span>
+            <div class="flex items-start gap-2.5 p-2.5 bg-app-main border border-line mb-2 last:mb-0">
+                <span class="text-ok shrink-0 mt-0.5">${svgIcon('file-earmark-excel')}</span>
                 <div class="min-w-0 flex-1">
-                    <p class="text-[11px] text-[#ffffff] truncate">${esc(item.fileName)}</p>
-                    <p class="text-[10px] text-[#616161] mt-0.5">${esc(item.scopeLabel)} · ${esc(item.timeLabel)}</p>
-                    ${item.summary ? `<p class="text-[10px] text-[#9e9e9e] mt-0.5">${esc(item.summary)}</p>` : ''}
+                    <p class="text-[11px] text-ink truncate">${esc(item.fileName)}</p>
+                    <p class="text-[10px] text-ink-dim mt-0.5">${esc(item.scopeLabel)} · ${esc(item.timeLabel)}</p>
+                    ${item.summary ? `<p class="text-[10px] text-ink-muted mt-0.5">${esc(item.summary)}</p>` : ''}
                 </div>
             </div>
         `).join('');
@@ -311,21 +311,21 @@ export const DieUploadPage = {
         if (titleEl) {
             if (status === 'completed') {
                 titleEl.textContent = '解析成功';
-                titleEl.className = 'text-xs font-medium text-[#4caf50] truncate mb-0';
+                titleEl.className = 'text-xs font-medium text-ok truncate mb-0';
             } else if (status === 'failed') {
                 titleEl.textContent = '解析失败';
-                titleEl.className = 'text-xs font-medium text-[#ef5350] truncate mb-0';
+                titleEl.className = 'text-xs font-medium text-danger truncate mb-0';
             } else {
                 titleEl.textContent = '正在解析模具布点...';
-                titleEl.className = 'text-xs font-medium text-[#ffffff] truncate mb-0';
+                titleEl.className = 'text-xs font-medium text-ink truncate mb-0';
             }
         }
         if (status === 'completed' && bar) {
-            bar.className = 'h-full bg-[#2e7d32] transition-all duration-300';
+            bar.className = 'h-full bg-ok transition-all duration-300';
         } else if (status === 'failed' && bar) {
-            bar.className = 'h-full bg-[#c62828] transition-all duration-300';
+            bar.className = 'h-full bg-danger transition-all duration-300';
         } else if (bar) {
-            bar.className = 'h-full bg-[#d32f2f] shadow-[0_0_8px_rgba(211,47,47,0.5)] transition-all duration-300';
+            bar.className = 'h-full bg-brand hud-brand-glow transition-all duration-300';
         }
     },
 
@@ -337,7 +337,7 @@ export const DieUploadPage = {
             submitBtn.disabled = isUploading || !(fileInput?.files?.length);
             submitBtn.innerHTML = isUploading
                 ? `${window.svgIcon('spinner', 'w-3.5 h-3.5')} 解析中...`
-                : `<svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12"></path></svg> 上传`;
+                : `<svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12"></path></svg> 上传`;
         }
         ['dieResetButton', 'dieLocation', 'dieVehicleModel', 'dieUploadTemplateBtn'].forEach((id) => {
             const el = document.getElementById(id);

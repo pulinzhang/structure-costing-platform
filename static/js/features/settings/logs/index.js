@@ -2,13 +2,13 @@
  * 操作日志 — 对接 /api/settings/logs，筛选项来自权限目录
  */
 
-import { logsTemplate, renderTableRows } from './template.js?v=12';
+import { logsTemplate, renderTableRows } from './template.js?v=17';
 import {
     DEFAULT_PAGE_SIZE,
     bindPagination,
     paintPagination,
-} from '../../../page-size.js?v=3';
-import { setSearchBusy } from '../../../search-busy.js?v=1';
+} from '../../../ui/page-size.js?v=6';
+import { setSearchBusy } from '../../../ui/search-busy.js?v=3';
 
 const logsState = {
     records: [],
@@ -197,7 +197,7 @@ async function loadData(page = 1) {
         if (tableBody) {
             tableBody.innerHTML = `
                 <tr>
-                    <td colspan="6" class="px-4 py-8 text-center text-[#9e9e9e] text-xs">
+                    <td colspan="6" class="px-4 py-8 text-center text-ink-muted text-xs">
                         加载数据失败，请重试
                     </td>
                 </tr>
@@ -265,7 +265,7 @@ async function exportLogs() {
     if (btn) {
         btn.disabled = true;
         btn.innerHTML = `
-            <div class="w-3 h-3 border border-[#ef5350] border-t-transparent rounded-full animate-spin"></div>
+            <div class="w-3 h-3 border border-danger border-t-transparent rounded-full animate-spin"></div>
             导出中...
         `;
     }

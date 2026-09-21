@@ -3,7 +3,7 @@
  * 基准价格上传 — 异步 task_id + 进度轮询
  */
 
-import { basePriceUploadTemplate } from './template.js?v=40';
+import { basePriceUploadTemplate } from './template.js?v=44';
 
 const POLL_INTERVAL_MS = 2000;
 
@@ -83,12 +83,12 @@ const BasePriceUploadPage = {
         zone?.addEventListener('dragover', (event) => {
             if (this.isUploading) return;
             event.preventDefault();
-            zone.classList.add('border-[#d32f2f]');
+            zone.classList.add('border-brand');
         });
-        zone?.addEventListener('dragleave', () => zone.classList.remove('border-[#d32f2f]'));
+        zone?.addEventListener('dragleave', () => zone.classList.remove('border-brand'));
         zone?.addEventListener('drop', (event) => {
             event.preventDefault();
-            zone.classList.remove('border-[#d32f2f]');
+            zone.classList.remove('border-brand');
             if (this.isUploading) return;
             this.selectFile(event.dataTransfer.files?.[0]);
         });
@@ -124,16 +124,16 @@ const BasePriceUploadPage = {
         if (preview) {
             preview.classList.remove('hidden');
             preview.innerHTML = `
-                <div class="flex items-center gap-3 p-3 bg-[#121212] border border-[#2c2c2c]">
-                    ${window.svgIcon('file-earmark-excel', 'w-5 h-5 text-[#2e7d32]')}
+                <div class="flex items-center gap-3 p-3 bg-app-main border border-line">
+                    ${window.svgIcon('file-earmark-excel', 'w-5 h-5 text-ok')}
                     <div class="min-w-0 flex-1">
-                        <p class="text-xs text-[#ffffff] truncate">${esc(file.name)}</p>
-                        <p class="text-[10px] text-[#616161]">${this.formatFileSize(file.size)}</p>
+                        <p class="text-xs text-ink truncate">${esc(file.name)}</p>
+                        <p class="text-[10px] text-ink-dim">${this.formatFileSize(file.size)}</p>
                     </div>
                 </div>`;
         }
         const title = document.getElementById('basePriceUploadTitle');
-        if (title) title.innerHTML = `<span class="text-[#2e7d32]">${esc(file.name)}</span> 已选择`;
+        if (title) title.innerHTML = `<span class="text-ok">${esc(file.name)}</span> 已选择`;
         const button = document.getElementById('basePriceSubmitButton');
         if (button) button.disabled = false;
     },
@@ -176,7 +176,7 @@ const BasePriceUploadPage = {
         if (panel) panel.classList.remove('hidden');
         if (zone) {
             zone.classList.add('pointer-events-none');
-            zone.classList.remove('border-[#d32f2f]');
+            zone.classList.remove('border-brand');
         }
         this.updateProgress(progress, msg);
     },
@@ -208,28 +208,28 @@ const BasePriceUploadPage = {
         if (titleEl) {
             if (status === 'completed') {
                 titleEl.textContent = '解析成功';
-                titleEl.className = 'text-xs font-medium text-[#4caf50] truncate mb-0';
+                titleEl.className = 'text-xs font-medium text-ok truncate mb-0';
             } else if (isMissingGrade) {
                 titleEl.textContent = '未导入';
-                titleEl.className = 'text-xs font-medium text-[#ef5350] truncate mb-0';
+                titleEl.className = 'text-xs font-medium text-danger truncate mb-0';
             } else if (status === 'failed') {
                 titleEl.textContent = '解析失败';
-                titleEl.className = 'text-xs font-medium text-[#ef5350] truncate mb-0';
+                titleEl.className = 'text-xs font-medium text-danger truncate mb-0';
             } else {
                 titleEl.textContent = '正在解析基准价格...';
-                titleEl.className = 'text-xs font-medium text-[#ffffff] truncate mb-0';
+                titleEl.className = 'text-xs font-medium text-ink truncate mb-0';
             }
         }
 
         if (status === 'completed' && bar) {
-            bar.className = 'h-full bg-[#2e7d32] transition-all duration-300';
-            if (percentEl) percentEl.className = 'text-xs font-mono tabular-nums text-[#4caf50] shrink-0';
+            bar.className = 'h-full bg-ok transition-all duration-300';
+            if (percentEl) percentEl.className = 'text-xs font-mono tabular-nums text-ok shrink-0';
         } else if (status === 'failed' && bar) {
-            bar.className = 'h-full bg-[#c62828] transition-all duration-300';
-            if (percentEl) percentEl.className = 'text-xs font-mono tabular-nums text-[#ef5350] shrink-0';
+            bar.className = 'h-full bg-danger transition-all duration-300';
+            if (percentEl) percentEl.className = 'text-xs font-mono tabular-nums text-danger shrink-0';
         } else if (bar) {
-            bar.className = 'h-full bg-[#d32f2f] shadow-[0_0_8px_rgba(211,47,47,0.5)] transition-all duration-300';
-            if (percentEl) percentEl.className = 'text-xs font-mono tabular-nums text-[#d32f2f] shrink-0';
+            bar.className = 'h-full bg-brand hud-brand-glow transition-all duration-300';
+            if (percentEl) percentEl.className = 'text-xs font-mono tabular-nums text-brand shrink-0';
         }
     },
 

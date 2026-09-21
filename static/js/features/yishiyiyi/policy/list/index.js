@@ -4,19 +4,19 @@
  * 用于测试部门核对数据，主子表联合查询导出 Excel
  */
 
-import { policyDownloadTemplate, renderPolicyRows } from './template.js?v=42';
-import { bindMoreMenu } from '../../../../more-menu.js?v=1';
+import { policyDownloadTemplate, renderPolicyRows } from './template.js?v=49';
+import { bindMoreMenu } from '../../../../ui/more-menu.js?v=5';
 import {
     DEFAULT_PREVIEW_PAGE_SIZE,
     PREVIEW_PAGE_SIZE_OPTIONS,
     bindPagination,
     paintPagination,
-} from '../../../../page-size.js?v=3';
-import { setSearchBusy } from '../../../../search-busy.js?v=1';
+} from '../../../../ui/page-size.js?v=6';
+import { setSearchBusy } from '../../../../ui/search-busy.js?v=3';
 import {
     requireExportYearMonth,
     selectDefaultYear,
-} from '../../../common/period-ui.js?v=4';
+} from '../../../common/period-ui.js?v=6';
 
 /** @type {{ setOpen: (isOpen: boolean) => void, close: () => void, unbind: () => void } | null} */
 let moreMenu = null;
@@ -382,8 +382,8 @@ async function previewData(page = 1) {
             <tr>
                 <td colspan="20" class="px-4 py-8 text-center">
                     <div class="flex items-center justify-center">
-                        <div class="w-4 h-4 border border-[#252525] border-t-[#d32f2f] rounded-full animate-spin mr-2"></div>
-                        <span class="text-[11px] text-[#616161]">加载中...</span>
+                        <div class="w-4 h-4 border border-line border-brand rounded-full animate-spin mr-2"></div>
+                        <span class="text-[11px] text-ink-dim">加载中...</span>
                     </div>
                 </td>
             </tr>
@@ -419,7 +419,7 @@ async function previewData(page = 1) {
                 ? renderPolicyRows(records)
                 : `
                 <tr>
-                    <td colspan="20" class="px-4 py-8 text-center text-[#616161] text-xs">
+                    <td colspan="20" class="px-4 py-8 text-center text-ink-dim text-xs">
                         当前筛选下暂无数据
                     </td>
                 </tr>
@@ -432,7 +432,7 @@ async function previewData(page = 1) {
         if (tableBody) {
             tableBody.innerHTML = `
                 <tr>
-                    <td colspan="20" class="px-4 py-8 text-center text-[#d32f2f] text-xs">
+                    <td colspan="20" class="px-4 py-8 text-center text-brand text-xs">
                         加载失败: ${esc(error.message || '未知错误')}
                     </td>
                 </tr>
@@ -533,7 +533,7 @@ async function batchDeletePolicies() {
     if (btnDelete) {
         btnDelete.disabled = true;
         btnDelete.innerHTML = `
-            <div class="w-3 h-3 border border-[#ef5350] border-t-transparent rounded-full animate-spin"></div>
+            <div class="w-3 h-3 border border-danger border-t-transparent rounded-full animate-spin"></div>
             删除中...
         `;
     }
@@ -559,8 +559,8 @@ async function batchDeletePolicies() {
                 <tr>
                     <td colspan="16" class="px-4 py-8 text-center">
                         <div class="flex items-center justify-center">
-                            <div class="w-4 h-4 border border-[#252525] border-t-[#d32f2f] rounded-full animate-spin mr-2"></div>
-                            <span class="text-[11px] text-[#616161]">正在刷新...</span>
+                            <div class="w-4 h-4 border border-line border-brand rounded-full animate-spin mr-2"></div>
+                            <span class="text-[11px] text-ink-dim">正在刷新...</span>
                         </div>
                     </td>
                 </tr>

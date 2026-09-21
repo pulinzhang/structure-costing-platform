@@ -5,8 +5,9 @@
  * 顶部摘要与表单同源渲染，避免展示/编辑数据冲突
  */
 
+import { BTN_SOLID } from '../../../ui/classes.js?v=11';
 import { updateUserSession } from '../../login/index.js';
-import { profileLoadingTemplate, profileTemplate } from './template.js';
+import { profileLoadingTemplate, profileTemplate } from './template.js?v=3';
 
 const profileState = {
     user: null,
@@ -85,9 +86,9 @@ async function loadProfile() {
         if (pageContent) {
             pageContent.innerHTML = `
                 <div class="flex flex-col items-center justify-center py-20">
-                    <p class="text-xs text-[#9e9e9e] mb-3">加载失败，请重试</p>
+                    <p class="text-xs text-ink-muted mb-3">加载失败，请重试</p>
                     <button type="button" id="btnRetryProfile"
-                            class="inline-flex items-center gap-1.5 bg-[#d32f2f] text-white px-4 py-2 text-xs font-semibold rounded-sm hover:bg-[#b71c1c] transition-all">
+                            class="${BTN_SOLID}">
                         重新加载
                     </button>
                 </div>
@@ -128,7 +129,7 @@ async function saveProfile() {
 }
 
 function passwordStrength(password) {
-    if (!password) return { score: 0, label: '—', color: '#616161', width: '0%' };
+    if (!password) return { score: 0, label: '—', color: 'rgb(var(--text-dim))', width: '0%' };
     let score = 0;
     if (password.length >= 6) score += 1;
     if (password.length >= 10) score += 1;
@@ -136,9 +137,9 @@ function passwordStrength(password) {
     if (/\d/.test(password)) score += 1;
     if (/[^A-Za-z0-9]/.test(password)) score += 1;
 
-    if (score <= 1) return { score, label: '弱', color: '#c62828', width: '25%' };
-    if (score <= 3) return { score, label: '中', color: '#f57f17', width: '55%' };
-    return { score, label: '强', color: '#2e7d32', width: '100%' };
+    if (score <= 1) return { score, label: '弱', color: 'rgb(var(--danger-color))', width: '25%' };
+    if (score <= 3) return { score, label: '中', color: 'rgb(var(--warning-color))', width: '55%' };
+    return { score, label: '强', color: 'rgb(var(--success-color))', width: '100%' };
 }
 
 function updatePasswordHints() {
@@ -158,19 +159,19 @@ function updatePasswordHints() {
         strengthTip.textContent = password
             ? `密码强度：${strength.label}${password.length < MIN_PASSWORD_LENGTH ? '（至少 6 个字符）' : ''}`
             : '密码强度：—';
-        strengthTip.className = `text-[10px] mt-1.5 ${password && password.length < MIN_PASSWORD_LENGTH ? 'text-[#f57f17]' : 'text-[#484848]'}`;
+        strengthTip.className = `text-[10px] mt-1.5 ${password && password.length < MIN_PASSWORD_LENGTH ? 'text-warn' : 'text-ink-faint'}`;
     }
 
     if (matchTip) {
         if (!confirm) {
             matchTip.textContent = '';
-            matchTip.className = 'text-[10px] text-[#484848] mt-1.5';
+            matchTip.className = 'text-[10px] text-ink-faint mt-1.5';
         } else if (password !== confirm) {
             matchTip.textContent = '两次输入的新密码不一致';
-            matchTip.className = 'text-[10px] text-[#ef5350] mt-1.5';
+            matchTip.className = 'text-[10px] text-danger mt-1.5';
         } else {
             matchTip.textContent = '两次输入一致';
-            matchTip.className = 'text-[10px] text-[#4caf50] mt-1.5';
+            matchTip.className = 'text-[10px] text-ok mt-1.5';
         }
     }
 }

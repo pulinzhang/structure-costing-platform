@@ -7,16 +7,16 @@ import {
     dieFeeListTemplate,
     renderDieFeeRows,
     updateDieFeeHud,
-    updateDieFeeFilterCapsules,
-} from './template.js?v=23';
-import { bindMoreMenu } from '../../../../more-menu.js?v=1';
-import { shortPartNumber } from '../../../../part-identity.js?v=3';
+} from './template.js?v=33';
+import { bindMoreMenu } from '../../../../ui/more-menu.js?v=5';
+import { bindFilterBar } from '../../../../ui/filter-bar.js?v=3';
+import { shortPartNumber } from '../../../../domain/part-identity.js?v=5';
 import {
     DEFAULT_PAGE_SIZE,
     bindPagination,
     paintPagination,
-} from '../../../../page-size.js?v=3';
-import { setSearchBusy } from '../../../../search-busy.js?v=1';
+} from '../../../../ui/page-size.js?v=6';
+import { setSearchBusy } from '../../../../ui/search-busy.js?v=3';
 
 const API_BASE = '/api/stamping/die-fees';
 const DRAWER_ANIMATION_MS = 300;
@@ -24,6 +24,18 @@ const SCOPE_REQUIRED_MESSAGE = '须选定年度、基地、项目';
 
 /** @type {{ setOpen: (isOpen: boolean) => void, close: () => void, unbind: () => void } | null} */
 let moreMenu = null;
+/** @type {{ paint: () => void, setOpen: (isOpen: boolean) => void, unbind: () => void } | null} */
+let filterBar = null;
+
+const DIE_FEE_FILTER_FIELD_IDS = [
+    'dieFeeYearFilter',
+    'dieFeeLocationFilter',
+    'dieFeeVehicleFilter',
+    'dieFeeSupplierFilter',
+    'dieFeeVersionFilter',
+    'dieFeeAuditStatusFilter',
+    'dieFeePartNumberFilter',
+];
 
 const feeState = {
     records: [],
@@ -32,7 +44,6 @@ const feeState = {
     pageSize: DEFAULT_PAGE_SIZE,
     totalPages: 1,
     canUpdate: true,
-    advancedOpen: false,
     onlyZero: false,
     zeroCount: 0,
     batchAuditSubmitting: false,
@@ -79,7 +90,7 @@ function init() {
     applyHashFilters();
     fillAuditStatusOptions();
     loadFilterOptions().then(() => {
-        updateDieFeeFilterCapsules();
+        filterBar?.paint();
         loadData(1);
     });
 }
@@ -132,9 +143,6 @@ function applyHashFilters() {
         const versionEl = document.getElementById('dieFeeVersionFilter');
         if (versionEl) versionEl.dataset.pending = version;
     }
-    if (year || location || vehicle || supplier || version) {
-        setAdvancedOpen(true);
-    }
 }
 
 function fillAuditStatusOptions() {
@@ -148,18 +156,30 @@ function fillAuditStatusOptions() {
     `;
 }
 
-function setAdvancedOpen(isOpen) {
-    feeState.advancedOpen = isOpen;
-    document.getElementById('dieFeeAdvancedFilterPanel')?.classList.toggle('hidden', !isOpen);
-    const label = document.getElementById('dieFeeAdvancedFilterLabel');
-    if (label) label.textContent = isOpen ? '收起高级筛选' : '展开高级筛选';
-}
-
 function bindEvents() {
-    document.getElementById('dieFeeSearchBtn')?.addEventListener('click', () => loadData(1));
-    document.getElementById('dieFeeResetBtn')?.addEventListener('click', resetFilters);
-    document.getElementById('dieFeeToggleAdvancedFilter')?.addEventListener('click', () => {
-        setAdvancedOpen(!feeState.advancedOpen);
+    filterBar = bindFilterBar({
+        prefix: 'dieFee',
+        searchId: 'dieFeeSearchBtn',
+        capsules: [
+            {
+                capsuleId: 'dieFeeCapsuleYear',
+                fieldId: 'dieFeeYearFilter',
+                idleLabel: '全部年度',
+                display: () => {
+                    const y = document.getElementById('dieFeeYearFilter')?.value;
+                    return y && typeof fmtYear === 'function' ? fmtYear(y) : '';
+                },
+            },
+            { capsuleId: 'dieFeeCapsuleLocation', fieldId: 'dieFeeLocationFilter', idleLabel: '全部基地' },
+            { capsuleId: 'dieFeeCapsuleVehicle', fieldId: 'dieFeeVehicleFilter', idleLabel: '全部项目' },
+            { capsuleId: 'dieFeeCapsuleSupplier', fieldId: 'dieFeeSupplierFilter', idleLabel: '全部供应商' },
+            { capsuleId: 'dieFeeCapsuleVersion', fieldId: 'dieFeeVersionFilter', idleLabel: '全部版本' },
+        ],
+        countFieldIds: DIE_FEE_FILTER_FIELD_IDS,
+        resetId: 'dieFeeResetBtn',
+        enterFieldIds: ['dieFeePartNumberFilter'],
+        onSearch: () => loadData(1),
+        onReset: resetFilters,
     });
     document.getElementById('dieFeeHudZeroCard')?.addEventListener('click', () => {
         if (feeState.onlyZero) {
@@ -195,44 +215,33 @@ function bindEvents() {
 
     document.getElementById('dieFeeYearFilter')?.addEventListener('change', () => {
         loadIdentityOptions().then(() => {
-            updateDieFeeFilterCapsules();
+            filterBar?.paint();
             loadData(1);
         });
     });
     document.getElementById('dieFeeLocationFilter')?.addEventListener('change', () => {
         loadVehicleOptions().then(() => loadIdentityOptions().then(() => {
-            updateDieFeeFilterCapsules();
+            filterBar?.paint();
             loadData(1);
         }));
     });
     document.getElementById('dieFeeVehicleFilter')?.addEventListener('change', () => {
         loadIdentityOptions().then(() => {
-            updateDieFeeFilterCapsules();
+            filterBar?.paint();
             loadData(1);
         });
     });
     document.getElementById('dieFeeSupplierFilter')?.addEventListener('change', () => {
         loadVersionOptions().then(() => {
-            updateDieFeeFilterCapsules();
+            filterBar?.paint();
             loadData(1);
         });
     });
     document.getElementById('dieFeeVersionFilter')?.addEventListener('change', () => {
-        updateDieFeeFilterCapsules();
         loadData(1);
     });
     document.getElementById('dieFeeAuditStatusFilter')?.addEventListener('change', () => {
-        updateDieFeeFilterCapsules();
         loadData(1);
-    });
-    document.getElementById('dieFeePartNumberFilter')?.addEventListener('keydown', (event) => {
-        if (event.key !== 'Enter') return;
-        event.preventDefault();
-        updateDieFeeFilterCapsules();
-        loadData(1);
-    });
-    document.getElementById('dieFeePartNumberFilter')?.addEventListener('input', () => {
-        updateDieFeeFilterCapsules();
     });
 
 
@@ -376,7 +385,7 @@ function resetFilters() {
     if (partEl) partEl.value = '';
     feeState.onlyZero = false;
     loadFilterOptions().then(() => {
-        updateDieFeeFilterCapsules();
+        filterBar?.paint();
         loadData(1);
     });
 }
@@ -429,7 +438,7 @@ async function loadData(page = 1) {
     const body = document.getElementById('dieFeeTableBody');
     if (body) body.innerHTML = '';
     empty?.classList.add('hidden');
-    updateDieFeeFilterCapsules();
+    filterBar?.paint();
 
     const filters = collectListFilters();
 
@@ -458,7 +467,7 @@ async function loadData(page = 1) {
         feeState.pageSize = data.page_size || feeState.pageSize;
         feeState.totalPages = data.total_pages || Math.ceil(feeState.total / feeState.pageSize) || 1;
 
-        const totalLabel = document.getElementById('dieFeeTotalLabel');
+        const totalLabel = document.getElementById('dieFeePageInfo');
         if (totalLabel) {
             totalLabel.textContent = feeState.onlyZero
                 ? `零价 ${feeState.total} 条`
@@ -496,8 +505,7 @@ function fillPartNumberFields(prefix, partNumber) {
         shortEl.textContent = shortNo || (full || '—');
         shortEl.classList.toggle('text-xl', Boolean(shortNo));
         shortEl.classList.toggle('text-xs', !shortNo);
-        shortEl.classList.toggle('text-[#cccccc]', !shortNo);
-        shortEl.classList.toggle('text-white', Boolean(shortNo));
+        shortEl.classList.add('text-ink');
     }
     if (fullEl) {
         fullEl.textContent = shortNo ? full : '';
@@ -582,7 +590,7 @@ function fillViewFieldsFromRecord(record) {
 async function loadFeeDetail(feeId) {
     const container = document.getElementById('dieFeeViewProcessItems');
     if (container) {
-        container.innerHTML = '<div class="px-4 py-6 text-[11px] text-[#616161]">加载中..</div>';
+        container.innerHTML = '<div class="px-4 py-6 text-[11px] text-ink-dim">加载中..</div>';
     }
     try {
         const res = await HttpClient.get(`${API_BASE}/${feeId}`);
@@ -592,7 +600,7 @@ async function loadFeeDetail(feeId) {
         renderProcessItems(detail.items || []);
     } catch (error) {
         if (container && feeState.viewingId === feeId) {
-            container.innerHTML = `<div class="px-4 py-6 text-[11px] text-[#ef5350]">${esc(error.message || '加载溯源失败')}</div>`;
+            container.innerHTML = `<div class="px-4 py-6 text-[11px] text-danger">${esc(error.message || '加载溯源失败')}</div>`;
         }
     }
 }
@@ -601,33 +609,33 @@ function renderProcessItems(items) {
     const container = document.getElementById('dieFeeViewProcessItems');
     if (!container) return;
     if (!items || !items.length) {
-        container.innerHTML = '<div class="px-4 py-6 text-[11px] text-[#616161]">暂无各序溯源</div>';
+        container.innerHTML = '<div class="px-4 py-6 text-[11px] text-ink-dim">暂无各序溯源</div>';
         return;
     }
     const rows = items.map((item) => `
-            <tr class="hover:bg-[#ffffff]/[0.02] transition-colors">
-                <td class="px-3 py-2 text-[11px] font-mono text-[#9e9e9e] whitespace-nowrap">${esc(item.process_seq || '—')}</td>
-                <td class="px-3 py-2 text-[11px] text-[#cccccc] whitespace-nowrap">${esc(item.process_code || '—')}</td>
-                <td class="px-3 py-2 text-[11px] text-right font-mono tabular-nums text-[#9e9e9e]">${formatDecimal(item.estimated_weight_t, 4)}</td>
-                <td class="px-3 py-2 text-[11px] text-right font-mono tabular-nums text-[#9e9e9e]">${formatDecimal(item.alloc_ratio, 2)}</td>
-                <td class="px-3 py-2 text-[11px] text-right font-mono tabular-nums text-[#9e9e9e]">${formatDecimal(item.unit_price, 4)}</td>
-                <td class="px-3 py-2 text-[11px] text-right font-mono tabular-nums text-[#ffffff]">${formatDecimal(item.line_die_fee, 4)}</td>
-                <td class="px-3 py-2 text-[11px] text-[#888888] min-w-[180px]">${esc(item.basis_text || '—')}</td>
+            <tr class="hover:bg-ink/[0.02] transition-colors">
+                <td class="px-3 py-2 text-[11px] font-mono text-ink-muted whitespace-nowrap">${esc(item.process_seq || '—')}</td>
+                <td class="px-3 py-2 text-[11px] text-ink whitespace-nowrap">${esc(item.process_code || '—')}</td>
+                <td class="px-3 py-2 text-[11px] text-right font-mono tabular-nums text-ink-muted">${formatDecimal(item.estimated_weight_t, 4)}</td>
+                <td class="px-3 py-2 text-[11px] text-right font-mono tabular-nums text-ink-muted">${formatDecimal(item.alloc_ratio, 2)}</td>
+                <td class="px-3 py-2 text-[11px] text-right font-mono tabular-nums text-ink-muted">${formatDecimal(item.unit_price, 4)}</td>
+                <td class="px-3 py-2 text-[11px] text-right font-mono tabular-nums text-ink">${formatDecimal(item.line_die_fee, 4)}</td>
+                <td class="px-3 py-2 text-[11px] text-ink-muted min-w-[180px]">${esc(item.basis_text || '—')}</td>
             </tr>`).join('');
     container.innerHTML = `
         <table class="w-full">
             <thead>
-                <tr class="bg-[#0a0a0a] border-b border-[#2c2c2c]">
-                    <th class="px-3 py-2 text-left text-[10px] font-semibold uppercase tracking-[0.12em] text-[#616161]">工序</th>
-                    <th class="px-3 py-2 text-left text-[10px] font-semibold uppercase tracking-[0.12em] text-[#616161]">代码</th>
-                    <th class="px-3 py-2 text-right text-[10px] font-semibold uppercase tracking-[0.12em] text-[#616161]">预估重量(T)</th>
-                    <th class="px-3 py-2 text-right text-[10px] font-semibold uppercase tracking-[0.12em] text-[#616161]">分摊比例</th>
-                    <th class="px-3 py-2 text-right text-[10px] font-semibold uppercase tracking-[0.12em] text-[#616161]">单价</th>
-                    <th class="px-3 py-2 text-right text-[10px] font-semibold uppercase tracking-[0.12em] text-[#616161]">本序模具费</th>
-                    <th class="px-3 py-2 text-left text-[10px] font-semibold uppercase tracking-[0.12em] text-[#616161]">计算依据</th>
+                <tr class="bg-app-deep border-b border-line">
+                    <th class="px-3 py-2 text-left text-[10px] font-semibold uppercase tracking-[0.12em] text-ink-dim">工序</th>
+                    <th class="px-3 py-2 text-left text-[10px] font-semibold uppercase tracking-[0.12em] text-ink-dim">代码</th>
+                    <th class="px-3 py-2 text-right text-[10px] font-semibold uppercase tracking-[0.12em] text-ink-dim">预估重量(T)</th>
+                    <th class="px-3 py-2 text-right text-[10px] font-semibold uppercase tracking-[0.12em] text-ink-dim">分摊比例</th>
+                    <th class="px-3 py-2 text-right text-[10px] font-semibold uppercase tracking-[0.12em] text-ink-dim">单价</th>
+                    <th class="px-3 py-2 text-right text-[10px] font-semibold uppercase tracking-[0.12em] text-ink-dim">本序模具费</th>
+                    <th class="px-3 py-2 text-left text-[10px] font-semibold uppercase tracking-[0.12em] text-ink-dim">计算依据</th>
                 </tr>
             </thead>
-            <tbody class="divide-y divide-[#222222]">${rows}</tbody>
+            <tbody class="divide-y divide-line-subtle">${rows}</tbody>
         </table>`;
 }
 
@@ -762,7 +770,7 @@ async function exportExcel() {
     if (btn) {
         btn.disabled = true;
         btn.innerHTML = `
-            <div class="w-3 h-3 border border-[#ef5350] border-t-transparent rounded-full animate-spin"></div>
+            <div class="w-3 h-3 border border-danger border-t-transparent rounded-full animate-spin"></div>
             导出中..
         `;
     }
@@ -806,7 +814,7 @@ async function exportExcel() {
 async function batchDelete() {
     const filters = collectScopeFilters();
     if (!hasScope(filters)) {
-        setAdvancedOpen(true);
+        filterBar?.setOpen(true);
         showToast(SCOPE_REQUIRED_MESSAGE, 'warning');
         return;
     }
@@ -821,7 +829,7 @@ async function batchDelete() {
     if (btn) {
         btn.disabled = true;
         btn.innerHTML = `
-            <div class="w-3 h-3 border border-[#ef5350] border-t-transparent rounded-full animate-spin"></div>
+            <div class="w-3 h-3 border border-danger border-t-transparent rounded-full animate-spin"></div>
             删除中..
         `;
     }
@@ -867,7 +875,7 @@ function getSessionDisplayName() {
 function openBatchAuditDrawer(mode) {
     const filters = collectScopeFilters();
     if (!hasScope(filters)) {
-        setAdvancedOpen(true);
+        filterBar?.setOpen(true);
         showToast(SCOPE_REQUIRED_MESSAGE, 'warning');
         return;
     }
@@ -895,8 +903,8 @@ function openBatchAuditDrawer(mode) {
     }
     if (remarkLabel) {
         remarkLabel.innerHTML = isApprove
-            ? '审核意见<span class="text-[#d32f2f]">*</span>'
-            : '反审核意见<span class="text-[#d32f2f]">*</span>';
+            ? '审核意见<span class="text-brand">*</span>'
+            : '反审核意见<span class="text-brand">*</span>';
     }
     if (remarkEl) {
         remarkEl.value = '';
@@ -970,6 +978,8 @@ async function submitBatchAudit() {
 function destroy() {
     moreMenu?.unbind();
     moreMenu = null;
+    filterBar?.unbind();
+    filterBar = null;
     closeDrawer('dieFeeViewDrawer', 'dieFeeViewDrawerBackdrop');
     closeDrawer('dieFeeEditDrawer', 'dieFeeEditDrawerBackdrop');
     closeDrawer('dieFeeBatchAuditDrawer', 'dieFeeBatchAuditDrawerBackdrop');

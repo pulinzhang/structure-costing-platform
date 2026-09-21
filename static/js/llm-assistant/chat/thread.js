@@ -4,7 +4,7 @@
 
 import { humanizeUserFacingError } from '../errors.js';
 import { EXPORT_ICON_BTN_CLASS, llmIconPrint, llmIconWord } from '../icons.js';
-import { renderMarkdown } from '../markdown/render.js?v=2';
+import { renderMarkdown } from '../markdown/render.js?v=4';
 import { canExportAssistantMessage } from '../export/document.js';
 
 /**
@@ -16,7 +16,7 @@ export function renderThread(root, messages) {
     if (!Array.isArray(messages) || messages.length === 0) {
         root.innerHTML = `
 <div class="flex flex-col items-center justify-center h-full min-h-[160px] text-center px-4">
-  <p class="text-xs text-[#757575]">点下方常见问题，或直接输入一句人话提问</p>
+  <p class="text-xs text-ink-muted">点下方常见问题，或直接输入一句人话提问</p>
 </div>`;
         return;
     }
@@ -32,21 +32,21 @@ export function renderThread(root, messages) {
 function renderMessage(msg) {
     const isUser = msg.role === 'user';
     const bubbleClass = isUser
-        ? 'ml-8 bg-[#1e1e1e] border border-[#2c2c2c] text-[#F5F5F5]'
-        : 'mr-2 bg-[#141414] border border-[#222222] text-[#E8E8E8]';
+        ? 'ml-8 bg-app-surface border border-line text-ink'
+        : 'mr-2 bg-app-main border border-line-subtle text-ink';
 
     let body;
     if (msg.status === 'pending') {
-        body = `<div class="text-[11px] text-[#9e9e9e] flex items-center gap-2">
-          <span class="inline-block w-3 h-3 border border-[#616161] border-t-[#ff5252] rounded-full animate-spin"></span>
+        body = `<div class="text-[11px] text-ink-muted flex items-center gap-2">
+          <span class="inline-block w-3 h-3 border border-ink-muted border-brand-active rounded-full animate-spin"></span>
           <span>${esc(msg.content || 'AI思考中…')}</span>
         </div>`;
     } else if (msg.status === 'error') {
-        body = `<div class="text-[11px] text-[#ef5350]">${esc(humanizeUserFacingError(msg.content))}</div>`;
+        body = `<div class="text-[11px] text-danger">${esc(humanizeUserFacingError(msg.content))}</div>`;
     } else if (!isUser) {
         const exportToolbar = renderExportToolbar(msg);
         const periodChip = renderPeriodChip(msg);
-        const markdownBlock = `<div class="llm-md text-[11px] leading-relaxed [&_h1]:text-sm [&_h2]:text-xs [&_h3]:text-[11px] [&_p]:my-1.5 [&_ul]:my-1.5 [&_ul]:list-disc [&_ul]:pl-4 [&_code]:font-mono [&_code]:text-[10px] [&_code]:text-[#ff8a80] [&_.table-scroll]:overflow-x-auto [&_.table-scroll]:max-w-full [&_.table-scroll]:my-2 [&_table]:border-collapse [&_table]:text-[10px] [&_table]:leading-snug [&_th]:border [&_th]:border-[#2c2c2c] [&_th]:bg-[#1a1a1a] [&_th]:px-2 [&_th]:py-1 [&_th]:whitespace-nowrap [&_th]:text-[#bdbdbd] [&_td]:border [&_td]:border-[#2c2c2c] [&_td]:px-2 [&_td]:py-1 [&_.cell-keep]:whitespace-nowrap [&_.cell-wrap]:max-w-[10.5em] [&_.cell-wrap]:break-words">${renderMarkdown(msg.content || '')}</div>`;
+        const markdownBlock = `<div class="llm-md text-[11px] leading-relaxed [&_h1]:text-sm [&_h2]:text-xs [&_h3]:text-[11px] [&_p]:my-1.5 [&_ul]:my-1.5 [&_ul]:list-disc [&_ul]:pl-4 [&_code]:font-mono [&_code]:text-[10px] [&_code]:text-brand-hud [&_.table-scroll]:overflow-x-auto [&_.table-scroll]:max-w-full [&_.table-scroll]:my-2 [&_table]:border-collapse [&_table]:text-[10px] [&_table]:leading-snug [&_th]:border [&_th]:border-line [&_th]:bg-app-surface [&_th]:px-2 [&_th]:py-1 [&_th]:whitespace-nowrap [&_th]:text-ink [&_td]:border [&_td]:border-line [&_td]:px-2 [&_td]:py-1 [&_.cell-keep]:whitespace-nowrap [&_.cell-wrap]:max-w-[10.5em] [&_.cell-wrap]:break-words">${renderMarkdown(msg.content || '')}</div>`;
         body = `${exportToolbar}${periodChip}${markdownBlock}`;
     } else {
         body = `<div class="text-[11px] whitespace-pre-wrap break-words">${esc(msg.content || '')}</div>`;
@@ -74,7 +74,7 @@ function renderPeriodChip(msg) {
         .filter(Boolean)
         .map((item) => esc(String(item)))
         .join(' · ');
-    return `<p class="text-[10px] text-[#757575] mb-1.5">${esc(period)}${extra ? ` · ${extra}` : ''}</p>`;
+    return `<p class="text-[10px] text-ink-muted mb-1.5">${esc(period)}${extra ? ` · ${extra}` : ''}</p>`;
 }
 
 function renderExportToolbar(msg) {

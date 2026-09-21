@@ -1146,11 +1146,6 @@
                   "type": "op"
                 },
                 {
-                  "code": "op:steel-price-list:reject",
-                  "label": "驳回",
-                  "type": "op"
-                },
-                {
                   "code": "op:steel-price-list:reverse",
                   "label": "反审核",
                   "type": "op"

@@ -8,13 +8,11 @@ from app.repositories.costing.steel_price.steel_price_repository import (
     SteelPriceRepository,
 )
 from app.schemas.dto.steel_price_dto import (
-    SteelPriceAuditDTO,
     SteelPriceBatchApproveDTO,
     SteelPriceBatchDeleteDTO,
     SteelPriceBatchReverseAuditDTO,
     SteelPriceCreate,
     SteelPriceQuery,
-    SteelPriceReverseAuditDTO,
     SteelPriceUpdate,
     SteelPriceWrite,
 )
@@ -26,11 +24,8 @@ from app.schemas.vo.steel_price_vo import (
 )
 from app.schemas.vo.user_vo import UserVO
 from app.services.costing.steel_price.audit.service import (
-    approve_steel_price,
     batch_approve_steel_prices,
     batch_reverse_audit_steel_prices,
-    reject_steel_price,
-    reverse_audit_steel_price,
 )
 from app.services.costing.steel_price.calc_batch import save_calc_batch
 from app.services.costing.steel_price.crud import (
@@ -100,33 +95,6 @@ class SteelPriceService:
         current_user: UserVO,
     ) -> SteelPriceBatchAuditResultVO:
         return batch_reverse_audit_steel_prices(self.repository, db, data, current_user)
-
-    def approve(
-        self,
-        db: Session,
-        record_id: int,
-        data: SteelPriceAuditDTO,
-        current_user: UserVO,
-    ) -> SteelPriceResponse:
-        return approve_steel_price(self.repository, db, record_id, data, current_user)
-
-    def reject(
-        self,
-        db: Session,
-        record_id: int,
-        data: SteelPriceAuditDTO,
-        current_user: UserVO,
-    ) -> SteelPriceResponse:
-        return reject_steel_price(self.repository, db, record_id, data, current_user)
-
-    def reverse_audit(
-        self,
-        db: Session,
-        record_id: int,
-        data: SteelPriceReverseAuditDTO,
-        current_user: UserVO,
-    ) -> SteelPriceResponse:
-        return reverse_audit_steel_price(self.repository, db, record_id, data, current_user)
 
     def save_calc_batch(
         self,

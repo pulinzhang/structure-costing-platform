@@ -1,4 +1,4 @@
-import { policyUploadTemplate } from './template.js?v=3';
+import { policyUploadTemplate } from './template.js?v=7';
 
 const MAX_RECENT_UPLOADS = 8;
 const POLL_INTERVAL_MS = 2000;
@@ -92,12 +92,12 @@ const PolicyUploadPage = {
         zone?.addEventListener('dragover', (event) => {
             if (this.isUploading) return;
             event.preventDefault();
-            zone.classList.add('border-[#d32f2f]');
+            zone.classList.add('border-brand');
         });
-        zone?.addEventListener('dragleave', () => zone.classList.remove('border-[#d32f2f]'));
+        zone?.addEventListener('dragleave', () => zone.classList.remove('border-brand'));
         zone?.addEventListener('drop', (event) => {
             event.preventDefault();
-            zone.classList.remove('border-[#d32f2f]');
+            zone.classList.remove('border-brand');
             if (this.isUploading) return;
             this.selectFile(event.dataTransfer.files?.[0]);
         });
@@ -134,16 +134,16 @@ const PolicyUploadPage = {
         if (preview) {
             preview.classList.remove('hidden');
             preview.innerHTML = `
-                <div class="flex items-center gap-3 p-3 bg-[#121212] border border-[#2c2c2c]">
-                    ${window.svgIcon('file-earmark-excel', 'w-5 h-5 text-[#2e7d32]')}
+                <div class="flex items-center gap-3 p-3 bg-app-main border border-line">
+                    ${window.svgIcon('file-earmark-excel', 'w-5 h-5 text-ok')}
                     <div class="min-w-0 flex-1">
-                        <p class="text-xs text-[#ffffff] truncate">${esc(file.name)}</p>
-                        <p class="text-[10px] text-[#616161]">${this.formatFileSize(file.size)}</p>
+                        <p class="text-xs text-ink truncate">${esc(file.name)}</p>
+                        <p class="text-[10px] text-ink-dim">${this.formatFileSize(file.size)}</p>
                     </div>
                 </div>`;
         }
         const title = document.getElementById('policyUploadTitle');
-        if (title) title.innerHTML = `<span class="text-[#2e7d32]">${esc(file.name)}</span> 已选择`;
+        if (title) title.innerHTML = `<span class="text-ok">${esc(file.name)}</span> 已选择`;
         const button = document.getElementById('policySubmitButton');
         if (button) button.disabled = false;
     },
@@ -204,10 +204,10 @@ const PolicyUploadPage = {
         if (this.recentUploads.length === 0) {
             container.innerHTML = `
                 <div class="text-center py-6">
-                    <div class="w-8 h-8 bg-[#262626] flex items-center justify-center mx-auto mb-2.5">
-                        <svg class="w-4 h-4 text-[#616161]" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10"></path></svg>
+                    <div class="w-8 h-8 bg-app-elevated flex items-center justify-center mx-auto mb-2.5">
+                        <svg class="w-4 h-4 text-ink-dim" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10"></path></svg>
                     </div>
-                    <p class="text-[11px] text-[#616161]">暂无导入记录</p>
+                    <p class="text-[11px] text-ink-dim">暂无导入记录</p>
                 </div>
             `;
             return;
@@ -216,12 +216,12 @@ const PolicyUploadPage = {
         container.innerHTML = `
             <div class="space-y-2">
                 ${this.recentUploads.map((item) => `
-                    <div class="flex items-start gap-2.5 p-2.5 bg-[#121212] border border-[#2c2c2c]">
-                        <span class="text-[#2e7d32] shrink-0 mt-0.5">${window.svgIcon('file-earmark-excel', 'w-4 h-4')}</span>
+                    <div class="flex items-start gap-2.5 p-2.5 bg-app-main border border-line">
+                        <span class="text-ok shrink-0 mt-0.5">${window.svgIcon('file-earmark-excel', 'w-4 h-4')}</span>
                         <div class="min-w-0 flex-1">
-                            <p class="text-[11px] text-[#ffffff] truncate" title="${esc(item.fileName)}">${esc(item.fileName)}</p>
-                            <p class="text-[10px] text-[#616161] mt-0.5">${esc(item.periodLabel)} · ${esc(item.timeLabel)}</p>
-                            ${item.summary ? `<p class="text-[10px] text-[#9e9e9e] mt-0.5">${esc(item.summary)}</p>` : ''}
+                            <p class="text-[11px] text-ink truncate" title="${esc(item.fileName)}">${esc(item.fileName)}</p>
+                            <p class="text-[10px] text-ink-dim mt-0.5">${esc(item.periodLabel)} · ${esc(item.timeLabel)}</p>
+                            ${item.summary ? `<p class="text-[10px] text-ink-muted mt-0.5">${esc(item.summary)}</p>` : ''}
                         </div>
                     </div>
                 `).join('')}
@@ -237,7 +237,7 @@ const PolicyUploadPage = {
         if (panel) panel.classList.remove('hidden');
         if (zone) {
             zone.classList.add('pointer-events-none');
-            zone.classList.remove('border-[#d32f2f]');
+            zone.classList.remove('border-brand');
         }
         this.updateProgress(progress, msg);
     },
@@ -266,25 +266,25 @@ const PolicyUploadPage = {
         if (titleEl) {
             if (status === 'completed') {
                 titleEl.textContent = '解析成功';
-                titleEl.className = 'text-xs font-medium text-[#4caf50] truncate mb-0';
+                titleEl.className = 'text-xs font-medium text-ok truncate mb-0';
             } else if (status === 'failed') {
                 titleEl.textContent = '解析失败';
-                titleEl.className = 'text-xs font-medium text-[#ef5350] truncate mb-0';
+                titleEl.className = 'text-xs font-medium text-danger truncate mb-0';
             } else {
                 titleEl.textContent = '正在解析政策文件...';
-                titleEl.className = 'text-xs font-medium text-[#ffffff] truncate mb-0';
+                titleEl.className = 'text-xs font-medium text-ink truncate mb-0';
             }
         }
 
         if (status === 'completed' && bar) {
-            bar.className = 'h-full bg-[#2e7d32] transition-all duration-300';
-            if (percentEl) percentEl.className = 'text-xs font-mono tabular-nums text-[#4caf50] shrink-0';
+            bar.className = 'h-full bg-ok transition-all duration-300';
+            if (percentEl) percentEl.className = 'text-xs font-mono tabular-nums text-ok shrink-0';
         } else if (status === 'failed' && bar) {
-            bar.className = 'h-full bg-[#c62828] transition-all duration-300';
-            if (percentEl) percentEl.className = 'text-xs font-mono tabular-nums text-[#ef5350] shrink-0';
+            bar.className = 'h-full bg-danger transition-all duration-300';
+            if (percentEl) percentEl.className = 'text-xs font-mono tabular-nums text-danger shrink-0';
         } else if (bar) {
-            bar.className = 'h-full bg-[#d32f2f] shadow-[0_0_8px_rgba(211,47,47,0.5)] transition-all duration-300';
-            if (percentEl) percentEl.className = 'text-xs font-mono tabular-nums text-[#d32f2f] shrink-0';
+            bar.className = 'h-full bg-brand hud-brand-glow transition-all duration-300';
+            if (percentEl) percentEl.className = 'text-xs font-mono tabular-nums text-brand shrink-0';
         }
     },
 
@@ -300,7 +300,7 @@ const PolicyUploadPage = {
             button.disabled = isUploading || !this.selectedFile;
             button.innerHTML = isUploading
                 ? `${window.svgIcon('spinner', 'w-3.5 h-3.5')} 解析中...`
-                : `<svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12"></path></svg> 导入政策`;
+                : `<svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12"></path></svg> 导入政策`;
         }
         if (resetButton) resetButton.disabled = isUploading;
         if (yearInput) yearInput.disabled = isUploading;

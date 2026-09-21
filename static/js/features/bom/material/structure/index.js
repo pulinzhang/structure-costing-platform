@@ -4,9 +4,9 @@
  * Phase B：L0 Assembly Selection（#/bom-structure?snapshot_id=）
  */
 
-import { can } from '../../../../permissions.js?v=8';
-import { bomStructureTemplate } from './template.js?v=5';
-import { fmtPeriodRange, hasClosedPeriod } from '../../../common/period-ui.js?v=3';
+import { can } from '../../../../core/permissions.js?v=10';
+import { bomStructureTemplate } from './template.js?v=9';
+import { fmtPeriodRange, hasClosedPeriod } from '../../../common/period-ui.js?v=5';
 
 const bomStructureState = {
     view: 'projects', // projects | assemblies
@@ -156,9 +156,9 @@ const BomStructurePage = {
             const grid = document.getElementById('bomStructureProjectGrid');
             if (grid) {
                 grid.innerHTML = `
-                    <div class="col-span-full flex flex-col items-center justify-center py-16 border border-[#2c2c2c] bg-[#1e1e1e]">
-                        <p class="text-xs text-[#9e9e9e]">无权查看产品结构</p>
-                        <p class="text-[11px] text-[#616161] mt-1">需要权限 op:bom-structure:view</p>
+                    <div class="col-span-full flex flex-col items-center justify-center py-16 border border-line bg-app-surface">
+                        <p class="text-xs text-ink-muted">无权查看产品结构</p>
+                        <p class="text-[11px] text-ink-dim mt-1">需要权限 op:bom-structure:view</p>
                     </div>
                 `;
             }
@@ -299,12 +299,12 @@ const BomStructurePage = {
         const grid = document.getElementById('bomStructureProjectGrid');
         const base = document.getElementById('bomStructureBaseContext');
         if (base) {
-            base.innerHTML = `<span class="text-sm text-[#616161]">加载中…</span>`;
+            base.innerHTML = `<span class="text-sm text-ink-dim">加载中…</span>`;
         }
         if (grid) {
             grid.innerHTML = `
                 <div class="col-span-full flex items-center justify-center py-16">
-                    <div class="w-6 h-6 border-2 border-[#2c2c2c] border-t-[#d32f2f] rounded-full animate-spin"></div>
+                    <div class="w-6 h-6 border-2 border-line border-brand rounded-full animate-spin"></div>
                 </div>
             `;
         }
@@ -314,9 +314,9 @@ const BomStructurePage = {
         const grid = document.getElementById('bomStructureProjectGrid');
         if (!grid) return;
         grid.innerHTML = `
-            <div class="col-span-full flex flex-col items-center justify-center py-14 border border-[#2c2c2c] bg-[#1e1e1e]">
-                <p class="text-xs text-[#ef5350] mb-1">加载失败</p>
-                <p class="text-[11px] text-[#616161]">${esc(message)}</p>
+            <div class="col-span-full flex flex-col items-center justify-center py-14 border border-line bg-app-surface">
+                <p class="text-xs text-danger mb-1">加载失败</p>
+                <p class="text-[11px] text-ink-dim">${esc(message)}</p>
             </div>
         `;
     },
@@ -330,7 +330,7 @@ const BomStructurePage = {
         if (grid) {
             grid.innerHTML = `
                 <div class="col-span-full flex items-center justify-center py-16">
-                    <div class="w-6 h-6 border-2 border-[#2c2c2c] border-t-[#d32f2f] rounded-full animate-spin"></div>
+                    <div class="w-6 h-6 border-2 border-line border-brand rounded-full animate-spin"></div>
                 </div>
             `;
         }
@@ -340,9 +340,9 @@ const BomStructurePage = {
         const grid = document.getElementById('bomStructureAssemblyGrid');
         if (!grid) return;
         grid.innerHTML = `
-            <div class="col-span-full flex flex-col items-center justify-center py-14 border border-[#2c2c2c] bg-[#1e1e1e]">
-                <p class="text-xs text-[#ef5350] mb-1">加载失败</p>
-                <p class="text-[11px] text-[#616161]">${esc(message)}</p>
+            <div class="col-span-full flex flex-col items-center justify-center py-14 border border-line bg-app-surface">
+                <p class="text-xs text-danger mb-1">加载失败</p>
+                <p class="text-[11px] text-ink-dim">${esc(message)}</p>
             </div>
         `;
     },
@@ -354,15 +354,15 @@ const BomStructurePage = {
         const locations = bomStructureState.locations;
 
         if (!locations.length) {
-            el.innerHTML = `<span class="text-sm text-[#616161]">暂无基地数据</span>`;
+            el.innerHTML = `<span class="text-sm text-ink-dim">暂无基地数据</span>`;
             return;
         }
 
         if (locations.length === 1) {
             el.innerHTML = `
                 <div class="flex items-baseline gap-3">
-                    <h2 class="text-xl font-semibold text-[#ffffff] tracking-wide">${esc(locations[0])}</h2>
-                    <span class="text-[10px] uppercase tracking-[0.14em] text-[#616161]">基地</span>
+                    <h2 class="text-xl font-semibold text-ink tracking-wide">${esc(locations[0])}</h2>
+                    <span class="text-[10px] uppercase tracking-[0.14em] text-ink-dim">基地</span>
                 </div>
             `;
             return;
@@ -374,13 +374,13 @@ const BomStructurePage = {
         }
 
         el.innerHTML = `
-            <div class="inline-flex items-stretch border border-[#2c2c2c] bg-[#0a0a0a] p-0.5" role="tablist" aria-label="采购基地">
+            <div class="inline-flex items-stretch border border-line bg-app-deep p-0.5" role="tablist" aria-label="采购基地">
                 ${locations
                     .map((loc) => {
                         const isActive = loc === bomStructureState.selectedLocation;
                         const activeCls = isActive
-                            ? 'bg-[#1e1e1e] text-[#ffffff] border border-[#d32f2f]/60 shadow-[0_0_8px_rgba(211,47,47,0.25)]'
-                            : 'text-[#9e9e9e] border border-transparent hover:text-[#ffffff] hover:bg-[#161616]';
+                            ? 'bg-app-surface text-ink border border-brand/60'
+                            : 'text-ink-muted border border-transparent hover:text-ink hover:bg-app-surface';
                         return `
                             <button type="button"
                                     data-bom-base="${esc(loc)}"
@@ -419,14 +419,14 @@ const BomStructurePage = {
 
         if (!list.length) {
             grid.innerHTML = `
-                <div class="col-span-full flex flex-col items-center justify-center py-16 border border-dashed border-[#2c2c2c] bg-[#1a1a1a]">
-                    <div class="w-10 h-10 bg-[#262626] flex items-center justify-center mb-3">
-                        <svg class="w-5 h-5 text-[#616161]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <div class="col-span-full flex flex-col items-center justify-center py-16 border border-dashed border-line bg-app-surface">
+                    <div class="w-10 h-10 bg-app-elevated flex items-center justify-center mb-3">
+                        <svg class="w-5 h-5 text-ink-dim" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M20 13V6a2 2 0 00-2-2H6a2 2 0 00-2 2v7m16 0v5a2 2 0 01-2 2H6a2 2 0 01-2-2v-5m16 0h-2.586a1 1 0 00-.707.293l-2.414 2.414a1 1 0 01-.707.293h-3.172a1 1 0 01-.707-.293l-2.414-2.414A1 1 0 006.586 13H4"></path>
                         </svg>
                     </div>
-                    <h5 class="text-xs font-medium text-[#9e9e9e] mb-1">暂无项目</h5>
-                    <p class="text-[11px] text-[#616161]">请先上传材料清单</p>
+                    <h5 class="text-xs font-medium text-ink-muted mb-1">暂无项目</h5>
+                    <p class="text-[11px] text-ink-dim">请先上传材料清单</p>
                 </div>
             `;
             return;
@@ -472,64 +472,64 @@ const BomStructurePage = {
         }
 
         return `
-            <article class="group relative bg-[#1e1e1e] border border-[#2c2c2c] hover:border-[#3a3a3a] transition-all duration-300 flex flex-col min-h-[220px] cursor-pointer"
+            <article class="group relative bg-app-surface border border-line hover:border-line transition-all duration-300 flex flex-col min-h-[220px] cursor-pointer"
                      role="button"
                      tabindex="0"
                      data-snapshot-id="${esc(String(row.id))}">
-                <div class="absolute left-0 top-6 bottom-6 w-0.5 bg-transparent group-hover:bg-[#d32f2f] group-hover:shadow-[0_0_8px_rgba(211,47,47,0.5)] transition-all"></div>
+                <div class="absolute left-0 top-6 bottom-6 w-0.5 bg-transparent group-hover:bg-brand hud-brand-glow-hover transition-all"></div>
                 <div class="px-6 pt-6 pb-5 flex-1 flex flex-col">
                     <div class="flex items-start justify-between gap-3 mb-5">
                         <div class="min-w-0">
                             ${
                                 customer
-                                    ? `<p class="text-[10px] font-semibold uppercase tracking-[0.16em] text-[#888888] truncate">${esc(customer)}</p>`
-                                    : `<p class="text-[10px] font-semibold tracking-[0.12em] text-[#484848]">客户</p>`
+                                    ? `<p class="text-[10px] font-semibold uppercase tracking-[0.16em] text-ink-muted truncate">${esc(customer)}</p>`
+                                    : `<p class="text-[10px] font-semibold tracking-[0.12em] text-ink-faint">客户</p>`
                             }
                             ${
                                 location && bomStructureState.locations.length > 1
-                                    ? `<p class="text-[10px] text-[#616161] mt-1">${esc(location)}</p>`
+                                    ? `<p class="text-[10px] text-ink-dim mt-1">${esc(location)}</p>`
                                     : ''
                             }
                         </div>
                         ${
                             status
-                                ? `<span class="shrink-0 inline-flex items-center px-2 py-0.5 text-[10px] font-semibold rounded bg-[#2e7d32]/15 text-[#4caf50]">${esc(status)}</span>`
+                                ? `<span class="shrink-0 inline-flex items-center px-2 py-0.5 text-[10px] font-semibold rounded bg-ok/15 text-ok">${esc(status)}</span>`
                                 : ''
                         }
                     </div>
 
-                    <h3 class="text-lg font-semibold text-[#ffffff] tracking-wide leading-snug mb-1">
+                    <h3 class="text-lg font-semibold text-ink tracking-wide leading-snug mb-1">
                         ${vehicle ? esc(vehicle) : '—'}
                     </h3>
                     ${
                         version
-                            ? `<p class="text-sm text-[#9e9e9e] font-mono tracking-wider mb-1">${esc(version)}</p>`
+                            ? `<p class="text-sm text-ink-muted font-mono tracking-wider mb-1">${esc(version)}</p>`
                             : ''
                     }
                     ${
                         category || title
-                            ? `<p class="text-[11px] text-[#616161] mt-1 line-clamp-2">${esc(category || title)}</p>`
+                            ? `<p class="text-[11px] text-ink-dim mt-1 line-clamp-2">${esc(category || title)}</p>`
                             : ''
                     }
                     ${
                         row.source_filename
-                            ? `<p class="text-[10px] text-[#555555] mt-2 font-mono truncate" title="${esc(row.source_filename)}${row.source_sheet_name ? ` / ${esc(row.source_sheet_name)}` : ''}">来源 ${esc(row.source_filename)}${row.source_sheet_name ? ` · ${esc(row.source_sheet_name)}` : ''}</p>`
+                            ? `<p class="text-[10px] text-ink-faint mt-2 font-mono truncate" title="${esc(row.source_filename)}${row.source_sheet_name ? ` / ${esc(row.source_sheet_name)}` : ''}">来源 ${esc(row.source_filename)}${row.source_sheet_name ? ` · ${esc(row.source_sheet_name)}` : ''}</p>`
                             : ''
                     }
 
                     <div class="mt-auto pt-6">
                         ${
                             metaBits.length
-                                ? `<p class="text-[10px] uppercase tracking-[0.12em] text-[#616161] mb-3">${metaBits.join(' <span class="text-[#333333] mx-1">·</span> ')}</p>`
+                                ? `<p class="text-[10px] uppercase tracking-[0.12em] text-ink-dim mb-3">${metaBits.join(' <span class="text-ink-faint mx-1">·</span> ')}</p>`
                                 : ''
                         }
                         ${
                             updated
-                                ? `<p class="text-[11px] text-[#484848] mb-4">更新于 ${esc(updated)}</p>`
+                                ? `<p class="text-[11px] text-ink-faint mb-4">更新于 ${esc(updated)}</p>`
                                 : ''
                         }
                         <div class="flex items-center justify-end">
-                            <span class="text-[11px] font-semibold tracking-wide text-[#616161] group-hover:text-[#d32f2f] transition-colors">
+                            <span class="text-[11px] font-semibold tracking-wide text-ink-dim group-hover:text-brand transition-colors">
                                 打开 <span class="inline-block transition-transform group-hover:translate-x-0.5">→</span>
                             </span>
                         </div>
@@ -579,9 +579,9 @@ const BomStructurePage = {
                 : '该项目下暂无供货总成';
             const emptyTitle = options.isFiltered ? '无搜索结果' : '暂无供货总成';
             grid.innerHTML = `
-                <div class="col-span-full flex flex-col items-center justify-center py-16 border border-dashed border-[#2c2c2c] bg-[#1a1a1a]">
-                    <h5 class="text-xs font-medium text-[#9e9e9e] mb-1">${esc(emptyTitle)}</h5>
-                    <p class="text-[11px] text-[#616161]">${esc(emptyHint)}</p>
+                <div class="col-span-full flex flex-col items-center justify-center py-16 border border-dashed border-line bg-app-surface">
+                    <h5 class="text-xs font-medium text-ink-muted mb-1">${esc(emptyTitle)}</h5>
+                    <p class="text-[11px] text-ink-dim">${esc(emptyHint)}</p>
                 </div>
             `;
             return;
@@ -624,13 +624,13 @@ const BomStructurePage = {
             node.expiry_year,
             node.expiry_month,
         );
-        const periodClass = isChanged ? 'text-[#d32f2f]' : 'text-[#616161]';
+        const periodClass = isChanged ? 'text-brand' : 'text-ink-dim';
         const periodTitle = isChanged ? ' title="已变更"' : '';
 
         const sketchBlock = src
             ? `
-                <div class="relative h-48 bg-[#111111] border-b border-[#222222] flex items-center justify-center px-6 py-5 overflow-hidden">
-                    <span class="absolute top-3 left-3 text-[10px] font-mono tabular-nums tracking-[0.14em] text-[#4d4d4d]">
+                <div class="relative h-48 bg-app-main border-b border-line-subtle flex items-center justify-center px-6 py-5 overflow-hidden">
+                    <span class="absolute top-3 left-3 text-[10px] font-mono tabular-nums tracking-[0.14em] text-ink-dim">
                         ${esc(seqLabel)}
                     </span>
                     <img src="${esc(src)}"
@@ -641,32 +641,32 @@ const BomStructurePage = {
                 </div>
             `
             : `
-                <div class="relative h-48 bg-[#111111] border-b border-[#222222] flex items-center justify-center px-6 py-5">
-                    <span class="absolute top-3 left-3 text-[10px] font-mono tabular-nums tracking-[0.14em] text-[#4d4d4d]">
+                <div class="relative h-48 bg-app-main border-b border-line-subtle flex items-center justify-center px-6 py-5">
+                    <span class="absolute top-3 left-3 text-[10px] font-mono tabular-nums tracking-[0.14em] text-ink-dim">
                         ${esc(seqLabel)}
                     </span>
-                    <span class="text-[10px] text-[#3a3a3a]">暂无图</span>
+                    <span class="text-[10px] text-ink-faint">暂无图</span>
                 </div>
             `;
 
         // 短号视觉主角；完整零件号降为次要标注
         const partNumberBlock = shortNo
             ? `
-                <p class="text-2xl font-mono font-semibold tabular-nums text-[#ffffff] tracking-[0.14em] drop-shadow-[0_0_16px_rgba(211,47,47,0.18)] mb-0.5">
+                <p class="text-2xl font-mono font-semibold tabular-nums text-ink tracking-[0.14em] hud-kpi-num-glow mb-0.5">
                     ${esc(shortNo)}
                 </p>
                 ${
                     partNumber
-                        ? `<p class="text-[11px] font-mono text-[#616161] tracking-wider mb-3">${esc(partNumber)}</p>`
+                        ? `<p class="text-[11px] font-mono text-ink-dim tracking-wider mb-3">${esc(partNumber)}</p>`
                         : `<div class="mb-3"></div>`
                 }
             `
             : partNumber
-              ? `<p class="text-sm font-mono text-[#9e9e9e] tracking-wider mb-3">${esc(partNumber)}</p>`
+              ? `<p class="text-sm font-mono text-ink-muted tracking-wider mb-3">${esc(partNumber)}</p>`
               : `<div class="mb-3"></div>`;
 
         return `
-            <article class="group bg-[#1e1e1e] border border-[#2c2c2c] hover:border-[#3a3a3a] hover:shadow-[0_8px_24px_rgba(0,0,0,0.35)] transition-all duration-300 flex flex-col cursor-pointer overflow-hidden"
+            <article class="group bg-app-surface border border-line hover:border-line hover:shadow-[0_8px_24px_rgb(var(--overlay)/0.35)] transition-all duration-300 flex flex-col cursor-pointer overflow-hidden"
                      role="button"
                      tabindex="0"
                      data-snapshot-id="${esc(String(snapshotId))}"
@@ -675,12 +675,12 @@ const BomStructurePage = {
                 <div class="px-5 pt-4 pb-5 flex-1 flex flex-col">
                     ${
                         name
-                            ? `<h3 class="text-sm font-semibold text-[#ffffff] tracking-wide leading-snug mb-2 line-clamp-2">${esc(name)}</h3>`
+                            ? `<h3 class="text-sm font-semibold text-ink tracking-wide leading-snug mb-2 line-clamp-2">${esc(name)}</h3>`
                             : ''
                     }
                     ${partNumberBlock}
                     <div class="mt-auto space-y-1">
-                        <p class="text-[10px] tracking-wide text-[#616161]">
+                        <p class="text-[10px] tracking-wide text-ink-dim">
                             ${esc(node.location || snapshot?.location || '')}
                             · ${esc(node.vehicle_model || snapshot?.vehicle_model || '')}
                             · ${esc(node.bom_version || snapshot?.bom_version || '')}
@@ -688,15 +688,15 @@ const BomStructurePage = {
                         <p class="text-[10px] tracking-wide ${periodClass}"${periodTitle}>
                             ${esc(fmtPeriodRange(node.effective_year, node.effective_month, node.expiry_year, node.expiry_month))}
                         </p>
-                        <p class="text-[10px] tracking-wide text-[#616161]">
-                            <span class="font-mono tabular-nums text-[#9e9e9e]">${esc(String(componentCount))}</span> 个子件
+                        <p class="text-[10px] tracking-wide text-ink-dim">
+                            <span class="font-mono tabular-nums text-ink-muted">${esc(String(componentCount))}</span> 个子件
                         </p>
-                        <p class="text-[10px] tracking-wide text-[#616161]">
-                            <span class="font-mono tabular-nums text-[#9e9e9e]">${esc(String(levelCount))}</span> 层结构
+                        <p class="text-[10px] tracking-wide text-ink-dim">
+                            <span class="font-mono tabular-nums text-ink-muted">${esc(String(levelCount))}</span> 层结构
                         </p>
                     </div>
                     <div class="flex items-center justify-end mt-4">
-                        <span class="text-[11px] font-semibold tracking-wide text-[#616161] group-hover:text-[#d32f2f] transition-colors">
+                        <span class="text-[11px] font-semibold tracking-wide text-ink-dim group-hover:text-brand transition-colors">
                             打开 <span class="inline-block transition-transform duration-300 group-hover:translate-x-0.5">→</span>
                         </span>
                     </div>

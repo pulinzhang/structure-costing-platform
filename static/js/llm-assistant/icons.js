@@ -20,11 +20,11 @@ export function llmIconClose(extraClass = 'w-3.5 h-3.5') {
     if (typeof window.svgIcon === 'function') {
         return window.svgIcon('x-lg', `inline-block ${extraClass}`);
     }
-    return `<svg class="inline-block ${extraClass}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></svg>`;
+    return `<svg class="inline-block ${extraClass}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" aria-hidden="true"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></svg>`;
 }
 
 export const EXPORT_ICON_BTN_CLASS =
-    'w-6 h-6 inline-flex items-center justify-center text-[#555555] hover:text-[#c8c8c8] transition-colors rounded-sm';
+    'w-6 h-6 inline-flex items-center justify-center text-ink-faint hover:text-ink-muted transition-colors rounded-sm';
 
 export const PANEL_ICON_BTN_CLASS =
-    'w-7 h-7 inline-flex items-center justify-center text-[#9e9e9e] hover:text-white hover:bg-[#262626] transition-colors rounded-sm';
+    'w-7 h-7 inline-flex items-center justify-center text-ink-muted hover:text-ink hover:bg-app-elevated transition-colors rounded-sm';

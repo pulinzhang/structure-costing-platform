@@ -132,8 +132,13 @@ stamping-costing-platform/
 │   ├── index.html / login.html
 │   ├── css/style.css
 │   └── js/
-│       ├── main.js / app.js / permissions.js / page-size.js
-│       └── features/…           # 与菜单对齐的页面模块
+│       ├── main.js / app.js     # HTML 入口（根目录只留这两份）
+│       ├── core/                # permissions
+│       ├── domain/              # part-identity / duration
+│       ├── ui/                  # HUD 原语 + 控件
+│       ├── features/…           # 与菜单对齐的页面模块
+│       ├── llm-assistant/
+│       └── vendor/
 ├── docs/                        # 规范与说明（含本文件）
 ├── .cursor/rules/               # Agent 规范正文（按 glob / alwaysApply 加载）
 ├── data/                        # SQLite
