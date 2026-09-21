@@ -66,45 +66,16 @@ def _bind_restore_audit_scope(request: Request, row: AssemblyCostRestoreVO) -> N
     response_model=ApiResponse[PageResult[AssemblyCostVO]],
 )
 def list_costs(
-    year: int | None = Query(None),
-    month: int | None = Query(None),
-    location: str | None = Query(None),
-    vehicle_model: str | None = Query(None),
-    bom_version: str | None = Query(None),
-    part_number: str | None = Query(None),
-    audit_status: str | None = Query(None),
-    calc_status: str | None = Query(None),
-    view: AssemblyCostView = Query("finance"),
-    level: int | None = Query(None),
-    object_kind: str | None = Query(None),
-    confirm_status: str | None = Query(None),
-    page: int = Query(1, ge=1),
-    size: int = Query(20, ge=1, le=200),
+    query: AssemblyCostQuery = Depends(),
     db: Session = Depends(get_db),
     current_user: UserVO = Depends(require_perm(Perm.ASSEMBLY_COST_VIEW)),
 ) -> ApiResponse[PageResult[AssemblyCostVO]]:
-    query = AssemblyCostQuery(
-        year=year,
-        month=month,
-        location=location,
-        vehicle_model=vehicle_model,
-        bom_version=bom_version,
-        part_number=part_number,
-        audit_status=audit_status,
-        calc_status=calc_status,
-        view=view,
-        level=level,
-        object_kind=object_kind,
-        confirm_status=confirm_status,
-        page=page,
-        size=size,
-    )
     rows, total, filters = _service.paginate(db, query)
     return ApiResponse.list_(
         items=rows,
         total=total,
-        page=page,
-        page_size=size,
+        page=query.page,
+        page_size=query.size,
         filters=filters,
         message=f"查询到 {total} 条记录",
     )
@@ -214,7 +185,7 @@ def batch_delete(
     current_user: UserVO = Depends(require_perm(Perm.ASSEMBLY_COST_DELETE)),
 ) -> ApiResponse[AssemblyCostBatchResultVO]:
     result = _service.batch_delete(db, dto, current_user=current_user)
-    return ApiResponse.ok(data=result, message=result.message or "删除完成")
+    return ApiResponse.ok(data=result, message=result.message)
 
 
 @router.post(
@@ -227,7 +198,7 @@ def batch_approve(
     current_user: UserVO = Depends(require_perm(Perm.ASSEMBLY_COST_APPROVE)),
 ) -> ApiResponse[AssemblyCostBatchResultVO]:
     result = _service.batch_approve(db, dto, current_user=current_user)
-    return ApiResponse.ok(data=result, message=result.message or "审核完成")
+    return ApiResponse.ok(data=result, message=result.message)
 
 
 @router.post(
@@ -240,4 +211,4 @@ def batch_reverse(
     current_user: UserVO = Depends(require_perm(Perm.ASSEMBLY_COST_REVERSE)),
 ) -> ApiResponse[AssemblyCostBatchResultVO]:
     result = _service.batch_reverse(db, dto, current_user=current_user)
-    return ApiResponse.ok(data=result, message=result.message or "反审核完成")
+    return ApiResponse.ok(data=result, message=result.message)

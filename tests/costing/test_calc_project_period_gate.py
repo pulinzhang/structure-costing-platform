@@ -179,16 +179,12 @@ def test_monthly_start_calc_rejects_after_expiry(memory_db: Session) -> None:
 
 def test_monthly_start_calc_accepts_before_expiry(memory_db: Session) -> None:
     user = _user()
-    with (
-        patch(
-            "app.services.costing.stamping_part_cost.calc_ops.begin_processing",
-            return_value=_lock(),
-        ) as part_begin,
-        _patch_async("app.services.costing.stamping_part_cost.calc_ops") as part_async,
-    ):
+    part = StampingPartCostService()
+    part.begin_processing = MagicMock(return_value=_lock())
+    with _patch_async("app.services.costing.stamping_part_cost.service") as part_async:
         _task_service(part_async)
-        result = StampingPartCostService().start_calc(memory_db, _monthly(month=6), user)
-    part_begin.assert_called_once()
+        result = part.start_calc(memory_db, _monthly(month=6), user)
+    part.begin_processing.assert_called_once()
     assert result.task_id == "task-1"
 
     assembly = AssemblyCostService()

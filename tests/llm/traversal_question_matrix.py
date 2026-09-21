@@ -6,6 +6,7 @@ from dataclasses import dataclass
 
 from sqlalchemy.orm import Session
 
+from app.models.bom.node import BomSnapshot
 from app.models.costing.assembly_cost import AssemblyCost
 from app.repositories.llm.scope_options_repository import ScopeOptionsRepository
 from app.services.llm.menu_catalog import MENU_COVERAGE
@@ -43,6 +44,54 @@ class TraversalCase:
     notes: str = ""
 
 
+def _canonical_location(repo: ScopeOptionsRepository, db: Session, raw: str) -> str:
+    text = (raw or "").strip()
+    mapping = repo.location_alias_map(db)
+    return mapping.get(text, text)
+
+
+def _location_names(repo: ScopeOptionsRepository, db: Session, raw: str) -> list[str]:
+    names = repo.expand_location_names(db, raw)
+    return names or [raw]
+
+
+def _pick_cost_row(
+    db: Session, repo: ScopeOptionsRepository, preferred: str | None
+) -> AssemblyCost | None:
+    candidates = (
+        db.query(AssemblyCost)
+        .filter(
+            AssemblyCost.is_tree_root.is_(True),
+            AssemblyCost.grand_total > 0,
+        )
+        .order_by(AssemblyCost.year.desc(), AssemblyCost.month.desc(), AssemblyCost.id.asc())
+        .limit(80)
+        .all()
+    )
+    preferred_names = set(_location_names(repo, db, preferred)) if preferred else set()
+
+    def _has_bom(row: AssemblyCost) -> bool:
+        names = _location_names(repo, db, str(row.location))
+        return (
+            db.query(BomSnapshot.id)
+            .filter(
+                BomSnapshot.location.in_(names),
+                BomSnapshot.vehicle_model == row.vehicle_model,
+            )
+            .first()
+            is not None
+        )
+
+    ranked = sorted(
+        candidates,
+        key=lambda row: (
+            0 if _has_bom(row) else 1,
+            0 if str(row.location) in preferred_names else 1,
+        ),
+    )
+    return ranked[0] if ranked else None
+
+
 def _pick_scope(db: Session) -> TraversalScope:
     repo = ScopeOptionsRepository()
     locations = repo.list_locations(db)
@@ -50,35 +99,26 @@ def _pick_scope(db: Session) -> TraversalScope:
     bom_versions = repo.list_bom_versions(db)
     years = repo.list_years(db)
 
-    location = "青岛" if "青岛" in locations else (locations[0] if locations else "青岛")
-    location_label = f"{location}基地" if not location.endswith("基地") else location
-    vehicle = vehicles[0] if vehicles else "T28"
-    bom_version = bom_versions[0] if bom_versions else "D/00"
-    year = 2025 if 2025 in years else (years[0] if years else 2025)
-
-    row = (
-        db.query(AssemblyCost.year, AssemblyCost.month)
-        .filter(AssemblyCost.location == location)
-        .order_by(AssemblyCost.year.desc(), AssemblyCost.month.desc())
-        .first()
-    )
-    if row:
-        anchor_year, anchor_month = int(row[0]), int(row[1])
-    else:
-        anchor_year, anchor_month = year, 1
-
-    anchor_ym = f"{anchor_year:04d}-{anchor_month:02d}"
-
-    part_row = (
-        db.query(AssemblyCost.part_number)
-        .filter(
-            AssemblyCost.location == location,
-            AssemblyCost.grand_total > 0,
+    preferred = "青岛" if "青岛" in locations else (locations[0] if locations else "青岛")
+    cost_row = _pick_cost_row(db, repo, preferred)
+    if cost_row is not None:
+        location = _canonical_location(repo, db, str(cost_row.location))
+        vehicle = str(cost_row.vehicle_model)
+        bom_version = (cost_row.bom_version or "").strip() or (
+            bom_versions[0] if bom_versions else "D/00"
         )
-        .order_by(AssemblyCost.id.asc())
-        .first()
-    )
-    part_number = str(part_row[0]) if part_row else "501006873AA"
+        anchor_year, anchor_month = int(cost_row.year), int(cost_row.month)
+        part_number = str(cost_row.part_number)
+    else:
+        location = preferred
+        vehicle = vehicles[0] if vehicles else "T28"
+        bom_version = bom_versions[0] if bom_versions else "D/00"
+        year = 2025 if 2025 in years else (years[0] if years else 2025)
+        anchor_year, anchor_month = year, 1
+        part_number = "501006873AA"
+
+    location_label = f"{location}基地" if not location.endswith("基地") else location
+    anchor_ym = f"{anchor_year:04d}-{anchor_month:02d}"
 
     alt_location = next((loc for loc in locations if loc != location), None)
 
@@ -119,9 +159,7 @@ def build_traversal_cases(db: Session) -> list[TraversalCase]:
                 time_start=scope.anchor_ym,
                 time_end=scope.anchor_ym,
                 expect_has_data=(
-                    False
-                    if menu_case.expected_subject == "winning_thickness"
-                    else True
+                    True
                     if menu_case.status == "complete" and menu_case.expected_subject is not None
                     else None
                 ),
@@ -141,7 +179,7 @@ def build_traversal_cases(db: Session) -> list[TraversalCase]:
                 expected_hash_page=item.hash_page,
                 time_start=scope.anchor_ym,
                 time_end=scope.anchor_ym,
-                expect_has_data=False if item.subject == "winning_thickness" else None,
+                expect_has_data=None,
                 notes=item.notes,
             )
         )
@@ -334,7 +372,21 @@ def mock_extractor_draft(case: TraversalCase, scope: TraversalScope) -> dict:
     start = case.time_start or scope.anchor_ym
     end = case.time_end or scope.anchor_ym
     filters: dict[str, str] = {"location": scope.location_label}
-    if case.expected_subject in ("l0", "cost_total", "stamping_part"):
+    if case.expected_subject in (
+        "l0",
+        "cost_total",
+        "stamping_part",
+        "bom_material",
+        "welding_process_breakdown",
+        "stamping_process",
+        "stamping_process_fee",
+        "l0_welding_fee",
+        "packaging_transport_fee",
+        "stamping_die_fee",
+        "stamping_gauge_fee",
+        "procurement_object",
+        "engineering_change",
+    ):
         filters["vehicle_model"] = scope.vehicle_model
     draft: dict = {
         "time_range": {"start": start, "end": end},

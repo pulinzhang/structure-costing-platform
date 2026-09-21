@@ -230,12 +230,16 @@ def batch_delete_steel_prices(
             steel_mill=steel_mill,
         )
         db.commit()
+        message = f"已删除 {deleted_count} 条未审核记录"
+        if skipped_approved_count:
+            message += f"，跳过已审核 {skipped_approved_count} 条"
         return SteelPriceBatchDeleteResultVO(
             deleted_count=deleted_count,
             skipped_approved_count=skipped_approved_count,
             year=data.year,
             month=data.month,
             location=location,
+            message=message,
         )
     except Exception:
         db.rollback()

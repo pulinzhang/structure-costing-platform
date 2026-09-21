@@ -8,6 +8,7 @@ from __future__ import annotations
 
 from sqlalchemy.orm import Session
 
+from app.common.audit import display_name
 from app.models.costing import StampingPartCostCalcLog
 from app.repositories.costing.stamping_part_cost.stamping_part_cost_repository import (
     PartCostListFilters,
@@ -36,6 +37,15 @@ from app.schemas.vo.stamping_part_cost_vo import (
     StampingPartCostVO,
 )
 from app.schemas.vo.user_vo import UserVO
+from app.services.async_task.service import (
+    TASK_TYPE_STAMPING_PART_COST_CALC,
+    AsyncTaskService,
+)
+from app.services.async_task.worker_runner import (
+    WorkerTaskOutcome,
+    calc_status_label,
+    outcome_from_calc_status,
+)
 from app.services.costing.stamping_part_cost.audit.service import (
     batch_approve_costs,
     batch_delete_costs,
@@ -46,17 +56,6 @@ from app.services.costing.stamping_part_cost.calc.models import ProgressCallback
 from app.services.costing.stamping_part_cost.calc.orchestrator.orchestrator import (
     StampingPartCostCalcOrchestrator,
 )
-from app.services.costing.stamping_part_cost.calc_ops import (
-    begin_processing,
-    calculate,
-    delete_all_calc_logs,
-    delete_calc_log,
-    get_calc_log,
-    get_calc_ready,
-    list_calc_logs,
-    mark_log_failed,
-    start_calc,
-)
 from app.services.costing.stamping_part_cost.queries import (
     get_cost_by_id,
     list_locations,
@@ -64,6 +63,7 @@ from app.services.costing.stamping_part_cost.queries import (
     list_years,
     paginate_costs,
 )
+from app.services.masterdata.vehicle_model.service import VehicleModelService
 
 
 class StampingPartCostService:
@@ -84,8 +84,7 @@ class StampingPartCostService:
         location: str | None = None,
         vehicle_model: str | None = None,
     ) -> StampingPartCostCalcReadyVO:
-        return get_calc_ready(
-            self,
+        return self.orchestrator.get_calc_ready(
             db,
             year=year,
             month=month,
@@ -101,7 +100,12 @@ class StampingPartCostService:
         operator_id: int | None,
         operator_name: str | None,
     ) -> StampingPartCostCalcLog:
-        return begin_processing(self, db, dto, operator_id=operator_id, operator_name=operator_name)
+        return self.orchestrator.begin_processing(
+            db,
+            dto,
+            operator_id=operator_id,
+            operator_name=operator_name,
+        )
 
     def mark_log_failed(
         self,
@@ -110,7 +114,7 @@ class StampingPartCostService:
         log_id: int,
         detail_text: str,
     ) -> None:
-        mark_log_failed(self, db, log_id=log_id, detail_text=detail_text)
+        self.orchestrator.mark_log_failed(db, log_id=log_id, detail_text=detail_text)
 
     def calculate(
         self,
@@ -122,8 +126,7 @@ class StampingPartCostService:
         log_id: int | None = None,
         calc_batch_id: str | None = None,
     ) -> StampingPartCostCalcResultVO:
-        return calculate(
-            self,
+        return self.orchestrator.calculate(
             db,
             dto,
             current_user,
@@ -138,7 +141,61 @@ class StampingPartCostService:
         dto: StampingPartCostCalcDTO,
         current_user: UserVO,
     ) -> AsyncTaskAcceptedVO:
-        return start_calc(self, db, dto, current_user)
+        canonical, vehicle_model = VehicleModelService().require_introducible(
+            db, dto.location, dto.vehicle_model, dto.year, dto.month
+        )
+        dto = dto.model_copy(update={"location": canonical, "vehicle_model": vehicle_model})
+        lock_log = self.begin_processing(
+            db,
+            dto,
+            operator_id=current_user.id,
+            operator_name=display_name(current_user),
+        )
+        log_id = lock_log.id
+        calc_batch_id = lock_log.calc_batch_id
+        async_task_service = AsyncTaskService()
+        task = async_task_service.create_task(
+            task_type=TASK_TYPE_STAMPING_PART_COST_CALC,
+            message="已提交计算队列",
+            operator_id=current_user.id,
+            operator_name=display_name(current_user),
+        )
+
+        def work(worker_db: Session, on_progress: ProgressCallback) -> WorkerTaskOutcome:
+            result = self.calculate(
+                worker_db,
+                dto,
+                current_user=current_user,
+                progress_callback=on_progress,
+                log_id=log_id,
+                calc_batch_id=calc_batch_id,
+            )
+            label = calc_status_label(result.status)
+            return outcome_from_calc_status(
+                result.status,
+                failed_message=(
+                    f"计算失败：成功 {result.success_count}，失败 {result.failed_count}"
+                ),
+                completed_message=(
+                    f"计算{label}：成功 {result.success_count}，" f"失败 {result.failed_count}"
+                ),
+                result=result.model_dump(),
+            )
+
+        def on_crash(worker_db: Session, error: BaseException) -> None:
+            self.mark_log_failed(
+                worker_db,
+                log_id=log_id,
+                detail_text=f"计算失败: {error}",
+            )
+
+        async_task_service.submit_session_worker(
+            task.task_id,
+            start_message="后台开始计算...",
+            work=work,
+            on_crash=on_crash,
+        )
+        return AsyncTaskAcceptedVO(task_id=task.task_id)
 
     def list_calc_logs(
         self,
@@ -151,8 +208,7 @@ class StampingPartCostService:
         page: int = 1,
         size: int = 20,
     ) -> tuple[list[StampingPartCostCalcLogVO], int]:
-        return list_calc_logs(
-            self,
+        return self.orchestrator.calc_log_service.list_calc_logs(
             db,
             year=year,
             month=month,
@@ -163,13 +219,13 @@ class StampingPartCostService:
         )
 
     def get_calc_log(self, db: Session, log_id: int) -> StampingPartCostCalcLogVO:
-        return get_calc_log(self, db, log_id)
+        return self.orchestrator.calc_log_service.get_calc_log(db, log_id)
 
     def delete_calc_log(self, db: Session, log_id: int) -> None:
-        delete_calc_log(self, db, log_id)
+        self.orchestrator.calc_log_service.delete_calc_log(db, log_id)
 
     def delete_all_calc_logs(self, db: Session) -> DeletedCountVO:
-        return delete_all_calc_logs(self, db)
+        return self.orchestrator.calc_log_service.delete_all_logs(db)
 
     def paginate(
         self, db: Session, query: StampingPartCostQuery

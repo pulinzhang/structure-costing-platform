@@ -26,14 +26,6 @@ def batch_delete_costs(
     location = dto.location.strip()
     vehicle_model = dto.vehicle_model.strip()
     bom_version = (dto.bom_version or "").strip() or None
-    skipped = cost_repo.count_approved_by_scope(
-        db,
-        year=dto.year,
-        month=dto.month,
-        location=location,
-        vehicle_model=vehicle_model,
-        bom_version=bom_version,
-    )
     ids = cost_repo.list_ids_by_scope(
         db,
         year=dto.year,

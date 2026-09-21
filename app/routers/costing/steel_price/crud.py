@@ -72,17 +72,7 @@ def batch_delete_steel_prices(
     年度、月份、基地必填；已审核通过的记录跳过。
     """
     result = _steel_price_service.batch_delete(db, body)
-    return ApiResponse.ok(
-        data=result,
-        message=(
-            f"已删除 {result.deleted_count} 条未审核记录"
-            + (
-                f"，跳过已审核 {result.skipped_approved_count} 条"
-                if result.skipped_approved_count
-                else ""
-            )
-        ),
-    )
+    return ApiResponse.ok(data=result, message=result.message)
 
 
 @router.post(
@@ -100,13 +90,7 @@ def batch_approve_steel_prices(
     三者必填；仅处理待审/已驳回，已通过记录跳过。
     """
     result = _steel_price_service.batch_approve(db, body, current_user=current_user)
-    return ApiResponse.ok(
-        data=result,
-        message=(
-            f"已审核通过 {result.updated_count} 条"
-            + (f"，跳过 {result.skipped_count} 条" if result.skipped_count else "")
-        ),
-    )
+    return ApiResponse.ok(data=result, message=result.message)
 
 
 @router.post(
@@ -124,13 +108,7 @@ def batch_reverse_audit_steel_prices(
     三者必填；仅处理已通过记录，其余跳过；反审核意见必填。
     """
     result = _steel_price_service.batch_reverse_audit(db, body, current_user=current_user)
-    return ApiResponse.ok(
-        data=result,
-        message=(
-            f"已反审核 {result.updated_count} 条"
-            + (f"，跳过 {result.skipped_count} 条" if result.skipped_count else "")
-        ),
-    )
+    return ApiResponse.ok(data=result, message=result.message)
 
 
 @router.get("/export-download")

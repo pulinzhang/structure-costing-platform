@@ -110,8 +110,8 @@ def _bind(service: AssemblyCostRestoreService) -> None:
 def test_restore_route_before_detail() -> None:
     paths = [getattr(route, "path", "") for route in crud.router.routes]
     restore_at = paths.index("/api/costing/assembly-costs/restore")
-    by_id_at = paths.index("/api/costing/assembly-costs/{cost_id}/restore")
-    detail_at = paths.index("/api/costing/assembly-costs/{cost_id}")
+    by_id_at = paths.index("/api/costing/assembly-costs/{cost_id:int}/restore")
+    detail_at = paths.index("/api/costing/assembly-costs/{cost_id:int}")
     assert restore_at < by_id_at < detail_at
 
 

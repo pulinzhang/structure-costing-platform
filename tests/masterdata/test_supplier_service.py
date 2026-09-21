@@ -257,7 +257,7 @@ def test_parser_does_not_import_supplier_service() -> None:
 
 
 def test_supplier_service_does_not_import_downstream() -> None:
-    from app.services.masterdata.supplier import supplier_service
+    from app.services.masterdata.supplier import service as supplier_service
 
     source = inspect.getsource(supplier_service)
     assert "app.services.stamping" not in source

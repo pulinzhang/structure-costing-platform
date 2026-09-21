@@ -302,27 +302,6 @@ class AssemblyCostQueries:
             q = q.filter(AssemblyCost.audit_status == AUDIT_PENDING)
         return [row[0] for row in q.all()]
 
-    def count_approved_by_scope(
-        self,
-        db: Session,
-        *,
-        year: int,
-        month: int,
-        location: str,
-        vehicle_model: str,
-        bom_version: str | None = None,
-    ) -> int:
-        q = db.query(AssemblyCost).filter(
-            AssemblyCost.year == year,
-            AssemblyCost.month == month,
-            AssemblyCost.location == location,
-            AssemblyCost.vehicle_model == vehicle_model,
-            AssemblyCost.audit_status == AUDIT_APPROVED,
-        )
-        if bom_version:
-            q = q.filter(AssemblyCost.bom_version == bom_version)
-        return q.count()
-
     def count_approved_by_ids(self, db: Session, ids: list[int]) -> int:
         if not ids:
             return 0

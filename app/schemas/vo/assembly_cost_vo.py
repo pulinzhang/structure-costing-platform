@@ -272,4 +272,4 @@ class AssemblyCostCalcLogVO(DurationSecondsMixin):
 class AssemblyCostBatchResultVO(BaseModel):
     affected_count: int
     skipped_count: int = 0
-    message: str | None = None
+    message: str = ""

@@ -60,12 +60,16 @@ def batch_approve_steel_prices(
             updated_by=audited_by,
         )
         db.commit()
+        message = f"已审核通过 {updated_count} 条"
+        if skipped_count:
+            message += f"，跳过 {skipped_count} 条"
         return SteelPriceBatchAuditResultVO(
             updated_count=updated_count,
             skipped_count=skipped_count,
             year=data.year,
             month=data.month,
             location=location,
+            message=message,
         )
     except Exception:
         db.rollback()
@@ -114,12 +118,16 @@ def batch_reverse_audit_steel_prices(
             updated_by=reverse_audited_by,
         )
         db.commit()
+        message = f"已反审核 {updated_count} 条"
+        if skipped_count:
+            message += f"，跳过 {skipped_count} 条"
         return SteelPriceBatchAuditResultVO(
             updated_count=updated_count,
             skipped_count=skipped_count,
             year=data.year,
             month=data.month,
             location=location,
+            message=message,
         )
     except Exception:
         db.rollback()
