@@ -9,7 +9,7 @@ from app.repositories.bom.welding_process_breakdown_repository import (
     BomWeldingProcessBreakdownRepository,
 )
 from app.repositories.bom.welding_unit_price_repository import BomWeldingUnitPriceRepository
-from app.services.bom.welding_fee.calc.calc_log_service import (
+from app.services.bom.welding_fee.calc.calc_log import (
     BomWeldingFeeCalcLogService,
 )
 

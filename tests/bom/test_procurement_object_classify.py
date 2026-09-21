@@ -20,7 +20,7 @@ from app.services.bom.procurement_object.classify import (
     SUBTYPE_STAMPING_BLANK,
     classify_nodes,
 )
-from app.services.bom.procurement_object.generate_log_service import (
+from app.services.bom.procurement_object.generate.log import (
     BomProcurementObjectGenerateLogService,
 )
 

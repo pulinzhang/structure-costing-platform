@@ -4,9 +4,9 @@
 
 | 你要做什么 | 打开 |
 |---|---|
-| 登录 | `users.auth_service.AuthService` |
-| 用户 | `users.user_service.UserService` |
-| 权限 | `users.permission_service.PermissionService` |
+| 登录 | `users.auth.AuthService` |
+| 用户 | `users.service.UserService` |
+| 权限 | `users.permission.PermissionService` |
 | 系统参数 | `system.service.SettingsService` |
 | 操作日志 | `logs.service.OperationLogService` |
 

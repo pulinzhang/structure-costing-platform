@@ -13,7 +13,7 @@ from app.common.bom.welding_standard_process import validate_welding_unit_price_
 from app.exceptions.base import BusinessException
 from app.parsers.bom.welding_unit_price_parser import parse_welding_unit_price_excel
 from app.schemas.dto.bom_welding_unit_price_dto import BomWeldingUnitPriceCreate
-from app.services.bom.welding_unit_price.import_service import (
+from app.services.bom.welding_unit_price.importing.service import (
     BomWeldingUnitPriceImportService,
 )
 
@@ -62,7 +62,7 @@ def test_create_dto_rejects_non_catalog_name() -> None:
         )
 
 
-@patch("app.services.bom.welding_unit_price.import_service.LocationService")
+@patch("app.services.bom.welding_unit_price.importing.service.LocationService")
 def test_import_aborts_on_catalog_error(mock_location_cls: MagicMock) -> None:
     mock_location_cls.return_value.require_enabled.return_value = "青岛"
     content = _xlsx_bytes(

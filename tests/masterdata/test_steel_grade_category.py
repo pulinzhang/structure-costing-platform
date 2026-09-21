@@ -311,7 +311,7 @@ def test_update_grade_cascades_base_price(memory_db: Session) -> None:
 
 def test_base_price_write_uses_archive_grade_and_category(memory_db: Session) -> None:
     from app.schemas.dto.steel_base_price_dto import SteelBasePriceWrite
-    from app.services.yishiyiyi.base_price.importing.import_service import (
+    from app.services.yishiyiyi.base_price.importing.service import (
         _canonicalize_grade_and_category,
     )
 

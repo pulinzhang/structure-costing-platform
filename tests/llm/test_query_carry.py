@@ -10,8 +10,8 @@ from app.schemas.vo.user_vo import UserVO
 from app.services.llm.analysis.shared.idempotency import build_idempotency_key
 from app.services.llm.client.openai_compatible import LlmClientError
 from app.services.llm.comparison_basis import default_comparison_basis
-from app.services.llm.query.query_parser import QueryParser
-from app.services.llm.report_service import (
+from app.services.llm.query.parser.pipeline import QueryParser
+from app.services.llm.report import (
     LlmAnalysisReportService,
     analysis_query_from_report_fields,
 )

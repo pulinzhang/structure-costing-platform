@@ -9,7 +9,7 @@ import pytest
 from app.exceptions.base import NotFoundException, PermissionException
 from app.schemas.dto.llm_analysis_dto import LlmAnalysisReportQuery
 from app.schemas.vo.user_vo import UserVO
-from app.services.llm.report_service import LlmAnalysisReportService
+from app.services.llm.report import LlmAnalysisReportService
 
 
 def _user(user_id: int, *, is_admin: bool = False) -> UserVO:
@@ -70,7 +70,7 @@ def test_get_report_owner_succeeds(monkeypatch: pytest.MonkeyPatch) -> None:
     copied = MagicMock()
     expected.model_copy = MagicMock(return_value=copied)
     monkeypatch.setattr(
-        "app.services.llm.report_service.LlmAnalysisReportVO.from_orm_row",
+        "app.services.llm.report.LlmAnalysisReportVO.from_orm_row",
         MagicMock(return_value=expected),
     )
 
@@ -126,7 +126,7 @@ def test_get_task_progress_without_report_row_not_found(
     db = MagicMock()
     service.repository.get_by_task_id = MagicMock(return_value=None)
     monkeypatch.setattr(
-        "app.services.llm.report_service._async_task_service.get_task_snapshot",
+        "app.services.llm.report._async_task_service.get_task_snapshot",
         MagicMock(return_value={"status": "running", "progress": 10}),
     )
 
@@ -145,7 +145,7 @@ def test_get_task_progress_other_user_forbidden(
     row.user_id = 2
     service.repository.get_by_task_id = MagicMock(return_value=row)
     monkeypatch.setattr(
-        "app.services.llm.report_service._async_task_service.get_task_snapshot",
+        "app.services.llm.report._async_task_service.get_task_snapshot",
         MagicMock(return_value={"status": "running", "progress": 10}),
     )
 

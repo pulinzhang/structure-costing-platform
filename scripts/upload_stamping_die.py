@@ -20,7 +20,7 @@ import app.models  # noqa: F401
 from app.common.audit import SYSTEM_USER
 from app.database import DatabaseConfig
 from app.exceptions.base import BusinessException
-from app.services.stamping.die.upload.upload_service import StampingDieUploadService
+from app.services.stamping.die.upload.service import StampingDieUploadService
 
 ROOT = Path(__file__).resolve().parents[1]
 DEFAULT_LOCATION = "芜湖"

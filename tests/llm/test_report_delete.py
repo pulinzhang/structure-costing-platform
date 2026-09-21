@@ -8,7 +8,7 @@ import pytest
 
 from app.exceptions.base import NotFoundException, PermissionException
 from app.schemas.vo.user_vo import UserVO
-from app.services.llm.report_service import LlmAnalysisReportService
+from app.services.llm.report import LlmAnalysisReportService
 
 
 def _user(user_id: int, *, is_admin: bool = False) -> UserVO:

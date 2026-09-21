@@ -12,7 +12,7 @@ from openpyxl import Workbook, load_workbook
 from app.common.audit import SYSTEM_USER
 from app.parsers.stamping.tonnage_price_parser import parse_tonnage_price_excel
 from app.services.stamping.tonnage_price.export.service import StampingTonnagePriceExportService
-from app.services.stamping.tonnage_price.upload.import_service import (
+from app.services.stamping.tonnage_price.upload.service import (
     StampingTonnagePriceImportService,
 )
 

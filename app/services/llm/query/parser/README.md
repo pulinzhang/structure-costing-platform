@@ -3,7 +3,7 @@
 问句 → `AnalysisQuery` 的规则层。对外仍：
 
 ```python
-from app.services.llm.query.query_parser import QueryParser
+from app.services.llm.query.parser.pipeline import QueryParser
 ```
 
 `QueryParser.parse` 只编排：抽条件 → 词典对齐 → 上一问沿用 → 钉月或沿用时间 → 定 analyses/subject。  

@@ -17,7 +17,7 @@ from app.services.async_task.service import (
     TASK_TYPE_ENGINEERING_CHANGE_UPLOAD,
     AsyncTaskService,
 )
-from app.services.engineering_change.upload.upload_service import EngineeringChangeUploadService
+from app.services.engineering_change.upload.service import EngineeringChangeUploadService
 from app.utils.response import ApiResponse
 
 router = APIRouter(prefix="/api/engineering-change", tags=["工程变更"])

@@ -30,7 +30,7 @@ from app.schemas.vo.user_vo import UserVO
 from app.services.bom.packaging_transport_fee.export.service import (
     BomPackagingTransportFeeExportService,
 )
-from app.services.bom.packaging_transport_fee.import_service import (
+from app.services.bom.packaging_transport_fee.importing.service import (
     BomPackagingTransportFeeImportService,
 )
 from app.services.bom.packaging_transport_fee.service import BomPackagingTransportFeeService

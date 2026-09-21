@@ -7,7 +7,7 @@
 | 列表 / 详情 / 分摊比例 / 按项目删除 | `service.StampingDieService` |
 | 工程变更当月命中、改图抄行、插行、回滚 | `engineering.service.StampingDieEngineeringService` |
 | 模具清单导出 | `export.service.StampingDieExportService` |
-| 布点 Excel 导入 / 下载模板 | `upload.upload_service.StampingDieUploadService` |
+| 布点 Excel 导入 / 下载模板 | `upload.service.StampingDieUploadService` |
 | 模具单价档案 | `unit_price.service.StampingDieUnitPriceService` |
 
 禁止本包 `__init__.py` 再导出。HTTP 仍在 `/api/stamping/die`。

@@ -5,7 +5,7 @@
 | 你要做什么 | 调 |
 |---|---|
 | 列表 / 改删 / 整包删除 / 工程变更抄行与回滚 | `service.StampingGaugeFeeService` |
-| 检具费 Excel 导入 / 下载模板 | `upload.upload_service.StampingGaugeFeeUploadService` |
+| 检具费 Excel 导入 / 下载模板 | `upload.service.StampingGaugeFeeUploadService` |
 | 检具费 Excel 导出 | `export.service.StampingGaugeFeeExportService` |
 
 禁止本包 `__init__.py` 再导出。HTTP 仍在 `/api/stamping/gauge-fees`。

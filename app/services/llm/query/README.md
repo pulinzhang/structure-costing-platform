@@ -4,7 +4,7 @@
 
 | 你要做什么 | 调 |
 |---|---|
-| 解析入口 | `query_parser.QueryParser` |
+| 解析入口 | `parser.pipeline.QueryParser` |
 | 抽槽 | `condition_extractor.ConditionExtractor` |
 | 词典对齐 | `entity_aligner.EntityAligner` |
 | 钉月 | `time_range` |
@@ -16,7 +16,7 @@
 
 | 文件 / 目录 | 职责 |
 |------|------|
-| `query_parser.py` | 对外入口 |
+| `parser/pipeline.py` | 对外入口 `QueryParser` |
 | `condition_extractor.py` | 抽条件 |
 | `entity_aligner.py` | 基地 / 项目 / 零件对齐 |
 | `time_range.py` | 默认月 |

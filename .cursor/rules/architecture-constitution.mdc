@@ -58,10 +58,8 @@ app/
 - `models/` 根与切片 `__init__.py` 仍可再导出，仅供 `create_all`（业务代码仍 `from app.models.{feature} import …`）。
 - 切片内拆文件以 `app/services/bom/` **整棵**为准。新切片跟 BOM。
   - **单门面**：切片根 `service.py`（如 `bom/welding_fee/service.py`）。
-  - **多门面**：命名模块，禁止再加总门面（如 `bom/bom/snapshot.py`、`node.py`、`period.py`）。
-  - **根上第二职责**：命名文件（`generate_service.py`、`audit_service.py`、`import_service.py`）。
-  - **导出成包**：入口 `{duty}/service.py`（导出即 `export/service.py`）。类名仍是 `XxxExportService`。
-  - **导出未拆列/值**：允许切片根 `export.py`（如 `bom/where_used/export.py`）。
+  - **多门面**：对等命名模块，禁止再加总门面（如 `bom/bom/snapshot.py`、`node.py`、`period.py`）。
+  - **第二入口**：`{duty}/service.py`（如 `generate/service.py`、`audit/service.py`、`export/service.py`），不论里面是类还是函数。导入目录必须叫 `importing/`（`import` 是关键字，不能做包名）。职责包内配角用短名（`generate/log.py`、`generate/task.py`），不要再套一层。未拆列/值的导出允许根 `export.py`（如 `bom/where_used/export.py`）。类名仍带领域。门面自己拆开的配角（`queries.py`、`crud.py`、`paginate.py`、`calc_ops.py`、`pricing.py`）留在切片根上，不要为拆文件建空包。
   - **计算指挥包**：`calc/orchestrator/orchestrator.py`；包 `__init__` 不导出。
   - **仅编排导出**：指挥是模块 `export/orchestrator.py`，禁止再套 `export/orchestrator/__init__.py` 再导出。
   - **禁止** export 门面文件名：`export_service.py`、`{slice}_export_service.py`、`export/export_service.py`。职责目录若叫 `calc_report/`，入口是 `calc_report/service.py`，不要再套 `export/`。

@@ -17,7 +17,7 @@ if str(ROOT) not in sys.path:
     sys.path.insert(0, str(ROOT))
 
 from app.services.llm.menu_catalog import SUBJECT_MENU  # noqa: E402
-from app.services.llm.query.query_parser import QueryParser  # noqa: E402
+from app.services.llm.query.parser.pipeline import QueryParser  # noqa: E402
 from tests.llm.menu_question_matrix import MENU_QUESTION_CASES  # noqa: E402
 
 

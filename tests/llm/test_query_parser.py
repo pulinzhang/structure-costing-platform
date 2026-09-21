@@ -17,8 +17,8 @@ from app.services.llm.analysis.shared.idempotency import (
 )
 from app.services.llm.analysis.shared.summary import build_summary
 from app.services.llm.comparison_basis import default_comparison_basis
+from app.services.llm.query.parser.pipeline import QueryParser
 from app.services.llm.query.parser.subjects import resolve_subject
-from app.services.llm.query.query_parser import QueryParser
 from app.services.llm.query.time_range import DefaultScopeMonth, normalize_time_range
 
 
@@ -623,7 +623,7 @@ def test_query_parser_base_price_question() -> None:
     from unittest.mock import MagicMock
 
     from app.services.llm.menu_catalog import build_list_params
-    from app.services.llm.query.query_parser import QueryParser
+    from app.services.llm.query.parser.pipeline import QueryParser
 
     parser = QueryParser()
     db = MagicMock()

@@ -419,7 +419,7 @@ app/models/bom/procurement_object.py
 app/models/bom/procurement_object_generate_log.py
 app/repositories/bom/procurement_object_repository.py
 app/repositories/bom/procurement_object/   queries · writes · types（ScopeFilters / HUD TypedDict）
-app/services/bom/procurement_object/   service · generate_service · insert_service · audit_service · generate_log_service · export/service · classify · labels · mapping · row_write
+app/services/bom/procurement_object/   service · generate/service · insert/service · audit/service · generate/log · export/service · classify · labels · mapping · row_write
 app/routers/bom/procurement_object.py
 app/schemas/dto|vo/bom_procurement_object_*.py
 static/js/features/bom/procurement-object/

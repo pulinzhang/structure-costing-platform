@@ -15,13 +15,13 @@ from app.repositories.costing.engine.costing_engine_run_repository import (
 )
 from app.schemas.vo.costing_engine_vo import CostingEngineAnnualItemVO
 from app.schemas.vo.user_vo import UserVO
-from app.services.bom.procurement_object.generate_service import (
+from app.services.bom.procurement_object.generate.service import (
     BomProcurementObjectGenerateService,
 )
 from app.services.bom.welding_fee.calc.orchestrator.orchestrator import (
     BomWeldingFeeCalcOrchestrator,
 )
-from app.services.bom.welding_process_breakdown.generate_service import (
+from app.services.bom.welding_process_breakdown.generate.service import (
     BomWeldingProcessBreakdownGenerateService,
 )
 from app.services.costing.assembly_cost.calc.orchestrator.orchestrator import (

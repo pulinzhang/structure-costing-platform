@@ -14,8 +14,8 @@ from app.repositories.settings.users.user_repository import UserRepository
 from app.repositories.settings.users.user_token_repository import UserTokenRepository
 from app.schemas.dto.user_dto import UserLoginDTO, UserTokenCreate, UserTokenSnapshot
 from app.schemas.vo.user_vo import LoginVO, UserVO
-from app.services.settings.users.permission_service import PermissionService
-from app.services.settings.users.user_service import hash_password_md5
+from app.services.settings.users.permission import PermissionService
+from app.services.settings.users.service import hash_password_md5
 
 
 class AuthService:

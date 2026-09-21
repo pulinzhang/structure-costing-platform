@@ -34,7 +34,7 @@ from app.services.bom.procurement_object.labels import (
     SUBTYPE_LABELS,
 )
 
-logger = logging.getLogger("service.bom.procurement_object.generate_log")
+logger = logging.getLogger("service.bom.procurement_object.generate.log")
 
 STATUS_SUCCESS = "success"
 STATUS_FAILED = "failed"

@@ -31,7 +31,7 @@ from app.schemas.dto.user_dto import (
     UserUpdateDTO,
 )
 from app.schemas.vo.user_vo import UserVO
-from app.services.settings.users.permission_service import PermissionService
+from app.services.settings.users.permission import PermissionService
 from app.utils.avatar_storage import delete_avatar_file, save_user_avatar
 
 logger = logging.getLogger("service.user")

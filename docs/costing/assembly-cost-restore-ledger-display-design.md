@@ -195,7 +195,7 @@ unit_price  = line_amount / effective_qty    // qty=0 则 0
 ```text
 docs/costing/assembly-cost-restore-ledger-display-design.md   # 本文
 docs/costing/assembly-cost-restore-design.md                 # 载体；冲突以本文为准
-app/services/costing/assembly_cost/restore/restore_service.py  # _sub_assembly_node
+app/services/costing/assembly_cost/restore/service.py  # _sub_assembly_node
 app/schemas/vo/assembly_cost_restore_vo.py
 static/js/features/costing/assembly-cost/restore/boot.js       # 封面 / 瀑布 / 焊装章 / assemblyBlock / 链接
 static/assembly-cost-restore.html                            # 能不加样式就不加

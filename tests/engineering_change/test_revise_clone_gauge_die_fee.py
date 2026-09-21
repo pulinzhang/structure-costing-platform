@@ -23,7 +23,7 @@ from app.models.stamping.gauge_fee import STATUS_EFFECTIVE, StampingGaugeFee
 from app.repositories.stamping.die_fee.repository import StampingDieFeeRepository
 from app.schemas.dto.stamping_die_fee_dto import DieFeeInsertPayload, DieFeeItemPayload
 from app.schemas.vo.user_vo import UserVO
-from app.services.engineering_change.list.rollback_service import (
+from app.services.engineering_change.list.rollback import (
     EngineeringChangeRollbackService,
 )
 from app.services.engineering_change.upload.persist.die_fee import persist_die_fees

@@ -14,7 +14,7 @@ from app.services.llm.engine_readiness.runner import (
 )
 from app.services.llm.generator import LlmReportGenerator
 from app.services.llm.query.intent_router import detect_query_mode
-from app.services.llm.query.query_parser import QueryParser
+from app.services.llm.query.parser.pipeline import QueryParser
 
 
 def test_detect_engine_readiness_mode() -> None:

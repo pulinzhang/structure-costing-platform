@@ -35,7 +35,7 @@ from app.schemas.vo.bom_procurement_object_vo import (
 )
 from app.schemas.vo.user_vo import UserVO
 from app.services.bom.procurement_object.classify import SECTION_OBJECT, classify_nodes
-from app.services.bom.procurement_object.generate_log_service import (
+from app.services.bom.procurement_object.generate.log import (
     BomProcurementObjectGenerateLogService,
 )
 from app.services.bom.procurement_object.row_write import ConfirmByNode, build_object_row_write

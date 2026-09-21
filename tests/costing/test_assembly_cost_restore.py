@@ -9,7 +9,7 @@ from app.routers.costing.assembly_cost import crud
 from app.schemas.vo.assembly_cost_restore_vo import RestoreDocumentRefVO
 from app.services.costing.assembly_cost.codes import PURCHASED_ASSEMBLY_NOTE
 from app.services.costing.assembly_cost.restore.labels import indirect_kind
-from app.services.costing.assembly_cost.restore.restore_service import (
+from app.services.costing.assembly_cost.restore.service import (
     AssemblyCostRestoreService,
 )
 

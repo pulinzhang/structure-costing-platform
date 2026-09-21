@@ -6,7 +6,7 @@ import pytest
 
 from app.exceptions.base import BusinessException
 from app.schemas.vo.user_vo import UserVO
-from app.services.bom.bom.upload.upload_service import BomUploadService
+from app.services.bom.bom.upload.service import BomUploadService
 
 
 def _user() -> UserVO:

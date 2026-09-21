@@ -29,7 +29,7 @@ from app.parsers.yishiyiyi.base_price.steel_base_price_parser import (
     parse_base_price_excel,
 )
 from app.services.masterdata.location.service import LocationService
-from app.services.yishiyiyi.base_price.importing.import_service import SteelBasePriceImportService
+from app.services.yishiyiyi.base_price.importing.service import SteelBasePriceImportService
 
 logger = logging.getLogger("scripts.import_base_price_samples")
 

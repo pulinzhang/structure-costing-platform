@@ -9,7 +9,7 @@ import pytest
 from app.common.tonnage import extract_tonnage_from_text
 from app.database import DatabaseConfig
 from app.services.llm.analysis.runner import AnalysisRunner
-from app.services.llm.query.query_parser import QueryParser
+from app.services.llm.query.parser.pipeline import QueryParser
 from app.services.llm.query.time_range import DefaultScopeMonth, normalize_time_range
 
 

@@ -31,7 +31,7 @@ from app.services.async_task.service import (
 )
 from app.services.stamping.die.export.service import StampingDieExportService
 from app.services.stamping.die.service import StampingDieService
-from app.services.stamping.die.upload.upload_service import StampingDieUploadService
+from app.services.stamping.die.upload.service import StampingDieUploadService
 from app.utils.response import ApiResponse
 
 router = APIRouter(prefix="/api/stamping/die", tags=["冲压模具 API"])

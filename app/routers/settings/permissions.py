@@ -10,7 +10,7 @@ from app.deps.permissions import require_admin_user
 from app.schemas.dto.user_permission_dto import UserPermissionsUpdateDTO
 from app.schemas.vo.permission_vo import PermissionNodeVO
 from app.schemas.vo.user_vo import UserVO
-from app.services.settings.users.permission_service import PermissionService
+from app.services.settings.users.permission import PermissionService
 from app.utils.response import ApiResponse
 
 router = APIRouter(prefix="/api/settings", tags=["权限管理"])

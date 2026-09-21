@@ -15,7 +15,7 @@ from sqlalchemy.orm import Session
 from app.common.operation_log.context import set_request_user
 from app.database import get_auxiliary_db, get_db
 from app.schemas.vo.user_vo import UserVO
-from app.services.settings.users.auth_service import AuthService
+from app.services.settings.users.auth import AuthService
 
 _auth_service = AuthService()
 

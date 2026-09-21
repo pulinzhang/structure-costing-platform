@@ -12,7 +12,7 @@ from app.services.llm._money import count_months_in_span
 from app.services.llm.analysis.runner import AnalysisRunner, AnalysisRunResult
 from app.services.llm.context.snapshot_builder import SnapshotBuilder, _build_scope
 from app.services.llm.prompts.registry import PromptRegistry
-from app.services.llm.query.query_parser import QueryParser
+from app.services.llm.query.parser.pipeline import QueryParser
 
 
 def test_count_months_in_span() -> None:

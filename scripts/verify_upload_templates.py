@@ -82,7 +82,7 @@ def main() -> None:
 
     # 5 冲次单价
     from app.parsers.stamping.tonnage_price_parser import parse_tonnage_price_excel
-    from app.services.stamping.tonnage_price.upload.import_service import (
+    from app.services.stamping.tonnage_price.upload.service import (
         StampingTonnagePriceImportService,
     )
 
@@ -98,7 +98,7 @@ def main() -> None:
 
     # 6 焊接单价
     from app.parsers.bom.welding_unit_price_parser import parse_welding_unit_price_excel
-    from app.services.bom.welding_unit_price.import_service import (
+    from app.services.bom.welding_unit_price.importing.service import (
         BomWeldingUnitPriceImportService,
     )
 
@@ -119,7 +119,7 @@ def main() -> None:
     from app.parsers.bom.packaging_transport_fee_parser import (
         parse_packaging_transport_fee_excel,
     )
-    from app.services.bom.packaging_transport_fee.import_service import (
+    from app.services.bom.packaging_transport_fee.importing.service import (
         BomPackagingTransportFeeImportService,
     )
 

@@ -7,7 +7,7 @@ from sqlalchemy.orm import Session
 
 from app.common.export_watermark import workbook_to_xlsx_bytes
 from app.schemas.vo.user_vo import UserVO
-from app.services.costing.assembly_cost.calc.calc_log_service import (
+from app.services.costing.assembly_cost.calc.calc_log import (
     AssemblyCostCalcLogService,
 )
 from app.services.costing.assembly_cost.calc_report.builder import (

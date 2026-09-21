@@ -9,7 +9,7 @@ from app.repositories.stamping.process_fee.repository import (
     StampingProcessFeeRepository,
 )
 from app.repositories.stamping.tonnage_price.repository import StampingTonnagePriceRepository
-from app.services.stamping.process_fee.calc.calc_log_service import ProcessFeeCalcLogService
+from app.services.stamping.process_fee.calc.calc_log import ProcessFeeCalcLogService
 from app.services.stamping.process_fee.calc.part_calculator import PartFeeCalculator
 from app.services.stamping.process_fee.calc.tailor_weld_calculator import (
     TailorWeldFeeCalculator,

@@ -4,8 +4,8 @@
 
 | 你要做什么 | 调 |
 |---|---|
-| 列表 / 详情 | `query_service.EngineeringChangeQueryService` |
-| 回滚 | `rollback_service.EngineeringChangeRollbackService` |
+| 列表 / 详情 | `query.EngineeringChangeQueryService` |
+| 回滚 | `rollback.EngineeringChangeRollbackService` |
 
 禁止本包 `__init__.py` 再导出。HTTP 仍在 `/api/engineering-change`。
 
@@ -13,5 +13,5 @@
 
 | 文件 | 职责 |
 |------|------|
-| `query_service.py` | 列表与筛选 |
-| `rollback_service.py` | 回滚编排 |
+| `query.py` | 列表与筛选 |
+| `rollback.py` | 回滚编排 |

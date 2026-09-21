@@ -143,7 +143,7 @@ L0_CALC_STUCK_QUESTION = "我在进行成品核价计算时卡住了，怎么办
 def test_query_parser_routes_l0_calc_stuck_to_usage_help() -> None:
     from unittest.mock import MagicMock
 
-    from app.services.llm.query.query_parser import QueryParser
+    from app.services.llm.query.parser.pipeline import QueryParser
 
     parser = QueryParser()
     db = MagicMock()
@@ -171,7 +171,7 @@ def test_l0_calc_stuck_usage_help_fallback_markdown() -> None:
     """不依赖真实 LLM：语料命中后降级模板应包含删除计算历史指引。"""
     from app.services.llm.context.snapshot_builder import SnapshotBuilder
     from app.services.llm.generator import LlmReportGenerator
-    from app.services.llm.query.query_parser import QueryParser
+    from app.services.llm.query.parser.pipeline import QueryParser
 
     load_corpus_chunks.cache_clear()
     parser = QueryParser()

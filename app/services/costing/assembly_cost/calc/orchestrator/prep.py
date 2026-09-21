@@ -18,7 +18,7 @@ from app.repositories.bom.welding_process_breakdown_repository import (
 from app.schemas.dto.assembly_cost_dto import AssemblyCostCalcDTO
 from app.services.bom.bom.period import BomPeriodService
 from app.services.bom.procurement_object.classify import SECTION_OBJECT
-from app.services.costing.assembly_cost.calc.calc_log_service import SCOPE_REQUIRED_MESSAGE
+from app.services.costing.assembly_cost.calc.calc_log import SCOPE_REQUIRED_MESSAGE
 from app.services.costing.assembly_cost.calc.orchestrator.deps import AssemblyCalcDeps
 from app.services.costing.assembly_cost.calc.orchestrator.progress import ProgressNotifier
 from app.services.costing.assembly_cost.calc.orchestrator.ready import assert_calc_ready

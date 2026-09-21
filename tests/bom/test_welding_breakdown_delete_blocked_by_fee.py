@@ -21,7 +21,7 @@ from app.models.bom.welding_process_breakdown import (
 )
 from app.models.masterdata.location import Location
 from app.models.masterdata.vehicle_model import VehicleModel
-from app.services.bom.welding_process_breakdown.audit_service import WELDING_FEE_REFERENCED
+from app.services.bom.welding_process_breakdown.audit.service import WELDING_FEE_REFERENCED
 from app.services.bom.welding_process_breakdown.service import BomWeldingProcessBreakdownService
 
 LOCATION = "青岛"

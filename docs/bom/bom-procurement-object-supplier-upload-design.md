@@ -187,7 +187,7 @@ Router
 | `app/services/masterdata/supplier/service.py` | 改造导出：收 `Workbook`；`export_excel` 与本页共用写表。表名仍由本切片 `resolve_worksheet` 决定 |
 | `app/parsers/bom/procurement_object_supplier_parser.py` | 表头唯一来源；行 → dataclass；只读第一页 |
 | `app/services/bom/procurement_object/supplier_template.py` | 第一页 `采购对象` + 第三页 `填写说明`；中间把 `wb` 交给供应商 Service，禁止改副页名 |
-| `app/services/bom/procurement_object/supplier_upload_service.py` | 校验、对账、事务、溯源 |
+| `app/services/bom/procurement_object/supplier_upload/service.py` | 校验、对账、事务、溯源 |
 | `static/js/features/bom/procurement-object/supplier-upload/` | 页面 |
 
 ---

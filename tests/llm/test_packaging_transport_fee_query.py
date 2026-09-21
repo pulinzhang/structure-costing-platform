@@ -8,7 +8,7 @@ import pytest
 
 from app.database import DatabaseConfig
 from app.services.llm.analysis.runner import AnalysisRunner
-from app.services.llm.query.query_parser import QueryParser
+from app.services.llm.query.parser.pipeline import QueryParser
 
 
 def test_query_parser_packaging_transport_fee_subject() -> None:

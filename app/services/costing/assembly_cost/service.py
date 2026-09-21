@@ -5,7 +5,6 @@ from __future__ import annotations
 from sqlalchemy.orm import Session
 
 from app.common.audit import display_name
-from app.common.timezone import now
 from app.exceptions.base import NotFoundException
 from app.models.costing.assembly_cost_calc_log import AssemblyCostCalcLog
 from app.repositories.bom.annual_part_price_repository import (
@@ -51,7 +50,12 @@ from app.services.async_task.worker_runner import (
     calc_status_label,
     outcome_from_calc_status,
 )
-from app.services.costing.assembly_cost.calc.calc_log_service import (
+from app.services.costing.assembly_cost.audit.service import (
+    batch_approve_costs,
+    batch_delete_costs,
+    batch_reverse_costs,
+)
+from app.services.costing.assembly_cost.calc.calc_log import (
     DUPLICATE_SCOPE_CALC_MESSAGE,
     AssemblyCostCalcLogService,
     DuplicateScopeCalcError,
@@ -313,37 +317,7 @@ class AssemblyCostService:
         *,
         current_user: UserVO,
     ) -> AssemblyCostBatchResultVO:
-        location = dto.location.strip()
-        vehicle_model = dto.vehicle_model.strip()
-        bom_version = (dto.bom_version or "").strip() or None
-        skipped = self.cost_repo.count_approved_by_scope(
-            db,
-            year=dto.year,
-            month=dto.month,
-            location=location,
-            vehicle_model=vehicle_model,
-            bom_version=bom_version,
-        )
-        ids = self.cost_repo.list_ids_by_scope(
-            db,
-            year=dto.year,
-            month=dto.month,
-            location=location,
-            vehicle_model=vehicle_model,
-            bom_version=bom_version,
-            view=dto.view,
-        )
-        skipped = self.cost_repo.count_approved_by_ids(db, ids)
-        count = self.cost_repo.delete_by_ids(db, ids)
-        db.commit()
-        message = f"已删除 {count} 条"
-        if skipped:
-            message += f"，跳过已审核 {skipped} 条"
-        return AssemblyCostBatchResultVO(
-            affected_count=count,
-            skipped_count=skipped,
-            message=message,
-        )
+        return batch_delete_costs(self.cost_repo, db, dto)
 
     def batch_approve(
         self,
@@ -352,31 +326,7 @@ class AssemblyCostService:
         *,
         current_user: UserVO,
     ) -> AssemblyCostBatchResultVO:
-        location = dto.location.strip()
-        vehicle_model = dto.vehicle_model.strip()
-        bom_version = (dto.bom_version or "").strip() or None
-        ids = self.cost_repo.list_ids_by_scope(
-            db,
-            year=dto.year,
-            month=dto.month,
-            location=location,
-            vehicle_model=vehicle_model,
-            bom_version=bom_version,
-            view=dto.view,
-        )
-        count = self.cost_repo.approve_by_ids(
-            db,
-            ids,
-            audited_by=display_name(current_user),
-            audited_at=now(),
-            audit_remark=dto.audit_remark,
-        )
-        db.commit()
-        return AssemblyCostBatchResultVO(
-            affected_count=count,
-            skipped_count=0,
-            message=f"已审核通过 {count} 条",
-        )
+        return batch_approve_costs(self.cost_repo, db, dto, current_user)
 
     def batch_reverse(
         self,
@@ -385,28 +335,4 @@ class AssemblyCostService:
         *,
         current_user: UserVO,
     ) -> AssemblyCostBatchResultVO:
-        location = dto.location.strip()
-        vehicle_model = dto.vehicle_model.strip()
-        bom_version = (dto.bom_version or "").strip() or None
-        ids = self.cost_repo.list_ids_by_scope(
-            db,
-            year=dto.year,
-            month=dto.month,
-            location=location,
-            vehicle_model=vehicle_model,
-            bom_version=bom_version,
-            view=dto.view,
-        )
-        count = self.cost_repo.reverse_by_ids(
-            db,
-            ids,
-            reverse_audited_by=display_name(current_user),
-            reverse_audited_at=now(),
-            reverse_audit_remark=dto.reverse_audit_remark,
-        )
-        db.commit()
-        return AssemblyCostBatchResultVO(
-            affected_count=count,
-            skipped_count=0,
-            message=f"已反审核 {count} 条",
-        )
+        return batch_reverse_costs(self.cost_repo, db, dto, current_user)

@@ -476,7 +476,7 @@ POST body：user_question（可选 previous_report_id）
 
 ```text
 app/services/llm/
-  report_service.py       # 编排入口
+  report.py       # 编排入口
   query/                  # parser / intent / 词典 / 时间 / 口径
   analysis/               # 薄 runner + shared 公式 + 主题包（ops/stamping/steel/welding/bom/assembly）
   context/                # snapshot_builder

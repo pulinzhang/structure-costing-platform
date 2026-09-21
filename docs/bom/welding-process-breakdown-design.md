@@ -210,8 +210,8 @@ start_generate
 ```text
 Router  welding_process_breakdown.py
   → BomWeldingProcessBreakdownService     门面
-       ├── generate_service / generate_log
-       ├── audit_service
+       ├── generate/service · generate/log · generate/task
+       ├── audit/service
        ├── export/orchestrator            L0 核对导出
        └── bom_tree · rollup · fastener_check · evidence · recompute
 Parser  仅 generate / 改量映射 经 Service 调用

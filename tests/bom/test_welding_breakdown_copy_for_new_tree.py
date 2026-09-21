@@ -9,7 +9,7 @@ from unittest.mock import MagicMock, patch
 import pytest
 
 from app.exceptions.base import BusinessException
-from app.services.bom.welding_process_breakdown.generate_service import (
+from app.services.bom.welding_process_breakdown.generate.service import (
     BomWeldingProcessBreakdownGenerateService,
 )
 

@@ -28,7 +28,7 @@ from app.repositories.bom.packaging_transport_fee_repository import (
 )
 from app.repositories.masterdata.location.location_repository import LocationRepository
 from app.schemas.dto.location_dto import LocationAliasInsert, LocationInsert
-from app.services.bom.packaging_transport_fee.import_service import (
+from app.services.bom.packaging_transport_fee.importing.service import (
     BomPackagingTransportFeeImportService,
 )
 

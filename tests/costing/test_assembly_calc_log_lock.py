@@ -15,7 +15,7 @@ from app.repositories.costing.assembly_cost.assembly_cost_calc_log_repository im
     AssemblyCostCalcLogRepository,
 )
 from app.schemas.dto.assembly_cost_dto import AssemblyCostCalcDTO
-from app.services.costing.assembly_cost.calc.calc_log_service import (
+from app.services.costing.assembly_cost.calc.calc_log import (
     STATUS_FAILED,
     STATUS_PARTIAL,
     STATUS_PROCESSING,

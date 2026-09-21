@@ -13,7 +13,7 @@ from app.common.part_number import (
     sanitize_part_number_token,
 )
 from app.services.llm.query.entity_aligner import EntityAligner
-from app.services.llm.query.query_parser import QueryParser
+from app.services.llm.query.parser.pipeline import QueryParser
 from tests.llm.menu_question_matrix import MENU_QUESTION_CASES
 
 

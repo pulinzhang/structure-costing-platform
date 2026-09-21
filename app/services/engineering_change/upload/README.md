@@ -4,7 +4,7 @@
 
 | 你要做什么 | 调 |
 |---|---|
-| Router 入口 | `upload_service.EngineeringChangeUploadService` |
+| Router 入口 | `service.EngineeringChangeUploadService` |
 | 入队 | `start_upload` |
 | 异步编排 | `orchestrator.orchestrator.EngineeringChangeOrchestrator` |
 | 模板 | `template_builder` |
@@ -15,7 +15,7 @@
 
 | 目录 / 文件 | 职责 |
 |------|------|
-| `upload_service.py` | 门面 |
+| `service.py` | 门面 |
 | `start_upload.py` | 校验文件并入队 |
 | `template_builder.py` | 下载模板 |
 | `gates/` | 表内与切片一致性门禁 |

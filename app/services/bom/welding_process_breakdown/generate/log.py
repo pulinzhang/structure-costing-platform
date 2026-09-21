@@ -30,7 +30,7 @@ from app.schemas.vo.bom_welding_process_breakdown_vo import (
     BomWeldingProcessBreakdownGenerateResultVO,
 )
 
-logger = logging.getLogger("service.bom.welding_process_breakdown.generate_log")
+logger = logging.getLogger("service.bom.welding_process_breakdown.generate.log")
 
 STATUS_PROCESSING = "processing"
 STATUS_SUCCESS = "success"
