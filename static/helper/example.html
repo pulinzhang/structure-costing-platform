@@ -6,7 +6,7 @@
   <title>样例 · 青岛 2025-01 T28 · 核价平台</title>
   <link rel="icon" type="image/x-icon" href="/static/assets/favicon.ico">
   <link href="/static/css/fonts.css?v=1" rel="stylesheet">
-  <link rel="stylesheet" href="helper.css?v=3">
+  <link rel="stylesheet" href="helper.css?v=4">
 </head>
 <body>
   <div class="layout">
@@ -62,7 +62,7 @@
         <div class="hero-actions">
           <a class="back-link" href="index.html">← 帮助入口</a>
           <a class="btn-print" href="print-all.html" style="text-decoration:none;">整本打印 / PDF</a>
-          <button type="button" class="btn-print" onclick="window.print()" style="background:transparent;color:#9e9e9e;border-color:#2c2c2c;">仅本页</button>
+          <button type="button" class="btn-print is-ghost" onclick="window.print()">仅本页</button>
         </div>
       </header>
 
@@ -448,10 +448,10 @@
 
         <div class="card">
           <p>月总账 <span class="money">18.8655</span> + 间接 <span class="money">2.3357</span> =</p>
-          <p style="font-size:22px;font-family:'JetBrains Mono',monospace;color:#ff8a80;margin-top:8px;">
+          <p style="font-size:22px;font-family:'JetBrains Mono',monospace;color:var(--red);margin-top:8px;">
             成品总费用　21.2012 元
           </p>
-          <p style="margin-top:10px;font-size:13px;color:#9e9e9e;">
+          <p style="margin-top:10px;font-size:13px;color:var(--muted);">
             流水槽加强梁总成（501006873AA）· 青岛 · T28 · D/00 · 2025 年 01 月
           </p>
         </div>
@@ -486,33 +486,33 @@
           <tbody>
             <tr>
               <td>完成停止</td>
-              <td>501009533AA<br><span style="color:#9e9e9e">发盖左铰链安装支架总成</span></td>
+              <td>501009533AA<br><span style="color:var(--muted)">发盖左铰链安装支架总成</span></td>
               <td>（空）</td>
               <td>整棵交货总成 7 月起不再交；材料清单不写该总成</td>
             </tr>
             <tr>
               <td>改图 · 一级</td>
-              <td>501006873AA<br><span style="color:#9e9e9e">流水槽加强梁总成</span></td>
+              <td>501006873AA<br><span style="color:var(--muted)">流水槽加强梁总成</span></td>
               <td>501006873AB</td>
-              <td>501006875AA → 501006875AB<br><span style="color:#9e9e9e">雨刮电机安装支架Ⅰ（与 1 月样例同一成品换号）</span></td>
+              <td>501006875AA → 501006875AB<br><span style="color:var(--muted)">雨刮电机安装支架Ⅰ（与 1 月样例同一成品换号）</span></td>
             </tr>
             <tr>
               <td>改图 · 二级</td>
-              <td>501009144AA<br><span style="color:#9e9e9e">后防撞梁总成</span></td>
+              <td>501009144AA<br><span style="color:var(--muted)">后防撞梁总成</span></td>
               <td>501009144AB</td>
-              <td>501009122AA → 501009122AB<br><span style="color:#9e9e9e">后保下安装支架</span></td>
+              <td>501009122AA → 501009122AB<br><span style="color:var(--muted)">后保下安装支架</span></td>
             </tr>
             <tr>
               <td>此件不装</td>
-              <td>501008897AA<br><span style="color:#9e9e9e">后围总成</span></td>
+              <td>501008897AA<br><span style="color:var(--muted)">后围总成</span></td>
               <td>501008897AB</td>
-              <td>504000341AA 不装<br><span style="color:#9e9e9e">用量 0 + 备注含「此件不装」</span></td>
+              <td>504000341AA 不装<br><span style="color:var(--muted)">用量 0 + 备注含「此件不装」</span></td>
             </tr>
             <tr>
               <td>增加零件</td>
-              <td>501007029AA<br><span style="color:#9e9e9e">中通道左后纵梁总成</span></td>
+              <td>501007029AA<br><span style="color:var(--muted)">中通道左后纵梁总成</span></td>
               <td>501007029AB</td>
-              <td>新加 501007040AA<br><span style="color:#9e9e9e">中通道后纵梁加强板（变更前零件空）</span></td>
+              <td>新加 501007040AA<br><span style="color:var(--muted)">中通道后纵梁加强板（变更前零件空）</span></td>
             </tr>
           </tbody>
         </table>
