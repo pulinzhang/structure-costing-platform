@@ -60,7 +60,9 @@ def _ensure_bom_node_part_number_index() -> None:
 
 
 def _seed_if_empty() -> None:
-    from app.services.masterdata.steel_grade_category import SteelGradeCategoryService
+    from app.services.masterdata.steel_grade_category.service import (
+        SteelGradeCategoryService,
+    )
     from app.services.settings.users.user_service import UserService
 
     session_factory = DatabaseConfig.get_session_factory()

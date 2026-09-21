@@ -6,7 +6,7 @@ from pathlib import Path
 from openpyxl import load_workbook
 
 from app.parsers.stamping.stamping_parser import parse_stamping_excel
-from app.services.stamping.upload.template_builder import build_stamping_process_template
+from app.services.stamping.part.upload.template_builder import build_stamping_process_template
 
 
 def test_parse_without_die_number_header(tmp_path: Path) -> None:

@@ -9,10 +9,10 @@ from sqlalchemy.orm import Session
 
 from app.common.money import parse_decimal
 from app.common.scrap_categories import SCRAP_CATEGORY_STEEL
-from app.services.masterdata.location.location_service import LocationService
+from app.services.masterdata.location.service import LocationService
 
 if TYPE_CHECKING:
-    from app.services.dashboard.dashboard_service import DashboardService
+    from app.services.dashboard.service import DashboardService
 
 
 class ScrapStatus(NamedTuple):

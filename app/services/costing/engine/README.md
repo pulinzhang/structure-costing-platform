@@ -1,23 +1,25 @@
-# 核价引擎门禁（`engine/`）
+# 核价引擎 Service（`costing/engine/`）
 
-硬门禁：当期上游是否齐套。`GateChecker.check` 只编排各组检查，不落库。
+月度智能自动核价：范围发现、硬门禁、年度补算计划、分阶段编排。计算本身在各切片 `calc/`。
 
-对外入口：`GateChecker`（`gate_checker.py`）。  
-跳转：`gate_navigate.py`。
+| 你要做什么 | 调 |
+|---|---|
+| 列表 / 预检 / 启动 / 删除 Run | `service.CostingEngineService` |
+| 分阶段执行 | `orchestrator.run_orchestrator.RunOrchestrator` |
+| 硬门禁 | `gate.checker.GateChecker` |
+| 范围发现 | `scope.discovery.ScopeDiscovery` |
+| 年度补算计划 | `plan.annual.AnnualCalcPlanner` |
 
-## 架构
+禁止本包 `__init__.py` 再导出。HTTP 仍在 `/api/costing/engine`。
 
-`GateChecker` 注入各切片 Repository，按组调用 `gate/` 下的检查函数。
+## 目录
 
-## 职责
-
-| 模块 | 职责 |
+| 目录 / 文件 | 职责 |
 |------|------|
-| `gate_checker.py` | 检查顺序、注入 Repo、汇总条目 |
-| `gate/item.py` | 条目组装、跳转开关 |
-| `gate/stamping.py` | 项目 / 冲压工艺 / 冲次单价 |
-| `gate/welding.py` | 焊接单价 |
-| `gate/bom.py` | BOM 快照 / 年度零件价 / 包装运输 |
-| `gate/steel.py` | 基价与厚度政策覆盖 |
-| `gate/scrap.py` | 废料月度价 |
-| `gate/rates.py` | 系统费率 |
+| `service.py` | 列表、预检、入队启动 |
+| `scope/` | 当月 L0 范围发现 |
+| `gate/` | 硬门禁编排与分组检查、去处理跳转 |
+| `plan/` | 年度加工费 / 模具费 / 焊接补算计划 |
+| `orchestrator/` | 准备 → 阶段 → 落库；进度映射 |
+
+`GateChecker.check` 只编排各组检查，不落库。

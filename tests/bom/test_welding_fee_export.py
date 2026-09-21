@@ -7,13 +7,15 @@ from unittest.mock import MagicMock
 from openpyxl import Workbook
 from openpyxl.utils import get_column_letter
 
-from app.services.bom.welding_fee.export_service import (
+from app.services.bom.welding_fee.export.columns import (
     COL,
     COL_COUNT,
     HEADERS,
     MAIN_COLS,
-    BomWeldingFeeExportService,
     WeldingSheetLayout,
+)
+from app.services.bom.welding_fee.export.service import BomWeldingFeeExportService
+from app.services.bom.welding_fee.export.values import (
     _count_label,
     part_short_code,
 )

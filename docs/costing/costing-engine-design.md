@@ -49,7 +49,7 @@
 | 项 | 状态 |
 |---|---|
 | `#/costing` 与 `/api/costing/engine` | 已上线（就绪检查、启动 Run、轮询、历史删除含 running） |
-| 「基地+年+月」展开为多工厂 × 多 BOM 并串链 | 已上线（`engine/orchestrator/` / `scope_discovery`） |
+| 「基地+年+月」展开为多工厂 × 多 BOM 并串链 | 已上线（`engine/orchestrator/` / `scope/discovery`） |
 | Run 账本与「上传硬停 / 年度补算 / 月度主链」分类门禁 | 已上线 |
 
 产品规则（R1–R8）仍以本文为准。目标页若暂不读 `navigate.query`，至少落到正确功能页（见 §12）。  
@@ -224,7 +224,7 @@ L0Scope      = (location, year, month, vehicle_model, bom_version)
 ### 6.2 发现规则
 
 1. **项目**：先该基地该月 **冲压零件月命中** 的 `vehicle_model` ∪ **L0 节点月命中** 的 `vehicle_model`（`as_of_vehicle_models`），再留下 `list_introducible(账期年, 月)` 里的。项目该月已失效 → **不进计划**（即使对象失效为空）。**仅有冲压工艺且项目期覆盖该月的项目**进入加工费补算与 PartCost 计划（一车多厂一次算完）。as_of 两边都空则 `has_path=false`，去零件列表 / 产品结构。as_of 有件但项目期裁空：门禁 code `vehicle_model_period`，去 `#/vehicle-model-list`。  
-2. **L0Scope**：该基地下含 **该月命中 L0** 的 BOM 快照 `(vehicle_model, bom_version)` 全部进入焊接年度计划（多版本可逐个补算）。`bom_version` 取 **snapshot 头**，不是节点变更字（**不改发现键**）。总成核价仍按项目一次跑完该月有效树。无该月命中 L0 则不进入焊接拆解 / 焊接费 / 总成。工程变更写入后补拆解见 §5.2，不要按头版本去整包 generate。  
+2. **L0Scope**：该基地下含 **该月命中 L0** 的 BOM 快照 `(vehicle_model, bom_version)` 进入 **拆解生成** 年度计划。`bom_version` 取 **snapshot 头**（找 SOP 那一包，**不改发现键**）。**口径写死：snapshot 只约束拆解生成（SOP 那一包）；焊接费计算和列表一样认树根，不认 SOP 头。** `annual_welding_fee` / 覆盖检查走年 + 基地 + 项目 + L0 年交集，不要把头字塞进计算 WHERE。总成核价仍按项目一次跑完该月有效树。无该月命中 L0 则不进入焊接拆解 / 焊接费 / 总成。工程变更写入后补拆解见 §5.2，不要按头版本去整包 generate。  
 3. **地点规范化**：由 `LocationService.expand_for_query` 展开规范名与别名（如「青岛」/「青岛基地」），门禁与发现用同一套，避免假缺失。引擎 `get_ready` / `start_run` 先 `require_enabled`，只写入规范名。
 
 ### 6.3 与月度核对导出参数对齐
@@ -350,7 +350,7 @@ GET  .../tasks/{task_id} → AsyncTaskProgressVO
 - 新增 `TASK_TYPE_COSTING_ENGINE_RUN`。  
 - `run.task_id` ↔ 父任务互指；完成时 `result` 含 `run_id` + 摘要。  
 - **分层：** `start_run` 已在 Service 提交；开 Session / `on_progress` / `finally` 必须走公共 runner（架构宪法 §5.3），禁止引擎再自建一套 worker 壳。  
-- 领域逻辑（`RunDeletedError`、回写 Run 失败态、进度权重）留在 `CostingEngineService`，runner 不感知 `run_id`。  
+- 领域逻辑（`RunDeletedError`、回写 Run 失败态）留在 `CostingEngineService`；进度权重在 `engine/orchestrator/progress.py`。runner 不感知 `run_id`。  
 
 ### 9.3 禁止嵌套入队死等
 
@@ -606,13 +606,13 @@ can_start: bool   # = not hard_stop 且存在可执行路径（该月命中冲�
 
 | 主题 | 路径 |
 |---|---|
-| 钢材编排 | `app/services/costing/steel_price/calc/orchestrator.py` |
-| 零件价编排 | `app/services/costing/stamping_part_cost/calc/orchestrator.py` |
-| 总成编排 | `app/services/costing/assembly_cost/calc/orchestrator.py` |
+| 钢材编排 | `app/services/costing/steel_price/calc/orchestrator/` |
+| 零件价编排 | `app/services/costing/stamping_part_cost/calc/orchestrator/` |
+| 总成编排 | `app/services/costing/assembly_cost/calc/orchestrator/` |
 | 月度核对导出 | `app/services/costing/monthly_bundle_export/` |
-| 引擎实现 | `app/routers/costing/engine/`、`app/services/costing/engine/`（指挥：`engine/orchestrator/`；年度子算：`orchestrator/runners.py`）、`static/js/features/costing/engine/` |
+| 引擎实现 | `app/routers/costing/engine.py`、`app/services/costing/engine/`（指挥：`engine/orchestrator/`；年度子算：`orchestrator/runners.py`）、`static/js/features/costing/engine/` |
 | 焊接拆解 generate / 门禁钥匙 | `app/services/bom/welding_process_breakdown/generate_service.py`、`app/common/engineering_change_gates.py`（`snapshot_blocks_full_generate`） |
-| 异步任务 | `app/services/async_task/async_task_service.py` |
+| 异步任务 | `app/services/async_task/service.py` |
 | 进度 VO | `app/schemas/vo/async_task_vo.py` |
 
 ---
@@ -638,3 +638,4 @@ can_start: bool   # = not hard_stop 且存在可执行路径（该月命中冲�
 | 2026-09-19 | 引擎 `annual_welding_breakdown` 恢复同进程调 generate；`FULL_GENERATE`→`ENGINE_BREAKDOWN`。禁止 runner 一律硬停。用语「合册」改为工程变更 / 月度核对导出。 |
 | 2026-09-19 | 年度补算增加 `annual_procurement_object`；总成 P20 采购对象硬门；`FULL_GENERATE`→`ENGINE_PROCUREMENT`。 |
 | 2026-09-19 | 年度补算增加 `annual_die_fee`（有布点且当年无模具费行 → 同进程补算）；硬门 `die_unit_price`；失败跳过零件价。§13 冻结双轨：引擎补算 / 零件价页只 lookup。 |
+| 2026-09-20 | **口径写死：** snapshot 只约束拆解生成（SOP 那一包）；焊接费计算和列表一样认树根，不认 SOP 头。 |

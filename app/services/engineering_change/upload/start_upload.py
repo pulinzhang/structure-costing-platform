@@ -18,21 +18,22 @@ from app.repositories.engineering_change.upload_log_repository import (
 )
 from app.schemas.vo.async_task_vo import AsyncTaskAcceptedVO
 from app.schemas.vo.user_vo import UserVO
-from app.services.async_task import (
+from app.services.async_task.service import (
     STATUS_COMPLETED,
     STATUS_FAILED,
+    TASK_TYPE_ENGINEERING_CHANGE_UPLOAD,
     AsyncTaskService,
-    WorkerTaskOutcome,
 )
-from app.services.async_task.async_task_service import TASK_TYPE_ENGINEERING_CHANGE_UPLOAD
-from app.services.async_task.worker_runner import ProgressCallback
-from app.services.engineering_change.upload.orchestrator import EngineeringChangeOrchestrator
+from app.services.async_task.worker_runner import ProgressCallback, WorkerTaskOutcome
+from app.services.engineering_change.upload.orchestrator.orchestrator import (
+    EngineeringChangeOrchestrator,
+)
 from app.services.engineering_change.upload.orchestrator.types import (
     EngineeringChangeExecuteArgs,
 )
 from app.services.file_trace.path_utils import to_upload_relpath
 from app.services.file_trace.register import register_existing
-from app.services.masterdata.vehicle_model import VehicleModelService
+from app.services.masterdata.vehicle_model.service import VehicleModelService
 
 logger = logging.getLogger("service.engineering_change.start_upload")
 
@@ -112,7 +113,7 @@ def start_upload(
     log_id = log_row.id
     refreshed = _log_repo.get_by_id(db, log_id)
     if refreshed is None:
-        raise BusinessException("工程变更上传记录写入后丢失")
+        raise BusinessException("上传没有记上，请再传一次。")
     _log_repo.update(db, refreshed, EngineeringChangeUploadLogUpdate(task_id=task.task_id))
     db.commit()
 

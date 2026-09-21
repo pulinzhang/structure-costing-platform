@@ -18,8 +18,8 @@
 **对外入口**：
 
 ```python
-from app.services.yishiyiyi.scrap_price import (
-    StampingScrapPriceService,
+from app.services.yishiyiyi.scrap_price.service import StampingScrapPriceService
+from app.services.yishiyiyi.scrap_price.export.service import (
     StampingScrapPriceExportService,
 )
 ```
@@ -37,7 +37,7 @@ from app.services.yishiyiyi.scrap_price import (
    `StampingScrapPriceService` 不写业务细节；下载接口走 `StampingScrapPriceExportService`。
 
 3. **查询与 Excel 生成分离**  
-   `export_service` 拉年/月数据；`excel_exporter` 负责合并格、公式与边框。
+   `export/service.py` 拉年/月数据；`excel_exporter` 负责合并格、公式与边框。
 
 4. **仍遵守项目分层**  
    写库走 Repository；Router 不直接碰 Repository。
@@ -50,11 +50,11 @@ from app.services.yishiyiyi.scrap_price import (
 app/services/yishiyiyi/scrap_price/
 ├── README.md
 ├── __init__.py
-├── scrap_price_service.py          # 薄门面
+├── service.py          # 薄门面
 ├── crud/
 │   └── scrap_price_crud.py         # 整月取数/保存/复制/删除
 └── export/
-    ├── export_service.py           # 查库 + 调导出器
+    ├── service.py                  # 查库 + 调导出器
     └── excel_exporter.py           # 宽表 openpyxl
 ```
 
@@ -91,7 +91,7 @@ repositories.yishiyiyi.scrap_price
 | 模块 | 职责 |
 |------|------|
 | `crud/scrap_price_crud.py` | 月表字段 / 复制校验 |
-| `export/export_service.py` | 导出取数范围 |
+| `export/service.py` | 导出取数范围 |
 | `export/excel_exporter.py` | 宽表版式 / 公式 |
 
 ---
@@ -100,7 +100,7 @@ repositories.yishiyiyi.scrap_price
 
 | 层级 | 路径 |
 |------|------|
-| Router | `app/routers/yishiyiyi/scrap_price/` |
+| Router | `app/routers/yishiyiyi/scrap_price.py` |
 | Repository | `app/repositories/yishiyiyi/scrap_price/` |
 | 前端 | `static/js/features/yishiyiyi/scrap-price/` |
 | API 前缀 | `/api/yishiyiyi/scrap-price` |

@@ -1,7 +1,7 @@
 # 工程变更
 
 跨切片能力（BOM / 冲压 / 核价）。**工程变更上传、列表、回滚已落地**（`app/services/engineering_change/`）。  
-有效期与核价按月见 [bom-process-die-effective-period-design.md](bom-process-die-effective-period-design.md)。
+有效期与核价按月见 [bom-process-die-effective-period-design.md](bom-process-die-effective-period-design.md)。工程变更门禁从严：一本一个项目号；材料清单与确认表版本必须同一字；生效月须在项目期内；必须先有 SOP 采购对象清单头；版本与清单头不得凑合。
 
 > 2–4 年后敢改：先读本节，再下钻长设计稿。长稿与代码冲突时以**代码 + 本节**为准。
 
@@ -45,7 +45,7 @@
 | 硬门禁 | 变更单 + 材料清单 + 工艺确认表。材料清单总成列必须等于变更后总成；改图层必须等于变更后零件。缺新号 / 多新号 / 旧号仍挂其它有效总成 → 拒收 |
 | 工程变更不读布点表 | 不要「零件汇总」。模具 **逻辑建立**：改图有旧布点则从库里变更前零件整行抄到变更后零件。新号布点简图从冲压工艺确认表抄，不从旧布点、不从 Excel 抽 |
 | 抄检具/模具费/包装/年度价 | 改图：旧号有检具费生效档或 `year≥生效年` 模具费结果 → 抄到新号。种新树：旧交货总成 `year≥生效年` 包装整行抄到新总成；种树 remap 换号则年度价 `year≥生效年` 抄到新号。无则跳过；不读 Excel、非硬门禁。回滚删本次新行（先年度价/包装/模具费/检具费，再布点）；旧行保留 |
-| 种树 | 只经 `persist/tree.py` → BomService；到期经 `expire_l0_tree`（写失效月，不删行）。改图以旧树为底 **启用**新树，**整条链**换号：总成/改图层用变更单，中间分总成用材料清单已写出的号，**禁止自己进一位**；没改的零件原号带走 |
+| 种树 | 只经 `persist/tree.py` → BomEngineeringService；到期经 `expire_l0_tree`（写失效月，不删行）。改图以旧树为底 **启用**新树，**整条链**换号：总成/改图层用变更单，中间分总成用材料清单已写出的号，**禁止自己进一位**；没改的零件原号带走 |
 | `change_order_id` 占位 | 管线里 `change_order_id` 是变更单行下标；persist 插变更单后再回填真实 id。勿提前 flush |
 | SOP 不改 | Parser / UNIQUE / 引擎发现键 / 投产整包覆盖路径不为本切片去改 |
 | 依赖方向 | EC → 上游 Service；上游不得 import EC |
@@ -98,7 +98,7 @@ flowchart TB
   end
 
   subgraph upstream [上游领域 · EC 只适配]
-    T -.-> BomSvc[BomService / change_tree_plant]
+    T -.-> BomSvc[BomEngineeringService / change_tree_plant]
     PR -.-> StPart[stamping part EC]
     DI -.-> StDie[stamping die EC]
   end
@@ -129,7 +129,9 @@ flowchart TB
 | `EC_PART_SKETCH_REQUIRED` | 材料清单里的一级/二级零件没有单件图示 | 在「单件图示」列贴图，或在冲压工艺确认表给出该号简图（系统会抄到材料清单图目录）；总成图示按合并总成只需一张；分总成本层不要求；此件不装不要求 |
 | `EC_SHEET_REQUIRED` | 缺工程变更单 / 车身件材料清单 / 冲压工艺确认表 | 三张表缺一不可；不要「零件汇总」 |
 | `EC_EFFECTIVE_MISMATCH` | 生效年月与上传页不一致 | 上传页的年、月要和工程变更单一致；一次只能一个变更年月 |
-| `EC_PROJECT_MISMATCH` | 工程变更单项目和上传页不一致 | 对照上传页、工程变更单、材料清单项目代号 |
+| `EC_PROJECT_MISMATCH` | 一本只能一个项目号 | 对照上传页、工程变更单、材料清单项目代号、确认表标题里的项目 |
+| `EC_PROCUREMENT_LIST_REQUIRED` | 还没有采购对象清单头 | 先到焊接工程生成；完成停止也不例外 |
+| `EC_BOM_PROCESS_VERSION_MISMATCH` | 两张表版本不是同一个字 | 材料清单第 2 行与确认表表头必须写成一样 |
 | `EC_CHANGE_ORDER_*` | 变更单行数、类型、填法、同一个总成写了多次 | 类型只准四句：完成停止、改图、增加零件、此件不装；一个总成改了好几处请把总成格子上下合并 |
 | `EC_ROLLBACK_BLOCKED` | 不能删本次 | 其后还有未回滚变更，或采购对象已审未反审 |
 | `EC_ROLLBACK_REFERENCED` | 不能删本次 | 加工费/模具费/焊接费等仍引用本次变更产生的零件或布点 |
@@ -182,11 +184,11 @@ Router → EngineeringChangeUploadService.start_upload
 
 上游内核（勿把业务搬回 EC）：
 
-- `app/services/bom/change_tree_plant.py`
-- `app/services/stamping/part/engineering_change.py`
-- `app/services/stamping/die/engineering_change.py`
-- `app/services/stamping/gauge_fee/engineering_change.py`
-- `app/services/stamping/die_fee/engineering_change.py`
+- `app/services/bom/bom/change_tree_plant/`
+- `app/services/stamping/part/engineering/change.py`
+- `app/services/stamping/die/engineering/change.py`
+- `app/services/stamping/gauge_fee/engineering/change.py`
+- `app/services/stamping/die_fee/engineering/change.py`
 - `app/services/bom/packaging_transport_fee/engineering_change.py`
 - `app/services/bom/annual_part_price/engineering_change.py`
 

@@ -6,10 +6,8 @@ from sqlalchemy.orm import Session
 
 from app.common.period import resolve_as_of_month
 from app.exceptions import NotFoundException
-from app.repositories.stamping.stamping_repository import (
-    StampingPartRepository,
-    StampingProcessRepository,
-)
+from app.repositories.stamping.part.process import StampingProcessRepository
+from app.repositories.stamping.part.repository import StampingPartRepository
 from app.schemas.dto.stamping_part_dto import StampingCascadeFilterQuery, StampingPartQuery
 from app.schemas.vo.stamping_vo import (
     StampingCascadeFilterOptionsVO,
@@ -18,9 +16,9 @@ from app.schemas.vo.stamping_vo import (
     StampingPartListSummaryVO,
     StampingPartWithProcessesResponse,
 )
-from app.services.masterdata.location.location_service import LocationService
-from app.services.masterdata.supplier import SupplierService
-from app.services.masterdata.vehicle_model import VehicleModelService
+from app.services.masterdata.location.service import LocationService
+from app.services.masterdata.supplier.service import SupplierService
+from app.services.masterdata.vehicle_model.service import VehicleModelService
 
 
 def count_parts(repository: StampingPartRepository, db: Session) -> int:

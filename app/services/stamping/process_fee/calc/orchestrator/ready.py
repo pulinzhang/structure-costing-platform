@@ -7,12 +7,12 @@ from typing import NamedTuple
 from sqlalchemy.orm import Session
 
 from app.exceptions.base import BusinessException
-from app.repositories.stamping.stamping_process_fee_repository import (
+from app.repositories.stamping.part.repository import StampingPartRepository
+from app.repositories.stamping.process_fee.repository import (
     StampingProcessFeeRepository,
 )
-from app.repositories.stamping.stamping_repository import StampingPartRepository
 from app.schemas.vo.stamping_process_fee_vo import StampingProcessFeeCalcReadyVO
-from app.services.masterdata.vehicle_model import VehicleModelService
+from app.services.masterdata.vehicle_model.service import VehicleModelService
 from app.services.stamping.process_fee.calc.orchestrator.deps import ProcessFeeCalcDeps
 
 

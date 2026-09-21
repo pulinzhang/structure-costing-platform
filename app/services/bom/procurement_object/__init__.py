@@ -1,5 +1,4 @@
-"""
-采购对象清单服务包
+"""采购对象清单服务包
 
 改前先读：docs/bom/bom-procurement-objects-design.md 文首「改前必读」+ §14。
 指定对方：docs/bom/bom-procurement-object-supplier-design.md。
@@ -18,12 +17,8 @@
   audit_service.py       确认 / 按范围审核、反审核、删除
   supplier_template.py   导入窄表第一页 / 填写说明
   supplier_upload_service.py  下载模板 + 上传改供应商
-  export.py              Excel 导出门面
-  columns.py / styles.py / values.py / workbook.py / export_service.py
+  export/service.py      Excel 导出
+  columns.py / styles.py / values.py / workbook.py
   mapping.py             ORM → VO；树根期；scope_from_query
   service.py             门面：查询 + 委托上述服务
 """
-
-from app.services.bom.procurement_object.service import BomProcurementObjectService
-
-__all__ = ["BomProcurementObjectService"]

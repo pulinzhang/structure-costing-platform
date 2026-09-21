@@ -4,10 +4,10 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 
-from app.repositories.stamping.die_fee_repository import StampingDieFeeRepository
-from app.repositories.stamping.die_unit_price_repository import StampingDieUnitPriceRepository
-from app.repositories.stamping.stamping_die_repository import StampingDiePartRepository
-from app.repositories.stamping.stamping_part_repository import StampingPartRepository
+from app.repositories.stamping.die.repository import StampingDiePartRepository
+from app.repositories.stamping.die.unit_price import StampingDieUnitPriceRepository
+from app.repositories.stamping.die_fee.repository import StampingDieFeeRepository
+from app.repositories.stamping.part.repository import StampingPartRepository
 from app.services.stamping.die_fee.calc.calc_log_service import DieFeeCalcLogService
 from app.services.stamping.die_fee.calc.part_calculator import DieFeePartCalculator
 

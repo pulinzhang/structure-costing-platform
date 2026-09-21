@@ -30,7 +30,7 @@ from app.schemas.vo.stamping_scrap_price_vo import (
     StampingScrapPriceMonthSummaryVO,
 )
 from app.schemas.vo.user_vo import UserVO
-from app.services.masterdata.location.location_service import LocationService
+from app.services.masterdata.location.service import LocationService
 
 logger = logging.getLogger("service.stamping_scrap_price.crud")
 

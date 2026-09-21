@@ -37,9 +37,37 @@ from app.schemas.vo.bom_welding_fee_vo import (
     WeldingFeeListSummaryVO,
 )
 from app.schemas.vo.user_vo import UserVO
+from app.services.bom.bom.period import BomPeriodService
 from app.services.bom.welding_fee.fee_math import resolve_final_welding_fee
-from app.services.masterdata.location.location_service import LocationService
-from app.services.masterdata.vehicle_model import VehicleModelService
+from app.services.masterdata.location.service import LocationService
+from app.services.masterdata.vehicle_model.service import VehicleModelService
+
+
+def _fee_tree_root_versions(db: Session, records: list[BomWeldingFee]) -> dict[int, str]:
+    breakdown_ids = [
+        int(record.source_breakdown_node_id)
+        for record in records
+        if record.source_breakdown_node_id
+    ]
+    if not breakdown_ids:
+        return {}
+    nodes = BomWeldingProcessBreakdownRepository().list_nodes_by_ids(db, breakdown_ids)
+    by_breakdown = {int(node.id): node for node in nodes}
+    by_source = BomPeriodService().map_tree_root_version_by_node_id(
+        db,
+        [int(node.source_node_id) for node in nodes if node.source_node_id],
+    )
+    result: dict[int, str] = {}
+    for record in records:
+        if not record.source_breakdown_node_id:
+            continue
+        breakdown = by_breakdown.get(int(record.source_breakdown_node_id))
+        if breakdown is None or not breakdown.source_node_id:
+            continue
+        overlay = by_source.get(int(breakdown.source_node_id))
+        if overlay:
+            result[int(record.id)] = overlay
+    return result
 
 
 def _normalize_scope(
@@ -125,12 +153,18 @@ class BomWeldingFeeService:
                     summary=summary,
                 )
                 return [], 0, empty_filters
+        source_node_ids = BomPeriodService().node_ids_for_l0_version(
+            db,
+            bom_version=query.bom_version,
+            locations=locations,
+            vehicle_model=query.vehicle_model,
+        )
         rows, total = self.fee_repo.paginate(
             db,
             year=query.year,
             locations=locations,
             vehicle_model=query.vehicle_model,
-            bom_version=query.bom_version,
+            source_node_ids=source_node_ids,
             part_number=query.part_number,
             audit_status=query.audit_status,
             calc_status=query.calc_status,
@@ -146,7 +180,7 @@ class BomWeldingFeeService:
                 year=query.year,
                 locations=locations,
                 vehicle_model=query.vehicle_model,
-                bom_version=query.bom_version,
+                source_node_ids=source_node_ids,
                 part_number=query.part_number,
                 audit_status=query.audit_status,
                 levels=levels,
@@ -176,9 +210,13 @@ class BomWeldingFeeService:
             if r.source_breakdown_node_id and not (r.weld_info_raw or "").strip()
         ]
         weld_map = self.breakdown_repo.map_weld_info_by_ids(db, need_ids) if need_ids else {}
+        versions = _fee_tree_root_versions(db, records)
         result: list[BomWeldingFeeVO] = []
         for record in records:
             vo = BomWeldingFeeVO.model_validate(record)
+            overlay = versions.get(int(record.id))
+            if overlay:
+                vo.bom_version = overlay
             if not (vo.weld_info_raw or "").strip() and record.source_breakdown_node_id:
                 fallback = weld_map.get(int(record.source_breakdown_node_id))
                 if fallback:
@@ -196,12 +234,18 @@ class BomWeldingFeeService:
             vehicle_model=dto.vehicle_model,
             bom_version=dto.bom_version,
         )
+        source_node_ids = BomPeriodService().node_ids_for_l0_version(
+            db,
+            bom_version=bom_version,
+            location=location,
+            vehicle_model=vehicle_model,
+        )
         skipped = self.fee_repo.count_by_scope_and_statuses(
             db,
             year=dto.year,
             location=location,
             vehicle_model=vehicle_model,
-            bom_version=bom_version,
+            source_node_ids=source_node_ids,
             statuses=[AUDIT_APPROVED],
             level=dto.level,
             levels=dto.levels,
@@ -211,7 +255,7 @@ class BomWeldingFeeService:
             year=dto.year,
             location=location,
             vehicle_model=vehicle_model,
-            bom_version=bom_version,
+            source_node_ids=source_node_ids,
             level=dto.level,
             levels=dto.levels,
         )
@@ -239,13 +283,19 @@ class BomWeldingFeeService:
         operator = display_name(current_user)
         if not operator:
             raise BusinessException("无法识别当前登录用户")
+        source_node_ids = BomPeriodService().node_ids_for_l0_version(
+            db,
+            bom_version=bom_version,
+            location=location,
+            vehicle_model=vehicle_model,
+        )
 
         skipped = self.fee_repo.count_by_scope_and_statuses(
             db,
             year=dto.year,
             location=location,
             vehicle_model=vehicle_model,
-            bom_version=bom_version,
+            source_node_ids=source_node_ids,
             statuses=[AUDIT_APPROVED],
             level=dto.level,
             levels=dto.levels,
@@ -255,7 +305,7 @@ class BomWeldingFeeService:
             year=dto.year,
             location=location,
             vehicle_model=vehicle_model,
-            bom_version=bom_version,
+            source_node_ids=source_node_ids,
             audited_by=operator,
             audited_at=now(),
             audit_remark=(dto.audit_remark or "").strip() or None,
@@ -290,13 +340,19 @@ class BomWeldingFeeService:
         operator = display_name(current_user)
         if not operator:
             raise BusinessException("无法识别当前登录用户")
+        source_node_ids = BomPeriodService().node_ids_for_l0_version(
+            db,
+            bom_version=bom_version,
+            location=location,
+            vehicle_model=vehicle_model,
+        )
 
         skipped = self.fee_repo.count_by_scope_and_statuses(
             db,
             year=dto.year,
             location=location,
             vehicle_model=vehicle_model,
-            bom_version=bom_version,
+            source_node_ids=source_node_ids,
             statuses=[AUDIT_PENDING, AUDIT_REJECTED],
             level=dto.level,
             levels=dto.levels,
@@ -306,7 +362,7 @@ class BomWeldingFeeService:
             year=dto.year,
             location=location,
             vehicle_model=vehicle_model,
-            bom_version=bom_version,
+            source_node_ids=source_node_ids,
             reverse_audited_by=operator,
             reverse_audited_at=now(),
             reverse_audit_remark=remark,
@@ -350,9 +406,9 @@ class BomWeldingFeeService:
             locations = LocationService().expand_for_query(db, location)
             if not locations:
                 return []
-        return self.fee_repo.get_distinct_bom_versions(
+        return BomPeriodService().list_l0_versions(
             db,
-            year=year,
             locations=locations,
             vehicle_model=vehicle_model,
+            year=year,
         )

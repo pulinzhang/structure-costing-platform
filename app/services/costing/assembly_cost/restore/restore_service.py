@@ -18,7 +18,7 @@ from app.models.stamping.process_fee import StampingProcessFee
 from app.models.yishiyiyi.scrap_price import StampingScrapPrice
 from app.models.yishiyiyi.steel_base_price import SteelBasePrice
 from app.repositories.bom.annual_part_price_repository import BomAnnualPartPriceRepository
-from app.repositories.bom.bom_repository import BomNodeRepository
+from app.repositories.bom.bom.node import BomNodeRepository
 from app.repositories.bom.packaging_transport_fee_repository import (
     BomPackagingTransportFeeRepository,
 )
@@ -31,9 +31,9 @@ from app.repositories.costing.stamping_part_cost.stamping_part_cost_repository i
 )
 from app.repositories.costing.steel_price.steel_price_repository import SteelPriceRepository
 from app.repositories.file_trace.upload_file_repository import UploadFileRepository
-from app.repositories.stamping.die_fee_repository import StampingDieFeeRepository
-from app.repositories.stamping.gauge_fee_repository import StampingGaugeFeeRepository
-from app.repositories.stamping.stamping_process_fee_repository import (
+from app.repositories.stamping.die_fee.repository import StampingDieFeeRepository
+from app.repositories.stamping.gauge_fee.repository import StampingGaugeFeeRepository
+from app.repositories.stamping.process_fee.repository import (
     StampingProcessFeeRepository,
 )
 from app.repositories.yishiyiyi.base_price.steel_base_price_repository import (
@@ -65,7 +65,7 @@ from app.services.costing.assembly_cost.restore.money import _money
 from app.services.costing.assembly_cost.restore.stamping import RestoreStamping
 from app.services.costing.assembly_cost.restore.tree import RestoreTree
 from app.services.costing.assembly_cost.restore.welding import RestoreWelding
-from app.services.settings.system.settings_service import SettingsService
+from app.services.settings.system.service import SettingsService
 
 
 class AssemblyCostRestoreService:

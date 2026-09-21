@@ -1,5 +1,1 @@
-"""系统设置 Repository。"""
-
-from app.repositories.settings.system.system_config_repository import SystemConfigRepository
-
-__all__ = ["SystemConfigRepository"]
+"""系统参数仓储。按模块 import，不要在本文件汇总。"""

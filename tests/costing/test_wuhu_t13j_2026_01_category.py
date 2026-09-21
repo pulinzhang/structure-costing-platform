@@ -19,7 +19,9 @@ from app.services.costing.steel_price.calc.models import (
 from app.services.costing.steel_price.calc.steps.apply_adjustments import AdjustmentApplier
 from app.services.costing.steel_price.calc.steps.enrich_base_price import BasePriceEnricher
 from app.services.costing.steel_price.calc.steps.load_materials import MaterialThicknessLoader
-from app.services.masterdata.steel_grade_category import SteelGradeCategoryService
+from app.services.masterdata.steel_grade_category.service import (
+    SteelGradeCategoryService,
+)
 
 YEAR = 2026
 MONTH = 1

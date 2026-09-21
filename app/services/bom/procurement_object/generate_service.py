@@ -21,7 +21,7 @@ from app.common.engineering_change_gates import (
 from app.common.timezone import now
 from app.common.vehicle_model import normalize_vehicle_model
 from app.exceptions.base import BusinessException
-from app.repositories.bom.bom_repository import BomNodeRepository
+from app.repositories.bom.bom.node import BomNodeRepository
 from app.repositories.bom.procurement_object_repository import BomProcurementObjectRepository
 from app.schemas.dto.bom_procurement_object_dto import (
     BomProcurementObjectGenerateDTO,
@@ -40,8 +40,8 @@ from app.services.bom.procurement_object.generate_log_service import (
 )
 from app.services.bom.procurement_object.row_write import ConfirmByNode, build_object_row_write
 from app.services.bom.procurement_object.snapshot_scope import lookup_snapshot, require_snapshot
-from app.services.masterdata.location.location_service import LocationService
-from app.services.masterdata.vehicle_model import VehicleModelService
+from app.services.masterdata.location.service import LocationService
+from app.services.masterdata.vehicle_model.service import VehicleModelService
 
 logger = logging.getLogger("service.bom.procurement_object.generate")
 

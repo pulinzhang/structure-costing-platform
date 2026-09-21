@@ -2,7 +2,7 @@
 
 主表按节点纵向合并，右侧工艺明细分行。
 
-对外入口：`export_service.py`。
+对外入口：`export.service.BomWeldingFeeExportService`。
 
 ## 职责
 

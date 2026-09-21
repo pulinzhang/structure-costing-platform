@@ -14,7 +14,9 @@ from typing import Any
 
 from openpyxl.worksheet.worksheet import Worksheet
 
-from app.parsers.yishiyiyi.policy.handlers.base_handler import BaseSheetHandler
+from app.parsers.yishiyiyi.policy.handlers.base_handler.base_handler import (
+    BaseSheetHandler,
+)
 
 # 马钢右侧宽度块
 _W_GRADE_COL = 15

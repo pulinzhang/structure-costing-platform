@@ -15,7 +15,7 @@ from sqlalchemy.orm import Session
 
 from app.common.audit import display_name
 from app.exceptions.base import BusinessException
-from app.schemas.common import DeletedCountVO
+from app.schemas.common.deleted_count import DeletedCountVO
 from app.schemas.dto.stamping_die_fee_dto import StampingDieFeeCalcDTO
 from app.schemas.vo.async_task_vo import AsyncTaskAcceptedVO
 from app.schemas.vo.stamping_die_fee_vo import (
@@ -24,15 +24,17 @@ from app.schemas.vo.stamping_die_fee_vo import (
     StampingDieFeeCalcResultVO,
 )
 from app.schemas.vo.user_vo import UserVO
-from app.services.async_task import (
+from app.services.async_task.service import (
     TASK_TYPE_STAMPING_DIE_FEE_CALC,
     AsyncTaskService,
+)
+from app.services.async_task.worker_runner import (
+    ProgressCallback,
     WorkerTaskOutcome,
     calc_status_label,
     outcome_from_calc_status,
 )
-from app.services.async_task.worker_runner import ProgressCallback
-from app.services.masterdata.vehicle_model import VehicleModelService
+from app.services.masterdata.vehicle_model.service import VehicleModelService
 from app.services.stamping.die_fee.calc.constants import APPROVED_SCOPE_MESSAGE
 from app.services.stamping.die_fee.calc.orchestrator.batch_engine import (
     BatchCalculationEngine,

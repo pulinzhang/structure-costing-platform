@@ -5,7 +5,6 @@ from __future__ import annotations
 from dataclasses import dataclass
 
 from app.repositories.bom.annual_part_price_repository import BomAnnualPartPriceRepository
-from app.repositories.bom.bom_repository import BomNodeRepository, BomSnapshotRepository
 from app.repositories.bom.packaging_transport_fee_repository import (
     BomPackagingTransportFeeRepository,
 )
@@ -19,7 +18,7 @@ from app.repositories.costing.stamping_part_cost.stamping_part_cost_repository i
 from app.services.costing.assembly_cost.calc.calc_log_service import (
     AssemblyCostCalcLogService,
 )
-from app.services.settings.system.settings_service import SettingsService
+from app.services.settings.system.service import SettingsService
 
 
 @dataclass(frozen=True, slots=True)
@@ -27,8 +26,6 @@ class AssemblyCalcDeps:
     cost_repo: AssemblyCostRepository
     calc_log_service: AssemblyCostCalcLogService
     settings_service: SettingsService
-    bom_snapshot_repo: BomSnapshotRepository
-    bom_node_repo: BomNodeRepository
     stamping_cost_repo: StampingPartCostRepository
     annual_price_repo: BomAnnualPartPriceRepository
     l0_welding_fee_repo: BomWeldingFeeRepository
@@ -41,8 +38,6 @@ def build_assembly_calc_deps() -> AssemblyCalcDeps:
         cost_repo=AssemblyCostRepository(),
         calc_log_service=AssemblyCostCalcLogService(),
         settings_service=SettingsService(),
-        bom_snapshot_repo=BomSnapshotRepository(),
-        bom_node_repo=BomNodeRepository(),
         stamping_cost_repo=StampingPartCostRepository(),
         annual_price_repo=BomAnnualPartPriceRepository(),
         l0_welding_fee_repo=BomWeldingFeeRepository(),

@@ -111,53 +111,39 @@ class BomWeldingFeeWrites:
         year: int,
         location: str,
         vehicle_model: str,
-        bom_version: str | None = None,
+        source_node_ids: set[int] | None = None,
         level: int | None = None,
         levels: list[int] | None = None,
     ) -> int:
-        fee_ids = [
-            row.id
-            for row in (
-                self._queries._scope_query(
-                    db,
-                    year=year,
-                    location=location,
-                    vehicle_model=vehicle_model,
-                    bom_version=bom_version,
-                    level=level,
-                    levels=levels,
-                )
-                .filter(BomWeldingFee.audit_status != AUDIT_APPROVED)
-                .with_entities(BomWeldingFee.id)
-                .all()
-            )
-        ]
-        if fee_ids:
-            (
-                db.query(BomWeldingFeeItem)
-                .filter(BomWeldingFeeItem.fee_id.in_(fee_ids))
-                .delete(synchronize_session=False)
-            )
+        fee_ids = self._queries.list_ids_matching(
+            db,
+            year=year,
+            location=location,
+            vehicle_model=vehicle_model,
+            source_node_ids=source_node_ids,
+            exclude_audit_status=AUDIT_APPROVED,
+            level=level,
+            levels=levels,
+        )
+        if not fee_ids:
+            return 0
+        (
+            db.query(BomWeldingFeeItem)
+            .filter(BomWeldingFeeItem.fee_id.in_(fee_ids))
+            .delete(synchronize_session=False)
+        )
         count = (
-            self._queries._scope_query(
-                db,
-                year=year,
-                location=location,
-                vehicle_model=vehicle_model,
-                bom_version=bom_version,
-                level=level,
-                levels=levels,
-            )
-            .filter(BomWeldingFee.audit_status != AUDIT_APPROVED)
+            db.query(BomWeldingFee)
+            .filter(BomWeldingFee.id.in_(fee_ids))
             .delete(synchronize_session=False)
         )
         db.flush()
         logger.info(
-            "批量删除未审核焊接费: year=%s location=%s vehicle=%s version=%s count=%s",
+            "批量删除未审核焊接费: year=%s location=%s vehicle=%s source_nodes=%s count=%s",
             year,
             location,
             vehicle_model,
-            bom_version,
+            None if source_node_ids is None else len(source_node_ids),
             count,
         )
         return int(count)
@@ -169,7 +155,7 @@ class BomWeldingFeeWrites:
         year: int,
         location: str,
         vehicle_model: str,
-        bom_version: str | None = None,
+        source_node_ids: set[int] | None = None,
         audited_by: str,
         audited_at: datetime,
         audit_remark: str | None,
@@ -185,16 +171,20 @@ class BomWeldingFeeWrites:
         }
         if updated_by is not None:
             values["updated_by"] = updated_by
+        ids = self._queries.list_ids_matching(
+            db,
+            year=year,
+            location=location,
+            vehicle_model=vehicle_model,
+            source_node_ids=source_node_ids,
+            audit_statuses=[AUDIT_PENDING, AUDIT_REJECTED],
+            level=level,
+            levels=levels,
+        )
+        if not ids:
+            return 0
         count = query_update(
-            self._queries._scope_query(
-                db,
-                year=year,
-                location=location,
-                vehicle_model=vehicle_model,
-                bom_version=bom_version,
-                level=level,
-                levels=levels,
-            ).filter(BomWeldingFee.audit_status.in_([AUDIT_PENDING, AUDIT_REJECTED])),
+            db.query(BomWeldingFee).filter(BomWeldingFee.id.in_(ids)),
             values,
         )
         db.flush()
@@ -207,7 +197,7 @@ class BomWeldingFeeWrites:
         year: int,
         location: str,
         vehicle_model: str,
-        bom_version: str | None = None,
+        source_node_ids: set[int] | None = None,
         reverse_audited_by: str,
         reverse_audited_at: datetime,
         reverse_audit_remark: str,
@@ -223,16 +213,20 @@ class BomWeldingFeeWrites:
         }
         if updated_by is not None:
             values["updated_by"] = updated_by
+        ids = self._queries.list_ids_matching(
+            db,
+            year=year,
+            location=location,
+            vehicle_model=vehicle_model,
+            source_node_ids=source_node_ids,
+            audit_statuses=[AUDIT_APPROVED],
+            level=level,
+            levels=levels,
+        )
+        if not ids:
+            return 0
         count = query_update(
-            self._queries._scope_query(
-                db,
-                year=year,
-                location=location,
-                vehicle_model=vehicle_model,
-                bom_version=bom_version,
-                level=level,
-                levels=levels,
-            ).filter(BomWeldingFee.audit_status == AUDIT_APPROVED),
+            db.query(BomWeldingFee).filter(BomWeldingFee.id.in_(ids)),
             values,
         )
         db.flush()

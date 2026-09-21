@@ -8,8 +8,9 @@ from sqlalchemy.orm import Session
 
 from app.exceptions.base import BusinessException
 from app.schemas.vo.bom_welding_fee_vo import BomWeldingFeeCalcReadyVO, WeldingFeeLevelReadyVO
+from app.services.bom.bom.period import BomPeriodService
 from app.services.bom.welding_fee.calc.orchestrator.deps import WeldingFeeCalcDeps
-from app.services.masterdata.vehicle_model import VehicleModelService
+from app.services.masterdata.vehicle_model.service import VehicleModelService
 
 
 def collect_calc_ready(
@@ -36,11 +37,13 @@ def collect_calc_ready(
             message=str(exc),
         )
     prices = deps.unit_price_repo.list_by_location_year(db, location, year)
-    nodes = deps.breakdown_repo.list_overlapping_year(
+    nodes = deps.breakdown_repo.list_by_source_node_ids(
         db,
-        location=location,
-        vehicle_model=vehicle_model,
-        year=year,
+        list(
+            BomPeriodService().node_ids_overlapping_year(
+                db, location=location, vehicle_model=vehicle_model, year=year
+            )
+        ),
     )
     grouped: dict[int, list[int]] = defaultdict(list)
     for node in nodes:

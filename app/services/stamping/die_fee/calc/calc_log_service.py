@@ -15,10 +15,10 @@ from sqlalchemy.orm import Session
 from app.common.timezone import now
 from app.exceptions.base import BusinessException, NotFoundException
 from app.models.stamping.die_fee_calc_log import StampingDieFeeCalcLog
-from app.repositories.stamping.die_fee_calc_log_repository import (
+from app.repositories.stamping.die_fee.calc_log import (
     StampingDieFeeCalcLogRepository,
 )
-from app.schemas.common import DeletedCountVO
+from app.schemas.common.deleted_count import DeletedCountVO
 from app.schemas.dto.stamping_die_fee_dto import (
     DieFeeCalcLogCreate,
     DieFeeCalcLogPatch,
@@ -32,9 +32,15 @@ from app.services.stamping.die_fee.calc.constants import (
     STATUS_FAILED,
     STATUS_PROCESSING,
 )
-from app.services.stamping.process_fee.calc.models import DuplicateScopeCalcError
 
 logger = logging.getLogger("service.stamping.die_fee.calc.log")
+
+
+class DuplicateScopeCalcError(BusinessException):
+    """同一计算范围已有进行中的任务。"""
+
+    def __init__(self, message: str = DUPLICATE_SCOPE_CALC_MESSAGE) -> None:
+        super().__init__(message=message, code=409)
 
 
 class DieFeeCalcLogService:

@@ -27,7 +27,8 @@ from app.models.bom.procurement_object_generate_log import (  # noqa: F401
 from app.models.masterdata.location import Location, LocationAlias  # noqa: F401
 from app.models.masterdata.supplier import Supplier, SupplierAlias  # noqa: F401
 from app.models.masterdata.vehicle_model import VehicleModel
-from app.repositories.bom.bom_repository import BomNodeRepository, BomSnapshotRepository
+from app.repositories.bom.bom.node import BomNodeRepository
+from app.repositories.bom.bom.snapshot import BomSnapshotRepository
 from app.repositories.masterdata.location.location_repository import LocationRepository
 from app.schemas.dto.bom_dto import BomNodeWrite, BomSnapshotWrite
 from app.schemas.dto.bom_procurement_object_dto import (
@@ -43,10 +44,10 @@ from app.schemas.dto.bom_procurement_object_dto import (
 )
 from app.schemas.dto.location_dto import LocationAliasInsert, LocationInsert
 from app.schemas.dto.supplier_dto import SupplierCreateDTO
-from app.services.bom.procurement_object.export import BomProcurementObjectExportService
+from app.services.bom.procurement_object.export.service import BomProcurementObjectExportService
 from app.services.bom.procurement_object.insert_service import BomProcurementObjectInsertService
 from app.services.bom.procurement_object.service import BomProcurementObjectService
-from app.services.masterdata.supplier import SupplierService
+from app.services.masterdata.supplier.service import SupplierService
 
 
 @pytest.fixture()
@@ -384,28 +385,74 @@ def test_engineering_change_rollback_delete_keeps_header_when_rows_remain(db: Se
     assert service.repository.get_object_by_id(db, target_id) is None
 
 
-def test_engineering_change_rollback_deletes_empty_header(db: Session) -> None:
-    """EC 建空头插行后全部回滚：头须删掉（不依赖 procurement_list 效果链接）。"""
+def test_insert_for_new_tree_requires_header(db: Session) -> None:
     _seed_tree(db)
     snapshot = db.query(BomSnapshot).one()
+    with pytest.raises(BusinessException, match="采购对象清单"):
+        BomProcurementObjectInsertService().insert_for_new_tree(
+            db,
+            snapshot_id=snapshot.id,
+            new_l0_id=db.query(BomNode).filter(BomNode.level == 0).one().id,
+            old_l0_id=None,
+            current_user=SYSTEM_USER,
+        )
+
+
+def test_engineering_change_rollback_keeps_generated_header(db: Session) -> None:
+    """先 generate 再插行再回滚行：清单头仍在。"""
+    _seed_tree(db)
     service = BomProcurementObjectService()
+    service.generate(db, _scope(), current_user=SYSTEM_USER)
+    snapshot = db.query(BomSnapshot).one()
+    old_l0 = db.query(BomNode).filter(BomNode.level == 0).one()
+    node_repo = BomNodeRepository()
+    new_l0 = node_repo.create(
+        db,
+        BomNodeWrite(
+            snapshot_id=snapshot.id,
+            level=0,
+            part_number="L0-EC",
+            node_role="supply",
+            created_by="tester",
+            updated_by="tester",
+            sort_no=0,
+            is_supply_unit=True,
+            excel_filename="t13j.xlsx",
+            excel_row=40,
+        ),
+    )
+    node_repo.create(
+        db,
+        BomNodeWrite(
+            snapshot_id=snapshot.id,
+            parent_id=new_l0.id,
+            level=1,
+            part_number="L1-EC",
+            node_role="make",
+            created_by="tester",
+            updated_by="tester",
+            sort_no=1,
+            part_name="加强板",
+            internal_number="ACA674099",
+            thickness_mm=Decimal("0.8000"),
+            thickness_text="T=0.8",
+            excel_filename="t13j.xlsx",
+            excel_row=41,
+        ),
+    )
+    db.flush()
     inserted_ids = BomProcurementObjectInsertService().insert_for_new_tree(
         db,
         snapshot_id=snapshot.id,
-        new_l0_id=db.query(BomNode).filter(BomNode.level == 0).one().id,
-        old_l0_id=None,
+        new_l0_id=new_l0.id,
+        old_l0_id=old_l0.id,
         current_user=SYSTEM_USER,
     )
     assert inserted_ids
-    header = service.repository.get_list_by_snapshot_id(db, snapshot.id)
-    assert header is not None
-    assert header.qa_passed is True
-
     for object_id in inserted_ids:
         service.delete_object_for_engineering_change_rollback(db, object_id)
     db.commit()
-
-    assert service.repository.get_list_by_snapshot_id(db, snapshot.id) is None
+    assert service.repository.get_list_by_snapshot_id(db, snapshot.id) is not None
 
 
 def test_confirm_skipped_when_approved(db: Session) -> None:

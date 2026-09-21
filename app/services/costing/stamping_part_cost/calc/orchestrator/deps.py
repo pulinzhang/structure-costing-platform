@@ -11,12 +11,12 @@ from app.repositories.costing.stamping_part_cost.stamping_part_cost_repository i
     StampingPartCostRepository,
 )
 from app.repositories.costing.steel_price.steel_price_repository import SteelPriceRepository
-from app.repositories.stamping.die_fee_repository import StampingDieFeeRepository
-from app.repositories.stamping.gauge_fee_repository import StampingGaugeFeeRepository
-from app.repositories.stamping.stamping_process_fee_repository import (
+from app.repositories.stamping.die_fee.repository import StampingDieFeeRepository
+from app.repositories.stamping.gauge_fee.repository import StampingGaugeFeeRepository
+from app.repositories.stamping.part.repository import StampingPartRepository
+from app.repositories.stamping.process_fee.repository import (
     StampingProcessFeeRepository,
 )
-from app.repositories.stamping.stamping_repository import StampingPartRepository
 from app.repositories.yishiyiyi.scrap_price.scrap_price_repository import (
     StampingScrapPriceRepository,
 )
@@ -31,7 +31,7 @@ from app.services.costing.stamping_part_cost.calc.resolvers import PriceResolver
 from app.services.costing.stamping_part_cost.calc.tailor_weld_calculator import (
     TailorWeldPartCostCalculator,
 )
-from app.services.settings.system.settings_service import SettingsService
+from app.services.settings.system.service import SettingsService
 
 
 @dataclass(frozen=True, slots=True)

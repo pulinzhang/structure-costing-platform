@@ -10,7 +10,7 @@ from sqlalchemy.orm import Session
 from app.common.audit import audit_create
 from app.exceptions.base import BusinessException
 from app.parsers.masterdata.supplier_parser import parse_supplier_excel
-from app.repositories.masterdata.supplier import SupplierRepository
+from app.repositories.masterdata.supplier.supplier_repository import SupplierRepository
 from app.schemas.dto.supplier_dto import SupplierAliasInsert, SupplierInsert
 from app.schemas.vo.supplier_vo import SupplierUploadResultVO
 from app.schemas.vo.user_vo import UserVO

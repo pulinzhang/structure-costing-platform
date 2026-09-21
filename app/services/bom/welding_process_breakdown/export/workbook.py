@@ -65,6 +65,7 @@ class L0CheckWorkbookBuilder:
 
     def __init__(self) -> None:
         self.style = build_sheet_style()
+        self._version_overlay: dict[int, str] = {}
 
     def build(
         self,
@@ -72,6 +73,7 @@ class L0CheckWorkbookBuilder:
         *,
         filter_text: str,
         current_user: UserVO,
+        version_by_node_id: dict[int, str] | None = None,
     ) -> tuple[bytes, int]:
         style = self.style
         wb = Workbook()
@@ -80,6 +82,7 @@ class L0CheckWorkbookBuilder:
 
         self._write_banner(ws, filter_text=filter_text, node_count=len(nodes))
         header_row = self._write_headers(ws)
+        self._version_overlay = version_by_node_id or {}
 
         row_idx = header_row + 1
         export_row_count = 0
@@ -299,11 +302,17 @@ class L0CheckWorkbookBuilder:
         style = self.style
         parse_raw = node.parse_status or ""
         if write_main:
+            node_id = getattr(node, "id", None)
+            stored = node.bom_version or ""
+            if node_id is None:
+                display_version = stored
+            else:
+                display_version = self._version_overlay.get(int(node_id), stored)
             main_values: list[Any] = [
                 seq_no,
                 node.location or "",
                 node.vehicle_model or "",
-                node.bom_version or "",
+                display_version,
                 node.part_number or "",
                 part_short_code(node.part_number),
                 node.part_name or "",

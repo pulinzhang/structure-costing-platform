@@ -9,30 +9,30 @@
 
 from __future__ import annotations
 
-import tempfile
 from collections.abc import Sequence
-from pathlib import Path
 
 from sqlalchemy.orm import Session
 
 from app.common.audit import audit_create
-from app.common.engineering_change_gates import EFFECT_PROCESS_PART
+from app.common.engineering_change_gates import (
+    EFFECT_PROCESS_PART,
+    require_ec_sheet_versions,
+)
 from app.common.period import previous_month
-from app.parsers.engineering_change.sheet_extract import SHEET_PROCESS
 from app.parsers.stamping.models.part import Part
 from app.parsers.stamping.models.process import Process
-from app.parsers.stamping.stamping_parser import parse_stamping_excel
 from app.repositories.engineering_change.effect_link_repository import (
     EngineeringChangeEffectLinkInsert,
 )
 from app.schemas.dto.stamping_upload_dto import PartData, ProcessData
 from app.schemas.vo.user_vo import UserVO
-from app.services.stamping.part.engineering_change import (
+from app.services.engineering_change.upload.gates.process_gates import parse_process_confirmation
+from app.services.stamping.part.engineering.service import (
     EngineeringChangePartAsOfRow,
     EngineeringChangeProcessPartSpec,
+    StampingEngineeringService,
 )
-from app.services.stamping.stamping_service import StampingPartService
-from app.services.stamping.upload.persist.files import save_part_sketches
+from app.services.stamping.part.upload.persist.files import save_part_sketches
 
 
 def persist_process_parts(
@@ -47,24 +47,19 @@ def persist_process_parts(
     vehicle_model: str,
     current_user: UserVO,
     sort_no_start: int,
+    expected_version: str,
     expiry_year: int | None = None,
     expiry_month: int | None = None,
 ) -> tuple[list[EngineeringChangeEffectLinkInsert], int, str]:
-    if not file_content:
-        return [], 0, ""
-
-    with tempfile.NamedTemporaryFile(suffix=".xlsx", delete=False) as tmp:
-        tmp.write(file_content)
-        tmp_path = tmp.name
-    try:
-        parsed = parse_stamping_excel(tmp_path, sheet_title=SHEET_PROCESS)
-    finally:
-        Path(tmp_path).unlink(missing_ok=True)
-
+    parsed = parse_process_confirmation(file_content)
+    sheet_version = require_ec_sheet_versions(
+        bom_version=expected_version,
+        process_version=parsed.version,
+    )
     if not parsed.parts:
-        return [], 0, (parsed.version or "").strip()
+        return [], 0, sheet_version
 
-    stamping = StampingPartService()
+    stamping = StampingEngineeringService()
     as_of_rows = stamping.list_parts_as_of_for_engineering_change(
         db,
         location=location,
@@ -76,7 +71,6 @@ def persist_process_parts(
     prev_year, prev_month = previous_month(effective_year, effective_month)
     specs: list[EngineeringChangeProcessPartSpec] = []
     change_order_indexes: list[int] = []
-    sheet_version = (parsed.version or "").strip()
     sketch_urls = save_part_sketches(
         parsed.images_by_part,
         location=location,

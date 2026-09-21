@@ -7,13 +7,13 @@ from decimal import Decimal
 from sqlalchemy.orm import Session
 
 from app.models.stamping import StampingPart
-from app.repositories.stamping.stamping_part_repository import MaterialSpecRow
-from app.repositories.stamping.stamping_repository import StampingPartRepository
+from app.repositories.stamping.part.repository import StampingPartRepository
+from app.repositories.stamping.part.types import MaterialSpecRow
 from app.schemas.dto.stamping_part_dto import StampingMaterialQuery
 from app.schemas.vo.stamping_vo import StampingMaterialResponse, StampingPartListFilterOptions
-from app.services.masterdata.location.location_service import LocationService
-from app.services.masterdata.supplier import SupplierService
-from app.services.masterdata.vehicle_model import VehicleModelService
+from app.services.masterdata.location.service import LocationService
+from app.services.masterdata.supplier.service import SupplierService
+from app.services.masterdata.vehicle_model.service import VehicleModelService
 
 
 def nonempty_decimals(values: list[Decimal | None]) -> list[Decimal]:

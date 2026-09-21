@@ -27,7 +27,7 @@ from app.schemas.vo.steel_price_policy_vo import (
     PolicyOptionsResponse,
 )
 from app.schemas.vo.user_vo import UserVO
-from app.services.yishiyiyi.policy import SteelPricePolicyService
+from app.services.yishiyiyi.policy.service import SteelPricePolicyService
 from app.utils.response import ApiResponse
 
 router = APIRouter(prefix="/api/yishiyiyi/policy", tags=["钢价政策管理"])

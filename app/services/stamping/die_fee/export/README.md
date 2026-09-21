@@ -2,7 +2,7 @@
 
 左侧零件主表合并；中段各序模具费；右侧布点外形仅核对。
 
-对外入口：`export_service.py`。
+对外入口：`die_fee.export.service.StampingDieFeeExportService`。
 
 ## 职责
 

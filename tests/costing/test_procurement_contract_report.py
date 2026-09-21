@@ -26,7 +26,8 @@ from app.models.settings.system_config import SystemConfig
 from app.models.stamping.die import StampingDiePart
 from app.models.stamping.die_fee import StampingDieFee
 from app.models.stamping.gauge_fee import StampingGaugeFee
-from app.repositories.bom.bom_repository import BomNodeRepository, BomSnapshotRepository
+from app.repositories.bom.bom.node import BomNodeRepository
+from app.repositories.bom.bom.snapshot import BomSnapshotRepository
 from app.repositories.bom.procurement_object_repository import BomProcurementObjectRepository
 from app.schemas.dto.bom_dto import BomNodeWrite, BomSnapshotWrite
 from app.schemas.dto.bom_procurement_object_dto import (
@@ -40,7 +41,7 @@ from app.services.costing.procurement_contract_report.assemble import (
     seq_sort_key,
     sum_vehicle_total,
 )
-from app.services.costing.procurement_contract_report.export import (
+from app.services.costing.procurement_contract_report.export.orchestrator import (
     ProcurementContractReportExportOrchestrator,
 )
 from app.services.costing.procurement_contract_report.export.styles import (

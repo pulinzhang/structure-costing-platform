@@ -210,7 +210,7 @@ def _write_welding_sheet(
     sheet_title: str,
     omit_scope_columns: bool,
 ) -> None:
-    from app.services.bom.welding_fee.export_service import BomWeldingFeeExportService
+    from app.services.bom.welding_fee.export.service import BomWeldingFeeExportService
 
     BomWeldingFeeExportService().write_to_workbook(
         wb,

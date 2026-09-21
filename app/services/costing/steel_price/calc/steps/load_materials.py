@@ -7,7 +7,7 @@ from decimal import Decimal
 from sqlalchemy.orm import Session
 
 from app.services.costing.steel_price.calc.models import MaterialThicknessRow, SteelPriceCalcRequest
-from app.services.stamping.stamping_service import StampingPartService
+from app.services.stamping.part.service import StampingPartService
 
 
 class MaterialThicknessLoader:

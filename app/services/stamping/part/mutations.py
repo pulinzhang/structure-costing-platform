@@ -10,10 +10,8 @@ from sqlalchemy.orm import Session
 from app.common.audit import audit_create, display_name
 from app.exceptions import BusinessException, NotFoundException
 from app.models.stamping import StampingPart
-from app.repositories.stamping.stamping_repository import (
-    StampingPartRepository,
-    StampingProcessRepository,
-)
+from app.repositories.stamping.part.process import StampingProcessRepository
+from app.repositories.stamping.part.repository import StampingPartRepository
 from app.schemas.dto.stamping_part_dto import (
     StampingPartBatchDeleteDTO,
     StampingPartOffalUpdateDTO,
@@ -31,8 +29,10 @@ from app.schemas.vo.stamping_vo import (
     StampingProcessResponse,
 )
 from app.schemas.vo.user_vo import UserVO
-from app.services.masterdata.steel_grade_category import SteelGradeCategoryService
-from app.services.masterdata.supplier import SupplierService
+from app.services.masterdata.steel_grade_category.service import (
+    SteelGradeCategoryService,
+)
+from app.services.masterdata.supplier.service import SupplierService
 
 logger = logging.getLogger("service.stamping")
 

@@ -72,7 +72,7 @@ Parser 是**横向工具**：只被 Service 调用；禁止依赖 Router/Service
 ```
 app/models/stamping/      app/routers/stamping/     app/services/stamping/     app/repositories/stamping/
 app/models/costing/       app/routers/costing/      app/services/costing/      app/repositories/costing/
-app/models/file_trace/    app/routers/file_trace/   app/services/file_trace/   app/repositories/file_trace/
+app/models/file_trace/    app/routers/file_trace.py app/services/file_trace/   app/repositories/file_trace/
 app/models/yishiyiyi/     …
 app/parsers/stamping/     # 仅上传类切片有 Parser
 ```
@@ -122,11 +122,11 @@ stamping-costing-platform/
 │   ├── config.py / database.py
 │   ├── common/                  # 横切：permissions / audit / timezone / money …
 │   ├── models/{feature}/        # ORM（按垂直切片）；根 __init__ 仅供 main 注册表
-│   ├── schemas/                 # dto/ + vo/
-│   ├── repositories/{feature}/
-│   ├── services/{feature}/
-│   ├── routers/{feature}/
-│   ├── parsers/{feature}/       # 有文件解析的切片
+│   ├── schemas/                 # dto/ + vo/；任意层级 __init__.py 只作标记
+│   ├── repositories/{feature}/  # 任意层级 __init__.py 只作标记
+│   ├── services/{feature}/      # 路径形状以 BOM 为准；任意层级 __init__.py 只作标记
+│   ├── routers/{feature}.py     # 单职责叶子；仅拆职责才成包（crud/calc/upload/export）
+│   ├── parsers/{feature}/       # 有文件解析的切片；任意层级 __init__.py 只作标记
 │   └── utils/                   # 日志、ApiResponse 等
 ├── static/                      # 前端 SPA
 │   ├── index.html / login.html
@@ -158,6 +158,8 @@ stamping-costing-platform/
 ### Router 示例（示意）
 
 ```python
+from app.services.stamping.part.service import StampingPartService
+
 @router.get("/parts", response_model=ApiResponse[PageResult[PartVO]])
 def list_parts(
     db: Session = Depends(get_db),

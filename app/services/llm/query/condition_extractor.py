@@ -7,7 +7,10 @@ import re
 from typing import cast
 
 from app.schemas.llm.parser_draft import ParserDraft
-from app.services.llm.client import LlmClientError, OpenAiCompatibleClient
+from app.services.llm.client.openai_compatible import (
+    LlmClientError,
+    OpenAiCompatibleClient,
+)
 
 _EXTRACT_SYSTEM = """你是核价分析条件抽取器。用户用中文提问采购/核价相关问题。
 你只输出一个 JSON 对象，不要 Markdown，不要解释。

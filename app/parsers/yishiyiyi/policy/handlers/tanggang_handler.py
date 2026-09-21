@@ -17,7 +17,9 @@ from typing import Any
 from openpyxl.worksheet.worksheet import Worksheet
 
 from app.parsers.yishiyiyi.policy.boundary_parser import _Boundary
-from app.parsers.yishiyiyi.policy.handlers.base_handler import BaseSheetHandler
+from app.parsers.yishiyiyi.policy.handlers.base_handler.base_handler import (
+    BaseSheetHandler,
+)
 
 from .constants import GRADE_LABELS, parse_thickness_label
 
@@ -43,11 +45,11 @@ class TanggangSheetHandler(BaseSheetHandler):
         - 钢种行（DC01、DC03、"DC04及以上"）：grade_type = GRADE
         - 厚度行（"厚度≤1.5mm"、"厚度＞1.5mm"）：grade_type = THICKNESS_RANGE
         """
-        from ..models import ParsedPolicy
         from ..models.policy import (
             GRADE_TYPE_GRADE,
             GRADE_TYPE_THICKNESS_RANGE,
             POLICY_TYPE_WIDTH,
+            ParsedPolicy,
         )
 
         header_row = block["header_row"]

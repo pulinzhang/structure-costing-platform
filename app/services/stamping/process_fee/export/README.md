@@ -2,7 +2,7 @@
 
 左侧主表按零件合并；右侧工序明细一行一序。
 
-对外入口：`stamping_process_fee_export_service.py`。
+对外入口：`process_fee.export.service.StampingProcessFeeExportService`。禁止切片根再导出门面。
 
 ## 职责
 

@@ -14,9 +14,9 @@ from app.repositories.costing.engine.costing_engine_run_repository import (
 )
 from app.services.costing.engine.orchestrator.errors import RunDeletedError
 from app.services.costing.engine.orchestrator.prep import ensure_run
+from app.services.costing.engine.orchestrator.progress import ProgressNotifier
 from app.services.costing.engine.orchestrator.summary import build_summary
-from app.services.costing.engine.progress import ProgressNotifier
-from app.services.costing.engine.scope_discovery import DiscoveryResult
+from app.services.costing.engine.scope.discovery import DiscoveryResult
 
 if TYPE_CHECKING:
     from app.services.costing.engine.orchestrator.phases import PhaseCarry

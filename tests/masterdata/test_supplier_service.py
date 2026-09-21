@@ -21,7 +21,7 @@ from app.schemas.dto.supplier_dto import (
     SupplierCreateDTO,
     SupplierUpdateDTO,
 )
-from app.services.masterdata.supplier import SupplierService
+from app.services.masterdata.supplier.service import SupplierService
 
 
 @pytest.fixture

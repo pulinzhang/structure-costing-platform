@@ -27,7 +27,8 @@ from app.models.file_trace.upload_file import UploadFile
 from app.models.masterdata.location import Location
 from app.models.masterdata.supplier import Supplier
 from app.models.masterdata.vehicle_model import VehicleModel
-from app.services.bom.bom_service import BomService
+from app.services.bom.bom.node import BomNodeService
+from app.services.bom.bom.snapshot import BomSnapshotService
 
 LOCATION = "青岛"
 VEHICLE_MODEL = "T28"
@@ -135,7 +136,7 @@ def _add_node(db: Session, snapshot: BomSnapshot) -> BomNode:
 class TestBomDownstreamGate:
     def test_delete_snapshot_without_direct_downstream(self, memory_db: Session) -> None:
         snapshot = _add_snapshot(memory_db)
-        BomService().delete_snapshot(memory_db, snapshot.id)
+        BomSnapshotService().delete_snapshot(memory_db, snapshot.id)
         assert memory_db.get(BomSnapshot, snapshot.id) is None
 
     def test_delete_snapshot_blocked_by_procurement_then_ok(self, memory_db: Session) -> None:
@@ -154,14 +155,14 @@ class TestBomDownstreamGate:
         memory_db.commit()
 
         with pytest.raises(BusinessException) as caught:
-            BomService().delete_snapshot(memory_db, snapshot.id)
+            BomSnapshotService().delete_snapshot(memory_db, snapshot.id)
         assert caught.value.code == 409
         assert "采购对象清单" in caught.value.message
         assert "焊接工艺拆解" not in caught.value.message
 
         memory_db.delete(head)
         memory_db.commit()
-        BomService().delete_snapshot(memory_db, snapshot.id)
+        BomSnapshotService().delete_snapshot(memory_db, snapshot.id)
         assert memory_db.get(BomSnapshot, snapshot.id) is None
 
     def test_delete_snapshot_blocked_by_welding_breakdown(self, memory_db: Session) -> None:
@@ -185,7 +186,7 @@ class TestBomDownstreamGate:
         memory_db.commit()
 
         with pytest.raises(BusinessException) as caught:
-            BomService().delete_snapshot(memory_db, snapshot.id)
+            BomSnapshotService().delete_snapshot(memory_db, snapshot.id)
         assert caught.value.code == 409
         assert "焊接工艺拆解" in caught.value.message
 
@@ -240,14 +241,14 @@ class TestBomDownstreamGate:
         memory_db.commit()
 
         with pytest.raises(BusinessException) as caught:
-            BomService().delete_snapshot(memory_db, snapshot.id)
+            BomSnapshotService().delete_snapshot(memory_db, snapshot.id)
         assert caught.value.message == "仍被工程变更单引用，请先回滚相关变更后再删"
         assert memory_db.get(BomSnapshot, snapshot.id) is not None
 
         memory_db.query(EngineeringChangeOrder).delete()
         memory_db.query(EngineeringChangeUploadLog).delete()
         memory_db.commit()
-        BomService().delete_snapshot(memory_db, snapshot.id)
+        BomSnapshotService().delete_snapshot(memory_db, snapshot.id)
         assert memory_db.get(BomSnapshot, snapshot.id) is None
 
     def test_grandchildren_do_not_block(self, memory_db: Session) -> None:
@@ -278,14 +279,14 @@ class TestBomDownstreamGate:
         )
         memory_db.commit()
 
-        BomService().assert_bom_scope_unused(
+        BomSnapshotService().assert_bom_scope_unused(
             memory_db,
             location=LOCATION,
             vehicle_model=VEHICLE_MODEL,
             bom_version=BOM_VERSION,
             action="覆盖导入",
         )
-        BomService().delete_snapshot(memory_db, snapshot.id)
+        BomSnapshotService().delete_snapshot(memory_db, snapshot.id)
         assert memory_db.get(BomSnapshot, snapshot.id) is None
 
     def test_delete_node_blocked_by_procurement(self, memory_db: Session) -> None:
@@ -306,6 +307,6 @@ class TestBomDownstreamGate:
         memory_db.commit()
 
         with pytest.raises(BusinessException) as caught:
-            BomService().delete_node(memory_db, node.id)
+            BomNodeService().delete_node(memory_db, node.id)
         assert caught.value.code == 409
         assert memory_db.get(BomNode, node.id) is not None

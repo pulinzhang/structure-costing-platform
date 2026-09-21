@@ -1,6 +1,6 @@
-# 冲压零件 Repository（`part/`）
+# 冲压零件仓储（`part/`）
 
-对外入口：上一级 `stamping_part_repository.py` 的 `StampingPartRepository`。
+调本包：`repository.StampingPartRepository`、`process.StampingProcessRepository`、`tailor_weld_blank`。禁止切片根门面。
 
 ## 架构
 
@@ -16,6 +16,9 @@ StampingPartRepository
 
 | 模块 | 职责 |
 |------|------|
+| `repository.py` | 零件仓储门面（本包） |
+| `process.py` | 工序行 |
+| `tailor_weld_blank.py` | 拼焊子片 |
 | `queries.py` | 分页列表、导出加载、范围查询 |
 | `filter_options.py` | 下拉与级联筛选 |
 | `writes.py` | 创建/更新/按范围删零件+工序+拼焊子片 |

@@ -9,7 +9,7 @@ from sqlalchemy.orm import Session
 
 from app.exceptions.base import NotFoundException
 from app.models.bom.node import BomSnapshot
-from app.repositories.bom.bom_repository import BomSnapshotRepository
+from app.repositories.bom.bom.snapshot import BomSnapshotRepository
 
 
 def lookup_snapshot(

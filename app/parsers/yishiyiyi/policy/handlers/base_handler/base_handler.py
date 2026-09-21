@@ -23,8 +23,8 @@ from openpyxl.worksheet.worksheet import Worksheet
 
 from app.parsers.yishiyiyi.policy.boundary_parser import _Boundary
 from app.parsers.yishiyiyi.policy.handlers.constants import BLANK_LIMIT
-from app.parsers.yishiyiyi.policy.models import ParsedPolicy
 from app.parsers.yishiyiyi.policy.models.ladder_item import ParsedLadderItem
+from app.parsers.yishiyiyi.policy.models.policy import ParsedPolicy
 
 from .policy_assembler import PolicyAssembler
 from .sheet_scanner import SheetScanner

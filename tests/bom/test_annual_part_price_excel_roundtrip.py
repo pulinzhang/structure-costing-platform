@@ -11,7 +11,7 @@ from openpyxl import load_workbook
 
 from app.common.audit import SYSTEM_USER
 from app.parsers.bom.annual_part_price_parser import parse_annual_part_price_excel
-from app.services.bom.annual_part_price.export_service import BomAnnualPartPriceExportService
+from app.services.bom.annual_part_price.export.service import BomAnnualPartPriceExportService
 
 
 def test_export_includes_scope_audit_and_roundtrips() -> None:

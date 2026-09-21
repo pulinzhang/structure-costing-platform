@@ -487,7 +487,7 @@ app/services/llm/
 
 app/repositories/llm/     # 各主题 analysis repo、scope_options、report_repository
 app/schemas/llm/
-app/routers/llm/
+app/routers/llm.py
 static/js/llm-assistant/
 ```
 

@@ -5,7 +5,7 @@ from __future__ import annotations
 from decimal import Decimal
 from unittest.mock import MagicMock
 
-from app.repositories.llm.cost_analysis import L0CompositionLineRow
+from app.repositories.llm.cost_analysis.rows import L0CompositionLineRow
 from app.services.llm.analysis.shared.composition import (
     build_composition_anomalies,
     composition_risk_entry,

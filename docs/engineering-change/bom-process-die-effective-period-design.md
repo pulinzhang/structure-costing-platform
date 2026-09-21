@@ -58,7 +58,7 @@
 | 上传模具布点 | `#/stamping-die-upload` | `GET /api/stamping/die/filters`（年+月 → 可引入项目） | `POST /api/stamping/die/upload` Form：`location` + `vehicle_model` + file（异步） |
 | 模具清单 | `#/stamping-die-list` | `GET /api/stamping/die/parts`（`StampingDiePartQuery`：**必须**基地+项目，无年+月）；筛选项同年+月只问可引入 | 详情只 `PATCH /api/stamping/die/processes/{id}`（`alloc_ratio`）。`POST /batch-delete` 整项目；`GET /export` 无 as_of |
 
-落库 `die/upload_service.py`：`delete_scope(location, vehicle_model)` 整项目替换，再 `preserve_die_alloc` 按零件号+工序号沿用分摊。UNIQUE `(location, vehicle_model, part_number)` — **同号只能一行**。`version` / `stamping_supplier` 可从工艺回填，不是覆盖键。**冲压模具费计算按布点零件有效期与计算年做年交集**，见 §5.4；不要再用项目 `require_overlaps_year` 当取件 WHERE。
+落库 `die/upload/upload_service.py`：`delete_scope(location, vehicle_model)` 整项目替换，再 `preserve_die_alloc` 按零件号+工序号沿用分摊。UNIQUE `(location, vehicle_model, part_number)` — **同号只能一行**。`version` / `stamping_supplier` 可从工艺回填，不是覆盖键。**冲压模具费计算按布点零件有效期与计算年做年交集**，见 §5.4；不要再用项目 `require_overlaps_year` 当取件 WHERE。
 
 ---
 
@@ -316,7 +316,7 @@ L0 生效 <= 该年该月  且  （失效空  或  失效 >= 该年该月）
 
 ### 5.2 写入
 
-`die/upload_service.py`：**去掉** 整项目 `delete_scope`。
+`die/upload/upload_service.py`：**去掉** 整项目 `delete_scope`。
 
 第一次 SOP（该基地+项目尚无布点行）：整表插入，每件生失效抄项目起止（结束空则空）。其后按 `(location, vehicle_model, part_number)` 找 **这一行**（唯一键，至多一行）：有则更新尺寸/工序（`alloc_ratio` 仍按零件号+工序号沿用已改值；**生失效、`seq_no`、已有 `version` 不动**）；无这一号 → **拒绝整单**，指向工程变更。Excel 没有的号不删。补号 `DP-40-{项目}-流水` 扫描 **含已失效行已占用的号**，避免复号。
 
@@ -358,7 +358,8 @@ L0 生效 <= 该年该月  且  （失效空  或  失效 >= 该年该月）
 ```text
 拆解行 INNER JOIN bom_nodes ON source_node_id = bom_nodes.id
 树根 = level==0；树根 overlaps_year(year) → 收下整棵子树
-实现：app/repositories/bom/period_trees.py（node_ids_in_year_overlap_trees）
+实现：``period_trees.nodes_in_year_overlap_trees``；对外 ``BomPeriodService.node_ids_overlapping_year``
+月命中：``period_trees.nodes_in_as_of_trees``；对外 ``BomPeriodService.list_as_of_trees``
 ```
 
 **禁止** join `bom_snapshots` 问期（头上无这四列），也 **禁止** 用项目 `require_overlaps_year` 当取件 WHERE，也 **禁止** 用 L1/L2 本行生失效筛期。四年后改树期口径只改 `period_trees`。
@@ -369,7 +370,7 @@ L0 生效 <= 该年该月  且  （失效空  或  失效 >= 该年该月）
 
 | 分组 | 字段 | 说明 |
 |------|------|------|
-| 范围 | `location`, `vehicle_model`, `bom_version` | 现网已有。生成锁 / UNIQUE 用。`location` / `vehicle_model` 从 source 节点抄；`bom_version` **抄 snapshot 头**（工程变更节点可写变更字，UNIQUE 与引擎仍按头） |
+| 范围 | `location`, `vehicle_model`, `bom_version` | 现网已有。**拆解生成**找包 / 锁用 snapshot 头。行上 `bom_version` **抄所属 L0 树根**（列表/UNIQUE 认树根，不认 SOP 头）。`location` / `vehicle_model` 从 source 节点抄 |
 | 溯源 | `source_node_id` | 取期的钥匙。必须能命中 `bom_nodes.id` |
 | 溯源 | `snapshot_id` | 辅助；不是身份、不是取件钥匙 |
 | 时段 | （不落表） | 读 source 节点四列 |
@@ -393,7 +394,7 @@ bom_welding_process_breakdown_node.source_node_id  =  bom_nodes.id
 
 `source_node_id` 为空、节点已删、或爬不到 L0：该拆解行 **不参加** 年交集，须再生成。重导材料清单会换 `bom_nodes.id`，现网本就要再生成拆解，这条继续成立。
 
-范围三列：`location` / `vehicle_model` 从节点抄；`bom_version` 抄 snapshot 头（工程变更节点变更字不进拆解 UNIQUE）。它们改得少；**时段会经 §2.2 PATCH 独立变**，所以只 join、不抄。
+范围三列：`location` / `vehicle_model` 从节点抄；`bom_version` 抄所属 L0 树根（生成找包仍用 snapshot 头；列表/UNIQUE 认树根）。它们改得少；**时段会经 §2.2 PATCH 独立变**，所以只 join、不抄。
 
 ### 6.3 `#/bom-welding-fee-calc`：年 + 基地 + 项目
 
@@ -507,9 +508,9 @@ year, location, vehicle_model
 
 **本期必须定死，否则工程变更会卡住**
 
-1. **插入走同一套 Write。** `BomNodeWrite` / 工艺零件插入 / 布点零件插入必须含基地、项目、版本、生失效（BOM 节点还含 `seq_no`）。SOP 上传、以后的工程变更都调这套，不要把列只写在 upload 闭包里。工程变更种树 = 同一事务里：PATCH 旧 L0 失效到切点前一月 → insert 新树（生效=切点、失效抄项目结束月、`seq_no`=旧根）。不要走 `BomService.create_node`（强制节点版本=头）。SOP 上传不走「新号」分支。
+1. **插入走同一套 Write。** `BomNodeWrite` / 工艺零件插入 / 布点零件插入必须含基地、项目、版本、生失效（BOM 节点还含 `seq_no`）。SOP 上传、以后的工程变更都调这套，不要把列只写在 upload 闭包里。工程变更种树 = 同一事务里：PATCH 旧 L0 失效到切点前一月 → insert 新树（生效=切点、失效抄项目结束月、`seq_no`=旧根）。不要走 `BomNodeService.create_node`（强制节点版本=头）。SOP 上传不走「新号」分支。
 2. **有采购对象 / 焊接拆解不挡插新 L0。** `assert_bom_scope_unused` 只拦删 snapshot / 整包覆盖，不拦种树。工程变更写入后下游行已经在。
-3. **节点 `bom_version` 允许与头不同。** SOP 抄 D/09；工程变更新树写变更字，头仍 D/09。不要 CHECK / Service 断言行版本 = 头版本。拆解 / 焊接费行的 `bom_version` **抄 snapshot 头**，不要抄节点变更字（引擎 `discover_l0_scopes` 分组键是头；UNIQUE 含 `bom_version`）。
+3. **节点 `bom_version` 允许与头不同。** SOP 抄 D/09；工程变更新树写变更字，头仍 D/09。不要 CHECK / Service 断言行版本 = 头版本。**snapshot 只约束拆解生成（SOP 那一包）；焊接费计算和列表一样认树根，不认 SOP 头。** 拆解 / 焊接费行的 `bom_version` **抄所属 L0**，不要抄 snapshot 头。
 4. **`seq_no` 冻结。** SOP 第一次写入后，三块再导已有对象不得改 `seq_no`。工程变更 AB 继承 SOP 槽，不在本期做继承算法，但槽不能被再导冲掉。
 5. **同一 `seq_no` 撞月按事务结束状态校验。** 工程变更先截断旧根再生效新根；不要在截断前就因「将要插入的月」把整单打回去。生失效不进 UNIQUE。
 6. **子孙列有值 = 跟树根，不是独立切点。** 工程变更正文若写「子孙不写生失效」，意思是不独立改期；落库仍每个节点都写同值（与 §3.1 一致）。
@@ -518,7 +519,7 @@ year, location, vehicle_model
 
 **不是本期缺口（工程变更自己做）**
 
-工程变更 Excel / 变更头 / 按树对齐换号 / `seq_no` 继承写法 / 采购对象插行抄确认 / 焊接拆解从旧树结果抄到新树（主表+全部明细，禁止按焊信重拆；`bom_version` 抄头）。核价与引擎 as_of **已落地**。Parser / UNIQUE / 引擎发现键 **设计让步，不改**。工程变更写入只收窄三条整包写入门禁，见 [工程变更 §4.6](part-number-revision-design.md)。
+工程变更 Excel / 变更头 / 按树对齐换号 / `seq_no` 继承写法 / 采购对象插行抄确认 / 焊接拆解从旧树结果抄到新树（主表+全部明细，禁止按焊信重拆；行上 `bom_version` 抄树根）。核价与引擎 as_of **已落地**。拆解生成找包仍用 SOP 头；Parser **不改**。工程变更写入只收窄三条整包写入门禁，见 [工程变更 §4.6](part-number-revision-design.md)。
 
 ---
 
@@ -594,3 +595,4 @@ year, location, vehicle_model
 | 2026-09-18 | 采购对象列表：否决默认按月 as_of；默认包含已过期；对象行仍不落四列、join 树根。见采购对象 §14。 |
 | 2026-09-18 | 文首「本期仍不动：采购对象」改为已落地口径；与采购对象 §14 / 工程变更插行现网对齐。 |
 | 2026-09-18 | 焊接费取件改为 L0 树根年交集；禁止用 L1/L2 本行生失效筛期（防工程变更后子孙失效空漂进旧树）。 |
+| 2026-09-20 | **口径写死：** snapshot 只约束拆解生成（SOP 那一包）；焊接费计算和列表一样认树根，不认 SOP 头。拆解/费行 `bom_version` 抄 L0。 |

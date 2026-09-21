@@ -9,7 +9,7 @@ from sqlalchemy.orm import Session
 from app.common.audit import AUDIT_PENDING
 from app.schemas.dto.bom_procurement_object_dto import BomProcurementObjectWrite
 from app.services.bom.procurement_object.classify import SECTION_OBJECT, ClassifiedRow
-from app.services.masterdata.supplier import SupplierService
+from app.services.masterdata.supplier.service import SupplierService
 
 ConfirmTuple = tuple[str, str | None, datetime | None, str | None, str | None]
 # source_node_id → ConfirmTuple

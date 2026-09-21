@@ -15,10 +15,10 @@ from sqlalchemy.orm import Session
 from app.common.timezone import now
 from app.exceptions.base import NotFoundException
 from app.models.stamping import StampingProcessFeeCalcLog
-from app.repositories.stamping.stamping_process_fee_calc_log_repository import (
+from app.repositories.stamping.process_fee.calc_log import (
     StampingProcessFeeCalcLogRepository,
 )
-from app.schemas.common import DeletedCountVO
+from app.schemas.common.deleted_count import DeletedCountVO
 from app.schemas.dto.stamping_process_fee_dto import (
     ProcessFeeCalcLogCreate,
     ProcessFeeCalcLogPatch,
@@ -35,7 +35,7 @@ from app.services.stamping.process_fee.calc.constants import (
     STATUS_PROCESSING,
 )
 from app.services.stamping.process_fee.calc.models import DuplicateScopeCalcError
-from app.services.stamping.process_fee.scope import ALL_SUPPLIERS_LOCK, require_calc_scope
+from app.services.stamping.process_fee.rules.scope import ALL_SUPPLIERS_LOCK, require_calc_scope
 
 logger = logging.getLogger("service.stamping.process_fee.calc.log")
 

@@ -1,5 +1,1 @@
-"""使用帮助语料检索与执行（P1a）。"""
-
-from app.services.llm.usage.runner import UsageHelpRunner
-
-__all__ = ["UsageHelpRunner"]
+"""用法帮助。按模块 import，不要在本文件汇总。"""

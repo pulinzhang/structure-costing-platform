@@ -34,13 +34,13 @@ return persist_xxx_result(...)
 
 ## 职责降级
 
-业务判断 → `prep` 或 engine/pipeline；组装/写库 → `persist`；进度 → 本切片 `ProgressNotifier`（禁止抽到 `app/common/`）；字符串拼接 → prep/persist 的 detail 或 formatter。
+业务判断 → `prep` 或 engine/pipeline；组装/写库 → `persist`；进度 → 本切片 `ProgressNotifier`（禁止抽到 `app/common/`）；字符串拼接 → prep/persist 的 detail 或 formatter。拆 `prep.py` / `persist.py` **不是**给 `orchestrator/__init__.py` 开再导出例外。
 
 ## 命名
 
 - 类名以 `Orchestrator` 结尾
 - 主方法只允许 `calculate` / `execute` / `export`
 - 指挥文件必须是 `orchestrator.py` 或引擎的 `orchestrator/run_orchestrator.py`
-- `orchestrator/__init__.py` 只 `from .orchestrator import XxxOrchestrator`
+- `orchestrator/__init__.py` 只作包标记，禁止再导出；调用方写 `from …orchestrator.orchestrator import XxxOrchestrator`（引擎写 `…orchestrator.run_orchestrator`）
 
-合格样本：`costing/stamping_part_cost/calc/orchestrator/orchestrator.py`、`bom/welding_process_breakdown/export/orchestrator.py`
+合格样本：`bom/welding_fee/calc/orchestrator/orchestrator.py`（指挥包）、`bom/welding_process_breakdown/export/orchestrator.py`（指挥文件）、`costing/stamping_part_cost/calc/orchestrator/orchestrator.py`。

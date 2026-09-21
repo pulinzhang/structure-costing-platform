@@ -29,7 +29,7 @@ from app.schemas.vo.bom_procurement_object_vo import (
 from app.schemas.vo.user_vo import UserVO
 from app.services.bom.procurement_object.classify import SECTION_OBJECT
 from app.services.bom.procurement_object.mapping import row_to_vo
-from app.services.masterdata.supplier import SupplierService
+from app.services.masterdata.supplier.service import SupplierService
 
 logger = logging.getLogger("service.bom.procurement_object.audit")
 

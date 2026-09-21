@@ -36,8 +36,8 @@ from app.services.bom.procurement_object.supplier_template import (
 )
 from app.services.file_trace.path_utils import to_upload_relpath
 from app.services.file_trace.register import register_existing
-from app.services.masterdata.location.location_service import LocationService
-from app.services.masterdata.supplier import SupplierService
+from app.services.masterdata.location.service import LocationService
+from app.services.masterdata.supplier.service import SupplierService
 from app.utils.bom_procurement_object_supplier_archive import (
     save_procurement_object_supplier_upload,
 )

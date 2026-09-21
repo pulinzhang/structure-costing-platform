@@ -8,7 +8,7 @@ from types import SimpleNamespace
 import pytest
 
 from app.models.bom import BomSnapshot
-from app.repositories.bom.bom_repository import BomNodeRepository
+from app.repositories.bom.bom.node import BomNodeRepository
 from app.services.bom.procurement_object.classify import (
     KIND_L0_DEGENERATE,
     KIND_L1_STAMPING,

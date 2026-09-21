@@ -13,9 +13,11 @@ from sqlalchemy.pool import StaticPool
 
 from app.database import Base
 from app.models.masterdata.location import Location, LocationAlias
-from app.parsers.yishiyiyi.base_price import parse_base_price_excel
+from app.parsers.yishiyiyi.base_price.steel_base_price_parser import (
+    parse_base_price_excel,
+)
 from app.schemas.dto.location_dto import LocationUpdateDTO
-from app.services.masterdata.location import LocationService
+from app.services.masterdata.location.service import LocationService
 from tests.masterdata.location_fixtures import insert_sample_locations
 
 

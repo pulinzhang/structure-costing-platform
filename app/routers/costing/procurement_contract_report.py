@@ -20,7 +20,7 @@ from app.schemas.vo.procurement_contract_report_vo import (
     ProcurementContractReportRowVO,
 )
 from app.schemas.vo.user_vo import UserVO
-from app.services.costing.procurement_contract_report.export import (
+from app.services.costing.procurement_contract_report.export.orchestrator import (
     ProcurementContractReportExportOrchestrator,
 )
 from app.services.costing.procurement_contract_report.service import (

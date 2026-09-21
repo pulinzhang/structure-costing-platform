@@ -1,15 +1,15 @@
 """采购对象清单查询：清单/对象、分页、导出、HUD、生成日志。"""
 
-from sqlalchemy import and_, func
-from sqlalchemy.orm import Query, Session, aliased
+from sqlalchemy import func
+from sqlalchemy.orm import Query, Session
 
 from app.common.audit import AUDIT_APPROVED, AUDIT_PENDING
-from app.models.bom.node import BomNode
 from app.models.bom.procurement_object import (
     BomProcurementObject,
     BomProcurementObjectList,
 )
 from app.models.bom.procurement_object_generate_log import BomProcurementObjectGenerateLog
+from app.repositories.bom.l0_tree_root import join_l0_tree_root, map_l0_nodes
 from app.repositories.bom.procurement_object.types import (
     KIND_L0_DEGENERATE,
     SECTION_OBJECT,
@@ -265,16 +265,10 @@ class BomProcurementObjectQueries:
         elif has_supplier is False:
             query = query.filter(BomProcurementObject.supplier_name.is_(None))
         if (as_of_year is not None and as_of_month is not None) or bom_version:
-            # 有效期 / 版本浏览只认所属 L0 树根（与 map_l0_periods 同钥：
-            # snapshot_id + l0_part_number + level=0 ≡ 爬到树根；禁止 source 本行 / 清单头字）。
-            tree_root = aliased(BomNode)
-            query = query.join(
-                tree_root,
-                and_(
-                    tree_root.snapshot_id == BomProcurementObjectList.snapshot_id,
-                    tree_root.part_number == BomProcurementObject.l0_part_number,
-                    tree_root.level == 0,
-                ),
+            query, tree_root = join_l0_tree_root(
+                query,
+                BomProcurementObjectList.snapshot_id,
+                BomProcurementObject.l0_part_number,
             )
             if as_of_year is not None and as_of_month is not None:
                 query = query.filter(
@@ -298,32 +292,14 @@ class BomProcurementObjectQueries:
         snapshot_l0_keys: list[tuple[int, str]],
     ) -> dict[tuple[int, str], L0Period]:
         """(snapshot_id, l0_part_number) → 所属树根四列。"""
-        if not snapshot_l0_keys:
-            return {}
-        wanted = set(snapshot_l0_keys)
-        snapshot_ids = {snapshot_id for snapshot_id, _ in wanted}
-        part_numbers = {part_number for _, part_number in wanted}
-        rows = (
-            db.query(
-                BomNode.snapshot_id,
-                BomNode.part_number,
-                BomNode.effective_year,
-                BomNode.effective_month,
-                BomNode.expiry_year,
-                BomNode.expiry_month,
-            )
-            .filter(
-                BomNode.snapshot_id.in_(snapshot_ids),
-                BomNode.part_number.in_(part_numbers),
-                BomNode.level == 0,
-            )
-            .all()
-        )
         result: dict[tuple[int, str], L0Period] = {}
-        for snapshot_id, part_number, ey, em, xy, xm in rows:
-            key = (int(snapshot_id), str(part_number))
-            if key in wanted:
-                result[key] = (int(ey), int(em), xy, xm)
+        for key, node in map_l0_nodes(db, snapshot_l0_keys).items():
+            result[key] = (
+                int(node.effective_year),
+                int(node.effective_month),
+                node.expiry_year,
+                node.expiry_month,
+            )
         return result
 
     @staticmethod

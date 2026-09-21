@@ -1,13 +1,1 @@
-"""冲压零件价格核算 Repository。"""
-
-from app.repositories.costing.stamping_part_cost.stamping_part_cost_calc_log_repository import (
-    StampingPartCostCalcLogRepository,
-)
-from app.repositories.costing.stamping_part_cost.stamping_part_cost_repository import (
-    StampingPartCostRepository,
-)
-
-__all__ = [
-    "StampingPartCostCalcLogRepository",
-    "StampingPartCostRepository",
-]
+"""冲压零件核价仓储。按模块 import，不要在本文件汇总。"""

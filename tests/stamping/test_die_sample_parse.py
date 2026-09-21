@@ -12,7 +12,7 @@ from app.parsers.stamping.die.parser import (
     layout_has_die_mass,
     parse_die_layout_excel,
 )
-from app.services.stamping.process_seq_validator import (
+from app.services.stamping.part.rules.process_seq_validator import (
     ProcessSeqOccurrence,
     find_duplicate_process_seqs,
 )

@@ -625,7 +625,7 @@ def test_t2aa_sample_copies_process_sketch_onto_bom_l1() -> None:
     from app.parsers.bom.bom_parser import parse_bom_excel
     from app.parsers.engineering_change.sheet_extract import SHEET_BOM
     from app.services.engineering_change.upload.gates.process_gates import (
-        parse_process_part_sketches,
+        parse_process_confirmation,
     )
 
     sample = Path("docs/engineering-change/samples/工程变更导入T2AA-1.xlsx")
@@ -633,7 +633,9 @@ def test_t2aa_sample_copies_process_sketch_onto_bom_l1() -> None:
     parsed = parse_bom_excel(content, sheet_name=SHEET_BOM)
     target = next(node for node in parsed.nodes if node.part_number == "551005982AB")
     assert not target.sketch_bytes
-    apply_process_sketches_to_bom_nodes(parsed.nodes, parse_process_part_sketches(content))
+    apply_process_sketches_to_bom_nodes(
+        parsed.nodes, parse_process_confirmation(content).images_by_part
+    )
     assert target.sketch_bytes
     old_nodes = [
         _old(node_id=1, parent_id=None, level=0, part_number="551007577AA"),

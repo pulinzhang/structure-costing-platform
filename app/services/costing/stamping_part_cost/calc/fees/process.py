@@ -8,7 +8,7 @@ from decimal import Decimal
 from sqlalchemy.orm import Session
 
 from app.models.stamping import StampingPart
-from app.repositories.stamping.stamping_process_fee_repository import (
+from app.repositories.stamping.process_fee.repository import (
     StampingProcessFeeRepository,
 )
 from app.schemas.vo.stamping_part_cost_vo import StampingPartCostFailedItemVO

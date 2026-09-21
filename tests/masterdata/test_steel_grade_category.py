@@ -25,8 +25,10 @@ from app.schemas.dto.steel_grade_category_dto import (
     SteelGradeCategoryQuery,
     SteelGradeCategoryUpdate,
 )
-from app.services.masterdata.steel_grade_category import SteelGradeCategoryService
 from app.services.masterdata.steel_grade_category.seed import SEED_STEEL_GRADE_CATEGORIES
+from app.services.masterdata.steel_grade_category.service import (
+    SteelGradeCategoryService,
+)
 
 
 @pytest.fixture

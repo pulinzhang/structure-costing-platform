@@ -1,5 +1,1 @@
-"""供应商主数据 Repository。"""
-
-from app.repositories.masterdata.supplier.supplier_repository import SupplierRepository
-
-__all__ = ["SupplierRepository"]
+"""供应商仓储。按模块 import，不要在本文件汇总。"""

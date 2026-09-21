@@ -4,14 +4,16 @@ from __future__ import annotations
 
 from sqlalchemy.orm import Session
 
-from app.repositories.costing.steel_price import SteelPriceRepository
+from app.repositories.costing.steel_price.steel_price_repository import (
+    SteelPriceRepository,
+)
 from app.schemas.dto.steel_price_dto import SteelPriceQuery
 from app.schemas.vo.steel_price_vo import (
     SteelPriceFilterOptionsVO,
     SteelPriceListSummaryVO,
     SteelPriceResponse,
 )
-from app.services.masterdata.location.location_service import LocationService
+from app.services.masterdata.location.service import LocationService
 
 
 def paginate_steel_prices(

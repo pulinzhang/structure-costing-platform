@@ -1,6 +1,6 @@
 """同一零件工序号不得重复。"""
 
-from app.services.stamping.process_seq_validator import (
+from app.services.stamping.part.rules.process_seq_validator import (
     ProcessSeqOccurrence,
     find_duplicate_process_seqs,
     format_duplicate_process_seq_issues,

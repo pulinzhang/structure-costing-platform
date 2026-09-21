@@ -1,5 +1,1 @@
-"""基地主数据 Repository。"""
-
-from app.repositories.masterdata.location.location_repository import LocationRepository
-
-__all__ = ["LocationRepository"]
+"""基地仓储。按模块 import，不要在本文件汇总。"""

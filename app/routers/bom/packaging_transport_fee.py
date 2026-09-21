@@ -27,13 +27,13 @@ from app.schemas.vo.bom_packaging_transport_fee_vo import (
     BomPackagingTransportFeeResponse,
 )
 from app.schemas.vo.user_vo import UserVO
-from app.services.bom.packaging_transport_fee import BomPackagingTransportFeeService
-from app.services.bom.packaging_transport_fee.export_service import (
+from app.services.bom.packaging_transport_fee.export.service import (
     BomPackagingTransportFeeExportService,
 )
 from app.services.bom.packaging_transport_fee.import_service import (
     BomPackagingTransportFeeImportService,
 )
+from app.services.bom.packaging_transport_fee.service import BomPackagingTransportFeeService
 from app.utils.response import ApiResponse
 
 router = APIRouter(prefix="/api/bom/packaging-transport-fee", tags=["BOM 包装运输费 API"])

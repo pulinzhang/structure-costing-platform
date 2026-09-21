@@ -4,7 +4,7 @@
 > 读者：新加入本切片的开发  
 > 产品契约（用户看到什么、禁止 LLM 算数）：[llm-costing-analysis-report-design.md](llm-costing-analysis-report-design.md)  
 > 关联：`docs/architecture.md`、[核价引擎](../costing/costing-engine-design.md)  
-> 现网：`app/routers/llm/`、`app/services/llm/`、`app/repositories/llm/`、`static/js/llm-assistant/`、`tests/llm/`
+> 现网：`app/routers/llm.py`、`app/services/llm/`、`app/repositories/llm/`、`static/js/llm-assistant/`、`tests/llm/`
 
 **先读哪份**
 
@@ -246,7 +246,7 @@ LLM 调用失败：`render_fallback_markdown`，任务仍 **succeeded**（采购
 
 ### 10.1 API
 
-`app/routers/llm/reports.py`，前缀 `/api/llm`。
+`app/routers/llm.py`，前缀 `/api/llm`。
 
 | Method | Path | 权限 |
 |--------|------|------|
@@ -326,7 +326,7 @@ Body：`user_question`（可选 `audience` / `force_refresh` / `idempotency_key`
 
 | 主题 | 路径 |
 |------|------|
-| HTTP | `app/routers/llm/reports.py` |
+| HTTP | `app/routers/llm.py` |
 | 编排 | `app/services/llm/report_service.py` |
 | Query | `app/services/llm/query/`（规则在 `query/parser/`） |
 | Analysis 分发 | `app/services/llm/analysis/runner.py` |

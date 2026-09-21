@@ -6,7 +6,7 @@ from sqlalchemy.orm import Session
 from app.common.permissions.codes import Perm
 from app.database import get_db
 from app.deps.permissions import require_perm
-from app.schemas.common import PageResult
+from app.schemas.common.page_result import PageResult
 from app.schemas.dto.stamping_die_unit_price_dto import (
     StampingDieUnitPriceCreate,
     StampingDieUnitPriceQuery,
@@ -17,7 +17,7 @@ from app.schemas.vo.stamping_die_unit_price_vo import (
     StampingDieUnitPriceVO,
 )
 from app.schemas.vo.user_vo import UserVO
-from app.services.stamping.die.unit_price_service import StampingDieUnitPriceService
+from app.services.stamping.die.unit_price.service import StampingDieUnitPriceService
 from app.utils.response import ApiResponse
 
 router = APIRouter(prefix="/api/stamping/die-unit-prices", tags=["冲压模具单价"])

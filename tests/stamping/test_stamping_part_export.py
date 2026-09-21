@@ -6,7 +6,7 @@ from types import SimpleNamespace
 
 from openpyxl import Workbook, load_workbook
 
-from app.services.stamping.stamping_part_export_service import (
+from app.services.stamping.part.export.constants import (
     COL_COUNT,
     DATA_START_ROW,
     SHORT_CODE_COL,
@@ -19,8 +19,8 @@ from app.services.stamping.stamping_part_export_service import (
     STEEL_WEIGHT_COL,
     STEEL_WIDTHS,
     WIDTHS,
-    StampingPartExportService,
 )
+from app.services.stamping.part.export.service import StampingPartExportService
 
 
 def test_process_confirm_export_headers_include_short_code_and_swing_shear() -> None:

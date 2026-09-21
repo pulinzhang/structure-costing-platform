@@ -13,7 +13,7 @@ from app.repositories.engineering_change.effect_link_repository import (
     EngineeringChangeEffectLinkInsert,
 )
 from app.schemas.vo.user_vo import UserVO
-from app.services.stamping.die_fee.die_fee_service import StampingDieFeeService
+from app.services.stamping.die_fee.service import StampingDieFeeService
 
 
 def persist_die_fees(

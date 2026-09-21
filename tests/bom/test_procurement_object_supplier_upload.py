@@ -33,7 +33,8 @@ from app.parsers.bom.procurement_object_supplier_parser import (
     HEADER_INTERNAL_NUMBER,
     HEADER_SUPPLIER,
 )
-from app.repositories.bom.bom_repository import BomNodeRepository, BomSnapshotRepository
+from app.repositories.bom.bom.node import BomNodeRepository
+from app.repositories.bom.bom.snapshot import BomSnapshotRepository
 from app.repositories.masterdata.location.location_repository import LocationRepository
 from app.schemas.dto.bom_dto import BomNodeWrite, BomSnapshotWrite
 from app.schemas.dto.bom_procurement_object_dto import (
@@ -45,7 +46,7 @@ from app.schemas.dto.bom_procurement_object_dto import (
 from app.schemas.dto.location_dto import LocationAliasInsert, LocationInsert
 from app.schemas.dto.supplier_dto import SupplierCreateDTO, SupplierUpdateDTO
 from app.services.bom.procurement_object.service import BomProcurementObjectService
-from app.services.masterdata.supplier import SupplierService
+from app.services.masterdata.supplier.service import SupplierService
 
 FULL_NAME = "安庆常庆汽车部件有限公司"
 

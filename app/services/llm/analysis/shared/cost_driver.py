@@ -5,7 +5,7 @@ from __future__ import annotations
 from collections import defaultdict
 from decimal import Decimal
 
-from app.repositories.llm.cost_analysis import L0PartPeriodRow
+from app.repositories.llm.cost_analysis.rows import L0PartPeriodRow
 from app.repositories.llm.l0_welding_fee_analysis_repository import L0WeldingFeeRow
 from app.repositories.llm.stamping_cost_analysis_repository import StampingPartPeriodRow
 from app.schemas.llm.analysis_payload import (

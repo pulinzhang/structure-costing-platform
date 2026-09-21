@@ -7,13 +7,13 @@ from decimal import Decimal
 
 from sqlalchemy.orm import Session
 
-from app.repositories.stamping.gauge_fee_repository import StampingGaugeFeeRepository
+from app.repositories.stamping.gauge_fee.repository import StampingGaugeFeeRepository
 from app.services.costing.stamping_part_cost.calc.constants import (
     AMOUNT_QUANTIZE,
     quantize,
 )
 from app.services.costing.stamping_part_cost.calc.fees.match import location_and_vehicle_keys
-from app.services.masterdata.location.location_service import LocationService
+from app.services.masterdata.location.service import LocationService
 
 ZERO = Decimal("0")
 

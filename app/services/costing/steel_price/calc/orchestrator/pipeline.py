@@ -20,7 +20,7 @@ from app.services.costing.steel_price.calc.status import (
     summarize_match_status,
     summarize_thickness_outcomes,
 )
-from app.services.costing.steel_price.steel_price_service import FORMULA_VERSION
+from app.services.costing.steel_price.service import FORMULA_VERSION
 
 logger = logging.getLogger("service.steel_price.calc")
 

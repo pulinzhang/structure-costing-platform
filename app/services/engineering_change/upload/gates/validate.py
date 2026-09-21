@@ -100,14 +100,15 @@ def validate_change_order_project(
         file_project = change_order.project_code.strip().upper()
         if not file_project or file_project != page_project:
             raise BusinessException(
-                f"{EC_PROJECT_MISMATCH}：{row}项目写成{quoted(change_order.project_code)}，"
-                f"上传页是{quoted(page_vehicle_model)}。"
+                f"{EC_PROJECT_MISMATCH}。工程变更单{row}项目写成{quoted(change_order.project_code)}，"
+                f"上传页是{quoted(page_vehicle_model)}。请改成同一个后再传。"
             )
         projects.add(file_project)
         periods.add(parse_effective_period_text(change_order.effective_period_text))
     if len(projects) != 1:
         raise BusinessException(
-            f"{EC_PROJECT_MISMATCH}：工程变更单项目写成了 {listed(projects)}，一本只能一个项目。"
+            f"{EC_PROJECT_MISMATCH}。工程变更单项目写成了 {listed(projects)}。"
+            "请改成同一个项目后再传。"
         )
     if len(periods) != 1:
         labels = [format_period(year, month) for year, month in sorted(periods)]

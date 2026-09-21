@@ -12,12 +12,15 @@ from sqlalchemy.pool import StaticPool
 
 from app.database import Base
 from app.exceptions.base import BusinessException
+from app.models.bom import BomNode, BomSnapshot
 from app.models.bom.welding_fee import BomWeldingFee
 from app.models.bom.welding_fee_item import BomWeldingFeeItem
 from app.models.bom.welding_process_breakdown import (
     BomWeldingProcessBreakdownLine,
     BomWeldingProcessBreakdownNode,
 )
+from app.models.masterdata.location import Location
+from app.models.masterdata.vehicle_model import VehicleModel
 from app.services.bom.welding_process_breakdown.audit_service import WELDING_FEE_REFERENCED
 from app.services.bom.welding_process_breakdown.service import BomWeldingProcessBreakdownService
 
@@ -44,6 +47,10 @@ def memory_db() -> Generator[Session, None, None]:
     Base.metadata.create_all(
         bind=engine,
         tables=[
+            Location.__table__,
+            VehicleModel.__table__,
+            BomSnapshot.__table__,
+            BomNode.__table__,
             BomWeldingProcessBreakdownNode.__table__,
             BomWeldingProcessBreakdownLine.__table__,
             BomWeldingFee.__table__,
@@ -52,6 +59,26 @@ def memory_db() -> Generator[Session, None, None]:
     )
     session_factory = sessionmaker(bind=engine)
     session = session_factory()
+    session.add(
+        Location(
+            location=LOCATION,
+            is_enabled=True,
+            sort_order=1,
+            created_by="system",
+            updated_by="system",
+        )
+    )
+    session.add(
+        VehicleModel(
+            location=LOCATION,
+            vehicle_model=VEHICLE,
+            effective_year=2020,
+            effective_month=1,
+            created_by="system",
+            updated_by="system",
+        )
+    )
+    session.commit()
     try:
         yield session
     finally:
@@ -60,13 +87,48 @@ def memory_db() -> Generator[Session, None, None]:
 
 
 def _add_breakdown(db: Session) -> BomWeldingProcessBreakdownNode:
+    snapshot = BomSnapshot(
+        location=LOCATION,
+        vehicle_model=VEHICLE,
+        bom_version=BOM_VERSION,
+        stage="initial",
+        status="active",
+        source_filename="bom.xlsx",
+        created_by="system",
+        updated_by="system",
+    )
+    db.add(snapshot)
+    db.commit()
+    db.refresh(snapshot)
+    source = BomNode(
+        snapshot_id=snapshot.id,
+        parent_id=None,
+        level=0,
+        seq_no=1,
+        part_number=PART_NUMBER,
+        part_name=PART_NUMBER,
+        node_role="supply",
+        location=LOCATION,
+        vehicle_model=VEHICLE,
+        bom_version=BOM_VERSION,
+        effective_year=2020,
+        effective_month=1,
+        created_by="system",
+        updated_by="system",
+    )
+    db.add(source)
+    db.commit()
+    db.refresh(source)
     node = BomWeldingProcessBreakdownNode(
         location=LOCATION,
         vehicle_model=VEHICLE,
         bom_version=BOM_VERSION,
+        snapshot_id=snapshot.id,
+        source_node_id=source.id,
         part_number=PART_NUMBER,
         level=0,
         node_role="supply",
+        supply_part_number=PART_NUMBER,
         assembly_qty=Decimal("1"),
         weld_info_raw="焊点 2",
         created_by="system",

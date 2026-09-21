@@ -12,12 +12,12 @@ from datetime import datetime
 from sqlalchemy.orm import Session
 
 from app.models.bom import BomWeldingProcessBreakdownGenerateLog
-from app.repositories.bom.bom_repository import BomNodeRepository
+from app.repositories.bom.bom.node import BomNodeRepository
 from app.repositories.bom.welding_process_breakdown_repository import (
     BomWeldingProcessBreakdownRepository,
     WeldingBreakdownListFilters,
 )
-from app.schemas.common import DeletedCountVO
+from app.schemas.common.deleted_count import DeletedCountVO
 from app.schemas.dto.bom_welding_process_breakdown_dto import (
     BomWeldingProcessBreakdownBatchApproveDTO,
     BomWeldingProcessBreakdownBatchReverseAuditDTO,
@@ -56,8 +56,8 @@ from app.services.bom.welding_process_breakdown.query import (
     get_node,
     paginate_nodes,
 )
-from app.services.masterdata.location.location_service import LocationService
-from app.services.masterdata.vehicle_model import VehicleModelService
+from app.services.masterdata.location.service import LocationService
+from app.services.masterdata.vehicle_model.service import VehicleModelService
 
 
 class BomWeldingProcessBreakdownService:

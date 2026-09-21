@@ -16,6 +16,7 @@ from app.repositories.bom.welding_process_breakdown_repository import (
     BomWeldingProcessBreakdownRepository,
 )
 from app.schemas.dto.assembly_cost_dto import AssemblyCostCalcDTO
+from app.services.bom.bom.period import BomPeriodService
 from app.services.bom.procurement_object.classify import SECTION_OBJECT
 from app.services.costing.assembly_cost.calc.calc_log_service import SCOPE_REQUIRED_MESSAGE
 from app.services.costing.assembly_cost.calc.orchestrator.deps import AssemblyCalcDeps
@@ -32,7 +33,7 @@ from app.services.costing.assembly_cost.calc.rollup import (
     RollupWeldingFee,
 )
 from app.services.costing.assembly_cost.calc.seq_label import calc_card_seq_labels
-from app.services.masterdata.vehicle_model import VehicleModelService
+from app.services.masterdata.vehicle_model.service import VehicleModelService
 
 
 @dataclass(frozen=True, slots=True)
@@ -110,7 +111,7 @@ def prepare_calc_run(
     )
 
     progress.report(5, "加载 BOM…")
-    orm_nodes = deps.bom_node_repo.list_as_of_trees(
+    orm_nodes = BomPeriodService().list_as_of_trees(
         db,
         location=location,
         vehicle_model=vehicle_model,
@@ -208,15 +209,17 @@ def prepare_calc_run(
         if name:
             annual_suppliers[row.part_number] = str(name)
 
-    breakdown_repo = BomWeldingProcessBreakdownRepository()
-    breakdowns = breakdown_repo.list_by_scope(db, location=location, vehicle_model=vehicle_model)
+    current_ids = {int(node.id) for node in nodes}
+    breakdowns = BomWeldingProcessBreakdownRepository().list_by_source_node_ids(
+        db, list(current_ids)
+    )
     fee_by_breakdown_id: dict[int, RollupWeldingFee] = {}
     for weld_row in deps.welding_fee_repo.list_by_calc_scope(
         db,
         year=year,
         location=location,
         vehicle_model=vehicle_model,
-        bom_version=None,
+        source_node_ids=current_ids,
         level=None,
     ):
         breakdown_id = weld_row.source_breakdown_node_id
@@ -236,8 +239,6 @@ def prepare_calc_run(
     welding_by_bom_node: dict[int, RollupWeldingFee] = {}
     for bd in breakdowns:
         if bd.source_node_id is None:
-            continue
-        if int(bd.source_node_id) not in nodes_by_id:
             continue
         fee = fee_by_breakdown_id.get(bd.id)
         if fee is not None:

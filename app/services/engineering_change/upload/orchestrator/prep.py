@@ -14,8 +14,10 @@ from app.common.engineering_change_gates import (
     CHANGE_TYPE_STOP,
     EC_AFTER_ASSEMBLY_BUSY,
     EC_CHANGE_ORDER_COLUMNS,
+    EC_PROCUREMENT_LIST_REQUIRED_DETAIL,
     EC_PROJECT_MISMATCH,
     quoted,
+    require_ec_sheet_versions,
 )
 from app.common.period import previous_month
 from app.exceptions.base import BusinessException
@@ -28,18 +30,21 @@ from app.parsers.engineering_change.change_order_parser import (
 from app.parsers.engineering_change.sheet_extract import (
     SHEET_BOM,
     SHEET_CHANGE_ORDER,
-    SHEET_PROCESS,
     extract_named_sheets,
 )
 from app.repositories.engineering_change.upload_log_repository import (
     EngineeringChangeUploadLogRepository,
 )
-from app.services.bom.bom_service import BomService
+from app.services.bom.bom.engineering import BomEngineeringService
+from app.services.bom.procurement_object.service import BomProcurementObjectService
 from app.services.engineering_change.upload.gates.bom_slice import slice_bom_nodes_for_l0
 from app.services.engineering_change.upload.gates.process_gates import (
     ProcessGateItem,
-    parse_process_part_sketches,
+    parse_process_confirmation,
     validate_process_hard_gates,
+)
+from app.services.engineering_change.upload.gates.sheet_consistency import (
+    validate_workbook_part_numbers,
 )
 from app.services.engineering_change.upload.gates.tree_gates import (
     apply_process_sketches_to_bom_nodes,
@@ -59,7 +64,7 @@ from app.services.engineering_change.upload.orchestrator.types import (
     ProgressCallback,
     report_progress,
 )
-from app.services.masterdata.vehicle_model import VehicleModelService
+from app.services.masterdata.vehicle_model.service import VehicleModelService
 
 
 def prepare_engineering_change_run(
@@ -69,11 +74,14 @@ def prepare_engineering_change_run(
     on_progress: ProgressCallback | None = None,
 ) -> PreparedBundle:
     log_repo = EngineeringChangeUploadLogRepository()
-    bom_service = BomService()
+    bom_service = BomEngineeringService()
     location = args.location
     vehicle_model = args.vehicle_model
     effective_year = args.effective_year
     effective_month = args.effective_month
+    location, vehicle_model = VehicleModelService().require_introducible(
+        db, location, vehicle_model, effective_year, effective_month
+    )
 
     report_progress(on_progress, 10, "校验工程变更单与抽表")
     sheets = extract_named_sheets(args.file_content)
@@ -144,8 +152,12 @@ def prepare_engineering_change_run(
 
     if len(snapshot_ids) != 1:
         raise BusinessException(
-            f"{EC_PROJECT_MISMATCH}：变更前总成分属不同投产清单，一本只能一个项目。"
+            f"{EC_PROJECT_MISMATCH}。这几行变更前总成不是同一个项目。"
+            "请拆成两本，或改成同一个项目后再传。"
         )
+    snapshot_id = next(iter(snapshot_ids))
+    if BomProcurementObjectService().get_list_id_by_snapshot(db, snapshot_id) is None:
+        raise BusinessException(EC_PROCUREMENT_LIST_REQUIRED_DETAIL)
 
     _, _, project_expiry_year, project_expiry_month = VehicleModelService().project_sop_period(
         db, location, vehicle_model
@@ -156,14 +168,32 @@ def prepare_engineering_change_run(
     page_project = vehicle_model.strip()
     if not file_project or file_project.upper() != page_project.upper():
         raise BusinessException(
-            f"{EC_PROJECT_MISMATCH}：材料清单项目代号写成{quoted(file_project)}，"
-            f"上传页是{quoted(page_project)}。请改材料清单第 3 行「项目代号」。"
+            f"{EC_PROJECT_MISMATCH}。材料清单第 3 行「项目代号」写成了{quoted(file_project)}，"
+            f"上传页是{quoted(page_project)}。请改成同一个项目后再传。"
         )
-    validate_bom_l0_matches_change_orders(parsed_bom.nodes, change_orders)
-    node_bom_version = (parsed_bom.meta.bom_version or "").strip() or None
-    apply_process_sketches_to_bom_nodes(
-        parsed_bom.nodes, parse_process_part_sketches(args.file_content)
+    parsed_process = parse_process_confirmation(args.file_content)
+    process_project = (parsed_process.vehicle_model or "").strip()
+    if not process_project or process_project.upper() != page_project.upper():
+        raise BusinessException(
+            f"{EC_PROJECT_MISMATCH}。冲压工艺确认表标题里的项目写成了{quoted(process_project)}，"
+            f"上传页是{quoted(page_project)}。请改确认表标题（写成「{page_project}项目冲压工艺确认表」那种）后再传。"
+        )
+    node_bom_version = require_ec_sheet_versions(
+        bom_version=parsed_bom.meta.bom_version,
+        process_version=parsed_process.version,
     )
+    process_part_numbers = {
+        (part.part_number or "").strip()
+        for part in parsed_process.parts
+        if (part.part_number or "").strip()
+    }
+    validate_workbook_part_numbers(
+        bom_nodes=parsed_bom.nodes,
+        process_part_numbers=process_part_numbers,
+        change_orders=change_orders,
+    )
+    validate_bom_l0_matches_change_orders(parsed_bom.nodes, change_orders)
+    apply_process_sketches_to_bom_nodes(parsed_bom.nodes, parsed_process.images_by_part)
 
     for item in prepared_change_orders:
         if item.change_order.change_type == CHANGE_TYPE_STOP:
@@ -172,7 +202,7 @@ def prepare_engineering_change_run(
         if not after_number:
             raise BusinessException(
                 f"{EC_CHANGE_ORDER_COLUMNS}：工程变更单第 {item.change_order.excel_row} 行"
-                f"{item.change_order.change_type}必须填变更后总成。"
+                f"是{item.change_order.change_type}，必须填变更后总成。"
             )
         item.sliced_bom_nodes = slice_bom_nodes_for_l0(parsed_bom.nodes, after_number)
         old_nodes = bom_service.list_subtree_nodes(db, root_id=item.before_root_id)
@@ -190,7 +220,7 @@ def prepare_engineering_change_run(
             )
             for item in prepared_change_orders
         ],
-        process_sheet=sheets.get(SHEET_PROCESS),
+        process_part_numbers=process_part_numbers,
         location=location,
         vehicle_model=vehicle_model,
         effective_year=effective_year,
@@ -250,7 +280,7 @@ def _assert_after_assemblies_idle(
 def _locate_before_root(
     db: Session,
     *,
-    bom_service: BomService,
+    bom_service: BomEngineeringService,
     location: str,
     vehicle_model: str,
     change_order: ChangeOrderRowParsed,

@@ -141,14 +141,16 @@ def row_height(record: BomWeldingFee) -> float:
     return DATA_H + extra
 
 
-def main_pairs(record: BomWeldingFee, *, seq_no: int) -> list[tuple[str, object]]:
+def main_pairs(
+    record: BomWeldingFee, *, seq_no: int, bom_version: str | None = None
+) -> list[tuple[str, object]]:
     calc_status = record.calc_status or ""
     return [
         ("序号", seq_no),
         ("年度", record.year),
         ("基地", record.location),
         ("项目", record.vehicle_model),
-        ("版本", record.bom_version),
+        ("版本", bom_version if bom_version is not None else record.bom_version),
         ("层级", level_label(record.level)),
         ("零件号", record.part_number),
         (

@@ -10,7 +10,9 @@ import pytest
 from app.exceptions.base import BusinessException
 from app.parsers.bom.bom_parser import parse_bom_excel
 from app.parsers.bom.models import BomParsedNode
-from app.services.bom.subassembly_consistency import validate_subassembly_consistency
+from app.services.bom.bom.rules.subassembly_consistency import (
+    validate_subassembly_consistency,
+)
 
 _T13J_BOM = (
     Path(__file__).resolve().parents[2]

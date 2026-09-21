@@ -1,13 +1,1 @@
-"""冲压加工费：CRUD 外的计算子包。"""
-
-from app.services.stamping.process_fee.calc import (
-    DUPLICATE_SCOPE_CALC_MESSAGE,
-    DuplicateScopeCalcError,
-    StampingProcessFeeCalcOrchestrator,
-)
-
-__all__ = [
-    "DUPLICATE_SCOPE_CALC_MESSAGE",
-    "DuplicateScopeCalcError",
-    "StampingProcessFeeCalcOrchestrator",
-]
+"""冲压加工费。按模块 import，不要在本文件汇总。"""

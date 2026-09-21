@@ -8,7 +8,7 @@ from sqlalchemy.orm import Session
 
 from app.common.audit import display_name
 from app.models.costing import StampingPartCostCalcLog
-from app.schemas.common import DeletedCountVO
+from app.schemas.common.deleted_count import DeletedCountVO
 from app.schemas.dto.stamping_part_cost_dto import StampingPartCostCalcDTO
 from app.schemas.vo.async_task_vo import AsyncTaskAcceptedVO
 from app.schemas.vo.stamping_part_cost_vo import (
@@ -17,18 +17,20 @@ from app.schemas.vo.stamping_part_cost_vo import (
     StampingPartCostCalcResultVO,
 )
 from app.schemas.vo.user_vo import UserVO
-from app.services.async_task import (
+from app.services.async_task.service import (
     TASK_TYPE_STAMPING_PART_COST_CALC,
     AsyncTaskService,
+)
+from app.services.async_task.worker_runner import (
     WorkerTaskOutcome,
     calc_status_label,
     outcome_from_calc_status,
 )
 from app.services.costing.stamping_part_cost.calc.models import ProgressCallback
-from app.services.masterdata.vehicle_model import VehicleModelService
+from app.services.masterdata.vehicle_model.service import VehicleModelService
 
 if TYPE_CHECKING:
-    from app.services.costing.stamping_part_cost.stamping_part_cost_service import (
+    from app.services.costing.stamping_part_cost.service import (
         StampingPartCostService,
     )
 

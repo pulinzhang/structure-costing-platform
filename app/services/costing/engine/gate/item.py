@@ -4,8 +4,8 @@ from __future__ import annotations
 
 from app.common.audit import AUDIT_APPROVED, AUDIT_PENDING, AUDIT_REJECTED
 from app.schemas.vo.costing_engine_vo import CostingEngineGateItemVO
-from app.services.costing.engine.gate_navigate import build_navigate
-from app.services.costing.engine.scope_discovery import DiscoveryResult
+from app.services.costing.engine.gate.navigate import build_navigate
+from app.services.costing.engine.scope.discovery import DiscoveryResult
 
 USABLE_STATUSES = [AUDIT_PENDING, AUDIT_APPROVED, AUDIT_REJECTED]
 PERIOD_FILTERED_SKIP = "项目该月未覆盖，未展开此项检查"

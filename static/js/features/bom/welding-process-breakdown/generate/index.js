@@ -345,8 +345,7 @@ function renderHistoryRows(items) {
                     ${item.status === 'failed' ? '' : `
                     <button type="button" class="calc-view-result-btn text-[9px] text-[#777] hover:text-white mr-2"
                             data-location="${esc(item.location || '')}"
-                            data-model="${esc(item.vehicle_model || '')}"
-                            data-version="${esc(item.bom_version || '')}">结果</button>
+                            data-model="${esc(item.vehicle_model || '')}">结果</button>
                     `}
                     `}
                     ${genState.canDeleteLog ? `
@@ -366,7 +365,6 @@ function renderHistoryRows(items) {
             const qs = new URLSearchParams();
             if (btn.dataset.location) qs.set('location', btn.dataset.location);
             if (btn.dataset.model) qs.set('vehicle_model', btn.dataset.model);
-            if (btn.dataset.version) qs.set('bom_version', btn.dataset.version);
             const suffix = qs.toString() ? `?${qs.toString()}` : '';
             window.location.hash = `/bom-welding-process-breakdown-list${suffix}`;
         });

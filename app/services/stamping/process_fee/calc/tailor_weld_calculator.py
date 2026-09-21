@@ -37,7 +37,7 @@ from app.services.stamping.process_fee.calc.models import (
 )
 from app.services.stamping.process_fee.calc.previous_part import PreviousPartIndex
 from app.services.stamping.process_fee.calc.tonnage_resolver import TonnageResolver
-from app.services.stamping.process_fee.fee_math import FEE_QUANTIZE
+from app.services.stamping.process_fee.rules.fee_math import FEE_QUANTIZE
 
 logger = logging.getLogger("service.stamping.process_fee.calc")
 

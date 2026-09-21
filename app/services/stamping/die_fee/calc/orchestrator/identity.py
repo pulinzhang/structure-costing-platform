@@ -4,7 +4,7 @@ from __future__ import annotations
 
 from app.common.scrap_byproduct import layout_is_scrap_byproduct_part
 from app.models.stamping.die import StampingDiePart
-from app.services.stamping.die.process_identity import matches_die_identity
+from app.services.stamping.die.rules.process_identity import matches_die_identity
 
 
 def die_part_identity_key(part: StampingDiePart) -> tuple[str, str, str]:

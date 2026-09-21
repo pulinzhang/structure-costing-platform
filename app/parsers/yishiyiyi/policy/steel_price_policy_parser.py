@@ -35,8 +35,8 @@ from openpyxl.worksheet.worksheet import Worksheet
 
 from app.utils.logging_config import get_logger
 
-from .handlers import find_handler
-from .models import SteelPricePolicyParseResult
+from .handlers.registry import find_handler
+from .models.parse_result import SteelPricePolicyParseResult
 
 # progress_callback(progress: int, msg: str) — 可选进度回调
 ProgressCallback = Callable[[int, str], None]

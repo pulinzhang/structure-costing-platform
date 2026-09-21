@@ -1,5 +1,1 @@
-"""钢价政策 Repository。"""
-
-from .steel_price_policy_repository import SteelPricePolicyRepository
-
-__all__ = ["SteelPricePolicyRepository"]
+"""钢价政策仓储。按模块 import，不要在本文件汇总。"""

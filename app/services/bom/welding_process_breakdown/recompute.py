@@ -10,10 +10,11 @@ from typing import Any
 
 from sqlalchemy.orm import Session
 
-from app.repositories.bom.bom_repository import BomNodeRepository
+from app.repositories.bom.bom.node import BomNodeRepository
 from app.repositories.bom.welding_process_breakdown_repository import (
     BomWeldingProcessBreakdownRepository,
 )
+from app.services.bom.bom.period import BomPeriodService
 from app.services.bom.welding_process_breakdown.bom_tree import build_children_map
 from app.services.bom.welding_process_breakdown.fastener_check import (
     check_process_qty_against_children,
@@ -39,7 +40,12 @@ def recompute_scope_derived_fields(
         db,
         location=location,
         vehicle_model=vehicle_model,
-        bom_version=bom_version,
+        source_node_ids=BomPeriodService().node_ids_for_l0_version(
+            db,
+            bom_version=bom_version,
+            location=location,
+            vehicle_model=vehicle_model,
+        ),
     )
     if not nodes:
         return

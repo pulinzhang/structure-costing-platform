@@ -553,7 +553,7 @@ Ready VO 增加：`subject_count`、`tree_root_count`、`procurement_object_coun
 | 模型 / schema | `AssemblyCost*`、`assembly_cost_{dto,vo}` |
 | 表 | `costing_assembly_costs` / `_items` / `_indirects` / `_calc_logs` |
 | 引擎 | 零件价完成且 **焊接费覆盖该月命中树全部要抄的 level**、**采购对象齐** 才跑 assembly（P20）。同一项目当月 **算一次**。补焊 **禁止** 只传 `levels=[0]`。阶段 id `assembly`；年度 `annual_procurement_object` / `annual_welding_fee`。本切片不得内部触发上游 |
-| 月度核对导出 | `monthly_bundle_export_service` → 树根过滤 |
+| 月度核对导出 | `monthly_bundle_export.export.service` → 树根过滤 |
 | LLM | `menu_catalog`、`field_labels`、`cost_analysis/`（查现表 `costing_assembly_costs`） |
 | 权限 / 种子 | `catalog.json` → `codes.py`（§10.3） |
 | 前端 | `index.html`、`app.js`、`features/index.js`、`static/js/features/costing/assembly-cost/` |

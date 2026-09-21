@@ -8,7 +8,7 @@ from unittest.mock import MagicMock
 from app.schemas.llm.analysis_query import SCOPE_UNSET, AnalysisQuery, TimeRange
 from app.schemas.vo.user_vo import UserVO
 from app.services.llm.analysis.shared.idempotency import build_idempotency_key
-from app.services.llm.client import LlmClientError
+from app.services.llm.client.openai_compatible import LlmClientError
 from app.services.llm.comparison_basis import default_comparison_basis
 from app.services.llm.query.query_parser import QueryParser
 from app.services.llm.report_service import (

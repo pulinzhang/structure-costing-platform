@@ -4,20 +4,29 @@ from __future__ import annotations
 
 from sqlalchemy.orm import Session
 
-from app.common.period import is_in_period as columns_in_period
-from app.common.period import overlaps_year as period_overlaps_year
-from app.common.period import period, validate_period
+from app.common.period import (
+    is_in_period as columns_in_period,
+)
+from app.common.period import (
+    overlaps_year as period_overlaps_year,
+)
+from app.common.period import (
+    period,
+    validate_period,
+)
 from app.common.vehicle_model import normalize_vehicle_model
 from app.exceptions.base import BusinessException, NotFoundException
 from app.models.masterdata.vehicle_model import VehicleModel
-from app.repositories.masterdata.vehicle_model import VehicleModelRepository
+from app.repositories.masterdata.vehicle_model.vehicle_model_repository import (
+    VehicleModelRepository,
+)
 from app.schemas.vo.vehicle_model_vo import (
     PERIOD_EXPIRED,
     PERIOD_INTRODUCIBLE,
     PERIOD_PENDING,
     VehicleModelVO,
 )
-from app.services.masterdata.location import LocationService
+from app.services.masterdata.location.service import LocationService
 
 PLACEHOLDER_CODES = frozenset({"UNKNOWN"})
 PAGE_HINT = "请到项目一览手工增加或上传（#/vehicle-model-list）"
@@ -153,9 +162,21 @@ def require_introducible(
         raise BusinessException(f"没有该项目，{PAGE_HINT}")
     as_of = period(year, month)
     if as_of < period(record.effective_year, record.effective_month):
-        raise BusinessException(f"该项目尚未生效，{PAGE_HINT}")
+        raise BusinessException(
+            f"该项目尚未生效：你选的是{year}年{month}月，项目从"
+            f"{record.effective_year}年{record.effective_month}月才开始。"
+            f"请改年月，或到项目一览核对开始月。{PAGE_HINT}"
+        )
     if not is_not_expired(record, year, month):
-        raise BusinessException(f"该项目已失效，{PAGE_HINT}")
+        end = (
+            f"{record.expiry_year}年{record.expiry_month}月"
+            if record.expiry_year and record.expiry_month
+            else "结束月"
+        )
+        raise BusinessException(
+            f"该项目已失效：你选的是{year}年{month}月，项目用到{end}就结束了。"
+            f"请改年月，或到项目一览核对结束月。{PAGE_HINT}"
+        )
     return (canonical, record.vehicle_model)
 
 

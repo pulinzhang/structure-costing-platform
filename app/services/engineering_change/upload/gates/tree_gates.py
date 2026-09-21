@@ -31,7 +31,9 @@ from app.exceptions.base import BusinessException
 from app.models.bom import BomNode
 from app.parsers.bom.bom_parser import BomParsedNode
 from app.parsers.engineering_change.change_order_parser import ChangeOrderRowParsed
-from app.services.bom.internal_number_uniqueness import validate_internal_number_uniqueness
+from app.services.bom.bom.rules.internal_number_uniqueness import (
+    validate_internal_number_uniqueness,
+)
 
 
 def validate_change_tree_gates(

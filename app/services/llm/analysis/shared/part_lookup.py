@@ -5,7 +5,7 @@ from __future__ import annotations
 from dataclasses import dataclass
 from typing import Literal
 
-from app.repositories.llm.cost_analysis import L0PartPeriodRow
+from app.repositories.llm.cost_analysis.rows import L0PartPeriodRow
 from app.repositories.llm.stamping_cost_analysis_repository import StampingPartPeriodRow
 from app.repositories.llm.stamping_process_analysis_repository import StampingProcessPartRow
 from app.schemas.llm.analysis_payload import (

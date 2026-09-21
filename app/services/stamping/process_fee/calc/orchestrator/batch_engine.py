@@ -25,7 +25,7 @@ from app.services.stamping.process_fee.calc.snapshot import part_snapshot
 from app.services.stamping.process_fee.calc.tailor_weld_calculator import (
     TailorWeldFeeCalculator,
 )
-from app.services.stamping.process_fee.fee_math import resolve_final_fee
+from app.services.stamping.process_fee.rules.fee_math import resolve_final_fee
 
 
 @dataclass(slots=True)

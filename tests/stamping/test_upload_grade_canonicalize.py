@@ -18,8 +18,10 @@ from app.parsers.stamping.models.tailor_weld import (
     TailorWeldBlankParsed,
 )
 from app.schemas.dto.steel_grade_category_dto import SteelGradeCategoryCreate
-from app.services.masterdata.steel_grade_category import SteelGradeCategoryService
-from app.services.stamping.upload.materials import canonicalize_materials
+from app.services.masterdata.steel_grade_category.service import (
+    SteelGradeCategoryService,
+)
+from app.services.stamping.part.upload.materials import canonicalize_materials
 
 
 @pytest.fixture

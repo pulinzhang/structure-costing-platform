@@ -12,11 +12,12 @@ from app.common.steel_grade_category import (
 )
 from app.exceptions.base import BusinessException
 from app.parsers.yishiyiyi.policy.handlers.constants import GRADE_LABELS
-from app.parsers.yishiyiyi.policy.models import ParsedLadderItem, ParsedPolicy
+from app.parsers.yishiyiyi.policy.models.ladder_item import ParsedLadderItem
 from app.parsers.yishiyiyi.policy.models.policy import (
     GRADE_TYPE_CATEGORY,
     POLICY_TYPE_THICKNESS,
     POLICY_TYPE_WIDTH,
+    ParsedPolicy,
 )
 
 from .build_items import ItemBuilder

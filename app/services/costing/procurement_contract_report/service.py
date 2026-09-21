@@ -14,14 +14,14 @@ from app.common.bom.node_order import bom_node_order_from
 from app.exceptions.base import BusinessException, NotFoundException
 from app.models.bom.node import BomNode
 from app.models.bom.procurement_object import BomProcurementObject, BomProcurementObjectList
-from app.repositories.bom.bom_repository import BomNodeRepository
+from app.repositories.bom.bom.node import BomNodeRepository
 from app.repositories.bom.procurement_object_repository import BomProcurementObjectRepository
 from app.repositories.costing.assembly_cost.assembly_cost_repository import (
     AssemblyCostRepository,
     SettlementAmountField,
 )
-from app.repositories.stamping.die_fee_repository import StampingDieFeeRepository
-from app.repositories.stamping.gauge_fee_repository import StampingGaugeFeeRepository
+from app.repositories.stamping.die_fee.repository import StampingDieFeeRepository
+from app.repositories.stamping.gauge_fee.repository import StampingGaugeFeeRepository
 from app.schemas.dto.procurement_contract_report_dto import ProcurementContractReportQuery
 from app.schemas.vo.procurement_contract_report_vo import (
     ProcurementContractMonthAmountVO,
@@ -51,7 +51,7 @@ from app.services.costing.procurement_contract_report.assemble import (
 )
 from app.services.costing.procurement_contract_report.qty import l0_node_of
 from app.services.costing.procurement_contract_report.window import expand_months, month_header
-from app.services.masterdata.supplier.supplier_service import SupplierService
+from app.services.masterdata.supplier.service import SupplierService
 
 _SECTION_OBJECT = "object"
 _EMPTY_OBJECT_HINT = "当前范围没有采购对象行"

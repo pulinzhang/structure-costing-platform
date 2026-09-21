@@ -35,7 +35,7 @@ from app.schemas.vo.bom_welding_unit_price_vo import (
 from app.schemas.vo.user_vo import UserVO
 from app.services.file_trace.path_utils import to_upload_relpath
 from app.services.file_trace.register import register_existing
-from app.services.masterdata.location.location_service import LocationService
+from app.services.masterdata.location.service import LocationService
 from app.utils.bom_welding_unit_price_archive import save_welding_unit_price_upload
 
 logger = logging.getLogger("service.bom_welding_unit_price_import")

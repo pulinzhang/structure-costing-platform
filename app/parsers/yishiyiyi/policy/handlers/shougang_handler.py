@@ -5,11 +5,16 @@ from typing import Any
 
 from openpyxl.worksheet.worksheet import Worksheet
 
-from app.parsers.yishiyiyi.policy.handlers.base_handler import BaseSheetHandler
+from app.parsers.yishiyiyi.policy.handlers.base_handler.base_handler import (
+    BaseSheetHandler,
+)
 from app.parsers.yishiyiyi.policy.handlers.constants import GRADE_LABELS, parse_thickness_label
 
-from ..models import ParsedPolicy
-from ..models.policy import GRADE_TYPE_WIDTH_RANGE, POLICY_TYPE_WIDTH
+from ..models.policy import (
+    GRADE_TYPE_WIDTH_RANGE,
+    POLICY_TYPE_WIDTH,
+    ParsedPolicy,
+)
 
 
 class ShougangSheetHandler(BaseSheetHandler):

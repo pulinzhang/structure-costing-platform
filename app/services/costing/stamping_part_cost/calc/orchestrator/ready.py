@@ -7,8 +7,8 @@ from sqlalchemy.orm import Session
 from app.exceptions.base import BusinessException
 from app.schemas.vo.stamping_part_cost_vo import StampingPartCostCalcReadyVO
 from app.services.costing.stamping_part_cost.calc.orchestrator.deps import PartCostCalcDeps
-from app.services.masterdata.location.location_service import LocationService
-from app.services.masterdata.vehicle_model import VehicleModelService
+from app.services.masterdata.location.service import LocationService
+from app.services.masterdata.vehicle_model.service import VehicleModelService
 from app.services.stamping.process_fee.calc.orchestrator.ready import (
     evaluate_process_fee_coverage,
 )

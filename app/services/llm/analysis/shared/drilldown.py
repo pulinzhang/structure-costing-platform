@@ -4,7 +4,7 @@ from __future__ import annotations
 
 from app.common.part_number import part_numbers_match
 from app.repositories.llm.annual_part_price_analysis_repository import AnnualPartPriceRow
-from app.repositories.llm.cost_analysis import (
+from app.repositories.llm.cost_analysis.rows import (
     AssemblyCardItemRow,
     L0CompositionLineRow,
     L0PartPeriodRow,

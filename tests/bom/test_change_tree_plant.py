@@ -11,10 +11,10 @@ from app.common.engineering_change_gates import (
     PART_LEVEL_L2,
 )
 from app.parsers.bom.models import BomParsedNode
-from app.services.bom.change_tree_plant import BomChangePlantSpec
-from app.services.bom.change_tree_plant.copy import excel_row_for_added_part
-from app.services.bom.change_tree_plant.number_map import build_number_map
-from app.services.bom.change_tree_plant.sketches import copied_sketch_url
+from app.services.bom.bom.change_tree_plant.copy import excel_row_for_added_part
+from app.services.bom.bom.change_tree_plant.number_map import build_number_map
+from app.services.bom.bom.change_tree_plant.sketches import copied_sketch_url
+from app.services.bom.bom.change_tree_plant.types import BomChangePlantSpec
 
 
 def _node(

@@ -11,7 +11,7 @@ from app.services.costing.procurement_contract_report.assemble import ReportBund
 from app.services.costing.procurement_contract_report.service import (
     ProcurementContractReportService,
 )
-from app.services.settings.system.settings_service import SettingsService
+from app.services.settings.system.service import SettingsService
 
 
 @dataclass(frozen=True, slots=True)

@@ -6,7 +6,10 @@ from decimal import Decimal
 from types import SimpleNamespace
 from unittest.mock import MagicMock
 
-from app.repositories.llm.cost_analysis import L0MonthlyTotalRow, L0PartPeriodRow
+from app.repositories.llm.cost_analysis.rows import (
+    L0MonthlyTotalRow,
+    L0PartPeriodRow,
+)
 from app.services.llm.analysis.shared.cost_trend import build_cost_trend
 from app.services.llm.analysis.shared.idempotency import (
     build_idempotency_key,
@@ -234,7 +237,7 @@ def test_normalize_yoy_range() -> None:
 
 
 def test_query_parser_level4_blind_question_forces_safe_analyses() -> None:
-    from app.services.llm.client import LlmClientError
+    from app.services.llm.client.openai_compatible import LlmClientError
 
     parser = QueryParser()
     db = MagicMock()
@@ -250,7 +253,7 @@ def test_query_parser_level4_blind_question_forces_safe_analyses() -> None:
 def test_query_parser_rule_fallback_when_llm_fails() -> None:
     from app.common.timezone import now
     from app.services.llm._money import month_key, shift_month
-    from app.services.llm.client import LlmClientError
+    from app.services.llm.client.openai_compatible import LlmClientError
 
     parser = QueryParser()
     db = MagicMock()
@@ -677,7 +680,7 @@ def test_normalize_year_first_n_months() -> None:
 def test_build_l0_mom_anomalies_ranks_jump() -> None:
     from decimal import Decimal
 
-    from app.repositories.llm.cost_analysis import L0PartPeriodRow
+    from app.repositories.llm.cost_analysis.rows import L0PartPeriodRow
     from app.services.llm.analysis.shared.cost_driver import build_l0_mom_anomalies
 
     rows = [

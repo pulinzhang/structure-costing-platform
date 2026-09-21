@@ -17,7 +17,7 @@ from app.common.scrap_categories import (
 )
 from app.database import DatabaseConfig
 from app.models.yishiyiyi import StampingScrapPrice
-from app.services.masterdata.location.location_service import LocationService
+from app.services.masterdata.location.service import LocationService
 
 STEEL_DEDUCTIONS = {
     "芜湖": Decimal("149.39"),

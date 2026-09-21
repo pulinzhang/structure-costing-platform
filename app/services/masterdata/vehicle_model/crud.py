@@ -11,7 +11,9 @@ from app.common.audit import audit_create, audit_update
 from app.common.timezone import now
 from app.exceptions.base import BusinessException, NotFoundException
 from app.models.masterdata.vehicle_model import VehicleModel
-from app.repositories.masterdata.vehicle_model import VehicleModelRepository
+from app.repositories.masterdata.vehicle_model.vehicle_model_repository import (
+    VehicleModelRepository,
+)
 from app.schemas.dto.vehicle_model_dto import (
     VehicleModelCreateDTO,
     VehicleModelInsert,
@@ -26,7 +28,7 @@ from app.schemas.vo.vehicle_model_vo import (
     VehicleModelListVO,
     VehicleModelVO,
 )
-from app.services.masterdata.location import LocationService
+from app.services.masterdata.location.service import LocationService
 from app.services.masterdata.vehicle_model.identity import (
     normalize,
     period_status,

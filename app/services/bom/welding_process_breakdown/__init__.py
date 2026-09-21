@@ -1,5 +1,4 @@
-"""
-BOM 焊接工艺拆解服务包
+"""BOM 焊接工艺拆解服务包
 
 分层：
   parsers/…_parser.py          原文 → 单件工艺项（纯函数）
@@ -9,9 +8,3 @@ BOM 焊接工艺拆解服务包
   export/                      L0 核对 Excel 导出（orchestrator 编排）
   service                      门面：查询 + 修改 + 委托上述服务
 """
-
-from app.services.bom.welding_process_breakdown.service import (
-    BomWeldingProcessBreakdownService,
-)
-
-__all__ = ["BomWeldingProcessBreakdownService"]

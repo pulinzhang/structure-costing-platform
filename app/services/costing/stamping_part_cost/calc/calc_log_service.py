@@ -18,7 +18,7 @@ from app.models.costing import StampingPartCostCalcLog
 from app.repositories.costing.stamping_part_cost.stamping_part_cost_calc_log_repository import (
     StampingPartCostCalcLogRepository,
 )
-from app.schemas.common import DeletedCountVO
+from app.schemas.common.deleted_count import DeletedCountVO
 from app.schemas.dto.stamping_part_cost_dto import (
     StampingPartCostCalcDTO,
     StampingPartCostCalcLogCreate,

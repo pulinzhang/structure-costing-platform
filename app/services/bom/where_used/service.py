@@ -10,7 +10,7 @@ from app.common.bom.manufacturing_category import short_part_number_digits
 from app.common.part_number import part_number_like_pattern
 from app.exceptions.base import BusinessException
 from app.models.bom import BomNode
-from app.repositories.bom.bom_repository import BomNodeRepository
+from app.repositories.bom.bom.node import BomNodeRepository
 from app.schemas.dto.bom_where_used_dto import BomWhereUsedQuery
 from app.schemas.vo.bom_where_used_vo import (
     BomWhereUsedNodeVO,
@@ -19,7 +19,7 @@ from app.schemas.vo.bom_where_used_vo import (
     BomWhereUsedVO,
 )
 from app.services.bom.where_used.match import HIT_LIMIT, SHORT_CODE_CANDIDATE_LIMIT, plan_match
-from app.services.masterdata.location.location_service import LocationService
+from app.services.masterdata.location.service import LocationService
 
 _ONE = Decimal("1")
 _PARENT_WALK_LIMIT = 8

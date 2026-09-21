@@ -21,10 +21,10 @@
 **对外入口**：
 
 ```python
-from app.services.yishiyiyi.policy import SteelPricePolicyService
+from app.services.yishiyiyi.policy.service import SteelPricePolicyService
 ```
 
-业务调用方经门面访问；子包实现类仅供本切片内部使用。
+禁止本包 `__init__.py` 再导出。业务调用方经门面访问；子包实现类仅供本切片内部使用。
 
 ---
 
@@ -40,7 +40,7 @@ from app.services.yishiyiyi.policy import SteelPricePolicyService
    `LadderMatcher` 不访问数据库，只做区间判断；`match_service` 负责查候选与 fallback。
 
 4. **查询组装与 Excel 生成分离（导出）**  
-   `export_service` 产出扁平行；`excel_exporter` 负责 openpyxl。样式变更不搅进数据查询。
+   `export/service.py` 产出扁平行；`excel_exporter` 负责 openpyxl。样式变更不搅进数据查询。
 
 5. **仍遵守项目分层**  
    子包是 Service 内部拆分，不是新的架构层。写库走 Repository；解析只由 importing 调 Parser；Router 不直接碰 Parser / Repository。
@@ -54,8 +54,8 @@ from app.services.yishiyiyi.policy import SteelPricePolicyService
 ```text
 app/services/yishiyiyi/policy/
 ├── README.md
-├── __init__.py                       # re-export SteelPricePolicyService
-├── steel_price_policy_service.py     # 薄门面：只委托
+├── __init__.py                       # 只作包标记，不汇总导出
+├── service.py                        # 薄门面：只委托
 ├── crud/
 │   ├── __init__.py
 │   └── policy_crud.py                # 主表/明细 CRUD、批量删除、筛选统计
@@ -69,7 +69,7 @@ app/services/yishiyiyi/policy/
 │   └── adjustment_common.py          # 钢厂/大类别名 + 加减价候选筛选（供本切片与 costing）
 └── export/
     ├── __init__.py
-    ├── export_service.py             # 主子表扁平化、调导出器
+    ├── service.py                    # 主子表扁平化、调导出器
     └── excel_exporter.py             # openpyxl 生成；含 format_interval
 ```
 
@@ -124,7 +124,7 @@ parsers.yishiyiyi.policy         （仅 importing 调用）
 
 ### 5.3 导出（`export`）
 
-- `export_service` 负责行数据；`excel_exporter` 负责样式与工作簿。
+- `export/service.py` 负责行数据；`excel_exporter` 负责样式与工作簿。
 - `format_interval` 可被其它切片复用：  
   `from app.services.yishiyiyi.policy.export.excel_exporter import format_interval`
 
@@ -139,7 +139,7 @@ parsers.yishiyiyi.policy         （仅 importing 调用）
 | `match/ladder_matcher.py` | 区间运算符、命中维度 |
 | `match/adjustment_common.py` | 钢厂别名 / 加减价候选排序 |
 | `match/match_service.py` | fallback 策略 |
-| `export/excel_exporter.py` / `export_service.py` | 导出列、Excel 样式 |
+| `export/excel_exporter.py` / `export/service.py` | 导出列、Excel 样式 |
 
 约束：门面不堆业务逻辑；Router 不直接调 Parser；子包之间避免成环（共享逻辑抽 helpers，或由门面编排）。
 

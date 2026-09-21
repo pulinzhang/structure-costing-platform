@@ -58,9 +58,9 @@ from app.services.bom.procurement_object.mapping import (
 from app.services.bom.procurement_object.supplier_upload_service import (
     BomProcurementObjectSupplierUploadService,
 )
-from app.services.masterdata.location.location_service import LocationService
-from app.services.masterdata.supplier import SupplierService
-from app.services.masterdata.vehicle_model import VehicleModelService
+from app.services.masterdata.location.service import LocationService
+from app.services.masterdata.supplier.service import SupplierService
+from app.services.masterdata.vehicle_model.service import VehicleModelService
 
 
 class ProcurementObjectListFilters(TypedDict):

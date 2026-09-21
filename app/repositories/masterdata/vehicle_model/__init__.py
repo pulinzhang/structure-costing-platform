@@ -1,7 +1,1 @@
-"""项目主数据 Repository。"""
-
-from app.repositories.masterdata.vehicle_model.vehicle_model_repository import (
-    VehicleModelRepository,
-)
-
-__all__ = ["VehicleModelRepository"]
+"""项目仓储。按模块 import，不要在本文件汇总。"""

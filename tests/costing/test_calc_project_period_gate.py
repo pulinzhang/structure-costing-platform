@@ -35,7 +35,6 @@ from app.services.bom.welding_fee.calc.orchestrator.progress import (
 from app.services.bom.welding_fee.calc.orchestrator.ready import (
     collect_calc_ready as welding_ready,
 )
-from app.services.costing.assembly_cost.assembly_cost_service import AssemblyCostService
 from app.services.costing.assembly_cost.calc.orchestrator.prep import (
     prepare_calc_run as prepare_assembly,
 )
@@ -45,6 +44,7 @@ from app.services.costing.assembly_cost.calc.orchestrator.progress import (
 from app.services.costing.assembly_cost.calc.orchestrator.ready import (
     collect_calc_ready as assembly_ready,
 )
+from app.services.costing.assembly_cost.service import AssemblyCostService
 from app.services.costing.stamping_part_cost.calc.orchestrator.prep import (
     prepare_calc_run as prepare_part_cost,
 )
@@ -54,10 +54,10 @@ from app.services.costing.stamping_part_cost.calc.orchestrator.progress import (
 from app.services.costing.stamping_part_cost.calc.orchestrator.ready import (
     collect_calc_ready as part_cost_ready,
 )
-from app.services.costing.stamping_part_cost.stamping_part_cost_service import (
+from app.services.costing.stamping_part_cost.service import (
     StampingPartCostService,
 )
-from app.services.masterdata.vehicle_model import VehicleModelService
+from app.services.masterdata.vehicle_model.service import VehicleModelService
 from app.services.stamping.die_fee.calc.orchestrator.orchestrator import (
     StampingDieFeeCalcOrchestrator,
 )
@@ -193,7 +193,7 @@ def test_monthly_start_calc_accepts_before_expiry(memory_db: Session) -> None:
 
     assembly = AssemblyCostService()
     assembly.begin_processing = MagicMock(return_value=_lock())
-    with _patch_async("app.services.costing.assembly_cost.assembly_cost_service") as assembly_async:
+    with _patch_async("app.services.costing.assembly_cost.service") as assembly_async:
         _task_service(assembly_async)
         result = assembly.start_calc(memory_db, _assembly(month=6), user)
     assembly.begin_processing.assert_called_once()
@@ -284,7 +284,6 @@ def test_ready_expired_period_is_not_http_error(memory_db: Session) -> None:
     )
     assert assembly.ready is False
     assert ARCHIVE in (assembly.message or "")
-    deps.bom_node_repo.list_as_of_trees.assert_not_called()
 
     process = process_ready(
         memory_db,
@@ -320,4 +319,4 @@ def test_ready_expired_period_is_not_http_error(memory_db: Session) -> None:
     assert welding.unit_price_count == 0
     assert welding.levels == []
     assert ARCHIVE in (welding.message or "")
-    deps.breakdown_repo.list_overlapping_year.assert_not_called()
+    deps.breakdown_repo.list_by_source_node_ids.assert_not_called()

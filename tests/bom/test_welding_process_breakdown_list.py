@@ -12,22 +12,25 @@ from app.services.bom.welding_process_breakdown.service import (
 )
 
 
+@patch("app.services.bom.welding_process_breakdown.query.BomPeriodService")
 @patch("app.services.bom.welding_process_breakdown.service.LocationService")
 @patch("app.services.bom.welding_process_breakdown.service.VehicleModelService")
 def test_paginate_hud_ignores_zero_process_drilldown(
     mock_vehicle_cls: MagicMock,
     mock_location_cls: MagicMock,
+    mock_bom_cls: MagicMock,
 ) -> None:
     mock_location = mock_location_cls.return_value
     mock_location.list_registered.return_value = []
     mock_location.expand_for_query.return_value = ["芜湖"]
     mock_vehicle_cls.return_value.list_filter_codes.return_value = []
+    mock_bom_cls.return_value.list_l0_versions.return_value = []
+    mock_bom_cls.return_value.node_ids_for_l0_version.return_value = None
 
     service = BomWeldingProcessBreakdownService()
     service.repository = MagicMock()
     service.repository.paginate.return_value = ([], 2)
     service.repository.get_distinct_customer_names.return_value = []
-    service.repository.get_distinct_bom_versions.return_value = []
     service.repository.summarize_by_filters.return_value = {
         "total_count": 89,
         "pending_count": 80,

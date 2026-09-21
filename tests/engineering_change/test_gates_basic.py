@@ -101,11 +101,17 @@ def test_template_change_order_examples_and_parses_as_book() -> None:
     workbook = load_workbook(BytesIO(content), data_only=True)
     assert workbook.sheetnames == [
         "工程变更单",
+        "工程变更填写说明",
         "车身件材料清单",
         "材料清单填写说明",
         "冲压工艺确认表",
         "工艺确认填写说明",
     ]
+    instructions = workbook["工程变更填写说明"]
+    instruction_text = " ".join(str(instructions.cell(row, 1).value or "") for row in range(1, 10))
+    assert "项目代号" in instruction_text
+    assert "同一个字" in instruction_text
+    assert "采购对象" in instruction_text
     change_order = workbook["工程变更单"]
     types = [change_order.cell(row, 6).value for row in range(5, 5 + len(CHANGE_ORDER_SAMPLES))]
     assert types == [sample.change_type for sample in CHANGE_ORDER_SAMPLES]
@@ -599,14 +605,16 @@ def test_template_bom_l1_leaves_have_part_sketches() -> None:
 
 
 def test_template_process_sheet_parses_new_part_numbers() -> None:
-    from app.parsers.engineering_change.sheet_extract import SHEET_PROCESS, extract_named_sheets
     from app.services.engineering_change.upload.gates.process_gates import (
-        _parse_process_part_numbers,
+        parse_process_confirmation,
     )
 
     content, _ = build_engineering_change_template()
-    sheets = extract_named_sheets(content)
-    numbers = _parse_process_part_numbers(sheets[SHEET_PROCESS])
+    numbers = {
+        (part.part_number or "").strip()
+        for part in parse_process_confirmation(content).parts
+        if (part.part_number or "").strip()
+    }
     assert numbers == {sample.part_number for sample in PROCESS_SAMPLES}
 
 
@@ -649,13 +657,9 @@ def test_template_has_no_die_sheet() -> None:
 )
 def test_scenario_template_parses_and_passes_gates(scenario) -> None:
     from app.parsers.bom.bom_parser import parse_bom_excel
-    from app.parsers.engineering_change.sheet_extract import (
-        SHEET_BOM,
-        SHEET_PROCESS,
-        extract_named_sheets,
-    )
+    from app.parsers.engineering_change.sheet_extract import SHEET_BOM
     from app.services.engineering_change.upload.gates.process_gates import (
-        _parse_process_part_numbers,
+        parse_process_confirmation,
     )
     from app.services.engineering_change.upload.gates.validate import (
         validate_bom_l0_matches_change_orders,
@@ -683,8 +687,11 @@ def test_scenario_template_parses_and_passes_gates(scenario) -> None:
     )
     parsed = parse_bom_excel(content, sheet_name=SHEET_BOM)
     validate_bom_l0_matches_change_orders(parsed.nodes, rows)
-    sheets = extract_named_sheets(content)
-    numbers = _parse_process_part_numbers(sheets[SHEET_PROCESS])
+    numbers = {
+        (part.part_number or "").strip()
+        for part in parse_process_confirmation(content).parts
+        if (part.part_number or "").strip()
+    }
     assert numbers == {item.part_number for item in scenario.book.process}
 
 

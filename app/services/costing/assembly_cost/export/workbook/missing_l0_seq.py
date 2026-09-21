@@ -10,7 +10,7 @@ from sqlalchemy.orm import Session
 from app.common.period import period
 from app.models.bom.node import BomNode
 from app.models.costing.assembly_cost import AssemblyCost
-from app.services.masterdata.location.location_service import LocationService
+from app.services.masterdata.location.service import LocationService
 
 
 @dataclass(frozen=True, slots=True)

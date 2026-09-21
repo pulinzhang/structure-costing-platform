@@ -10,7 +10,7 @@ from app.schemas.dto.stamping_part_dto import StampingCascadeFilterQuery
 from app.schemas.vo.dashboard_vo import DashboardBomStatsVO, SteelPriceCalcFilterOptionsVO
 
 if TYPE_CHECKING:
-    from app.services.dashboard.dashboard_service import DashboardService
+    from app.services.dashboard.service import DashboardService
 
 
 def bom_coverage(

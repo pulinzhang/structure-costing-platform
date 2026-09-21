@@ -6,7 +6,7 @@ from sqlalchemy.orm import Session
 
 from app.schemas.vo.costing_engine_vo import CostingEngineGateItemVO
 from app.services.costing.engine.gate.item import make_item
-from app.services.costing.engine.scope_discovery import DiscoveryResult
+from app.services.costing.engine.scope.discovery import DiscoveryResult
 from app.services.costing.steel_price.calc.coverage import inspect_steel_coverage
 from app.services.costing.steel_price.calc.models import SteelPriceCalcRequest
 

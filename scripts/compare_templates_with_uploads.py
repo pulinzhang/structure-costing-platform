@@ -34,7 +34,7 @@ def _has_all(haystack: str, needles: list[str]) -> list[str]:
 
 def check_stamping() -> list[str]:
     from app.parsers.stamping.stamping_parser import parse_stamping_excel
-    from app.services.stamping.upload.template_builder import (
+    from app.services.stamping.part.upload.template_builder import (
         build_stamping_process_template,
     )
 
@@ -91,7 +91,7 @@ def check_stamping() -> list[str]:
 
 def check_bom() -> list[str]:
     from app.parsers.bom.bom_parser import parse_bom_excel
-    from app.services.bom.upload.template_builder import build_bom_material_template
+    from app.services.bom.bom.upload.template_builder import build_bom_material_template
 
     issues: list[str] = []
     content, _name = build_bom_material_template()
@@ -136,7 +136,9 @@ def check_bom() -> list[str]:
 
 
 def check_base_price() -> list[str]:
-    from app.parsers.yishiyiyi.base_price import parse_base_price_excel
+    from app.parsers.yishiyiyi.base_price.steel_base_price_parser import (
+        parse_base_price_excel,
+    )
     from app.services.yishiyiyi.base_price.importing.template_builder import (
         build_steel_base_price_template,
         sample_location_lookup,
@@ -185,7 +187,9 @@ def check_base_price() -> list[str]:
 
 
 def check_policy() -> list[str]:
-    from app.parsers.yishiyiyi.policy import parse_steel_price_policy_excel
+    from app.parsers.yishiyiyi.policy.steel_price_policy_parser import (
+        parse_steel_price_policy_excel,
+    )
     from app.services.yishiyiyi.policy.importing.template_builder import (
         build_steel_price_policy_template,
     )
@@ -236,7 +240,7 @@ def check_flat_templates() -> list[str]:
     issues: list[str] = []
 
     from app.parsers.stamping.tonnage_price_parser import parse_tonnage_price_excel
-    from app.services.stamping.tonnage_price_import_service import (
+    from app.services.stamping.tonnage_price.upload.import_service import (
         StampingTonnagePriceImportService,
     )
 

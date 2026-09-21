@@ -1,12 +1,8 @@
 from decimal import Decimal
 
-from app.services.stamping.die_fee.export_service import (
-    COL_COUNT,
-    HEADERS,
-    WIDTHS,
-    _check_weight_formula,
-)
-from app.services.stamping.die_fee.fee_math import (
+from app.services.stamping.die_fee.export.columns import COL_COUNT, HEADERS, WIDTHS
+from app.services.stamping.die_fee.export.values import _check_weight_formula
+from app.services.stamping.die_fee.rules.fee_math import (
     calc_line_die_fee,
     is_progressive_mode,
     resolve_final_die_fee,

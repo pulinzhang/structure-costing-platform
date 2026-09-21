@@ -15,9 +15,10 @@ from sqlalchemy.orm import Session
 
 from app.common.excel_workbook import resolve_worksheet
 from app.common.export_watermark import workbook_to_xlsx_bytes
-from app.repositories.bom.bom_repository import BomNodeRepository, BomSnapshotRepository
+from app.repositories.bom.bom.node import BomNodeRepository
+from app.repositories.bom.bom.snapshot import BomSnapshotRepository
 from app.repositories.costing.steel_price.steel_price_repository import SteelPriceRepository
-from app.repositories.stamping.stamping_process_fee_repository import (
+from app.repositories.stamping.process_fee.repository import (
     StampingProcessFeeRepository,
 )
 from app.repositories.yishiyiyi.scrap_price.scrap_price_repository import (
@@ -43,7 +44,7 @@ from app.services.costing.stamping_part_cost.export.process_sheet.rows import (
     write_process_data_rows,
 )
 from app.services.costing.stamping_part_cost.helpers import to_decimal
-from app.services.settings.system.settings_service import SettingsService
+from app.services.settings.system.service import SettingsService
 
 logger = logging.getLogger("service.stamping_part_cost_export")
 

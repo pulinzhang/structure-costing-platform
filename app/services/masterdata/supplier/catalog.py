@@ -19,7 +19,7 @@ from app.parsers.masterdata.supplier_parser import (
     HEADER_FULL_NAME,
     HEADER_STATUS,
 )
-from app.repositories.masterdata.supplier import SupplierRepository
+from app.repositories.masterdata.supplier.supplier_repository import SupplierRepository
 from app.schemas.vo.user_vo import UserVO
 
 IMPORT_HEADERS = (

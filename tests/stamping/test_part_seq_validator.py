@@ -2,13 +2,13 @@
 
 from app.exceptions.base import BusinessException
 from app.parsers.stamping.models.part import Part
-from app.services.stamping.part_seq_validator import (
+from app.services.stamping.part.rules.part_seq_validator import (
     PartSeqOccurrence,
     format_part_seq_issues,
     inspect_part_seq_nos,
     next_consecutive_seq_no,
 )
-from app.services.stamping.upload.gates.validate import require_consecutive_part_seq_nos
+from app.services.stamping.part.upload.gates.validate import require_consecutive_part_seq_nos
 
 
 def _row(part_number: str, seq_no: int, excel_row: int | None = None) -> PartSeqOccurrence:

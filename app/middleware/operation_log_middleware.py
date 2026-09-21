@@ -15,7 +15,7 @@ from app.common.operation_log.context import (
     get_request_user,
 )
 from app.common.operation_log.rules import should_record
-from app.services.settings.logs.operation_log_service import OperationLogService
+from app.services.settings.logs.service import OperationLogService
 
 logger = logging.getLogger("middleware.operation_log")
 _service = OperationLogService()

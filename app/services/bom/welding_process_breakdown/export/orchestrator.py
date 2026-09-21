@@ -52,5 +52,6 @@ class BomWeldingProcessBreakdownExportOrchestrator:
             ctx.nodes,
             filter_text=ctx.filter_text,
             current_user=current_user,
+            version_by_node_id=ctx.version_by_node_id,
         )
         return persist_export(ctx, content, export_row_count)

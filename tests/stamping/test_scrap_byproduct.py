@@ -15,8 +15,8 @@ from app.services.stamping.die_fee.calc.orchestrator.identity import is_scrap_by
 from app.services.stamping.die_fee.calc.orchestrator.prep import CalcPrepContext
 from app.services.stamping.die_fee.calc.orchestrator.progress import ProgressNotifier
 from app.services.stamping.die_fee.calc.part_calculator import DieFeePartCalculator
+from app.services.stamping.part.upload.cost_ratio_preserver import ProcessCostRatioPreserver
 from app.services.stamping.process_fee.calc.part_calculator import PartFeeCalculator
-from app.services.stamping.upload.cost_ratio_preserver import ProcessCostRatioPreserver
 
 
 def test_four_blank_columns_with_weight_is_scrap_byproduct() -> None:

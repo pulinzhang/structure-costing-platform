@@ -21,10 +21,8 @@
 **对外入口**：
 
 ```python
-from app.services.yishiyiyi.base_price import (
-    SteelBasePriceService,
-    SteelBasePriceExportService,
-)
+from app.services.yishiyiyi.base_price.service import SteelBasePriceService
+from app.services.yishiyiyi.base_price.export.service import SteelBasePriceExportService
 ```
 
 - `SteelBasePriceService`：CRUD / 导入 / 导出预览 / 核价取数（门面）  
@@ -43,7 +41,7 @@ from app.services.yishiyiyi.base_price import (
    `SteelBasePriceService` 不写业务细节，只转发。对外能力在门面，细节在子包。
 
 3. **查询组装与 Excel 生成分离（导出）**  
-   `export_service` 负责查库与扁平行；`excel_exporter` 负责 openpyxl。样式变更不搅进查询。
+   `export/service.py` 负责查库与扁平行；`excel_exporter` 负责 openpyxl。样式变更不搅进查询。
 
 4. **仍遵守项目分层**  
    子包是 Service 内部拆分。写库走 Repository；解析只由 importing 调 Parser；Router 不直接碰 Parser / Repository。
@@ -59,8 +57,8 @@ from app.services.yishiyiyi.base_price import (
 ```text
 app/services/yishiyiyi/base_price/
 ├── README.md
-├── __init__.py                         # re-export Service / ExportService
-├── steel_base_price_service.py         # 薄门面：只委托
+├── __init__.py                         # 只作包标记，不汇总导出
+├── service.py                          # 薄门面：只委托
 ├── crud/
 │   ├── __init__.py
 │   └── base_price_crud.py              # CRUD、批量删除、核价取数、统计
@@ -69,7 +67,7 @@ app/services/yishiyiyi/base_price/
 │   └── import_service.py               # 归档 + 解析 + upsert
 └── export/
     ├── __init__.py
-    ├── export_service.py               # 导出预览查询、调导出器
+    ├── service.py                      # 导出预览查询、调导出器
     └── excel_exporter.py               # openpyxl 生成
 ```
 
@@ -131,7 +129,7 @@ parsers.yishiyiyi.base_price     （仅 importing 调用）
 |------|------|
 | `crud/base_price_crud.py` | 列表字段 / 写操作审计 |
 | `importing/import_service.py` | 导入 upsert 策略、进度分段 |
-| `export/export_service.py` | 导出预览字段 |
+| `export/service.py` | 导出预览字段 |
 | `export/excel_exporter.py` | Excel 列与样式 |
 
 约束：门面不堆业务逻辑；Router 不直接调 Parser；子包之间避免成环。
@@ -142,7 +140,7 @@ parsers.yishiyiyi.base_price     （仅 importing 调用）
 
 | 层级 | 路径 |
 |------|------|
-| Router | `app/routers/yishiyiyi/base_price/` |
+| Router | `app/routers/yishiyiyi/base_price.py` |
 | Service（本目录） | `app/services/yishiyiyi/base_price/` |
 | Repository | `app/repositories/yishiyiyi/base_price/` |
 | Parser | `app/parsers/yishiyiyi/base_price/` |

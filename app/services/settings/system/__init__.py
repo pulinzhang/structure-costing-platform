@@ -1,5 +1,1 @@
-"""系统设置服务。"""
-
-from app.services.settings.system.settings_service import SettingsService
-
-__all__ = ["SettingsService"]
+"""系统参数。按模块 import，不要在本文件汇总。"""

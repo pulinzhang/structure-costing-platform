@@ -80,17 +80,17 @@ def persist_engineering_change_result(
                 )
             )
         if not pipeline.effect_links:
-            raise BusinessException("写入成功但缺效果链接，禁止标成功")
+            raise BusinessException("这次导入没记全改了哪些数据，没有保存成功。请再传一次。")
         for link in pipeline.effect_links:
             index = link.change_order_id
             if index < 0 or index >= len(change_order_rows):
-                raise BusinessException("效果链接变更单下标无效")
+                raise BusinessException("这次导入对不上工程变更单的行，没有保存成功。请再传一次。")
             link.change_order_id = change_order_rows[index].id
             link.upload_log_id = prepared.log_id
         effect_repo.bulk_create(db, pipeline.effect_links)
         log_row = log_repo.get_by_id(db, prepared.log_id)
         if log_row is None:
-            raise BusinessException("上传日志不存在")
+            raise BusinessException("找不到这次上传记录，请重新上传。")
         log_repo.update(
             db,
             log_row,
@@ -120,7 +120,9 @@ def persist_engineering_change_result(
     except Exception:
         db.rollback()
         logger.exception("工程变更落库失败")
-        mark_engineering_change_failed(db, prepared.log_id, "工程变更落库异常", current_user)
+        mark_engineering_change_failed(
+            db, prepared.log_id, "这次没有保存成功，请再传一次。", current_user
+        )
         raise
 
     report_progress(on_progress, 100, "写入完成")

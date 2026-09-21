@@ -24,7 +24,7 @@ from app.services.stamping.die_fee.calc.orchestrator.prep import CalcPrepContext
 from app.services.stamping.die_fee.calc.orchestrator.progress import ProgressNotifier
 from app.services.stamping.die_fee.calc.part_calculator import DieFeePartCalculator
 from app.services.stamping.die_fee.calc.weight_resolver import PreviousWeightIndex
-from app.services.stamping.die_fee.fee_math import DieFeeLineResult
+from app.services.stamping.die_fee.rules.fee_math import DieFeeLineResult
 
 
 @dataclass(slots=True)

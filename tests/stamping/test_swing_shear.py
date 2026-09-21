@@ -12,7 +12,7 @@ from app.common.swing_shear import (
 from app.parsers.stamping.models.part import Part
 from app.parsers.stamping.models.process import Process
 from app.parsers.stamping.stamping_parser import parse_stamping_excel
-from app.services.stamping.upload.swing_shear_resolver import collect_swing_shear_part_numbers
+from app.services.stamping.part.upload.swing_shear_resolver import collect_swing_shear_part_numbers
 
 
 def test_is_swing_shear_label_matches_code_or_seq() -> None:

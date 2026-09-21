@@ -15,7 +15,7 @@ from sqlalchemy.orm import Session
 
 from app.common.audit import display_name
 from app.models.bom import BomWeldingFeeCalcLog
-from app.schemas.common import DeletedCountVO
+from app.schemas.common.deleted_count import DeletedCountVO
 from app.schemas.dto.bom_welding_fee_dto import BomWeldingFeeCalcDTO
 from app.schemas.vo.async_task_vo import AsyncTaskAcceptedVO
 from app.schemas.vo.bom_welding_fee_vo import (
@@ -24,9 +24,11 @@ from app.schemas.vo.bom_welding_fee_vo import (
     BomWeldingFeeCalcResultVO,
 )
 from app.schemas.vo.user_vo import UserVO
-from app.services.async_task import (
+from app.services.async_task.service import (
     TASK_TYPE_BOM_WELDING_FEE_CALC,
     AsyncTaskService,
+)
+from app.services.async_task.worker_runner import (
     WorkerTaskOutcome,
     outcome_from_calc_status,
 )
@@ -45,7 +47,7 @@ from app.services.bom.welding_fee.calc.orchestrator.progress import (
 )
 from app.services.bom.welding_fee.calc.orchestrator.ready import collect_calc_ready
 from app.services.bom.welding_fee.calc.staff_report import calc_finish_toast
-from app.services.masterdata.vehicle_model import VehicleModelService
+from app.services.masterdata.vehicle_model.service import VehicleModelService
 
 
 class BomWeldingFeeCalcOrchestrator:

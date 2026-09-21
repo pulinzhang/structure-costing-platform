@@ -12,8 +12,11 @@ from app.deps.permissions import require_any_perm, require_perm
 from app.schemas.vo.async_task_vo import AsyncTaskAcceptedVO, AsyncTaskProgressVO
 from app.schemas.vo.engineering_change_vo import EngineeringChangeUploadResultVO
 from app.schemas.vo.user_vo import UserVO
-from app.services.async_task import STATUS_PENDING, AsyncTaskService
-from app.services.async_task.async_task_service import TASK_TYPE_ENGINEERING_CHANGE_UPLOAD
+from app.services.async_task.service import (
+    STATUS_PENDING,
+    TASK_TYPE_ENGINEERING_CHANGE_UPLOAD,
+    AsyncTaskService,
+)
 from app.services.engineering_change.upload.upload_service import EngineeringChangeUploadService
 from app.utils.response import ApiResponse
 

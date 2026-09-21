@@ -17,7 +17,7 @@ from app.exceptions.base import BusinessException
 from app.parsers.bom.packaging_transport_fee_parser import (
     parse_packaging_transport_fee_excel,
 )
-from app.repositories.bom.bom_repository import BomSnapshotRepository
+from app.repositories.bom.bom.snapshot import BomSnapshotRepository
 from app.repositories.bom.packaging_transport_fee_repository import (
     BomPackagingTransportFeeRepository,
 )
@@ -31,7 +31,7 @@ from app.schemas.vo.bom_packaging_transport_fee_vo import (
 )
 from app.schemas.vo.user_vo import UserVO
 from app.services.file_trace.register import register_existing
-from app.services.masterdata.vehicle_model import VehicleModelService
+from app.services.masterdata.vehicle_model.service import VehicleModelService
 from app.utils.bom_packaging_transport_fee_archive import (
     save_packaging_transport_fee_upload,
 )

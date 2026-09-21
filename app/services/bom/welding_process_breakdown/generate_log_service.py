@@ -20,7 +20,7 @@ from app.models.bom import (
 from app.repositories.bom.welding_process_breakdown_generate_log_repository import (
     BomWeldingProcessBreakdownGenerateLogRepository,
 )
-from app.schemas.common import DeletedCountVO
+from app.schemas.common.deleted_count import DeletedCountVO
 from app.schemas.dto.bom_welding_process_breakdown_dto import (
     BomWeldingProcessBreakdownGenerateLogCreate,
     BomWeldingProcessBreakdownGenerateLogPatch,
