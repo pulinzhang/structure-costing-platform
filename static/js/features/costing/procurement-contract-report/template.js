@@ -2,9 +2,8 @@
  * 采购价格 — BRABUS 800 中控交车（协议黑匣）
  */
 
+import { HUD_SHELL } from '../../../ui/classes.js?v=13';
 import { paginationBarHtml } from '../../../ui/page-size.js?v=6';
-
-const HUD_SHELL_STYLE = 'background:#0D0D11;border:1px solid rgba(255,255,255,0.08);';
 
 const RING_SELECT_IDS = [
     'pcrLocationFilter',
@@ -17,41 +16,40 @@ const RING_SELECT_IDS = [
     'pcrSupplierFilter',
 ];
 
-const DRIVE_ACTIVE =
-    'flex-1 h-full text-[10px] rounded-sm bg-app-main border border-line-hud text-ink-muted font-medium';
-const DRIVE_IDLE =
-    'flex-1 h-full text-[10px] rounded-sm border border-transparent text-ink-dim hover:text-ink-muted font-medium';
-
-const IGNITION_STYLE =
-    'background-image:linear-gradient(90deg,#380A0E 0%,#1F0507 50%,#380A0E 100%);'
-    + 'box-shadow:0 0 18px rgba(255,30,39,0.5);';
+const VIEW_LABEL = 'pcr-view-toggle__label';
 const BENTO_H = 'height:72px;padding:8px';
 const MECH_FONT =
     "'Chakra Petch','JetBrains Mono',ui-monospace,Menlo,Consolas,monospace";
 const MECH_NUM_STYLE =
     `font-family:${MECH_FONT};font-weight:700;font-variant-numeric:tabular-nums;letter-spacing:-0.5px`;
-const KPI_NUM_STYLE = `${MECH_NUM_STYLE};text-shadow:0 0 12px rgba(255,30,39,0.4)`;
+const KPI_NUM_STYLE = `${MECH_NUM_STYLE};text-shadow:0 0 12px rgb(var(--hud-red) / 0.4)`;
 const PCR_FX_CSS = `@keyframes pcr-laser-sweep{0%{left:-72px;opacity:1}100%{left:100%;opacity:.2}}`
-    + `@keyframes pcr-ignition-breathe{0%,100%{opacity:.35;box-shadow:0 0 4px #FF1E27}50%{opacity:1;box-shadow:0 0 10px #FF1E27}}`
+    + `@keyframes pcr-ignition-breathe{0%,100%{opacity:.35;box-shadow:0 0 4px rgb(var(--hud-red))}50%{opacity:1;box-shadow:0 0 10px rgb(var(--hud-red))}}`
+    + `.pcr-cockpit{overflow:visible}`
     + `.pcr-laser-track{position:absolute;top:0;left:0;right:0;height:1px;overflow:hidden;pointer-events:none;z-index:2}`
     + `.pcr-laser-spot{position:absolute;top:0;width:72px;height:1px;`
-    + `background:linear-gradient(90deg,transparent,#FF1E27,#fff,#FF1E27,transparent);`
+    + `background:linear-gradient(90deg,transparent,rgb(var(--hud-red)),rgb(var(--text-on-brand)),rgb(var(--hud-red)),transparent);`
     + `animation:pcr-laser-sweep 100ms linear 1 forwards}`
     + `.pcr-ignition-pulse{animation:pcr-ignition-breathe 2s ease-in-out infinite}`
-    + `.pcr-glass{background:rgba(13,13,17,.58);backdrop-filter:blur(14px);-webkit-backdrop-filter:blur(14px);border-bottom:1px solid rgba(255,255,255,.08)}`
-    + `.pcr-bento{background:#121218;border:1px solid rgba(255,255,255,.08);transition:border-color .18s ease,box-shadow .18s ease}`
-    + `.pcr-bento:hover{border-color:rgba(255,30,39,.38);box-shadow:0 0 18px rgba(255,30,39,.12)}`
-    + `.pcr-hairline{border-color:rgba(255,255,255,.08)}`
+    + `.pcr-glass{background:rgb(var(--bg-hud) / 0.72);backdrop-filter:blur(14px);-webkit-backdrop-filter:blur(14px);border-bottom:1px solid rgb(var(--border-hud))}`
+    + `.pcr-bento{background:rgb(var(--bg-elevated));border:1px solid rgb(var(--border-hud));transition:border-color .18s ease,box-shadow .18s ease}`
+    + `.pcr-bento:hover{border-color:rgb(var(--hud-red) / 0.38);box-shadow:0 0 18px rgb(var(--hud-red) / 0.12)}`
     + `.pcr-num,#pcrHudVehicleTotal,#pcrHudPrice,#pcrHudSuppliers,#pcrHudMissing{`
     + `font-family:${MECH_FONT}!important;font-weight:700!important;`
     + `font-variant-numeric:tabular-nums lining-nums;letter-spacing:-0.5px}`
-    + `#pcrHudVehicleTotal{text-shadow:0 0 12px rgba(255,30,39,.4)}`
     + `.pcr-kpi{font-size:22px;line-height:1}`
-    + `.pcr-label{font-size:8px;color:#666;letter-spacing:.12em;line-height:1}`
-    + `.pcr-chip{background:rgba(255,255,255,.03);border:1px solid rgba(255,255,255,.08)}`
-    + `.pcr-status-idle{background:#3A3A42}`
-    + `.pcr-status-alert{background:#FF1E27;box-shadow:0 0 6px rgba(255,30,39,.55)}`
+    + `.pcr-label{font-size:8px;color:rgb(var(--text-muted));letter-spacing:.12em;line-height:1}`
+    + `.pcr-chip{background:rgb(var(--text-main) / 0.03);border:1px solid rgb(var(--border-hud))}`
+    + `.pcr-status-idle{background:rgb(var(--text-disabled))}`
+    + `.pcr-status-alert{background:rgb(var(--hud-red));box-shadow:0 0 6px rgb(var(--hud-red) / 0.55)}`
+    + `.pcr-export{background-image:linear-gradient(90deg,rgb(var(--pcr-ignition-from)) 0%,rgb(var(--pcr-ignition-mid)) 50%,rgb(var(--pcr-ignition-from)) 100%);box-shadow:0 0 18px rgb(var(--hud-red) / var(--pcr-ignition-glow))}`
     + `.pcr-export:hover{filter:brightness(1.25)}`
+    + `html[data-theme="light"] .pcr-export:hover{filter:none;background-image:none;background-color:rgb(var(--brabus-red));color:rgb(var(--text-on-brand));border-color:rgb(var(--brabus-red));border-top-color:rgb(var(--brabus-red))}`
+    + `.pcr-view-toggle{display:inline-flex;align-items:center;height:1.75rem;padding:0 .75rem;border:1px solid rgb(var(--border-color));border-radius:999px;background:transparent;flex-shrink:0}`
+    + `.pcr-view-toggle__label{margin:0;padding:0;border:0;background:transparent;color:rgb(var(--text-muted));font-size:11px;font-weight:500;letter-spacing:.04em;cursor:pointer;line-height:1}`
+    + `.pcr-view-toggle__label.is-active{color:rgb(var(--text-main));font-weight:600}`
+    + `.pcr-view-toggle__divider{color:rgb(var(--text-disabled));padding:0 .45rem;pointer-events:none;line-height:1}`
+    + `.pcr-view-toggle__label:focus-visible{outline:1px solid rgb(var(--border-active));outline-offset:2px}`
     + `.pcr-amt-mark{opacity:0}`
     + `.pcr-amt-cell:hover .pcr-amt-mark,.pcr-amt-cell:focus-within .pcr-amt-mark{opacity:.8}`
     + `@media (prefers-reduced-motion:reduce){.pcr-laser-spot,.pcr-ignition-pulse{animation:none!important}.pcr-bento{transition:none}}`;
@@ -76,8 +74,7 @@ export function procurementContractReportTemplate() {
     return `
         <div class="w-full max-w-full">
             <style>${PCR_FX_CSS}</style>
-            <div class="relative rounded-md p-2.5 mb-2 w-full max-w-full"
-                 style="${HUD_SHELL_STYLE}">
+            <div class="${HUD_SHELL} pcr-cockpit relative rounded-md p-2.5 mb-2">
                 <span class="pcr-laser-track" aria-hidden="true"><span class="pcr-laser-spot"></span></span>
 
                 <div class="pcr-glass flex items-center gap-2 -mx-2.5 px-2.5 py-1.5 mb-2 text-[11px]">
@@ -88,6 +85,11 @@ export function procurementContractReportTemplate() {
                         ${ringPeriodChip('pcrStartYearFilter', 'pcrStartMonthFilter', '开始')}
                         ${ringPeriodChip('pcrEndYearFilter', 'pcrEndMonthFilter', '结束')}
                         <span id="pcrSupplierFilterWrap">${ringChip('pcrSupplierFilter', '供应商', 'max-w-[14rem]')}</span>
+                    </div>
+                    <div class="pcr-view-toggle" role="group" aria-label="价目视图">
+                        <button type="button" id="pcrViewProcurementBtn" class="${VIEW_LABEL} is-active">采购对象</button>
+                        <span class="pcr-view-toggle__divider" aria-hidden="true">|</span>
+                        <button type="button" id="pcrViewAssemblyBtn" class="${VIEW_LABEL}">总成</button>
                     </div>
                     <button id="pcrResetBtn" type="button"
                             class="shrink-0 inline-flex items-center gap-1 px-2 h-7 text-[11px] text-ink-muted hover:text-ink">
@@ -101,7 +103,7 @@ export function procurementContractReportTemplate() {
                          style="${BENTO_H}">
                         ${cornerMarks()}
                         <div class="pcr-label">单车合计</div>
-                        <div class="pcr-kpi text-white mt-0.5">
+                        <div class="pcr-kpi text-ink mt-0.5">
                             <span id="pcrHudVehicleTotal" style="${KPI_NUM_STYLE}">—</span>
                             <span class="pcr-label align-top ml-0.5">元</span>
                         </div>
@@ -114,7 +116,7 @@ export function procurementContractReportTemplate() {
                             <div class="pcr-label">零件种数</div>
                             <div class="flex items-baseline gap-1.5 mt-0.5">
                                 <span id="pcrHudStatusLamp" class="pcr-status-idle w-1.5 h-1.5 rounded-full shrink-0 translate-y-[-1px]"></span>
-                                <div class="pcr-kpi text-white">
+                                <div class="pcr-kpi text-ink">
                                     <span id="pcrHudPrice" class="pcr-num" style="${MECH_NUM_STYLE}">—</span>
                                     <span class="pcr-label">种</span>
                                 </div>
@@ -124,33 +126,28 @@ export function procurementContractReportTemplate() {
                         <div id="pcrHudSupplierCard" class="pcr-bento rounded min-w-0 flex flex-col justify-center"
                              style="${BENTO_H}">
                             <div class="pcr-label">已指定供应商</div>
-                            <div class="pcr-kpi text-white mt-0.5">
+                            <div class="pcr-kpi text-ink mt-0.5">
                                 <span id="pcrHudSuppliers" class="pcr-num" style="${MECH_NUM_STYLE}">—</span>
                                 <span class="pcr-label">家</span>
                             </div>
                         </div>
                     </div>
 
-                    <div class="col-span-4 rounded flex flex-col justify-between min-w-0"
-                         style="${BENTO_H};border:1px solid rgba(255,255,255,.08)">
-                        <div class="flex w-full h-6 bg-app-deep border pcr-hairline rounded p-0.5" role="group" aria-label="价目视图">
-                            <button id="pcrViewProcurementBtn" type="button" class="${DRIVE_ACTIVE}">采购对象</button>
-                            <button id="pcrViewAssemblyBtn" type="button" class="${DRIVE_IDLE}">总成</button>
-                        </div>
+                    <div class="col-span-4 rounded min-w-0 border border-line-hud"
+                         style="${BENTO_H}">
                         <button id="pcrExportBtn" type="button"
-                                style="${IGNITION_STYLE}"
-                                class="pcr-export relative w-full h-8 inline-flex items-center justify-center gap-2 border border-brand-hud [border-top-color:rgba(255,255,255,0.35)] text-brand-hud text-[12px] font-black tracking-widest uppercase rounded active:scale-[0.99] transition-all"
+                                class="pcr-export relative w-full h-full inline-flex items-center justify-center gap-2 border border-brand-hud [border-top-color:rgb(var(--hairline)/0.35)] text-brand-hud text-[12px] font-black tracking-widest uppercase rounded active:scale-[0.99] transition-all"
                                 title="导出《批量零部件价格协议》（不分页、无水印）">
                             ${cornerMarks()}
-                            <span class="pcr-ignition-pulse w-2 h-2 rounded-full bg-brand-hud shrink-0 shadow-[0_0_10px_#FF1E27]"></span>
+                            <span class="pcr-ignition-pulse w-2 h-2 rounded-full bg-brand-hud shrink-0 shadow-[0_0_10px_rgb(var(--hud-red))]"></span>
                             <span>导出协议</span>
                         </button>
                     </div>
                 </div>
             </div>
 
-            <div class="overflow-hidden w-full max-w-full" style="border:1px solid rgba(255,255,255,.08)">
-                <div class="flex items-center gap-2 h-8 px-3 border-b pcr-hairline">
+            <div class="overflow-hidden w-full max-w-full border border-line-hud">
+                <div class="flex items-center gap-2 h-8 px-3 border-b border-line-hud">
                     <span class="pointer-events-none text-ink-muted shrink-0">
                         ${window.svgIcon('search', 'w-3 h-3')}
                     </span>
@@ -268,8 +265,8 @@ export function syncPcrChipFace(id) {
     const opt = select.selectedOptions[0];
     const label = trigger.querySelector('[data-pcr-chip-label]') || trigger;
     label.textContent = opt ? opt.textContent : '请选择';
-    trigger.classList.remove('text-white', 'text-ink-muted');
-    trigger.classList.add((select.value || '').trim() ? 'text-white' : 'text-ink-muted');
+    trigger.classList.remove('text-ink', 'text-ink-muted');
+    trigger.classList.add((select.value || '').trim() ? 'text-ink' : 'text-ink-muted');
 }
 
 let chipMenuEl = null;
@@ -380,8 +377,8 @@ export function updatePcrViewButtons(view) {
     const isAssembly = view === 'assembly';
     const procurementBtn = document.getElementById('pcrViewProcurementBtn');
     const assemblyBtn = document.getElementById('pcrViewAssemblyBtn');
-    if (procurementBtn) procurementBtn.className = isAssembly ? DRIVE_IDLE : DRIVE_ACTIVE;
-    if (assemblyBtn) assemblyBtn.className = isAssembly ? DRIVE_ACTIVE : DRIVE_IDLE;
+    if (procurementBtn) procurementBtn.classList.toggle('is-active', !isAssembly);
+    if (assemblyBtn) assemblyBtn.classList.toggle('is-active', isAssembly);
     document.getElementById('pcrHudSupplierCard')?.classList.toggle('hidden', isAssembly);
     document.getElementById('pcrHudPriceCard')?.classList.toggle('col-span-2', isAssembly);
     document.getElementById('pcrSupplierFilterWrap')?.classList.toggle('hidden', isAssembly);
@@ -507,7 +504,7 @@ export function renderPcrTableHead(months, showSupplier = true) {
         colgroup.innerHTML = widths.map((width) => `<col style="width:${width}">`).join('');
     }
 
-    const th = 'px-2 py-2 font-semibold text-center border-b pcr-hairline text-ink-muted';
+    const th = 'px-2 py-2 font-semibold text-center border-b border-line-hud text-ink-muted';
     const monthHeaders = monthCols.map((col) => {
         const label = String(col.header || '').replace(/\n/g, ' ');
         return `<th class="${th} text-right">${esc(label)}</th>`;
