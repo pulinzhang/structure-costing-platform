@@ -13,7 +13,7 @@ from app.services.costing.steel_price.calc.models import (
 )
 from app.services.costing.steel_price.calc.steps.apply_adjustments import AdjustmentApplier
 from app.services.costing.steel_price.calc.steps.enrich_base_price import BasePriceEnricher
-from app.services.costing.steel_price.service import SteelPriceService
+from app.services.costing.steel_price.pricing import compute_final_price
 
 YEAR = 2026
 MONTH = 1
@@ -67,7 +67,7 @@ def test_steel_price_golden_wuhu_2026_01_magang_dc01(db_session: Session) -> Non
 
     payload = row.to_persist_payload(calc_batch_id="gold-2026-01", formula_version="test")
     assert payload.final_price_per_ton == Decimal("4022.00")
-    assert payload.final_price_per_ton == SteelPriceService._compute_final_price(
+    assert payload.final_price_per_ton == compute_final_price(
         base_price=Decimal("3742.00"),
         thickness_adjustment=Decimal("160"),
         width_adjustment=Decimal("0"),
@@ -122,3 +122,11 @@ def test_steel_price_golden_wuhu_2026_01_magang_hc180y_06(db_session: Session) -
 
     payload = row.to_persist_payload(calc_batch_id="gold-2026-01-hc180y", formula_version="test")
     assert payload.final_price_per_ton == Decimal("4239.00")
+    assert payload.final_price_per_ton == compute_final_price(
+        base_price=Decimal("3919.00"),
+        thickness_adjustment=Decimal("200"),
+        width_adjustment=Decimal("0"),
+        zinc_adjustment=Decimal("0"),
+        processing_fee=Decimal("120.00"),
+        other_adjustment=Decimal("0"),
+    )
