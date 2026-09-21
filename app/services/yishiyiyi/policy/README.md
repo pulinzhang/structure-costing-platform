@@ -58,7 +58,7 @@ app/services/yishiyiyi/policy/
 ├── service.py                        # 薄门面：只委托
 ├── crud/
 │   ├── __init__.py
-│   └── policy_crud.py                # 主表/明细 CRUD、批量删除、筛选统计
+│   └── service.py                    # 主表/明细 CRUD、批量删除、筛选统计
 ├── importing/
 │   ├── __init__.py
 │   └── service.py                    # 上传校验 + 批量导入
@@ -134,7 +134,7 @@ parsers.yishiyiyi.policy         （仅 importing 调用）
 
 | 模块 | 职责 |
 |------|------|
-| `crud/policy_crud.py` | 列表字段 / 写操作审计 |
+| `crud/service.py` | 列表字段 / 写操作审计 |
 | `importing/service.py` | 导入替换策略、进度分段 |
 | `match/ladder_matcher.py` | 区间运算符、命中维度 |
 | `match/adjustment_common.py` | 钢厂别名 / 加减价候选排序 |

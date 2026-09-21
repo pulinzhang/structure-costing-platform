@@ -38,7 +38,7 @@ from app.services.async_task.service import (
     AsyncTaskService,
 )
 from app.services.async_task.worker_runner import WorkerTaskOutcome
-from app.services.yishiyiyi.policy.crud.policy_crud import SteelPricePolicyCrudService
+from app.services.yishiyiyi.policy.crud.service import SteelPricePolicyCrudService
 from app.services.yishiyiyi.policy.export.service import (
     SteelPricePolicyExportService,
 )

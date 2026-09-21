@@ -240,8 +240,5 @@ def batch_update_processes(
     current_user: UserVO = Depends(require_perm(Perm.STAMPING_PARTS_UPDATE)),
 ) -> ApiResponse[BatchUpdateResponse]:
     """批量更新零件的所有工序（仅更新 cost_ratio）"""
-    updated = _stamping_service.batch_update_processes(db, body, current_user=current_user)
-    return ApiResponse.ok(
-        data=BatchUpdateResponse(updated=updated),
-        message=f"成功更新 {updated} 条工序",
-    )
+    result = _stamping_service.batch_update_processes(db, body, current_user=current_user)
+    return ApiResponse.updated(data=result, message=result.message)

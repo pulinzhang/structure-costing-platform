@@ -6,7 +6,6 @@ from urllib.parse import quote
 
 from fastapi import APIRouter, Depends, File, Query, UploadFile, status
 from fastapi.responses import StreamingResponse
-from pydantic import BaseModel
 from sqlalchemy.orm import Session
 
 from app.common.permissions.codes import Perm
@@ -22,6 +21,7 @@ from app.schemas.dto.steel_base_price_dto import (
 )
 from app.schemas.vo.async_task_vo import AsyncTaskAcceptedVO, AsyncTaskProgressVO
 from app.schemas.vo.steel_base_price_vo import (
+    SteelBasePriceBatchDeleteResultVO,
     SteelBasePriceExportRow,
     SteelBasePriceFilterOptionsVO,
     SteelBasePriceImportResultResponse,
@@ -39,13 +39,6 @@ from app.utils.response import ApiResponse
 
 # 默认分页大小常量
 DEFAULT_EXPORT_PAGE_SIZE = 5000
-
-
-class BatchDeleteResponse(BaseModel):
-    """批量删除响应 VO"""
-
-    year: int
-    month: int
 
 
 router = APIRouter(prefix="/api/yishiyiyi/base-price", tags=["钢材基准价格"])
@@ -274,22 +267,19 @@ def delete_base_price(
 
 @router.post(
     "/batch-delete",
-    response_model=ApiResponse[BatchDeleteResponse],
+    response_model=ApiResponse[SteelBasePriceBatchDeleteResultVO],
 )
 def batch_delete_base_prices(
     body: SteelBasePriceQuery,
     db: Session = Depends(get_db),
     current_user: UserVO = Depends(require_perm(Perm.BASE_PRICE_DOWNLOAD_DELETE)),
-) -> ApiResponse[BatchDeleteResponse]:
+) -> ApiResponse[SteelBasePriceBatchDeleteResultVO]:
     """按条件批量删除基准价格记录（年度+月份必须同时指定）。"""
-    year, month = _steel_base_price_service.batch_delete(
+    result = _steel_base_price_service.batch_delete(
         db,
         year=body.year,
         month=body.month,
         location=body.location,
         steel_mill=body.steel_mill,
     )
-    return ApiResponse.ok(
-        data=BatchDeleteResponse(year=year, month=month),
-        message="批量删除成功",
-    )
+    return ApiResponse.ok(data=result, message=result.message)

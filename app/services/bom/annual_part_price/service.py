@@ -26,6 +26,7 @@ from app.repositories.bom.annual_part_price_repository import (
     AuditCountSummary,
     BomAnnualPartPriceRepository,
 )
+from app.schemas.common.batch_result import batch_approve_message, batch_reverse_message
 from app.schemas.dto.bom_annual_part_price_dto import (
     BomAnnualPartPriceBatchApproveDTO,
     BomAnnualPartPriceBatchReverseAuditDTO,
@@ -35,6 +36,7 @@ from app.schemas.dto.bom_annual_part_price_dto import (
 )
 from app.schemas.vo.bom_annual_part_price_vo import (
     BomAnnualPartPriceBatchAuditResultVO,
+    BomAnnualPartPriceBatchDeleteResultVO,
     BomAnnualPartPriceResponse,
 )
 from app.schemas.vo.supplier_vo import SupplierChoiceVO
@@ -274,7 +276,7 @@ class BomAnnualPartPriceService:
         *,
         location: str,
         year: int,
-    ) -> tuple[int, int]:
+    ) -> BomAnnualPartPriceBatchDeleteResultVO:
         location = (location or "").strip()
         if not location:
             raise BusinessException("请选择采购基地")
@@ -306,7 +308,16 @@ class BomAnnualPartPriceService:
             deleted_count,
             skipped,
         )
-        return deleted_count, skipped
+        message = f"已删除基地「{location}」{year} 年共 {deleted_count} 条"
+        if skipped:
+            message += f"，跳过已审核 {skipped} 条"
+        return BomAnnualPartPriceBatchDeleteResultVO(
+            location=location,
+            year=year,
+            deleted_count=deleted_count,
+            skipped_approved_count=skipped,
+            message=message,
+        )
 
     def batch_approve(
         self,
@@ -348,6 +359,7 @@ class BomAnnualPartPriceService:
             skipped_count=skipped,
             location=location,
             year=dto.year,
+            message=batch_approve_message(updated, skipped),
         )
 
     def batch_reverse_audit(
@@ -393,6 +405,7 @@ class BomAnnualPartPriceService:
             skipped_count=skipped,
             location=location,
             year=dto.year,
+            message=batch_reverse_message(updated, skipped),
         )
 
     def get_locations(self, db: Session) -> list[str]:

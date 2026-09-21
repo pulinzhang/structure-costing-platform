@@ -24,7 +24,7 @@ Parser 是横向工具：只被 Service 调用；可调 `app/common/` 纯函数�
 
 | 层级 | 做 | 禁止 |
 |------|----|------|
-| **Router** | 取参、调本切片 Service、成功响应；下载可 `StreamingResponse`/`FileResponse` | 业务逻辑、查库、调 Parser、写 `_process_*_in_background`、开 `get_session_factory`、把 Service 失败转 `HTTPException` |
+| **Router** | 取参、调本切片 Service、成功响应（工厂套 Service 已返回的 VO / `list_()`）；下载可 `StreamingResponse`/`FileResponse` | 业务逻辑、构造结果 VO、查库、调 Parser、写 `_process_*_in_background`、开 `get_session_factory`、把 Service 失败转 `HTTPException` |
 | **Service** | 业务规则、事务、`Parser`、ORM→VO、`create_task`+`submit`、抛业务异常 | 直接 SQL/`db.query`；`(None, str)` 当 HTTP 错误通道；手写 datetime/Decimal 给前端（形态在 VO） |
 | **Repository** | CRUD / 聚合查询；`add`/`delete`/`flush`/`refresh` | `commit`/`rollback`；权限/角色分支 |
 | **Model** | 表结构、同切片附属行 `relationship` | `to_dict`、业务 `@property`；父 Model 指向跨切片独立子主数据 |
@@ -136,7 +136,9 @@ app/
 | `PermissionException` | 403 | `require_perm` |
 | 未捕获 | 500 | rollback + 再 raise |
 
-业务 Router / 切片 Service **不抛 `HTTPException`**。仅 `deps/auth` 未登录可用 401。允许的元组：分页 `(items, total[, filters])`；Parser/计算领域「未匹配」；worker `WorkerTaskOutcome`（不穿过 HTTP）。
+业务 Router / 切片 Service **不抛 `HTTPException`**。仅 `deps/auth` 未登录可用 401。
+
+对 Router **穿过 HTTP** 的元组只允许：分页 `(items, total[, filters])` → `list_()`；下载 `(bytes, filename)` → Stream/File。批量 upsert/删除/审核必须是**一个**结果 VO，禁止四元组、`(deleted, skipped)`、`(year, month)` 或裸 `int` 再由 Router 组 VO。Parser/计算领域「未匹配」、worker `WorkerTaskOutcome` 允许为元组，**不穿过 HTTP**。
 
 ## 五、长任务、同步 Excel、旁路 Session
 
@@ -178,3 +180,4 @@ app/
 - 上游不得依赖下游；父不查子、不 `relationship` 独立子 → §3.3；结果表溯源指针 `SET NULL` 仅 §3.3 封闭名单
 - 有 `task_id` 的 worker 壳不在 Router、不在切片复制 runner；旁路 Session 与同步 Excel 仅 §五封闭名单
 - HTTP 错误只抛 `NotFoundException` / `BusinessException`；Orchestrator 主方法无 `for`/写库 → 指挥家宪法
+- 对 Router 的成功体是 VO 或 `list_()`，不是匿名元组（分页与下载除外）；禁止 Router 构造结果 VO

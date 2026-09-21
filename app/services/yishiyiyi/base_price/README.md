@@ -61,7 +61,7 @@ app/services/yishiyiyi/base_price/
 ├── service.py                          # 薄门面：只委托
 ├── crud/
 │   ├── __init__.py
-│   └── base_price_crud.py              # CRUD、批量删除、核价取数、统计
+│   └── service.py                      # CRUD、批量删除、核价取数、统计
 ├── importing/
 │   ├── __init__.py
 │   └── service.py                      # 归档 + 解析 + upsert
@@ -127,7 +127,7 @@ parsers.yishiyiyi.base_price     （仅 importing 调用）
 
 | 模块 | 职责 |
 |------|------|
-| `crud/base_price_crud.py` | 列表字段 / 写操作审计 |
+| `crud/service.py` | 列表字段 / 写操作审计 |
 | `importing/service.py` | 导入 upsert 策略、进度分段 |
 | `export/service.py` | 导出预览字段 |
 | `export/excel_exporter.py` | Excel 列与样式 |

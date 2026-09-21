@@ -4,13 +4,12 @@ from openpyxl import Workbook
 from sqlalchemy.orm import Session
 
 from app.common.excel_workbook import resolve_worksheet
-from app.models.bom.node import BomNode
 from app.models.costing.assembly_cost import AssemblyCost
+from app.repositories.bom.bom.node import BomNodeRepository
 from app.repositories.bom.procurement_object_repository import BomProcurementObjectRepository
 from app.repositories.costing.assembly_cost.assembly_cost_repository import (
     AssemblyCostRepository,
 )
-from app.repositories.costing.assembly_cost.payloads import _chunks
 from app.services.costing.assembly_cost.export.workbook.columns import (
     FINANCE_INDIRECTS_SHEET,
     FINANCE_ITEMS_SHEET,
@@ -176,10 +175,8 @@ def _seq_no_by_source_node_id(
     if not node_ids:
         return {}
     result: dict[int, int | None] = {}
-    for chunk in _chunks(node_ids):
-        rows = db.query(BomNode.id, BomNode.seq_no).filter(BomNode.id.in_(chunk)).all()
-        for node_id, seq_no in rows:
-            result[int(node_id)] = int(seq_no) if seq_no is not None else None
+    for node in BomNodeRepository().list_by_ids(db, node_ids):
+        result[int(node.id)] = int(node.seq_no) if node.seq_no is not None else None
     return result
 
 

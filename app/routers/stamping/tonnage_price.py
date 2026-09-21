@@ -188,25 +188,12 @@ def batch_delete(
     current_user: UserVO = Depends(require_perm(Perm.STAMPING_TONNAGE_DELETE)),
 ) -> ApiResponse[StampingTonnagePriceBatchDeleteResultVO]:
     """按基地 + 年度批量删除冲次单价（仅删未审核；已通过跳过）。"""
-    deleted_count, skipped = _tonnage_price_service.batch_delete_by_location_year(
+    result = _tonnage_price_service.batch_delete_by_location_year(
         db,
         location=body.location,
         year=body.year,
     )
-
-    message = f"已删除基地「{body.location}」{body.year} 年共 {deleted_count} 条"
-    if skipped:
-        message += f"，跳过已审核 {skipped} 条"
-    return ApiResponse.ok(
-        data=StampingTonnagePriceBatchDeleteResultVO(
-            location=body.location.strip(),
-            year=body.year,
-            deleted_count=deleted_count,
-            skipped_approved_count=skipped,
-            message=message,
-        ),
-        message=message,
-    )
+    return ApiResponse.ok(data=result, message=result.message)
 
 
 @router.post(
@@ -220,10 +207,7 @@ def batch_approve(
 ) -> ApiResponse[StampingTonnagePriceBatchAuditResultVO]:
     """按基地 + 年度批量审核通过。"""
     result = _tonnage_price_service.batch_approve(db, body, current_user=current_user)
-    message = f"已审核通过 {result.updated_count} 条"
-    if result.skipped_count:
-        message += f"，跳过已审核 {result.skipped_count} 条"
-    return ApiResponse.ok(data=result, message=message)
+    return ApiResponse.ok(data=result, message=result.message)
 
 
 @router.post(
@@ -237,10 +221,7 @@ def batch_reverse_audit(
 ) -> ApiResponse[StampingTonnagePriceBatchAuditResultVO]:
     """按基地 + 年度批量反审核。"""
     result = _tonnage_price_service.batch_reverse_audit(db, body, current_user=current_user)
-    message = f"已反审核 {result.updated_count} 条"
-    if result.skipped_count:
-        message += f"，跳过非已审 {result.skipped_count} 条"
-    return ApiResponse.ok(data=result, message=message)
+    return ApiResponse.ok(data=result, message=result.message)
 
 
 @router.post("/bulk", response_model=ApiResponse[StampingTonnagePriceBulkUpsertResponse])
@@ -250,24 +231,8 @@ def bulk_upsert(
     current_user: UserVO = Depends(require_perm(Perm.STAMPING_TONNAGE_CREATE)),
 ) -> ApiResponse[StampingTonnagePriceBulkUpsertResponse]:
     """批量写入冲次单价（存在则更新，与 Excel 导入一致）"""
-    created, updated, failed, skipped_approved = _tonnage_price_service.bulk_upsert(
-        db, items, current_user=current_user
-    )
-    return ApiResponse.ok(
-        data=StampingTonnagePriceBulkUpsertResponse(
-            created=created,
-            updated=updated,
-            failed=failed,
-            created_count=len(created),
-            updated_count=len(updated),
-            failed_count=len(failed),
-            skipped_approved_count=skipped_approved,
-        ),
-        message=(
-            f"批量写入完成: 新增 {len(created)}, 更新 {len(updated)}, "
-            f"失败 {len(failed)}, 跳过已审核 {skipped_approved}"
-        ),
-    )
+    result = _tonnage_price_service.bulk_upsert(db, items, current_user=current_user)
+    return ApiResponse.ok(data=result, message=result.message)
 
 
 @router.post("", response_model=ApiResponse[StampingTonnagePriceResponse])

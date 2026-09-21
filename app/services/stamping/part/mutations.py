@@ -24,6 +24,7 @@ from app.schemas.dto.stamping_upload_dto import (
     StampingProcessPatch,
 )
 from app.schemas.vo.stamping_vo import (
+    BatchUpdateResponse,
     StampingPartBatchDeleteResultVO,
     StampingPartResponse,
     StampingProcessResponse,
@@ -192,7 +193,7 @@ def batch_update_processes(
     db: Session,
     items: list[StampingProcessItemUpdate],
     current_user: UserVO,
-) -> int:
+) -> BatchUpdateResponse:
     """批量更新工序成本系数"""
     operator_name = display_name(current_user)
     process_repo = StampingProcessRepository()
@@ -212,4 +213,4 @@ def batch_update_processes(
             count += 1
     db.commit()
     logger.info("batch_update_processes 完成，更新了 %s 条", count)
-    return count
+    return BatchUpdateResponse(updated=count, message=f"成功更新 {count} 条工序")

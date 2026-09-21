@@ -21,6 +21,7 @@ from app.repositories.bom.welding_unit_price_repository import (
     BomWeldingUnitPriceRepository,
     WeldingUnitPriceListFilters,
 )
+from app.schemas.common.batch_result import batch_approve_message, batch_reverse_message
 from app.schemas.dto.bom_welding_unit_price_dto import (
     BomWeldingUnitPriceBatchApproveDTO,
     BomWeldingUnitPriceBatchReverseAuditDTO,
@@ -30,6 +31,8 @@ from app.schemas.dto.bom_welding_unit_price_dto import (
 )
 from app.schemas.vo.bom_welding_unit_price_vo import (
     BomWeldingUnitPriceBatchAuditResultVO,
+    BomWeldingUnitPriceBatchDeleteResultVO,
+    BomWeldingUnitPriceBulkUpsertResponse,
     BomWeldingUnitPriceResponse,
 )
 from app.schemas.vo.user_vo import UserVO
@@ -146,12 +149,7 @@ class BomWeldingUnitPriceService:
         db: Session,
         items: list[BomWeldingUnitPriceCreate],
         current_user: UserVO,
-    ) -> tuple[
-        list[BomWeldingUnitPriceResponse],
-        list[BomWeldingUnitPriceResponse],
-        list[str],
-        int,
-    ]:
+    ) -> BomWeldingUnitPriceBulkUpsertResponse:
         created: list[BomWeldingUnitPriceResponse] = []
         updated: list[BomWeldingUnitPriceResponse] = []
         failed: list[str] = []
@@ -189,7 +187,20 @@ class BomWeldingUnitPriceService:
             except BusinessException as error:
                 failed.append(str(error) or "未知错误")
 
-        return created, updated, failed, skipped_approved
+        message = (
+            f"批量写入完成: 新增 {len(created)}, 更新 {len(updated)}, "
+            f"失败 {len(failed)}, 跳过已审核 {skipped_approved}"
+        )
+        return BomWeldingUnitPriceBulkUpsertResponse(
+            created=created,
+            updated=updated,
+            failed=failed,
+            created_count=len(created),
+            updated_count=len(updated),
+            failed_count=len(failed),
+            skipped_approved_count=skipped_approved,
+            message=message,
+        )
 
     def update(
         self,
@@ -255,7 +266,7 @@ class BomWeldingUnitPriceService:
         *,
         location: str,
         year: int,
-    ) -> tuple[int, int]:
+    ) -> BomWeldingUnitPriceBatchDeleteResultVO:
         location = (location or "").strip()
         if not location:
             raise BusinessException("请选择采购基地")
@@ -286,7 +297,16 @@ class BomWeldingUnitPriceService:
             deleted_count,
             skipped,
         )
-        return deleted_count, skipped
+        message = f"已删除基地「{location}」{year} 年共 {deleted_count} 条"
+        if skipped:
+            message += f"，跳过已审核 {skipped} 条"
+        return BomWeldingUnitPriceBatchDeleteResultVO(
+            location=location,
+            year=year,
+            deleted_count=deleted_count,
+            skipped_approved_count=skipped,
+            message=message,
+        )
 
     def batch_approve(
         self,
@@ -327,6 +347,7 @@ class BomWeldingUnitPriceService:
             skipped_count=skipped,
             location=location,
             year=dto.year,
+            message=batch_approve_message(updated, skipped),
         )
 
     def batch_reverse_audit(
@@ -371,6 +392,7 @@ class BomWeldingUnitPriceService:
             skipped_count=skipped,
             location=location,
             year=dto.year,
+            message=batch_reverse_message(updated, skipped),
         )
 
     def get_locations(self, db: Session) -> list[str]:

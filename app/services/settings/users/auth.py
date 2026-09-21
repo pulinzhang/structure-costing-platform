@@ -13,9 +13,9 @@ from app.models.settings import User, UserToken
 from app.repositories.settings.users.user_repository import UserRepository
 from app.repositories.settings.users.user_token_repository import UserTokenRepository
 from app.schemas.dto.user_dto import UserLoginDTO, UserTokenCreate, UserTokenSnapshot
-from app.schemas.vo.user_vo import LoginVO, UserVO
+from app.schemas.vo.user_vo import AvatarUploadVO, LoginVO, UserVO
 from app.services.settings.users.permission import PermissionService
-from app.services.settings.users.service import hash_password_md5
+from app.services.settings.users.service import UserService, hash_password_md5
 
 
 class AuthService:
@@ -99,6 +99,24 @@ class AuthService:
             ),
         )
         token_db.commit()
+
+    def upload_own_avatar(
+        self,
+        db: Session,
+        token_db: Session,
+        current_user: UserVO,
+        *,
+        file_content: bytes,
+        filename: str,
+    ) -> AvatarUploadVO:
+        user = UserService().update_own_avatar(
+            db,
+            current_user,
+            file_content=file_content,
+            filename=filename,
+        )
+        self.sync_profile_to_tokens(token_db, user)
+        return AvatarUploadVO(url=user.avatar or "", message="头像上传成功")
 
     def touch(self, user_db: Session, token_db: Session, token: str) -> UserVO:
         """心跳探活：只校验，不顺延 last_active_at。"""

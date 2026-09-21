@@ -52,6 +52,8 @@ class StampingGaugeFeeUploadService:
         vehicle_model: str,
         current_user: UserVO,
     ) -> StampingGaugeFeeImportResultVO:
+        if not (filename or "").strip():
+            raise BusinessException("未提供文件名")
         loc, vehicle = self._require_die_scope(db, location, vehicle_model)
         original_name = Path(filename or "").name
         suffix = Path(original_name).suffix.lower()
