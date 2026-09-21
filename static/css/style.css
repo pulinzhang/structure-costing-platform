@@ -166,7 +166,7 @@ textarea:-webkit-autofill:active {
     display: flex;
     flex-direction: column;
     border-right: 1px solid rgb(var(--text-main) / 0.08);
-    box-shadow: 20px 0 50px rgb(var(--overlay) / 0.8), inset -1px 0 0 rgb(var(--text-main) / 0.03);
+    box-shadow: 20px 0 50px rgb(var(--overlay) / 0.8), inset -1px 0 0 rgb(var(--hairline) / 0.03);
     transform: translateX(-100%);
     visibility: hidden;
     pointer-events: none;
@@ -441,7 +441,7 @@ textarea:-webkit-autofill:active {
     border: 1px solid rgb(var(--text-main) / 0.08);
     border-radius: 2px;
     box-shadow:
-        0 1px 0 rgb(var(--text-main) / 0.03) inset,
+        0 1px 0 rgb(var(--hairline) / 0.03) inset,
         0 8px 24px rgb(var(--overlay) / 0.35);
     box-sizing: border-box;
 }
@@ -696,7 +696,7 @@ textarea:-webkit-autofill:active {
     background-color: rgb(var(--bg-hud));
     border: 1px solid rgb(var(--border-hud));
     border-radius: 2px;
-    box-shadow: inset 0 1px 0 rgb(var(--text-main) / 0.04);
+    box-shadow: inset 0 1px 0 rgb(var(--hairline) / 0.04);
     transition: border-color 0.15s ease, background-color 0.15s ease, box-shadow 0.15s ease;
 }
 
@@ -861,5 +861,5 @@ textarea:-webkit-autofill:active {
 }
 
 .hud-kpi-aux-inset {
-    box-shadow: inset 0 1px 0 rgb(var(--text-main) / 0.03);
+    box-shadow: inset 0 1px 0 rgb(var(--hairline) / 0.03);
 }

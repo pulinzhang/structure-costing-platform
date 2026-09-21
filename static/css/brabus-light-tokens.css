@@ -13,7 +13,8 @@
  * 仍为现网 #FF1E27（官网无此色）。Carbon :root 本文件不动。
  *
  * --hud-filter-chevron 用 mask，色走 --text-disabled。
- * --hairline 浅色填 1 1 1（Carbon 为 255 255 255）。
+ * --hairline 是迎光 1px 高光（inset 1px），深浅都填 255 255 255。
+ * 墨色洗（滚动条、hover 底）走 --text-main；结构边走 --border-*；红底勾走 --text-on-brand。
  * glow 浅色把 alpha 收轻。
  *
  * html[data-theme="light"] {
@@ -45,7 +46,7 @@
  *     --border-hud: 204 204 204;
  *     --border-active: 183 8 38;
  *     --grid-line: 1 1 1;
- *     --hairline: 1 1 1;
+ *     --hairline: 255 255 255;
  *
  *     --success-color: 46 125 50;
  *     --warning-color: 245 127 23;

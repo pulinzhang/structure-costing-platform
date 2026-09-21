@@ -23,7 +23,7 @@ alwaysApply: false
 - 禁止 Jinja2。禁止往 `style.css` 加业务 class（壳层：sidebar / page-header / 滚动条 / `@keyframes` / `.sr-only` / `.toast-shell` / `.brabus-bg-grid` / `.brabus-check` / `.hud-filter` / `.hud-select-menu` / `.hud-led` / `.hud-brand-glow` / `.hud-brand-glow-hover` / `.hud-kpi-*-glow` / `.hud-kpi-aux-inset` 可留）。
 - 内联 `style` 仅阴影/渐变等 Tailwind 表达不了的；历史抽屉不追溯。
 
-`:root` 色板在 `style.css`（RGB 通道）。另有 `--grid-size` / `--radius-ctl` / `--shadow-hud` / `--shadow-drawer` / `--glow-hud` / `--hairline`。业务用 Tailwind 语义色：`bg-app-deep` / `bg-app-main` / `bg-app-surface` / `bg-app-elevated` / `bg-app-hud`；字 `text-ink` / `text-ink-muted` / `text-ink-dim` / `text-ink-faint`；实心底上的字 `text-ink-onbrand`（`--text-on-brand`，禁止再用 `text-white`）；边 `border-line` / `border-line-hud`；红 `brand`（`#b70826`）与 HUD `brand-hud`（`#FF1E27`）。**禁止新写主题 hex 任意值**（`bg-[#0a0a0a]`）。同表不得两套红混用。原语在 `static/js/ui/classes.js`。
+`:root` 色板在 `style.css`（RGB 通道）。另有 `--grid-size` / `--radius-ctl` / `--shadow-hud` / `--shadow-drawer` / `--glow-hud` / `--hairline`（迎光 1px 高光，深浅都是白）。业务用 Tailwind 语义色：`bg-app-deep` / `bg-app-main` / `bg-app-surface` / `bg-app-elevated` / `bg-app-hud`；字 `text-ink` / `text-ink-muted` / `text-ink-dim` / `text-ink-faint`；实心底上的字 `text-ink-onbrand`（`--text-on-brand`，禁止再用 `text-white`）；边 `border-line` / `border-line-hud`；红 `brand`（`#b70826`）与 HUD `brand-hud`（`#FF1E27`）。**禁止新写主题 hex 任意值**（`bg-[#0a0a0a]`）。同表不得两套红混用。原语在 `static/js/ui/classes.js`。
 
 新页必须同时：`pageMeta`、`app.js` 注册、侧栏 `data-page`（若需菜单）、权限码（`docs/permission-design.md`）。
 
