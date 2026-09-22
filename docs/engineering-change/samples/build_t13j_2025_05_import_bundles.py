@@ -18,7 +18,7 @@ from app.common.engineering_change_gates import (  # noqa: E402
     PART_LEVEL_L1,
     PART_LEVEL_L2,
 )
-from app.services.engineering_change.upload.template_builder import (  # noqa: E402
+from app.services.engineering_change.design_change.upload.template_builder import (  # noqa: E402
     BomSample,
     ChangeOrderSample,
     ProcessSample,

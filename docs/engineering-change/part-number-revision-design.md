@@ -15,7 +15,7 @@
 7. **新旧号只认工程变更单写出的字，禁止猜下一位字母（不要自己把 AA 加成 AB、把 AB 加成 AC）。** 变更前总成 / 变更后总成 / 变更前零件 / 变更后零件以该行十列为准。材料清单总成列必须等于该行变更后总成；改图层号必须等于该行变更后零件。中间分总成新号只认材料清单已经写出的号，也不要自己进一位。  
 8. 工艺新号认变更单 + 材料清单已经写出的换号/新加；旧号有仍有效工艺则必须出对应新号。布点不填表、不抽表：改图且变更前零件有旧布点则 **逻辑建立** 新号布点（从库抄旧）；没有旧布点就不建。简图只从工艺确认表出，再抄到新号布点。  
 9. 种树同一事务自动插本树采购对象 + 本树焊接拆解（拆解从旧树已有结果抄，禁止按焊信重拆）；改图换号抄工艺工序比例、布点分摊比例和采购确认。种新树时抄包装运输费（旧交货总成→新交货总成）和年度零件价（种树 remap 里换了号的零件）；无旧行则跳过。增加零件的新号无旧年度价可对，仍人补。  
-10. 菜单与冲压工程、焊接工程同级。切片独立：只调上游 Service；上游不得 import 本切片。  
+10. 侧栏在文件溯源之下（少用）。切片独立：只调上游 Service；上游不得 import 本切片。  
 11. Excel 进 `upload_files`；变更单行落 `engineering_change_orders`；效果链接供整本回滚。  
 12. **号与图（管理）：** 交货总成、分总成必须有内部号；交货总成必须有总成图。图变了就是另一件物料：换零件号，禁止改旧号；未来 ERP 出入库也按新零件号办。见第 3 节。新号写在变更单上，系统照抄，不推算末两位。  
     **硬约束：** 一个交货总成只要碰上第 1 节五种场景之一（总成改图 / 一级改图 / 二级改图 / 此件不装 / 增加零件），总成图就变了，**变更后总成必须写出新零件号**，且不得等于变更前总成。完成停止不是这五种：没有新图、没有新号。禁止在旧总成号上改结构、少装、加装。
@@ -380,20 +380,27 @@ BOM / 工艺 / 布点的 Parser、UNIQUE、引擎发现键、`create_node`、投
 
 ```
 app/
-├── routers/engineering_change/          # upload.py · list.py
+├── routers/engineering_change/
+│   ├── design_change/                   # upload.py · crud.py
+│   └── material_change/                 # 前缀占位，无接口
 ├── services/engineering_change/
-│   ├── upload/                          # service · start_upload · template_builder
-│   │                                    # orchestrator/ · gates/ · persist/
-│   └── list/                            # 工程变更单列表：query · rollback
-├── repositories/engineering_change/
-├── models/engineering_change/           # upload_log · change_order · effect_link
-├── schemas/dto|vo/engineering_change_*.py
+│   ├── design_change/
+│   │   ├── upload/                      # service · start_upload · template_builder
+│   │   │                                # orchestrator/ · gates/ · persist/
+│   │   └── list/                        # 工程变更单列表：query · rollback
+│   └── material_change/                 # 占位，不写业务
+├── parsers/engineering_change/{design_change,material_change}/
+├── repositories/engineering_change/{design_change,material_change}/
+├── models/engineering_change/
+│   ├── design_change/                 # upload_log · change_order · effect_link
+│   └── material_change/               # 占位，还没有表
+├── schemas/dto|vo/engineering_change/design_change.py
 └── common/engineering_change_gates.py
 ```
 
-`prefix=/api/engineering-change`。任务类型 `engineering_change_upload`。测试 `tests/engineering_change/test_upload_*.py`、`test_gates_*.py`。
+设计变更 `prefix=/api/engineering-change`。材料变更前缀 `/api/engineering-change/material` 已挂上、零个接口。任务类型 `engineering_change_upload`。测试在 `tests/engineering_change/design_change/`，材料前缀锁在 `tests/engineering_change/material_change/`。
 
-前端：`static/js/features/engineering-change/{upload,list}/`；侧栏一级分组「工程变更」；`pages`：`engineering-change-upload`、`engineering-change-order-list`。
+前端：`static/js/features/engineering-change/design-change/{upload,list}/`。侧栏「工程变更 → 设计变更」。页面键仍是 `engineering-change-upload`、`engineering-change-order-list`。
 
 ---
 
@@ -461,11 +468,12 @@ app/
 
 ### 8.6 权限
 
-不要绑投产三页。一级分组 `menu:engineering-change`，与 `menu:stamping` / `menu:bom` 同级。组内上传 / 工程变更单列表。`defaults` / `mandatory` 不加入。按 [permission-design §0](../permission-design.md) 九步一次做齐。
+不要绑投产三页。一级分组 `menu:engineering-change` 在权限树里排在 `menu:file-trace` 之后（与侧栏同序，少用）。其下是「设计变更」分组，再挂上传 / 工程变更单列表。`defaults` / `mandatory` 不加入。按 [permission-design §0](../permission-design.md) 九步一次做齐。
 
 | code | 用途 |
 |------|------|
 | `menu:engineering-change` | 一级分组 |
+| `menu:engineering-change-design-group` | 设计变更分组。不进 `defaults` / `mandatory`，也不是页面键 |
 | `menu:engineering-change-upload` + `op:…:view` / `op:…:upload` | 上传页；下模板、POST 上传 |
 | `menu:engineering-change-order-list` + `op:…:view` / `op:…:delete` | 工程变更单列表；删除回滚。当时 Excel 在查看抽屉下载 |
 
@@ -531,7 +539,7 @@ app/
 - [ ] 本树没有增加零件且用量改写 ≠ 旧行 → `EC_QTY_CHANGED`；本树有增加零件则不拿旧用量拒收  
 - [ ] 工程变更无「零件汇总」仍成功；改图有旧布点则新号布点逻辑建立（从库抄出，不读 Excel）；简图从工艺确认表抄到工艺行和新号布点  
 - [ ] 列表 / 详情；删除任意变更单行 = 本次全部回滚并物理删除（一头多行一起没）；原件走文件溯源  
-- [ ] 权限：一级「工程变更」与冲压/焊接同级；未绑投产三页  
+- [ ] 权限：一级「工程变更」在文件溯源之下；未绑投产三页  
 - [ ] 投产再导不掐工程变更树；采购对象 / 拆解「开始生成」409；引擎缺拆解调 generate，拦住则 `EC_GATE_ENGINE_BREAKDOWN`  
 - [ ] Parser / UNIQUE / 引擎发现键行为不变；投产三页拒新号、空表硬停仍在  
 - [ ] 工作表名 `工程变更单`（不要叫封皮）；列表 / 上传文案同步  

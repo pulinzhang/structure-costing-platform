@@ -22,8 +22,8 @@ from app.models.bom.procurement_object import (
 from app.models.bom.welding_fee import BomWeldingFee
 from app.models.bom.welding_process_breakdown import BomWeldingProcessBreakdownNode
 from app.models.costing.assembly_cost import AssemblyCost
-from app.models.engineering_change.change_order import EngineeringChangeOrder
-from app.models.engineering_change.upload_log import EngineeringChangeUploadLog
+from app.models.engineering_change.design_change.change_order import EngineeringChangeOrder
+from app.models.engineering_change.design_change.upload_log import EngineeringChangeUploadLog
 from app.models.file_trace.upload_file import UploadFile
 from app.models.masterdata.location import Location
 from app.models.masterdata.supplier import Supplier
@@ -243,7 +243,7 @@ class TestBomDownstreamGate:
 
         with pytest.raises(BusinessException) as caught:
             BomSnapshotService().delete_snapshot(memory_db, snapshot.id)
-        assert "工程变更 → 工程变更单列表" in caught.value.message
+        assert "工程变更 → 设计变更 → 工程变更单列表" in caught.value.message
         assert "回滚" in caught.value.message
         assert "总成核价" not in caught.value.message
         assert memory_db.get(BomSnapshot, snapshot.id) is not None
@@ -370,7 +370,7 @@ class TestBomDownstreamGate:
         with pytest.raises(BusinessException) as caught:
             BomSnapshotService().delete_snapshot(memory_db, snapshot.id)
         assert "核价 → 总成核价 → 总成核价一览" in caught.value.message
-        assert "工程变更 → 工程变更单列表" in caught.value.message
+        assert "工程变更 → 设计变更 → 工程变更单列表" in caught.value.message
 
     def test_delete_node_blocked_by_procurement(self, memory_db: Session) -> None:
         snapshot = _add_snapshot(memory_db)

@@ -12,12 +12,22 @@ from app.common.permissions.catalog import (
     is_valid_code,
 )
 from app.common.permissions.checks import require_admin
+from app.common.permissions.codes import Perm
 from app.exceptions.base import BusinessException, NotFoundException
 from app.models.settings import User
 from app.repositories.settings.users.user_permission_repository import UserPermissionRepository
 from app.repositories.settings.users.user_repository import UserRepository
 from app.schemas.vo.permission_vo import PermissionNodeVO
 from app.schemas.vo.user_vo import UserVO
+
+_DESIGN_CHANGE_MENUS = (
+    Perm.MENU_ENGINEERING_CHANGE_UPLOAD,
+    Perm.MENU_ENGINEERING_CHANGE_ORDER_LIST,
+)
+
+
+def _has_design_change_menu(codes: list[str]) -> bool:
+    return any(code in _DESIGN_CHANGE_MENUS for code in codes)
 
 
 class PermissionService:
@@ -85,6 +95,7 @@ class PermissionService:
         启动补齐：
         - 若无任何 is_admin，将 username=admin 标为管理员
         - 非管理员：无权限记录则写 defaults；有记录则补 mandatory
+        - 已有设计变更上传或列表菜单的用户，补上设计变更分组码
         """
         users = self.user_repo.list_all(db)
         admin_count = sum(1 for u in users if u.is_admin)
@@ -101,6 +112,9 @@ class PermissionService:
             if not existing:
                 self.perm_repo.replace_codes(db, u.id, get_defaults())
             else:
-                self.perm_repo.ensure_codes(db, u.id, get_mandatory())
+                extra = list(get_mandatory())
+                if _has_design_change_menu(existing):
+                    extra.append(Perm.MENU_ENGINEERING_CHANGE_DESIGN_GROUP)
+                self.perm_repo.ensure_codes(db, u.id, extra)
 
         db.commit()

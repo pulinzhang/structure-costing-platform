@@ -71,6 +71,9 @@
  * │   ├── procurement-contract-report/  # 采购价格协议（侧栏一级叶子，不进核价组）
  * │   └── engine/                # 自动核价引擎
  * ├── file-trace/                # 文件溯源
+ * ├── engineering-change/        # 工程变更（侧栏在文件溯源之下）
+ * │   ├── design-change/         # 设计变更（现网上传与列表）
+ * │   └── material-change/       # 材料变更（目录占位，无页面）
  * ├── masterdata/                # 主数据
  * │   ├── location/              # 基地
  * │   ├── steel-grade-category/  # 牌号分类
@@ -330,12 +333,12 @@ export const pageMeta = {
     'engineering-change-upload': {
         title: '上传工程变更',
         en: 'ENGINEERING_CHANGE_UPLOAD',
-        breadcrumb: ['工程变更', '上传工程变更'],
+        breadcrumb: ['工程变更', '设计变更', '上传工程变更'],
     },
     'engineering-change-order-list': {
         title: '工程变更单列表',
         en: 'ENGINEERING_CHANGE_ORDER_LIST',
-        breadcrumb: ['工程变更', '工程变更单列表'],
+        breadcrumb: ['工程变更', '设计变更', '工程变更单列表'],
     },
     costing: {
         title: '自动核价引擎',

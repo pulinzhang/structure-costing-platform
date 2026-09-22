@@ -1,9 +1,13 @@
 # 工程变更
 
-跨切片能力（BOM / 冲压 / 核价）。**工程变更上传、列表、回滚已落地**（`app/services/engineering_change/`）。  
-有效期与核价按月见 [bom-process-die-effective-period-design.md](bom-process-die-effective-period-design.md)。工程变更门禁从严：一本一个项目号；材料清单与确认表版本必须同一字；生效月须在项目期内；必须先有 SOP 采购对象清单头；版本与清单头不得凑合。
+跨切片能力（BOM / 冲压 / 核价）。两条通道都挂在工程变更下：
 
-**冲压材质变更**（同号换牌号、不影响互换性）是另一条通道，见 [stamping-material-change-design.md](stamping-material-change-design.md)。**不要**给下面四句加第五句。本节其余条目只描述已落地的改图工程变更。
+- **设计变更**已落地：上传、列表、回滚在 `app/services/engineering_change/design_change/`。接口仍是 `/api/engineering-change`。
+- **材料变更**这次只占目录和空前缀 `/api/engineering-change/material`，不写业务。见 [stamping-material-change-design.md](stamping-material-change-design.md) 和 [服务包说明](../../app/services/engineering_change/material_change/README.md)。
+
+有效期与核价按月见 [bom-process-die-effective-period-design.md](bom-process-die-effective-period-design.md)。设计变更门禁从严：一本一个项目号；材料清单与确认表版本必须同一字；生效月须在项目期内；必须先有 SOP 采购对象清单头；版本与清单头不得凑合。
+
+**材料变更**（同号换牌号、不影响互换性）不要塞进设计变更的四句变更类型。本节其余条目只描述已落地的设计变更。
 
 > 2–4 年后敢改：先读本节，再下钻长设计稿。长稿与代码冲突时以**代码 + 本节**为准。
 
@@ -178,14 +182,14 @@ Router → EngineeringChangeUploadService.start_upload
 
 | 路径 | 职责 |
 |------|------|
-| `upload/service.py` | 门面：下模板、点上传 |
-| `upload/start_upload.py` | 入队壳 + 业务失败 rollback |
-| `upload/template_builder.py` | 下载模板（与导入执行无关） |
-| `upload/orchestrator/` | 指挥家：prep / pipeline / persist |
-| `upload/gates/` | 校验帮手：变更单 / 树 / 工艺 / 切清单 |
-| `upload/persist/` | 写入适配（树 / 对象 / 拆解 / 工艺 / 布点 / 检具费 / 模具费 / 包装 / 年度价）；只 flush |
-| `list/query.py` | 工程变更单列表 / 详情 |
-| `list/rollback.py` | `EFFECT_*` 回滚（含 `gauge_fee` / `die_fee` / `packaging_fee` / `annual_part_price`） |
+| `design_change/upload/service.py` | 门面：下模板、点上传 |
+| `design_change/upload/start_upload.py` | 入队壳 + 业务失败 rollback |
+| `design_change/upload/template_builder.py` | 下载模板（与导入执行无关） |
+| `design_change/upload/orchestrator/` | 指挥家：prep / pipeline / persist |
+| `design_change/upload/gates/` | 校验帮手：变更单 / 树 / 工艺 / 切清单 |
+| `design_change/upload/persist/` | 写入适配（树 / 对象 / 拆解 / 工艺 / 布点 / 检具费 / 模具费 / 包装 / 年度价）；只 flush |
+| `design_change/list/query.py` | 工程变更单列表 / 详情 |
+| `design_change/list/rollback.py` | `EFFECT_*` 回滚（含 `gauge_fee` / `die_fee` / `packaging_fee` / `annual_part_price`） |
 | `app/common/engineering_change_gates.py` | 文案常量 + 整包门禁谓词（新旧号整号比较，不 bump） |
 
 上游内核（勿把业务搬回 EC）：

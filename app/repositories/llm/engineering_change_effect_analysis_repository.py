@@ -9,9 +9,9 @@ from sqlalchemy.orm import Session
 
 from app.common.engineering_change_gates import EFFECT_DIE_PART, EFFECT_PROCESS_PART
 from app.common.period import is_in_period
-from app.models.engineering_change.change_order import EngineeringChangeOrder
-from app.models.engineering_change.effect_link import EngineeringChangeEffectLink
-from app.models.engineering_change.upload_log import EngineeringChangeUploadLog
+from app.models.engineering_change.design_change.change_order import EngineeringChangeOrder
+from app.models.engineering_change.design_change.effect_link import EngineeringChangeEffectLink
+from app.models.engineering_change.design_change.upload_log import EngineeringChangeUploadLog
 from app.models.stamping.die import StampingDiePart
 from app.models.stamping.part import StampingPart
 from app.repositories.llm.location_in import location_in_clause
