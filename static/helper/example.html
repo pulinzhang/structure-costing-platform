@@ -6,14 +6,14 @@
   <title>样例 · 芜湖 2025年01月 T13J · 核价平台</title>
   <link rel="icon" type="image/x-icon" href="/static/assets/favicon.ico">
   <link href="/static/css/fonts.css?v=1" rel="stylesheet">
-  <link rel="stylesheet" href="helper.css?v=19">
+  <link rel="stylesheet" href="helper.css?v=20">
 </head>
 <body>
   <div class="layout">
     <aside class="nav">
       <a class="nav-brand" href="index.html">
         <h1><span class="dot"></span> 使用帮助</h1>
-        <span>拿真数走一遍</span>
+        <span>数据对照</span>
       </a>
       <div class="nav-label">三大块</div>
       <div class="block-switch">
@@ -44,7 +44,6 @@
 
     <main class="main">
       <header class="hero">
-        <div class="eyebrow">Worked Example · Same Outline as Knowledge</div>
         <h1>样例 · 芜湖 · 2025年01月 · T13J</h1>
         <p>
           章节与<a href="knowledge.html">知识库</a>一一对应。
@@ -96,16 +95,16 @@
         <h2>核的是什么</h2>
         <p class="lead">
           核价对象在本样例是树上的<strong>根</strong>（供货总成）。平台同时核分总成与冲压件。
-          算账从根走到最末叶子，再 rollup 回根。
-          下面用芜湖 · 2025年01月 · T13J 的真实成品画结构示意，再给出挂价后的结果树。
+          算账从根走到最末零件，再往上汇总。
+          下面用芜湖 · 2025年01月 · T13J 的真实成品画结构示意，再给出计入价格后的结果树。
         </p>
 
         <h3>结构示意 · 左查右收</h3>
-        <div class="dual-rail" aria-label="左后尾灯安装板总成：左向下查，右向上rollup">
+        <div class="dual-rail" aria-label="左后尾灯安装板总成：左向下查，右向上汇总">
           <div class="dr-caption">芜湖 · 2025年01月 · T13J · 502007390AA</div>
           <div class="dr-keys">
             <span class="dr-key down"><i>↓ 查</i> 从成品根找到最末零件</span>
-            <span class="dr-key up"><i>↑ rollup</i> 零件有价后 ×用量收回成品</span>
+            <span class="dr-key up"><i>↑ 汇总</i> 零件有价后按用量收回成品</span>
           </div>
           <div class="dr-body">
             <div class="dr-rail down">
@@ -117,14 +116,14 @@
 
             <div class="dr-center">
               <div class="dr-levels">
-                <span><b>L0</b>1 件 · 成品根</span>
-                <span><b>L1</b>3 件</span>
-                <span><b>L2</b>2 件 · 挂在上安装板下</span>
+                <span><b>成品</b>1 件</span>
+                <span><b>下一层</b>3 件</span>
+                <span><b>再下层</b>2 件 · 挂在上安装板下</span>
               </div>
               <div class="htree">
                 <div class="ht-node is-root">
                   <div class="ht-head">
-                    <span class="ht-lv">L0</span>
+                    <span class="ht-lv">成品</span>
                     <div class="ht-body">
                       <strong>左后尾灯安装板总成</strong>
                       <div class="ht-pn">502007390AA · 用量 1 · 供货总成</div>
@@ -133,7 +132,7 @@
                   <div class="ht-children">
                     <div class="ht-node is-branch">
                       <div class="ht-head">
-                        <span class="ht-lv">L1</span>
+                        <span class="ht-lv">一层</span>
                         <div class="ht-body">
                           <strong>左后尾灯上安装板</strong>
                           <div class="ht-pn">502007709AA · 用量 1 · 当月冲压价 1.5618</div>
@@ -142,7 +141,7 @@
                       <div class="ht-children">
                         <div class="ht-node is-leaf">
                           <div class="ht-head">
-                            <span class="ht-lv">L2</span>
+                            <span class="ht-lv">二层</span>
                             <div class="ht-body">
                               <strong>左后尾灯安装板</strong>
                               <div class="ht-pn">502007710AA · 用量 1 · 当月冲压价 2.9388</div>
@@ -151,7 +150,7 @@
                         </div>
                         <div class="ht-node is-leaf">
                           <div class="ht-head">
-                            <span class="ht-lv">L2</span>
+                            <span class="ht-lv">二层</span>
                             <div class="ht-body">
                               <strong>焊接方螺母</strong>
                               <div class="ht-pn">N0111931 · 用量 2 · 年度价 12.96×2</div>
@@ -162,7 +161,7 @@
                     </div>
                     <div class="ht-node is-leaf">
                       <div class="ht-head">
-                        <span class="ht-lv">L1</span>
+                        <span class="ht-lv">一层</span>
                         <div class="ht-body">
                           <strong>后保安装支架</strong>
                           <div class="ht-pn">502002780AA · 用量 1 · 年度价 14.71</div>
@@ -171,7 +170,7 @@
                     </div>
                     <div class="ht-node is-leaf">
                       <div class="ht-head">
-                        <span class="ht-lv">L1</span>
+                        <span class="ht-lv">一层</span>
                         <div class="ht-body">
                           <strong>点焊胶</strong>
                           <div class="ht-pn">B11-4102613 · 用量 255 · 年度价 0.0009</div>
@@ -182,7 +181,7 @@
                 </div>
               </div>
               <div class="dr-node is-total">
-                <div class="dr-tag">rollup：叶子 ×用量 回到 L0，再 + 焊接 1.4391 + 间接 2.9484</div>
+                <div class="dr-tag">汇总：零件按用量回到成品，再 + 焊接 1.4391 + 间接 2.9484</div>
                 <strong>成品总费用 49.7476</strong>
                 <div class="dr-pn">月总账 46.7992 + 间接 2.9484</div>
               </div>
@@ -191,17 +190,17 @@
             <div class="dr-rail up">
               <div class="dr-sub">终点<br>根</div>
               <div class="dr-shaft" aria-hidden="true"></div>
-              <div class="dr-label">rollup ↑</div>
+              <div class="dr-label">汇总 ↑</div>
               <div class="dr-sub">起点<br>叶子</div>
             </div>
           </div>
           <p class="dr-foot">
-            本成品实况：<b class="down">L0=1</b> · <b class="down">L1=3</b> · <b class="down">L2=2</b>。
-            左 <b class="down">↓ 查</b>、右 <b class="up">↑ rollup</b>，层级与材料清单一致。
+            本成品实况：成品 1 件 · 下一层 3 件 · 再下层 2 件。
+            左 <b class="down">↓ 查</b>、右 <b class="up">↑ 汇总</b>，层级与材料清单一致。
           </p>
         </div>
 
-        <h3>成品结果树（挂价后的金额）</h3>
+        <h3>成品结果树（计入价格后的金额）</h3>
         <p>同一棵树，右侧为库内已核算金额。</p>
         <div class="tree">
           <div class="root">成品 · 左后尾灯安装板总成 502007390AA<span class="amt">总费用 49.7476</span></div>
@@ -229,8 +228,8 @@
       <section id="bom">
         <h2>材料清单是主线</h2>
         <p class="lead">
-          上面是<strong>挂价后的结果树</strong>；这里是材料清单规定的<strong>结构树</strong>（谁装进谁、各用多少）。
-          其它模块只是往这棵结构树上挂价。
+          上面是<strong>计入价格后的结果树</strong>；这里是材料清单规定的<strong>结构树</strong>（谁装进谁、各用多少）。
+          其它模块在这棵结构树上维护价格。
         </p>
 
         <div class="tree">
@@ -250,7 +249,7 @@
 
       <section id="prereq">
         <h2>前置条件（传一次 / 改版才重做）</h2>
-        <p class="lead">芜湖 T13J 样例里，结构与工艺底盘已经就绪；日常 01 月核价不必每月重传这些。</p>
+        <p class="lead">芜湖 T13J 样例里，结构和工艺已经就绪；日常 01 月核价不必每月重传这些。</p>
 
         <ul class="spec-list">
           <li>
@@ -331,7 +330,7 @@
         <ul class="spec-list">
           <li>
             <strong>钢材基准价 / 加减价政策 / 废料月度价</strong>
-            <span>当月已齐；缺则引擎硬停。</span>
+            <span>当月已齐；缺了就不能启动。</span>
           </li>
           <li>
             <strong>钢材联动价</strong>
@@ -499,7 +498,7 @@
         </ul>
 
         <div class="callout ok">
-          读完本页后，可回<a href="knowledge.html">知识库</a>对照概念，或打开系统按芜湖 · 2025年01月 · T13J · D/09 复现。
+          概念对照见<a href="knowledge.html">知识库</a>。系统中按芜湖 · 2025年01月 · T13J · D/09 查询即可复现。
         </div>
       </section>
 

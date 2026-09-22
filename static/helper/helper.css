@@ -196,7 +196,6 @@ a:hover { color: var(--color__link--hover); text-decoration: none; }
   padding-bottom: 48px;
   border-bottom: 1px solid var(--border);
 }
-.hero .eyebrow { display: none; }
 .hero h1 {
   font-size: clamp(36px, 4.2vw, 56px);
   font-weight: 500;
@@ -510,23 +509,6 @@ td:first-child {
 .callout.warn,
 .callout.ok {
   border-left: 0;
-  background: transparent;
-}
-
-.tag {
-  display: inline;
-  font-family: inherit;
-  font-size: inherit;
-  letter-spacing: 0;
-  padding: 0;
-  border: 0;
-  margin-right: 0;
-}
-.tag-year,
-.tag-month,
-.tag-main {
-  color: inherit;
-  border-color: transparent;
   background: transparent;
 }
 
@@ -915,7 +897,6 @@ figure.shot figcaption {
   text-decoration: none;
 }
 .hub-card:hover h2 { color: var(--color__link); }
-.hub-card .kicker { display: none; }
 .hub-card h2 {
   font-size: 22px;
   font-weight: 500;
@@ -931,10 +912,6 @@ figure.shot figcaption {
   line-height: 1.55;
   color: var(--color__text);
   margin: 0;
-}
-
-.frame-shell {
-  display: none;
 }
 
 .footer {
