@@ -7,6 +7,7 @@ from typing import cast
 from sqlalchemy import Engine, Table, text
 from sqlalchemy.engine import Connection
 
+from app.bootstrap.sqlite_rebuild import column_names, table_exists
 from app.utils.logging_config import get_logger
 
 logger = get_logger("bootstrap.engineering_change_schema")
@@ -46,28 +47,15 @@ def ensure_engineering_change_schema(engine: Engine) -> None:
 
 
 def _needs_rebuild(connection: Connection) -> bool:
-    if _table_exists(connection, _TABLE_COVERS_LEGACY):
+    if table_exists(connection, _TABLE_COVERS_LEGACY):
         return True
-    if not _table_exists(connection, _TABLE_ORDERS):
+    if not table_exists(connection, _TABLE_ORDERS):
         return False
-    order_cols = _column_names(connection, _TABLE_ORDERS)
+    order_cols = column_names(connection, _TABLE_ORDERS)
     if "before_assembly_node_id" not in order_cols:
         return True
-    if _table_exists(connection, _TABLE_LINKS):
-        link_cols = _column_names(connection, _TABLE_LINKS)
+    if table_exists(connection, _TABLE_LINKS):
+        link_cols = column_names(connection, _TABLE_LINKS)
         if "cover_id" in link_cols or "change_order_id" not in link_cols:
             return True
     return False
-
-
-def _table_exists(connection: Connection, table_name: str) -> bool:
-    row = connection.execute(
-        text("SELECT 1 FROM sqlite_master WHERE type='table' AND name=:name"),
-        {"name": table_name},
-    ).first()
-    return row is not None
-
-
-def _column_names(connection: Connection, table_name: str) -> set[str]:
-    rows = connection.execute(text(f"PRAGMA table_info({table_name})")).all()
-    return {str(row[1]) for row in rows}

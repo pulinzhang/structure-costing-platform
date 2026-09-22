@@ -16,7 +16,9 @@ from app.repositories.bom.period_trees import nodes_in_as_of_trees
 from app.schemas.dto.bom_dto import BomNodeCreate, BomNodeWrite
 from app.schemas.vo.bom_vo import BomNodeTreeVO, BomNodeVO
 from app.schemas.vo.user_vo import UserVO
+from app.services.bom.bom.delete_block import explain_bom_delete_blocked
 from app.services.bom.bom.snapshot import BomSnapshotService
+from app.services.bom.bom.trees import descendant_ids
 from app.services.masterdata.vehicle_model.service import VehicleModelService
 
 logger = logging.getLogger("service.bom.node")
@@ -184,14 +186,22 @@ class BomNodeService:
             bom_version=snapshot.bom_version,
             action="删除",
         )
+        rows = self.node_repo.list_by_snapshot(db, snapshot.id)
+        node_ids = sorted(descendant_ids(rows, {row.id}))
+        location = snapshot.location
+        vehicle_model = snapshot.vehicle_model
         try:
             self.node_repo.delete(db, row)
             db.commit()
         except IntegrityError:
             db.rollback()
-            # 变更单 before_assembly_node_id → bom_nodes RESTRICT
             raise BusinessException(
-                "仍被工程变更单引用，请先回滚相关变更后再删",
+                explain_bom_delete_blocked(
+                    db,
+                    node_ids,
+                    location=location,
+                    vehicle_model=vehicle_model,
+                ),
                 code=409,
             ) from None
         except BusinessException:

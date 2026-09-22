@@ -6,21 +6,35 @@
   <title>整本帮助 · 打印 / PDF · 核价平台</title>
   <link rel="icon" type="image/x-icon" href="/static/assets/favicon.ico">
   <link href="/static/css/fonts.css?v=1" rel="stylesheet">
-  <link rel="stylesheet" href="helper.css?v=4">
+  <link rel="stylesheet" href="helper.css?v=26">
 </head>
 <body class="print-book-page">
+  <table class="print-sheet">
+    <thead>
+      <tr class="print-page-banner">
+        <th>
+          <div class="print-running-head">
+            <span>结构件自动核价平台</span>
+            <span>使用帮助</span>
+          </div>
+        </th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td>
   <div class="layout">
     <aside class="nav no-print" aria-label="帮助导航">
       <a class="nav-brand" href="index.html">
         <h1><span class="dot" aria-hidden="true"></span> 使用帮助</h1>
-        <span>PRINT · 整本</span>
+        <span>整本打印</span>
       </a>
       <div class="nav-label">三大块</div>
       <div class="block-switch">
         <a href="index.html">入口总览</a>
-        <a href="help.html">① 帮助</a>
-        <a href="knowledge.html">② 知识库</a>
-        <a href="example.html">③ 样例</a>
+        <a href="help.html">帮助</a>
+        <a href="knowledge.html">知识库</a>
+        <a href="example.html">样例</a>
       </div>
       <div class="nav-label">整本</div>
       <ul>
@@ -35,10 +49,9 @@
 
     <main class="main">
       <header class="hero no-print">
-        <div class="eyebrow">Print Book</div>
         <h1>整本帮助 · 一次打成一份 PDF</h1>
         <p>
-          本页会自动合并「① 帮助 + ② 知识库 + ③ 样例」，对应<strong>结构件自动核价平台</strong>（小名：核价平台）。
+          本页会自动合并「帮助 + 知识库 + 样例」，对应<strong>结构件自动核价平台</strong>（简称：核价平台）。
           点下方按钮后，在打印对话框里选择「另存为 PDF」，即可得到<strong>一份</strong>文件。
         </p>
         <div class="hero-actions">
@@ -54,13 +67,17 @@
       <footer class="footer no-print">整本打印 · /helper/print-all.html</footer>
     </main>
   </div>
+        </td>
+      </tr>
+    </tbody>
+  </table>
 
   <script>
     (function () {
       const BLOCKS = [
-        { url: 'help.html', title: '① 帮助 · 操作说明' },
-        { url: 'knowledge.html', title: '② 知识库 · 核价方案' },
-        { url: 'example.html', title: '③ 样例 · 青岛 2025-01 T28' },
+        { url: 'help.html', title: '帮助 · 怎么操作系统' },
+        { url: 'knowledge.html', title: '知识库 · 账是怎么算的' },
+        { url: 'example.html', title: '样例 · 芜湖 2025年01月 T13J' },
       ];
 
       const bookRoot = document.getElementById('bookRoot');

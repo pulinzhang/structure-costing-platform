@@ -119,7 +119,7 @@ CostingEngineService                 ← 编排唯一入口
 | BOM 材料清单快照 | 基地 + 项目 + BOM 版本 | 须含 L0 才跑焊接与总成；**无 BOM 黄灯不硬停**，有工艺的仍可跑冲压路径 |
 | 年度零件价 | 年 + 基地 | 上传；**仅当有含 L0 的 BOM 时检查** |
 | 包装运输费 | 年 + 基地 | 上传；无 BOM 则跳过；有 BOM 时缺失仅黄灯（成品卡 I1/I2 为 0） |
-| **钢材基准价** | **年 + 月 + 基地** | **硬停**；按将算材料钢种覆盖 |
+| **钢材基准价** | **年 + 月 + 基地** | **硬停**；按将算材料钢种覆盖。将算规格与钢材 Step1 同一套；账期月命中 [冲压材质变更](../engineering-change/stamping-material-change-design.md) 时规格含解析后牌号（§6.5），引擎不加新门禁码 |
 | **厚度加减价政策** | 政策匹配 | **硬停**；可匹配完整 |
 | 宽度加减价政策 | 政策匹配 | 同属 5.1，硬停（允许「加减为 0 的合法命中」，不允许匹配失败） |
 | 废料月度销售价 | 年 + 月 + 基地 | **仅当有冲压工艺时硬停**；无工艺则跳过 |
@@ -521,8 +521,8 @@ can_start: bool   # = not hard_stop 且存在可执行路径（该月命中冲�
 |---|---|---|
 | 门禁 | 上游 Repository / 现有 count、政策 match | 覆盖检查集中在 GateChecker；有布点时 `die_unit_price` 硬停 |
 | 年度补算 | 加工费 / 模具费 / 采购对象 / 拆解 / 焊接费（`annual_*`） | 有结果则跳过；**检具费不补算** |
-| 钢材 | `SteelPriceCalcOrchestrator` | 材料→基价→厚度政策→宽度政策→落库 |
-| 零件价 | `StampingPartCostCalcOrchestrator` | ready：零件∧钢材∧废料∧加工费。**不**要求模具费齐、**不**在 prepare 补算模具费；lookup 缺档记 0（与引擎补算分工，见下） |
+| 钢材 | `SteelPriceCalcOrchestrator` | 材料→基价→厚度政策→宽度政策→落库。Step1 规格 as_of 见 [冲压材质变更 §6.4–6.5](../engineering-change/stamping-material-change-design.md) |
+| 零件价 | `StampingPartCostCalcOrchestrator` | ready：零件∧钢材∧废料∧加工费。取牌号走解析器（同上）。**不**要求模具费齐、**不**在 prepare 补算模具费；lookup 缺档记 0（与引擎补算分工，见下）。已审核跳过不覆盖 |
 | 总成 | `AssemblyCostCalcOrchestrator` | 不绑工厂；有工艺才要求冲压价完成；有 BOM 才判焊接费 |
 | 导出 | `MonthlyBundleExportService` | 每成功 L0Scope；可选 |
 

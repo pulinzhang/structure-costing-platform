@@ -34,6 +34,7 @@ from app.services.masterdata.steel_grade_category.service import (
     SteelGradeCategoryService,
 )
 from app.services.masterdata.supplier.service import SupplierService
+from app.services.stamping.part.delete_block import explain_part_delete_blocked
 
 logger = logging.getLogger("service.stamping")
 
@@ -47,7 +48,7 @@ def delete_part(repository: StampingPartRepository, db: Session, part_id: int) -
         db.commit()
     except IntegrityError:
         db.rollback()
-        raise BusinessException("仍被冲压加工费引用，请先删除对应加工费后再删") from None
+        raise BusinessException(explain_part_delete_blocked(db, [part_id])) from None
 
 
 def create_part(
@@ -143,6 +144,16 @@ def batch_delete_parts(
     if supplier and supplier_names is not None and not supplier_names:
         raise BusinessException("没有该供应商，请到供应商一览手工增加或上传（#/supplier-list）")
 
+    part_ids = [
+        part.id
+        for part in repository.get_all_by_scope(
+            db,
+            location=location,
+            vehicle_model=vehicle_model,
+            version=version,
+            stamping_suppliers=supplier_names,
+        )
+    ]
     try:
         deleted = repository.delete_by_scope(
             db,
@@ -154,7 +165,7 @@ def batch_delete_parts(
         db.commit()
     except IntegrityError:
         db.rollback()
-        raise BusinessException("仍被冲压加工费引用，请先删除对应加工费后再删") from None
+        raise BusinessException(explain_part_delete_blocked(db, part_ids)) from None
     return StampingPartBatchDeleteResultVO(
         location=location,
         stamping_supplier=supplier,

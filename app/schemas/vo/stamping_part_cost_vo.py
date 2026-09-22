@@ -21,7 +21,7 @@ class StampingPartCostVO(BaseModel):
     stamping_supplier: str
     vehicle_model: str
     version: str
-    source_part_id: int | None = None
+    source_part_id: int
     seq_no: int | None = None
     part_number: str
     part_name: str | None = None

@@ -3,9 +3,9 @@
 from __future__ import annotations
 
 from sqlalchemy import Engine, text
-from sqlalchemy.engine import Connection
 from sqlalchemy.exc import OperationalError
 
+from app.bootstrap.sqlite_rebuild import column_names, table_exists
 from app.utils.logging_config import get_logger
 
 logger = get_logger("bootstrap.llm_report_schema")
@@ -17,9 +17,9 @@ _COLUMNS: tuple[tuple[str, str], ...] = (("query_json", "TEXT"),)
 def ensure_llm_report_schema(engine: Engine) -> None:
     try:
         with engine.begin() as connection:
-            if not _table_exists(connection, _TABLE):
+            if not table_exists(connection, _TABLE):
                 return
-            existing = _column_names(connection, _TABLE)
+            existing = column_names(connection, _TABLE)
             for name, sql_type in _COLUMNS:
                 if name in existing:
                     continue
@@ -29,16 +29,3 @@ def ensure_llm_report_schema(engine: Engine) -> None:
     except OperationalError:
         logger.exception("无法补齐 LLM 报告表结构")
         raise
-
-
-def _table_exists(connection: Connection, table_name: str) -> bool:
-    row = connection.execute(
-        text("SELECT 1 FROM sqlite_master WHERE type='table' AND name=:name"),
-        {"name": table_name},
-    ).first()
-    return row is not None
-
-
-def _column_names(connection: Connection, table_name: str) -> set[str]:
-    rows = connection.execute(text(f"PRAGMA table_info({table_name})")).all()
-    return {str(row[1]) for row in rows}

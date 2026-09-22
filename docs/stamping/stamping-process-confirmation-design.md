@@ -8,7 +8,7 @@
 > 有效期现网改造（零件行生失效、停整包覆盖）见 [bom-process-die-effective-period-design.md](../engineering-change/bom-process-die-effective-period-design.md)。  
 > 模具布点是另一套表，见 [stamping-die-management-design.md](stamping-die-management-design.md)。  
 > **供应商主数据**见 [supplier-design.md](../masterdata/supplier-design.md)（S11 写门禁）。本表 `stamping_parts.stamping_supplier` 是供应商 **直接下一跳**：`ForeignKey(..., ondelete="RESTRICT", onupdate="RESTRICT")`。上传后非空规范全称。供应商改全称 / 删除时若仍有本表行，引擎拒绝（文案不点名本表）。模具布点 **不是** 下一跳。  
-> **冲压加工费**是本表直接下一跳：`stamping_process_fees.source_part_id` → `stamping_parts.id`（`RESTRICT`）。有加工费则不能删/覆盖工艺，文案「仍被冲压加工费引用，请先删除对应加工费后再删」。  
+> **冲压加工费**与**零件核价**都是本表直接下一跳：`stamping_process_fees.source_part_id`（可空）、`stamping_part_costs.source_part_id`（非空）→ `stamping_parts.id`（`RESTRICT`）。删零件被挡住时，说明按实际行写出范围并指到对应列表，见 `app/services/stamping/part/delete_block.py`。再导命中已有零件号时改原行，不删零件。  
 > **模具编号**：本表可空、不得挡导入；无该列表头也可解析。强制编号在布点。  
 > 硬约束：分层与切片见 [architecture.md](../architecture.md)。
 
@@ -140,7 +140,8 @@
 
 | 日期 | 说明 |
 |------|------|
-| 2026-09-09 | 加工费 `source_part_id` RESTRICT：有加工费则不能删/覆盖工艺 |
+| 2026-09-22 | 零件核价 `source_part_id` 非空 RESTRICT；删零件说明见 `part/delete_block.py` |
+| 2026-09-09 | 加工费 `source_part_id` RESTRICT：有加工费则不能删零件 |
 | 2026-09-08 | 交叉引用钢材采购测算导出（设计中；与本表工艺导出分开） |
 | 2026-09-08 | 工艺上传只选文件；项目解析后由主数据带出基地 |
 | 2026-09-08 | `stamping_parts.stamping_supplier` 定为供应商下一跳（`RESTRICT` / `RESTRICT`） |

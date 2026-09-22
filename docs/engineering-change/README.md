@@ -3,6 +3,8 @@
 跨切片能力（BOM / 冲压 / 核价）。**工程变更上传、列表、回滚已落地**（`app/services/engineering_change/`）。  
 有效期与核价按月见 [bom-process-die-effective-period-design.md](bom-process-die-effective-period-design.md)。工程变更门禁从严：一本一个项目号；材料清单与确认表版本必须同一字；生效月须在项目期内；必须先有 SOP 采购对象清单头；版本与清单头不得凑合。
 
+**冲压材质变更**（同号换牌号、不影响互换性）是另一条通道，见 [stamping-material-change-design.md](stamping-material-change-design.md)。**不要**给下面四句加第五句。本节其余条目只描述已落地的改图工程变更。
+
 > 2–4 年后敢改：先读本节，再下钻长设计稿。长稿与代码冲突时以**代码 + 本节**为准。
 
 ---
@@ -31,6 +33,10 @@
 ### 为什么用时间轴（`as_of_month`）而不是快照？
 
 核价按「某年某月仍有效」取树/工艺/布点。改图是 **旧的到期、新的启用**：旧树/旧工艺行失效写到生效月的前一月（**不删行**），新树/新工艺行从生效月起用。前一月旧账仍要看见 AA。不要说作废。若每次变更复制全量快照，旧月重算要绑「哪次变更编号」，与现网按月结账、与投产 UNIQUE 都不合。
+
+### 为什么同号换牌号不塞进改图？
+
+`DC01` 与 `DC03` 是两个档案牌号。冲压零件价按牌号全等 + 料厚匹配当月钢材联动价；两牌号会匹配到两条不同的联动价。上游已给出切到 DC03 且不影响互换性时，核价对象仍是同一零件号，但生效月及之后必须按 `DC03` 去匹配，不能继续按工艺行上的 `DC01`。现网改图以换号为门、同号跳过、换号还抄旧材质，UNIQUE 又不许同号第二行工艺。另做 [冲压材质变更](stamping-material-change-design.md)：独立 Excel、独立列表；**变更版本写在变更单上（变一次一本、原件存档），不写进工艺 UNIQUE。** 工艺行不改字；当月牌号走解析器。禁止在旧行上改 `material`，禁止为这一条去拆工艺 UNIQUE。
 
 ### 为什么新旧号只认工程变更单，不收口到字母进一位？
 
@@ -199,6 +205,7 @@ Router → EngineeringChangeUploadService.start_upload
 | 文档 | 说明 |
 |------|------|
 | [part-number-revision-design.md](part-number-revision-design.md) | 领域契约（样表即规格、§4 写入、§8 产品）；**落地状态以本节为准** |
+| [stamping-material-change-design.md](stamping-material-change-design.md) | 冲压材质变更（设计定稿，未落地）：同号切牌号；消费链 §6.4；与改图分离 |
 | [bom-process-die-effective-period-design.md](bom-process-die-effective-period-design.md) | 交货总成 / 工艺 / 布点生失效（已落地） |
 | [t28-2025-07-import-bundle-test-design.md](t28-2025-07-import-bundle-test-design.md) | 青岛 T28 测试样本（对照一本可整本上传；另有五份单种改法夹具） |
 | [t13j-2025-05-import-bundle-test-design.md](t13j-2025-05-import-bundle-test-design.md) | 芜湖 T13J · 2025-05 测试样本（对照一本 + 五份夹具） |

@@ -7,6 +7,7 @@ from sqlalchemy.orm import Session
 
 from app.common.audit import audit_create
 from app.exceptions.base import BusinessException, NotFoundException
+from app.repositories.bom.bom.node import BomNodeRepository
 from app.repositories.bom.bom.snapshot import BomSnapshotRepository
 from app.repositories.bom.bom.types import BomSnapshotListFilters
 from app.repositories.bom.procurement_object_repository import BomProcurementObjectRepository
@@ -21,6 +22,7 @@ from app.schemas.dto.bom_dto import (
 )
 from app.schemas.vo.bom_vo import BomCascadeFilterOptionsVO, BomSnapshotVO
 from app.schemas.vo.user_vo import UserVO
+from app.services.bom.bom.delete_block import explain_bom_delete_blocked
 from app.services.masterdata.location.service import LocationService
 from app.services.masterdata.vehicle_model.service import VehicleModelService
 
@@ -64,10 +66,13 @@ class BomSnapshotService:
             found.append("焊接工艺拆解")
         if not found:
             return
-        labels = "、".join(found)
+        guides: list[str] = []
+        if "采购对象清单" in found:
+            guides.append("请打开「焊接工程 → 采购对象 → 采购对象清单」，删掉这一版清单。")
+        if "焊接工艺拆解" in found:
+            guides.append("请打开「焊接工程 → 焊接工艺拆解 → 拆解列表」，删掉这一版拆解。")
         raise BusinessException(
-            f"该版本已有{labels}，不能{action}材料清单。"
-            "请改用新的 BOM 版本导入，或先删除上述下游后再操作。",
+            f"这一版材料清单还不能{action}。" + "".join(guides),
             code=409,
         )
 
@@ -246,14 +251,21 @@ class BomSnapshotService:
             bom_version=row.bom_version,
             action="删除",
         )
+        node_ids = [node.id for node in BomNodeRepository().list_by_snapshot(db, row.id)]
+        location = row.location
+        vehicle_model = row.vehicle_model
         try:
             self.snapshot_repo.delete(db, row)
             db.commit()
         except IntegrityError:
             db.rollback()
-            # 变更单 before_assembly_node_id → bom_nodes RESTRICT
             raise BusinessException(
-                "仍被工程变更单引用，请先回滚相关变更后再删",
+                explain_bom_delete_blocked(
+                    db,
+                    node_ids,
+                    location=location,
+                    vehicle_model=vehicle_model,
+                ),
                 code=409,
             ) from None
         except BusinessException:

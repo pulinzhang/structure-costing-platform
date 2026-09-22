@@ -198,7 +198,7 @@ def write_process_data_rows(
         )
         display = resolve_part_cost_display(
             row,
-            blanks_by_part.get(int(row.source_part_id or 0), []),
+            blanks_by_part.get(int(row.source_part_id), []),
             steel_index,
         )
         scrap_ton = to_decimal(row.scrap_ton_price)

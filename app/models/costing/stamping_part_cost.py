@@ -14,7 +14,17 @@
 from datetime import datetime
 from decimal import Decimal
 
-from sqlalchemy import Boolean, DateTime, Index, Integer, Numeric, String, Text, UniqueConstraint
+from sqlalchemy import (
+    Boolean,
+    DateTime,
+    ForeignKey,
+    Index,
+    Integer,
+    Numeric,
+    String,
+    Text,
+    UniqueConstraint,
+)
 from sqlalchemy.orm import Mapped, mapped_column
 
 from app.database import Base
@@ -36,8 +46,12 @@ class StampingPartCost(AuditUserMixin, Base):
     version: Mapped[str] = mapped_column(String(20), nullable=False, comment="版本")
 
     # —— 零件主表快照 ——
-    source_part_id: Mapped[int | None] = mapped_column(
-        Integer, nullable=True, comment="来源零件主表 id"
+    source_part_id: Mapped[int] = mapped_column(
+        Integer,
+        ForeignKey("stamping_parts.id", ondelete="RESTRICT", onupdate="RESTRICT"),
+        nullable=False,
+        index=True,
+        comment="来源零件主表 id；RESTRICT 防删零件出孤儿，禁止改 SET NULL/CASCADE",
     )
     seq_no: Mapped[int | None] = mapped_column(Integer, nullable=True, comment="序号")
     part_number: Mapped[str] = mapped_column(String(50), nullable=False, comment="零件号")

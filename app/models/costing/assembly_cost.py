@@ -15,6 +15,7 @@ from typing import TYPE_CHECKING
 from sqlalchemy import (
     Boolean,
     DateTime,
+    ForeignKey,
     Index,
     Integer,
     Numeric,
@@ -62,7 +63,11 @@ class AssemblyCost(AuditUserMixin, Base):
     )
 
     source_node_id: Mapped[int] = mapped_column(
-        Integer, nullable=False, comment="核价根 bom_nodes.id"
+        Integer,
+        ForeignKey("bom_nodes.id", ondelete="RESTRICT", onupdate="RESTRICT"),
+        nullable=False,
+        index=True,
+        comment="核价根 bom_nodes.id；RESTRICT 防删 BOM 出孤儿，禁止改 SET NULL/CASCADE",
     )
     level: Mapped[int] = mapped_column(SmallInteger, nullable=False, default=0)
     is_tree_root: Mapped[bool] = mapped_column(Boolean, nullable=False, default=False)

@@ -1,6 +1,6 @@
 # 结构件自动核价平台
 
-> **Structural Parts Automated Costing Platform**（short: **Costing Platform**）。FastAPI + SQLite + 原生 SPA。小名 **核价平台**。核总成、分总成、冲压件；覆盖冲压/焊接工艺、一事一议钢价、BOM、工程变更、月度自动核价与 AI 解读。
+> **Structural Parts Automated Costing Platform**（short: **Costing Platform**）。FastAPI + SQLite + 原生 SPA。简称 **核价平台**。核总成、分总成、冲压件；覆盖冲压/焊接工艺、一事一议钢价、BOM、工程变更、月度自动核价与 AI 解读。
 
 **设计风格**：Brabus Carbon & Precision Dark（碳素黑 · 钛灰面板 · 标志性红）
 

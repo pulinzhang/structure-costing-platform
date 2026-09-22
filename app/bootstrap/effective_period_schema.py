@@ -6,6 +6,7 @@ from sqlalchemy import Engine, text
 from sqlalchemy.engine import Connection
 from sqlalchemy.exc import OperationalError
 
+from app.bootstrap.sqlite_rebuild import column_names, table_exists
 from app.utils.logging_config import get_logger
 
 logger = get_logger("bootstrap.effective_period_schema")
@@ -30,7 +31,7 @@ _STAMPING_PERIOD_COLUMNS: tuple[tuple[str, str], ...] = (
 def ensure_effective_period_schema(engine: Engine) -> None:
     try:
         with engine.begin() as connection:
-            if not _table_exists(connection, "bom_nodes"):
+            if not table_exists(connection, "bom_nodes"):
                 return
             _add_missing_columns(connection, "bom_nodes", _BOM_NODE_COLUMNS)
             _add_missing_columns(connection, "stamping_parts", _STAMPING_PERIOD_COLUMNS)
@@ -48,25 +49,12 @@ def ensure_effective_period_schema(engine: Engine) -> None:
         raise
 
 
-def _table_exists(connection: Connection, table_name: str) -> bool:
-    row = connection.execute(
-        text("SELECT 1 FROM sqlite_master WHERE type='table' AND name=:name"),
-        {"name": table_name},
-    ).first()
-    return row is not None
-
-
-def _column_names(connection: Connection, table_name: str) -> set[str]:
-    rows = connection.execute(text(f"PRAGMA table_info({table_name})")).all()
-    return {str(row[1]) for row in rows}
-
-
 def _add_missing_columns(
     connection: Connection,
     table_name: str,
     columns: tuple[tuple[str, str], ...],
 ) -> None:
-    existing = _column_names(connection, table_name)
+    existing = column_names(connection, table_name)
     for name, sql_type in columns:
         if name in existing:
             continue
@@ -219,7 +207,7 @@ def _ensure_indexes(connection: Connection) -> None:
 
 
 def _ensure_welding_fee_unique(connection: Connection) -> None:
-    if not _table_exists(connection, "bom_welding_fees"):
+    if not table_exists(connection, "bom_welding_fees"):
         return
     index_sql = connection.execute(
         text(
@@ -240,7 +228,7 @@ def _ensure_welding_fee_unique(connection: Connection) -> None:
 
 
 def _ensure_assembly_cost_unique(connection: Connection) -> None:
-    if not _table_exists(connection, "costing_assembly_costs"):
+    if not table_exists(connection, "costing_assembly_costs"):
         return
     index_sql = connection.execute(
         text(

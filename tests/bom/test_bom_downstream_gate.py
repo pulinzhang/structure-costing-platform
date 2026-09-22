@@ -8,6 +8,7 @@ from decimal import Decimal
 
 import pytest
 from sqlalchemy import create_engine, event
+from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session, sessionmaker
 from sqlalchemy.pool import StaticPool
 
@@ -242,7 +243,9 @@ class TestBomDownstreamGate:
 
         with pytest.raises(BusinessException) as caught:
             BomSnapshotService().delete_snapshot(memory_db, snapshot.id)
-        assert caught.value.message == "仍被工程变更单引用，请先回滚相关变更后再删"
+        assert "工程变更 → 工程变更单列表" in caught.value.message
+        assert "回滚" in caught.value.message
+        assert "总成核价" not in caught.value.message
         assert memory_db.get(BomSnapshot, snapshot.id) is not None
 
         memory_db.query(EngineeringChangeOrder).delete()
@@ -252,7 +255,9 @@ class TestBomDownstreamGate:
         assert memory_db.get(BomSnapshot, snapshot.id) is None
 
     def test_grandchildren_do_not_block(self, memory_db: Session) -> None:
+        """应用预检不把总成核价当直接下游；真正删除时核价根外键拒绝。"""
         snapshot = _add_snapshot(memory_db)
+        node = _add_node(memory_db, snapshot)
         memory_db.add(
             BomWeldingFee(
                 year=2026,
@@ -264,19 +269,18 @@ class TestBomDownstreamGate:
                 updated_by="system",
             )
         )
-        memory_db.add(
-            AssemblyCost(
-                year=2026,
-                month=1,
-                location=LOCATION,
-                vehicle_model=VEHICLE_MODEL,
-                bom_version=BOM_VERSION,
-                source_node_id=1,
-                part_number="501006870AA",
-                created_by="system",
-                updated_by="system",
-            )
+        cost = AssemblyCost(
+            year=2026,
+            month=1,
+            location=LOCATION,
+            vehicle_model=VEHICLE_MODEL,
+            bom_version=BOM_VERSION,
+            source_node_id=node.id,
+            part_number="501006870AA",
+            created_by="system",
+            updated_by="system",
         )
+        memory_db.add(cost)
         memory_db.commit()
 
         BomSnapshotService().assert_bom_scope_unused(
@@ -286,8 +290,87 @@ class TestBomDownstreamGate:
             bom_version=BOM_VERSION,
             action="覆盖导入",
         )
+        with pytest.raises(BusinessException) as caught:
+            BomSnapshotService().delete_snapshot(memory_db, snapshot.id)
+        assert "核价 → 总成核价 → 总成核价一览" in caught.value.message
+        assert "反审核" in caught.value.message
+        assert "工程变更" not in caught.value.message
+        assert "2026年01月" in caught.value.message
+        assert LOCATION in caught.value.message
+        assert VEHICLE_MODEL in caught.value.message
+        assert memory_db.get(BomSnapshot, snapshot.id) is not None
+
+        memory_db.query(AssemblyCost).filter(AssemblyCost.id == cost.id).delete()
+        memory_db.commit()
         BomSnapshotService().delete_snapshot(memory_db, snapshot.id)
         assert memory_db.get(BomSnapshot, snapshot.id) is None
+
+    def test_delete_snapshot_blocked_by_cost_and_change_order(self, memory_db: Session) -> None:
+        snapshot = _add_snapshot(memory_db)
+        node = _add_node(memory_db, snapshot)
+        memory_db.add(
+            AssemblyCost(
+                year=2025,
+                month=4,
+                location=LOCATION,
+                vehicle_model=VEHICLE_MODEL,
+                bom_version=BOM_VERSION,
+                source_node_id=node.id,
+                part_number=node.part_number,
+                created_by="system",
+                updated_by="system",
+            )
+        )
+        memory_db.add(
+            UploadFile(
+                file_category="engineering_change",
+                original_filename="both.xlsx",
+                stored_relpath="engineering-change/both.xlsx",
+                file_hash="c" * 64,
+                file_size=10,
+                extension=".xlsx",
+                created_by="system",
+                updated_by="system",
+            )
+        )
+        memory_db.flush()
+        upload_file_id = memory_db.query(UploadFile).one().id
+        log_row = EngineeringChangeUploadLog(
+            upload_file_id=upload_file_id,
+            location=LOCATION,
+            vehicle_model=VEHICLE_MODEL,
+            customer_name="奇瑞",
+            effective_year=2025,
+            effective_month=7,
+            original_filename="both.xlsx",
+            status="success",
+            created_by="system",
+            updated_by="system",
+        )
+        memory_db.add(log_row)
+        memory_db.flush()
+        memory_db.add(
+            EngineeringChangeOrder(
+                upload_log_id=log_row.id,
+                upload_file_id=upload_file_id,
+                before_assembly_node_id=node.id,
+                excel_row=2,
+                project_code=VEHICLE_MODEL,
+                effective_period_text="2025年07月",
+                change_type="完成停止",
+                before_assembly_part_number=node.part_number,
+                part_level="总成",
+                status="active",
+                created_by="system",
+                updated_by="system",
+            )
+        )
+        memory_db.commit()
+
+        with pytest.raises(BusinessException) as caught:
+            BomSnapshotService().delete_snapshot(memory_db, snapshot.id)
+        assert "核价 → 总成核价 → 总成核价一览" in caught.value.message
+        assert "工程变更 → 工程变更单列表" in caught.value.message
 
     def test_delete_node_blocked_by_procurement(self, memory_db: Session) -> None:
         snapshot = _add_snapshot(memory_db)
@@ -310,3 +393,61 @@ class TestBomDownstreamGate:
             BomNodeService().delete_node(memory_db, node.id)
         assert caught.value.code == 409
         assert memory_db.get(BomNode, node.id) is not None
+
+    def test_orphan_source_node_id_rejected(self, memory_db: Session) -> None:
+        with pytest.raises(IntegrityError):
+            memory_db.add(
+                AssemblyCost(
+                    year=2026,
+                    month=1,
+                    location=LOCATION,
+                    vehicle_model=VEHICLE_MODEL,
+                    bom_version=BOM_VERSION,
+                    source_node_id=1,
+                    part_number="ghost",
+                    created_by="system",
+                    updated_by="system",
+                )
+            )
+            memory_db.commit()
+        memory_db.rollback()
+
+    def test_delete_parent_blocked_by_child_cost(self, memory_db: Session) -> None:
+        snapshot = _add_snapshot(memory_db)
+        parent = _add_node(memory_db, snapshot)
+        child = BomNode(
+            snapshot_id=snapshot.id,
+            parent_id=parent.id,
+            level=1,
+            part_number="CHILD-1",
+            node_role="make",
+            location=LOCATION,
+            vehicle_model=VEHICLE_MODEL,
+            bom_version=BOM_VERSION,
+            effective_year=2020,
+            effective_month=1,
+            created_by="system",
+            updated_by="system",
+        )
+        memory_db.add(child)
+        memory_db.flush()
+        memory_db.add(
+            AssemblyCost(
+                year=2025,
+                month=3,
+                location=LOCATION,
+                vehicle_model=VEHICLE_MODEL,
+                bom_version=BOM_VERSION,
+                source_node_id=child.id,
+                part_number=child.part_number,
+                created_by="system",
+                updated_by="system",
+            )
+        )
+        memory_db.commit()
+
+        with pytest.raises(BusinessException) as caught:
+            BomNodeService().delete_node(memory_db, parent.id)
+        assert "2025年03月" in caught.value.message
+        assert "核价 → 总成核价 → 总成核价一览" in caught.value.message
+        assert memory_db.get(BomNode, parent.id) is not None
