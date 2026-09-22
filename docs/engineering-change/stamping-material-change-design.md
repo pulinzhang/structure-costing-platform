@@ -1,15 +1,16 @@
 # 冲压材质变更 — 设计说明
 
-> 状态：**设计定稿，未落地。** 不改现网改图工程变更，不改代码。  
-> 本文是一条**独立通道**：零件号不变，只切冲压件牌号，从生效月起按新牌号取钢材联动价。  
-> 关联：[工程变更地图](README.md)、[改图换号](part-number-revision-design.md)、[生失效](bom-process-die-effective-period-design.md)、[冲压工艺确认表](../stamping/stamping-process-confirmation-design.md)、[牌号分类](../masterdata/steel-grade-category-design.md)、[钢材采购测算](../stamping/stamping-steel-purchase-export-design.md)、[核价引擎](../costing/costing-engine-design.md)。
+> 状态：**设计定稿，业务未落地。** 现网已占位：通道分包、空 API 前缀、侧栏「设计变更」分组；材料变更菜单/权限/页面还没有。  
+> 本文是一条**独立通道**：零件号不变，只切冲压件牌号，从生效月起按新牌号取钢材联动价。对人说 **材料变更**（对仗现网「设计变更」）；领域里仍说牌号/材质。  
+> 关联：[工程变更地图](README.md)、[改图换号](part-number-revision-design.md)、[生失效](bom-process-die-effective-period-design.md)、[冲压工艺确认表](../stamping/stamping-process-confirmation-design.md)、[牌号分类](../masterdata/steel-grade-category-design.md)、[钢材采购测算](../stamping/stamping-steel-purchase-export-design.md)、[核价引擎](../costing/costing-engine-design.md)。  
+> 占位说明：[材料变更服务包](../../app/services/engineering_change/material_change/README.md)。
 
 ---
 
 ## 0. 一句话
 
 > **互换性不影响时，核价对象仍是同一个零件号；牌号必须从生效月切开。**  
-> 本通道只做这件事。图变、少装、加装、整棵停交，仍走现网四句改图工程变更。
+> 本通道只做这件事。图变、少装、加装、整棵停交，仍走现网设计变更（四句类型）。
 
 动机：现网芜湖 T13J 振华工艺里，左右 B 柱气囊导向支架牌号是 `DC01`（见 §0.1）。**上游已给出切到 `DC03`，且不影响互换性。**
 
@@ -168,22 +169,60 @@ SOP 工艺再导：可以改投产列；**账期月一旦落在某条材质变�
 
 ## 4. 对人怎么说
 
-菜单挂在一级 **工程变更** 下，与「设计变更」并列，不要挂到冲压零件列表里去改一格。
+对人说 **材料变更**。对仗现网侧栏里的 **设计变更**。不要说升版、不要说 L0、不要说 overlay。变更类型格子只准一句：**材料变更**。不要和 BOM「材料清单」混称。
 
-| 页 | Hash | 作用 |
-|----|------|------|
-| 上传冲压材质变更 | `#/engineering-change-material-upload` | 选基地、项目、年、月 + 文件 |
-| 冲压材质变更单列表 | `#/engineering-change-material-list` | 查询、详情、删除=整本回滚 |
+### 4.1 挂在哪（菜单）
 
-对人说 **冲压材质变更**。不要说升版、不要说 L0、不要说 overlay。变更类型格子只准一句：**材质变更**。
+一级仍是现网 **工程变更**。不要新开一级「材料变更」，不要挂到冲压工程（工艺列表会变成改一格），不要挂到核价（那是消费方）。
+
+现网已经把设计变更收成二级分组（查询日 2026-09-22）：
+
+```text
+工程变更
+  └── 设计变更
+        ├── 上传工程变更     #/engineering-change-upload
+        └── 工程变更单列表   #/engineering-change-order-list
+```
+
+材料变更落地时 **对称**加一个二级分组，侧栏仍只有一个一级：
+
+```text
+工程变更
+  ├── 设计变更
+  │     ├── 上传工程变更
+  │     └── 工程变更单列表
+  └── 材料变更
+        ├── 上传材料变更     #/engineering-change-material-upload
+        └── 材料变更单列表   #/engineering-change-material-list
+```
+
+禁止把材料变更塞进设计变更那两个叶子（现网页面键、权限、`/api/engineering-change` 已占用）。禁止在工程变更根下摊平四个叶子。菜单预算：不增一级；二级分组对仗；叶子各两个。
+
+| 页 | Hash | 现网 | 作用 |
+|----|------|------|------|
+| 上传材料变更 | `#/engineering-change-material-upload` | 页面未建；目录 `features/engineering-change/material-change/` 已占 | 选基地、项目、年、月 + 文件 |
+| 材料变更单列表 | `#/engineering-change-material-list` | 同上 | 查询、详情、删除=整本回滚 |
 
 上传页年月必须和变更单生效年月一致；项目必须同一。一本一个项目、一个生效月、一个冲压厂（与工艺行上的厂一致；左右件不同厂请分两本）。
+
+### 4.2 现网已准备（业务未写）
+
+| 项 | 现网 |
+|----|------|
+| 切片分包 | `app/services|routers|parsers|repositories|models/engineering_change/{design_change,material_change}/` |
+| 设计变更 HTTP | `/api/engineering-change`（上传、列表、回滚已跑） |
+| 材料变更 HTTP | `/api/engineering-change/material` 已挂上，**零个接口**；测试锁前缀不被设计变更占用 |
+| 侧栏 / catalog | 一级 `menu:engineering-change`；二级 `menu:engineering-change-design-group`「设计变更」。材料分组码尚未进 catalog |
+| 前端 | `design-change/{upload,list}` 现网页；`material-change/` 只有 README，侧栏无材料项 |
+| 任务类型 | 设计变更仍 `engineering_change_upload`。材料变更新任务类型落地再定，禁止混进同一队列当同一种 Excel |
+
+落地时才写：catalog 材料分组与叶子、pageMeta、溯源分类 `engineering_change_material`、表、解析器接入消费链。
 
 ---
 
 ## 5. Excel（规格就是模板）
 
-工作表名：**工程变更单（材质）**。不要叫封皮，不要跟改图那张「工程变更单」同名。
+工作表名：**工程变更单（材质）**。不要叫封皮，不要跟设计变更那张「工程变更单」同名。
 
 | 列 | 必填 | 规则 |
 |----|------|------|
@@ -199,7 +238,7 @@ SOP 工艺再导：可以改投产列；**账期月一旦落在某条材质变�
 | 互换性 | 是 | 只准字面 **不影响互换性** |
 | 零件名称 | 否 | 不互校，给人看 |
 
-填写说明另表，讲清：本通道不是改图；号不变；变更版本是这一次通知的管理号，不是工艺列表里的 `D/00`；生效月及之后重算零件价时，按变更后牌号匹配钢材联动价；影响互换性去改图那本。
+填写说明另表，讲清：本通道不是设计变更；号不变；变更版本是这一次通知的管理号，不是工艺列表里的 `D/00`；生效月及之后重算零件价时，按变更后牌号匹配钢材联动价；影响互换性去设计变更那本。
 
 样例行以 §0.1 芜湖 T13J 现网件为准（左右 B 柱气囊导向支架可同一本两行；变更后固定 `DC03`）。
 
@@ -216,49 +255,127 @@ SOP 工艺再导：可以改投产列；**账期月一旦落在某条材质变�
 
 ### 6.1 表
 
-上传头：与改图上传头分开，避免回滚搅在一起。字段：基地、项目、**变更版本**、生效年月、文件 id、状态。表名自管。
+**冲压件工艺表不新增、不改行。** `stamping_parts` / `stamping_tailor_weld_blanks` 零 insert、零 update `material` / `version`、零为同号再插一行。投产字仍是确认表上的牌号。材料变更后的「当月牌号」不在工艺表里，在下面两张切点表 + 解析器。
 
-变更单行 = 一条切点（列表实体）：
+不要复用现网 `engineering_change_upload_logs` / `engineering_change_orders` / `engineering_change_effect_links`（外键指向设计变更单，回滚会搅在一起）。包路径现网已占：`app/models/engineering_change/material_change/`，落地再建表并导出。
+
+#### 6.1.1 上传头 `engineering_change_material_upload_logs`
+
+一次上传尝试（含失败）。一本成功 = 一个头。
+
+| 列 | 类型要点 | 含义 |
+|----|----------|------|
+| `id` | PK | |
+| `task_id` | 可空，索引 | 异步任务 |
+| `upload_file_id` | FK `upload_files` RESTRICT | 成功才 `register_existing`；失败不登记溯源 |
+| `status` | `pending` / `success` / `failed` | |
+| `location` | 非空 | 上传页基地 |
+| `vehicle_model` | 非空 | 项目 |
+| `change_version` | 非空 | 整本同一字，如 `MAT-202601` |
+| `effective_year` / `effective_month` | 非空 | 与 Excel、上传页同一月 |
+| `original_filename` | 非空 | |
+| `message` | 可空 | 失败原因 |
+
+成功头：同一 `vehicle_model` + `change_version` 只准一本（失败头不占这个字，可重传）。不要把工艺确认表版本写进来。
+
+#### 6.1.2 切点行 `engineering_change_material_orders`
+
+列表实体 = Excel 一行 = 某一工艺身份上的一次牌号切开。1 上传头 : N 切点行。
+
+| 列 | 类型要点 | 含义 |
+|----|----------|------|
+| `id` | PK | |
+| `upload_log_id` | FK 上传头 RESTRICT | 整本回滚 |
+| `upload_file_id` | FK `upload_files` RESTRICT | 与头同一原件 |
+| `change_version` | 非空 | 抄头，给人筛 |
+| `excel_row` | 非空 | |
+| `location` | 非空 | 与工艺行基地一致 |
+| `stamping_supplier` | 非空，FK `suppliers.full_name` RESTRICT | 冲压工厂 |
+| `vehicle_model` | 非空 | |
+| `effective_year` / `effective_month` | 非空 | 切点月；**没有**失效年/月列。下一刀的生效月就是上一刀的实际下限 |
+| `part_number` | 非空 | 当时仍有效的工艺号 |
+| `blank_seq` | 非空，普通件 `0` | 拼焊子片序号；禁止 NULL（SQLite 多 NULL 不互斥） |
+| `blank_part_number` | 可空 | 子片零件号；普通件空 |
+| `before_grade` | 非空，FK `steel_grade_categories.grade` RESTRICT，档案改字 CASCADE | 叠本行之前的当月牌号 |
+| `after_grade` | 同上 | 变更后牌号 |
+| `interchangeability` | 非空 | 固定句「不影响互换性」 |
+| `part_name` | 可空 | 不互校 |
+| `source_part_id` | FK `stamping_parts.id` RESTRICT | 导入时命中的工艺行。禁止 SET NULL / CASCADE |
+| `source_blank_id` | 可空，FK `stamping_tailor_weld_blanks.id` RESTRICT | 拼焊才填 |
+
+硬 UNIQUE（回滚是整本删除，不留行，不必滤 status）：
+
+1. 切点：`(location, stamping_supplier, vehicle_model, part_number, blank_seq, effective_year, effective_month)`
+2. 版本：成功头上 `(vehicle_model, change_version)`（切点行冗余版本，以头为准）
+
+解析器用的索引：`(location, stamping_supplier, vehicle_model, part_number, blank_seq, effective_year, effective_month)`。
+
+生失效不进 UNIQUE。工艺行 `version` 不更新、不进本表。
+
+#### 6.1.3 效果链接 `engineering_change_material_effect_links`
+
+本通道 **不**种新工艺行，链接只为整本回滚记账。不要插进现网 `engineering_change_effect_links`。
 
 | 列 | 含义 |
 |----|------|
-| 上传头 id | 整本删除用 |
-| 文件 id | 溯源；与上传头同一原件 |
-| 变更版本 | 抄上传头；给人检索 |
-| excel_row | 行号 |
-| 项目 / 生效年 / 生效月 / 冲压厂 / 零件号 | 切点身份 |
-| 子片序号、子片零件号 | 可空；普通件空 |
-| 变更前牌号 / 变更后牌号 | 档案 `grade` |
-| 互换性 | 落库固定句 |
-| `source_part_id` | 指向当时命中的 `stamping_parts.id`，RESTRICT |
-| 拼焊则 `source_blank_id` | 指向子片，RESTRICT |
-| status | `active` / `rolled_back` |
+| `upload_log_id` | 整本回滚 |
+| `order_id` | 切点行 |
+| `effect_kind` | 只准 `material_cutover` |
+| `before_id` | 普通件 = `source_part_id`；拼焊 = `source_blank_id` |
+| `after_id` | **空**（同号，没有新工艺行） |
+| `sort_no` | 回滚逆序 |
 
-两把唯一（都只约束未回滚）：
+未知 `effect_kind` 拒收。
 
-- 切点：同一厂同一项目同一零件号（+ 子片）同一生效月只能一行。
-- 管理版本：同一项目同一变更版本只能一本。
+原件：成功路径落盘 + `register_existing`。`file_category` 单开 `engineering_change_material`（落地列入文件溯源封闭名单）。失败回滚不登记。
 
-生失效不进 UNIQUE。工艺行 `version` **不更新**。
+回滚对齐现网设计变更：删头、切点行、链接，**不留** `rolled_back` 行，**不**改 `stamping_parts`。其后还有该身份更晚切点则拒（必须先删后一本）。
 
-原件：成功路径写入磁盘并 `register_existing`。`file_category` 单开一类（落地时列入 [文件溯源](../file-trace/file-trace-design.md) 封闭名单），不要和改图 Excel、工艺确认表混类。失败回滚不登记。
+#### 6.1.4 变了再变（同一冲压件多刀）
 
-效果链接：供整本回滚指到本行 id。未知 `effect_kind` 仍拒收。本通道只登记这一种业务对象。
+禁止 UPDATE 上一刀的 `after_grade`，禁止改工艺行 `material`。每一刀 **insert** 一行切点，按生效月排队。
+
+用 §0.1 `403014115AA`（工艺行始终 `material=DC01`、`version=V3-01`，`stamping_parts.id` 不变）：
+
+| 行 | 变更版本 | 生效 | before_grade | after_grade | 工艺行 |
+|----|----------|------|--------------|-------------|--------|
+| 无 | — | — | — | — | `DC01` |
+| 第一刀 | `MAT-202601` | 2026年01月 | `DC01` | `DC03` | 仍 `DC01` |
+| 第二刀 | `MAT-202607` | 2026年07月 | `DC03`（必须等于当时解析值） | 档案里另一个牌号（例只说明排队；验收主例子只写到 DC03） | 仍 `DC01` |
+
+同一把 UNIQUE：两行生效月不同，插得进。同一月再传一刀 → UNIQUE / 门禁拒。`MAT-202601` 未删又传同一版本 → 版本 UNIQUE 拒。
+
+解析（从工艺行字出发，按生效月升序叠 `after_grade`）：
+
+| as_of | 命中切点 | 当月牌号 |
+|-------|----------|----------|
+| 2025年12月 | 无 | `DC01`（工艺行） |
+| 2026年01月～06月 | 第一刀 | `DC03` |
+| 2026年07月起 | 第一刀再叠第二刀 | 第二刀的 `after_grade` |
+
+不是「最后一行覆盖库」。两行都在，旧月仍能解出旧牌号。回滚第二刀后，2026年07月起重新解成 `DC03`，第一刀还在。
+
+第二刀 Excel：变更前写成 `DC03`，不能再写 `DC01`（那是叠第一刀之前的值，门禁 `ECM_BEFORE_MATERIAL`）。变更后不能与变更前相同。
+
+左右件同一本可以两行切点、同一个头；再变一次必须 **另一本**（新头、新版本、更晚生效月），不要在第一本上追加行。
+
+---
 
 ### 6.2 写入纪律
 
-- 只 **insert** 变更单行。禁止 UPDATE `stamping_parts.material` / 子片 `material` / `stamping_parts.version`。
+- 只 **insert** 切点行与头。禁止 UPDATE `stamping_parts.material` / 子片 `material` / `stamping_parts.version`。变了再变 = 再 insert，不是改上一行。
 - 禁止为本通道去改工艺 UNIQUE、禁止同号第二行工艺。
-- 指挥家：prepare（校验）→ persist（插行 + 链接）→ commit。主方法不种树、不抄费。
-- 失败：先 rollback 再标上传失败。
+- 指挥家：prepare（校验）→ persist（插头 + 切点行 + 链接）→ commit。主方法不种树、不抄费。
+- 失败：先 rollback 再标上传失败（可留 failed 头，不插切点行）。
+- 列表回滚：整本 **删除** 头 / 切点 / 链接，不留 `rolled_back` 行（与现网设计变更同一纪律）。
 
 ### 6.3 解析器（当月牌号）
 
 输入：基地、冲压厂、项目、零件号、年、月；（拼焊再加子片键）。
 
 1. 取该月命中的工艺行（现网 `is_in_period`）。没有行 → 没有当月零件，本通道也不该给它建切点。  
-2. 取该身份上 `status=active` 且 `生效月 ≤ as_of` 的变更单，按生效月升序。  
-3. 从工艺行材质出发，按序把每条的变更后牌号叠上去（每条的变更前必须等于叠到它之前的值，导入时已校验；解析时仍按变更后走）。  
+2. 取该身份上生效月 ≤ as_of 的切点行，按生效月升序。  
+3. 从工艺行材质出发，按序把每条的 `after_grade` 叠上去（每条的 `before_grade` 必须等于叠到它之前的值，导入时已校验；解析时仍按 `after_grade` 走）。  
 4. 输出当月牌号。
 
 消费方如何调用见 §6.4。钢材联动价公式仍按牌号+料厚匹配，不因本通道改加减价算法。
@@ -292,7 +409,58 @@ SOP 工艺再导：可以改投产列；**账期月一旦落在某条材质变�
 
 零件价页、引擎、单独点「计算钢材联动」三条入口，规格扫描必须同一套 as_of。只改零件价计算器、不改 Step1：115AA 会报「未匹配到钢材联动价（材质=DC03, 料厚=1.5）」，因为联动价表里可能根本没有这一行。
 
+#### 钢材联动与零件价能否算通
+
+现网公式 **能**接上切点；现网取牌号 **接不上**。落地只改取数，不改加减价、不改材料费公式。
+
+**钢材联动**（`SteelPriceCalcOrchestrator`，整基地年+月一次）
+
+| 步 | 现网 | 切点之后 |
+|----|------|----------|
+| Step1 规格 | `list_material_specs`：工艺行 ∪ 子片，牌号+料厚去重，**不问账期、不叠切点** | **必须并入** 该账期月在期件解析牌号+原料厚。115AA 2026年01月要出现 `DC03`+1.5 mm；只靠工艺列则本件仍贡献 `DC01`+1.5。全鑫铰链板现网是 `DC03`+1.2，**替不了** 1.5 |
+| Step2 基价 | 牌号全等（O/0）命中该月该地基价行，大类走牌号分类 | 公式不变。`DC03` 必须在该月芜湖基价表里有行；档案有牌号只够材料变更上传，不够展开联动价 |
+| Step3–4 厚度/宽度政策 | 按档案大类 + 基价行上的宽、基准厚 | `DC01`/`DC03` 同属冷轧则走同一套冷轧政策；宽取 **该牌号基价行** 的宽，不是零件料片宽 |
+| 落库 | 业务键 `年+月+基地+钢厂+大类+牌号+料厚+宽`；已审跳过 | `DC03`+1.5 是新键，会 **新建** pending 行，不覆盖已审的 `DC01`+1.5。零件价按牌号+料厚取最低吨价，不靠宽 |
+
+引擎门禁 `inspect_steel_coverage` 与 Step1 **同一套**规格。Step1 并入解析后，缺 `DC03` 基价 / 冷轧厚度政策 → 现网硬停 `base_price` / `thickness_policy`，跳基价或政策页，不跳材料变更。
+
+手点「计算钢材联动」：该月若已经算过，再跑一遍会给新规格补行；已审旧规格仍跳过。材料变更导入 **不会**自动跑 4.1。
+
+**冲压零件价**（按项目、该月有效工艺；`list_with_processes(as_of)`）
+
+| 步 | 现网 | 切点之后 |
+|----|------|----------|
+| 取件 | 仍是 115AA，零件号、生失效、料厚、料片、净重不变 | **通。** 发现不靠牌号 |
+| 取牌号 | `part.material` / `blank.material` | **必须改成解析器。** 不改则继续按 `DC01`+1.5 匹配，切点等于没发生 |
+| 匹配联动价 | `find_steel_prices(牌号, 料厚)`，多钢厂取最低吨价 | 解析得 `DC03` 后找 `DC03`+1.5。表里没有这一行 → 本件失败：「未匹配到钢材联动价」，**不要**回退 `DC01` |
+| 材料费 | `M × 钢公斤价 × (1+损耗) − 废料扣`；M 用料片尺寸 | **通。** 只换 P（吨价），不换 M、料厚、工序 |
+| 加工费/模具/检具 | 按零件身份 lookup，公式不用牌号 | **通。** 快照上的材质列仍可抄工艺行（第一期） |
+| 落库快照 `stamping_part_costs.material` | 现抄工艺行 | 必须记 **解析牌号**（2026年01月是 `DC03`），列表/导出/还原钢价绑 `steel_price_id` |
+| 已审 | 该件该月已审则跳过不覆盖 | **不通直到反审。** 与改图同一纪律 |
+| ready | 只数该月该基地联动价 **行数**>0 | 有 `DC01` 行时 ready 仍可能绿，115AA 仍可能缺 `DC03`+1.5。缺规格以计算失败句为准，不在 ready 里假装齐。引擎硬停比这严 |
+
+拼焊：各子片自己解析、自己匹配；父件空材质不要拿去匹配。
+
+**用 115AA 走通一条（芜湖 / T13J / 2026年01月）**
+
+1. 材料变更成功：切点行在，工艺行仍 `DC01`。  
+2. 该月基价有 `DC03`（冷轧政策能盖 1.5 mm）。没有 → 引擎停在门禁，或手点钢材 Step2 无基价。  
+3. 跑该月钢材联动：落 `DC03`+1.5（及基价展开的各钢厂行）。  
+4. 115AA 该月零件价 **未审**：解析 `DC03`，匹配到上一步的行，材料费用新吨价；快照材质 `DC03`。已审 → 先反审。  
+5. 总成核价引用第 4 步金额。只跑总成、不跑 3–4 → 不通。
+
+2025年12月：解析仍 `DC01`，Step1 本件仍是 `DC01`+1.5，零件价仍匹配旧行。两月各算各的。
+
+**不通（落地禁止用这些办法「凑通」）**
+
+- 只改零件价、不改 Step1  
+- 匹配失败回退工艺行 `DC01`  
+- 用 `DC03`+1.2 顶 1.5  
+- 改工艺行 `material` 让扫描「自然」扫到  
+- 材料变更上传时硬要当月已有联动价（缺价是核价月的事）
+
 #### 不走解析器（第一期）
+
 
 | 消费方 | 仍读什么 | 原因 |
 |--------|----------|------|
@@ -378,18 +546,18 @@ SOP 工艺再导：可以改投产列；**账期月一旦落在某条材质变�
 
 回滚：
 
-- 其后还有该零件（+子片）更晚的未回滚材质变更 → 拒绝（必须从最新切点往回删）。
-- 只删本通道插的变更单行 / 上传头 / 效果链接。工艺行、BOM、费表一行都不动。
+- 其后还有该零件（+子片）更晚的切点 → 拒绝（必须从最新切点往回删）。
+- 只删本通道插的切点行 / 上传头 / 效果链接。工艺行、BOM、费表一行都不动。不留 `rolled_back` 行。
 - 已有零件价快照 **不**当 RESTRICT 挡回滚（快照不是本通道插的行）。回滚后旧月快照仍可能写着新牌号，直到人重算；列表提示「回滚后请视需要重算生效月及之后的零件价」。不要静默改历史快照。
 
-权限（落地进 `catalog.json`，本文不抄树）：一级仍 `menu:engineering-change`。新增：
+权限（落地进 `catalog.json`，对仗现网设计变更分组，本文不抄整棵树）：一级仍 `menu:engineering-change`。新增二级分组 `menu:engineering-change-material-group`（文案「材料变更」），其下：
 
 - `menu:engineering-change-material-upload` + `op:…:view` / `op:…:upload`
 - `menu:engineering-change-material-list` + `op:…:view` / `op:…:delete`
 
-不要复用改图上传/删除码，避免授权改图的人顺带改材质。
+不要复用设计变更的上传/删除码，也不要复用 `menu:engineering-change-design-group`。避免授权设计变更的人顺带改材料切点。
 
-API 前缀建议 `/api/engineering-change/material`（静态段在参数路径之前）。整数 id 写成 `/{id:int}`。
+API 前缀 **现网已挂**：`/api/engineering-change/material`（静态段在参数路径之前，零个接口）。落地接口写在这棵前缀下；整数 id 写成 `/{id:int}`。禁止设计变更路由占用此前缀（现网测试已锁）。
 
 ---
 
@@ -419,13 +587,16 @@ API 前缀建议 `/api/engineering-change/material`（静态段在参数路径�
 ## 11. 验收清单（落地时勾）
 
 - [ ] 改图那本 Excel / 四句类型 / UNIQUE / 种树 **一行都不为本文改语义**
+- [ ] 侧栏一级只有「工程变更」；材料变更是二级分组（对仗设计变更），不新开一级、不摊平到根下、不占用设计变更两个叶子
 - [ ] 本通道模板没有材料清单、没有确认表
 - [ ] DC01→DC03 用现网 `403014115AA`（芜湖 T13J 振华，左B柱气囊导向支架）导入成功；变更版本 `MAT-202601` 落在变更单/上传头；工艺行 `material` 仍是 `DC01`、`version` 仍是 `V3-01`；原件可从列表/文件溯源下载；2026年01月解析为 DC03，2025年12月解析为 DC01
-- [ ] 同一项目再传 `MAT-202601` 拒收；更晚生效月、新的变更版本可叠第二条，且第二条变更前必须是 DC03
+- [ ] `stamping_parts` 不因材料变更增行或改 `material`；`403014115AA` 第一刀后工艺仍一行 `DC01`；切点表一行。第二刀另插一行，变更前是 DC03；解析 1–6 月 DC03、7 月起第二刀 `after_grade`；回滚第二刀后工艺行仍不动
 - [ ] 变更前写成错牌号拒收；档案没有的变更后拒收；互换性空拒收。验收样表变更后必须是 `DC03`（与 §0.1 同一条上游通知）
 - [ ] 同号确认表再导改投产列，切点后解析仍是 DC03
 - [ ] 改图换号抄到新号的材质是切点月解析值（若旧号已 DC03，新号不得退回 DC01）
 - [ ] 零件价 2026年01月重算：Step1 含 `DC03`+1.5 mm；零件价按 DC03 匹配联动价；快照 `material=DC03`。2025年12月不自动变，该月 Step1 本件仍是 `DC01`+1.5 mm
+- [ ] 只改零件价、不改钢材 Step1：115AA 报未匹配 `DC03`+1.5，禁止回退按 `DC01` 算通
+- [ ] 基价无 `DC03` 时引擎 `base_price` 硬停；手点钢材 Step2 记无该牌号。材料变更上传仍成功
 - [ ] 只重跑 2026年01月总成、不重跑零件价：总成材料费仍是旧快照
 - [ ] 工艺列表按 2026年01月筛 `DC03` 能看到 `403014115AA`；直接查工艺列 `material='DC03'` 看不到这件
 - [ ] 引擎 DAG / 三参数 / 年度补算 / 硬停跳转映射 **不为本文加门禁码**；芜湖 2026年01月检查就绪时钢种覆盖含 `DC03`+1.5 mm（与 4.1 同一套）；缺基价仍是 `base_price` 去基价页
