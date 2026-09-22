@@ -503,7 +503,7 @@ function getFilters() {
 
 function requireScope(actionLabel = '批量操作') {
     const f = getFilters();
-    // 版本非约束：工程变更后同月可多版本字，空=该月全部。
+    // 版本非约束：工程变更后同月可多版本字，空=该月全部。导出仍跟当前视图和版本。
     if (!f.year || !f.month || !f.location || !f.vehicle_model) {
         showToast(`${actionLabel}须选定年度、月份、基地、项目（版本可不选）`, 'warning');
         setAdvancedOpen(true);
@@ -516,6 +516,21 @@ function requireScope(actionLabel = '批量操作') {
         vehicle_model: f.vehicle_model,
         bom_version: f.bom_version || undefined,
         view: listState.view,
+    };
+}
+
+function requireBatchScope(actionLabel = '批量操作') {
+    const f = getFilters();
+    if (!f.year || !f.month || !f.location || !f.vehicle_model) {
+        showToast(`${actionLabel}须选定年度、月份、基地、项目`, 'warning');
+        setAdvancedOpen(true);
+        return null;
+    }
+    return {
+        year: f.year,
+        month: f.month,
+        location: f.location,
+        vehicle_model: f.vehicle_model,
     };
 }
 
@@ -580,7 +595,7 @@ function openBatchAuditDrawer(mode) {
     const isApprove = mode === 'approve';
     if (isApprove && !listState.canApprove) return showToast('无审核权限', 'warning');
     if (!isApprove && !listState.canReverse) return showToast('无反审核权限', 'warning');
-    const scope = requireScope(isApprove ? '批量审核' : '批量反审核');
+    const scope = requireBatchScope(isApprove ? '批量审核' : '批量反审核');
     if (!scope) return;
 
     const modeEl = document.getElementById('lacBatchAuditMode');
@@ -596,9 +611,10 @@ function openBatchAuditDrawer(mode) {
     if (modeEl) modeEl.value = isApprove ? 'approve' : 'reverse';
     if (titleEl) titleEl.textContent = isApprove ? '批量审核' : '批量反审核';
     if (hintEl) {
+        const scopeHint = '本次不看列表是财务还是零件成本，也不看版本筛选；处理的是该年该月、该基地、该项目的全部核价卡。';
         hintEl.textContent = isApprove
-            ? '仅按年度、月份、基地、项目处理待审记录（版本筛可选）；已通过记录会跳过。'
-            : '仅按年度、月份、基地、项目处理已通过记录（版本筛可选）；其余状态会跳过。反审核意见必填。';
+            ? `${scopeHint}已通过记录会跳过。`
+            : `${scopeHint}其余状态会跳过。反审核意见必填。`;
     }
     if (operatorLabel) operatorLabel.textContent = isApprove ? '审核人' : '反审核人';
     if (operatorDisplay) {
@@ -614,11 +630,8 @@ function openBatchAuditDrawer(mode) {
         remarkEl.placeholder = isApprove ? '请填写审核意见（必填）' : '请填写反审核原因（必填）';
     }
     if (summaryEl) {
-        const versionPart = scope.bom_version
-            ? ` · 版本 ${scope.bom_version}`
-            : ' · 全部版本';
         summaryEl.textContent =
-            `${fmtPeriod(scope.year, scope.month)} · 基地 ${scope.location} · 项目 ${scope.vehicle_model}${versionPart}`;
+            `${fmtPeriod(scope.year, scope.month)} · 基地 ${scope.location} · 项目 ${scope.vehicle_model}`;
     }
     if (confirmBtn) {
         confirmBtn.textContent = isApprove ? '确认审核通过' : '确认反审核';
@@ -638,7 +651,7 @@ async function submitBatchAudit() {
     if (listState.batchAuditSubmitting) return;
     const mode = document.getElementById('lacBatchAuditMode')?.value || 'approve';
     const isApprove = mode === 'approve';
-    const scope = requireScope(isApprove ? '批量审核' : '批量反审核');
+    const scope = requireBatchScope(isApprove ? '批量审核' : '批量反审核');
     if (!scope) return;
 
     const remark = document.getElementById('lacBatchAuditRemark')?.value.trim() || '';
@@ -690,9 +703,12 @@ async function submitBatchAudit() {
 
 async function batchDelete() {
     if (!listState.canDelete) return showToast('无删除权限', 'warning');
-    const scope = requireScope();
+    const scope = requireBatchScope('批量删除');
     if (!scope) return;
-    if (!window.confirm('确认删除当前范围未审核记录？已审核将跳过。')) return;
+    if (!window.confirm(
+        '确认删除该年该月、该基地、该项目的全部未审核核价卡？'
+        + '本次不看列表是财务还是零件成本，也不看版本筛选。已审核将跳过。',
+    )) return;
     try {
         const res = await HttpClient.post(`${API_BASE}/batch-delete`, scope);
         showToast(res.message || '删除完成', 'success');

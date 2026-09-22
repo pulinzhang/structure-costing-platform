@@ -80,7 +80,7 @@ class StampingPartCostManualUnitCostDTO(BaseModel):
 class StampingPartCostPartSnapshot:
     """零件主表快照到核价结果行（含本月是否利废 / 摆剪）。"""
 
-    source_part_id: int | None
+    source_part_id: int
     seq_no: int | None
     part_number: str
     part_name: str | None

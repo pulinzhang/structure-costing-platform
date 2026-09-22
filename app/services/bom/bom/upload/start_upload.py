@@ -17,6 +17,7 @@ from app.services.async_task.service import (
     AsyncTaskService,
 )
 from app.services.async_task.worker_runner import ProgressCallback, WorkerTaskOutcome
+from app.services.bom.bom.delete_block import BomReimportBlocked, explain_bom_delete_blocked
 from app.services.bom.bom.upload.gates.validate import validate_upload_file
 from app.services.bom.bom.upload.orchestrator.orchestrator import BomUploadOrchestrator
 from app.services.bom.bom.upload.orchestrator.types import BomUploadExecuteArgs
@@ -62,6 +63,20 @@ def start_upload(
                 ),
                 current_user,
                 on_progress=on_progress,
+            )
+        except BomReimportBlocked as blocked:
+            logger.warning("材料清单再导被核价或变更单挡住: task_id=%s", task.task_id)
+            worker_db.rollback()
+            return WorkerTaskOutcome(
+                status=STATUS_FAILED,
+                progress=0,
+                message=explain_bom_delete_blocked(
+                    worker_db,
+                    blocked.node_ids,
+                    location=blocked.location,
+                    vehicle_model=blocked.vehicle_model,
+                    replacing_children=True,
+                ),
             )
         except (BusinessException, ValueError) as error:
             logger.warning("材料清单上传业务失败: task_id=%s error=%s", task.task_id, error)

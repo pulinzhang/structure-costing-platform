@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
 
 from app.common.audit import audit_create
@@ -14,6 +15,8 @@ from app.repositories.bom.bom.snapshot import BomSnapshotRepository
 from app.repositories.persist import apply_payload_fields
 from app.schemas.dto.bom_dto import BomNodeWrite, BomSnapshotWrite
 from app.schemas.vo.user_vo import UserVO
+from app.services.bom.bom.delete_block import BomReimportBlocked, is_foreign_key_error
+from app.services.bom.bom.trees import descendant_ids
 from app.services.bom.bom.upload.gates.validate import (
     require_file_l0_already_on_snapshot,
     require_matching_snapshot_version,
@@ -271,7 +274,18 @@ def align_existing_trees(
         if index in saved_images:
             root.sketch_url = saved_images[index]
         root.updated_by = updated_by
-        repo.delete_descendants(db, snapshot_id, root.id)
+        rows = repo.list_by_snapshot(db, snapshot_id)
+        child_ids = sorted(descendant_ids(rows, {root.id}) - {root.id})
+        try:
+            repo.delete_descendants(db, snapshot_id, root.id)
+        except IntegrityError as error:
+            if not is_foreign_key_error(error):
+                raise
+            raise BomReimportBlocked(
+                child_ids,
+                location=root.location,
+                vehicle_model=root.vehicle_model,
+            ) from error
         descendant_indices = _walk_parsed_descendants(children_of, index)
         if not descendant_indices:
             continue

@@ -6,12 +6,14 @@ from collections.abc import Generator
 
 import pytest
 from sqlalchemy import create_engine, event
+from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session, sessionmaker
 from sqlalchemy.pool import StaticPool
 
 from app.common.audit import SYSTEM_USER
 from app.database import Base
 from app.exceptions.base import BusinessException
+from app.models.costing.stamping_part_cost import StampingPartCost
 from app.models.masterdata.location import Location, LocationAlias
 from app.models.masterdata.steel_grade_category import SteelGradeCategory
 from app.models.masterdata.supplier import Supplier, SupplierAlias
@@ -62,6 +64,7 @@ def memory_db() -> Generator[Session, None, None]:
             StampingTailorWeldBlank.__table__,
             StampingProcessFee.__table__,
             StampingProcessFeeItem.__table__,
+            StampingPartCost.__table__,
         ],
     )
     session_factory = sessionmaker(bind=engine)
@@ -150,8 +153,11 @@ def test_delete_part_blocked_when_fee_exists(memory_db: Session) -> None:
     part = _add_part(memory_db)
     fee = _add_fee(memory_db, part)
 
-    with pytest.raises(BusinessException, match="仍被冲压加工费引用"):
+    with pytest.raises(BusinessException, match="冲压加工费列表") as caught:
         StampingPartService().delete(memory_db, part.id)
+    assert "2026年" in caught.value.message
+    assert "未审核" in caught.value.message
+    assert "冲压零件价格一览" not in caught.value.message
 
     assert memory_db.get(StampingPart, part.id) is not None
     memory_db.delete(fee)
@@ -164,7 +170,7 @@ def test_batch_delete_blocked_when_fee_exists(memory_db: Session) -> None:
     part = _add_part(memory_db)
     _add_fee(memory_db, part)
 
-    with pytest.raises(BusinessException, match="仍被冲压加工费引用"):
+    with pytest.raises(BusinessException, match="冲压加工费列表") as caught:
         StampingPartService().batch_delete(
             memory_db,
             StampingPartBatchDeleteDTO(
@@ -173,4 +179,102 @@ def test_batch_delete_blocked_when_fee_exists(memory_db: Session) -> None:
                 version=VERSION,
             ),
         )
+    assert "2026年" in caught.value.message
     assert memory_db.get(StampingPart, part.id) is not None
+
+
+def _add_cost(db: Session, part: StampingPart, *, approved: bool = False) -> StampingPartCost:
+    cost = StampingPartCost(
+        year=2026,
+        month=1,
+        location=part.location,
+        stamping_supplier=part.stamping_supplier,
+        vehicle_model=part.vehicle_model,
+        version=part.version,
+        source_part_id=part.id,
+        part_number=part.part_number,
+        audit_status="approved" if approved else "pending",
+        created_by="system",
+        updated_by="system",
+    )
+    db.add(cost)
+    db.commit()
+    db.refresh(cost)
+    return cost
+
+
+def test_delete_part_blocked_by_part_cost(memory_db: Session) -> None:
+    part = _add_part(memory_db)
+    cost = _add_cost(memory_db, part)
+
+    with pytest.raises(BusinessException, match="冲压零件价格一览") as caught:
+        StampingPartService().delete(memory_db, part.id)
+    assert "2026年01月" in caught.value.message
+    assert "未审核" in caught.value.message
+    assert "加工费" not in caught.value.message
+    assert memory_db.get(StampingPart, part.id) is not None
+
+    memory_db.query(StampingPartCost).filter(StampingPartCost.id == cost.id).delete()
+    memory_db.commit()
+    StampingPartService().delete(memory_db, part.id)
+    assert memory_db.get(StampingPart, part.id) is None
+
+
+def test_delete_part_blocked_by_approved_part_cost(memory_db: Session) -> None:
+    part = _add_part(memory_db)
+    _add_cost(memory_db, part, approved=True)
+
+    with pytest.raises(BusinessException, match="已审核") as caught:
+        StampingPartService().delete(memory_db, part.id)
+    assert "反审核" in caught.value.message
+    assert "冲压零件价格一览" in caught.value.message
+
+
+def test_delete_part_blocked_by_fee_and_part_cost(memory_db: Session) -> None:
+    part = _add_part(memory_db)
+    _add_fee(memory_db, part)
+    _add_cost(memory_db, part)
+
+    with pytest.raises(BusinessException) as caught:
+        StampingPartService().delete(memory_db, part.id)
+    assert "冲压零件价格一览" in caught.value.message
+    assert "冲压加工费列表" in caught.value.message
+
+
+def test_rollback_message_uses_cost_row_scope(memory_db: Session) -> None:
+    from app.common.engineering_change_gates import EFFECT_PROCESS_PART
+    from app.services.bom.bom.delete_block import explain_rollback_blocked
+
+    part = _add_part(memory_db)
+    _add_cost(memory_db, part, approved=True)
+    message = explain_rollback_blocked(
+        memory_db,
+        [(EFFECT_PROCESS_PART, part.id)],
+        location="别处",
+        vehicle_model="别的项目",
+    )
+    assert "冲压零件价格一览" in message
+    assert "已审核" in message
+    assert LOCATION in message
+    assert "工程变更 → 工程变更单列表" in message
+    assert "别处" not in message
+
+
+def test_orphan_source_part_id_rejected(memory_db: Session) -> None:
+    with pytest.raises(IntegrityError):
+        memory_db.add(
+            StampingPartCost(
+                year=2026,
+                month=1,
+                location=LOCATION,
+                stamping_supplier=SUPPLIER,
+                vehicle_model=VEHICLE,
+                version=VERSION,
+                source_part_id=99999,
+                part_number="ghost",
+                created_by="system",
+                updated_by="system",
+            )
+        )
+        memory_db.commit()
+    memory_db.rollback()

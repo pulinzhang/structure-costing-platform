@@ -26,7 +26,9 @@ from app.schemas.vo.bom_welding_process_breakdown_vo import (
 from app.schemas.vo.user_vo import UserVO
 from app.services.bom.bom.period import BomPeriodService
 
-WELDING_FEE_REFERENCED = "仍被焊接费引用，请先删除对应焊接费后再删"
+WELDING_FEE_REFERENCED = (
+    "删不了：请打开「焊接工程 → 焊接费 → 焊接费列表」，删掉对应焊接费后再回来删拆解。"
+)
 
 
 def _normalize_scope(

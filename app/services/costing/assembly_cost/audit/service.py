@@ -1,4 +1,8 @@
-"""成品月核价：范围删除 / 审核 / 反审核。"""
+"""成品月核价：范围删除 / 审核 / 反审核。
+
+这三步只按年、月、基地、项目取卡，忽略请求里的 view 和 bom_version
+（DTO 的 view 默认 finance，不传也会收成树根）。列表和导出仍走原来的筛选。
+"""
 
 from __future__ import annotations
 
@@ -25,15 +29,14 @@ def batch_delete_costs(
 ) -> AssemblyCostBatchResultVO:
     location = dto.location.strip()
     vehicle_model = dto.vehicle_model.strip()
-    bom_version = (dto.bom_version or "").strip() or None
     ids = cost_repo.list_ids_by_scope(
         db,
         year=dto.year,
         month=dto.month,
         location=location,
         vehicle_model=vehicle_model,
-        bom_version=bom_version,
-        view=dto.view,
+        bom_version=None,
+        view="all",
     )
     skipped = cost_repo.count_approved_by_ids(db, ids)
     count = cost_repo.delete_by_ids(db, ids)
@@ -56,15 +59,14 @@ def batch_approve_costs(
 ) -> AssemblyCostBatchResultVO:
     location = dto.location.strip()
     vehicle_model = dto.vehicle_model.strip()
-    bom_version = (dto.bom_version or "").strip() or None
     ids = cost_repo.list_ids_by_scope(
         db,
         year=dto.year,
         month=dto.month,
         location=location,
         vehicle_model=vehicle_model,
-        bom_version=bom_version,
-        view=dto.view,
+        bom_version=None,
+        view="all",
     )
     count = cost_repo.approve_by_ids(
         db,
@@ -89,15 +91,14 @@ def batch_reverse_costs(
 ) -> AssemblyCostBatchResultVO:
     location = dto.location.strip()
     vehicle_model = dto.vehicle_model.strip()
-    bom_version = (dto.bom_version or "").strip() or None
     ids = cost_repo.list_ids_by_scope(
         db,
         year=dto.year,
         month=dto.month,
         location=location,
         vehicle_model=vehicle_model,
-        bom_version=bom_version,
-        view=dto.view,
+        bom_version=None,
+        view="all",
     )
     count = cost_repo.reverse_by_ids(
         db,

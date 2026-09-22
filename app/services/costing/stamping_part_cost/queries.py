@@ -42,7 +42,7 @@ def to_cost_vos(
     for row in rows:
         display = resolve_part_cost_display(
             row,
-            blanks_by_part.get(int(row.source_part_id or 0), []),
+            blanks_by_part.get(row.source_part_id, []),
             price_index,
         )
         vo = StampingPartCostVO.model_validate(row)

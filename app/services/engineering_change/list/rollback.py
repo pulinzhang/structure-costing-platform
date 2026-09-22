@@ -15,7 +15,6 @@ from sqlalchemy.orm import Session
 
 from app.common.engineering_change_gates import (
     EC_ROLLBACK_BLOCKED,
-    EC_ROLLBACK_REFERENCED,
     EFFECT_ANNUAL_PART_PRICE,
     EFFECT_ASSEMBLY_L0,
     EFFECT_DIE_FEE,
@@ -40,6 +39,7 @@ from app.repositories.engineering_change.upload_log_repository import (
 )
 from app.schemas.vo.user_vo import UserVO
 from app.services.bom.annual_part_price.service import BomAnnualPartPriceService
+from app.services.bom.bom.delete_block import explain_rollback_blocked
 from app.services.bom.bom.engineering import BomEngineeringService
 from app.services.bom.packaging_transport_fee.service import BomPackagingTransportFeeService
 from app.services.bom.procurement_object.service import BomProcurementObjectService
@@ -93,6 +93,9 @@ class EngineeringChangeRollbackService:
                     raise BusinessException(EC_ROLLBACK_BLOCKED, code=409)
 
         links = self.link_repo.list_by_upload_log_id_desc(db, upload_log_id)
+        link_facts = [(link.effect_kind, link.after_id) for link in links]
+        location = log_row.location
+        vehicle_model = log_row.vehicle_model
         try:
             if log_row.status == "success":
                 for link in links:
@@ -106,8 +109,15 @@ class EngineeringChangeRollbackService:
             raise
         except IntegrityError:
             db.rollback()
-            # 加工费/模具费/焊接费等对零件、布点、拆解 RESTRICT；转业务异常给前端 Toast，勿 500
-            raise BusinessException(EC_ROLLBACK_REFERENCED, code=409) from None
+            raise BusinessException(
+                explain_rollback_blocked(
+                    db,
+                    link_facts,
+                    location=location,
+                    vehicle_model=vehicle_model,
+                ),
+                code=409,
+            ) from None
         except Exception:
             db.rollback()
             logger.exception("工程变更回滚失败 upload_log_id=%s", upload_log_id)

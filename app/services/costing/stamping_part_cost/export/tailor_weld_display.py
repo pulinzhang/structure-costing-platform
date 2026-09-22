@@ -72,7 +72,7 @@ def load_blanks_by_part_id(
     blank_repo: StampingTailorWeldBlankRepository | None = None,
 ) -> dict[int, list[StampingTailorWeldBlank]]:
     repo = blank_repo or StampingTailorWeldBlankRepository()
-    part_ids = [int(row.source_part_id) for row in rows if row.source_part_id]
+    part_ids = [int(row.source_part_id) for row in rows]
     if not part_ids:
         return {}
     blanks_by_part: dict[int, list[StampingTailorWeldBlank]] = {}

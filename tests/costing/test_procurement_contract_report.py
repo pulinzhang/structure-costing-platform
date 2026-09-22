@@ -526,20 +526,7 @@ def test_missing_list_is_not_found(db: Session) -> None:
 
 
 def test_conflict_same_part_two_prices(db: Session) -> None:
-    stamping, _sub = _seed_pack(db)
-    db.add(
-        AssemblyCost(
-            year=2026,
-            month=1,
-            location="芜湖",
-            vehicle_model="T13J",
-            bom_version="D/09",
-            source_node_id=stamping.id + 99999,
-            part_number="ghost",
-            should_cost=Decimal("9.0000"),
-            total_amount=Decimal("9.0000"),
-        )
-    )
+    _stamping, _sub = _seed_pack(db)
     nodes = BomNodeRepository()
     snapshot = db.query(BomSnapshot).one()
     l0 = db.query(BomNode).filter(BomNode.level == 0).one()
