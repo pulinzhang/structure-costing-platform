@@ -266,28 +266,8 @@ textarea:-webkit-autofill:active {
     font-weight: 500;
     letter-spacing: 0.06em;
     border-radius: 2px;
-    border-left: 2px solid transparent;
     transition: all 0.18s ease;
     background: transparent;
-}
-
-.sidebar-nav-link:hover {
-    color: rgb(var(--text-main));
-    background: rgb(var(--text-main) / 0.03);
-    border-left-color: rgb(var(--text-main) / 0.3);
-}
-
-/* 激活选中态：BRABUS 红激光条 + 极低暗红发光 */
-.sidebar-nav-link.active {
-    color: rgb(var(--text-main));
-    background: linear-gradient(90deg, rgb(var(--brabus-red) / 0.12) 0%, transparent 100%);
-    border-left-color: rgb(var(--brabus-red));
-    box-shadow: inset 1px 0 0 rgb(var(--brabus-red));
-}
-
-.sidebar-nav-link.active > svg:not(.submenu-arrow) {
-    color: rgb(var(--brabus-red));
-    filter: drop-shadow(0 0 6px rgb(var(--brabus-red) / 0.6));
 }
 
 .sidebar-nav-link > span,
@@ -309,7 +289,6 @@ textarea:-webkit-autofill:active {
 .has-submenu.open > .sidebar-nav-link .submenu-arrow,
 .has-submenu.open > .submenu-link .submenu-arrow {
     transform: rotate(180deg);
-    opacity: 0.7;
 }
 
 /* 5. 子菜单（Accordion）精细化调整；兼容 JS 的 .open / .show */
@@ -338,16 +317,8 @@ textarea:-webkit-autofill:active {
     text-decoration: none;
     font-size: 0.75rem;
     letter-spacing: 0.04em;
+    border-radius: 2px;
     transition: all 0.15s ease;
-}
-
-.submenu-link:hover {
-    color: rgb(var(--text-main) / 0.85);
-}
-
-.submenu-link.active {
-    color: rgb(var(--brabus-red));
-    font-weight: 600;
 }
 
 /* 嵌套三级菜单（加减价政策 / 基准价格） */
@@ -373,25 +344,28 @@ textarea:-webkit-autofill:active {
     padding: 0.4rem 0.65rem;
 }
 
-.submenu-nested .submenu-link:hover,
-.submenu-nested .submenu-link.active {
-    color: rgb(var(--brabus-red));
-}
-
 /* 图标微调：精密 1.5px 视角 */
 .sidebar-nav-link > svg,
 .submenu-link > svg {
     flex-shrink: 0;
     opacity: 0.7;
-    transition: opacity 0.15s ease, color 0.15s ease;
+    transition: opacity 0.15s ease;
 }
 
-.sidebar-nav-link:hover > svg {
+/* 悬停与当前页同一套：品牌红底、白字。必须写在三级字色之后，避免红字叠红底。 */
+.sidebar-nav-link:hover,
+.sidebar-nav-link.active,
+.submenu-link:hover,
+.submenu-link.active {
+    color: rgb(var(--text-on-brand));
+    background: rgb(var(--brabus-red));
+}
+
+.sidebar-nav-link:hover > svg,
+.sidebar-nav-link.active > svg,
+.submenu-link:hover > svg,
+.submenu-link.active > svg {
     opacity: 1;
-}
-
-.sidebar-nav-divider {
-    display: none;
 }
 
 /* 6. 页脚版本号刻度 */
