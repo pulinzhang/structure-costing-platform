@@ -92,6 +92,8 @@ def main() -> None:
             time.sleep(0.6)
             page.screenshot(path=str(OUT / "01b-sidebar.png"), full_page=False)
             print("saved 01b-sidebar.png")
+            page.keyboard.press("Escape")
+            time.sleep(0.4)
 
         _capture_llm(page)
         _capture_assembly_restore(page)

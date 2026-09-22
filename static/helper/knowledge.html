@@ -6,7 +6,7 @@
   <title>知识库 · 核价方案 · 核价平台</title>
   <link rel="icon" type="image/x-icon" href="/static/assets/favicon.ico">
   <link href="/static/css/fonts.css?v=1" rel="stylesheet">
-  <link rel="stylesheet" href="helper.css?v=26">
+  <link rel="stylesheet" href="helper.css?v=28">
 </head>
 <body>
   <table class="print-sheet">
@@ -208,12 +208,55 @@
         </div>
 
         <h3>树长什么样</h3>
-        <div class="tree">
-          <div class="root">供货总成（成品）── 财务成品账；分总成 / 冲压件同样核</div>
-          <div class="mid">　├── 分总成（下面还有零件）</div>
-          <div class="leaf">　│　　├── 自制冲压件</div>
-          <div class="leaf">　│　　└── 外购件（螺母、标准件…）</div>
-          <div class="mid">　└── 零件（直接挂在成品下）</div>
+        <div class="htree" aria-label="材料清单树">
+          <div class="ht-node is-root">
+            <div class="ht-head">
+              <span class="ht-lv">成品</span>
+              <div class="ht-body">
+                <strong>供货总成（成品）</strong>
+                <div class="ht-meta">财务成品账 · 分总成 / 冲压件同样核</div>
+              </div>
+            </div>
+            <div class="ht-children">
+              <div class="ht-node is-branch">
+                <div class="ht-head">
+                  <span class="ht-lv">一层</span>
+                  <div class="ht-body">
+                    <strong>分总成</strong>
+                    <div class="ht-meta">下面还有零件</div>
+                  </div>
+                </div>
+                <div class="ht-children">
+                  <div class="ht-node is-leaf">
+                    <div class="ht-head">
+                      <span class="ht-lv">二层</span>
+                      <div class="ht-body">
+                        <strong>自制冲压件</strong>
+                      </div>
+                    </div>
+                  </div>
+                  <div class="ht-node is-leaf">
+                    <div class="ht-head">
+                      <span class="ht-lv">二层</span>
+                      <div class="ht-body">
+                        <strong>外购件</strong>
+                        <div class="ht-meta">螺母、标准件…</div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+              <div class="ht-node is-leaf">
+                <div class="ht-head">
+                  <span class="ht-lv">一层</span>
+                  <div class="ht-body">
+                    <strong>零件</strong>
+                    <div class="ht-meta">直接挂在成品下</div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
         </div>
         <p>用量会沿树往下乘：相对成品的有效用量 = 路径上各层用量连乘。</p>
       </section>
@@ -327,22 +370,53 @@
           <div class="ec-swap">
             <div class="ec-tree-col">
               <div class="ec-tree-title">旧结构 · 序号 08</div>
-              <div class="ec-crown">总成 A</div>
-              <ul>
-                <li class="is-same">├ 零件 A</li>
-                <li class="is-same">├ 零件 B</li>
-                <li class="is-same">└ 零件 C</li>
-              </ul>
+              <div class="htree">
+                <div class="ht-node is-root">
+                  <div class="ht-head">
+                    <div class="ht-body">
+                      <strong>总成 A</strong>
+                    </div>
+                  </div>
+                  <div class="ht-children">
+                    <div class="ht-node is-leaf is-same">
+                      <div class="ht-head"><div class="ht-body"><strong>零件 A</strong></div></div>
+                    </div>
+                    <div class="ht-node is-leaf is-same">
+                      <div class="ht-head"><div class="ht-body"><strong>零件 B</strong></div></div>
+                    </div>
+                    <div class="ht-node is-leaf is-same">
+                      <div class="ht-head"><div class="ht-body"><strong>零件 C</strong></div></div>
+                    </div>
+                  </div>
+                </div>
+              </div>
             </div>
             <div class="ec-tree-col">
               <div class="ec-tree-title">新结构 · 同一序号</div>
-              <div class="ec-crown">总成 A' <span class="ec-ver-badge">EC-202507</span></div>
-              <ul>
-                <li class="is-same">├ 零件 A</li>
-                <li class="is-same">├ 零件 B</li>
-                <li class="is-new">├ 零件 D</li>
-                <li class="is-new">└ 零件 E</li>
-              </ul>
+              <div class="htree">
+                <div class="ht-node is-root">
+                  <div class="ht-head">
+                    <div class="ht-body">
+                      <strong>总成 A'</strong>
+                      <div class="ht-meta">EC-202507</div>
+                    </div>
+                  </div>
+                  <div class="ht-children">
+                    <div class="ht-node is-leaf is-same">
+                      <div class="ht-head"><div class="ht-body"><strong>零件 A</strong></div></div>
+                    </div>
+                    <div class="ht-node is-leaf is-same">
+                      <div class="ht-head"><div class="ht-body"><strong>零件 B</strong></div></div>
+                    </div>
+                    <div class="ht-node is-leaf is-new">
+                      <div class="ht-head"><div class="ht-body"><strong>零件 D</strong></div></div>
+                    </div>
+                    <div class="ht-node is-leaf is-new">
+                      <div class="ht-head"><div class="ht-body"><strong>零件 E</strong></div></div>
+                    </div>
+                  </div>
+                </div>
+              </div>
             </div>
           </div>
           <div class="ec-steps">
@@ -358,50 +432,50 @@
         <div class="ec-fig" aria-label="三层数字">
           <h4>③ 先换成新结构，再打上版本，最后数采购件</h4>
           <div class="ec-flow">
-            <div class="ec-flow-box"><span class="k">变更单</span>5 条变化记录</div>
-            <div class="ec-flow-arrow">↓ 判断受影响的交货总成</div>
-            <div class="ec-flow-box"><span class="k">本例处理结果</span></div>
+            <div class="ec-flow-box"><span class="k">变更单</span>5 条变化</div>
+            <div class="ec-flow-arrow">↓ 判断哪些交货总成要停、哪些要换成新结构</div>
             <div class="ec-flow-split">
-              <div class="ec-flow-box">1 棵停止</div>
+              <div class="ec-flow-box">1 棵完成停止</div>
               <div class="ec-flow-box">4 棵换成新结构</div>
             </div>
-            <div class="ec-flow-arrow">↓ 整棵归属 EC-202507</div>
-            <div class="ec-flow-box">数采购件</div>
-            <div class="ec-flow-arrow">↓</div>
-            <div class="ec-flow-box"><strong>17</strong></div>
+            <div class="ec-flow-arrow">↓ 新结构整体属于 EC-202507</div>
+            <div class="ec-flow-box">
+              <span class="k">在这 4 棵新结构上数采购件</span>
+              <strong>17</strong>
+            </div>
           </div>
           <div class="ec-leaves">
-            <div>树 1<strong>4</strong>个采购件</div>
-            <div>树 2<strong>5</strong>个采购件</div>
-            <div>树 3<strong>3</strong>个采购件</div>
-            <div>树 4<strong>5</strong>个采购件</div>
+            <div><span class="k">新结构 1</span><strong>4</strong><span class="u">个采购件</span></div>
+            <div><span class="k">新结构 2</span><strong>5</strong><span class="u">个采购件</span></div>
+            <div><span class="k">新结构 3</span><strong>3</strong><span class="u">个采购件</span></div>
+            <div><span class="k">新结构 4</span><strong>5</strong><span class="u">个采购件</span></div>
           </div>
           <div class="ec-triple">
             <div>
               <div class="n">5</div>
-              <div class="l">变更单层</div>
-              <p>变化记录数</p>
+              <div class="l">变更单</div>
+              <p>本次变化条数</p>
             </div>
             <div>
               <div class="n">4</div>
-              <div class="l">树的数量</div>
-              <p>换了 4 棵树</p>
+              <div class="l">交货总成</div>
+              <p>换成新结构的数量</p>
             </div>
             <div>
               <div class="n">17</div>
-              <div class="l">树里面</div>
-              <p>数采购件</p>
+              <div class="l">采购件</div>
+              <p>4 棵新结构上数出来的</p>
             </div>
           </div>
-          <p><strong>4 是交货总成的数量。17 是数采购件的结果。</strong>两个数字含义不同，不相等属正常。</p>
+          <p><strong>4 是交货总成的数量。17 是数采购件的结果。</strong>两个数字含义不同，不相等属正常。17 不是这次改了 17 个零件，而是这 4 棵新结构当前共有 17 个采购件。</p>
           <div class="ec-dont">
             <div class="box no">
               <div class="mark">错误</div>
-              <p>变更单 5 行 → 所以应该有 5 个采购对象。并非一行变更单对应一棵交货总成，亦非改过的零件等于新版本采购件的全部。</p>
+              <p>变更单 5 条，所以应该有 5 个采购件。一条变化不是一棵交货总成，改过的零件也不是新版本采购件的全部。</p>
             </div>
             <div class="box ok">
               <div class="mark">正确</div>
-              <p>5 条变化 → 判断交货总成 → 1 棵停止 + 4 棵换成新结构 → 新结构完整建立并打上版本 → 数采购件一共 17。</p>
+              <p>5 条变化 → 1 棵完成停止 + 4 棵换成新结构 → 新结构整体属于 EC-202507 → 在这 4 棵上数采购件，一共 17。</p>
             </div>
           </div>
         </div>
