@@ -1,6 +1,6 @@
 # 文档目录
 
-**大名** [结构件自动核价平台](architecture.md) · **小名** 核价平台。  
+**大名** [结构件自动核价平台](architecture.md) · **简称** 核价平台。  
 English: **Structural Parts Automated Costing Platform** / short **Costing Platform**.  
 核价对象：总成、分总成、冲压件。AI 只解释、不算价。领域词「冲压件」仍指自制叶子，不要当成产品名。
 
@@ -86,6 +86,7 @@ English: **Structural Parts Automated Costing Platform** / short **Costing Platf
 | [README.md](engineering-change/README.md) | 敢改地图：入口 / 不变量 / 代码地图（工程变更已落地） |
 | [bom-process-die-effective-period-design.md](engineering-change/bom-process-die-effective-period-design.md) | BOM / 冲压工艺 / 模具有效期（设计）：现网改造 |
 | [part-number-revision-design.md](engineering-change/part-number-revision-design.md) | 领域契约 §4.6–4.7、§8–§10；状态以同目录 README 为准；样表 `samples/` |
+| [stamping-material-change-design.md](engineering-change/stamping-material-change-design.md) | 冲压材质变更（设计定稿，未落地）：同号切牌号、不影响互换性 |
 | [t28-2025-07-import-bundle-test-design.md](engineering-change/t28-2025-07-import-bundle-test-design.md) | 测试：青岛 T28 · 五种改法一本即可上传 |
 
 ## 文件溯源 `file-trace/`

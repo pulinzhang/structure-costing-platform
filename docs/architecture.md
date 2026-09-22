@@ -10,7 +10,7 @@
 
 | 项目 | 说明 |
 |------|------|
-| 名称 | 结构件自动核价平台（小名：核价平台） |
+| 名称 | 结构件自动核价平台（简称：核价平台） |
 | English | Structural Parts Automated Costing Platform（short: Costing Platform） |
 | 后端 | FastAPI + SQLAlchemy + SQLite |
 | 前端 | `static/` SPA（无 Webpack/Vite：原生 ES Module + 入库的 `tailwind.css`） |

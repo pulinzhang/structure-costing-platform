@@ -6,9 +6,23 @@
   <title>知识库 · 核价方案 · 核价平台</title>
   <link rel="icon" type="image/x-icon" href="/static/assets/favicon.ico">
   <link href="/static/css/fonts.css?v=1" rel="stylesheet">
-  <link rel="stylesheet" href="helper.css?v=20">
+  <link rel="stylesheet" href="helper.css?v=26">
 </head>
 <body>
+  <table class="print-sheet">
+    <thead>
+      <tr class="print-page-banner">
+        <th>
+          <div class="print-running-head">
+            <span>结构件自动核价平台</span>
+            <span>使用帮助</span>
+          </div>
+        </th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td>
   <div class="layout">
     <aside class="nav">
       <a class="nav-brand" href="index.html">
@@ -23,7 +37,7 @@
         <a href="example.html">样例</a>
       </div>
       <div class="nav-label">本页</div>
-      <ul>
+      <ul class="page-toc">
         <li><a href="#what">核的是什么</a></li>
         <li><a href="#bom">材料清单是主线</a></li>
         <li><a href="#prereq">前置条件（传一次）</a></li>
@@ -659,5 +673,10 @@
       <footer class="footer">知识库 · 核价方案 · /helper/knowledge.html</footer>
     </main>
   </div>
+        </td>
+      </tr>
+    </tbody>
+  </table>
+  <script src="nav-active.js"></script>
 </body>
 </html>

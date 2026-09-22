@@ -128,7 +128,8 @@ a:hover { color: var(--color__link--hover); text-decoration: none; }
   gap: 2px;
   margin-bottom: 28px;
 }
-.block-switch a {
+.block-switch a,
+.nav li a {
   display: block;
   padding: 8px 12px;
   font-size: 14px;
@@ -139,18 +140,16 @@ a:hover { color: var(--color__link--hover); text-decoration: none; }
   text-decoration: none;
 }
 .block-switch a:hover,
-.block-switch a.is-active:hover {
+.block-switch a.is-active,
+.block-switch a.is-active:hover,
+.nav li a:hover,
+.nav li a.is-active,
+.nav li a.is-active:hover {
   color: var(--on-brand);
   background: var(--red);
-  border: 0;
-  text-decoration: none;
-}
-.block-switch a.is-active {
-  color: var(--text);
   font-weight: 500;
   border: 0;
-  background: transparent;
-  box-shadow: none;
+  text-decoration: none;
 }
 
 .nav-label {
@@ -163,24 +162,9 @@ a:hover { color: var(--color__link--hover); text-decoration: none; }
 }
 
 .nav ul { list-style: none; }
-.nav li a {
-  display: block;
-  padding: 6px 12px;
-  font-size: 14px;
-  font-weight: 400;
-  color: var(--muted);
-  border-left: 0;
-  text-decoration: none;
-}
 .nav li a strong {
   font-weight: inherit;
   color: inherit;
-}
-.nav li a:hover {
-  color: var(--color__link);
-  background: transparent;
-  border-left: 0;
-  text-decoration: none;
 }
 
 .main {
@@ -926,6 +910,17 @@ figure.shot figcaption {
   letter-spacing: 0;
 }
 
+.print-sheet {
+  width: 100%;
+  border-collapse: collapse;
+  border-spacing: 0;
+}
+.print-sheet > tbody > tr > td {
+  padding: 0;
+  border: 0;
+  vertical-align: top;
+}
+.print-page-banner { display: none; }
 .print-only { display: none; }
 
 /* 整本打印页 */
@@ -1212,13 +1207,24 @@ figure.shot figcaption {
   .ec-dont, .ec-triple { grid-template-columns: 1fr; }
 }
 
-/* 打印 */
-@page {
-  size: A4;
-  margin: 14mm;
-}
-
+/* 打印：页眉 / 页脚 / 页码走 @page 边距盒（与分析报告、总成计算过程同口径）。 */
 @media print {
+  @page {
+    size: A4 portrait;
+    margin: 12mm 14mm 18mm 14mm;
+    @bottom-left {
+      content: "核价平台 · 帮助中心";
+      font-family: Inter, "Segoe UI", "PingFang SC", "Microsoft YaHei", sans-serif;
+      font-size: 8pt;
+      color: #666666;
+    }
+    @bottom-center {
+      content: "第 " counter(page) " 页 / 共 " counter(pages) " 页";
+      font-family: Inter, "Segoe UI", "PingFang SC", "Microsoft YaHei", sans-serif;
+      font-size: 9pt;
+      color: #666666;
+    }
+  }
   * {
     -webkit-print-color-adjust: exact;
     print-color-adjust: exact;
@@ -1253,6 +1259,30 @@ figure.shot figcaption {
     padding-bottom: 8pt;
   }
   .print-only { display: block !important; }
+  thead { display: table-header-group; }
+  .print-page-banner { display: table-row; }
+  .print-page-banner th {
+    padding: 0 0 8mm;
+    border: 0;
+    background: #fff;
+    font-weight: 400;
+    text-align: left;
+    vertical-align: bottom;
+    color: #666666;
+  }
+  .print-running-head {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-end;
+    gap: 12px;
+    width: 100%;
+    padding-bottom: 2mm;
+    border: 0;
+    border-bottom: 0.5pt solid #b70826;
+    font-size: 8pt;
+    font-weight: 400;
+    color: #666666;
+  }
   .layout { display: block; }
   .main { max-width: none; padding: 0; }
   .hero {
@@ -1291,6 +1321,12 @@ figure.shot figcaption {
     border-bottom: 0.5pt solid var(--border) !important;
     background: transparent !important;
     color: var(--muted) !important;
+  }
+  .print-sheet,
+  .print-sheet > thead > tr > th,
+  .print-sheet > tbody > tr > td {
+    border: 0 !important;
+    box-shadow: none !important;
   }
   th { background: transparent !important; }
   .money, td.money { color: var(--text) !important; }
