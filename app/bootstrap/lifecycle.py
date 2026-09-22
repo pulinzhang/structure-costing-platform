@@ -16,34 +16,6 @@ def on_startup() -> None:
     DatabaseConfig.create_tables()
     AuxiliaryDatabaseConfig.create_tables()
     _ensure_bom_node_part_number_index()
-    from app.bootstrap.effective_period_schema import ensure_effective_period_schema
-
-    ensure_effective_period_schema(DatabaseConfig.get_engine())
-    from app.bootstrap.engineering_change_schema import ensure_engineering_change_schema
-
-    ensure_engineering_change_schema(DatabaseConfig.get_engine())
-    from app.bootstrap.llm_report_schema import ensure_llm_report_schema
-
-    ensure_llm_report_schema(DatabaseConfig.get_engine())
-    from app.bootstrap.operation_log_schema import ensure_operation_log_schema
-
-    ensure_operation_log_schema(DatabaseConfig.get_engine())
-    from app.bootstrap.die_fee_source_fk_schema import ensure_die_fee_source_fk_schema
-
-    ensure_die_fee_source_fk_schema(DatabaseConfig.get_engine())
-    from app.bootstrap.welding_fee_source_fk_schema import ensure_welding_fee_source_fk_schema
-
-    ensure_welding_fee_source_fk_schema(DatabaseConfig.get_engine())
-    from app.bootstrap.assembly_cost_source_node_fk_schema import (
-        ensure_assembly_cost_source_node_fk_schema,
-    )
-
-    ensure_assembly_cost_source_node_fk_schema(DatabaseConfig.get_engine())
-    from app.bootstrap.part_cost_source_part_fk_schema import (
-        ensure_part_cost_source_part_fk_schema,
-    )
-
-    ensure_part_cost_source_part_fk_schema(DatabaseConfig.get_engine())
     _seed_if_empty()
     _log_startup()
 

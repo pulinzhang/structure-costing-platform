@@ -9,11 +9,10 @@ from collections.abc import Generator
 from pathlib import Path
 
 import pytest
-from sqlalchemy import create_engine, event, text
+from sqlalchemy import create_engine, event
 from sqlalchemy.orm import Session, sessionmaker
 from sqlalchemy.pool import StaticPool
 
-from app.bootstrap.engineering_change_schema import ensure_engineering_change_schema
 from app.database import Base
 from app.models.bom.node import BomNode, BomSnapshot
 from app.models.engineering_change.change_order import EngineeringChangeOrder
@@ -347,60 +346,6 @@ def test_effect_links_belong_to_whole_book(memory_db: Session) -> None:
     assert len(links) == 2
     assert {link.upload_log_id for link in links} == {log_id}
     assert [link.sort_no for link in links] == [2, 1]
-
-
-def test_bootstrap_rebuilds_when_before_assembly_node_id_missing() -> None:
-    """缺列则 DROP 三表（清孤儿），不调业务 Service。"""
-    engine = create_engine(
-        "sqlite://",
-        connect_args={"check_same_thread": False},
-        poolclass=StaticPool,
-    )
-
-    @event.listens_for(engine, "connect")
-    def _enable_fk(dbapi_connection: object, _connection_record: object) -> None:
-        cursor = dbapi_connection.cursor()  # type: ignore[attr-defined]
-        cursor.execute("PRAGMA foreign_keys=ON")
-        cursor.close()
-
-    with engine.begin() as connection:
-        connection.execute(
-            text(
-                "CREATE TABLE engineering_change_upload_logs ("
-                "id INTEGER PRIMARY KEY, upload_file_id INTEGER NOT NULL)"
-            )
-        )
-        connection.execute(
-            text(
-                "CREATE TABLE engineering_change_orders ("
-                "id INTEGER PRIMARY KEY, upload_log_id INTEGER NOT NULL, "
-                "before_assembly_part_number VARCHAR(50) NOT NULL)"
-            )
-        )
-        connection.execute(
-            text("INSERT INTO engineering_change_upload_logs (id, upload_file_id) VALUES (1, 1)")
-        )
-        connection.execute(
-            text(
-                "INSERT INTO engineering_change_orders "
-                "(id, upload_log_id, before_assembly_part_number) VALUES (1, 1, 'ORPHAN')"
-            )
-        )
-
-    ensure_engineering_change_schema(engine)
-
-    with engine.connect() as connection:
-        cols = {
-            str(row[1])
-            for row in connection.execute(
-                text("PRAGMA table_info(engineering_change_orders)")
-            ).all()
-        }
-        assert "before_assembly_node_id" in cols
-        assert (
-            connection.execute(text("SELECT COUNT(*) FROM engineering_change_orders")).scalar() == 0
-        )
-    engine.dispose()
 
 
 def _list_viewer() -> UserVO:
