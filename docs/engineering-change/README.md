@@ -1,9 +1,9 @@
 # 工程变更
 
-跨切片能力（BOM / 冲压 / 核价）。两条通道都挂在工程变更下：
+跨切片能力（BOM / 冲压 / 核价）。两条通道都挂在一级 **工程变更** 下（不新开一级）：
 
-- **设计变更**已落地：上传、列表、回滚在 `app/services/engineering_change/design_change/`。接口仍是 `/api/engineering-change`。
-- **材料变更**这次只占目录和空前缀 `/api/engineering-change/material`，不写业务。见 [stamping-material-change-design.md](stamping-material-change-design.md) 和 [服务包说明](../../app/services/engineering_change/material_change/README.md)。
+- **设计变更**已落地：侧栏二级分组「设计变更」→ 上传 / 列表；代码在 `app/services/engineering_change/design_change/`。接口仍是 `/api/engineering-change`。
+- **材料变更**这次只占目录和空前缀 `/api/engineering-change/material`，侧栏还没有分组。落地时对称加二级「材料变更」→ 上传 / 列表，见 [stamping-material-change-design.md](stamping-material-change-design.md) §4 和 [服务包说明](../../app/services/engineering_change/material_change/README.md)。
 
 有效期与核价按月见 [bom-process-die-effective-period-design.md](bom-process-die-effective-period-design.md)。设计变更门禁从严：一本一个项目号；材料清单与确认表版本必须同一字；生效月须在项目期内；必须先有 SOP 采购对象清单头；版本与清单头不得凑合。
 
@@ -209,7 +209,7 @@ Router → EngineeringChangeUploadService.start_upload
 | 文档 | 说明 |
 |------|------|
 | [part-number-revision-design.md](part-number-revision-design.md) | 领域契约（样表即规格、§4 写入、§8 产品）；**落地状态以本节为准** |
-| [stamping-material-change-design.md](stamping-material-change-design.md) | 冲压材质变更（设计定稿，未落地）：同号切牌号；消费链 §6.4；与改图分离 |
+| [stamping-material-change-design.md](stamping-material-change-design.md) | 材料变更（设计定稿，业务未落地）：同号切牌号；菜单 §4；消费链 §6.4；与设计变更分离 |
 | [bom-process-die-effective-period-design.md](bom-process-die-effective-period-design.md) | 交货总成 / 工艺 / 布点生失效（已落地） |
 | [t28-2025-07-import-bundle-test-design.md](t28-2025-07-import-bundle-test-design.md) | 青岛 T28 测试样本（对照一本可整本上传；另有五份单种改法夹具） |
 | [t13j-2025-05-import-bundle-test-design.md](t13j-2025-05-import-bundle-test-design.md) | 芜湖 T13J · 2025-05 测试样本（对照一本 + 五份夹具） |
