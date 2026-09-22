@@ -3,24 +3,24 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>样例 · 青岛 2025-01 T28 · 核价平台</title>
+  <title>样例 · 芜湖 2025年01月 T13J · 核价平台</title>
   <link rel="icon" type="image/x-icon" href="/static/assets/favicon.ico">
   <link href="/static/css/fonts.css?v=1" rel="stylesheet">
-  <link rel="stylesheet" href="helper.css?v=4">
+  <link rel="stylesheet" href="helper.css?v=19">
 </head>
 <body>
   <div class="layout">
     <aside class="nav">
       <a class="nav-brand" href="index.html">
         <h1><span class="dot"></span> 使用帮助</h1>
-        <span>BLOCK · 样例</span>
+        <span>拿真数走一遍</span>
       </a>
       <div class="nav-label">三大块</div>
       <div class="block-switch">
         <a href="index.html">入口总览</a>
-        <a href="help.html">① 帮助</a>
-        <a href="knowledge.html">② 知识库</a>
-        <a class="is-active" href="example.html">③ 样例</a>
+        <a href="help.html">帮助</a>
+        <a href="knowledge.html">知识库</a>
+        <a class="is-active" href="example.html">样例</a>
       </div>
       <div class="nav-label">本页（对齐知识库）</div>
       <ul>
@@ -31,7 +31,7 @@
         <li><a href="#year">一年维护</a></li>
         <li><a href="#month">每月核价</a></li>
         <li><a href="#how">怎么算出成品价</a></li>
-        <li><a href="#engineering-change">工程变更（2025·07）</a></li>
+        <li><a href="#engineering-change">工程变更（填法）</a></li>
         <li><a href="#map">全貌收口</a></li>
       </ul>
       <div class="nav-label">快捷</div>
@@ -45,44 +45,51 @@
     <main class="main">
       <header class="hero">
         <div class="eyebrow">Worked Example · Same Outline as Knowledge</div>
-        <h1>③ 样例 · 青岛 · 2025 · 01 · T28</h1>
+        <h1>样例 · 芜湖 · 2025年01月 · T13J</h1>
         <p>
           章节与<a href="knowledge.html">知识库</a>一一对应。
           本样例跟一张<strong>供货总成</strong>把账算清；平台同时还核分总成与冲压件。
-          用库内真实数据，把「前置 → 年度 → 每月 → 成品总费用」落到具体数字；
-          另附青岛 T28 · <strong>2025年07月</strong>工程变更五种改法（与上传页下载模板同一本）。
+          数字来自库内真实核算：芜湖 · T13J · 清单 D/09 · 2025年01月。
         </p>
         <div class="scope-pill">
-          <span>青岛</span>
+          <span>芜湖</span>
           <span>2025 年</span>
           <span>01 月</span>
-          <span>T28</span>
-          <span>清单 D/00</span>
+          <span>T13J</span>
+          <span>清单 D/09</span>
         </div>
-        <div class="hero-actions">
-          <a class="back-link" href="index.html">← 帮助入口</a>
-          <a class="btn-print" href="print-all.html" style="text-decoration:none;">整本打印 / PDF</a>
-          <button type="button" class="btn-print is-ghost" onclick="window.print()">仅本页</button>
-        </div>
+        <p class="hero-link"><a href="index.html">帮助入口</a></p>
       </header>
 
       <section id="scope">
         <h2>固定范围</h2>
         <p class="lead">全文只用这一组条件，便于在系统中对照复现。</p>
-        <table>
-          <thead>
-            <tr><th>维度</th><th>取值</th></tr>
-          </thead>
-          <tbody>
-            <tr><td>基地</td><td>青岛</td></tr>
-            <tr><td>账期</td><td>2025 年 · 01 月</td></tr>
-            <tr><td>项目 / 清单版本</td><td>T28 · D/00</td></tr>
-            <tr><td>材料清单标题</td><td>T28项目产品材料清单（27 个成品 / 288 个节点）</td></tr>
-            <tr><td>讲解成品</td><td>流水槽加强梁总成　501006873AA</td></tr>
-            <tr><td>冲压工艺版本</td><td>V3（85 个自制件）</td></tr>
-            <tr><td>工程变更样册</td><td>同一项目 · 2025年07月 · 五种改法（见下节）</td></tr>
-          </tbody>
-        </table>
+        <ul class="spec-list">
+          <li>
+            <strong>基地</strong>
+            <span>芜湖</span>
+          </li>
+          <li>
+            <strong>账期</strong>
+            <span>2025 年 · 01 月</span>
+          </li>
+          <li>
+            <strong>项目 / 清单版本</strong>
+            <span>T13J · D/09</span>
+          </li>
+          <li>
+            <strong>材料清单标题</strong>
+            <span>T13J项目产品材料清单（44 个供货总成 / 357 个节点）</span>
+          </li>
+          <li>
+            <strong>讲解成品</strong>
+            <span>左后尾灯安装板总成　502007390AA</span>
+          </li>
+          <li>
+            <strong>顾客</strong>
+            <span>奇瑞公司</span>
+          </li>
+        </ul>
       </section>
 
       <section id="what">
@@ -90,12 +97,12 @@
         <p class="lead">
           核价对象在本样例是树上的<strong>根</strong>（供货总成）。平台同时核分总成与冲压件。
           算账从根走到最末叶子，再 rollup 回根。
-          下面用青岛 · 2025 · 01 · T28 的真实成品画结构示意，再给出挂价后的结果树。
+          下面用芜湖 · 2025年01月 · T13J 的真实成品画结构示意，再给出挂价后的结果树。
         </p>
 
         <h3>结构示意 · 左查右收</h3>
-        <div class="dual-rail" aria-label="流水槽加强梁：左向下查，右向上rollup">
-          <div class="dr-caption">Qingdao · 2025-01 · T28 · 501006873AA</div>
+        <div class="dual-rail" aria-label="左后尾灯安装板总成：左向下查，右向上rollup">
+          <div class="dr-caption">芜湖 · 2025年01月 · T13J · 502007390AA</div>
           <div class="dr-keys">
             <span class="dr-key down"><i>↓ 查</i> 从成品根找到最末零件</span>
             <span class="dr-key up"><i>↑ rollup</i> 零件有价后 ×用量收回成品</span>
@@ -111,16 +118,16 @@
             <div class="dr-center">
               <div class="dr-levels">
                 <span><b>L0</b>1 件 · 成品根</span>
-                <span><b>L1</b>2 件 · 分总成 + 支架</span>
-                <span><b>L2</b>2 件 · 仅挂在本体总成下</span>
+                <span><b>L1</b>3 件</span>
+                <span><b>L2</b>2 件 · 挂在上安装板下</span>
               </div>
               <div class="htree">
                 <div class="ht-node is-root">
                   <div class="ht-head">
                     <span class="ht-lv">L0</span>
                     <div class="ht-body">
-                      <strong>流水槽加强梁总成</strong>
-                      <div class="ht-pn">501006873AA · 用量 1 · 供货总成</div>
+                      <strong>左后尾灯安装板总成</strong>
+                      <div class="ht-pn">502007390AA · 用量 1 · 供货总成</div>
                     </div>
                   </div>
                   <div class="ht-children">
@@ -128,9 +135,8 @@
                       <div class="ht-head">
                         <span class="ht-lv">L1</span>
                         <div class="ht-body">
-                          <strong>流水槽上加强梁本体总成</strong>
-                          <div class="ht-pn">501005123AA-1 · 用量 1 · 分总成（拆散计价）</div>
-                          <div class="ht-meta">本层不是叶子；下面还有 2 个 L2</div>
+                          <strong>左后尾灯上安装板</strong>
+                          <div class="ht-pn">502007709AA · 用量 1 · 当月冲压价 1.5618</div>
                         </div>
                       </div>
                       <div class="ht-children">
@@ -138,8 +144,8 @@
                           <div class="ht-head">
                             <span class="ht-lv">L2</span>
                             <div class="ht-body">
-                              <strong>流水槽上加强梁本体</strong>
-                              <div class="ht-pn">501005123AA · 用量 1 · 年度价 17.04</div>
+                              <strong>左后尾灯安装板</strong>
+                              <div class="ht-pn">502007710AA · 用量 1 · 当月冲压价 2.9388</div>
                             </div>
                           </div>
                         </div>
@@ -148,7 +154,7 @@
                             <span class="ht-lv">L2</span>
                             <div class="ht-body">
                               <strong>焊接方螺母</strong>
-                              <div class="ht-pn">N0111931 · 用量 2 · 年度价 0.042×2</div>
+                              <div class="ht-pn">N0111931 · 用量 2 · 年度价 12.96×2</div>
                             </div>
                           </div>
                         </div>
@@ -158,9 +164,17 @@
                       <div class="ht-head">
                         <span class="ht-lv">L1</span>
                         <div class="ht-body">
-                          <strong>雨刮电机安装支架Ⅰ</strong>
-                          <div class="ht-pn">501006875AA · 用量 1 · 当月冲压价 0.9615</div>
-                          <div class="ht-meta">直接挂在 L0 下 · 本层已是叶子（无 L2）</div>
+                          <strong>后保安装支架</strong>
+                          <div class="ht-pn">502002780AA · 用量 1 · 年度价 14.71</div>
+                        </div>
+                      </div>
+                    </div>
+                    <div class="ht-node is-leaf">
+                      <div class="ht-head">
+                        <span class="ht-lv">L1</span>
+                        <div class="ht-body">
+                          <strong>点焊胶</strong>
+                          <div class="ht-pn">B11-4102613 · 用量 255 · 年度价 0.0009</div>
                         </div>
                       </div>
                     </div>
@@ -168,9 +182,9 @@
                 </div>
               </div>
               <div class="dr-node is-total">
-                <div class="dr-tag">rollup：L2→L1→L0，再 + 焊接 0.78 + 间接 2.3357</div>
-                <strong>成品总费用 21.2012</strong>
-                <div class="dr-pn">月总账 18.8655 + 间接 2.3357</div>
+                <div class="dr-tag">rollup：叶子 ×用量 回到 L0，再 + 焊接 1.4391 + 间接 2.9484</div>
+                <strong>成品总费用 49.7476</strong>
+                <div class="dr-pn">月总账 46.7992 + 间接 2.9484</div>
               </div>
             </div>
 
@@ -182,7 +196,7 @@
             </div>
           </div>
           <p class="dr-foot">
-            本成品实况：<b class="down">L0=1</b> · <b class="down">L1=2</b> · <b class="down">L2=2</b>。
+            本成品实况：<b class="down">L0=1</b> · <b class="down">L1=3</b> · <b class="down">L2=2</b>。
             左 <b class="down">↓ 查</b>、右 <b class="up">↑ rollup</b>，层级与材料清单一致。
           </p>
         </div>
@@ -190,23 +204,24 @@
         <h3>成品结果树（挂价后的金额）</h3>
         <p>同一棵树，右侧为库内已核算金额。</p>
         <div class="tree">
-          <div class="root">成品 · 流水槽加强梁总成 501006873AA<span class="amt">总费用 21.2012</span></div>
-          <div class="mid">　├── 分总成 · 流水槽上加强梁本体总成 501005123AA-1（拆散计价）</div>
-          <div class="leaf">　│　　├── 流水槽上加强梁本体 501005123AA ×1 · 年度价（沿用）<span class="amt">17.0400</span></div>
-          <div class="leaf">　│　　└── 焊接方螺母 N0111931 ×2 · 年度价（标准件）<span class="amt">0.0840</span></div>
-          <div class="leaf">　├── 雨刮电机安装支架Ⅰ 501006875AA ×1 · 当月冲压价<span class="amt">0.9615</span></div>
-          <div class="mid">　├── 成品焊接费（年维护）<span class="amt">0.7800</span></div>
-          <div class="mid">　├── 月总账（零件 + 焊接）<span class="amt">18.8655</span></div>
-          <div class="leaf">　└── 间接费用合计<span class="amt">2.3357</span></div>
-          <div class="leaf">　　　　├── 单件运输费<span class="amt">0.7600</span></div>
-          <div class="leaf">　　　　├── 仓储费 + 捆包费<span class="amt">0.3872</span></div>
-          <div class="leaf">　　　　├── 财务费（2%）<span class="amt">0.3773</span></div>
-          <div class="leaf">　　　　├── 管理费（2%）<span class="amt">0.3773</span></div>
-          <div class="leaf">　　　　├── 报废费用（3‰）<span class="amt">0.0566</span></div>
-          <div class="leaf">　　　　└── 税前利润（2%）<span class="amt">0.3773</span></div>
+          <div class="root">成品 · 左后尾灯安装板总成 502007390AA<span class="amt">总费用 49.7476</span></div>
+          <div class="mid">　├── 左后尾灯上安装板 502007709AA ×1 · 当月冲压价<span class="amt">1.5618</span></div>
+          <div class="leaf">　│　　├── 左后尾灯安装板 502007710AA ×1 · 当月冲压价<span class="amt">2.9388</span></div>
+          <div class="leaf">　│　　└── 焊接方螺母 N0111931 ×2 · 年度价<span class="amt">25.9200</span></div>
+          <div class="leaf">　├── 后保安装支架 502002780AA ×1 · 年度价<span class="amt">14.7100</span></div>
+          <div class="leaf">　├── 点焊胶 B11-4102613 ×255 · 年度价<span class="amt">0.2295</span></div>
+          <div class="mid">　├── 成品焊接费<span class="amt">1.4391</span></div>
+          <div class="mid">　├── 月总账（零件 + 焊接）<span class="amt">46.7992</span></div>
+          <div class="leaf">　└── 间接费用合计<span class="amt">2.9484</span></div>
+          <div class="leaf">　　　　├── 单件运输费<span class="amt">0.0000</span></div>
+          <div class="leaf">　　　　├── 仓储费 + 捆包费<span class="amt">0.0000</span></div>
+          <div class="leaf">　　　　├── 财务费（2%）<span class="amt">0.9360</span></div>
+          <div class="leaf">　　　　├── 管理费（2%）<span class="amt">0.9360</span></div>
+          <div class="leaf">　　　　├── 报废费用（3‰）<span class="amt">0.1404</span></div>
+          <div class="leaf">　　　　└── 税前利润（2%）<span class="amt">0.9360</span></div>
         </div>
         <div class="callout ok">
-          对外审核看的是成品总费用 <strong class="money">21.2012</strong>（菜单「总成核价一览」）。
+          对外审核看的是成品总费用 <strong class="money">49.7476</strong>（菜单「总成核价一览」）。
           概念流程见<a href="knowledge.html#what">知识库</a>；下面各节拆前置 / 年度 / 每月数据来源。
         </div>
       </section>
@@ -219,72 +234,60 @@
         </p>
 
         <div class="tree">
-          <div class="root">成品 · 流水槽加强梁总成 501006873AA（用量 1）</div>
-          <div class="mid">　├── 分总成 · 流水槽上加强梁本体总成 501005123AA-1（1）</div>
-          <div class="leaf">　│　　├── 流水槽上加强梁本体 501005123AA（1）</div>
+          <div class="root">成品 · 左后尾灯安装板总成 502007390AA（用量 1）</div>
+          <div class="mid">　├── 左后尾灯上安装板 502007709AA（1）</div>
+          <div class="leaf">　│　　├── 左后尾灯安装板 502007710AA（1）</div>
           <div class="leaf">　│　　└── 焊接方螺母 N0111931（2）</div>
-          <div class="leaf">　└── 雨刮电机安装支架Ⅰ 501006875AA（1）</div>
+          <div class="leaf">　├── 后保安装支架 502002780AA（1）</div>
+          <div class="leaf">　└── 点焊胶 B11-4102613（255）</div>
         </div>
 
         <p>
-          清单里该成品子树共 5 个节点。全清单共 <strong>27</strong> 个成品、
-          <strong>288</strong> 个节点——算法相同，本页只展开这一棵。
+          清单里该成品子树共 6 个节点。全清单共 <strong>44</strong> 个供货总成、
+          <strong>357</strong> 个节点——算法相同，本页只展开这一棵。
         </p>
       </section>
 
       <section id="prereq">
         <h2>前置条件（传一次 / 改版才重做）</h2>
-        <p class="lead">青岛 T28 样例里，结构与工艺底盘已经就绪；日常 01 月核价不必每月重传这些。</p>
+        <p class="lead">芜湖 T13J 样例里，结构与工艺底盘已经就绪；日常 01 月核价不必每月重传这些。</p>
 
-        <table>
-          <thead>
-            <tr>
-              <th>前置项</th>
-              <th>本样例实况</th>
-              <th>何时再做</th>
-            </tr>
-          </thead>
-          <tbody>
-            <tr>
-              <td><span class="tag tag-main">主线</span> 材料清单</td>
-              <td>青岛 · T28 · D/00 · 标题「T28项目产品材料清单」· 288 节点</td>
-              <td>清单换版 / 结构变更</td>
-            </tr>
-            <tr>
-              <td>冲压工艺</td>
-              <td>青岛 · T28 · 版本 V3 · <strong>85</strong> 个自制件（含支架 501006875AA）</td>
-              <td>工艺文件改版</td>
-            </tr>
-            <tr>
-              <td>模具 / 检具 / 采购对象</td>
-              <td>本样例讲解账未摊模具费、检具费（档案缺则零件价记 0）；采购对象不进月度算价</td>
-              <td>布点/检具改版，或清单换版后重生成采购对象</td>
-            </tr>
-            <tr>
-              <td>焊接工艺拆解</td>
-              <td>青岛 · T28 · D/00 · <strong>77</strong> 个拆解节点（成品 873 含焊点/凸焊信息）</td>
-              <td>清单结构变更，或当年焊接单价调整后</td>
-            </tr>
-          </tbody>
-        </table>
+        <ul class="spec-list">
+          <li>
+            <strong>材料清单</strong>
+            <span>芜湖 · T13J · D/09 · 标题「T13J项目产品材料清单」· 44 供货总成 / 357 节点 · 再做：清单换版 / 结构变更</span>
+          </li>
+          <li>
+            <strong>冲压工艺</strong>
+            <span>芜湖 · T13J 已传。本成品叶子 502007709AA、502007710AA 走当月冲压价 · 再做：工艺文件改版</span>
+          </li>
+          <li>
+            <strong>模具 / 检具 / 采购对象</strong>
+            <span>本成品间接里检具分摊为 0；采购对象不进月度算价 · 再做：布点/检具改版，或清单换版后重生成采购对象</span>
+          </li>
+          <li>
+            <strong>焊接工艺拆解</strong>
+            <span>芜湖 · T13J · D/09。本成品焊接费 <span class="money">1.4391</span> · 再做：清单结构变更，或当年焊接单价调整后</span>
+          </li>
+        </ul>
 
         <div class="flow">
           <div class="flow-step">
             <div class="n">前置 1</div>
             <strong>材料清单</strong>
-            <p>D/00 · 27 成品</p>
+            <p>D/09 · 44 供货总成</p>
           </div>
           <div class="flow-arrow">→</div>
           <div class="flow-step">
             <div class="n">前置 2</div>
             <strong>冲压工艺</strong>
-            <p>V3 · 85 件</p>
+            <p>自制叶子出当月冲压价</p>
           </div>
           <div class="flow-arrow">→</div>
           <div class="flow-step">
             <div class="n">前置 3</div>
             <strong>焊接工艺拆解</strong>
-            <p>77 节点（依赖当年焊接单价）</p>
+            <p>依赖当年焊接单价</p>
           </div>
         </div>
 
@@ -295,321 +298,212 @@
 
       <section id="year">
         <h2>年度维护（一年传一次 / 算一次）</h2>
-        <p class="lead">青岛 · <strong>2025</strong> 年维护，同年 1～12 月共用；本样例 01 月核价直接复用这些结果。</p>
+        <p class="lead">芜湖 · <strong>2025</strong> 年维护，同年 1～12 月共用；本样例 01 月核价直接复用这些结果。</p>
 
-        <table>
-          <thead>
-            <tr><th>工作</th><th>本样例实况</th></tr>
-          </thead>
-          <tbody>
-            <tr>
-              <td><span class="tag tag-year">一年一传</span> 冲次单价</td>
-              <td>青岛 · 2025 · <strong>23</strong> 档吨位（如 40T→0.046 元/冲次，100T→0.085）</td>
-            </tr>
-            <tr>
-              <td><span class="tag tag-year">一年一传</span> 焊接单价</td>
-              <td>青岛 · 2025 · <strong>13</strong> 项（如 CO2焊缝 0.1 元/CM、压铆 0.3 元/个）</td>
-            </tr>
-            <tr>
-              <td>年度零件价</td>
-              <td>青岛 · 2025 · <strong>45</strong> 条。本成品用到：本体 17.04（沿用）、螺母 0.042（标准件）</td>
-            </tr>
-            <tr>
-              <td>包装运输费</td>
-              <td>青岛 · 2025 · T28 · <strong>84</strong> 条。本成品单件运输费 <span class="money">0.76</span></td>
-            </tr>
-            <tr>
-              <td>冲压加工费</td>
-              <td>青岛 · 2025 · T28 · <strong>85</strong> 件全算成功。支架加工费 <span class="money">0.286</span></td>
-            </tr>
-            <tr>
-              <td>成品焊接费</td>
-              <td>青岛 · 2025 · T28 · D/00 · <strong>27</strong> 个成品。本成品焊接费 <span class="money">0.78</span></td>
-            </tr>
-            <tr>
-              <td>系统费率</td>
-              <td>财务 / 管理 / 税前利润各 2%，报废 3‰（作用在月总账上）</td>
-            </tr>
-          </tbody>
-        </table>
+        <ul class="spec-list">
+          <li>
+            <strong>冲次单价</strong>
+            <span>芜湖 · 2025。自制件加工费按年算好，01 月核价直接用。</span>
+          </li>
+          <li>
+            <strong>焊接单价</strong>
+            <span>芜湖 · 2025。本成品焊接费 <span class="money">1.4391</span></span>
+          </li>
+          <li>
+            <strong>年度零件价</strong>
+            <span>本成品用到：后保安装支架 14.71、焊接方螺母 12.96×2、点焊胶 0.0009×255</span>
+          </li>
+          <li>
+            <strong>包装运输费</strong>
+            <span>本成品单件运输费、仓储捆包均为 <span class="money">0</span></span>
+          </li>
+          <li>
+            <strong>系统费率</strong>
+            <span>财务 / 管理 / 税前利润各 2%，报废 3‰（作用在月总账上）</span>
+          </li>
+        </ul>
       </section>
 
       <section id="month">
         <h2>每月核价（2025 年 01 月）</h2>
         <p class="lead">前置与年度已齐时，01 月主要跑「跟钢价走」的链，并算出成品总费用。</p>
 
-        <table>
-          <thead>
-            <tr><th>工作</th><th>本样例实况（青岛 · 2025 · 01）</th></tr>
-          </thead>
-          <tbody>
-            <tr>
-              <td>钢材基准价 / 加减价政策 / 废料月度价</td>
-              <td>基准价 <strong>36</strong> 条；政策 <strong>355</strong> 条；废料净价 <span class="money">2106.5</span> 元/吨</td>
-            </tr>
-            <tr>
-              <td>钢材联动价</td>
-              <td>算出 <strong>32</strong> 条规格价。支架用料 DC51D+Z · 山钢 · 吨价 <span class="money">4233</span></td>
-            </tr>
-            <tr>
-              <td>冲压零件价格</td>
-              <td>T28 算出 <strong>85</strong> 件。支架单价 <span class="money">0.961525</span>（材料净额 + 加工费等；本样例无模具/检具档案则费用为 0）</td>
-            </tr>
-            <tr>
-              <td><strong>总成核价</strong>（成品月总账）</td>
-              <td>按材料清单汇总 → 本成品月总账 <span class="money">18.8655</span> + 间接 <span class="money">2.3357</span> → 总费用 <span class="money">21.2012</span></td>
-            </tr>
-          </tbody>
-        </table>
+        <ul class="spec-list">
+          <li>
+            <strong>钢材基准价 / 加减价政策 / 废料月度价</strong>
+            <span>当月已齐；缺则引擎硬停。</span>
+          </li>
+          <li>
+            <strong>钢材联动价</strong>
+            <span>政策落到规格，写出当月钢价，供冲压件取材料单价。</span>
+          </li>
+          <li>
+            <strong>冲压零件价格</strong>
+            <span>本成品两张自制件：上安装板 <span class="money">1.5618</span>、安装板 <span class="money">2.9388</span></span>
+          </li>
+          <li>
+            <strong>总成核价（成品月总账）</strong>
+            <span>按材料清单汇总 → 本成品月总账 <span class="money">46.7992</span> + 间接 <span class="money">2.9484</span> → 总费用 <span class="money">49.7476</span></span>
+          </li>
+        </ul>
 
         <div class="callout">
           同年其它月份通常只变冲压件月价（钢价联动）；冲次单价、焊接单价、年度零件价、焊接费等仍用 2025 年结果。
         </div>
       </section>
-
       <section id="how">
         <h2>怎么算出这个成品的价钱</h2>
         <p class="lead">对齐知识库：零件先有价 → 焊装往上收 → 月总账 → 间接 → 总费用。</p>
 
-        <h3>① 零件取价（本成品叶子）</h3>
-        <table>
-          <thead>
-            <tr>
-              <th>零件</th>
-              <th>零件号</th>
-              <th>用量</th>
-              <th>价源</th>
-              <th>单价</th>
-              <th>行金额</th>
-            </tr>
-          </thead>
-          <tbody>
-            <tr>
-              <td>雨刮电机安装支架Ⅰ</td>
-              <td>501006875AA</td>
-              <td class="money">1</td>
-              <td>当月冲压零件价</td>
-              <td class="money">0.961525</td>
-              <td class="money">0.9615</td>
-            </tr>
-            <tr>
-              <td>流水槽上加强梁本体</td>
-              <td>501005123AA</td>
-              <td class="money">1</td>
-              <td>当年年度零件价（沿用）</td>
-              <td class="money">17.04</td>
-              <td class="money">17.04</td>
-            </tr>
-            <tr>
-              <td>焊接方螺母</td>
-              <td>N0111931</td>
-              <td class="money">2</td>
-              <td>当年年度零件价（标准件）</td>
-              <td class="money">0.042</td>
-              <td class="money">0.084</td>
-            </tr>
-          </tbody>
-        </table>
+        <h3>零件取价（本成品叶子）</h3>
+        <ul class="spec-list">
+          <li>
+            <strong>左后尾灯上安装板</strong>
+            <span>零件号 502007709AA · 用量 1 · 价源 当月冲压零件价 · 单价 1.5618 · 行金额 1.5618</span>
+          </li>
+          <li>
+            <strong>左后尾灯安装板</strong>
+            <span>零件号 502007710AA · 用量 1 · 价源 当月冲压零件价 · 单价 2.9388 · 行金额 2.9388</span>
+          </li>
+          <li>
+            <strong>后保安装支架</strong>
+            <span>零件号 502002780AA · 用量 1 · 价源 当年年度零件价 · 单价 14.71 · 行金额 14.71</span>
+          </li>
+          <li>
+            <strong>焊接方螺母</strong>
+            <span>零件号 N0111931 · 用量 2 · 价源 当年年度零件价（标准件） · 单价 12.96 · 行金额 25.92</span>
+          </li>
+          <li>
+            <strong>点焊胶</strong>
+            <span>零件号 B11-4102613 · 用量 255 · 价源 当年年度零件价 · 单价 0.0009 · 行金额 0.2295</span>
+          </li>
+        </ul>
         <p>
           取价顺序与知识库一致：先完整号对<strong>当月冲压价</strong>，否则对<strong>当年年度价</strong>。
-          本体虽在清单角色为自制，但本月无可用冲压价，落到年度「沿用」价 17.04。
         </p>
 
-        <h3>② 焊装收拢 + 月总账</h3>
-        <p>分总成 501005123AA-1 <strong>未走一口价</strong>（拆散计价）：保留下面零件金额向上汇总，另加成品焊接费。</p>
-        <table>
-          <thead>
-            <tr><th>分项</th><th>金额（元）</th></tr>
-          </thead>
-          <tbody>
-            <tr><td>冲压件金额</td><td class="money">0.9615</td></tr>
-            <tr><td>外购 / 年度价金额</td><td class="money">17.1240</td></tr>
-            <tr><td>分总成一口价</td><td class="money">0.0000</td></tr>
-            <tr><td>成品焊接费</td><td class="money">0.7800</td></tr>
-            <tr><td><strong>月总账</strong></td><td class="money"><strong>18.8655</strong></td></tr>
-          </tbody>
-        </table>
+        <h3>焊装收拢 + 月总账</h3>
+        <p>本成品<strong>未走一口价</strong>：零件各自计价后向上汇总，另加成品焊接费。</p>
+        <ul class="spec-list">
+          <li>
+            <strong>冲压件金额</strong>
+            <span>4.5006</span>
+          </li>
+          <li>
+            <strong>外购 / 年度价金额</strong>
+            <span>40.8595</span>
+          </li>
+          <li>
+            <strong>分总成一口价</strong>
+            <span>0.0000</span>
+          </li>
+          <li>
+            <strong>成品焊接费</strong>
+            <span>1.4391</span>
+          </li>
+          <li>
+            <strong>月总账</strong>
+            <span><strong>46.7992</strong></span>
+          </li>
+        </ul>
 
-        <h3>③ 成品间接费用 → 总费用</h3>
-        <table>
-          <thead>
-            <tr><th>间接分项</th><th>金额（元）</th></tr>
-          </thead>
-          <tbody>
-            <tr><td>单件运输费</td><td class="money">0.7600</td></tr>
-            <tr><td>仓储费 + 捆包费</td><td class="money">0.3872</td></tr>
-            <tr><td>财务费（2% × 月总账）</td><td class="money">0.3773</td></tr>
-            <tr><td>管理费（2%）</td><td class="money">0.3773</td></tr>
-            <tr><td>报废费用（3‰）</td><td class="money">0.0566</td></tr>
-            <tr><td>税前利润（2%）</td><td class="money">0.3773</td></tr>
-            <tr><td><strong>间接合计</strong></td><td class="money"><strong>2.3357</strong></td></tr>
-          </tbody>
-        </table>
+        <h3>成品间接费用 → 总费用</h3>
+        <ul class="spec-list">
+          <li>
+            <strong>单件运输费</strong>
+            <span>0.0000</span>
+          </li>
+          <li>
+            <strong>仓储费 + 捆包费</strong>
+            <span>0.0000</span>
+          </li>
+          <li>
+            <strong>财务费（2% × 月总账）</strong>
+            <span>0.9360</span>
+          </li>
+          <li>
+            <strong>管理费（2%）</strong>
+            <span>0.9360</span>
+          </li>
+          <li>
+            <strong>报废费用（3‰）</strong>
+            <span>0.1404</span>
+          </li>
+          <li>
+            <strong>税前利润（2%）</strong>
+            <span>0.9360</span>
+          </li>
+          <li>
+            <strong>间接合计</strong>
+            <span><strong>2.9484</strong></span>
+          </li>
+        </ul>
 
-        <div class="card">
-          <p>月总账 <span class="money">18.8655</span> + 间接 <span class="money">2.3357</span> =</p>
-          <p style="font-size:22px;font-family:'JetBrains Mono',monospace;color:var(--red);margin-top:8px;">
-            成品总费用　21.2012 元
-          </p>
-          <p style="margin-top:10px;font-size:13px;color:var(--muted);">
-            流水槽加强梁总成（501006873AA）· 青岛 · T28 · D/00 · 2025 年 01 月
-          </p>
+        <div class="card figure-total">
+          <p>月总账 46.7992 + 间接 2.9484 =</p>
+          <p class="total-line">成品总费用 49.7476 元</p>
+          <p class="total-meta">左后尾灯安装板总成（502007390AA）· 芜湖 · T13J · D/09 · 2025 年 01 月</p>
         </div>
       </section>
 
       <section id="engineering-change">
-        <h2>工程变更样例 · 青岛 · T28 · 2025年07月</h2>
+        <h2>工程变更怎么填</h2>
         <p class="lead">
-          与上传页「下载模板」同一本：变更单五行 = 五种改法、五个交货总成，一行一种改法。
-          基地青岛、项目 T28、清单版本仍是 D/00（工程变更不改这个字）。生效月 2025年07月：新总成从 7 月启用，旧总成用到 6 月到期。
+          本样例账期是 <strong>2025年01月</strong>，跟的是当时仍有效的树。投产后改图、换号不在材料清单页整包覆盖，走「工程变更」。
+          上传页「下载模板」是五种改法对照本（完成停止 / 改图一级 / 改图二级 / 此件不装 / 增加零件），用来对照填法，不是这棵 01 月账。
         </p>
-
-        <div class="scope-pill">
-          <span>青岛</span>
-          <span>2025 年</span>
-          <span>07 月</span>
-          <span>T28</span>
-          <span>D/00</span>
-          <span>工程变更五种改法</span>
-        </div>
-
-        <h3>变更单五行对照</h3>
-        <table>
-          <thead>
-            <tr>
-              <th>类型</th>
-              <th>变更前总成</th>
-              <th>变更后总成</th>
-              <th>动到的零件</th>
-            </tr>
-          </thead>
-          <tbody>
-            <tr>
-              <td>完成停止</td>
-              <td>501009533AA<br><span style="color:var(--muted)">发盖左铰链安装支架总成</span></td>
-              <td>（空）</td>
-              <td>整棵交货总成 7 月起不再交；材料清单不写该总成</td>
-            </tr>
-            <tr>
-              <td>改图 · 一级</td>
-              <td>501006873AA<br><span style="color:var(--muted)">流水槽加强梁总成</span></td>
-              <td>501006873AB</td>
-              <td>501006875AA → 501006875AB<br><span style="color:var(--muted)">雨刮电机安装支架Ⅰ（与 1 月样例同一成品换号）</span></td>
-            </tr>
-            <tr>
-              <td>改图 · 二级</td>
-              <td>501009144AA<br><span style="color:var(--muted)">后防撞梁总成</span></td>
-              <td>501009144AB</td>
-              <td>501009122AA → 501009122AB<br><span style="color:var(--muted)">后保下安装支架</span></td>
-            </tr>
-            <tr>
-              <td>此件不装</td>
-              <td>501008897AA<br><span style="color:var(--muted)">后围总成</span></td>
-              <td>501008897AB</td>
-              <td>504000341AA 不装<br><span style="color:var(--muted)">用量 0 + 备注含「此件不装」</span></td>
-            </tr>
-            <tr>
-              <td>增加零件</td>
-              <td>501007029AA<br><span style="color:var(--muted)">中通道左后纵梁总成</span></td>
-              <td>501007029AB</td>
-              <td>新加 501007040AA<br><span style="color:var(--muted)">中通道后纵梁加强板（变更前零件空）</span></td>
-            </tr>
-          </tbody>
-        </table>
-
-        <h3>与 1 月样例怎么对上</h3>
-        <div class="tree">
-          <div class="root">1 月核价对象：501006873AA（流水槽加强梁总成）· 总费用 21.20</div>
-          <div class="mid">　└── 一级冲压件 501006875AA（雨刮电机安装支架Ⅰ）· 月价 0.9615</div>
-          <div class="leaf">　　↓ 工程变更 · 2025年07月 · 改图</div>
-          <div class="root">7 月起交货总成：501006873AB（同名）</div>
-          <div class="mid">　└── 一级冲压件 501006875AB（新号工艺 + 简图在工艺确认表）</div>
-        </div>
         <p>
-          6 月及以前仍按 AA 取树与工艺；7 月起按 AB。
-          系统照抄变更单上的 AB，不会自己把 AA 加成 AB。
-          材料清单只写变化的行；工程变更不要「零件汇总」。
-          已经算过的 6 月核价<strong>不会</strong>自动改成新号——要看新号价，对 7 月及以后重跑月度核价。
+          操作步骤见<a href="help.html#engineering-change">帮助 · 工程变更</a>；口径见<a href="knowledge.html#engineering-change">知识库 · 工程变更</a>。
         </p>
-
-        <div class="callout ok">
-          操作步骤见<a href="help.html#engineering-change">帮助 · 工程变更</a>；
-          口径见<a href="knowledge.html#engineering-change">知识库 · 工程变更</a>。
-          系统内：工程变更 → 上传工程变更 → 下载模板，即本册。
-        </div>
       </section>
 
       <section id="map">
         <h2>全貌收口：前置 → 年度 → 每月 → 完工</h2>
         <div class="flow-col">
           <div class="flow-step">
-            <div class="n">前置 · 青岛 T28</div>
-            <strong>材料清单 D/00 + 冲压工艺 V3 → 焊接工艺拆解</strong>
-            <p>288 节点 · 85 自制件 · 77 拆解节点</p>
+            <div class="n">前置 · 芜湖 T13J</div>
+            <strong>材料清单 D/09 + 冲压工艺 → 焊接工艺拆解</strong>
+            <p>44 供货总成 · 357 节点</p>
           </div>
           <div class="flow-step">
             <div class="n">年度 · 2025</div>
             <strong>冲次单价、焊接单价、年度零件价、包装运输；加工费、成品焊接费；费率</strong>
-            <p>本成品：加工费 0.286 · 焊接费 0.78 · 运输 0.76</p>
+            <p>本成品：焊接费 1.4391 · 运输 0</p>
           </div>
           <div class="flow-step">
-            <div class="n">每月 · 2025-01</div>
+            <div class="n">每月 · 2025年01月</div>
             <strong>基准价 / 政策 / 废料 → 钢材联动 → 冲压零件价 → 总成核价</strong>
-            <p>支架月价 0.9615 → 成品总费用 21.2012</p>
+            <p>冲压件 4.5006 → 成品总费用 49.7476</p>
           </div>
           <div class="flow-step">
             <div class="n">完工入账</div>
-            <strong>0.96 + 17.12 + 0.78 → 月总账 18.87 → + 间接 2.34 → 21.20</strong>
+            <strong>4.50 + 40.86 + 1.44 → 月总账 46.80 → + 间接 2.95 → 49.75</strong>
             <p>零件齐价 → 焊装收拢 → 总费用</p>
           </div>
         </div>
 
         <h3>同月其它成品（算法相同）</h3>
-        <table>
-          <thead>
-            <tr>
-              <th>成品</th>
-              <th>零件号</th>
-              <th>冲压</th>
-              <th>外购/年度</th>
-              <th>焊接</th>
-              <th>总费用</th>
-            </tr>
-          </thead>
-          <tbody>
-            <tr>
-              <td>流水槽加强梁总成（本样例）</td>
-              <td>501006873AA</td>
-              <td class="money">0.96</td>
-              <td class="money">17.12</td>
-              <td class="money">0.78</td>
-              <td class="money">21.20</td>
-            </tr>
-            <tr>
-              <td>后围总成</td>
-              <td>501008897AA</td>
-              <td class="money">58.00</td>
-              <td class="money">69.81</td>
-              <td class="money">15.33</td>
-              <td class="money">157.16</td>
-            </tr>
-            <tr>
-              <td>左侧围内板后部上段总成（五座）</td>
-              <td>502005511AA</td>
-              <td class="money">130.42</td>
-              <td class="money">32.78</td>
-              <td class="money">29.93</td>
-              <td class="money">221.79</td>
-            </tr>
-          </tbody>
-        </table>
+        <ul class="spec-list">
+          <li>
+            <strong>左后尾灯安装板总成（本样例）</strong>
+            <span>零件号 502007390AA · 冲压 4.50 · 外购/年度 40.86 · 焊接 1.44 · 总费用 49.75</span>
+          </li>
+          <li>
+            <strong>左前门上铰链加强板总成</strong>
+            <span>零件号 551003085AA · 冲压 5.43 · 外购/年度 34.06 · 焊接 0.50 · 总费用 42.51</span>
+          </li>
+          <li>
+            <strong>右前翼子板前安装支架总成</strong>
+            <span>零件号 501012536AA · 冲压 1.46 · 外购/年度 14.65 · 焊接 0.32 · 总费用 17.46</span>
+          </li>
+        </ul>
 
         <div class="callout ok">
-          读完本页后，可回<a href="knowledge.html">知识库</a>对照概念，或打开系统按青岛 · 2025 · 01 · T28 复现。
+          读完本页后，可回<a href="knowledge.html">知识库</a>对照概念，或打开系统按芜湖 · 2025年01月 · T13J · D/09 复现。
         </div>
       </section>
 
-      <footer class="footer">样例 · 青岛 2025-01 T28 · /helper/example.html</footer>
+      <footer class="footer">样例 · 芜湖 2025年01月 T13J · /helper/example.html</footer>
     </main>
   </div>
 </body>

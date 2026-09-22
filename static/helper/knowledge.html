@@ -6,21 +6,21 @@
   <title>知识库 · 核价方案 · 核价平台</title>
   <link rel="icon" type="image/x-icon" href="/static/assets/favicon.ico">
   <link href="/static/css/fonts.css?v=1" rel="stylesheet">
-  <link rel="stylesheet" href="helper.css?v=4">
+  <link rel="stylesheet" href="helper.css?v=19">
 </head>
 <body>
   <div class="layout">
     <aside class="nav">
       <a class="nav-brand" href="index.html">
         <h1><span class="dot"></span> 使用帮助</h1>
-        <span>BLOCK · 知识库</span>
+        <span>账是怎么算的</span>
       </a>
       <div class="nav-label">三大块</div>
       <div class="block-switch">
         <a href="index.html">入口总览</a>
-        <a href="help.html">① 帮助</a>
-        <a class="is-active" href="knowledge.html">② 知识库</a>
-        <a href="example.html">③ 样例</a>
+        <a href="help.html">帮助</a>
+        <a class="is-active" href="knowledge.html">知识库</a>
+        <a href="example.html">样例</a>
       </div>
       <div class="nav-label">本页</div>
       <ul>
@@ -45,7 +45,7 @@
     <main class="main">
       <header class="hero">
         <div class="eyebrow">Knowledge Base</div>
-        <h1>② 知识库 · 核价方案</h1>
+        <h1>知识库 · 核价方案</h1>
         <p>
           一句话：<strong>结构件自动核价平台</strong>按<strong>材料清单</strong>核<strong>总成、分总成、冲压件</strong>；
           顶栏 <strong>AI 助理</strong>解读动因，不算价。
@@ -54,11 +54,7 @@
           投产后改图换号走<strong>工程变更</strong>（换树，不是再拍全量快照）；
           <strong>冲次单价、焊接单价一年传一次</strong>；模具布点 / 检具 / 采购对象按改版维护；再做每月钢价与总成核价。
         </p>
-        <div class="hero-actions">
-          <a class="back-link" href="index.html">← 帮助入口</a>
-          <a class="btn-print" href="print-all.html" style="text-decoration:none;">整本打印 / PDF</a>
-          <button type="button" class="btn-print is-ghost" onclick="window.print()">仅本页</button>
-        </div>
+        <p class="hero-link"><a href="index.html">帮助入口</a></p>
       </header>
 
       <section id="what">
@@ -155,12 +151,12 @@
             </div>
           </div>
           <p class="dr-foot">
-            左边 <b class="down">红 ↓ 查</b>按 L0→L1→L2 找叶子；右边 <b class="up">绿 ↑ rollup</b>按 L2→L1→L0 收金额。层级不能压平。
+            左边 <b class="down">↓ 查</b>按 L0→L1→L2 找叶子；右边 <b class="up">↑ rollup</b>按 L2→L1→L0 收金额。层级不能压平。
           </p>
         </div>
 
         <div class="callout ok">
-          带金额的成品树见<a href="example.html">样例</a>（青岛 · 2025 · 01 · T28）。
+          带金额的成品树见<a href="example.html">样例</a>（芜湖 · 2025年01月 · T13J）。
           下面各节讲前置、年度、每月如何把叶子价准备好。
         </div>
 
@@ -220,54 +216,32 @@
           实务上：先把前置底盘铺齐 → 再做年内价格与年度计算结果 → 每月只跑钢价与成品账。
         </div>
 
-        <table>
-          <thead>
-            <tr>
-              <th>前置项</th>
-              <th>菜单位置</th>
-              <th>做什么</th>
-              <th>何时再做</th>
-            </tr>
-          </thead>
-          <tbody>
-            <tr>
-              <td><span class="tag tag-main">主线</span> 材料清单</td>
-              <td>焊接工程 → 材料清单</td>
-              <td>上传成品树（基地 + 项目 + 清单版本）。只做投产 SOP。</td>
-              <td>清单换版；投产后换号走工程变更，不要在本页整包覆盖</td>
-            </tr>
-            <tr>
-              <td>冲压工艺</td>
-              <td>冲压工程 → 冲压工艺</td>
-              <td>上传零件与工序（自制件工艺底盘）。只做投产 SOP。</td>
-              <td>工艺文件改版；投产后新号走工程变更里的工艺确认表</td>
-            </tr>
-            <tr>
-              <td>模具布点 / 模具单价</td>
-              <td>冲压工程 → 冲压模具</td>
-              <td>布点 Excel + 钢板模/级进模单价、分摊万台（单价无年，取当前生效档）</td>
-              <td>布点改版或单价调整后；再重算年度模具费</td>
-            </tr>
-            <tr>
-              <td>检具费档案</td>
-              <td>冲压工程 → 冲压检具费</td>
-              <td>上传万元与分摊万台；核价时摊成元/件</td>
-              <td>检具清单变更</td>
-            </tr>
-            <tr>
-              <td>焊接工艺拆解</td>
-              <td>焊接工程 → 焊接工艺拆解</td>
-              <td>按材料清单 + 当年焊接单价生成拆解结果（可引擎自动补算）</td>
-              <td>清单结构变更，或当年焊接单价调整后重做</td>
-            </tr>
-            <tr>
-              <td>采购对象清单</td>
-              <td>焊接工程 → 采购对象</td>
-              <td>从材料清单生成「买哪些」集合；确认外发/自制、指定供应商。不进月度算价链</td>
-              <td>清单换版后重新生成</td>
-            </tr>
-          </tbody>
-        </table>
+        <ul class="spec-list">
+          <li>
+            <strong>材料清单</strong>
+            <span>焊接工程 → 材料清单。上传成品树（基地 + 项目 + 清单版本）。只做投产 SOP。再做：清单换版；投产后换号走工程变更，不要在本页整包覆盖</span>
+          </li>
+          <li>
+            <strong>冲压工艺</strong>
+            <span>冲压工程 → 冲压工艺。上传零件与工序（自制件工艺底盘）。只做投产 SOP。再做：工艺文件改版；投产后新号走工程变更里的工艺确认表</span>
+          </li>
+          <li>
+            <strong>模具布点 / 模具单价</strong>
+            <span>冲压工程 → 冲压模具。布点 Excel + 钢板模/级进模单价、分摊万台（单价无年，取当前生效档） · 再做：布点改版或单价调整后；再重算年度模具费</span>
+          </li>
+          <li>
+            <strong>检具费档案</strong>
+            <span>冲压工程 → 冲压检具费。上传万元与分摊万台；核价时摊成元/件 · 再做：检具清单变更</span>
+          </li>
+          <li>
+            <strong>焊接工艺拆解</strong>
+            <span>焊接工程 → 焊接工艺拆解。按材料清单 + 当年焊接单价生成拆解结果（可引擎自动补算） · 再做：清单结构变更，或当年焊接单价调整后重做</span>
+          </li>
+          <li>
+            <strong>采购对象清单</strong>
+            <span>焊接工程 → 采购对象。从材料清单生成「买哪些」集合；确认外发/自制、指定供应商。不进月度算价链 · 再做：清单换版后重新生成</span>
+          </li>
+        </ul>
 
         <div class="flow">
           <div class="flow-step">
@@ -431,38 +405,49 @@
         </div>
 
         <h3>工程变更三张表各管什么</h3>
-        <table>
-          <thead>
-            <tr><th>表</th><th>作用</th></tr>
-          </thead>
-          <tbody>
-            <tr><td>工程变更单</td><td>生效年月 + 前后总成 + 变更类型；新旧号以这张表为准</td></tr>
-            <tr><td>车身件材料清单</td><td>新树骨架（可含「此件不装」剔除行）；总成列 = 变更后总成；中间分总成新号以本表为准；只写变化的行</td></tr>
-            <tr><td>冲压工艺确认表</td><td>新号工艺（号须等于变更后零件）；零件简图只画在这张表，导入后抄到新号工艺与（若建立了）新号布点</td></tr>
-          </tbody>
-        </table>
+        <ul class="spec-list">
+          <li>
+            <strong>工程变更单</strong>
+            <span>生效年月 + 前后总成 + 变更类型；新旧号以这张表为准</span>
+          </li>
+          <li>
+            <strong>车身件材料清单</strong>
+            <span>新树骨架（可含「此件不装」剔除行）；总成列 = 变更后总成；中间分总成新号以本表为准；只写变化的行</span>
+          </li>
+          <li>
+            <strong>冲压工艺确认表</strong>
+            <span>新号工艺（号须等于变更后零件）；零件简图只画在这张表，导入后抄到新号工艺与（若建立了）新号布点</span>
+          </li>
+        </ul>
         <p>
           工程变更<strong>不填、不解析</strong>模具布点表。仅<strong>改图</strong>且变更前零件有仍有效布点时，从库整行抄到新号；完成停止 / 此件不装 / 增加零件（无旧布点可对）不建布点。
           工程变更落库时自动插本树采购对象，并从旧树结果抄焊接拆解；换号则自动抄包装运输费与年度零件价。新加零件的年度价仍人补。
         </p>
 
         <h3>四种变更类型（口径）</h3>
-        <table>
-          <thead>
-            <tr><th>类型</th><th>对交货总成意味着什么</th></tr>
-          </thead>
-          <tbody>
-            <tr><td>完成停止</td><td>该交货总成从生效月起不再交货；只到期、不启用新总成；旧工艺 / 布点不到期</td></tr>
-            <tr><td>改图</td><td>旧总成到期、新总成启用；改图层与上级分总成整条链换号（中间分总成号认材料清单）；没改的零件原号带走</td></tr>
-            <tr><td>增加零件</td><td>加在原来的总成上（不是另交一个新总成）；变更后总成须换号；变更前零件空、变更后零件写新号；旧工艺不到期</td></tr>
-            <tr><td>此件不装</td><td>总成还交货但须换总成号；该件用量 0 且备注含「此件不装」；变更后零件空</td></tr>
-          </tbody>
-        </table>
+        <ul class="spec-list">
+          <li>
+            <strong>完成停止</strong>
+            <span>该交货总成从生效月起不再交货；只到期、不启用新总成；旧工艺 / 布点不到期</span>
+          </li>
+          <li>
+            <strong>改图</strong>
+            <span>旧总成到期、新总成启用；改图层与上级分总成整条链换号（中间分总成号认材料清单）；没改的零件原号带走</span>
+          </li>
+          <li>
+            <strong>增加零件</strong>
+            <span>加在原来的总成上（不是另交一个新总成）；变更后总成须换号；变更前零件空、变更后零件写新号；旧工艺不到期</span>
+          </li>
+          <li>
+            <strong>此件不装</strong>
+            <span>总成还交货但须换总成号；该件用量 0 且备注含「此件不装」；变更后零件空</span>
+          </li>
+        </ul>
 
         <div class="callout">
           本树没有「增加零件」时不得改用量（<code>EC_QTY_CHANGED</code>）；有增加零件则已是新总成，不再拿旧用量拒收。
           左右总成共用件：旧号当月仍挂其它有效总成时，不能按改图单独停掉。
-          操作步骤见<a href="help.html#engineering-change">帮助 · 工程变更</a>；青岛 T28 · 2025年07月五种填法见<a href="example.html#engineering-change">样例</a>。
+          操作步骤见<a href="help.html#engineering-change">帮助 · 工程变更</a>；芜湖 T13J · 2025年01月走账见<a href="example.html">样例</a>。
         </div>
       </section>
 
@@ -470,90 +455,80 @@
         <h2>年度维护（一年传一次 / 算一次，年内复用）</h2>
         <p class="lead">按<strong>年 + 基地</strong>维护单价与年度计算结果；同年 1～12 月共用，不必每月重传。</p>
 
-        <table>
-          <thead>
-            <tr><th>工作</th><th>说明</th></tr>
-          </thead>
-          <tbody>
-            <tr>
-              <td><span class="tag tag-year">一年一传</span> 冲次单价</td>
-              <td>冲压工程 → 冲次单价。吨位 / 冲次单价矩阵，供年度加工费使用。</td>
-            </tr>
-            <tr>
-              <td><span class="tag tag-year">一年一传</span> 焊接单价</td>
-              <td>焊接工程 → 焊接单价。焊接工时等单价，供工艺拆解与成品焊接费使用。</td>
-            </tr>
-            <tr>
-              <td>上传年度零件价</td>
-              <td>外购件、沿用件、分总成一口价等取价来源。</td>
-            </tr>
-            <tr>
-              <td>上传包装运输费</td>
-              <td>成品侧运输、仓储捆包等间接费用输入。</td>
-            </tr>
-            <tr>
-              <td>算冲压加工费</td>
-              <td>依赖前置「冲压工艺」+ 本年「冲次单价」。缺失时引擎可自动补算；已有默认不覆盖。</td>
-            </tr>
-            <tr>
-              <td>算冲压模具费</td>
-              <td>依赖模具布点 + 生效模具单价。按年+基地+项目计算，得到元/件最终模具费。有布点且当年无结果时引擎自动补算；缺生效模具单价硬停。零件价页不补算，无结果记 0。</td>
-            </tr>
-            <tr>
-              <td>算成品焊接费</td>
-              <td>依赖前置「焊接工艺拆解」（拆解又依赖本年焊接单价）。缺失时引擎可自动补算；已有默认不覆盖。</td>
-            </tr>
-            <tr>
-              <td>牌号分类</td>
-              <td>主数据。一个牌号一行，挂冷轧 / 镀锌 / 酸洗；只手工维护。工艺或基价导入缺档会整批拒绝，不自动补行。</td>
-            </tr>
-            <tr>
-              <td>系统费率</td>
-              <td>财务 / 管理 / 报废 / 税前利润等，全站配置，一般很少改。</td>
-            </tr>
-          </tbody>
-        </table>
+        <ul class="spec-list">
+          <li>
+            <strong>冲次单价</strong>
+            <span>冲压工程 → 冲次单价。吨位 / 冲次单价矩阵，供年度加工费使用。</span>
+          </li>
+          <li>
+            <strong>焊接单价</strong>
+            <span>焊接工程 → 焊接单价。焊接工时等单价，供工艺拆解与成品焊接费使用。</span>
+          </li>
+          <li>
+            <strong>上传年度零件价</strong>
+            <span>外购件、沿用件、分总成一口价等取价来源。</span>
+          </li>
+          <li>
+            <strong>上传包装运输费</strong>
+            <span>成品侧运输、仓储捆包等间接费用输入。</span>
+          </li>
+          <li>
+            <strong>算冲压加工费</strong>
+            <span>依赖前置「冲压工艺」+ 本年「冲次单价」。缺失时引擎可自动补算；已有默认不覆盖。</span>
+          </li>
+          <li>
+            <strong>算冲压模具费</strong>
+            <span>依赖模具布点 + 生效模具单价。按年+基地+项目计算，得到元/件最终模具费。有布点且当年无结果时引擎自动补算；缺生效模具单价硬停。零件价页不补算，无结果记 0。</span>
+          </li>
+          <li>
+            <strong>算成品焊接费</strong>
+            <span>依赖前置「焊接工艺拆解」（拆解又依赖本年焊接单价）。缺失时引擎可自动补算；已有默认不覆盖。</span>
+          </li>
+          <li>
+            <strong>牌号分类</strong>
+            <span>主数据。一个牌号一行，挂冷轧 / 镀锌 / 酸洗；只手工维护。工艺或基价导入缺档会整批拒绝，不自动补行。</span>
+          </li>
+          <li>
+            <strong>系统费率</strong>
+            <span>财务 / 管理 / 报废 / 税前利润等，全站配置，一般很少改。</span>
+          </li>
+        </ul>
       </section>
 
       <section id="month">
         <h2>每月核价（月月要做）</h2>
         <p class="lead">前置与年度结果已齐时，每月主要处理「跟钢价走」的账，并算出当月成品总费用。</p>
 
-        <table>
-          <thead>
-            <tr><th>工作</th><th>说明</th></tr>
-          </thead>
-          <tbody>
-            <tr>
-              <td>钢材基准价、加减价政策、废料月度价</td>
-              <td>当月钢价与废料扣减依据；缺则引擎硬停。</td>
-            </tr>
-            <tr>
-              <td>算钢材联动价</td>
-              <td>政策落到材料规格 → 当月钢价。</td>
-            </tr>
-            <tr>
-              <td>算冲压零件价格</td>
-              <td>材料净额 + 加工费 + 模具费 + 检具费 → 自制件当月单价。无模具/检具档案则费用为 0。</td>
-            </tr>
-            <tr>
-              <td><strong>算总成核价</strong></td>
-              <td>菜单名「总成核价」。按材料清单自下而上汇总成品 → 月总账 + 间接费用 → <strong>总费用</strong>。</td>
-            </tr>
-            <tr>
-              <td>中标钢厂厚度价格一览（可选）</td>
-              <td>一事一议：预览/导出中标基价叠厚度加减价。不写入核价结果表。</td>
-            </tr>
-            <tr>
-              <td>导出月度核对（可选）</td>
-              <td>总成核价一览：只导出、不算价；须选定年/月/基地/项目，版本可选。</td>
-            </tr>
-            <tr>
-              <td>导出采购价格协议（可选）</td>
-              <td>采购价格协议（一级菜单）。读已算应成本按月横排，出《批量零部件价格协议》。不算价。采购对象视图一家一导；总成视图整包一份。</td>
-            </tr>
-          </tbody>
-        </table>
+        <ul class="spec-list">
+          <li>
+            <strong>钢材基准价、加减价政策、废料月度价</strong>
+            <span>当月钢价与废料扣减依据；缺则引擎硬停。</span>
+          </li>
+          <li>
+            <strong>算钢材联动价</strong>
+            <span>政策落到材料规格 → 当月钢价。</span>
+          </li>
+          <li>
+            <strong>算冲压零件价格</strong>
+            <span>材料净额 + 加工费 + 模具费 + 检具费 → 自制件当月单价。无模具/检具档案则费用为 0。</span>
+          </li>
+          <li>
+            <strong>算总成核价</strong>
+            <span>菜单名「总成核价」。按材料清单自下而上汇总成品 → 月总账 + 间接费用 → <strong>总费用</strong>。</span>
+          </li>
+          <li>
+            <strong>中标钢厂厚度价格一览（可选）</strong>
+            <span>一事一议：预览/导出中标基价叠厚度加减价。不写入核价结果表。</span>
+          </li>
+          <li>
+            <strong>导出月度核对（可选）</strong>
+            <span>总成核价一览：只导出、不算价；须选定年/月/基地/项目，版本可选。</span>
+          </li>
+          <li>
+            <strong>导出采购价格协议（可选）</strong>
+            <span>采购价格协议（一级菜单）。读已算应成本按月横排，出《批量零部件价格协议》。不算价。采购对象视图一家一导；总成视图整包一份。</span>
+          </li>
+        </ul>
 
         <div class="callout">
           同一年里，1～12 月通常<strong>变化的是冲压件月价（跟钢价走）</strong>；
@@ -632,16 +607,20 @@
           交主机厂的是有子件的供货总成；采购要管的是能单独向二级买的件，以及「成品就是一张板」的退化供货件。
           生成入口：焊接工程 → 采购对象。列入只看树结构，不看有没有价。
         </p>
-        <table>
-          <thead>
-            <tr><th>列入采购对象</th><th>树上的样子</th></tr>
-          </thead>
-          <tbody>
-            <tr><td>退化供货件</td><td>L0 且下面没有 L1</td></tr>
-            <tr><td>分总成</td><td>L1 且下面还有 L2</td></tr>
-            <tr><td>冲压件</td><td>L1 叶子且是板料</td></tr>
-          </tbody>
-        </table>
+        <ul class="spec-list">
+          <li>
+            <strong>退化供货件</strong>
+            <span>L0 且下面没有 L1</span>
+          </li>
+          <li>
+            <strong>分总成</strong>
+            <span>L1 且下面还有 L2</span>
+          </li>
+          <li>
+            <strong>冲压件</strong>
+            <span>L1 叶子且是板料</span>
+          </li>
+        </ul>
         <p>
           有子件的 L0 <strong>永不列入</strong>。L2 不单独列入。L1 上的螺母、胶等进核对区「标准件/胶等」。
           列表上确认外发/自制、指定供应商。给二级厂签字的月度价目在「采购价格协议」，不是本页；金额读总成核价已算的应成本，本页不另算一遍。
@@ -674,7 +653,7 @@
           </div>
         </div>
         <div class="callout warn">
-          可参阅 <a href="example.html">样例</a>：青岛 · 2025 · 01 · T28，按本页同一章节结构对照真实金额。
+          可参阅 <a href="example.html">样例</a>：芜湖 · 2025年01月 · T13J，按本页同一章节结构对照真实金额。
         </div>
       </section>
 
