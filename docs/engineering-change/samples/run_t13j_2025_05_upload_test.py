@@ -13,14 +13,14 @@ if str(REPO) not in sys.path:
 from app.common.audit import SYSTEM_USER  # noqa: E402
 from app.database import DatabaseConfig  # noqa: E402
 from app.exceptions.base import BusinessException  # noqa: E402
-from app.repositories.engineering_change.upload_log_repository import (  # noqa: E402
+from app.repositories.engineering_change.design_change.upload_log_repository import (  # noqa: E402
     EngineeringChangeUploadLogInsert,
     EngineeringChangeUploadLogRepository,
 )
-from app.services.engineering_change.upload.orchestrator.orchestrator import (  # noqa: E402
+from app.services.engineering_change.design_change.upload.orchestrator.orchestrator import (  # noqa: E402
     EngineeringChangeOrchestrator,
 )
-from app.services.engineering_change.upload.orchestrator.types import (  # noqa: E402
+from app.services.engineering_change.design_change.upload.orchestrator.types import (  # noqa: E402
     EngineeringChangeExecuteArgs,
 )
 from app.services.file_trace.path_utils import to_upload_relpath  # noqa: E402

@@ -9,8 +9,8 @@ from sqlalchemy import or_
 from sqlalchemy.orm import Session
 
 from app.common.part_number import escape_like_fragment, pick_part_row
-from app.models.engineering_change.change_order import EngineeringChangeOrder
-from app.models.engineering_change.upload_log import EngineeringChangeUploadLog
+from app.models.engineering_change.design_change.change_order import EngineeringChangeOrder
+from app.models.engineering_change.design_change.upload_log import EngineeringChangeUploadLog
 from app.repositories.llm.location_in import location_in_clause
 
 

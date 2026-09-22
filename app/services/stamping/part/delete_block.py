@@ -14,7 +14,7 @@ from app.common.audit import AUDIT_APPROVED
 _CHUNK = 500
 _PART_COST_PAGE = "核价 → 冲压零件价格核算 → 冲压零件价格一览"
 _PROCESS_FEE_PAGE = "冲压工程 → 冲压加工费 → 冲压加工费列表"
-_CHANGE_PAGE = "工程变更 → 工程变更单列表"
+_CHANGE_PAGE = "工程变更 → 设计变更 → 工程变更单列表"
 
 _DELETE_FILTERS = (
     "列表上的审核状态、零件号不参与批量删除；就算列表被筛成空的，也要按列出的范围点批量删除。"

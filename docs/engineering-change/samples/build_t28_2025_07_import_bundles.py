@@ -9,7 +9,7 @@ REPO = Path(__file__).resolve().parents[3]
 if str(REPO) not in sys.path:
     sys.path.insert(0, str(REPO))
 
-from app.services.engineering_change.upload.template_builder import (  # noqa: E402
+from app.services.engineering_change.design_change.upload.template_builder import (  # noqa: E402
     CHANGE_ORDER_SAMPLES,
     COMBINED_BOOK,
     SCENARIO_SAMPLES,

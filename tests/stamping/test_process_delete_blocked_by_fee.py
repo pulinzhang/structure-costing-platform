@@ -256,7 +256,7 @@ def test_rollback_message_uses_cost_row_scope(memory_db: Session) -> None:
     assert "冲压零件价格一览" in message
     assert "已审核" in message
     assert LOCATION in message
-    assert "工程变更 → 工程变更单列表" in message
+    assert "工程变更 → 设计变更 → 工程变更单列表" in message
     assert "别处" not in message
 
 

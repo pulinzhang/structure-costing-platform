@@ -150,10 +150,11 @@ location: {
 
 ### 4.3 权限树位置
 
-走 [permission-design.md](../permission-design.md) §0。`catalog.json` 的 `tree` 里插在 `menu:file-trace` **之后**、`menu:settings` **之前**（与侧栏同序）。**不进** `defaults` / `mandatory`。
+走 [permission-design.md](../permission-design.md) §0。`catalog.json` 的 `tree` 里插在 `menu:engineering-change` **之后**、`menu:settings` **之前**（与侧栏同序）。**不进** `defaults` / `mandatory`。
 
 ```
 menu:file-trace
+menu:engineering-change
 menu:masterdata                          # 分组，可勾，label「主数据」
   └── menu:location                      # 叶子，label「基地」
         ├── op:location:view

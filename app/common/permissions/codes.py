@@ -231,16 +231,6 @@ class Perm:
     BOM_WELDING_FEE_LIST_REVERSE = "op:bom-welding-fee-list:reverse"  # 反审核
     BOM_WELDING_FEE_LIST_EXPORT = "op:bom-welding-fee-list:export"  # 导出
 
-    MENU_ENGINEERING_CHANGE = "menu:engineering-change"  # 工程变更
-
-    MENU_ENGINEERING_CHANGE_UPLOAD = "menu:engineering-change-upload"  # 上传工程变更
-    ENGINEERING_CHANGE_UPLOAD_VIEW = "op:engineering-change-upload:view"  # 查看
-    ENGINEERING_CHANGE_UPLOAD_UPLOAD = "op:engineering-change-upload:upload"  # 上传
-
-    MENU_ENGINEERING_CHANGE_ORDER_LIST = "menu:engineering-change-order-list"  # 工程变更单列表
-    ENGINEERING_CHANGE_ORDER_LIST_VIEW = "op:engineering-change-order-list:view"  # 查看
-    ENGINEERING_CHANGE_ORDER_LIST_DELETE = "op:engineering-change-order-list:delete"  # 删除回滚
-
     MENU_YISHIYIYI = "menu:yishiyiyi"  # 一事一议
 
     MENU_THICKNESS = "menu:thickness"  # 加减价政策
@@ -340,6 +330,18 @@ class Perm:
     FILE_TRACE_VIEW = "op:file-trace:view"  # 查看
     FILE_TRACE_DOWNLOAD = "op:file-trace:download"  # 下载原件
 
+    MENU_ENGINEERING_CHANGE = "menu:engineering-change"  # 工程变更
+
+    MENU_ENGINEERING_CHANGE_DESIGN_GROUP = "menu:engineering-change-design-group"  # 设计变更
+
+    MENU_ENGINEERING_CHANGE_UPLOAD = "menu:engineering-change-upload"  # 上传工程变更
+    ENGINEERING_CHANGE_UPLOAD_VIEW = "op:engineering-change-upload:view"  # 查看
+    ENGINEERING_CHANGE_UPLOAD_UPLOAD = "op:engineering-change-upload:upload"  # 上传
+
+    MENU_ENGINEERING_CHANGE_ORDER_LIST = "menu:engineering-change-order-list"  # 工程变更单列表
+    ENGINEERING_CHANGE_ORDER_LIST_VIEW = "op:engineering-change-order-list:view"  # 查看
+    ENGINEERING_CHANGE_ORDER_LIST_DELETE = "op:engineering-change-order-list:delete"  # 删除回滚
+
     MENU_MASTERDATA = "menu:masterdata"  # 主数据
 
     MENU_LOCATION = "menu:location"  # 基地
@@ -354,7 +356,7 @@ class Perm:
     VEHICLE_MODEL_UPLOAD_VIEW = "op:vehicle-model-upload:view"  # 查看
     VEHICLE_MODEL_UPLOAD_UPLOAD = "op:vehicle-model-upload:upload"  # 导入
 
-    MENU_VEHICLE_MODEL_LIST = "menu:vehicle-model-list"  # 一览
+    MENU_VEHICLE_MODEL_LIST = "menu:vehicle-model-list"  # 一览表
     VEHICLE_MODEL_LIST_VIEW = "op:vehicle-model-list:view"  # 查看
     VEHICLE_MODEL_LIST_EXPORT = "op:vehicle-model-list:export"  # 导出
     VEHICLE_MODEL_LIST_CREATE = "op:vehicle-model-list:create"  # 新增
@@ -367,7 +369,7 @@ class Perm:
     SUPPLIER_UPLOAD_VIEW = "op:supplier-upload:view"  # 查看
     SUPPLIER_UPLOAD_UPLOAD = "op:supplier-upload:upload"  # 导入
 
-    MENU_SUPPLIER_LIST = "menu:supplier-list"  # 一览
+    MENU_SUPPLIER_LIST = "menu:supplier-list"  # 一览表
     SUPPLIER_LIST_VIEW = "op:supplier-list:view"  # 查看
     SUPPLIER_LIST_EXPORT = "op:supplier-list:export"  # 导出
     SUPPLIER_LIST_CREATE = "op:supplier-list:create"  # 新增

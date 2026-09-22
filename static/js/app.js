@@ -17,7 +17,7 @@
 
 import { bindCurrentRowOnOps } from './ui/table-row.js?v=3';
 import { bindHudSelects, closeHudSelectMenu } from './ui/hud-select.js?v=1';
-import { pageMeta } from './features/index.js?v=49';
+import { pageMeta } from './features/index.js?v=51';
 
 // 页面导入（路径与 index.html 菜单树 / features 目录对齐）
 import { getUserSession, initUserMenu, startTokenHeartbeat, updateUserSession } from './features/login/index.js?v=20';
@@ -73,8 +73,8 @@ import { pageConfig as bomWeldingProcessBreakdownGeneratePage } from './features
 import { pageConfig as bomWeldingProcessBreakdownListPage } from './features/bom/welding-process-breakdown/list/index.js?v=64';
 import { pageConfig as bomWeldingFeeCalcPage } from './features/bom/welding-fee/calc/index.js?v=22';
 import { pageConfig as bomWeldingFeeListPage } from './features/bom/welding-fee/list/index.js?v=35';
-import { pageConfig as engineeringChangeUploadPage } from './features/engineering-change/upload/index.js?v=21';
-import { pageConfig as engineeringChangeListPage } from './features/engineering-change/list/index.js?v=36';
+import { pageConfig as engineeringChangeUploadPage } from './features/engineering-change/design-change/upload/index.js?v=22';
+import { pageConfig as engineeringChangeListPage } from './features/engineering-change/design-change/list/index.js?v=39';
 import { pageConfig as costingPage }        from './features/costing/engine/index.js?v=47';
 import { pageConfig as fileTracePage }       from './features/file-trace/index.js?v=25';
 import { pageConfig as locationPage }        from './features/masterdata/location/index.js?v=22';

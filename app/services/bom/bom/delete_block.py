@@ -10,7 +10,7 @@ from sqlalchemy.orm import Session
 _CHUNK = 500
 
 _ASSEMBLY_PAGE = "核价 → 总成核价 → 总成核价一览"
-_CHANGE_PAGE = "工程变更 → 工程变更单列表"
+_CHANGE_PAGE = "工程变更 → 设计变更 → 工程变更单列表"
 _DIE_PAGE = "冲压工程 → 冲压模具费 → 冲压模具费列表"
 _WELDING_FEE_PAGE = "焊接工程 → 焊接费 → 焊接费列表"
 
