@@ -56,6 +56,8 @@ from app.models.masterdata import (
 )
 from app.models.settings import (
     OperationLog,
+    RefHint,
+    SchemaComment,
     SystemConfig,
     User,
     UserPermission,
@@ -117,6 +119,8 @@ __all__ = [
     "SupplierAlias",
     "VehicleModel",
     "OperationLog",
+    "RefHint",
+    "SchemaComment",
     "StampingDieFee",
     "StampingDieFeeCalcLog",
     "StampingDieFeeItem",

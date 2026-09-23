@@ -16,10 +16,9 @@ from app.repositories.bom.period_trees import nodes_in_as_of_trees
 from app.schemas.dto.bom_dto import BomNodeCreate, BomNodeWrite
 from app.schemas.vo.bom_vo import BomNodeTreeVO, BomNodeVO
 from app.schemas.vo.user_vo import UserVO
-from app.services.bom.bom.delete_block import explain_bom_delete_blocked
-from app.services.bom.bom.snapshot import BomSnapshotService
 from app.services.bom.bom.trees import descendant_ids
 from app.services.masterdata.vehicle_model.service import VehicleModelService
+from app.services.settings.schema_comment.service import STILL_REFERENCED, ensure_deletable
 
 logger = logging.getLogger("service.bom.node")
 
@@ -179,31 +178,22 @@ class BomNodeService:
         snapshot = self.snapshot_repo.get_by_id(db, row.snapshot_id)
         if not snapshot:
             raise NotFoundException("BOM 清单不存在")
-        BomSnapshotService().assert_bom_scope_unused(
-            db,
-            location=snapshot.location,
-            vehicle_model=snapshot.vehicle_model,
-            bom_version=snapshot.bom_version,
-            action="删除",
-        )
         rows = self.node_repo.list_by_snapshot(db, snapshot.id)
         node_ids = sorted(descendant_ids(rows, {row.id}))
         location = snapshot.location
         vehicle_model = snapshot.vehicle_model
         try:
+            ensure_deletable(
+                db,
+                "bom_nodes",
+                [{"id": node_id} for node_id in node_ids],
+                subject=f"材料清单节点「{location} {vehicle_model}」",
+            )
             self.node_repo.delete(db, row)
             db.commit()
         except IntegrityError:
             db.rollback()
-            raise BusinessException(
-                explain_bom_delete_blocked(
-                    db,
-                    node_ids,
-                    location=location,
-                    vehicle_model=vehicle_model,
-                ),
-                code=409,
-            ) from None
+            raise BusinessException(STILL_REFERENCED) from None
         except BusinessException:
             db.rollback()
             raise

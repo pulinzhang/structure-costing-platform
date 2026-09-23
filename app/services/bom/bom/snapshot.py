@@ -1,4 +1,4 @@
-"""BOM 清单头：列表、创建、删除、级联筛、下游占用。"""
+"""BOM 清单头：列表、创建、删除、级联筛。"""
 
 import logging
 
@@ -10,10 +10,6 @@ from app.exceptions.base import BusinessException, NotFoundException
 from app.repositories.bom.bom.node import BomNodeRepository
 from app.repositories.bom.bom.snapshot import BomSnapshotRepository
 from app.repositories.bom.bom.types import BomSnapshotListFilters
-from app.repositories.bom.procurement_object_repository import BomProcurementObjectRepository
-from app.repositories.bom.welding_process_breakdown_repository import (
-    BomWeldingProcessBreakdownRepository,
-)
 from app.schemas.dto.bom_dto import (
     BomCascadeFilterQuery,
     BomSnapshotCreate,
@@ -22,9 +18,9 @@ from app.schemas.dto.bom_dto import (
 )
 from app.schemas.vo.bom_vo import BomCascadeFilterOptionsVO, BomSnapshotVO
 from app.schemas.vo.user_vo import UserVO
-from app.services.bom.bom.delete_block import explain_bom_delete_blocked
 from app.services.masterdata.location.service import LocationService
 from app.services.masterdata.vehicle_model.service import VehicleModelService
+from app.services.settings.schema_comment.service import STILL_REFERENCED, ensure_deletable
 
 logger = logging.getLogger("service.bom.snapshot")
 
@@ -37,44 +33,6 @@ class BomSnapshotService:
 
     def __init__(self) -> None:
         self.snapshot_repo = BomSnapshotRepository()
-        self._procurement_repo = BomProcurementObjectRepository()
-        self._breakdown_repo = BomWeldingProcessBreakdownRepository()
-
-    def assert_bom_scope_unused(
-        self,
-        db: Session,
-        *,
-        location: str,
-        vehicle_model: str,
-        bom_version: str,
-        action: str,
-    ) -> None:
-        """有直接下游（采购对象、焊接拆解）则禁止覆盖导入或删除材料清单/节点。
-
-        此处 bom_version = snapshot 头 SOP 字，与清单头冗余键同形；不是列表浏览的 L0 字。
-        """
-        found: list[str] = []
-        if self._procurement_repo.get_list_by_scope(
-            db,
-            location=location,
-            vehicle_model=vehicle_model,
-            bom_version=bom_version,
-        ):
-            found.append("采购对象清单")
-        snapshot = self.snapshot_repo.get_by_unique_key(db, location, vehicle_model, bom_version)
-        if snapshot is not None and self._breakdown_repo.exists_by_snapshot_id(db, snapshot.id):
-            found.append("焊接工艺拆解")
-        if not found:
-            return
-        guides: list[str] = []
-        if "采购对象清单" in found:
-            guides.append("请打开「焊接工程 → 采购对象 → 采购对象清单」，删掉这一版清单。")
-        if "焊接工艺拆解" in found:
-            guides.append("请打开「焊接工程 → 焊接工艺拆解 → 拆解列表」，删掉这一版拆解。")
-        raise BusinessException(
-            f"这一版材料清单还不能{action}。" + "".join(guides),
-            code=409,
-        )
 
     def paginate_snapshots(
         self, db: Session, query: BomSnapshotQuery
@@ -244,30 +202,24 @@ class BomSnapshotService:
         row = self.snapshot_repo.get_by_id(db, snapshot_id)
         if not row:
             raise NotFoundException("BOM 清单不存在")
-        self.assert_bom_scope_unused(
-            db,
-            location=row.location,
-            vehicle_model=row.vehicle_model,
-            bom_version=row.bom_version,
-            action="删除",
-        )
         node_ids = [node.id for node in BomNodeRepository().list_by_snapshot(db, row.id)]
         location = row.location
         vehicle_model = row.vehicle_model
+        subject = f"材料清单「{location} {vehicle_model}」"
         try:
+            if node_ids:
+                ensure_deletable(
+                    db,
+                    "bom_nodes",
+                    [{"id": node_id} for node_id in node_ids],
+                    subject=subject,
+                )
+            ensure_deletable(db, "bom_snapshots", [{"id": row.id}], subject=subject)
             self.snapshot_repo.delete(db, row)
             db.commit()
         except IntegrityError:
             db.rollback()
-            raise BusinessException(
-                explain_bom_delete_blocked(
-                    db,
-                    node_ids,
-                    location=location,
-                    vehicle_model=vehicle_model,
-                ),
-                code=409,
-            ) from None
+            raise BusinessException(STILL_REFERENCED) from None
         except BusinessException:
             db.rollback()
             raise

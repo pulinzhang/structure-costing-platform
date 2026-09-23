@@ -34,7 +34,7 @@ from app.services.masterdata.steel_grade_category.service import (
     SteelGradeCategoryService,
 )
 from app.services.masterdata.supplier.service import SupplierService
-from app.services.stamping.part.delete_block import explain_part_delete_blocked
+from app.services.settings.schema_comment.service import STILL_REFERENCED, ensure_deletable
 
 logger = logging.getLogger("service.stamping")
 
@@ -42,13 +42,19 @@ logger = logging.getLogger("service.stamping")
 def delete_part(repository: StampingPartRepository, db: Session, part_id: int) -> None:
     """删除零件（硬删除，不写审计字段）。"""
     try:
+        ensure_deletable(
+            db,
+            "stamping_parts",
+            [{"id": part_id}],
+            subject="该冲压零件",
+        )
         deleted = repository.delete(db, part_id)
         if not deleted:
             raise NotFoundException(f"零件不存在: id={part_id}")
         db.commit()
     except IntegrityError:
         db.rollback()
-        raise BusinessException(explain_part_delete_blocked(db, [part_id])) from None
+        raise BusinessException(STILL_REFERENCED) from None
 
 
 def create_part(
@@ -155,6 +161,13 @@ def batch_delete_parts(
         )
     ]
     try:
+        if part_ids:
+            ensure_deletable(
+                db,
+                "stamping_parts",
+                [{"id": part_id} for part_id in part_ids],
+                subject="这些冲压零件",
+            )
         deleted = repository.delete_by_scope(
             db,
             location=location,
@@ -165,7 +178,7 @@ def batch_delete_parts(
         db.commit()
     except IntegrityError:
         db.rollback()
-        raise BusinessException(explain_part_delete_blocked(db, part_ids)) from None
+        raise BusinessException(STILL_REFERENCED) from None
     return StampingPartBatchDeleteResultVO(
         location=location,
         stamping_supplier=supplier,

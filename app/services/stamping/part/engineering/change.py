@@ -21,6 +21,7 @@ from app.repositories.stamping.part.tailor_weld_blank import (
 from app.schemas.dto.stamping_tailor_weld_blank_dto import TailorWeldBlankWrite
 from app.schemas.dto.stamping_upload_dto import PartData, ProcessData
 from app.schemas.vo.user_vo import UserVO
+from app.services.settings.schema_comment.service import ensure_deletable
 
 
 @dataclass(slots=True)
@@ -300,6 +301,12 @@ def rollback_engineering_change_part(
 ) -> None:
     """回滚：删新零件（含工序），清空旧零件失效月。只 flush。"""
     if after_part_id is not None:
+        ensure_deletable(
+            db,
+            "stamping_parts",
+            [{"id": after_part_id}],
+            subject="该冲压零件",
+        )
         process_repo.delete_by_part_ids(db, [after_part_id])
         part_repo.delete(db, after_part_id)
     if before_part_id is not None:

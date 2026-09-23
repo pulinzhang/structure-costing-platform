@@ -41,7 +41,6 @@ from app.schemas.vo.bom_welding_process_breakdown_vo import (
     BomWeldingProcessBreakdownGenerateResultVO,
 )
 from app.schemas.vo.user_vo import UserVO
-from app.services.bom.welding_process_breakdown.audit.service import WELDING_FEE_REFERENCED
 from app.services.bom.welding_process_breakdown.bom_tree import (
     annotate_parse_status,
     build_children_map,
@@ -58,6 +57,7 @@ from app.services.bom.welding_process_breakdown.generate.log import (
 from app.services.bom.welding_process_breakdown.process_log import ProcessLogBuilder
 from app.services.bom.welding_process_breakdown.rollup import apply_rollup_flags
 from app.services.masterdata.vehicle_model.service import VehicleModelService
+from app.services.settings.schema_comment.service import STILL_REFERENCED
 
 logger = logging.getLogger("service.bom.welding_process_breakdown.generate")
 
@@ -311,14 +311,14 @@ class BomWeldingProcessBreakdownGenerateService:
             raise
         except IntegrityError:
             db.rollback()
-            process_log.error(WELDING_FEE_REFERENCED)
+            process_log.error(STILL_REFERENCED)
             self._fail_log(
                 db,
                 log_id=log_id,
-                message=WELDING_FEE_REFERENCED,
+                message=STILL_REFERENCED,
                 detail_text=process_log.build(),
             )
-            raise BusinessException(WELDING_FEE_REFERENCED) from None
+            raise BusinessException(STILL_REFERENCED) from None
         except Exception:
             db.rollback()
             logger.exception("生成焊接工艺拆解失败")

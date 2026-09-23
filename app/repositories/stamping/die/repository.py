@@ -258,6 +258,21 @@ class StampingDiePartRepository:
         db.flush()
         return int(deleted)
 
+    def list_ids_for_scope(
+        self,
+        db: Session,
+        *,
+        vehicle_model: str,
+        location: str | None = None,
+        locations: list[str] | None = None,
+    ) -> list[int]:
+        query = db.query(StampingDiePart.id).filter(StampingDiePart.vehicle_model == vehicle_model)
+        if locations is not None:
+            query = query.filter(StampingDiePart.location.in_(locations))
+        elif location:
+            query = query.filter(StampingDiePart.location == location)
+        return [part_id for (part_id,) in query.all()]
+
     def delete_scope(
         self,
         db: Session,

@@ -12,6 +12,7 @@ from app.common.operation_log.context import (
     get_request_audit_scope,
     get_request_error_message,
     get_request_permission,
+    get_request_reference_detail,
     get_request_upload_filenames,
     get_request_user,
 )
@@ -60,6 +61,7 @@ class OperationLogMiddleware(BaseHTTPMiddleware):
                     audit_scope=get_request_audit_scope(request),
                     upload_filenames=get_request_upload_filenames(request),
                     error_message=get_request_error_message(request),
+                    reference_detail=get_request_reference_detail(request),
                 )
         except Exception:
             logger.exception("操作日志中间件异常（已忽略）")

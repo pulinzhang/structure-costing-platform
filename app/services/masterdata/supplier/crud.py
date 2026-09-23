@@ -34,6 +34,7 @@ from app.services.masterdata.supplier.identity import (
     require_row,
     to_vo,
 )
+from app.services.settings.schema_comment.service import STILL_REFERENCED, ensure_deletable
 
 logger = logging.getLogger("service.supplier")
 
@@ -214,11 +215,17 @@ def update_supplier(
 def delete_supplier(repository: SupplierRepository, db: Session, full_name: str) -> None:
     record = require_row(repository, db, full_name)
     try:
+        ensure_deletable(
+            db,
+            "suppliers",
+            [{"full_name": record.full_name}],
+            subject=f"供应商「{record.full_name}」",
+        )
         repository.delete(db, record)
         db.commit()
     except IntegrityError:
         db.rollback()
-        raise BusinessException("仍被引用，不能删除") from None
+        raise BusinessException(STILL_REFERENCED) from None
     except BusinessException:
         db.rollback()
         raise

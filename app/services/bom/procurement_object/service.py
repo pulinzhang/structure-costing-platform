@@ -61,6 +61,7 @@ from app.services.bom.procurement_object.supplier_upload.service import (
 from app.services.masterdata.location.service import LocationService
 from app.services.masterdata.supplier.service import SupplierService
 from app.services.masterdata.vehicle_model.service import VehicleModelService
+from app.services.settings.schema_comment.service import ensure_deletable
 
 
 class ProcurementObjectListFilters(TypedDict):
@@ -333,6 +334,7 @@ class BomProcurementObjectService:
         if row.audit_status == AUDIT_APPROVED:
             raise BusinessException(EC_ROLLBACK_BLOCKED, code=409)
         list_id = row.list_id
+        ensure_deletable(db, "bom_procurement_objects", [{"id": row.id}], subject="该采购对象")
         self.repository.delete_object(db, row)
         self.delete_list_if_empty_for_engineering_change_rollback(db, list_id)
 
@@ -346,4 +348,7 @@ class BomProcurementObjectService:
         objects = self.repository.list_objects_by_list_id(db, header.id)
         if objects:
             return
+        ensure_deletable(
+            db, "bom_procurement_object_lists", [{"id": header.id}], subject="该采购对象清单"
+        )
         self.repository.delete_list(db, header)

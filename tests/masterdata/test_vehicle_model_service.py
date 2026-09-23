@@ -426,8 +426,10 @@ def test_delete_blocked_when_child_row_exists(memory_db: Session) -> None:
         current_user=SYSTEM_USER,
     )
     assert updated.effective_year == 2024
-    with pytest.raises(BusinessException, match="仍被引用，不能删除"):
+    with pytest.raises(BusinessException, match="仍被引用，不能删除") as caught:
         VehicleModelService().delete(memory_db, "青岛", "T13J")
+    assert "stamping_gauge_fees" in (caught.value.audit_detail or "")
+    assert "请联系管理员处理" in (caught.value.audit_detail or "")
 
 
 def test_gauge_fee_declares_vehicle_model_fk(memory_db: Session) -> None:
@@ -444,8 +446,10 @@ def test_gauge_fee_declares_vehicle_model_fk(memory_db: Session) -> None:
 def test_location_delete_blocked_when_project_exists(memory_db: Session) -> None:
     _seed(memory_db)
     _create(memory_db)
-    with pytest.raises(BusinessException, match="仍被引用，不能删除"):
+    with pytest.raises(BusinessException, match="仍被引用，不能删除") as caught:
         LocationService().delete(memory_db, "青岛")
+    assert "vehicle_models" in (caught.value.audit_detail or "")
+    assert caught.value.message == "仍被引用，不能删除"
 
 
 def test_assert_matches_selected(memory_db: Session) -> None:

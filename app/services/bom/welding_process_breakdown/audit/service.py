@@ -25,10 +25,7 @@ from app.schemas.vo.bom_welding_process_breakdown_vo import (
 )
 from app.schemas.vo.user_vo import UserVO
 from app.services.bom.bom.period import BomPeriodService
-
-WELDING_FEE_REFERENCED = (
-    "删不了：请打开「焊接工程 → 焊接费 → 焊接费列表」，删掉对应焊接费后再回来删拆解。"
-)
+from app.services.settings.schema_comment.service import STILL_REFERENCED, ensure_deletable
 
 
 def _normalize_scope(
@@ -88,7 +85,20 @@ class BomWeldingProcessBreakdownAuditService:
             source_node_ids=source_node_ids,
             statuses=[AUDIT_APPROVED],
         )
+        node_ids = self.repository.list_unaudited_ids(
+            db,
+            location=location,
+            vehicle_model=vehicle_model,
+            source_node_ids=source_node_ids,
+        )
         try:
+            if node_ids:
+                ensure_deletable(
+                    db,
+                    "bom_welding_process_breakdown_node",
+                    [{"id": node_id} for node_id in node_ids],
+                    subject="这些焊接工艺拆解",
+                )
             deleted = self.repository.delete_unaudited_by_scope(
                 db,
                 location=location,
@@ -98,7 +108,7 @@ class BomWeldingProcessBreakdownAuditService:
             db.commit()
         except IntegrityError:
             db.rollback()
-            raise BusinessException(WELDING_FEE_REFERENCED) from None
+            raise BusinessException(STILL_REFERENCED) from None
         return BomWeldingProcessBreakdownBatchDeleteResultVO(
             location=location,
             vehicle_model=vehicle_model,

@@ -16,6 +16,7 @@ from app.repositories.bom.packaging_transport_fee_repository import (
 )
 from app.schemas.dto.bom_packaging_transport_fee_dto import BomPackagingTransportFeeCreate
 from app.schemas.vo.user_vo import UserVO
+from app.services.settings.schema_comment.service import ensure_deletable
 
 
 @dataclass(slots=True, frozen=True)
@@ -86,6 +87,9 @@ def delete_for_engineering_change_rollback(
     record = repository.get_by_id(db, fee_id)
     if record is None:
         return
+    ensure_deletable(
+        db, "bom_packaging_transport_fees", [{"id": record.id}], subject="该包装运输费"
+    )
     repository.delete(db, record.id)
 
 

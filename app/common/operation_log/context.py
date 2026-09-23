@@ -13,6 +13,7 @@ _PERM_KEY = "operation_log_permission_code"
 _SCOPE_KEY = "operation_log_audit_scope"
 _UPLOAD_FILENAMES_KEY = "operation_log_upload_filenames"
 _ERROR_MESSAGE_KEY = "operation_log_error_message"
+_REFERENCE_DETAIL_KEY = "operation_log_reference_detail"
 
 
 class OperationAuditScope(TypedDict, total=False):
@@ -95,6 +96,19 @@ def set_request_error_message(request: Request, message: str) -> None:
 
 def get_request_error_message(request: Request) -> str | None:
     value = getattr(request.state, _ERROR_MESSAGE_KEY, None)
+    if not isinstance(value, str):
+        return None
+    text = value.strip()
+    return text or None
+
+
+def set_request_reference_detail(request: Request, detail: str) -> None:
+    """删除被引用挡住时的明细。不进接口响应。"""
+    setattr(request.state, _REFERENCE_DETAIL_KEY, detail)
+
+
+def get_request_reference_detail(request: Request) -> str | None:
+    value = getattr(request.state, _REFERENCE_DETAIL_KEY, None)
     if not isinstance(value, str):
         return None
     text = value.strip()

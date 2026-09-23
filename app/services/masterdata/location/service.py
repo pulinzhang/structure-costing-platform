@@ -21,6 +21,7 @@ from app.schemas.dto.location_dto import (
 )
 from app.schemas.vo.location_vo import LocationVO
 from app.schemas.vo.user_vo import UserVO
+from app.services.settings.schema_comment.service import STILL_REFERENCED, ensure_deletable
 
 logger = logging.getLogger("service.location")
 
@@ -160,11 +161,17 @@ class LocationService:
     def delete(self, db: Session, location: str) -> None:
         record = self._require_row(db, location)
         try:
+            ensure_deletable(
+                db,
+                "locations",
+                [{"location": record.location}],
+                subject=f"基地「{record.location}」",
+            )
             self.repository.delete(db, record)
             db.commit()
         except IntegrityError:
             db.rollback()
-            raise BusinessException("仍被引用，不能删除") from None
+            raise BusinessException(STILL_REFERENCED) from None
         except BusinessException:
             db.rollback()
             raise

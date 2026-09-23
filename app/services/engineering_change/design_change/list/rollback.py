@@ -39,11 +39,11 @@ from app.repositories.engineering_change.design_change.upload_log_repository imp
 )
 from app.schemas.vo.user_vo import UserVO
 from app.services.bom.annual_part_price.service import BomAnnualPartPriceService
-from app.services.bom.bom.delete_block import explain_rollback_blocked
 from app.services.bom.bom.engineering import BomEngineeringService
 from app.services.bom.packaging_transport_fee.service import BomPackagingTransportFeeService
 from app.services.bom.procurement_object.service import BomProcurementObjectService
 from app.services.bom.welding_process_breakdown.service import BomWeldingProcessBreakdownService
+from app.services.settings.schema_comment.service import STILL_REFERENCED, ensure_deletable
 from app.services.stamping.die.engineering.service import StampingDieEngineeringService
 from app.services.stamping.die_fee.service import StampingDieFeeService
 from app.services.stamping.gauge_fee.service import StampingGaugeFeeService
@@ -93,15 +93,36 @@ class EngineeringChangeRollbackService:
                     raise BusinessException(EC_ROLLBACK_BLOCKED, code=409)
 
         links = self.link_repo.list_by_upload_log_id_desc(db, upload_log_id)
-        link_facts = [(link.effect_kind, link.after_id) for link in links]
         location = log_row.location
         vehicle_model = log_row.vehicle_model
         try:
             if log_row.status == "success":
                 for link in links:
                     self._rollback_link(db, link, current_user=current_user)
+            link_ids = [link.id for link in links]
+            if link_ids:
+                ensure_deletable(
+                    db,
+                    "engineering_change_effect_links",
+                    [{"id": link_id} for link_id in link_ids],
+                    subject="这些设计变更效果",
+                )
             self.link_repo.delete_by_upload_log_id(db, upload_log_id)
+            order_ids = [change_order.id for change_order in change_orders]
+            if order_ids:
+                ensure_deletable(
+                    db,
+                    "engineering_change_orders",
+                    [{"id": order_id} for order_id in order_ids],
+                    subject="这些设计变更单",
+                )
             self.change_order_repo.delete_by_upload_log_id(db, upload_log_id)
+            ensure_deletable(
+                db,
+                "engineering_change_upload_logs",
+                [{"id": log_row.id}],
+                subject=f"设计变更「{location} {vehicle_model}」",
+            )
             self.log_repo.delete(db, log_row)
             db.commit()
         except BusinessException:
@@ -109,15 +130,7 @@ class EngineeringChangeRollbackService:
             raise
         except IntegrityError:
             db.rollback()
-            raise BusinessException(
-                explain_rollback_blocked(
-                    db,
-                    link_facts,
-                    location=location,
-                    vehicle_model=vehicle_model,
-                ),
-                code=409,
-            ) from None
+            raise BusinessException(STILL_REFERENCED) from None
         except Exception:
             db.rollback()
             logger.exception("工程变更回滚失败 upload_log_id=%s", upload_log_id)

@@ -8,7 +8,10 @@ from fastapi.exceptions import RequestValidationError
 from fastapi.responses import JSONResponse
 from pydantic import ValidationError
 
-from app.common.operation_log.context import set_request_error_message
+from app.common.operation_log.context import (
+    set_request_error_message,
+    set_request_reference_detail,
+)
 from app.common.operation_log.error_message import (
     GENERIC_PUBLIC_ERROR,
     VALIDATION_FAIL_PREFIX,
@@ -59,10 +62,12 @@ async def business_exception_handler(request: Request, exc: BusinessException) -
     注意：透传 HTTP 状态码
     """
     set_request_error_message(request, exc.message)
+    if exc.audit_detail:
+        set_request_reference_detail(request, exc.audit_detail)
     return JSONResponse(
         status_code=exc.code,  # 透传业务异常码
         content=ApiResponse.fail(
-            message=exc.message,
+            message=exc.audit_detail or exc.message,
             code=exc.code,
             data=exc.data,
         ).model_dump(),

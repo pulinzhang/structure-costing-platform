@@ -13,6 +13,7 @@ from app.models.bom.annual_part_price import BomAnnualPartPrice
 from app.repositories.bom.annual_part_price_repository import BomAnnualPartPriceRepository
 from app.schemas.dto.bom_annual_part_price_dto import BomAnnualPartPriceCreate
 from app.schemas.vo.user_vo import UserVO
+from app.services.settings.schema_comment.service import ensure_deletable
 
 
 @dataclass(slots=True, frozen=True)
@@ -74,6 +75,7 @@ def delete_for_engineering_change_rollback(
     record = repository.get_by_id(db, price_id)
     if record is None:
         return
+    ensure_deletable(db, "bom_annual_part_prices", [{"id": record.id}], subject="该年度零件价")
     repository.delete(db, record.id)
 
 

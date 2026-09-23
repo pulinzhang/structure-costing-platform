@@ -26,6 +26,7 @@ from app.schemas.vo.stamping_die_vo import (
 from app.schemas.vo.user_vo import UserVO
 from app.services.masterdata.location.service import LocationService
 from app.services.masterdata.vehicle_model.service import VehicleModelService
+from app.services.settings.schema_comment.service import STILL_REFERENCED, ensure_deletable
 
 
 class StampingDieService:
@@ -127,14 +128,24 @@ class StampingDieService:
         locations = LocationService().expand_for_query(db, location)
         if not locations:
             return StampingDieBatchDeleteResultVO(deleted_parts=0)
+        part_ids = self.die_part_repo.list_ids_for_scope(
+            db, locations=locations, vehicle_model=vehicle_model
+        )
         try:
+            if part_ids:
+                ensure_deletable(
+                    db,
+                    "stamping_die_parts",
+                    [{"id": part_id} for part_id in part_ids],
+                    subject="这些模具零件",
+                )
             deleted = self.die_part_repo.delete_scope(
                 db, locations=locations, vehicle_model=vehicle_model
             )
             db.commit()
         except IntegrityError:
             db.rollback()
-            raise BusinessException("仍被冲压模具费引用，请先删除对应模具费后再删") from None
+            raise BusinessException(STILL_REFERENCED) from None
         except Exception:
             db.rollback()
             raise

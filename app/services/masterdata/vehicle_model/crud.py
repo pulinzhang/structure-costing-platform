@@ -36,6 +36,7 @@ from app.services.masterdata.vehicle_model.identity import (
     to_vo,
     validate_period,
 )
+from app.services.settings.schema_comment.service import STILL_REFERENCED, ensure_deletable
 
 logger = logging.getLogger("service.vehicle_model")
 
@@ -190,11 +191,17 @@ def delete_vehicle_model(
 ) -> None:
     record = require_row(repository, location, vehicle_model, db)
     try:
+        ensure_deletable(
+            db,
+            "vehicle_models",
+            [{"location": record.location, "vehicle_model": record.vehicle_model}],
+            subject=f"项目「{record.vehicle_model}」",
+        )
         repository.delete(db, record)
         db.commit()
     except IntegrityError:
         db.rollback()
-        raise BusinessException("仍被引用，不能删除") from None
+        raise BusinessException(STILL_REFERENCED) from None
     except BusinessException:
         db.rollback()
         raise
