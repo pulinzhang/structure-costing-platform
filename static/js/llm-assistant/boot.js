@@ -1,10 +1,10 @@
 /**
- * 采购助理入口：就绪队列 + 顶栏挂载 + 权限门禁
+ * 采购助理入口：就绪队列 + 右侧常驻圆钮 + 权限门禁
  */
 
 import { can } from '../core/permissions.js?v=12';
 import { getUserSession } from '../features/login/index.js?v=17';
-import { createShell } from './shell.js?v=40';
+import { createShell } from './shell.js?v=55';
 
 const QUEUE_KEY = '_q';
 
@@ -45,27 +45,7 @@ export function bootLlmAssistant() {
     const canView = can('op:llm-analysis:view') || can('op:llm-analysis:run');
     const canRun = can('op:llm-analysis:run');
 
-    const headerRight = document.querySelector('.page-header-right');
-    let entryHost = document.getElementById('llmAssistantEntry');
-    if (!entryHost && headerRight) {
-        entryHost = document.createElement('span');
-        entryHost.id = 'llmAssistantEntry';
-        entryHost.className = 'inline-flex';
-        const helpLink = headerRight.querySelector('a[href="/helper/"]');
-        if (helpLink) {
-            headerRight.insertBefore(entryHost, helpLink);
-        } else {
-            const topActions = headerRight.querySelector('#topActions');
-            if (topActions?.nextSibling) {
-                headerRight.insertBefore(entryHost, topActions.nextSibling);
-            } else {
-                headerRight.prepend(entryHost);
-            }
-        }
-    }
-
     if (!canView) {
-        if (entryHost) entryHost.innerHTML = '';
         window.LlmAssistant = {
             __ready: true,
             [QUEUE_KEY]: [],
@@ -79,7 +59,6 @@ export function bootLlmAssistant() {
     const shell = createShell({
         canView,
         canRun,
-        entryHost,
         getUserId: () => {
             const session = getUserSession();
             return session?.user_id || session?.id || session?.username || 'anon';

@@ -8,43 +8,71 @@
  *   canRun: boolean,
  *   busy?: boolean,
  *   onSubmit: (text: string) => void,
+ *   onDismissCarry?: () => void,
  * }} options
  */
 export function mountComposer(root, options) {
     const canRun = Boolean(options.canRun);
     const busy = Boolean(options.busy);
 
+    root.dataset.canRun = canRun ? '1' : '0';
+    root.dataset.busy = busy ? '1' : '0';
     root.innerHTML = `
-<div id="llmComposerCarry" class="hidden mb-1.5 text-[10px] text-ink-muted truncate" title=""></div>
-<div class="flex items-end gap-2">
+<div id="llmComposerCarry" class="hidden mb-2 flex items-center gap-1 max-w-full">
+  <span id="llmComposerCarryText" class="min-w-0 truncate text-[12px] leading-5 text-ink"></span>
+  <button type="button" id="llmComposerCarryClear"
+          class="shrink-0 w-5 h-5 inline-flex items-center justify-center rounded-full text-ink-faint hover:text-ink hover:bg-app-elevated"
+          aria-label="不沿用上一问范围" title="不沿用">×</button>
+</div>
+<div class="rounded-2xl border border-line-subtle bg-app-surface focus-within:border-ink-muted transition-colors">
   <textarea id="llmComposerInput" rows="2"
-            placeholder="${canRun ? '输入问题，Enter 发送 / Shift+Enter 换行' : '无生成权限，仅可查看'}"
-            class="flex-1 resize-none px-2 py-1.5 text-[11px] leading-relaxed bg-app-deep border border-line text-ink placeholder:text-ink-faint focus:outline-none focus:border-brand-active rounded-sm disabled:opacity-50"
-            ${!canRun || busy ? 'disabled' : ''}></textarea>
-  <button type="button" id="llmComposerSend"
-          class="shrink-0 h-9 px-3 text-[11px] font-medium bg-brand text-ink-onbrand hover:bg-brand-hover disabled:opacity-40 disabled:cursor-not-allowed rounded-sm transition-colors"
-          ${!canRun || busy ? 'disabled' : ''}>发送</button>
+            placeholder="${canRun ? '问一句…' : '无生成权限，仅可查看'}"
+            title="Enter 发送，Shift+Enter 换行"
+            class="block w-full resize-none bg-transparent px-3.5 pt-3 pb-1 min-h-16 text-[13px] leading-relaxed text-ink placeholder:text-ink-faint focus:outline-none disabled:opacity-50 max-h-40"></textarea>
+  <div class="flex items-center justify-end px-2 pb-2">
+    <button type="button" id="llmComposerSend" aria-label="发送" title="发送"
+            class="inline-flex items-center justify-center w-7 h-7 rounded-full bg-ink text-app-deep disabled:bg-ink/20 disabled:text-ink-muted disabled:cursor-not-allowed">
+      <svg class="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
+        <path stroke-linecap="round" stroke-linejoin="round" d="M12 19V5M6 12l6-6 6 6"/>
+      </svg>
+    </button>
+  </div>
 </div>`;
 
     const input = root.querySelector('#llmComposerInput');
     const sendBtn = root.querySelector('#llmComposerSend');
 
     const submit = () => {
-        if (!canRun) return;
+        if (root.dataset.canRun === '0') return;
+        if (root.dataset.busy === '1') return;
         if (sendBtn?.disabled) return;
         const text = String(input?.value || '').trim();
         if (!text) return;
         options.onSubmit(text);
-        if (input) input.value = '';
+        if (input) {
+            input.value = '';
+            fitComposerInput(input);
+            input.focus();
+        }
+        syncComposerControls(root);
     };
 
     sendBtn?.addEventListener('click', submit);
+    input?.addEventListener('input', () => {
+        fitComposerInput(input);
+        syncComposerControls(root);
+    });
     input?.addEventListener('keydown', (event) => {
         if (event.key === 'Enter' && !event.shiftKey) {
             event.preventDefault();
             submit();
         }
     });
+    root.querySelector('#llmComposerCarryClear')?.addEventListener('click', () => {
+        options.onDismissCarry?.();
+    });
+    if (input) fitComposerInput(input);
+    syncComposerControls(root);
 }
 
 /**
@@ -53,11 +81,38 @@ export function mountComposer(root, options) {
  * @param {boolean} canRun
  */
 export function setComposerBusy(root, busy, canRun) {
+    if (!root) return;
+    root.dataset.canRun = canRun ? '1' : '0';
+    root.dataset.busy = busy ? '1' : '0';
+    syncComposerControls(root);
+}
+
+/**
+ * 空输入时发送钮保持灰圆，有字才亮起。
+ * @param {HTMLElement} root
+ */
+function syncComposerControls(root) {
     const input = root.querySelector('#llmComposerInput');
     const sendBtn = root.querySelector('#llmComposerSend');
-    const disabled = !canRun || busy;
-    if (input) input.disabled = disabled;
-    if (sendBtn) sendBtn.disabled = disabled;
+    const canRun = root.dataset.canRun !== '0';
+    const busy = root.dataset.busy === '1';
+    const hasText = Boolean(String(input?.value || '').trim());
+    if (input) input.disabled = !canRun;
+    if (sendBtn) sendBtn.disabled = !canRun || busy || !hasText;
+}
+
+/**
+ * @param {HTMLTextAreaElement} input
+ */
+function fitComposerInput(input) {
+    input.style.height = 'auto';
+    const measured = input.scrollHeight;
+    // 面板还是 hidden 时 scrollHeight 为 0，写进去会把两行高压没。
+    if (measured <= 0) {
+        input.style.height = '';
+        return;
+    }
+    input.style.height = `${Math.min(measured, 160)}px`;
 }
 
 /**
@@ -67,16 +122,18 @@ export function setComposerBusy(root, busy, canRun) {
  */
 export function setComposerCarry(root, carry, scope) {
     const bar = root?.querySelector('#llmComposerCarry');
-    if (!bar) return;
+    const label = root?.querySelector('#llmComposerCarryText');
+    if (!bar || !label) return;
     const text = formatCarryText(carry, scope);
     if (!text) {
-        bar.textContent = '';
+        label.textContent = '';
         bar.setAttribute('title', '');
         bar.classList.add('hidden');
         return;
     }
-    bar.textContent = `沿用：${text}`;
-    bar.setAttribute('title', `沿用：${text}`);
+    const shown = `沿用上一问：${text}`;
+    label.textContent = shown;
+    bar.setAttribute('title', shown);
     bar.classList.remove('hidden');
 }
 

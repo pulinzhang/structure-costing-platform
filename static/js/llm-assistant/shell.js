@@ -4,23 +4,23 @@
  */
 
 import { createReport, getReport } from './api.js';
-import { mountChips, setChipsDisabled, setChipsVisible } from './chat/chips.js?v=4';
-import { mountComposer, setComposerBusy, setComposerCarry } from './chat/composer.js?v=6';
+import { mountComposer, setComposerBusy, setComposerCarry } from './chat/composer.js?v=9';
 import { humanizeUserFacingError } from './errors.js';
-import { renderThread } from './chat/thread.js?v=14';
+import { renderThread } from './chat/thread.js?v=18';
 import { printAssistantMessage, closePrintPreview } from './export/print.js?v=13';
 import { downloadWordDocument } from './export/word.js?v=8';
-import { findPrompt, fillPromptTemplate } from './prompts/catalog.js?v=7';
+import { findPrompt, fillPromptTemplate } from './prompts/catalog.js?v=9';
 import { applyReportToMessage } from './report/apply-report.js?v=4';
-import { openHistoryPanel } from './report/history.js?v=11';
+import { openHistoryPanel } from './report/history.js?v=12';
 import {
     buildStorageKey,
     clearConversation,
     loadConversation,
     saveConversation,
 } from './storage/conversation.js';
+import { applyPanelWidth, bindPanelResize } from './panel-size.js?v=2';
 import { pollTask } from './task/poller.js';
-import { entryButtonHtml, shellHtml } from './template.js?v=8';
+import { panelClass, shellHtml } from './template.js?v=18';
 
 /** @typedef {'closed'|'panel'|'maximized'|'docked'} AssistantMode */
 
@@ -34,13 +34,10 @@ export function createShell(options) {
     let messages = [];
     let conversationId = `c_local_${Date.now()}`;
     let busy = false;
+    /** 用户拿掉沿用条之后，下一问不再带上一份报告，直到这次提问自己写出新报告。 */
+    let carrySuppressed = false;
     /** @type {AbortController|null} */
     let pollAbort = null;
-
-    const entryHost = options.entryHost;
-    if (entryHost && canView) {
-        entryHost.innerHTML = entryButtonHtml();
-    }
 
     let root = document.getElementById('llmAssistantRoot');
     if (!root) {
@@ -57,20 +54,16 @@ export function createShell(options) {
         status: root.querySelector('#llmAssistantStatus'),
         thread: root.querySelector('#llmThread'),
         history: root.querySelector('#llmHistoryOverlay'),
-        chips: root.querySelector('#llmChips'),
         composer: root.querySelector('#llmComposer'),
-        entryBtn: entryHost?.querySelector('#llmAssistantEntryBtn'),
     };
 
-    remountChips();
     remountComposer();
     reloadThread();
+    bindPanelResize(els.panel, { isMaximized: () => mode === 'maximized' });
     applyMode('closed');
 
-    els.entryBtn?.addEventListener('click', () => open());
     els.dock?.addEventListener('click', () => setMode('panel'));
     els.mask?.addEventListener('click', () => setMode('docked'));
-    root.querySelector('#llmBtnClose')?.addEventListener('click', () => close());
     root.querySelector('#llmBtnDock')?.addEventListener('click', () => setMode('docked'));
     root.querySelector('#llmBtnMaximize')?.addEventListener('click', () => {
         setMode(mode === 'maximized' ? 'panel' : 'maximized');
@@ -90,7 +83,6 @@ export function createShell(options) {
                 if (messages.length !== before) {
                     renderThread(els.thread, messages);
                     persist();
-                    updateChipsVisibility();
                 }
             },
             onClose: () => {},
@@ -102,7 +94,6 @@ export function createShell(options) {
         conversationId = `c_local_${Date.now()}`;
         renderThread(els.thread, messages);
         setStatus('已清空本机对话');
-        updateChipsVisibility();
         refreshComposerCarry();
     });
 
@@ -133,26 +124,7 @@ export function createShell(options) {
         conversationId = stored.conversation_id;
         messages = stored.messages || [];
         renderThread(els.thread, messages);
-        updateChipsVisibility();
         refreshComposerCarry();
-    }
-
-    function updateChipsVisibility() {
-        setChipsVisible(els.chips, messages.length === 0);
-    }
-
-    function remountChips() {
-        mountChips(els.chips, {
-            disabled: busy || !canRun,
-            onPick: (item, text) => {
-                void submitQuestion({
-                    text,
-                    audience: item.audience,
-                    prompt_id: item.id,
-                    needs_part_number: item.needs_part_number,
-                });
-            },
-        });
     }
 
     function remountComposer() {
@@ -166,6 +138,7 @@ export function createShell(options) {
                     prompt_id: null,
                 });
             },
+            onDismissCarry: () => dismissCarry(),
         });
         refreshComposerCarry();
     }
@@ -173,11 +146,27 @@ export function createShell(options) {
     function setBusy(next) {
         busy = next;
         setComposerBusy(els.composer, busy, canRun);
-        setChipsDisabled(els.chips, busy || !canRun);
     }
 
     function setStatus(text) {
-        if (els.status) els.status.textContent = text || '就绪';
+        if (!els.status) return;
+        const label = String(text || '');
+        const quiet = isQuietStatus(label);
+        els.status.textContent = quiet ? '' : label;
+        els.status.classList.toggle('hidden', quiet);
+    }
+
+    /**
+     * 空闲和做完的提示不占标题。进行中和失败才显示。
+     * @param {string} label
+     * @returns {boolean}
+     */
+    function isQuietStatus(label) {
+        if (!label || label === '就绪') return true;
+        if (label === '完成' || label === '完成（缓存）' || label === '已完成' || label === '命中缓存') return true;
+        if (label === '已清空本机对话') return true;
+        if (label.startsWith('已在对话中') || label.startsWith('已打开')) return true;
+        return false;
     }
 
     function persist() {
@@ -188,7 +177,13 @@ export function createShell(options) {
         refreshComposerCarry();
     }
 
+    function dismissCarry() {
+        carrySuppressed = true;
+        refreshComposerCarry();
+    }
+
     function findPreviousReportId() {
+        if (carrySuppressed) return null;
         // 只沿用本线程提交或空线程种子。历史只读插入 (source=history) 和帮助回答不送 id。
         for (let index = messages.length - 1; index >= 0; index -= 1) {
             const msg = messages[index];
@@ -203,6 +198,10 @@ export function createShell(options) {
     }
 
     function refreshComposerCarry() {
+        if (carrySuppressed) {
+            setComposerCarry(els.composer, null, null);
+            return;
+        }
         const previousId = findPreviousReportId();
         const sourceMsg = previousId
             ? [...messages].reverse().find((item) => Number(item.report_id) === Number(previousId))
@@ -213,28 +212,28 @@ export function createShell(options) {
     function applyMode(next) {
         mode = next;
         const showPanel = mode === 'panel' || mode === 'maximized';
-        const showDock = mode === 'docked';
-        const showMask = showPanel;
+        const showDock = !showPanel;
+        const opening = showPanel && Boolean(els.panel?.classList.contains('hidden'));
 
         els.panel?.classList.toggle('hidden', !showPanel);
         els.dock?.classList.toggle('hidden', !showDock);
-        els.dock?.classList.toggle('flex', showDock);
-        els.mask?.classList.toggle('hidden', !showMask);
+        els.dock?.classList.toggle('inline-flex', showDock);
+        els.mask?.classList.toggle('hidden', !showPanel);
+        if (opening) focusComposer();
         els.history?.classList.add('hidden');
         closePrintPreview();
 
         if (els.panel) {
-            if (mode === 'maximized') {
-                els.panel.className =
-                    'fixed z-[110] flex flex-col overflow-hidden border border-line bg-app-main ' +
-                    'left-4 right-4 top-4 bottom-4 w-auto h-auto shadow-[0_16px_48px_rgb(var(--overlay)/0.65)]';
-            } else {
-                els.panel.className =
-                    'fixed z-[110] flex flex-col overflow-hidden border border-line bg-app-main ' +
-                    'w-[min(420px,calc(100vw-1.5rem))] top-4 bottom-4 right-4 h-auto ' +
-                    'shadow-[0_16px_48px_rgb(var(--overlay)/0.65)]';
-            }
+            els.panel.className = panelClass(mode === 'maximized');
             if (!showPanel) els.panel.classList.add('hidden');
+            applyPanelWidth(els.panel, mode === 'maximized');
+        }
+    }
+
+    function focusComposer() {
+        const input = els.composer?.querySelector('#llmComposerInput');
+        if (input instanceof HTMLTextAreaElement && !input.disabled) {
+            input.focus();
         }
     }
 
@@ -280,7 +279,6 @@ export function createShell(options) {
             messages = [...messages, userMsg, assistantMsg];
             renderThread(els.thread, messages);
             persist();
-            updateChipsVisibility();
             setStatus(`已打开 #${reportId}`);
         } catch (error) {
             window.showToast?.(error?.message || '加载失败', 'error');
@@ -303,7 +301,6 @@ export function createShell(options) {
             return;
         }
         reloadThread();
-        remountChips();
         setMode('panel');
 
         const promptId = opts.promptId || null;
@@ -365,6 +362,7 @@ export function createShell(options) {
             );
         }
 
+        const clearsSuppression = carrySuppressed;
         const previousReportId = findPreviousReportId();
         const userMsg = {
             id: `m_${Date.now()}_u`,
@@ -381,8 +379,7 @@ export function createShell(options) {
             created_at: new Date().toISOString(),
         };
         messages = [...messages, userMsg, assistantMsg];
-        renderThread(els.thread, messages);
-        updateChipsVisibility();
+        renderThread(els.thread, messages, { stick: true });
         persist();
         setBusy(true);
         setStatus('已提交分析…');
@@ -406,6 +403,7 @@ export function createShell(options) {
             if (task.carry) assistantMsg.carry = task.carry;
             if (task.scope) assistantMsg.scope = task.scope;
             if (task.resolved_report_type) assistantMsg.resolved_report_type = task.resolved_report_type;
+            if (clearsSuppression) carrySuppressed = false;
             persist();
 
             let report = null;
@@ -453,7 +451,6 @@ export function createShell(options) {
         } finally {
             setBusy(false);
             pollAbort = null;
-            remountChips();
         }
     }
 
