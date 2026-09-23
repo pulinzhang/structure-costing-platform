@@ -969,13 +969,13 @@ async function batchDelete() {
     if (!listState.canDelete) return showToast('无删除权限', 'warning');
     const scope = requireScope();
     if (!scope) return;
-    if (!window.confirm('确认删除当前范围未审核记录？已审核将跳过。')) return;
+    if (!await window.confirmAction('确认删除当前范围未审核记录？已审核将跳过。')) return;
     try {
         const res = await HttpClient.post(`${API_BASE}/batch-delete`, scope);
         showToast(res.message || '删除完成', 'success');
         loadList(1);
     } catch (error) {
-        showToast(error.message || '删除失败', 'error');
+        console.error('删除失败:', error);
     }
 }
 

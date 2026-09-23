@@ -404,7 +404,7 @@ async function deleteAllCalcLogs() {
         showToast('无删除权限', 'warning');
         return;
     }
-    if (!window.confirm('确定删除全部计算历史？仅删除日志，不影响已落库的加工费。计算中的记录删除后将释放锁。')) {
+    if (!await window.confirmAction('确定删除全部计算历史？仅删除日志，不影响已落库的加工费。计算中的记录删除后将释放锁。')) {
         return;
     }
     try {
@@ -414,7 +414,7 @@ async function deleteAllCalcLogs() {
         loadCalcHistory(1);
     } catch (error) {
         console.error('清空计算历史失败:', error);
-        showToast(error.message || '删除失败', 'error');
+        console.error('删除失败:', error);
     }
 }
 
@@ -424,7 +424,7 @@ async function deleteCalcLog(logId) {
         showToast('无删除权限', 'warning');
         return;
     }
-    if (!window.confirm('确定删除这条计算历史？计算中的记录删除后将释放锁；仅删除日志，不影响已落库的加工费。')) {
+    if (!await window.confirmAction('确定删除这条计算历史？计算中的记录删除后将释放锁；仅删除日志，不影响已落库的加工费。')) {
         return;
     }
     try {
@@ -437,7 +437,7 @@ async function deleteCalcLog(logId) {
         loadCalcHistory(nextPage);
     } catch (error) {
         console.error('删除计算历史失败:', error);
-        showToast(error.message || '删除失败', 'error');
+        console.error('删除失败:', error);
     }
 }
 

@@ -161,13 +161,15 @@ a:hover { color: var(--color__link--hover); text-decoration: none; }
 .nav-label {
   font-family: inherit;
   font-size: 11px;
-  letter-spacing: 0.08em;
+  letter-spacing: 0;
   color: var(--dim);
   margin: 24px 0 8px;
-  text-transform: uppercase;
+  text-transform: none;
 }
 
 .nav ul { list-style: none; }
+.page-toc ul { margin: 0; padding: 0 0 4px; }
+.page-toc li li a { padding-left: 24px; font-size: 13px; }
 .nav li a strong {
   font-weight: inherit;
   color: inherit;
@@ -206,8 +208,8 @@ a:hover { color: var(--color__link--hover); text-decoration: none; }
 .hero-link a {
   font-size: 13px;
   font-weight: 500;
-  letter-spacing: 0.1em;
-  text-transform: uppercase;
+  letter-spacing: 0;
+  text-transform: none;
   color: var(--color__text);
   border-bottom: 1px solid var(--color__border);
   padding-bottom: 3px;
@@ -233,8 +235,8 @@ a:hover { color: var(--color__link--hover); text-decoration: none; }
   font-family: inherit;
   font-size: 13px;
   font-weight: 500;
-  letter-spacing: 0.08em;
-  text-transform: uppercase;
+  letter-spacing: 0;
+  text-transform: none;
   padding: 10px 22px 12px;
   border: 1px solid transparent;
   text-decoration: none;
@@ -487,19 +489,20 @@ td:first-child {
 
 .callout {
   border: 0;
-  border-top: 1px solid var(--color__border);
-  border-bottom: 1px solid var(--color__border);
-  background: transparent;
-  padding: 20px 0;
+  border-left: 3px solid var(--color__text--muted);
+  background: var(--color__background--subtle);
+  padding: 16px 20px 18px;
   margin: 28px 0;
   font-size: 16px;
   font-weight: 400;
   color: var(--color__text);
 }
-.callout.warn,
 .callout.ok {
-  border-left: 0;
-  background: transparent;
+  border-left-color: var(--color__text);
+}
+.callout.warn {
+  border-left-color: var(--color__accent);
+  background: var(--red-soft);
 }
 
 figure.shot {
@@ -507,7 +510,6 @@ figure.shot {
   border: 0;
   background: transparent;
   overflow: visible;
-  max-width: 52rem;
 }
 figure.shot img {
   display: block;
@@ -529,7 +531,6 @@ figure.shot figcaption {
   grid-template-columns: 1fr;
   gap: 8px;
   margin: 28px 0 36px;
-  max-width: 52rem;
 }
 .shot-grid figure.shot { margin: 0; }
 
@@ -552,8 +553,8 @@ figure.shot figcaption {
   font-family: inherit;
   font-size: 11px;
   font-weight: 500;
-  letter-spacing: 0.08em;
-  text-transform: uppercase;
+  letter-spacing: 0;
+  text-transform: none;
   color: var(--color__text--muted);
   margin-bottom: 6px;
 }
@@ -1310,6 +1311,16 @@ figure.shot figcaption {
     background: transparent !important;
     border: 0 !important;
     break-inside: avoid;
+  }
+  .callout {
+    background: #f5f5f5 !important;
+    border-left: 2.5pt solid #666666 !important;
+    padding: 8pt 10pt 8pt 12pt !important;
+  }
+  .callout.ok { border-left-color: #010101 !important; }
+  .callout.warn {
+    border-left-color: #b70826 !important;
+    background: #f8e8eb !important;
   }
   .print-sheet {
     border-collapse: separate !important;

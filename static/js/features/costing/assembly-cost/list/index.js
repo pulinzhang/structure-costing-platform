@@ -705,7 +705,7 @@ async function batchDelete() {
     if (!listState.canDelete) return showToast('无删除权限', 'warning');
     const scope = requireBatchScope('批量删除');
     if (!scope) return;
-    if (!window.confirm(
+    if (!await window.confirmAction(
         '确认删除该年该月、该基地、该项目的全部未审核核价卡？'
         + '本次不看列表是财务还是零件成本，也不看版本筛选。已审核将跳过。',
     )) return;

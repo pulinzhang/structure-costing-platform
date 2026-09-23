@@ -73,7 +73,7 @@
  * ├── file-trace/                # 文件溯源
  * ├── engineering-change/        # 工程变更（侧栏在文件溯源之下）
  * │   ├── design-change/         # 设计变更（现网上传与列表）
- * │   └── material-change/       # 材料变更（目录占位，无页面）
+ * │   └── material-change/       # 材料变更（上传 / 列表）
  * ├── masterdata/                # 主数据
  * │   ├── location/              # 基地
  * │   ├── steel-grade-category/  # 牌号分类
@@ -339,6 +339,16 @@ export const pageMeta = {
         title: '工程变更单列表',
         en: 'ENGINEERING_CHANGE_ORDER_LIST',
         breadcrumb: ['工程变更', '设计变更', '工程变更单列表'],
+    },
+    'engineering-change-material-upload': {
+        title: '上传材料变更',
+        en: 'MATERIAL_CHANGE_UPLOAD',
+        breadcrumb: ['工程变更', '材料变更', '上传材料变更'],
+    },
+    'engineering-change-material-list': {
+        title: '材料变更列表',
+        en: 'MATERIAL_CHANGE_LIST',
+        breadcrumb: ['工程变更', '材料变更', '材料变更列表'],
     },
     costing: {
         title: '自动核价引擎',

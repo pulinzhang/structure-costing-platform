@@ -351,7 +351,7 @@ function renderHistoryRows(items) {
 
 async function deleteAllCalcLogs() {
     if (calcState.canDelete === false) return;
-    if (!window.confirm('确定删除全部计算历史？仅删除日志，不影响已落库模具费。进行中的记录不会删除。')) {
+    if (!await window.confirmAction('确定删除全部计算历史？仅删除日志，不影响已落库模具费。进行中的记录不会删除。')) {
         return;
     }
     try {
@@ -360,19 +360,19 @@ async function deleteAllCalcLogs() {
         showToast(`已删除 ${count} 条`, 'success');
         loadCalcHistory(1);
     } catch (error) {
-        showToast(error.message || '删除失败', 'error');
+        console.error('删除失败:', error);
     }
 }
 
 async function deleteCalcLog(logId) {
     if (!logId || calcState.canDelete === false) return;
-    if (!window.confirm('确定删除这条计算历史？仅删日志，不影响已落库模具费。')) return;
+    if (!await window.confirmAction('确定删除这条计算历史？仅删日志，不影响已落库模具费。')) return;
     try {
         await HttpClient.delete(`${CALC_LOGS_API}/${logId}`);
         showToast('删除成功', 'success');
         loadCalcHistory(calcState.history.page);
     } catch (error) {
-        showToast(error.message || '删除失败', 'error');
+        console.error('删除失败:', error);
     }
 }
 

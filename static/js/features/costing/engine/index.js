@@ -1767,7 +1767,7 @@ function renderPager() {
 
 async function deleteRun(runId) {
     if (engineState.isDeleting) return;
-    const ok = window.confirm(
+    const ok = await window.confirmAction(
         '确认删除该引擎 Run？\n用于清理中断/卡住任务；不会撤销已写入的钢材/零件/L0 等业务价格。'
     );
     if (!ok) return;
@@ -1796,7 +1796,7 @@ async function deleteAllRuns() {
         return;
     }
     if (engineState.isDeleting) return;
-    const ok = window.confirm(
+    const ok = await window.confirmAction(
         '确认删除全部引擎运行历史？\n用于清理中断/卡住任务；不会撤销已写入的钢材/零件/L0 等业务价格。'
     );
     if (!ok) return;

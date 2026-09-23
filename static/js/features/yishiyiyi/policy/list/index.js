@@ -519,7 +519,7 @@ async function batchDeletePolicies() {
     }
 
     const millLabel = steelMill || '全部钢厂';
-    const confirmed = window.confirm(
+    const confirmed = await window.confirmAction(
         `确定要删除以下条件的政策数据吗？\n\n${fmtPeriod(year, month)} · 钢厂: ${millLabel}\n\n此操作不可恢复！`
     );
 
@@ -575,7 +575,6 @@ async function batchDeletePolicies() {
 
     } catch (error) {
         console.error('删除政策失败:', error);
-        showToast(`删除失败: ${error.message}`, 'error');
     } finally {
         // 恢复按钮状态
         if (btnDelete) {

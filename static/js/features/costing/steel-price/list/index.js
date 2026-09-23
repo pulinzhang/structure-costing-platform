@@ -442,7 +442,7 @@ async function batchDeleteByFilters() {
     if (filters.grade) parts.push(`牌号: ${filters.grade}`);
     if (filters.steel_mill) parts.push(`钢厂: ${filters.steel_mill}`);
 
-    const confirmed = window.confirm(
+    const confirmed = await window.confirmAction(
         `确定按以下条件批量删除未审核记录吗？\n\n${parts.join(' | ')}\n\n仅删除待审已驳回；已审核通过的记录会跳过。此操作不可恢复！`
     );
     if (!confirmed) return;

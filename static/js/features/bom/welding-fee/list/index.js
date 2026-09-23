@@ -814,7 +814,7 @@ async function submitBatchAudit() {
 async function batchDelete() {
     const scope = requireScope();
     if (!scope) return;
-    if (!window.confirm(`确定删除未审核的焊接费？\n${formatBatchScope(scope)}\n已审核记录将跳过。`)) {
+    if (!await window.confirmAction(`确定删除未审核的焊接费？\n${formatBatchScope(scope)}\n已审核记录将跳过。`)) {
         return;
     }
     try {
@@ -823,7 +823,7 @@ async function batchDelete() {
         showToast(`删除完成：删除 ${data.deleted_count ?? 0}，跳过 ${data.skipped_approved_count ?? 0}`, 'success');
         loadData(1);
     } catch (error) {
-        showToast(error.message || '删除失败', 'error');
+        console.error('删除失败:', error);
     }
 }
 

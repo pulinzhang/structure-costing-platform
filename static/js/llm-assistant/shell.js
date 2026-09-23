@@ -12,7 +12,7 @@ import { printAssistantMessage, closePrintPreview } from './export/print.js?v=13
 import { downloadWordDocument } from './export/word.js?v=8';
 import { findPrompt, fillPromptTemplate } from './prompts/catalog.js?v=7';
 import { applyReportToMessage } from './report/apply-report.js?v=4';
-import { openHistoryPanel } from './report/history.js?v=9';
+import { openHistoryPanel } from './report/history.js?v=11';
 import {
     buildStorageKey,
     clearConversation,

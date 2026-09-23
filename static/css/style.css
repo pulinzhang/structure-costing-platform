@@ -835,7 +835,8 @@ textarea:-webkit-autofill:active {
     box-shadow: var(--glow-brand);
 }
 
-.group:hover .hud-brand-glow-hover {
+.group:hover .hud-brand-glow-hover,
+.hud-brand-glow-hover:hover {
     box-shadow: var(--glow-brand);
 }
 

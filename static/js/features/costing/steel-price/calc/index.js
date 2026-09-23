@@ -284,7 +284,7 @@ async function deleteAllCalcLogs() {
         showToast('无删除权限', 'warning');
         return;
     }
-    if (!window.confirm('确定删除全部计算历史？仅删除日志，不影响已落库的钢材价格。计算中的记录删除后将释放锁。')) {
+    if (!await window.confirmAction('确定删除全部计算历史？仅删除日志，不影响已落库的钢材价格。计算中的记录删除后将释放锁。')) {
         return;
     }
     try {
@@ -303,7 +303,7 @@ async function deleteCalcLog(logId) {
         showToast('无删除权限', 'warning');
         return;
     }
-    if (!window.confirm('确定删除这条计算历史？计算中的记录删除后将释放锁；仅删除日志，不影响已落库的钢材价格。')) {
+    if (!await window.confirmAction('确定删除这条计算历史？计算中的记录删除后将释放锁；仅删除日志，不影响已落库的钢材价格。')) {
         return;
     }
     try {

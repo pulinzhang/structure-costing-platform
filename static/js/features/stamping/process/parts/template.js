@@ -337,6 +337,64 @@ function renderProcessRow(p, idx) {
                 </tr>`;
 }
 
+function formatMaterialPeriod(row) {
+    const start = typeof fmtPeriod === 'function'
+        ? fmtPeriod(row.effective_year, row.effective_month)
+        : `${row.effective_year}年${String(row.effective_month).padStart(2, '0')}月`;
+    if (!row.valid_until_year || !row.valid_until_month) {
+        return `${start} — 未结束`;
+    }
+    const end = typeof fmtPeriod === 'function'
+        ? fmtPeriod(row.valid_until_year, row.valid_until_month)
+        : `${row.valid_until_year}年${String(row.valid_until_month).padStart(2, '0')}月`;
+    return `${start} — ${end}`;
+}
+
+function renderMaterialChangeBlock(records, { canDownload }) {
+    const rows = (records || []).length
+        ? records.map((row) => {
+            const download = canDownload
+                ? `<button type="button" class="text-[10px] text-brand underline"
+                        data-ecm-download="${Number(row.upload_log_id)}"
+                        data-filename="${esc(row.original_filename || '')}">${esc(row.original_filename || '原件')}</button>`
+                : esc(row.original_filename || '—');
+            return `<tr>
+                <td class="px-3 py-2 text-[11px] font-mono">${esc(row.change_version)}</td>
+                <td class="px-3 py-2 text-[11px]">${esc(formatMaterialPeriod(row))}</td>
+                <td class="px-3 py-2 text-[11px]">${esc(row.before_material)}</td>
+                <td class="px-3 py-2 text-[11px]">${esc(row.before_thickness)}</td>
+                <td class="px-3 py-2 text-[11px]">${esc(row.after_material)}</td>
+                <td class="px-3 py-2 text-[11px]">${esc(row.after_thickness)}</td>
+                <td class="px-3 py-2 text-[11px]">${esc(row.stamping_supplier)}</td>
+                <td class="px-3 py-2 text-[11px]">${download}</td>
+            </tr>`;
+        }).join('')
+        : `<tr><td colspan="8" class="px-4 py-8 text-center text-[11px] text-ink-faint">暂无材料变更</td></tr>`;
+    return `
+            <div class="mx-4 mb-4 flex flex-col shrink-0">
+                <div class="${BRABUS_SECTION_HEADER}">
+                    <span class="text-[9px] font-semibold text-ink-faint uppercase tracking-[0.22em]">材料变更</span>
+                </div>
+                <div class="${BRABUS_TABLE_WRAPPER}">
+                    <table class="w-full">
+                        <thead>
+                            <tr>
+                                <th class="px-3 py-2 text-left text-[8px] font-semibold text-ink-faint">版本</th>
+                                <th class="px-3 py-2 text-left text-[8px] font-semibold text-ink-faint">有效时间</th>
+                                <th class="px-3 py-2 text-left text-[8px] font-semibold text-ink-faint">变更前材料</th>
+                                <th class="px-3 py-2 text-left text-[8px] font-semibold text-ink-faint">变更前料厚</th>
+                                <th class="px-3 py-2 text-left text-[8px] font-semibold text-ink-faint">变更后材料</th>
+                                <th class="px-3 py-2 text-left text-[8px] font-semibold text-ink-faint">变更后料厚</th>
+                                <th class="px-3 py-2 text-left text-[8px] font-semibold text-ink-faint">冲压工厂</th>
+                                <th class="px-3 py-2 text-left text-[8px] font-semibold text-ink-faint">原件</th>
+                            </tr>
+                        </thead>
+                        <tbody>${rows}</tbody>
+                    </table>
+                </div>
+            </div>`;
+}
+
 export function renderDetailContent(part, options = {}) {
     const canUpdate = options.canUpdate !== false;
     const sketchUrl = part.sketch_url || '';
@@ -400,6 +458,10 @@ export function renderDetailContent(part, options = {}) {
             </div>
 
             ${renderExcelProvenance(part)}
+
+            ${renderMaterialChangeBlock(options.materialRecords || [], {
+                canDownload: options.canDownloadMaterialFile === true,
+            })}
 
             <!-- 工序列表 -->
             <div class="mx-4 mb-4 flex flex-col shrink-0">

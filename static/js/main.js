@@ -487,6 +487,17 @@ const HttpClient = (() => {
             }
         }
 
+        const reportFailure = (msg) => {
+            if (skipToast) return;
+            const path = String(url || '').split('?')[0];
+            const useDialog = methodUpper === 'DELETE' || path.endsWith('/batch-delete');
+            if (useDialog && typeof window.showDeleteError === 'function') {
+                window.showDeleteError(msg);
+                return;
+            }
+            showToast(msg, 'error');
+        };
+
         try {
             const response = await fetch(fullUrl, init);
             clearTimeout(timer);
@@ -506,7 +517,7 @@ const HttpClient = (() => {
                     return { ok: true, status: response.status, data: data.data, message: data.message };
                 }
                 const msg = data.message || data.detail || '请求失败';
-                if (!skipToast) showToast(msg, 'error');
+                reportFailure(msg);
                 const err = new Error(msg);
                 err.status = response.status;
                 err.data = data.data;
@@ -515,7 +526,7 @@ const HttpClient = (() => {
 
             if (!response.ok) {
                 const msg = (data && (data.message || data.detail)) || `请求失败 (${response.status})`;
-                if (!skipToast) showToast(msg, 'error');
+                reportFailure(msg);
                 const err = new Error(msg);
                 err.status = response.status;
                 throw err;
@@ -526,11 +537,11 @@ const HttpClient = (() => {
             clearTimeout(timer);
             if (isAbortError(error)) {
                 error.message = REQUEST_TIMEOUT_MSG;
-                if (!skipToast) showToast(REQUEST_TIMEOUT_MSG, 'error');
+                reportFailure(REQUEST_TIMEOUT_MSG);
             } else if (!error.status) {
                 const msg = humanizeTransportError(error, '网络请求失败');
                 error.message = msg;
-                if (!skipToast) showToast(msg, 'error');
+                reportFailure(msg);
             }
             throw error;
         }

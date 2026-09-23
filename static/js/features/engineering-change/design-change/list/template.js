@@ -6,7 +6,6 @@ import { filterSelect, HUD_SHELL, DRAWER_CLOSE, DRAWER_BACKDROP, DRAWER_SHELL, H
 import { filterBarHtml } from '../../../../ui/filter-bar.js?v=4';
 import { hudTableHtml, hudRowHtml, opsIconButtonHtml } from '../../../../ui/hud-table.js?v=2';
 import { hudKpiCardHtml } from '../../../../ui/hud-kpi.js?v=1';
-import { errorDialogHtml } from '../../../../ui/error-dialog.js?v=1';
 
 
 const STATUS_LABELS = {
@@ -122,10 +121,6 @@ export function engineeringChangeListTemplate() {
             </div>
         </div>
         ${detailDrawerHtml()}
-        ${errorDialogHtml({
-            prefix: 'ecRollbackError',
-            title: '删除回滚失败',
-        })}
     `;
 }
 

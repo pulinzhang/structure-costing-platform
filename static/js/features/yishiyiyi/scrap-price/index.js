@@ -543,7 +543,7 @@ async function deleteMonth() {
     }
     const label = fmtPeriod(scrapState.year, scrapState.month);
     const categoryLabel = SCRAP_CATEGORY_LABELS[scrapState.scrapCategory] || '';
-    if (!window.confirm(`确认删除 ${label} ${categoryLabel}废料销售价？此操作不可恢复。`)) {
+    if (!await window.confirmAction(`确认删除 ${label} ${categoryLabel}废料销售价？此操作不可恢复。`)) {
         return;
     }
     try {

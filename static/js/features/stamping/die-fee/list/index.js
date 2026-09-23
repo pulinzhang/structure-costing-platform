@@ -818,7 +818,7 @@ async function batchDelete() {
         showToast(SCOPE_REQUIRED_MESSAGE, 'warning');
         return;
     }
-    if (!window.confirm(
+    if (!await window.confirmAction(
         `确定批量删除未审核记录吗？\n\n${fmtYear(filters.year)} · 基地 ${filters.location} · 项目 ${filters.vehicle_model}\n\n仅删除待审/已驳回；已审核通过会跳过。此操作不可恢复！`,
     )) {
         return;
@@ -852,7 +852,7 @@ async function batchDelete() {
         await loadFilterOptions();
         await loadData(1);
     } catch (error) {
-        showToast(error.message || '批量删除失败', 'error');
+        console.error('批量删除失败:', error);
     } finally {
         if (btn) {
             btn.disabled = false;

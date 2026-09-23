@@ -377,7 +377,7 @@ function renderHistoryRows(items) {
 
 async function deleteAllGenerateLogs() {
     if (!genState.canDeleteLog) return;
-    if (!window.confirm('确定删除全部拆解历史？仅删除日志，不影响已落库的拆解数据。拆解中的记录删除后将释放锁。')) {
+    if (!await window.confirmAction('确定删除全部拆解历史？仅删除日志，不影响已落库的拆解数据。拆解中的记录删除后将释放锁。')) {
         return;
     }
     try {
@@ -392,7 +392,7 @@ async function deleteAllGenerateLogs() {
 
 async function deleteCalcLog(logId) {
     if (!logId || !genState.canDeleteLog) return;
-    if (!window.confirm('确定删除这条拆解历史？拆解中的记录删除后将释放锁；仅删除日志，不影响已落库的拆解数据。')) {
+    if (!await window.confirmAction('确定删除这条拆解历史？拆解中的记录删除后将释放锁；仅删除日志，不影响已落库的拆解数据。')) {
         return;
     }
     try {

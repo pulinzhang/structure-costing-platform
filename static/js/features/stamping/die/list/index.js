@@ -433,7 +433,7 @@ export const DieListPage = {
     async batchDelete() {
         const scope = this.requireScope('删除');
         if (!scope) return;
-        const ok = window.confirm(
+        const ok = await window.confirmAction(
             `将删除基地「${scope.location}」项目「${scope.vehicle_model}」下全部模具布点数据，不可恢复。确定？`
         );
         if (!ok) return;
@@ -443,7 +443,7 @@ export const DieListPage = {
             this.closeDrawer();
             this.loadList(1);
         } catch (error) {
-            showToast(error.message || '删除失败', 'error');
+            console.error('删除失败:', error);
         }
     },
 };

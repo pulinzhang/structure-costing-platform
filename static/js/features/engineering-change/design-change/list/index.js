@@ -6,7 +6,7 @@ import {
     engineeringChangeListTemplate,
     renderEcDetailBody,
     renderEcListRows,
-} from './template.js?v=38';
+} from './template.js?v=39';
 import {
     DEFAULT_PAGE_SIZE,
     bindPagination,
@@ -16,7 +16,6 @@ import { can } from '../../../../core/permissions.js?v=8';
 import { setSearchBusy } from '../../../../ui/search-busy.js?v=4';
 import { bindFilterBar } from '../../../../ui/filter-bar.js?v=4';
 import { monthOptionsHtml, yearOptionsHtml } from '../../../common/period-ui.js?v=4';
-import { bindErrorDialog } from '../../../../ui/error-dialog.js?v=1';
 
 const API = '/api/engineering-change';
 const CASCADE_API = '/api/bom/filters/cascade';
@@ -31,8 +30,6 @@ const FILTER_IDS = [
 
 /** @type {{ paint: () => void, setOpen: (isOpen: boolean) => void, unbind: () => void } | null} */
 let filterBar = null;
-/** @type {{ show: (message: string) => void, close: () => void, unbind: () => void } | null} */
-let rollbackError = null;
 
 const state = {
     records: [],
@@ -48,7 +45,6 @@ function init() {
     state.canDelete = typeof can === 'function'
         ? can('op:engineering-change-order-list:delete')
         : false;
-    rollbackError = bindErrorDialog('ecRollbackError');
     fillPeriodFilters();
     bindEvents();
     bindPagination({
@@ -66,8 +62,6 @@ function init() {
 function destroy() {
     filterBar?.unbind();
     filterBar = null;
-    rollbackError?.unbind();
-    rollbackError = null;
     closeDrawer();
 }
 
@@ -179,7 +173,7 @@ function bindEvents() {
     });
 }
 
-function handleActionClick(event) {
+async function handleActionClick(event) {
     const btn = event.target.closest('[data-action]');
     if (!btn) return;
     const uploadLogId = Number(btn.getAttribute('data-upload-log-id'));
@@ -194,14 +188,14 @@ function handleActionClick(event) {
         return;
     }
     if (action !== 'delete') return;
-    if (!confirm('删除即回滚。将撤销本次上传的全部变更并删除本记录，同一文件的全部变更单行都会去掉。')) return;
-    HttpClient.delete(`${API}/change-orders/${uploadLogId}`, { skipToast: true })
+    if (!await window.confirmAction('删除即回滚。将撤销本次上传的全部变更并删除本记录，同一文件的全部变更单行都会去掉。')) return;
+    HttpClient.delete(`${API}/change-orders/${uploadLogId}`)
         .then(() => {
             showToast('已删除并回滚', 'success');
             loadData(state.page);
         })
-        .catch((error) => {
-            rollbackError?.show(error?.message || '删除回滚失败');
+        .catch(() => {
+            /* HttpClient 已弹出删除失败提示框 */
         });
 }
 

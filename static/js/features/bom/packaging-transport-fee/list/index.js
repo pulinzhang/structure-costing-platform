@@ -399,7 +399,7 @@ async function submitDelete() {
         closeDrawer('pkgDeleteDrawer', 'pkgDeleteDrawerBackdrop');
         loadData(pkgState.page);
     } catch (err) {
-        showToast(err.message || '删除失败', 'error');
+        console.error('删除失败:', err);
     }
 }
 
@@ -439,7 +439,7 @@ async function batchDelete() {
         return;
     }
     const year = Number(filters.year);
-    const ok = window.confirm(
+    const ok = await window.confirmAction(
         `确定批量删除未审核包装运输费吗？\n\n基地: ${filters.location} · ${fmtYear(year)} · 项目: ${filters.vehicle_model}\n\n仅删除待审记录；已审核通过会跳过。此操作不可恢复！`,
     );
     if (!ok) return;
@@ -455,7 +455,7 @@ async function batchDelete() {
         await loadFilterOptions();
         loadData(1);
     } catch (err) {
-        showToast(err.message || '批量删除失败', 'error');
+        console.error('批量删除失败:', err);
     } finally {
         pkgState.isBatchDeleting = false;
     }

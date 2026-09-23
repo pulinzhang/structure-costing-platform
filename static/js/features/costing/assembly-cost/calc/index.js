@@ -382,7 +382,7 @@ function renderHistoryRows(items) {
 
 async function deleteAllCalcLogs() {
     if (!calcState.canDelete) return;
-    if (!window.confirm('确定删除全部计算历史？仅删除日志，不影响已落库结果。计算中的记录删除后将释放锁。')) {
+    if (!await window.confirmAction('确定删除全部计算历史？仅删除日志，不影响已落库结果。计算中的记录删除后将释放锁。')) {
         return;
     }
     try {
@@ -397,7 +397,7 @@ async function deleteAllCalcLogs() {
 
 async function deleteCalcLog(logId) {
     if (!calcState.canDelete) return;
-    if (!window.confirm('确认删除该计算日志？计算中的记录删除后将释放锁，可重新提交。')) return;
+    if (!await window.confirmAction('确认删除该计算日志？计算中的记录删除后将释放锁，可重新提交。')) return;
     try {
         await HttpClient.delete(`${CALC_LOGS_API}/${logId}`);
         showToast('已删除计算日志', 'success');

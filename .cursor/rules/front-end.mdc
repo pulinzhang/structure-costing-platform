@@ -45,7 +45,8 @@ JS 标识符：camelCase；页面对象 PascalCase；常量 `UPPER_SNAKE`；与�
 - **操作只走操作列按钮**（`data-action` 或现网 `.edit-btn` / `.delete-btn` / `.view-btn`）。操作列必须是最后一列；`OPS_TH` 纯色不铺格；`OPS_TD` 同格 sticky；钮 `OPS_ICON`（hover/focus 才显）。禁止阴影。
 - 分页：当前页 `brand-hud`。HUD 列表分页栏由 `hudTableHtml` 内嵌 `paginationBarHtml`；`index.js` 仍用 `static/js/ui/page-size.js` 的 `paintPagination` / `bindPagination` 绑原 id。禁止各页复制页码按钮或每页常量。
 - 抽屉：`DRAWER_BACKDROP` z-80、`DRAWER_SHELL` z-85，append 到 `body`。禁止 `z-40`/`z-50`。
-- 弹出的错误提示框走 `static/js/ui/error-dialog.js`（`errorDialogHtml` / `bindErrorDialog`）。禁止各页再复制这套遮罩、正文和复制按钮。上传页嵌在表单里的错误面板保持原样，不要改成这个弹层。
+- 弹出的错误提示框走 `static/js/ui/error-dialog.js`。删除失败（含批量删除）由壳上的 `showDeleteError` 弹出，全站只有一个。禁止各页再复制这套遮罩、正文和复制按钮，也禁止删除失败再走 Toast。上传页嵌在表单里的错误面板保持原样，不要改成这个弹层。
+- 操作前确认（删除等）走 `static/js/ui/confirm-dialog.js` 的 `confirmAction`，全站只有一个。禁止 `window.confirm` / `confirm()`。各页已有的确认抽屉保持原样。
 - 禁止 Bootstrap、浅色底（`bg-white` 等）、`rounded-lg` 及以上、`shadow-md` 等。控件圆角 2px。图标走 `svgIcon`，描边 1.5。
 
 ## 全局 JS（禁止页面重写）

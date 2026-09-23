@@ -8,8 +8,8 @@
     <script src="/static/js/ui/theme-boot.js?v=1"></script>
     <link rel="icon" type="image/x-icon" href="/static/assets/favicon.ico">
     <link href="/static/css/fonts.css?v=5" rel="stylesheet">
-    <link href="/static/css/tailwind.css?v=19" rel="stylesheet">
-    <link href="/static/css/style.css?v=65" rel="stylesheet">
+    <link href="/static/css/tailwind.css?v=21" rel="stylesheet">
+    <link href="/static/css/style.css?v=66" rel="stylesheet">
     <link href="/static/css/brabus-light-tokens.css?v=5" rel="stylesheet">
 </head>
 <body class="bg-app-deep min-h-screen antialiased">
@@ -435,6 +435,21 @@
                                 </li>
                             </ul>
                         </li>
+                        <li class="submenu-item has-submenu">
+                            <a href="javascript:void(0)" class="submenu-link" data-submenu-toggle="engineeringChangeMaterialSubmenu">
+                                <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path></svg>
+                                <span>材料变更</span>
+                                <svg class="w-3.5 h-3.5 ms-auto submenu-arrow" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M19 9l-7 7-7-7"></path></svg>
+                            </a>
+                            <ul class="submenu submenu-nested" id="engineeringChangeMaterialSubmenu">
+                                <li>
+                                    <a href="#/engineering-change-material-upload" class="submenu-link submenu-link-nested" data-page="engineering-change-material-upload"><span>上传材料变更</span></a>
+                                </li>
+                                <li>
+                                    <a href="#/engineering-change-material-list" class="submenu-link submenu-link-nested" data-page="engineering-change-material-list"><span>材料变更列表</span></a>
+                                </li>
+                            </ul>
+                        </li>
                     </ul>
                 </li>
                 <!-- 主数据 -->
@@ -645,7 +660,7 @@
     <script src="/static/js/vendor/marked.min.js"></script>
     <script src="/static/js/vendor/purify.min.js"></script>
 
-    <script src="/static/js/main.js?v=23"></script>
-    <script type="module" src="/static/js/app.js?v=771"></script>
+    <script src="/static/js/main.js?v=26"></script>
+    <script type="module" src="/static/js/app.js?v=792"></script>
 </body>
 </html>
