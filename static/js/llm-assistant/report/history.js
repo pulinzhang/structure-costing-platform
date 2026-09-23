@@ -39,11 +39,11 @@ export async function openHistoryPanel(overlay, options) {
 
     overlay.classList.remove('hidden');
     overlay.innerHTML = `
-<div class="flex items-center justify-between px-3 py-2 border-b border-line-subtle bg-app-surface shrink-0">
-  <div class="text-xs font-semibold text-ink">分析历史</div>
-  <button type="button" id="llmHistoryClose" class="w-7 h-7 inline-flex items-center justify-center text-ink-muted hover:text-ink" aria-label="关闭">×</button>
+<div class="flex items-center justify-between px-4 pt-3 pb-2 shrink-0">
+  <div class="text-[13px] font-medium text-ink">分析历史</div>
+  <button type="button" id="llmHistoryClose" class="w-7 h-7 inline-flex items-center justify-center rounded-full text-ink-faint hover:text-ink hover:bg-app-elevated" aria-label="关闭">×</button>
 </div>
-<div id="llmHistoryBody" class="flex-1 overflow-y-auto px-3 py-2 bg-app-deep min-h-0">
+<div id="llmHistoryBody" class="flex-1 overflow-y-auto px-4 py-1 min-h-0">
   <div id="llmHistoryList"></div>
   <div id="llmHistoryFooter" class="py-3 text-center text-[10px] text-ink-faint"></div>
 </div>`;
@@ -213,9 +213,9 @@ function renderHistoryItem(item) {
         : '';
 
     return `
-<div class="mb-2 px-2.5 py-2 border border-line-subtle bg-app-main rounded-sm">
-  <div class="text-[11px] text-ink line-clamp-2">${esc(question)}</div>
-  <div class="mt-1 flex flex-wrap gap-x-2 gap-y-0.5 text-[9px] text-ink-faint">
+<article class="py-3 border-b border-line-subtle">
+  <div class="text-[13px] leading-relaxed text-ink line-clamp-2">${esc(question)}</div>
+  <div class="mt-1 flex flex-wrap gap-x-2 gap-y-0.5 text-[11px] text-ink-faint">
     <span class="${statusClass}">${esc(statusLabel)}</span>
     ${scopeText ? `<span>${esc(scopeText)}</span>` : ''}
     ${types ? `<span class="font-mono">${esc(types)}</span>` : ''}
@@ -223,17 +223,17 @@ function renderHistoryItem(item) {
   </div>
   <div class="mt-2 flex items-center justify-end gap-1">
     <button type="button" data-action="open-report" data-report-id="${escAttr(item.report_id)}"
-      class="px-2 py-1 text-[10px] text-ink-muted border border-line hover:border-ink-muted hover:text-ink rounded-sm transition-colors">
+      class="px-2 py-1 text-[11px] text-ink-muted hover:text-ink transition-colors">
       打开
     </button>
     <button type="button" data-action="delete-report"
       data-report-id="${escAttr(item.report_id)}"
       data-question="${escAttr(question)}"
-      class="px-2 py-1 text-[10px] text-danger border border-line hover:border-danger hover:bg-app-deep rounded-sm transition-colors">
+      class="px-2 py-1 text-[11px] text-danger hover:text-ink transition-colors">
       删除
     </button>
   </div>
-</div>`;
+</article>`;
 }
 
 /**

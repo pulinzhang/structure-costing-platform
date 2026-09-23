@@ -8,7 +8,7 @@
     <script src="/static/js/ui/theme-boot.js?v=1"></script>
     <link rel="icon" type="image/x-icon" href="/static/assets/favicon.ico">
     <link href="/static/css/fonts.css?v=5" rel="stylesheet">
-    <link href="/static/css/tailwind.css?v=21" rel="stylesheet">
+    <link href="/static/css/tailwind.css?v=28" rel="stylesheet">
     <link href="/static/css/style.css?v=68" rel="stylesheet">
     <link href="/static/css/brabus-light-tokens.css?v=5" rel="stylesheet">
 </head>
@@ -588,10 +588,8 @@
             </div>
             <div class="page-header-right">
                 <div id="topActions"></div>
-                <!-- 采购助理入口（帮助左侧）；按钮由 llm-assistant/boot.js 按权限注入 -->
-                <span id="llmAssistantEntry" class="inline-flex"></span>
                 <a href="/helper/" target="_blank" rel="noopener noreferrer"
-                   class="flex items-center justify-center w-8 h-8 rounded-full border border-line text-ink-muted hover:border-brand hover:text-ink transition-colors"
+                   class="flex items-center justify-center w-8 h-8 rounded-full border border-line text-ink-muted hover:bg-ink/[0.08] hover:border-ink/25 hover:text-ink transition-colors"
                    aria-label="使用帮助" title="使用帮助">
                     <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5"
@@ -601,7 +599,7 @@
                 <!-- 用户入口：仅头像，点击展开菜单（姓名/设置/退出） -->
                 <div class="relative" id="userMenuRoot">
                     <button type="button" id="userMenuBtn"
-                            class="flex items-center justify-center w-8 h-8 rounded-full bg-app-elevated border border-line text-[11px] font-semibold text-ink-muted hover:border-brand hover:text-ink transition-colors"
+                            class="flex items-center justify-center w-8 h-8 rounded-full bg-app-elevated border border-line text-[11px] font-semibold text-ink-muted hover:bg-ink/[0.08] hover:border-ink/25 hover:text-ink transition-colors"
                             aria-label="用户菜单" aria-haspopup="true" aria-expanded="false">
                         <span id="userAvatarInitial">?</span>
                     </button>
@@ -637,7 +635,7 @@
                             </label>
                             -->
                             <button type="button" id="userLogoutBtn" role="menuitem"
-                                    class="w-full flex items-center gap-2.5 px-4 py-2.5 text-xs text-ink-muted hover:bg-ink/[0.03] hover:text-danger transition-colors text-left">
+                                    class="w-full flex items-center gap-2.5 px-4 py-2.5 text-xs text-ink-muted hover:bg-ink/[0.03] hover:text-ink transition-colors text-left">
                                 <svg class="w-3.5 h-3.5 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
                                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"></path>
                                 </svg>
@@ -661,6 +659,6 @@
     <script src="/static/js/vendor/purify.min.js"></script>
 
     <script src="/static/js/main.js?v=27"></script>
-    <script type="module" src="/static/js/app.js?v=796"></script>
+    <script type="module" src="/static/js/app.js?v=811"></script>
 </body>
 </html>
