@@ -78,7 +78,7 @@ final_welding_fee = total_welding_fee + other_fee   // other 空当 0
 
 - 单价：`bom_welding_unit_price`（`location + year + item_name`）。
 - 计费用量：`app/common/bom/welding_billing_qty.py`。**不乘装配用量**。
-- 结果 **没有 `month`**（现网）。单价分段后再加月，见 [effective-period-design.md](../costing/effective-period-design.md)。
+- 结果 **没有 `month`**（现网）。年内分段已否决，不要为焊接费结果加月。见 [effective-period-design.md](../costing/effective-period-design.md)。
 - `calc_status`：`ok` / `partial` / `failed`（规则与现网 L0 相同）。
 
 ---
@@ -242,7 +242,7 @@ static/js/features/bom/welding-fee/{calc,list}/
 | [assembly-costing-design.md](../costing/assembly-costing-design.md) | 成品账只读 **level=0** |
 | [l1-assembly-costing-design.md](../costing/l1-assembly-costing-design.md) | 应成本工艺费读 **level=1** |
 | [costing-engine-design.md](../costing/costing-engine-design.md) | 补算默认 `levels=[0]` |
-| [effective-period-design.md](../costing/effective-period-design.md) | 将来加 `month` 时表名跟本文 |
+| [effective-period-design.md](../costing/effective-period-design.md) | 已否决。不要为结果加 `month` |
 | `app/services/bom/welding_fee/` | 现网实现 |
 
 ---

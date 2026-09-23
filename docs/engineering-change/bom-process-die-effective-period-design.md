@@ -8,7 +8,7 @@
 > 本文不是工程变更，也不是一口价年内分段。  
 > 关联：[材料清单 / 采购对象](../bom/bom-procurement-objects-design.md)、[冲压工艺确认表](../stamping/stamping-process-confirmation-design.md)、[模具布点](../stamping/stamping-die-management-design.md)、[焊接工艺拆解](../bom/welding-process-breakdown-design.md)、[焊接费](../bom/welding-fee-design.md)、[项目](../masterdata/vehicle-model-design.md)、[核价引擎](../costing/costing-engine-design.md)。  
 > 工程变更切点入口（以后；**设计让步给现网**，落地只改三条写入门禁）：[工程变更](part-number-revision-design.md)。  
-> 协议价分段（另一件事）：[年度协议价生效期](../costing/effective-period-design.md)。  
+> 协议价年内分段已否决，见 [年度协议价生效期](../costing/effective-period-design.md)。本文的生失效继续按现网。  
 > 下游 as_of：总成月核价与引擎 `start_run` 已接零件/节点月命中；计算身份另按账期问项目期。采购对象列表是档案（默认包含已过期、join 树根），见 [采购对象 §14](../bom/bom-procurement-objects-design.md)；核价侧仍按账期月裁树。
 
 ---
@@ -534,7 +534,7 @@ year, location, vehicle_model
 | 工艺批量删改键、布点批量删改键 | 本期导入不再走它们；管理删除可暂留现网 |
 | 工程变更菜单、工程变更 Excel、变更头自动种树 | [part-number-revision-design.md](part-number-revision-design.md)。SOP 三页不做切点月、不种新号 |
 | AB 继承 SOP 序号、设变给新树插采购对象并抄确认 | 同上 |
-| 一口价/焊接单价年内分段 | [effective-period-design.md](../costing/effective-period-design.md) |
+| 一口价/焊接单价年内分段 | **已否决。** [effective-period-design.md](../costing/effective-period-design.md) |
 | 取价 AB 回退 AA；库内复制出新号 | 否决 |
 
 本期 SOP 三页只负责第一次投产导入，以及之后对 **已有号** 的属性再导（不删未出现的行）。改图路径等工程变更。列表仍可单条改期（纠错 SOP 时段），不要当成设变作业。冲压加工费 / 模具费 / 焊接费计算已接零件（布点、节点）年交集；冲压零件价格 / 总成核价 / 引擎发现已接月命中。

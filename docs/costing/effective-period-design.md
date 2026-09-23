@@ -1,9 +1,9 @@
 # 年度协议价生效期 — 设计说明
 
-> 状态：**设计稿（未落地）**  
-> 关联：`docs/bom/bom-annual-part-prices-design.md`、[总成月核价](assembly-costing-design.md)、`docs/costing/costing-engine-design.md`、`docs/architecture.md`。冻结史料：[l0-assembly-costing-design.md](l0-assembly-costing-design.md)。  
-> 原则：账在库里对得上。客户、核价引擎、分析读同一套行。不要用审核 Excel 快照当历史账。  
-> BOM / 冲压工艺 / 模具行上的生失效不在本文，见 [bom-process-die-effective-period-design.md](../engineering-change/bom-process-die-effective-period-design.md)。
+> 状态：**已否决（不做）**  
+> 决定：2026-09-23。年度协议价保持一年一行。年中改价仍走现网：反审后覆盖。不给一口价、焊接单价、包装运输费、吨位价加起止月。  
+> 下文是否决前的分段方案，仅作存档。若再有人提「8 月改价不能覆盖 1–7 月」，先读本节，不要按下文改表。  
+> BOM / 冲压工艺 / 模具行上的生失效是另一篇，已经落地，见 [bom-process-die-effective-period-design.md](../engineering-change/bom-process-die-effective-period-design.md)。不要跟着本文一起停。
 
 ---
 

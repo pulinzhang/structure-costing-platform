@@ -79,9 +79,9 @@ English: **Structural Parts Automated Costing Platform** / short **Costing Platf
 | [procurement-contract-report-design.md](costing/procurement-contract-report-design.md) | 采购价格协议（已落地）：按供应商出《批量零部件价格协议》 |
 | [l0-assembly-costing-design.md](costing/l0-assembly-costing-design.md) | 冻结史料：原 L0 成品核价口径（现网见总成月核价） |
 | [l1-assembly-costing-design.md](costing/l1-assembly-costing-design.md) | 历史：委外应成本口径（结果表方案已作废） |
-| [effective-period-design.md](costing/effective-period-design.md) | 协议价生效期（设计）：一口价/年度价年内分段 |
-| [provisional-final-settlement-design.md](costing/provisional-final-settlement-design.md) | 暂估 / 正式（设计） |
-| [anchor-true-up-design.md](costing/anchor-true-up-design.md) | 锚点送货与价差（设计） |
+| [effective-period-design.md](costing/effective-period-design.md) | 协议价生效期（已否决）：年度价保持一年一行 |
+| [provisional-final-settlement-design.md](costing/provisional-final-settlement-design.md) | 暂估 / 正式（已否决） |
+| [anchor-true-up-design.md](costing/anchor-true-up-design.md) | 锚点送货与价差（已否决） |
 | [t13j-offal-nesting-simulation.md](costing/t13j-offal-nesting-simulation.md) | T13J 利废件材料核算模拟（不改代码） |
 | [offal-nested-material-design.md](costing/offal-nested-material-design.md) | 利废件材料价（已落地）：`R = 成品净重×废料单价` |
 

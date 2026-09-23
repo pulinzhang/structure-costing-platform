@@ -206,7 +206,7 @@ list_objects_by_location_vehicle(基地, 项目) · section=object
 
 落地后要交出的，就是现场主合同附件 **「批量零部件价格协议」**，不是另做一张系统表。对照样张 `excel_sample/批量零部件价格协议模板2023V1.A2.xlsx`。
 
-和 [anchor-true-up-design.md](anchor-true-up-design.md) **同名文书、不同方向**：那边是对客户的销售协议价；本切片是对二级厂（样张甲方采购方、乙方供应商）。不导入已签字件、不跑价差。
+和 [anchor-true-up-design.md](anchor-true-up-design.md) **同名文书、不同方向**。那边对客户的销售协议价与价差已否决、不做。本切片是对二级厂（样张甲方采购方、乙方供应商）的导出，保持现网。不导入已签字件、不跑价差。
 
 页面列表只预览中间价目表（便于筛、对金额）。**导出 Excel 必须按样张成文**：文头 + 价目表 + 文尾条款 + 甲乙方签字栏。不要附「准备」Sheet。
 
