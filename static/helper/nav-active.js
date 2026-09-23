@@ -5,32 +5,61 @@
   const links = [...toc.querySelectorAll('a[href^="#"]')];
   if (!links.length) return;
 
+  let pinnedId = "";
+  let settleTimer = 0;
+
   const setActive = (id) => {
     links.forEach((link) => {
       link.classList.toggle("is-active", link.hash === `#${id}`);
     });
   };
 
-  const fromHash = () => {
-    const id = decodeURIComponent(location.hash.replace(/^#/, ""));
-    if (id && document.getElementById(id)) setActive(id);
+  const sectionIdFromHash = (hash) => decodeURIComponent(hash.replace(/^#/, ""));
+
+  const releasePin = () => {
+    const id = pinnedId;
+    if (!id) return;
+    setActive(id);
+    window.setTimeout(() => {
+      if (pinnedId === id) pinnedId = "";
+    }, 80);
+  };
+
+  const pin = (id) => {
+    if (!id || !document.getElementById(id)) return;
+    pinnedId = id;
+    setActive(id);
+    window.clearTimeout(settleTimer);
+    settleTimer = window.setTimeout(releasePin, 140);
   };
 
   links.forEach((link) => {
     link.addEventListener("click", () => {
-      const id = link.hash.slice(1);
-      if (id) setActive(id);
+      pin(sectionIdFromHash(link.hash));
     });
   });
 
-  window.addEventListener("hashchange", fromHash);
+  window.addEventListener("hashchange", () => {
+    pin(sectionIdFromHash(location.hash));
+  });
+
+  window.addEventListener(
+    "scroll",
+    () => {
+      if (!pinnedId) return;
+      window.clearTimeout(settleTimer);
+      settleTimer = window.setTimeout(releasePin, 140);
+    },
+    { passive: true },
+  );
 
   const sections = links
-    .map((link) => document.getElementById(link.hash.slice(1)))
+    .map((link) => document.getElementById(sectionIdFromHash(link.hash)))
     .filter(Boolean);
   if (typeof IntersectionObserver === "function" && sections.length) {
     const observer = new IntersectionObserver(
       (entries) => {
+        if (pinnedId) return;
         const visible = entries
           .filter((entry) => entry.isIntersecting)
           .sort((left, right) => right.intersectionRatio - left.intersectionRatio);
@@ -41,5 +70,6 @@
     sections.forEach((section) => observer.observe(section));
   }
 
-  fromHash();
+  const initialId = sectionIdFromHash(location.hash);
+  if (initialId && document.getElementById(initialId)) setActive(initialId);
 })();

@@ -139,14 +139,20 @@ a:hover { color: var(--color__link--hover); text-decoration: none; }
   background: transparent;
   text-decoration: none;
 }
-.block-switch a:hover,
 .block-switch a.is-active,
+.nav li a.is-active {
+  color: var(--color__button__text);
+  background: var(--color__button__background);
+  font-weight: 500;
+  border: 0;
+  text-decoration: none;
+}
+.block-switch a:hover,
 .block-switch a.is-active:hover,
 .nav li a:hover,
-.nav li a.is-active,
 .nav li a.is-active:hover {
-  color: var(--on-brand);
-  background: var(--red);
+  color: var(--color__button__text--hover);
+  background: var(--color__button__background--hover);
   font-weight: 500;
   border: 0;
   text-decoration: none;
