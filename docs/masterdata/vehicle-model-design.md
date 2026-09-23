@@ -332,7 +332,7 @@ APQP 文档若仍写「只选基地、文件立项」，以本文为准。
 
 禁止 `is_paused` / `is_enabled`（启用/禁用是基地的事；期内停用靠改失效）。禁止逻辑删除 / 软删冒充 P10。
 
-**期别比较（闭区间，对齐 [effective-period-design.md](../costing/effective-period-design.md) 的「含」）：**
+**期别比较（闭区间，含起含止）：**
 
 ```text
 已生效  = (year, month) >= (effective_year, effective_month)

@@ -1,8 +1,8 @@
 # 暂估与正式结算 — 设计说明
 
-> 状态：**与实操不符，不要落地。**  
-> 现场口径见 [锚点送货与价差核价](anchor-true-up-design.md)：送货价是一个锚点月，不是每个自然月两套暂估/正式账。  
-> 下文仅作讨论留痕，避免再按「计划库/实际库」实施。
+> 状态：**已否决（不做）**  
+> 决定：与实操不符。锚点送货与价差同样已否决（2026-09-23），见 [anchor-true-up-design.md](anchor-true-up-design.md)。两篇都不要落地。  
+> 下文仅作讨论留痕，避免再按「计划库/实际库」或「暂估/正式两套账」实施。
 
 ---
 
@@ -202,5 +202,5 @@
 |------|------|
 | `docs/costing/costing-engine-design.md` | 落地时入口增加账本 + 沿用年；覆盖规则按账本隔离 |
 | `docs/costing/assembly-costing-design.md` | 唯一键加账本；取协议价用 `annual_price_year` |
-| `docs/costing/effective-period-design.md` | 正交；晚到订价走本文，定稿后改口走生效期 |
+| `docs/costing/effective-period-design.md` | 已否决。不要用年内分段表达晚到订价或定稿后改口 |
 | `docs/architecture.md` | 仍一套库；costing 结果表加维度，不新建切片库 |

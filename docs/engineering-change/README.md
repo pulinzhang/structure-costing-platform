@@ -216,4 +216,4 @@ Router → EngineeringChangeUploadService.start_upload
 | [samples/t13j-2026-05-stop.xlsx](samples/t13j-2026-05-stop.xlsx) 等五份 | T13J 单种改法夹具 |
 | [samples/build_t13j_2026_05_import_bundles.py](samples/build_t13j_2026_05_import_bundles.py) | 写出 T13J 对照一本 + 五种改法各一份 |
 
-一口价年内分段不在本目录，见 [effective-period-design.md](../costing/effective-period-design.md)。
+一口价年内分段已否决，见 [effective-period-design.md](../costing/effective-period-design.md)。本目录的生失效不要跟着停。
