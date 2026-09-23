@@ -19,6 +19,7 @@ FILE_CATEGORY_LABELS: dict[str, str] = {
     "bom_annual_part_price": "年度零件价",
     "bom_procurement_object_supplier": "采购对象供应商",
     "engineering_change": "设计变更",
+    "engineering_change_material": "材料变更",
 }
 
 VALID_FILE_CATEGORIES = frozenset(FILE_CATEGORY_LABELS.keys())
@@ -71,6 +72,10 @@ CATEGORY_VIEW_PERMISSIONS: dict[str, tuple[str, ...]] = {
     "engineering_change": (
         Perm.ENGINEERING_CHANGE_UPLOAD_VIEW,
         Perm.ENGINEERING_CHANGE_ORDER_LIST_VIEW,
+    ),
+    "engineering_change_material": (
+        Perm.ENGINEERING_CHANGE_MATERIAL_UPLOAD_VIEW,
+        Perm.ENGINEERING_CHANGE_MATERIAL_LIST_VIEW,
     ),
 }
 

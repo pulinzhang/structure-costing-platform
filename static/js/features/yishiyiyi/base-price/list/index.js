@@ -4,7 +4,7 @@
  */
 
 import { basePriceDownloadTemplate } from './template.js?v=45';
-import { bindMoreMenu } from '../../../../ui/more-menu.js?v=5';
+import { bindMoreMenu } from '../../../../ui/more-menu.js?v=6';
 import {
     DEFAULT_PREVIEW_PAGE_SIZE,
     PREVIEW_PAGE_SIZE_OPTIONS,
@@ -388,7 +388,7 @@ async function batchDeleteBasePrices() {
         return;
     }
 
-    const confirmed = window.confirm(
+    const confirmed = await window.confirmAction(
         `确定要删除以下条件的基准价格数据吗？\n\n${fmtPeriod(year, month)} · 基地: ${location || '全部'} · 钢厂: ${mill || '全部'}\n\n此操作不可恢复！`
     );
 
@@ -439,7 +439,6 @@ async function batchDeleteBasePrices() {
 
     } catch (error) {
         console.error('删除基准价格失败:', error);
-        showToast(`删除失败: ${error.message}`, 'error');
     } finally {
         if (btnDelete) {
             btnDelete.disabled = false;

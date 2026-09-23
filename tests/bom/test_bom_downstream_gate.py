@@ -1,4 +1,4 @@
-"""材料清单删除门闩：采购对象 / 焊接拆解（应用层）+ 工程变更单 before L0（DB RESTRICT）。"""
+"""材料清单删除：子表外键拒绝时不点名；采购清单随 snapshot 级联，拆解 snapshot_id 只是辅助指针。"""
 
 from __future__ import annotations
 
@@ -140,7 +140,7 @@ class TestBomDownstreamGate:
         BomSnapshotService().delete_snapshot(memory_db, snapshot.id)
         assert memory_db.get(BomSnapshot, snapshot.id) is None
 
-    def test_delete_snapshot_blocked_by_procurement_then_ok(self, memory_db: Session) -> None:
+    def test_delete_snapshot_cascades_procurement_list(self, memory_db: Session) -> None:
         snapshot = _add_snapshot(memory_db)
         head = BomProcurementObjectList(
             snapshot_id=snapshot.id,
@@ -154,42 +154,41 @@ class TestBomDownstreamGate:
         )
         memory_db.add(head)
         memory_db.commit()
+        snapshot_id = snapshot.id
+        head_id = head.id
 
-        with pytest.raises(BusinessException) as caught:
-            BomSnapshotService().delete_snapshot(memory_db, snapshot.id)
-        assert caught.value.code == 409
-        assert "采购对象清单" in caught.value.message
-        assert "焊接工艺拆解" not in caught.value.message
+        BomSnapshotService().delete_snapshot(memory_db, snapshot_id)
+        memory_db.expire_all()
+        assert memory_db.get(BomSnapshot, snapshot_id) is None
+        assert memory_db.get(BomProcurementObjectList, head_id) is None
 
-        memory_db.delete(head)
-        memory_db.commit()
-        BomSnapshotService().delete_snapshot(memory_db, snapshot.id)
-        assert memory_db.get(BomSnapshot, snapshot.id) is None
-
-    def test_delete_snapshot_blocked_by_welding_breakdown(self, memory_db: Session) -> None:
+    def test_delete_snapshot_leaves_auxiliary_breakdown_pointer(self, memory_db: Session) -> None:
         snapshot = _add_snapshot(memory_db)
-        memory_db.add(
-            BomWeldingProcessBreakdownNode(
-                location=LOCATION,
-                vehicle_model=VEHICLE_MODEL,
-                bom_version=BOM_VERSION,
-                snapshot_id=snapshot.id,
-                source_node_id=1,
-                part_number="501006870AA",
-                level=0,
-                node_role="supply",
-                assembly_qty=Decimal("1"),
-                weld_info_raw="焊点 2",
-                created_by="system",
-                updated_by="system",
-            )
+        node = BomWeldingProcessBreakdownNode(
+            location=LOCATION,
+            vehicle_model=VEHICLE_MODEL,
+            bom_version=BOM_VERSION,
+            snapshot_id=snapshot.id,
+            source_node_id=1,
+            part_number="501006870AA",
+            level=0,
+            node_role="supply",
+            assembly_qty=Decimal("1"),
+            weld_info_raw="焊点 2",
+            created_by="system",
+            updated_by="system",
         )
+        memory_db.add(node)
         memory_db.commit()
+        snapshot_id = snapshot.id
+        node_id = node.id
 
-        with pytest.raises(BusinessException) as caught:
-            BomSnapshotService().delete_snapshot(memory_db, snapshot.id)
-        assert caught.value.code == 409
-        assert "焊接工艺拆解" in caught.value.message
+        BomSnapshotService().delete_snapshot(memory_db, snapshot_id)
+        memory_db.expire_all()
+        assert memory_db.get(BomSnapshot, snapshot_id) is None
+        left = memory_db.get(BomWeldingProcessBreakdownNode, node_id)
+        assert left is not None
+        assert left.snapshot_id == snapshot_id
 
     def test_delete_snapshot_blocked_by_engineering_change_order(self, memory_db: Session) -> None:
         """变更单 before_assembly_node_id RESTRICT：有单则不能删；清表后可删。"""
@@ -243,8 +242,8 @@ class TestBomDownstreamGate:
 
         with pytest.raises(BusinessException) as caught:
             BomSnapshotService().delete_snapshot(memory_db, snapshot.id)
-        assert "工程变更 → 设计变更 → 工程变更单列表" in caught.value.message
-        assert "回滚" in caught.value.message
+        assert "仍被引用，不能删除" in caught.value.message
+        assert "工程变更" not in caught.value.message
         assert "总成核价" not in caught.value.message
         assert memory_db.get(BomSnapshot, snapshot.id) is not None
 
@@ -255,7 +254,7 @@ class TestBomDownstreamGate:
         assert memory_db.get(BomSnapshot, snapshot.id) is None
 
     def test_grandchildren_do_not_block(self, memory_db: Session) -> None:
-        """应用预检不把总成核价当直接下游；真正删除时核价根外键拒绝。"""
+        """应用预检不读总成核价。真正删除时外键拒绝，文案不点名核价。"""
         snapshot = _add_snapshot(memory_db)
         node = _add_node(memory_db, snapshot)
         memory_db.add(
@@ -283,21 +282,12 @@ class TestBomDownstreamGate:
         memory_db.add(cost)
         memory_db.commit()
 
-        BomSnapshotService().assert_bom_scope_unused(
-            memory_db,
-            location=LOCATION,
-            vehicle_model=VEHICLE_MODEL,
-            bom_version=BOM_VERSION,
-            action="覆盖导入",
-        )
         with pytest.raises(BusinessException) as caught:
             BomSnapshotService().delete_snapshot(memory_db, snapshot.id)
-        assert "核价 → 总成核价 → 总成核价一览" in caught.value.message
-        assert "反审核" in caught.value.message
+        assert "仍被引用，不能删除" in caught.value.message
+        assert "总成核价" not in caught.value.message
         assert "工程变更" not in caught.value.message
-        assert "2026年01月" in caught.value.message
-        assert LOCATION in caught.value.message
-        assert VEHICLE_MODEL in caught.value.message
+        assert "反审核" not in caught.value.message
         assert memory_db.get(BomSnapshot, snapshot.id) is not None
 
         memory_db.query(AssemblyCost).filter(AssemblyCost.id == cost.id).delete()
@@ -369,30 +359,31 @@ class TestBomDownstreamGate:
 
         with pytest.raises(BusinessException) as caught:
             BomSnapshotService().delete_snapshot(memory_db, snapshot.id)
-        assert "核价 → 总成核价 → 总成核价一览" in caught.value.message
-        assert "工程变更 → 设计变更 → 工程变更单列表" in caught.value.message
+        assert "仍被引用，不能删除" in caught.value.message
+        assert "总成核价" not in caught.value.message
+        assert "工程变更" not in caught.value.message
 
-    def test_delete_node_blocked_by_procurement(self, memory_db: Session) -> None:
+    def test_delete_node_does_not_read_procurement_list(self, memory_db: Session) -> None:
         snapshot = _add_snapshot(memory_db)
         node = _add_node(memory_db, snapshot)
-        memory_db.add(
-            BomProcurementObjectList(
-                snapshot_id=snapshot.id,
-                location=LOCATION,
-                vehicle_model=VEHICLE_MODEL,
-                bom_version=BOM_VERSION,
-                source_filename="fixture-bom.xlsx",
-                generated_at=datetime(2026, 1, 1),
-                created_by="system",
-                updated_by="system",
-            )
+        head = BomProcurementObjectList(
+            snapshot_id=snapshot.id,
+            location=LOCATION,
+            vehicle_model=VEHICLE_MODEL,
+            bom_version=BOM_VERSION,
+            source_filename="fixture-bom.xlsx",
+            generated_at=datetime(2026, 1, 1),
+            created_by="system",
+            updated_by="system",
         )
+        memory_db.add(head)
         memory_db.commit()
+        node_id = node.id
+        head_id = head.id
 
-        with pytest.raises(BusinessException) as caught:
-            BomNodeService().delete_node(memory_db, node.id)
-        assert caught.value.code == 409
-        assert memory_db.get(BomNode, node.id) is not None
+        BomNodeService().delete_node(memory_db, node_id)
+        assert memory_db.get(BomNode, node_id) is None
+        assert memory_db.get(BomProcurementObjectList, head_id) is not None
 
     def test_orphan_source_node_id_rejected(self, memory_db: Session) -> None:
         with pytest.raises(IntegrityError):
@@ -448,6 +439,7 @@ class TestBomDownstreamGate:
 
         with pytest.raises(BusinessException) as caught:
             BomNodeService().delete_node(memory_db, parent.id)
-        assert "2025年03月" in caught.value.message
-        assert "核价 → 总成核价 → 总成核价一览" in caught.value.message
+        assert "仍被引用，不能删除" in caught.value.message
+        assert "总成核价" not in caught.value.message
+        assert "2025年03月" not in caught.value.message
         assert memory_db.get(BomNode, parent.id) is not None

@@ -39,6 +39,7 @@ from app.services.masterdata.steel_grade_category.catalog import (
     build_template as build_catalog_template,
 )
 from app.services.masterdata.steel_grade_category.seed import SEED_STEEL_GRADE_CATEGORIES
+from app.services.settings.schema_comment.service import STILL_REFERENCED, ensure_deletable
 
 logger = logging.getLogger("service.steel_grade_category")
 
@@ -391,11 +392,17 @@ class SteelGradeCategoryService:
         if record is None:
             raise NotFoundException("牌号分类不存在")
         try:
+            ensure_deletable(
+                db,
+                "steel_grade_categories",
+                [{"id": record.id, "grade": record.grade}],
+                subject=f"牌号分类「{record.grade}」",
+            )
             self.repository.delete(db, record)
             db.commit()
         except IntegrityError:
             db.rollback()
-            raise BusinessException("仍被引用，不能删除") from None
+            raise BusinessException(STILL_REFERENCED) from None
         except Exception:
             db.rollback()
             logger.exception("删除牌号分类失败: id=%s", record_id)

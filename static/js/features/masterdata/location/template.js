@@ -1,4 +1,4 @@
-import { HUD_SHELL, DRAWER_SHELL, DRAWER_BACKDROP, HUD_BAND, OPS_TH, BTN_HUD_CREATE, BTN_HUD_SAVE, BTN_HUD_CHIP } from '../../../ui/classes.js?v=13';
+import { HUD_SHELL, DRAWER_SHELL, DRAWER_BACKDROP, HUD_BAND, OPS_TH, BTN_HUD_CREATE, BTN_HUD_SAVE, BTN_HUD_CHIP, BTN_GHOST, BTN_SOLID, BTN_SOLID_DANGER } from '../../../ui/classes.js?v=13';
 import { hudTableHtml, hudRowHtml, opsIconButtonHtml } from '../../../ui/hud-table.js?v=2';
 /**
  * 基地主数据 — HUD 密表 + 抽屉（无 KPI / 搜索 / 分页）
@@ -78,8 +78,8 @@ export function locationTemplate() {
                 </form>
             </div>
             <div class="px-5 py-3 border-t border-line flex items-center justify-end gap-2 bg-app-surface shrink-0">
-                <button type="button" id="cancelLocationCreateBtn" class="px-4 py-1.5 text-xs text-ink-muted border border-line hover:text-ink">取消</button>
-                <button type="button" id="submitLocationCreateBtn" class="${BTN_HUD_SAVE}">保存</button>
+                <button type="button" id="cancelLocationCreateBtn" class="${BTN_GHOST}">取消</button>
+                <button type="button" id="submitLocationCreateBtn" class="${BTN_SOLID}">保存</button>
             </div>
         </div>
 
@@ -135,8 +135,8 @@ export function locationTemplate() {
                 <p class="text-[11px] text-ink-faint mt-3">仍被引用时无法删除。此操作不可恢复。</p>
             </div>
             <div class="px-5 py-3 border-t border-line flex items-center justify-end gap-2 bg-app-surface shrink-0">
-                <button type="button" id="cancelLocationDeleteBtn" class="px-4 py-1.5 text-xs text-ink-muted border border-line">取消</button>
-                <button type="button" id="confirmLocationDeleteBtn" class="bg-danger hover:bg-brand-hover text-ink-onbrand px-5 py-1.5 text-xs font-semibold">删除</button>
+                <button type="button" id="cancelLocationDeleteBtn" class="${BTN_GHOST}">取消</button>
+                <button type="button" id="confirmLocationDeleteBtn" class="${BTN_SOLID_DANGER}">删除</button>
             </div>
         </div>
 
@@ -156,7 +156,7 @@ export function locationTemplate() {
                 <p class="text-[11px] text-ink-faint mt-3" id="locationToggleHint">禁用后不能再按此基地写入或开引擎；列表筛选仍可见。</p>
             </div>
             <div class="px-5 py-3 border-t border-line flex items-center justify-end gap-2 bg-app-surface shrink-0">
-                <button type="button" id="cancelLocationToggleBtn" class="px-4 py-1.5 text-xs text-ink-muted border border-line">取消</button>
+                <button type="button" id="cancelLocationToggleBtn" class="${BTN_GHOST}">取消</button>
                 <button type="button" id="confirmLocationToggleBtn" class="${BTN_HUD_SAVE}">确认禁用</button>
             </div>
         </div>
@@ -188,7 +188,12 @@ export function renderLocationRows(records) {
             })
             : '';
         const toggleBtn = canUpdate
-            ? `<button type="button" data-action="toggle" data-enabled="${isEnabled ? '1' : '0'}" class="px-1.5 h-7 text-[10px] text-ink-dim hover:text-brand-hud opacity-0 group-hover:opacity-100 focus:opacity-100" title="${toggleLabel}">${toggleLabel}</button>`
+            ? opsIconButtonHtml({
+                action: 'toggle',
+                title: toggleLabel,
+                icon: window.svgIcon(isEnabled ? 'ban' : 'check-circle', 'w-3.5 h-3.5'),
+                attrs: `data-enabled="${isEnabled ? '1' : '0'}"`,
+            })
             : '';
         const deleteBtn = canDelete
             ? opsIconButtonHtml({

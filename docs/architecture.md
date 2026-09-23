@@ -45,7 +45,7 @@ Parser 是**横向工具**：只被 Service 调用；禁止依赖 Router/Service
 | **Service** | 业务规则、事务、调 Parser/Repo、ORM→VO、抛业务异常 | 直接写 SQL；用 `(None, str)` 向 Router 报错；手写 datetime/Decimal JSON |
 | **Orchestrator** | 核算指挥：`prepare → engine → persist` | 主方法里 `for` / 掐进度 / 写库（见 [指挥家宪法](orchestrator-constitution.mdc)） |
 | **Repository** | CRUD / 聚合查询；返回 Model 或具名 `TypedDict`（函数体 `return {…}` 合法） | 权限/角色分支决策；签名写成匿名 `dict` / `dict[str, Any]` |
-| **Model** | 表字段 + `relationship`（同切片附属行） | `to_dict`、业务 `@property`；跨切片独立主数据禁止父指向子（引用保护） |
+| **Model** | 表字段；子表外键，以及子指回直接父的 `relationship` | `to_dict`、业务 `@property`；父指向子（引用保护：父不读子） |
 | **Schema** | DTO（`schemas/dto/`）/ VO（`schemas/vo/`） | 业务流程 |
 | **Parser** | 纯解析，无副作用 | 依赖 Router/Service/Repository |
 
@@ -104,7 +104,7 @@ app/parsers/stamping/     # 仅上传类切片有 Parser
 **数据引用**和 **4.2 代码依赖** 方向相反：下游可以 import 上游；父不得 import / 点名子。拦改主键和删除的是数据库引擎，不是父在应用里 `count` 子行。
 
 - 外键只加在设计图**直接下一跳**（子表 `ForeignKey(..., ondelete="RESTRICT", onupdate="RESTRICT")`）
-- 父改主键或删除只动自己；仍被引用 → `IntegrityError` → `BusinessException("仍被引用，不能修改")` / `BusinessException("仍被引用，不能删除")`
+- 父改主键或删除只动自己。删除前由设置切片做动态引用检查，接口返回业务名、条数和建议；操作日志的失败原因仍是「仍被引用，不能删除」（见 [表注释与删除前引用检查](settings/schema-comment-design.md)）。改主键，以及检查之后才插入的引用，仍是 `IntegrityError` → 「仍被引用，不能修改」 / 「仍被引用，不能删除」
 - 有外键的独立主数据必须**同时提供修改和删除**：非主键修改（启用/禁用）外键不管；改主键与删除都走 `RESTRICT`
 - `CASCADE` 只给没有独立身份的附属行（`ondelete` 与 `onupdate` 都 `CASCADE`）；独立主数据之间改主键和删除都用 `RESTRICT`
 - **例外：** 钢材联动价结果行上「当初用了哪条基价/政策」的可选 ID 允许 `SET NULL`（档案可重导，账留下）。这是外键策略，与有没有 `task_id` 无关。列名单只在 [架构宪法](../.cursor/rules/architecture-constitution.mdc) §3.3，禁止扩到身份主键
@@ -290,11 +290,11 @@ ApiResponse[AsyncTaskAcceptedVO]
 
 ### Model 可以有 relationship 吗？
 
-同切片附属行可以（零件→工序、主单→明细）。禁止的是业务方法与 `to_dict`。跨切片、独立主数据之间禁止父指向子的 `relationship`，引用由子表外键承担（架构宪法「引用保护」）。
+自己只读自己和直接的父。子表只用外键指回父，子侧可以 `relationship` 指回直接父。父不读子：不查询、不 `count`、不 JOIN，父 Model 不 `relationship`、不 import 子。同切片附属行同样遵守。禁止的还有业务方法与 `to_dict`。细则见架构宪法 §3.3。
 
 ### 删除或改主键时该不该先查有没有人用？
 
-不该在父切片里查。直接下游在自己的 Model 上声明 `ON UPDATE RESTRICT` + `ON DELETE RESTRICT`，由数据库拒绝；父只把 `IntegrityError` 译成「仍被引用，不能修改」或「仍被引用，不能删除」。修改与删除必须同时提供。核价结果表上的可选溯源 ID 见宪法 §3.3 `SET NULL` 名单（基价/政策可重导；与 Session / `task_id` 无关）。细则见 [架构宪法](../.cursor/rules/architecture-constitution.mdc)「引用保护」。
+不该在父切片里查子表。直接下游在自己的 Model 上声明 `ON UPDATE RESTRICT` + `ON DELETE RESTRICT`。删除前由设置切片向当前库问谁在引用，接口返回业务名、条数和建议。操作日志的失败原因仍是「仍被引用，不能删除」。改主键，以及检查之后才插入的引用，仍把 `IntegrityError` 译成「仍被引用，不能修改」或「仍被引用，不能删除」。修改与删除必须同时提供。核价结果表上的可选溯源 ID 见宪法 §3.3 `SET NULL` 名单（基价/政策可重导；与 Session / `task_id` 无关）。细则见 [表注释与删除前引用检查](settings/schema-comment-design.md) 和 [架构宪法](../.cursor/rules/architecture-constitution.mdc)「引用保护」。
 
 ### 后台解析/计算为什么不能写在 Router？为什么有的 upload 又没有 `task_id`？
 

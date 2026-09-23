@@ -15,7 +15,6 @@ from app.repositories.bom.bom.snapshot import BomSnapshotRepository
 from app.repositories.persist import apply_payload_fields
 from app.schemas.dto.bom_dto import BomNodeWrite, BomSnapshotWrite
 from app.schemas.vo.user_vo import UserVO
-from app.services.bom.bom.delete_block import BomReimportBlocked, is_foreign_key_error
 from app.services.bom.bom.trees import descendant_ids
 from app.services.bom.bom.upload.gates.validate import (
     require_file_l0_already_on_snapshot,
@@ -23,6 +22,7 @@ from app.services.bom.bom.upload.gates.validate import (
 )
 from app.services.file_trace.register import register_existing
 from app.services.masterdata.vehicle_model.service import VehicleModelService
+from app.services.settings.schema_comment.service import STILL_REFERENCED, ensure_deletable
 
 # Excel 列号（1-based）：各层级「零件号」列，与 node_parser 一致
 _EXCEL_PART_COL_BY_LEVEL = {0: 3, 1: 9, 2: 14}
@@ -276,16 +276,19 @@ def align_existing_trees(
         root.updated_by = updated_by
         rows = repo.list_by_snapshot(db, snapshot_id)
         child_ids = sorted(descendant_ids(rows, {root.id}) - {root.id})
+        if child_ids:
+            ensure_deletable(
+                db,
+                "bom_nodes",
+                [{"id": node_id} for node_id in child_ids],
+                subject=f"材料清单「{root.location} {root.vehicle_model}」里要换掉的零件",
+            )
         try:
             repo.delete_descendants(db, snapshot_id, root.id)
         except IntegrityError as error:
-            if not is_foreign_key_error(error):
+            if "FOREIGN KEY constraint failed" not in str(getattr(error, "orig", error)):
                 raise
-            raise BomReimportBlocked(
-                child_ids,
-                location=root.location,
-                vehicle_model=root.vehicle_model,
-            ) from error
+            raise BusinessException(STILL_REFERENCED) from error
         descendant_indices = _walk_parsed_descendants(children_of, index)
         if not descendant_indices:
             continue

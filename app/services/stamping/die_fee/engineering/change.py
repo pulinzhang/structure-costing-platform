@@ -13,6 +13,7 @@ from app.repositories.stamping.die.repository import StampingDiePartRepository
 from app.repositories.stamping.die_fee.repository import StampingDieFeeRepository
 from app.schemas.dto.stamping_die_fee_dto import DieFeeInsertPayload, DieFeeItemPayload
 from app.schemas.vo.user_vo import UserVO
+from app.services.settings.schema_comment.service import ensure_deletable
 
 
 @dataclass(slots=True, frozen=True)
@@ -107,6 +108,7 @@ def delete_for_engineering_change_rollback(
     record = fee_repo.get_by_id(db, fee_id)
     if record is None:
         return
+    ensure_deletable(db, "stamping_die_fees", [{"id": record.id}], subject="该模具费")
     fee_repo.delete_by_id(db, record)
 
 

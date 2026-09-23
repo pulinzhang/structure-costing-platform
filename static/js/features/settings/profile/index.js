@@ -7,7 +7,7 @@
 
 import { BTN_SOLID } from '../../../ui/classes.js?v=13';
 import { updateUserSession } from '../../login/index.js';
-import { profileLoadingTemplate, profileTemplate } from './template.js?v=4';
+import { profileLoadingTemplate, profileTemplate } from './template.js?v=5';
 
 const profileState = {
     user: null,

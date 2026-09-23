@@ -12,8 +12,8 @@ import {
     parsePriceInput,
     comparePriceStrings,
     subtractPriceStrings,
-} from './template.js?v=27';
-import { bindMoreMenu } from '../../../ui/more-menu.js?v=5';
+} from './template.js?v=28';
+import { bindMoreMenu } from '../../../ui/more-menu.js?v=6';
 
 const API_BASE = '/api/yishiyiyi/scrap-price';
 const DRAWER_ANIMATION_MS = 300;
@@ -543,7 +543,7 @@ async function deleteMonth() {
     }
     const label = fmtPeriod(scrapState.year, scrapState.month);
     const categoryLabel = SCRAP_CATEGORY_LABELS[scrapState.scrapCategory] || '';
-    if (!window.confirm(`确认删除 ${label} ${categoryLabel}废料销售价？此操作不可恢复。`)) {
+    if (!await window.confirmAction(`确认删除 ${label} ${categoryLabel}废料销售价？此操作不可恢复。`)) {
         return;
     }
     try {

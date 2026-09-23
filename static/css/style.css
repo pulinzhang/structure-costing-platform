@@ -352,11 +352,17 @@ textarea:-webkit-autofill:active {
     transition: opacity 0.15s ease;
 }
 
-/* 悬停与当前页同一套：品牌红底、白字。必须写在三级字色之后，避免红字叠红底。 */
-.sidebar-nav-link:hover,
+/* 当前页：帮助站同款墨底 #010101、白字。悬停（含当前项）品牌红底白字。必须写在三级字色之后。 */
 .sidebar-nav-link.active,
-.submenu-link:hover,
 .submenu-link.active {
+    color: rgb(var(--text-on-brand));
+    background: rgb(1 1 1);
+}
+
+.sidebar-nav-link:hover,
+.sidebar-nav-link.active:hover,
+.submenu-link:hover,
+.submenu-link.active:hover {
     color: rgb(var(--text-on-brand));
     background: rgb(var(--brabus-red));
 }
@@ -835,7 +841,8 @@ textarea:-webkit-autofill:active {
     box-shadow: var(--glow-brand);
 }
 
-.group:hover .hud-brand-glow-hover {
+.group:hover .hud-brand-glow-hover,
+.hud-brand-glow-hover:hover {
     box-shadow: var(--glow-brand);
 }
 

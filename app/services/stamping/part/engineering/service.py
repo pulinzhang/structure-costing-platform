@@ -9,6 +9,8 @@ from app.repositories.stamping.part.repository import StampingPartRepository
 from app.schemas.dto.stamping_upload_dto import PartData, ProcessData
 from app.schemas.vo.user_vo import UserVO
 from app.services.stamping.part.engineering.change import (
+    MISS_NOT_AS_OF,
+    MISS_SUPPLIER_UNKNOWN,
     EngineeringChangePartAsOfRow,
     EngineeringChangeProcessPartResult,
     EngineeringChangeProcessPartSpec,
@@ -17,10 +19,16 @@ from app.services.stamping.part.engineering.change import (
     clone_revise_from_predecessor as clone_revise_from_predecessor_fn,
 )
 from app.services.stamping.part.engineering.change import (
+    get_part_as_of as get_part_as_of_fn,
+)
+from app.services.stamping.part.engineering.change import (
     insert_for_engineering_change as insert_for_engineering_change_fn,
 )
 from app.services.stamping.part.engineering.change import (
     list_parts_as_of as list_parts_as_of_fn,
+)
+from app.services.stamping.part.engineering.change import (
+    process_material_on_file as process_material_on_file_fn,
 )
 from app.services.stamping.part.engineering.change import (
     rollback_engineering_change_part as rollback_engineering_change_part_fn,
@@ -31,6 +39,8 @@ __all__ = [
     "EngineeringChangePartAsOfRow",
     "EngineeringChangeProcessPartResult",
     "EngineeringChangeProcessPartSpec",
+    "MISS_NOT_AS_OF",
+    "MISS_SUPPLIER_UNKNOWN",
     "StampingEngineeringService",
 ]
 
@@ -60,6 +70,31 @@ class StampingEngineeringService:
             as_of_year=as_of_year,
             as_of_month=as_of_month,
         )
+
+    def get_part_as_of(
+        self,
+        db: Session,
+        *,
+        location: str,
+        stamping_supplier: str,
+        vehicle_model: str,
+        part_number: str,
+        as_of_year: int,
+        as_of_month: int,
+    ) -> tuple[EngineeringChangePartAsOfRow | None, str | None]:
+        return get_part_as_of_fn(
+            self.repository,
+            db,
+            location=location,
+            stamping_supplier=stamping_supplier,
+            vehicle_model=vehicle_model,
+            part_number=part_number,
+            as_of_year=as_of_year,
+            as_of_month=as_of_month,
+        )
+
+    def process_material_on_file(self, db: Session, material: str) -> bool:
+        return process_material_on_file_fn(db, material)
 
     def next_seq_no_in_scope_for_engineering_change(
         self,

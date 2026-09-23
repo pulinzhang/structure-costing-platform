@@ -8,7 +8,7 @@
  * - 删除确认  →deleteDrawer
  */
 
-import { usersTemplate, renderTableRows } from './template.js?v=19';
+import { usersTemplate, renderTableRows } from './template.js?v=21';
 import {
     DEFAULT_PAGE_SIZE,
     bindPagination,
@@ -551,7 +551,7 @@ function renderPermissionTree(nodes, checked, depth = 0) {
             <div class="grant-node" data-code="${esc(code)}" data-mandatory="${isMandatory ? '1' : '0'}">
                 <label class="flex items-center gap-2 py-1.5 hover:bg-ink/[0.02] cursor-pointer ${isMandatory ? 'opacity-70' : ''}"
                        style="padding-left:${pad}px">
-                    <input type="checkbox" class="grant-check brabus-check">
+                    <input type="checkbox" class="grant-check brabus-check"
                            data-code="${esc(code)}"
                            ${isChecked ? 'checked' : ''}
                            ${isMandatory ? 'disabled' : ''}>

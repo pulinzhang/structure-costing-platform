@@ -20,6 +20,7 @@ from app.services.bom.bom.change_tree_plant.types import BomChangePlantResult, B
 from app.services.bom.bom.period import BomPeriodService
 from app.services.bom.bom.snapshot import BomSnapshotService
 from app.services.bom.bom.trees import collect_subtree
+from app.services.settings.schema_comment.service import ensure_deletable
 
 __all__ = [
     "BomChangePlantResult",
@@ -147,6 +148,13 @@ class BomEngineeringService:
             return
         if row.level != 0:
             raise BusinessException("只能删除总成（L0）树")
+        subtree = collect_subtree(self.node_repo.list_by_snapshot(db, row.snapshot_id), row.id)
+        ensure_deletable(
+            db,
+            "bom_nodes",
+            [{"id": node.id} for node in subtree],
+            subject="这些材料清单节点",
+        )
         self.node_repo.delete_descendants(db, row.snapshot_id, row.id)
         self.node_repo.delete(db, row)
         db.flush()

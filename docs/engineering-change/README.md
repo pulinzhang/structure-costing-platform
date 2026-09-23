@@ -3,11 +3,11 @@
 跨切片能力（BOM / 冲压 / 核价）。两条通道都挂在一级 **工程变更** 下（不新开一级）：
 
 - **设计变更**已落地：侧栏二级分组「设计变更」→ 上传 / 列表；代码在 `app/services/engineering_change/design_change/`。接口仍是 `/api/engineering-change`。
-- **材料变更**这次只占目录和空前缀 `/api/engineering-change/material`，侧栏还没有分组。落地时对称加二级「材料变更」→ 上传 / 列表，见 [stamping-material-change-design.md](stamping-material-change-design.md) §4 和 [服务包说明](../../app/services/engineering_change/material_change/README.md)。
+- **材料变更**这次只占目录和空前缀 `/api/engineering-change/material`，侧栏还没有分组。落地按刀：[material-change/](material-change/README.md)；菜单在第 3 刀。服务包：[占位说明](../../app/services/engineering_change/material_change/README.md)。
 
 有效期与核价按月见 [bom-process-die-effective-period-design.md](bom-process-die-effective-period-design.md)。设计变更门禁从严：一本一个项目号；材料清单与确认表版本必须同一字；生效月须在项目期内；必须先有 SOP 采购对象清单头；版本与清单头不得凑合。
 
-**材料变更**（同号换牌号、不影响互换性）不要塞进设计变更的四句变更类型。本节其余条目只描述已落地的设计变更。
+**材料变更**（同号换材料、不影响互换性）不要塞进设计变更的四句变更类型。本节其余条目只描述已落地的设计变更。
 
 > 2–4 年后敢改：先读本节，再下钻长设计稿。长稿与代码冲突时以**代码 + 本节**为准。
 
@@ -38,9 +38,9 @@
 
 核价按「某年某月仍有效」取树/工艺/布点。改图是 **旧的到期、新的启用**：旧树/旧工艺行失效写到生效月的前一月（**不删行**），新树/新工艺行从生效月起用。前一月旧账仍要看见 AA。不要说作废。若每次变更复制全量快照，旧月重算要绑「哪次变更编号」，与现网按月结账、与投产 UNIQUE 都不合。
 
-### 为什么同号换牌号不塞进改图？
+### 为什么同号换材料不塞进改图？
 
-`DC01` 与 `DC03` 是两个档案牌号。冲压零件价按牌号全等 + 料厚匹配当月钢材联动价；两牌号会匹配到两条不同的联动价。上游已给出切到 DC03 且不影响互换性时，核价对象仍是同一零件号，但生效月及之后必须按 `DC03` 去匹配，不能继续按工艺行上的 `DC01`。现网改图以换号为门、同号跳过、换号还抄旧材质，UNIQUE 又不许同号第二行工艺。另做 [冲压材质变更](stamping-material-change-design.md)：独立 Excel、独立列表；**变更版本写在变更单上（变一次一本、原件存档），不写进工艺 UNIQUE。** 工艺行不改字；当月牌号走解析器。禁止在旧行上改 `material`，禁止为这一条去拆工艺 UNIQUE。
+`DC01` 与 `DC03` 是冲压 `material` 上两个不同的字。零件价按 `material` 全等 + 料厚匹配当月钢材联动价；两个字会匹配到两条不同的联动价。上游已给出切到 DC03 且不影响互换性时，核价对象仍是同一零件号，但生效月及之后必须按 `DC03` 去匹配，不能继续按工艺行上的 `DC01`。现网改图以换号为门、同号跳过、换号还抄旧 `material`，UNIQUE 又不许同号第二行工艺。另做 [材料变更设计](material-change/README.md)：独立 Excel、独立列表；**变更版本写在变更单上（变一次一本、原件存档），不写进工艺 UNIQUE。** 工艺行不改字；当月材料走解析器。禁止在旧行上改 `material`，禁止为这一条去拆工艺 UNIQUE。禁止在本通道另起一套 `grade` 字段名。
 
 ### 为什么新旧号只认工程变更单，不收口到字母进一位？
 
@@ -144,7 +144,6 @@ flowchart TB
 | `EC_BOM_PROCESS_VERSION_MISMATCH` | 两张表版本不是同一个字 | 材料清单第 2 行与确认表表头必须写成一样 |
 | `EC_CHANGE_ORDER_*` | 变更单行数、类型、填法、同一个总成写了多次 | 类型只准四句：完成停止、改图、增加零件、此件不装；一个总成改了好几处请把总成格子上下合并 |
 | `EC_ROLLBACK_BLOCKED` | 不能删本次 | 其后还有未回滚变更，或采购对象已审未反审 |
-| `EC_ROLLBACK_REFERENCED` | 不能删本次 | 加工费/模具费/焊接费等仍引用本次变更产生的零件或布点 |
 | `EC_GATE_FULL_GENERATE` | 禁止整包 generate | 已有设变树（或失效 L0）；请走工程变更重传 |
 | `EC_GATE_ENGINE_BREAKDOWN` | 引擎拆解补算被同一把钥匙拦住 | 引擎已调 generate；`FULL_GENERATE` 映射为此文案。查是否工程变更未抄齐拆解 |
 | `EC_GATE_ENGINE_PROCUREMENT` | 引擎采购对象补算被同一把钥匙拦住 | 引擎已调 generate；查是否工程变更未插齐本树对象行 |
@@ -209,16 +208,12 @@ Router → EngineeringChangeUploadService.start_upload
 | 文档 | 说明 |
 |------|------|
 | [part-number-revision-design.md](part-number-revision-design.md) | 领域契约（样表即规格、§4 写入、§8 产品）；**落地状态以本节为准** |
-| [stamping-material-change-design.md](stamping-material-change-design.md) | 材料变更（设计定稿，业务未落地）：同号切牌号；菜单 §4；消费链 §6.4；与设计变更分离 |
+| [material-change/](material-change/README.md) | 材料变更（设计定稿，业务未落地）：同号切材料；按刀 0–5 落地。样表 06 月第一刀、07 月再变回去，见 [material-change/samples/](material-change/samples/README.md)。旧入口 [stamping-material-change-design.md](stamping-material-change-design.md) 只作跳转 |
 | [bom-process-die-effective-period-design.md](bom-process-die-effective-period-design.md) | 交货总成 / 工艺 / 布点生失效（已落地） |
-| [t28-2025-07-import-bundle-test-design.md](t28-2025-07-import-bundle-test-design.md) | 青岛 T28 测试样本（对照一本可整本上传；另有五份单种改法夹具） |
-| [t13j-2025-05-import-bundle-test-design.md](t13j-2025-05-import-bundle-test-design.md) | 芜湖 T13J · 2025-05 测试样本（对照一本 + 五份夹具） |
-| [samples/engineering-change-t13j-3086ab.xlsx](samples/engineering-change-t13j-3086ab.xlsx) | T13J 3086AA→AB 样表（单总成演示） |
-| [samples/t28-2025-07-import-bundle.xlsx](samples/t28-2025-07-import-bundle.xlsx) | 下载模板 / 对照一本：T28 五种填法 |
-| [samples/t28-2025-07-stop.xlsx](samples/t28-2025-07-stop.xlsx) 等五份 | 单种改法夹具（完成停止 / 一级改图 / 二级改图 / 此件不装 / 增加零件） |
-| [samples/build_t28_2025_07_import_bundles.py](samples/build_t28_2025_07_import_bundles.py) | 写出对照一本 + 五种改法各一份 |
-| [samples/t13j-2025-05-import-bundle.xlsx](samples/t13j-2025-05-import-bundle.xlsx) | 芜湖 T13J 对照一本：五种填法 |
-| [samples/t13j-2025-05-stop.xlsx](samples/t13j-2025-05-stop.xlsx) 等五份 | T13J 单种改法夹具 |
-| [samples/build_t13j_2025_05_import_bundles.py](samples/build_t13j_2025_05_import_bundles.py) | 写出 T13J 对照一本 + 五种改法各一份 |
+| [t28-2025-07-import-bundle-test-design.md](t28-2025-07-import-bundle-test-design.md) | 青岛 T28 下载模板怎么填（上传页生成，样表目录不存放副本） |
+| [t13j-2026-05-import-bundle-test-design.md](t13j-2026-05-import-bundle-test-design.md) | 芜湖 T13J · 2026-05 测试样本（对照一本 + 五份夹具）。样表目录只留这一套 |
+| [samples/t13j-2026-05-import-bundle.xlsx](samples/t13j-2026-05-import-bundle.xlsx) | 芜湖 T13J 对照一本：五种填法，生效 2026年05月 |
+| [samples/t13j-2026-05-stop.xlsx](samples/t13j-2026-05-stop.xlsx) 等五份 | T13J 单种改法夹具 |
+| [samples/build_t13j_2026_05_import_bundles.py](samples/build_t13j_2026_05_import_bundles.py) | 写出 T13J 对照一本 + 五种改法各一份 |
 
 一口价年内分段不在本目录，见 [effective-period-design.md](../costing/effective-period-design.md)。

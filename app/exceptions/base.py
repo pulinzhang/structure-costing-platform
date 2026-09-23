@@ -23,10 +23,12 @@ class BusinessException(Exception):
         message: str = "业务处理失败",
         code: int = 400,
         data: object | None = None,
+        audit_detail: str | None = None,
     ):
         self.message = message
         self.code = code
         self.data = data
+        self.audit_detail = audit_detail
         super().__init__(message)
 
 

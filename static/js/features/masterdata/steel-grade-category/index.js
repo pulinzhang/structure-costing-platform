@@ -6,13 +6,13 @@ import {
     steelGradeCategoryTemplate,
     renderTableRows,
     syncTabStyles,
-} from './template.js?v=27';
+} from './template.js?v=28';
 import {
     DEFAULT_PAGE_SIZE,
     bindPagination,
     paintPagination,
 } from '../../../ui/page-size.js?v=6';
-import { bindMoreMenu } from '../../../ui/more-menu.js?v=5';
+import { bindMoreMenu } from '../../../ui/more-menu.js?v=6';
 
 const API_BASE = '/api/masterdata/steel-grade-category';
 const DRAWER_ANIMATION_MS = 300;

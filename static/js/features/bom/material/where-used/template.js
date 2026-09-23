@@ -37,7 +37,7 @@ export function bomWhereUsedTemplate() {
                         ${canExport ? `
                         <div class="flex items-center shrink-0 pt-1">
                             <button id="wuExportBtn" type="button" title="按当前查询导出"
-                                    class="inline-flex items-center gap-1.5 bg-transparent text-ink-dim border border-line-hud px-3 py-1.5 text-[11px] font-medium rounded-md hover:border-brand-hud/50 hover:text-brand-hud transition-all">
+                                    class="${BTN_GHOST}">
                                 ${window.svgIcon('download', 'w-3 h-3')}
                                 导出 Excel
                             </button>

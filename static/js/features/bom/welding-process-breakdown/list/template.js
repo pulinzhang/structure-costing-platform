@@ -7,7 +7,7 @@ import { filterBarHtml } from '../../../../ui/filter-bar.js?v=4';
 import { hudTableHtml, hudRowHtml, opsIconButtonHtml } from '../../../../ui/hud-table.js?v=2';
 import { hudKpiCardHtml } from '../../../../ui/hud-kpi.js?v=1';
 
-import { moreMenuItemHtml, moreMenuShellHtml } from '../../../../ui/more-menu.js?v=5';
+import { moreMenuItemHtml, moreMenuShellHtml } from '../../../../ui/more-menu.js?v=6';
 import {
     partShortCodeCellHtml,
     partNumberNameCellHtml,
@@ -85,7 +85,7 @@ export function weldingProcessBreakdownListTemplate() {
                                 ].join(''),
                             })}
                             <button id="btnWpbExport" type="button"
-                                    class="inline-flex items-center gap-1.5 bg-transparent text-ink-dim border border-line-hud px-3 py-1.5 text-[11px] font-medium rounded-md hover:border-brand-hud/50 hover:text-brand-hud hover:bg-brand-hud/10 transition-all">
+                                    class="${BTN_GHOST}">
                                 ${window.svgIcon('download', 'w-3 h-3')}
                                 导出L0核对
                             </button>
@@ -247,7 +247,7 @@ function batchDrawerHtml() {
             </div>
             <div class="px-6 py-4 border-t border-app-elevated flex justify-end gap-2 shrink-0">
                 <button type="button" id="wpbCancelBatch"
-                        class="inline-flex items-center gap-1.5 bg-transparent text-ink-muted border border-line px-4 py-2 text-[11px] font-medium rounded hover:text-ink transition-all">取消</button>
+                        class="${BTN_GHOST}">取消</button>
                 <button type="button" id="wpbConfirmBatch"
                         class="${BTN_SOLID}">确认</button>
             </div>

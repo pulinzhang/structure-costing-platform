@@ -6,7 +6,8 @@
  */
 
 import { paginationBarHtml } from '../../../ui/page-size.js?v=6';
-import { DRAWER_SHELL, DRAWER_BACKDROP, BTN_FILTER_SEARCH, HUD_FILTER } from '../../../ui/classes.js?v=13';
+import { DRAWER_SHELL, DRAWER_BACKDROP, BTN_FILTER_SEARCH, HUD_FILTER, BTN_GHOST, BTN_HUD_CREATE, BTN_SOLID, BTN_SOLID_DANGER } from '../../../ui/classes.js?v=13';
+import { opsIconButtonHtml } from '../../../ui/hud-table.js?v=2';
 
 
 export function usersTemplate() {
@@ -75,7 +76,7 @@ export function usersTemplate() {
                         </button>
                     </div>
 
-                    <button id="btnAddUser" class="h-8 inline-flex items-center gap-1.5 bg-brand hover:bg-brand-hover text-ink-onbrand px-4 text-xs font-semibold transition-all">
+                    <button id="btnAddUser" class="${BTN_HUD_CREATE}">
                         ${window.svgIcon('plus', 'w-3.5 h-3.5')}
                         <span>新增用户</span>
                     </button>
@@ -177,8 +178,8 @@ export function usersTemplate() {
             </div>
 
             <div class="px-5 py-3 border-t border-line flex items-center justify-end gap-2 bg-app-surface shrink-0">
-                <button type="button" id="cancelEditBtn" class="px-4 py-1.5 text-xs text-ink-muted hover:text-ink border border-line hover:bg-app-elevated transition-all">取消</button>
-                <button type="button" id="submitEditBtn" class="bg-brand hover:bg-brand-hover text-ink-onbrand px-5 py-1.5 text-xs font-semibold transition-all">保存</button>
+                <button type="button" id="cancelEditBtn" class="${BTN_GHOST}">取消</button>
+                <button type="button" id="submitEditBtn" class="${BTN_SOLID}">保存</button>
             </div>
         </div>
 
@@ -213,7 +214,7 @@ export function usersTemplate() {
                 </form>
             </div>
             <div class="px-5 py-3 border-t border-line flex items-center justify-end gap-2 bg-app-surface">
-                <button type="button" id="cancelPasswordBtn" class="px-4 py-1.5 text-xs text-ink-muted hover:text-ink border border-line">取消</button>
+                <button type="button" id="cancelPasswordBtn" class="${BTN_GHOST}">取消</button>
                 <button type="button" id="submitPasswordBtn" class="bg-brand hover:bg-brand-hover text-ink-onbrand font-semibold px-4 py-1.5 text-xs">确认修改</button>
             </div>
         </div>
@@ -239,8 +240,8 @@ export function usersTemplate() {
                 <p class="text-[11px] text-ink-dim">此操作不可恢复。</p>
             </div>
             <div class="px-5 py-3 border-t border-line flex items-center justify-end gap-2 bg-app-surface">
-                <button type="button" id="cancelDeleteBtn" class="px-4 py-1.5 text-xs text-ink-muted hover:text-ink border border-line">取消</button>
-                <button type="button" id="confirmDeleteBtn" class="bg-danger hover:bg-brand-hover text-ink-onbrand font-semibold px-4 py-1.5 text-xs">确认删除</button>
+                <button type="button" id="cancelDeleteBtn" class="${BTN_GHOST}">取消</button>
+                <button type="button" id="confirmDeleteBtn" class="${BTN_SOLID_DANGER}">确认删除</button>
             </div>
         </div>
 
@@ -270,8 +271,8 @@ export function usersTemplate() {
             </div>
 
             <div class="px-5 py-3 border-t border-line flex items-center justify-end gap-2 bg-app-surface">
-                <button type="button" id="cancelGrantBtn" class="px-4 py-1.5 text-xs text-ink-muted hover:text-ink border border-line">取消</button>
-                <button type="button" id="submitGrantBtn" class="bg-brand hover:bg-brand-hover text-ink-onbrand font-semibold px-5 py-1.5 text-xs">保存授权</button>
+                <button type="button" id="cancelGrantBtn" class="${BTN_GHOST}">取消</button>
+                <button type="button" id="submitGrantBtn" class="${BTN_SOLID}">保存授权</button>
             </div>
         </div>
     `;
@@ -337,20 +338,29 @@ export function renderTableRows(records) {
             <td class="px-4 py-2.5 whitespace-nowrap">${contactDisplay}</td>
             <td class="px-4 py-2.5 text-center whitespace-nowrap">${statusBadge}</td>
             <td class="px-4 py-2.5 text-[11px] text-ink-dim font-mono whitespace-nowrap">${esc(createdAt)}</td>
-            <td class="px-4 py-2.5 text-right whitespace-nowrap pr-5 sticky right-0 z-[2] bg-app-deep group-hover:bg-ink/[0.02]">
-                <div class="inline-flex items-center gap-0.5 bg-app-hud border border-line p-0.5 opacity-0 pointer-events-none group-hover:opacity-100 group-hover:pointer-events-auto transition-opacity">
-                    ${canEdit ? `<button class="edit-btn p-1.5 text-ink-muted hover:text-ink hover:bg-app-elevated transition-all" title="编辑">
-                        ${window.svgIcon('pencil', 'w-3.5 h-3.5')}
-                    </button>` : ''}
-                    ${showGrant ? `<button class="grant-btn p-1.5 text-ink-muted hover:text-ok hover:bg-app-elevated transition-all" title="授权">
-                        ${window.svgIcon('shield', 'w-3.5 h-3.5')}
-                    </button>` : ''}
-                    ${canPassword ? `<button class="password-btn p-1.5 text-ink-muted hover:text-warn hover:bg-app-elevated transition-all" title="修改密码">
-                        ${window.svgIcon('gear', 'w-3.5 h-3.5')}
-                    </button>` : ''}
-                    ${canDelete ? `<button class="delete-btn p-1.5 text-ink-muted hover:text-danger hover:bg-app-elevated transition-all" title="删除">
-                        ${window.svgIcon('trash', 'w-3.5 h-3.5')}
-                    </button>` : ''}
+            <td class="px-1 py-2 text-right whitespace-nowrap sticky right-0 z-[2] bg-app-deep group-hover:bg-ink/[0.02]">
+                <div class="inline-flex items-center justify-end">
+                    ${canEdit ? opsIconButtonHtml({
+                        extraClass: 'edit-btn',
+                        title: '编辑',
+                        icon: window.svgIcon('pencil', 'w-3.5 h-3.5'),
+                    }) : ''}
+                    ${showGrant ? opsIconButtonHtml({
+                        extraClass: 'grant-btn',
+                        title: '授权',
+                        icon: window.svgIcon('shield', 'w-3.5 h-3.5'),
+                    }) : ''}
+                    ${canPassword ? opsIconButtonHtml({
+                        extraClass: 'password-btn',
+                        title: '修改密码',
+                        icon: window.svgIcon('gear', 'w-3.5 h-3.5'),
+                    }) : ''}
+                    ${canDelete ? opsIconButtonHtml({
+                        extraClass: 'delete-btn',
+                        danger: true,
+                        title: '删除',
+                        icon: window.svgIcon('trash', 'w-3.5 h-3.5'),
+                    }) : ''}
                 </div>
             </td>
         </tr>`;

@@ -2,7 +2,7 @@
  * 文件溯源 — HUD 密表 + 筛选 + 详情抽屉
  */
 
-import { HUD_SHELL, OPS_TH, DRAWER_BACKDROP, HUD_FILTER, BTN_FILTER_SEARCH } from '../../ui/classes.js?v=13';
+import { HUD_SHELL, OPS_TH, DRAWER_BACKDROP, HUD_FILTER, BTN_FILTER_SEARCH, BTN_GHOST } from '../../ui/classes.js?v=13';
 import { hudTableHtml, hudRowHtml, opsIconButtonHtml } from '../../ui/hud-table.js?v=2';
 
 
@@ -51,11 +51,12 @@ export function fileTraceTemplate() {
                                    class="h-9 px-3 text-xs bg-app-deep border border-line text-ink-muted focus:outline-none focus:border-brand-active">
                         </div>
                         <button id="ftBtnSearch" type="button"
-                                class="${BTN_FILTER_SEARCH} h-9">
+                                class="${BTN_FILTER_SEARCH} h-7">
+                            ${window.svgIcon('search', 'w-3 h-3')}
                             查询
                         </button>
                         <button id="ftBtnReset" type="button"
-                                class="inline-flex items-center justify-center h-9 px-4 text-xs font-medium bg-transparent text-ink-muted border border-line rounded hover:border-ink-muted hover:text-ink transition-all">
+                                class="${BTN_GHOST} justify-center">
                             重置
                         </button>
                     </div>

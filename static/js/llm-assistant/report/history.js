@@ -139,7 +139,7 @@ export async function openHistoryPanel(overlay, options) {
         }
     });
 
-    body.addEventListener('click', (event) => {
+    body.addEventListener('click', async (event) => {
         const openBtn = event.target.closest('[data-action="open-report"]');
         if (openBtn) {
             const reportId = Number(openBtn.getAttribute('data-report-id'));
@@ -159,7 +159,7 @@ export async function openHistoryPanel(overlay, options) {
         const promptText = question
             ? `确定删除这条分析记录？\n${question}`
             : '确定删除这条分析记录？';
-        if (!window.confirm(promptText)) return;
+        if (!await window.confirmAction(promptText)) return;
 
         void (async () => {
             deleteBtn.disabled = true;
@@ -181,8 +181,7 @@ export async function openHistoryPanel(overlay, options) {
                 } else {
                     await reloadFromStart();
                 }
-            } catch (error) {
-                window.showToast?.(error?.message || '删除失败', 'error');
+            } catch (_error) {
                 deleteBtn.disabled = false;
             }
         })();

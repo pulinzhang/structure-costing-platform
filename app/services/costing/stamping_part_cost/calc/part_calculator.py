@@ -93,8 +93,9 @@ class PartCostCalculator:
         warehouse_packaging_rate: Decimal,
         pretax_profit_rate: Decimal,
         swing_shear_fee_per_ton: Decimal = Decimal("0"),
+        material: str | None = None,
     ) -> StampingPartCostCalcAmounts | StampingPartCostFailedItemVO:
-        material = (part.material or "").strip()
+        material = (part.material or "").strip() if material is None else material.strip()
         is_offal_nested = bool(part.is_offal_nested)
         if not is_offal_nested and not material:
             return StampingPartCostFailedItemVO(

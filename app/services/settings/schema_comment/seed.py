@@ -1,0 +1,202 @@
+"""启动时按键补齐表注释和引用话术。不删除种子里没有的行。"""
+
+from __future__ import annotations
+
+from sqlalchemy.orm import Session
+
+from app.repositories.settings.schema_comment.repository import SchemaCommentRepository
+
+_COMMENTS: tuple[tuple[str, str, str, str], ...] = (
+    ("locations", "masterdata", "基地", "location"),
+    ("location_aliases", "masterdata", "基地别名", "location alias"),
+    ("vehicle_models", "masterdata", "项目", "vehicle model"),
+    ("suppliers", "masterdata", "供应商", "supplier"),
+    ("supplier_aliases", "masterdata", "供应商别名", "supplier alias"),
+    ("steel_grade_categories", "masterdata", "牌号分类", "steel grade category"),
+    ("users", "settings", "用户", "user"),
+    ("user_permissions", "settings", "用户权限", "user permission"),
+    ("user_tokens", "settings", "用户令牌", "user token"),
+    ("system_configs", "settings", "系统设置", "system config"),
+    ("operation_logs", "settings", "操作日志", "operation log"),
+    ("schema_comment", "settings", "表注释", "schema comment"),
+    ("ref_hint", "settings", "引用话术", "reference hint"),
+    ("async_tasks", "settings", "异步任务", "async task"),
+    ("stamping_parts", "stamping", "冲压零件", "stamping part"),
+    ("stamping_processes", "stamping", "冲压工序", "stamping process"),
+    ("stamping_process_fees", "stamping", "冲压加工费", "process fee"),
+    ("stamping_process_fee_items", "stamping", "冲压加工费明细", "process fee item"),
+    ("stamping_process_fee_calc_logs", "stamping", "冲压加工费计算日志", "process fee calc log"),
+    ("stamping_die_parts", "stamping", "模具零件", "die part"),
+    ("stamping_die_processes", "stamping", "模具工序", "die process"),
+    ("stamping_die_fees", "stamping", "模具费", "die fee"),
+    ("stamping_die_fee_items", "stamping", "模具费明细", "die fee item"),
+    ("stamping_die_fee_calc_logs", "stamping", "模具费计算日志", "die fee calc log"),
+    ("stamping_die_unit_prices", "stamping", "模具单价", "die unit price"),
+    ("stamping_gauge_fees", "stamping", "检具费", "gauge fee"),
+    ("stamping_tailor_weld_blanks", "stamping", "拼焊板", "tailor welded blank"),
+    ("stamping_tonnage_price", "stamping", "冲次单价", "tonnage price"),
+    ("bom_snapshots", "bom", "材料清单", "BOM snapshot"),
+    ("bom_nodes", "bom", "材料清单节点", "BOM node"),
+    ("bom_procurement_object_lists", "bom", "采购对象清单", "procurement object list"),
+    ("bom_procurement_objects", "bom", "采购对象", "procurement object"),
+    ("bom_procurement_object_generate_logs", "bom", "采购对象生成日志", "procurement generate log"),
+    ("bom_welding_process_breakdown_node", "bom", "焊接工艺拆解", "welding process breakdown"),
+    (
+        "bom_welding_process_breakdown_line",
+        "bom",
+        "焊接工艺拆解明细",
+        "welding process breakdown line",
+    ),
+    (
+        "bom_welding_process_breakdown_generate_logs",
+        "bom",
+        "焊接工艺拆解生成日志",
+        "welding breakdown generate log",
+    ),
+    ("bom_welding_fees", "bom", "焊接费", "welding fee"),
+    ("bom_welding_fee_items", "bom", "焊接费明细", "welding fee item"),
+    ("bom_welding_fee_calc_logs", "bom", "焊接费计算日志", "welding fee calc log"),
+    ("bom_welding_unit_price", "bom", "焊接单价", "welding unit price"),
+    ("bom_packaging_transport_fees", "bom", "包装运输费", "packaging transport fee"),
+    ("bom_annual_part_prices", "bom", "年度零件价", "annual part price"),
+    ("steel_base_prices", "yishiyiyi", "基价", "steel base price"),
+    ("steel_price_policies", "yishiyiyi", "加减价政策", "steel price policy"),
+    ("steel_price_ladder_items", "yishiyiyi", "加减价阶梯", "steel price ladder item"),
+    ("stamping_scrap_prices", "yishiyiyi", "废料价", "scrap price"),
+    ("stamping_part_costs", "costing", "冲压零件价格", "stamping part cost"),
+    (
+        "stamping_part_cost_calc_logs",
+        "costing",
+        "冲压零件价格计算日志",
+        "stamping part cost calc log",
+    ),
+    ("steel_prices", "costing", "钢材联动价", "steel price"),
+    ("steel_price_calc_logs", "costing", "钢材联动价计算日志", "steel price calc log"),
+    ("costing_assembly_costs", "costing", "总成核价", "assembly cost"),
+    ("costing_assembly_cost_items", "costing", "总成核价明细", "assembly cost item"),
+    ("costing_assembly_cost_indirects", "costing", "总成核价间接费", "assembly cost indirect"),
+    ("costing_assembly_cost_calc_logs", "costing", "总成核价计算日志", "assembly cost calc log"),
+    ("costing_engine_runs", "costing", "核价引擎运行", "costing engine run"),
+    ("costing_engine_run_steps", "costing", "核价引擎运行步骤", "costing engine run step"),
+    (
+        "engineering_change_upload_logs",
+        "engineering_change",
+        "设计变更上传",
+        "design change upload",
+    ),
+    ("engineering_change_orders", "engineering_change", "设计变更单", "design change order"),
+    (
+        "engineering_change_effect_links",
+        "engineering_change",
+        "设计变更效果",
+        "design change effect",
+    ),
+    (
+        "engineering_change_material_upload_logs",
+        "engineering_change",
+        "材料变更上传",
+        "material change upload",
+    ),
+    (
+        "engineering_change_material_orders",
+        "engineering_change",
+        "材料变更单",
+        "material change order",
+    ),
+    (
+        "engineering_change_material_effect_links",
+        "engineering_change",
+        "材料变更效果",
+        "material change effect",
+    ),
+    ("llm_analysis_reports", "llm", "分析报告", "analysis report"),
+    ("upload_files", "file_trace", "上传文件", "upload file"),
+)
+
+_RESTRICT_EDGES: tuple[tuple[str, str], ...] = (
+    ("locations", "vehicle_models"),
+    ("locations", "stamping_scrap_prices"),
+    ("vehicle_models", "bom_snapshots"),
+    ("vehicle_models", "bom_nodes"),
+    ("vehicle_models", "stamping_parts"),
+    ("vehicle_models", "stamping_die_parts"),
+    ("vehicle_models", "stamping_gauge_fees"),
+    ("vehicle_models", "stamping_die_unit_prices"),
+    ("vehicle_models", "bom_packaging_transport_fees"),
+    ("suppliers", "stamping_parts"),
+    ("suppliers", "bom_procurement_objects"),
+    ("suppliers", "engineering_change_material_upload_logs"),
+    ("suppliers", "engineering_change_material_orders"),
+    ("steel_grade_categories", "steel_base_prices"),
+    ("steel_grade_categories", "stamping_parts"),
+    ("steel_grade_categories", "stamping_tailor_weld_blanks"),
+    ("steel_grade_categories", "engineering_change_material_orders"),
+    ("stamping_parts", "stamping_process_fees"),
+    ("stamping_parts", "stamping_part_costs"),
+    ("stamping_parts", "engineering_change_material_orders"),
+    ("stamping_die_parts", "stamping_die_fees"),
+    ("bom_nodes", "costing_assembly_costs"),
+    ("bom_nodes", "engineering_change_orders"),
+    ("bom_welding_process_breakdown_node", "bom_welding_fees"),
+    ("upload_files", "engineering_change_upload_logs"),
+    ("upload_files", "engineering_change_orders"),
+    ("upload_files", "engineering_change_material_upload_logs"),
+    ("upload_files", "engineering_change_material_orders"),
+    ("engineering_change_upload_logs", "engineering_change_orders"),
+    ("engineering_change_upload_logs", "engineering_change_effect_links"),
+    ("engineering_change_orders", "engineering_change_effect_links"),
+    ("engineering_change_material_upload_logs", "engineering_change_material_orders"),
+    ("engineering_change_material_upload_logs", "engineering_change_material_effect_links"),
+    ("engineering_change_material_orders", "engineering_change_material_effect_links"),
+    ("engineering_change_material_orders", "engineering_change_material_orders"),
+)
+
+# 子表在侧栏上的落点。话术指到能打开并处理这些行的菜单，不重复中文名。
+_MENU: dict[str, str] = {
+    "vehicle_models": "主数据 → 项目 → 一览",
+    "stamping_scrap_prices": "一事一议 → 废料月度销售价",
+    "bom_snapshots": "焊接工程 → 材料清单 → 材料清单列表",
+    "bom_nodes": "焊接工程 → 材料清单 → 材料清单列表",
+    "stamping_parts": "冲压工程 → 冲压工艺 → 冲压零件列表",
+    "stamping_die_parts": "冲压工程 → 冲压模具 → 模具清单",
+    "stamping_gauge_fees": "冲压工程 → 冲压检具费 → 检具费列表",
+    "stamping_die_unit_prices": "冲压工程 → 冲压模具 → 模具单价",
+    "bom_packaging_transport_fees": "焊接工程 → 包装运输费 → 包装运输费列表",
+    "bom_procurement_objects": "焊接工程 → 采购对象 → 采购对象清单",
+    "engineering_change_material_upload_logs": "工程变更 → 材料变更 → 材料变更列表",
+    "engineering_change_material_orders": "工程变更 → 材料变更 → 材料变更列表",
+    "engineering_change_material_effect_links": "工程变更 → 材料变更 → 材料变更列表",
+    "steel_base_prices": "一事一议 → 基准价格 → 基准价格列表",
+    "stamping_tailor_weld_blanks": "冲压工程 → 冲压工艺 → 冲压零件列表",
+    "stamping_process_fees": "冲压工程 → 冲压加工费 → 冲压加工费列表",
+    "stamping_part_costs": "核价 → 冲压零件价格核算 → 冲压零件价格一览",
+    "stamping_die_fees": "冲压工程 → 冲压模具费 → 冲压模具费列表",
+    "costing_assembly_costs": "核价 → 总成核价 → 总成核价一览",
+    "engineering_change_orders": "工程变更 → 设计变更 → 工程变更单列表",
+    "engineering_change_upload_logs": "工程变更 → 设计变更 → 工程变更单列表",
+    "engineering_change_effect_links": "工程变更 → 设计变更 → 工程变更单列表",
+    "bom_welding_fees": "焊接工程 → 焊接费 → 焊接费列表",
+}
+
+
+def ensure_schema_reference_seed(db: Session) -> None:
+    """按键插入或更新。种子未列出的行留在库里。"""
+    repository = SchemaCommentRepository()
+    for table_name, slice_name, name_zh, name_en in _COMMENTS:
+        repository.upsert_comment(
+            db,
+            table_name=table_name,
+            slice_name=slice_name,
+            name_zh=name_zh,
+            name_en=name_en,
+        )
+    for parent_table, child_table in _RESTRICT_EDGES:
+        menu = _MENU[child_table]
+        repository.upsert_hint(
+            db,
+            parent_table=parent_table,
+            child_table=child_table,
+            hint=f"请到「{menu}」处理",
+        )
+    db.flush()
+    db.commit()

@@ -12,6 +12,7 @@ import {
     formatDurationSeconds,
     formatTimingLine,
 } from '../../../domain/duration.js?v=3';
+import { opsIconButtonHtml } from '../../../ui/hud-table.js?v=2';
 
 const READY_API = '/api/costing/engine/ready';
 const RUNS_API = '/api/costing/engine/runs';
@@ -1728,12 +1729,20 @@ function renderHistory() {
                 className: 'text-ink-dim',
             };
             const fingerprint = auditFingerprint(row);
-            const viewBtn = `<button type="button" data-action="open-run" data-run-id="${row.id}"
-                        class="px-2 py-1 text-[10px] text-ink-muted hover:text-ink transition-colors">查看</button>`;
+            const viewBtn = opsIconButtonHtml({
+                action: 'open-run',
+                title: '查看',
+                icon: window.svgIcon('eye', 'w-3.5 h-3.5'),
+                attrs: `data-run-id="${row.id}"`,
+            });
             const deleteBtn = engineState.canDelete
-                ? `<button type="button" data-action="delete-run" data-run-id="${row.id}"
-                        class="px-2 py-1 text-[10px] text-ink-dim hover:text-brand-hud transition-colors"
-                        title="删除记录（不撤销已算价格）">删除</button>`
+                ? opsIconButtonHtml({
+                    action: 'delete-run',
+                    danger: true,
+                    title: '删除记录（不撤销已算价格）',
+                    icon: window.svgIcon('trash', 'w-3.5 h-3.5'),
+                    attrs: `data-run-id="${row.id}"`,
+                })
                 : '';
             return `
             <tr class="engine-history-row group font-mono text-[11px] border-b border-ink/5 hover:bg-ink/[0.02] transition-colors">
@@ -1750,7 +1759,7 @@ function renderHistory() {
                 <td class="px-2 py-2.5 text-[10px] text-ink-dim tabular-nums">${esc(formatTs(row.started_at))}</td>
                 <td class="px-2 py-2.5 text-[10px] text-ink-dim tabular-nums">${esc(formatTs(row.finished_at))}</td>
                 <td class="px-2 py-2.5 text-right text-[10px] text-ink-muted tabular-nums">${esc(formatDurationSeconds(row))}</td>
-                <td class="px-2 py-2.5 text-center">${viewBtn}${deleteBtn}</td>
+                <td class="px-1 py-2.5 text-center"><div class="inline-flex items-center justify-center">${viewBtn}${deleteBtn}</div></td>
             </tr>`;
         })
         .join('');
@@ -1767,7 +1776,7 @@ function renderPager() {
 
 async function deleteRun(runId) {
     if (engineState.isDeleting) return;
-    const ok = window.confirm(
+    const ok = await window.confirmAction(
         '确认删除该引擎 Run？\n用于清理中断/卡住任务；不会撤销已写入的钢材/零件/L0 等业务价格。'
     );
     if (!ok) return;
@@ -1796,7 +1805,7 @@ async function deleteAllRuns() {
         return;
     }
     if (engineState.isDeleting) return;
-    const ok = window.confirm(
+    const ok = await window.confirmAction(
         '确认删除全部引擎运行历史？\n用于清理中断/卡住任务；不会撤销已写入的钢材/零件/L0 等业务价格。'
     );
     if (!ok) return;

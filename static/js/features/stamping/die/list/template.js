@@ -3,7 +3,7 @@ import { filterBarHtml } from '../../../../ui/filter-bar.js?v=4';
 import { hudTableHtml } from '../../../../ui/hud-table.js?v=2';
 import { hudKpiCardHtml } from '../../../../ui/hud-kpi.js?v=1';
 
-import { moreMenuItemHtml, moreMenuShellHtml } from '../../../../ui/more-menu.js?v=5';
+import { moreMenuItemHtml, moreMenuShellHtml } from '../../../../ui/more-menu.js?v=6';
 
 export function dieListTemplate() {
     return `
@@ -32,7 +32,7 @@ export function dieListTemplate() {
                                 itemsHtml: moreMenuItemHtml({ id: 'dieBatchDeleteBtn', label: '删除本范围', danger: true }),
                             })}
                             <button id="dieExportBtn" type="button"
-                                    class="inline-flex items-center gap-1.5 bg-transparent text-ink-dim border border-line-hud px-3 py-1.5 text-[11px] font-medium rounded-md hover:border-brand-hud/50 hover:text-brand-hud hover:bg-brand-hud/10 transition-all">
+                                    class="${BTN_GHOST}">
                                 ${window.svgIcon('download', 'w-3 h-3')}
                                 Excel
                             </button>

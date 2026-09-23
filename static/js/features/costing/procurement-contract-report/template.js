@@ -2,7 +2,7 @@
  * 采购价格 — BRABUS 800 中控交车（协议黑匣）
  */
 
-import { HUD_SHELL } from '../../../ui/classes.js?v=13';
+import { HUD_SHELL, BTN_GHOST } from '../../../ui/classes.js?v=13';
 import { paginationBarHtml } from '../../../ui/page-size.js?v=6';
 
 const RING_SELECT_IDS = [
@@ -92,7 +92,7 @@ export function procurementContractReportTemplate() {
                         <button type="button" id="pcrViewAssemblyBtn" class="${VIEW_LABEL}">总成</button>
                     </div>
                     <button id="pcrResetBtn" type="button"
-                            class="shrink-0 inline-flex items-center gap-1 px-2 h-7 text-[11px] text-ink-muted hover:text-ink">
+                            class="${BTN_GHOST} shrink-0">
                         ${window.svgIcon('refresh', 'w-3 h-3')}
                         重置
                     </button>

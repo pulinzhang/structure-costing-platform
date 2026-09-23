@@ -9,8 +9,8 @@ import {
     pricePerStrokeInputValue,
     parsePricePerStrokeInput,
     updateTonnageHud,
-} from './template.js?v=40';
-import { bindMoreMenu } from '../../../../ui/more-menu.js?v=5';
+} from './template.js?v=41';
+import { bindMoreMenu } from '../../../../ui/more-menu.js?v=6';
 import { bindFilterBar } from '../../../../ui/filter-bar.js?v=4';
 import {
     DEFAULT_PAGE_SIZE,
@@ -507,7 +507,7 @@ async function batchDeleteByFilters() {
         showToast('请选择正确的年度', 'warning');
         return;
     }
-    if (!window.confirm(
+    if (!await window.confirmAction(
         `确定批量删除未审核冲次单价吗？\n\n基地: ${filters.location} · ${fmtYear(year)}\n\n仅删除待审记录；已审核通过会跳过。此操作不可恢复！`,
     )) return;
 
@@ -535,7 +535,7 @@ async function batchDeleteByFilters() {
         await loadData(1);
         await loadFilterOptions();
     } catch (error) {
-        if (!error.status) showToast(error.message || '批量删除失败', 'error');
+        console.error('批量删除失败:', error);
     } finally {
         tonnagePriceState.isBatchDeleting = false;
         if (btn) {

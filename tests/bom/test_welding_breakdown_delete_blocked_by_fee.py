@@ -21,7 +21,6 @@ from app.models.bom.welding_process_breakdown import (
 )
 from app.models.masterdata.location import Location
 from app.models.masterdata.vehicle_model import VehicleModel
-from app.services.bom.welding_process_breakdown.audit.service import WELDING_FEE_REFERENCED
 from app.services.bom.welding_process_breakdown.service import BomWeldingProcessBreakdownService
 
 LOCATION = "青岛"
@@ -184,7 +183,7 @@ def test_batch_delete_blocked_when_welding_fee_exists(memory_db: Session) -> Non
     node_id = node.id
     fee = _add_fee(memory_db, node)
 
-    with pytest.raises(BusinessException, match=WELDING_FEE_REFERENCED):
+    with pytest.raises(BusinessException, match="仍被引用，不能删除") as caught:
         BomWeldingProcessBreakdownService().batch_delete(
             memory_db,
             location=LOCATION,
@@ -192,6 +191,7 @@ def test_batch_delete_blocked_when_welding_fee_exists(memory_db: Session) -> Non
             bom_version=BOM_VERSION,
         )
 
+    assert "焊接费" not in caught.value.message
     assert _node_exists(memory_db, node_id)
     memory_db.delete(fee)
     memory_db.commit()

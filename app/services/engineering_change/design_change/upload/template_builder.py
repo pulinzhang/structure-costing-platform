@@ -32,12 +32,12 @@ TEMPLATE_FILENAME = "工程变更导入模板.xlsx"
 LOCATION = "青岛"
 VEHICLE_MODEL = "T28"
 CUSTOMER_NAME = "奇瑞公司"
-PERIOD_LABEL = "2025年07月"
-CHANGE_VERSION = "EC-202507"
+PERIOD_LABEL = "2026年07月"
+CHANGE_VERSION = "EC-202607"
 STAMPING_SUPPLIER = "烟台海众汽车零部件有限公司"
 BOM_VERSION_LABEL = "D/00"
-HEADER_DATE = "2025-07-01"
-DOC_NO = "EC-T28-202507"
+HEADER_DATE = "2026-07-01"
+DOC_NO = "EC-T28-202607"
 SLASH = "/"
 ADD_PART_NUMBER = "501007040AA"
 _ASSEMBLY_CHANGE_ORDER_COLS = (3, 4, 5)
@@ -584,7 +584,7 @@ def _write_ec_fill_instructions(sheet: Worksheet) -> None:
     sheet["A1"].font = Font(name="微软雅黑", size=14, bold=True)
     lines = (
         "上传页不填版本。车身件材料清单第 2 行「版本：」必填；冲压工艺确认表表头「版本」必填。"
-        "两张表必须写成同一个字（样表都是 EC-202507）。任一张空、或两张写成不一样，整单不能导入。"
+        f"两张表必须写成同一个字（样表都是 {CHANGE_VERSION}）。任一张空、或两张写成不一样，整单不能导入。"
         "设变后的总成、工艺、布点都用这个字，不会改成投产清单的 D/00，也不会各用各的。布点不要另填表。",
         "一本只能一个项目号。系统会拆：材料清单第 3 行「项目代号」、确认表标题"
         "「某某项目冲压工艺确认表」里「项目」前面那一段（或表头项目名称）。"

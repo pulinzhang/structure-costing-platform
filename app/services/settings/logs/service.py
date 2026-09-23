@@ -157,6 +157,7 @@ class OperationLogService:
         audit_scope: OperationAuditScope | None = None,
         upload_filenames: list[str] | None = None,
         error_message: str | None = None,
+        reference_detail: str | None = None,
     ) -> None:
         """中间件调用：独立 Session 写入，失败不影响主请求。"""
         session_factory = DatabaseConfig.get_session_factory()
@@ -176,6 +177,9 @@ class OperationLogService:
                 audit_scope,
                 upload_filenames=upload_filenames,
             )
+            if reference_detail and reference_detail.strip():
+                reference_text = reference_detail.strip()
+                detail = reference_text if not detail else f"{detail}\n{reference_text}"
 
             row = self.repository.create(
                 db,

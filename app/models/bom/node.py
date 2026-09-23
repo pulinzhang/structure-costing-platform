@@ -46,7 +46,7 @@ class BomSnapshot(AuditUserMixin, Base):
 
     唯一键：location + vehicle_model + bom_version
     含义：同一采购基地、同一车型、同一清单版本只有一份生效树。
-    覆盖导入仅在无直接下游（采购对象清单、焊接工艺拆解）时删旧树再写新树；
+    覆盖导入删旧树时由子表外键拒绝；父不预读子表。
     Excel 原件因带时间戳文件名而保留历史。
 
     另含 AuditUserMixin：created_at / created_by / updated_at / updated_by

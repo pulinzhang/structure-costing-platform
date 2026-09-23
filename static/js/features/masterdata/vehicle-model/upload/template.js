@@ -2,12 +2,14 @@
  * 项目上传 — 基地写在 Excel 列里；同步写入
  */
 
+import { UPLOAD_DROPZONE } from '../../../../ui/classes.js?v=13';
 import {
-    BTN_FILE_SELECT,
-    BTN_GHOST,
-    BTN_UPLOAD_SUBMIT,
-    UPLOAD_DROPZONE,
-} from '../../../../ui/classes.js?v=13';
+    uploadBrowseButtonHtml,
+    uploadFileHintHtml,
+    uploadResetButtonHtml,
+    uploadSubmitButtonHtml,
+    uploadTemplateButtonHtml,
+} from '../../../../ui/upload-actions.js?v=2';
 
 export function vehicleModelUploadTemplate() {
     return `
@@ -18,12 +20,7 @@ export function vehicleModelUploadTemplate() {
                         <span class="w-1 h-3.5 bg-brand-hud"></span>
                         <h5 class="text-xs font-semibold text-ink mb-0 tracking-wider">项目补档</h5>
                     </div>
-                    <button type="button"
-                            id="vmUploadTemplateBtn"
-                            class="inline-flex items-center gap-1.5 bg-transparent text-ink-muted border border-line-hud px-3 py-1.5 text-[11px] font-medium rounded-md hover:border-brand-hud/50 hover:text-brand-hud transition-all">
-                        ${window.svgIcon('download', 'w-3 h-3')}
-                        下载模板
-                    </button>
+                    ${uploadTemplateButtonHtml('vmUploadTemplateBtn')}
                 </div>
                 <div class="p-5">
                     <form id="vmUploadForm">
@@ -31,12 +28,9 @@ export function vehicleModelUploadTemplate() {
                             <div id="vmUploadDropIdle" class="flex flex-col items-center gap-0">
                                 ${window.svgIcon('upload', 'w-10 h-10 text-ink-dim mx-auto mb-4')}
                                 <h5 id="vmUploadTitle" class="text-xs font-medium text-ink-muted mb-1.5">拖入 Excel</h5>
-                                <p id="vmUploadHint" class="text-[11px] text-ink-dim mb-5">或点下方选择文件</p>
+                                ${uploadFileHintHtml('vmUploadHint')}
                                 <input type="file" id="vmUploadFileInput" class="hidden" accept=".xlsx,.xls">
-                                <button type="button" id="vmUploadSelectFileBtn" class="${BTN_FILE_SELECT}">
-                                    ${window.svgIcon('folder', 'w-3.5 h-3.5')}
-                                    选择文件
-                                </button>
+                                ${uploadBrowseButtonHtml('vmUploadSelectFileBtn')}
                                 <p class="text-[10px] text-ink-faint mt-5 mb-0">.xlsx / .xls · 基地写在模板列</p>
                             </div>
                             <div id="vmUploadProgressPanel" class="hidden text-left w-full">
@@ -54,8 +48,8 @@ export function vehicleModelUploadTemplate() {
                         </div>
                         <div id="vmUploadFilePreview" class="hidden mb-4"></div>
                         <div class="flex items-center justify-end gap-3">
-                            <button type="button" id="vmUploadResetBtn" class="${BTN_GHOST}">重置</button>
-                            <button type="submit" id="vmUploadSubmitBtn" disabled class="${BTN_UPLOAD_SUBMIT}">上传</button>
+                            ${uploadResetButtonHtml('vmUploadResetBtn')}
+                            ${uploadSubmitButtonHtml('vmUploadSubmitBtn')}
                         </div>
                     </form>
                 </div>

@@ -179,6 +179,8 @@ _USAGE_TOPIC_SIGNALS: tuple[str, ...] = (
     "怎么查价",
     "怎么问价",
     "工程变更",
+    "材料变更",
+    "设计变更",
 )
 
 _STUCK_SIGNALS: tuple[str, ...] = (
@@ -304,6 +306,9 @@ _HELP_TOPIC_RULES: tuple[tuple[str, tuple[str, ...]], ...] = (
             "投产后改图",
             "投产后换号",
             "材料清单换号",
+            "材料变更",
+            "设计变更",
+            "换材料",
         ),
     ),
     ("file_trace", ("文件溯源", "溯源")),

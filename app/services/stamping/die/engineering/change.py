@@ -18,6 +18,7 @@ from app.repositories.stamping.die.repository import (
 )
 from app.schemas.dto.stamping_die_dto import StampingDiePartInsert, StampingDieProcessInsert
 from app.schemas.vo.user_vo import UserVO
+from app.services.settings.schema_comment.service import ensure_deletable
 
 
 @dataclass(slots=True)
@@ -237,6 +238,12 @@ def rollback_engineering_change_part(
 ) -> None:
     """回滚：删新布点（含工序），清空旧布点失效月。只 flush。"""
     if after_part_id is not None:
+        ensure_deletable(
+            db,
+            "stamping_die_parts",
+            [{"id": after_part_id}],
+            subject="该模具零件",
+        )
         die_part_repo.delete_processes_by_part_ids(db, [after_part_id])
         die_part_repo.delete_by_ids(db, [after_part_id])
     if before_part_id is not None:

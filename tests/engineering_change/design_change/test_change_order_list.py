@@ -309,12 +309,11 @@ def test_delete_rolls_back_and_physically_deletes_whole_book(memory_db: Session)
 
 
 def test_rollback_integrity_error_becomes_business_exception(memory_db: Session) -> None:
-    """加工费等 RESTRICT 挡住删零件时，回滚应 409 业务文案，不是 500。"""
+    """加工费等 RESTRICT 挡住删零件时，回滚应 400 业务文案，不是 500。"""
     from unittest.mock import MagicMock
 
     from sqlalchemy.exc import IntegrityError
 
-    from app.common.engineering_change_gates import EC_ROLLBACK_REFERENCED
     from app.exceptions.base import BusinessException
     from app.schemas.vo.user_vo import UserVO
     from app.services.engineering_change.design_change.list.rollback import (
@@ -334,9 +333,9 @@ def test_rollback_integrity_error_becomes_business_exception(memory_db: Session)
         Exception("FOREIGN KEY constraint failed"),
     )
 
-    with pytest.raises(BusinessException, match=EC_ROLLBACK_REFERENCED) as raised:
+    with pytest.raises(BusinessException, match="仍被引用，不能删除") as raised:
         service.rollback(memory_db, log_id, UserVO(id=1, username="tester", real_name="测试员"))
-    assert raised.value.code == 409
+    assert raised.value.code == 400
     assert memory_db.query(EngineeringChangeUploadLog).count() == 1
 
 

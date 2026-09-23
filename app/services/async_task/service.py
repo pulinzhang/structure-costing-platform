@@ -59,6 +59,7 @@ TASK_TYPE_BOM_WELDING_FEE_CALC = "bom_welding_fee_calc"
 TASK_TYPE_ASSEMBLY_COST_CALC = "assembly_cost_calc"
 TASK_TYPE_COSTING_ENGINE_RUN = "costing_engine_run"
 TASK_TYPE_ENGINEERING_CHANGE_UPLOAD = "engineering_change_upload"
+TASK_TYPE_ENGINEERING_CHANGE_MATERIAL_UPLOAD = "engineering_change_material_upload"
 TASK_TYPE_BOM_UPLOAD = "bom_upload"
 
 TASK_TTL_SECONDS = 3600

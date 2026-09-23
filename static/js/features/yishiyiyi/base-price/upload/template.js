@@ -7,8 +7,14 @@ import {
     UPLOAD_DROPZONE,
     UPLOAD_INPUT,
     UPLOAD_LABEL,
-    BTN_GHOST,
 } from '../../../../ui/classes.js?v=13';
+import {
+    uploadBrowseButtonHtml,
+    uploadFileHintHtml,
+    uploadResetButtonHtml,
+    uploadSubmitButtonHtml,
+    uploadTemplateButtonHtml,
+} from '../../../../ui/upload-actions.js?v=2';
 
 export function basePriceUploadTemplate() {
     return `
@@ -20,12 +26,7 @@ export function basePriceUploadTemplate() {
                         ${window.svgIcon('file-earmark-excel', 'w-3.5 h-3.5 text-ink-dim')}
                         <h5 class="text-xs font-semibold text-ink-muted mb-0">基准价格导入</h5>
                     </div>
-                    <button type="button"
-                            id="basePriceUploadTemplateBtn"
-                            class="inline-flex items-center gap-1.5 bg-transparent text-ink-muted border border-line px-3 py-1.5 text-[11px] font-medium rounded-sm hover:border-brand hover:text-brand transition-all duration-150">
-                        <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"></path></svg>
-                        下载模板
-                    </button>
+                    ${uploadTemplateButtonHtml('basePriceUploadTemplateBtn')}
                 </div>
                 <div class="p-5">
                     <form id="basePriceUploadForm">
@@ -62,14 +63,9 @@ export function basePriceUploadTemplate() {
                             <div id="basePriceDropIdle">
                                 ${window.svgIcon('upload', 'w-10 h-10 text-ink-dim mx-auto mb-4')}
                                 <h5 id="basePriceUploadTitle" class="text-xs font-medium text-ink-muted mb-1.5">拖拽文件到此处上传</h5>
-                                <p class="text-[11px] text-ink-dim mb-5">或点击下方按钮选择文件</p>
+                                ${uploadFileHintHtml('basePriceUploadHint')}
                                 <input type="file" id="basePriceFileInput" class="hidden" accept=".xlsx,.xls">
-                                <button type="button"
-                                        id="basePriceSelectFileBtn"
-                                        class="${BTN_GHOST}">
-                                    ${window.svgIcon('folder', 'w-3.5 h-3.5')}
-                                    选择文件
-                                </button>
+                                ${uploadBrowseButtonHtml('basePriceSelectFileBtn')}
                                 <p class="text-[10px] text-ink-dim mt-5 mb-0">支持 .xlsx, .xls（最大 50MB）</p>
                             </div>
 
@@ -97,19 +93,8 @@ export function basePriceUploadTemplate() {
 
                         <!-- 操作按钮行 -->
                         <div class="flex items-center justify-end gap-3">
-                            <button type="button"
-                                    id="basePriceResetButton"
-                                    class="${BTN_GHOST}">
-                                ${window.svgIcon('refresh', 'w-3.5 h-3.5')}
-                                重置
-                            </button>
-                            <button type="submit"
-                                    id="basePriceSubmitButton"
-                                    disabled
-                                    class="inline-flex items-center gap-1.5 px-3 py-1.5 text-[11px] font-semibold rounded-sm text-ink-muted border border-brand/40 transition-all duration-200 hover:text-ink disabled:opacity-30 disabled:pointer-events-none">
-                                ${window.svgIcon('upload', 'w-3.5 h-3.5')}
-                                导入基准价格
-                            </button>
+                            ${uploadResetButtonHtml('basePriceResetButton')}
+                            ${uploadSubmitButtonHtml('basePriceSubmitButton')}
                         </div>
                     </form>
                 </div>

@@ -6,11 +6,13 @@ from app.bootstrap.routers import _collect_routers
 _MATERIAL_PREFIX = "/api/engineering-change/material"
 
 
-def test_scanned_routes_keep_material_prefix_empty() -> None:
+def test_scanned_routes_keep_material_prefix() -> None:
     routers = _collect_routers(routers_package)
     material = [router for router in routers if router.prefix == _MATERIAL_PREFIX]
     assert len(material) == 1
-    assert list(material[0].routes) == []
+    paths = {getattr(route, "path", "") for route in material[0].routes}
+    assert any(path.endswith("/upload") for path in paths)
+    assert any("/uploads/{upload_log_id:int}" in path for path in paths)
     for router in routers:
         if router.prefix == _MATERIAL_PREFIX:
             continue

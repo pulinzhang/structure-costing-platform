@@ -9,6 +9,7 @@ from datetime import datetime
 
 from sqlalchemy.orm import Session
 
+from app.common.audit import AUDIT_APPROVED
 from app.models.bom import BomWeldingProcessBreakdownLine, BomWeldingProcessBreakdownNode
 from app.repositories.bom.welding_process_breakdown.queries import WeldingBreakdownQueries
 from app.repositories.bom.welding_process_breakdown.types import (
@@ -308,6 +309,22 @@ class BomWeldingProcessBreakdownRepository:
 
     def delete_unaudited_by_snapshot_id(self, db: Session, snapshot_id: int) -> int:
         return self._writes.delete_unaudited_by_snapshot_id(db, snapshot_id)
+
+    def list_unaudited_ids(
+        self,
+        db: Session,
+        *,
+        location: str,
+        vehicle_model: str,
+        source_node_ids: set[int],
+    ) -> list[int]:
+        return self._queries.list_ids_matching(
+            db,
+            location=location,
+            vehicle_model=vehicle_model,
+            source_node_ids=source_node_ids,
+            exclude_audit_status=AUDIT_APPROVED,
+        )
 
     def delete_unaudited_by_scope(
         self,

@@ -38,6 +38,8 @@
 | `bom_welding_unit_price` | `BomWeldingUnitPriceImportService` + `save_welding_unit_price_upload` |
 | `bom_annual_part_price` | `BomAnnualPartPriceImportService` + `save_annual_part_price_upload` |
 | `bom_procurement_object_supplier` | `BomProcurementObjectSupplierUploadService` + `save_procurement_object_supplier_upload` |
+| `engineering_change` | 现网设计变更 `start_upload` 入队即 `register_existing`（`supersede_same_scope=False`） |
+| `engineering_change_material` | **待落地**：[材料变更第 3 刀](../engineering-change/material-change/03-menu-list-rollback.md) §4。禁止复用上一行 |
 
 **现网全量对照（Excel 相关）：**
 
@@ -54,6 +56,8 @@
 | 焊接单价 | ✅ | ✅ | ✅ |
 | 年度零件价 | ✅ | ✅ | ✅ |
 | 采购对象供应商 | ✅ | ✅ | ✅ |
+| 设计变更 | ✅ | ✅ | ✅（分类 `engineering_change`） |
+| 材料变更 | 设计已定、业务未落地 | 第 3 刀落盘 | 第 3 刀加分类 `engineering_change_material`，见 [material-change/03](../engineering-change/material-change/03-menu-list-rollback.md) |
 | 废料销售价 | ❌ | — | ❌ |
 | 冲压加工费 / 焊接工艺拆解 / L0 焊接费等 | ❌ | — | ❌ |
 
@@ -236,6 +240,8 @@ file_trace Service → upload_file Repository（读列表 / 下载）
 | `bom_welding_unit_price` | 焊接单价 | `location`, `year` | 焊接单价 import（归档后登记） |
 | `bom_annual_part_price` | 年度零件价 | `location`, `year` | 年度零件价 import（归档后登记） |
 | `bom_procurement_object_supplier` | 采购对象供应商 | `location`, `vehicle_model`, `bom_version` | 采购对象供应商 import（归档后登记） |
+| `engineering_change` | 设计变更 | `location`, `vehicle_model`, `year`, `month` | 现网 `start_upload` 入队即登记；`supersede_same_scope=False` |
+| `engineering_change_material` | 材料变更 | `location`, `vehicle_model`, `year`, `month` | **待落地** 材料变更入队即登记；`supersede_same_scope=False`；禁止复用上一行 |
 
 字段命名：
 
@@ -305,6 +311,7 @@ file_trace Service → upload_file Repository（读列表 / 下载）
 | `bom_welding_unit_price` | `file_category` + `location` + `year` |
 | `bom_annual_part_price` | `file_category` + `location` + `year` |
 | `bom_procurement_object_supplier` | `file_category` + `location` + `vehicle_model` + `bom_version` |
+| `engineering_change` / `engineering_change_material` | **不 supersede**（每本一份；回滚业务头也不删这一行） |
 
 列表默认 `status=active`。
 
@@ -469,6 +476,8 @@ JSON 端点使用 `response_model=ApiResponse[T]`；**下载为 `StreamingRespon
 | `bom_welding_unit_price` | `op:bom-welding-unit-price-upload:view`, `op:bom-welding-unit-price:view` |
 | `bom_annual_part_price` | `op:bom-annual-part-price-upload:view`, `op:bom-annual-part-price:view` |
 | `bom_procurement_object_supplier` | `op:bom-procurement-object-supplier-upload:view`, `op:bom-procurement-object-list:view` |
+| `engineering_change` | `op:engineering-change-upload:view`, `op:engineering-change-order-list:view`（现网已挂） |
+| `engineering_change_material` | `op:engineering-change-material-upload:view`, `op:engineering-change-material-list:view`（第 3 刀；**不要**用设计变更那两码） |
 
 ---
 

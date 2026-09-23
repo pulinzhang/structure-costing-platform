@@ -8,13 +8,13 @@ import {
     steelPriceListTemplate,
     renderSteelPriceRows,
     updateSteelPriceHud,
-} from './template.js?v=69';
+} from './template.js?v=70';
 import {
     DEFAULT_PAGE_SIZE,
     bindPagination,
     paintPagination,
 } from '../../../../ui/page-size.js?v=6';
-import { bindMoreMenu } from '../../../../ui/more-menu.js?v=5';
+import { bindMoreMenu } from '../../../../ui/more-menu.js?v=6';
 import { bindFilterBar } from '../../../../ui/filter-bar.js?v=4';
 import { setSearchBusy } from '../../../../ui/search-busy.js?v=4';
 
@@ -442,7 +442,7 @@ async function batchDeleteByFilters() {
     if (filters.grade) parts.push(`牌号: ${filters.grade}`);
     if (filters.steel_mill) parts.push(`钢厂: ${filters.steel_mill}`);
 
-    const confirmed = window.confirm(
+    const confirmed = await window.confirmAction(
         `确定按以下条件批量删除未审核记录吗？\n\n${parts.join(' | ')}\n\n仅删除待审已驳回；已审核通过的记录会跳过。此操作不可恢复！`
     );
     if (!confirmed) return;

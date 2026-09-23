@@ -596,7 +596,7 @@ def test_t2aa_sample_blocks_missing_l1_part_sketch() -> None:
     from app.parsers.bom.bom_parser import parse_bom_excel
     from app.parsers.engineering_change.design_change.sheet_extract import SHEET_BOM
 
-    sample = Path("docs/engineering-change/samples/工程变更导入T2AA-1.xlsx")
+    sample = Path("tests/engineering_change/design_change/fixtures/工程变更导入T2AA-1.xlsx")
     parsed = parse_bom_excel(sample.read_bytes(), sheet_name=SHEET_BOM)
     target = next(node for node in parsed.nodes if node.part_number == "551005982AB")
     assert int(target.level) == 1
@@ -628,7 +628,7 @@ def test_t2aa_sample_copies_process_sketch_onto_bom_l1() -> None:
         parse_process_confirmation,
     )
 
-    sample = Path("docs/engineering-change/samples/工程变更导入T2AA-1.xlsx")
+    sample = Path("tests/engineering_change/design_change/fixtures/工程变更导入T2AA-1.xlsx")
     content = sample.read_bytes()
     parsed = parse_bom_excel(content, sheet_name=SHEET_BOM)
     target = next(node for node in parsed.nodes if node.part_number == "551005982AB")

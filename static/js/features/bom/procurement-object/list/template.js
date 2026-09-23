@@ -2,12 +2,12 @@
  * 采购对象清单列表 — HUD 密表（对齐冲压零件价格一览）
  */
 
-import { filterSelect, filterInput, HUD_SHELL, HUD_BAND, OPS_TH, BTN_GHOST, DRAWER_BACKDROP, BTN_SOLID_DANGER, HUD_FILTER } from '../../../../ui/classes.js?v=13';
+import { filterSelect, filterInput, HUD_SHELL, HUD_BAND, OPS_TH, BTN_GHOST, DRAWER_BACKDROP, BTN_SOLID_DANGER, HUD_FILTER, BTN_SOLID } from '../../../../ui/classes.js?v=13';
 import { filterBarHtml } from '../../../../ui/filter-bar.js?v=4';
-import { hudTableHtml } from '../../../../ui/hud-table.js?v=2';
+import { hudTableHtml, opsIconButtonHtml } from '../../../../ui/hud-table.js?v=2';
 import { hudKpiCardHtml } from '../../../../ui/hud-kpi.js?v=1';
 
-import { moreMenuItemHtml, moreMenuShellHtml } from '../../../../ui/more-menu.js?v=5';
+import { moreMenuItemHtml, moreMenuShellHtml } from '../../../../ui/more-menu.js?v=6';
 import { AUDIT_LABELS, CONFIRM_LABELS, KIND_LABELS, SECTION_LABELS } from '../labels.js?v=4';
 import { partShortCodeCellHtml, partNumberNameCellHtml } from '../../../../domain/part-identity.js?v=5';
 import { fmtPeriodRange, hasClosedPeriod } from '../../../common/period-ui.js?v=5';
@@ -170,7 +170,7 @@ function auditDrawerHtml() {
                 </div>
             </div>
             <div class="px-6 py-4 border-t border-app-elevated flex items-center justify-end gap-2">
-                <button type="button" id="poBatchAuditCancelBtn" class="inline-flex items-center gap-1.5 bg-transparent text-ink-muted border border-line px-4 py-2 text-[11px] font-medium rounded hover:text-ink">取消</button>
+                <button type="button" id="poBatchAuditCancelBtn" class="${BTN_GHOST}">取消</button>
                 <button type="button" id="poBatchAuditConfirmBtn" class="inline-flex items-center gap-1.5 bg-brand-hud text-ink-onbrand px-4 py-2 text-[11px] font-semibold rounded hover:bg-brand-hover">确认提交</button>
             </div>
         </div>
@@ -185,7 +185,7 @@ function auditDrawerHtml() {
                 <p class="text-[11px] text-ink-dim">按范围整单删除：无已审时连清单头一并清除（与重新生成前覆盖一致）；有已审则只删待审行与核对区，清单头保留。</p>
             </div>
             <div class="px-6 py-4 border-t border-app-elevated flex items-center justify-end gap-2">
-                <button type="button" id="poBatchDeleteCancelBtn" class="inline-flex items-center gap-1.5 bg-transparent text-ink-muted border border-line px-4 py-2 text-[11px] font-medium rounded">取消</button>
+                <button type="button" id="poBatchDeleteCancelBtn" class="${BTN_GHOST}">取消</button>
                 <button type="button" id="poBatchDeleteConfirmBtn" class="${BTN_SOLID_DANGER}">确认删除</button>
             </div>
         </div>
@@ -229,8 +229,8 @@ function confirmDrawerHtml() {
                 </label>
             </div>
             <div class="px-6 py-4 border-t border-app-elevated flex justify-end gap-2">
-                <button type="button" id="poConfirmCancelBtn" class="inline-flex items-center bg-transparent text-ink-muted border border-line px-4 py-2 text-[11px] rounded">取消</button>
-                <button type="button" id="poConfirmSaveBtn" class="inline-flex items-center bg-brand-hud text-ink-onbrand px-4 py-2 text-[11px] font-semibold rounded">保存确认</button>
+                <button type="button" id="poConfirmCancelBtn" class="${BTN_GHOST}">取消</button>
+                <button type="button" id="poConfirmSaveBtn" class="${BTN_SOLID}">保存确认</button>
             </div>
         </div>
     `;
@@ -300,9 +300,12 @@ export function renderProcurementObjectRows(records) {
     const mergeCell = 'px-2 py-2 overflow-hidden align-middle border-r border-line-hud';
     return records.map((row, index) => {
         const confirmBtn = row.section === 'object'
-            ? `<button type="button" data-action="confirm" data-id="${esc(row.id)}"
-                    class="inline-flex items-center justify-center w-7 h-7 rounded-sm opacity-0 group-hover:opacity-100 focus:opacity-100 text-ink-faint hover:text-brand-hud hover:bg-app-rowhover"
-                    title="确认" aria-label="确认">${window.svgIcon('pencil', 'w-3.5 h-3.5')}</button>`
+            ? opsIconButtonHtml({
+                action: 'confirm',
+                title: '确认',
+                icon: window.svgIcon('check-circle', 'w-3.5 h-3.5'),
+                attrs: `data-id="${esc(row.id)}"`,
+            })
             : '';
         const excelSpan = excelSpans[index];
         const l0Span = l0Spans[index];
@@ -350,10 +353,12 @@ export function renderProcurementObjectRows(records) {
             ${periodTd}
             <td class="px-2 py-2 text-[9px] text-ink-faint truncate">${esc(row.location)} · ${esc(row.vehicle_model)} · ${esc(row.bom_version)}</td>
             <td class="px-1 py-2 text-center sticky right-0 z-[2] brabus-bg-grid group-hover:bg-app-rowhover">
-                ${confirmBtn}
-                <button type="button" data-action="detail" data-id="${esc(row.id)}"
-                        class="inline-flex items-center justify-center w-7 h-7 rounded-sm opacity-0 group-hover:opacity-100 focus:opacity-100 text-ink-faint hover:text-ink-muted hover:bg-app-rowhover"
-                        title="详情" aria-label="详情">${window.svgIcon('eye', 'w-3.5 h-3.5')}</button>
+                ${confirmBtn}${opsIconButtonHtml({
+                    action: 'detail',
+                    title: '详情',
+                    icon: window.svgIcon('eye', 'w-3.5 h-3.5'),
+                    attrs: `data-id="${esc(row.id)}"`,
+                })}
             </td>
         </tr>`;
     }).join('');

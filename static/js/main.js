@@ -20,6 +20,7 @@ const SVG_ICONS = {
     'exclamation-circle': `<svg class="inline-block w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="12" cy="12" r="10"/><path d="M12 8v4"/><path d="M12 16h.01"/></svg>`,
     'exclamation-triangle': `<svg class="inline-block w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3Z"/><path d="M12 9v4"/><path d="M12 17h.01"/></svg>`,
     'check-circle': `<svg class="inline-block w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><path d="m9 11 3 3L22 4"/></svg>`,
+    'ban': `<svg class="inline-block w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="12" cy="12" r="10"/><path d="m4.9 4.9 14.2 14.2"/></svg>`,
     'info-circle': `<svg class="inline-block w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="12" cy="12" r="10"/><path d="M12 16v-4"/><path d="M12 8h.01"/></svg>`,
     'box': `<svg class="inline-block w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4"/></svg>`,
     'gear': `<svg class="inline-block w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"/><path d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/></svg>`,
@@ -487,6 +488,17 @@ const HttpClient = (() => {
             }
         }
 
+        const reportFailure = (msg) => {
+            if (skipToast) return;
+            const path = String(url || '').split('?')[0];
+            const useDialog = methodUpper === 'DELETE' || path.endsWith('/batch-delete');
+            if (useDialog && typeof window.showDeleteError === 'function') {
+                window.showDeleteError(msg);
+                return;
+            }
+            showToast(msg, 'error');
+        };
+
         try {
             const response = await fetch(fullUrl, init);
             clearTimeout(timer);
@@ -506,7 +518,7 @@ const HttpClient = (() => {
                     return { ok: true, status: response.status, data: data.data, message: data.message };
                 }
                 const msg = data.message || data.detail || '请求失败';
-                if (!skipToast) showToast(msg, 'error');
+                reportFailure(msg);
                 const err = new Error(msg);
                 err.status = response.status;
                 err.data = data.data;
@@ -515,7 +527,7 @@ const HttpClient = (() => {
 
             if (!response.ok) {
                 const msg = (data && (data.message || data.detail)) || `请求失败 (${response.status})`;
-                if (!skipToast) showToast(msg, 'error');
+                reportFailure(msg);
                 const err = new Error(msg);
                 err.status = response.status;
                 throw err;
@@ -526,11 +538,11 @@ const HttpClient = (() => {
             clearTimeout(timer);
             if (isAbortError(error)) {
                 error.message = REQUEST_TIMEOUT_MSG;
-                if (!skipToast) showToast(REQUEST_TIMEOUT_MSG, 'error');
+                reportFailure(REQUEST_TIMEOUT_MSG);
             } else if (!error.status) {
                 const msg = humanizeTransportError(error, '网络请求失败');
                 error.message = msg;
-                if (!skipToast) showToast(msg, 'error');
+                reportFailure(msg);
             }
             throw error;
         }

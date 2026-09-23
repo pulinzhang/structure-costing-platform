@@ -17,6 +17,7 @@ def on_startup() -> None:
     AuxiliaryDatabaseConfig.create_tables()
     _ensure_bom_node_part_number_index()
     _seed_if_empty()
+    _bind_material_overlay()
     _log_startup()
 
 
@@ -48,6 +49,7 @@ def _seed_if_empty() -> None:
     from app.services.masterdata.steel_grade_category.service import (
         SteelGradeCategoryService,
     )
+    from app.services.settings.schema_comment.seed import ensure_schema_reference_seed
     from app.services.settings.users.service import UserService
 
     session_factory = DatabaseConfig.get_session_factory()
@@ -55,8 +57,18 @@ def _seed_if_empty() -> None:
     try:
         UserService().ensure_default_admin(db)
         SteelGradeCategoryService().ensure_seed_if_empty(db)
+        ensure_schema_reference_seed(db)
     finally:
         db.close()
+
+
+def _bind_material_overlay() -> None:
+    from app.services.engineering_change.material_change.overlay import (
+        overlay_materials_for_parts,
+    )
+    from app.services.stamping.part.materials import bind_material_overlay
+
+    bind_material_overlay(overlay_materials_for_parts)
 
 
 def _log_startup() -> None:

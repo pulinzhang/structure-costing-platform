@@ -9,14 +9,15 @@ import {
     renderDetailContent,
     updatePartsHudScope,
     updatePartsHud,
-} from './template.js?v=58';
+} from './template.js?v=60';
+import { can } from '../../../../core/permissions.js?v=8';
 import { hudRowHtml, opsIconButtonHtml } from '../../../../ui/hud-table.js?v=2';
-import { bindMoreMenu } from '../../../../ui/more-menu.js?v=5';
+import { bindMoreMenu } from '../../../../ui/more-menu.js?v=6';
 import { bindFilterBar } from '../../../../ui/filter-bar.js?v=4';
 import { fmtPeriodRange } from '../../../common/period-ui.js?v=4';
+import { downloadMaterialChangeFile } from '../../../engineering-change/material-change/download.js?v=1';
 import {
-    BTN_SAVE_ACTIVE,
-    BTN_SAVE_DEFAULT,
+    BTN_SOLID,
     SKETCH_PLACEHOLDER,
     SKETCH_THUMBNAIL,
     ZOOM_OVERLAY,
@@ -127,7 +128,23 @@ const partsState = {
     advancedOpen: false,
     pendingFilters: null,
     total: 0,
+    items: [],
 };
+
+function specText(value) {
+    const text = String(value ?? '').trim();
+    return text || '—';
+}
+
+function partDeleteSpecs(part) {
+    const project = [part?.vehicle_model, part?.version].map((item) => String(item ?? '').trim()).filter(Boolean).join(' / ');
+    return [
+        { label: '零件名称', value: specText(part?.part_name) },
+        { label: '零件号', value: specText(part?.part_number) },
+        { label: '项目', value: specText(project) },
+        { label: '冲压工厂', value: specText(part?.stamping_supplier) },
+    ];
+}
 
 export const PartsPage = {
     init() {
@@ -358,6 +375,7 @@ export const PartsPage = {
             const pageInfo = resp.data ?? {};
             const items = pageInfo.items || [];
             const total = pageInfo.total ?? 0;
+            partsState.items = items;
             partsState.total = total;
             const totalPages = pageInfo.total_pages ?? 1;
 
@@ -380,6 +398,7 @@ export const PartsPage = {
         } catch (error) {
             console.error('加载零件列表失败:', error);
             showToast(error.message || '加载失败', 'error');
+            partsState.items = [];
             partsState.total = 0;
             this.showEmptyHint('加载失败', esc(error.message) || '请稍后重试');
             updatePartsHud(null);
@@ -465,8 +484,18 @@ export const PartsPage = {
         const filters = this.requireScopeForBatchDelete();
         if (!filters) return;
 
-        if (!window.confirm(
-            `确定批量删除零件吗？\n\n基地: ${filters.location}\n项目: ${filters.vehicle_model}\n版本: ${filters.version}\n工厂: ${filters.stamping_supplier || '全部工厂'}\n\n将同时删除关联工序。有冲压加工费时无法删除。此操作不可恢复！`,
+        if (!await window.confirmAction(
+            '即将删除该范围内的零件，并同时删除关联工序。此操作不可恢复。',
+            {
+                title: '确认批量删除零件',
+                confirmLabel: '确认彻底删除',
+                specs: [
+                    { label: '基地', value: specText(filters.location) },
+                    { label: '项目', value: specText(filters.vehicle_model) },
+                    { label: '版本', value: specText(filters.version) },
+                    { label: '工厂', value: specText(filters.stamping_supplier || '全部工厂') },
+                ],
+            },
         )) {
             return;
         }
@@ -498,7 +527,7 @@ export const PartsPage = {
                 await this.loadParts(1);
             }
         } catch (error) {
-            showToast(error.message || '批量删除失败', 'error');
+            console.error('批量删除失败:', error);
         } finally {
             if (btn) {
                 btn.disabled = false;
@@ -533,6 +562,19 @@ export const PartsPage = {
         try {
             const result = await HttpClient.get(`${PARTS_API}/${partId}`);
             const part = result.data?.data ?? result.data ?? result;
+            let materialRecords = [];
+            try {
+                const recordsRes = await HttpClient.get(
+                    `/api/engineering-change/material/parts/${partId}/records`,
+                    { skipToast: true },
+                );
+                materialRecords = Array.isArray(recordsRes?.data) ? recordsRes.data : [];
+            } catch (_error) {
+                materialRecords = [];
+            }
+            const canDownloadMaterialFile = typeof can === 'function'
+                ? can('op:engineering-change-material-list:view')
+                : false;
             contentEl.innerHTML = renderDetailContent(part, {
                 canUpdate: this.canUpdate !== false,
                 periodLabel: fmtPeriodRange(
@@ -541,17 +583,20 @@ export const PartsPage = {
                     part.expiry_year,
                     part.expiry_month,
                 ),
+                materialRecords,
+                canDownloadMaterialFile,
             });
 
             const btn = document.getElementById('saveProcessBtn');
             if (btn) {
                 btn.dataset.active = 'false';
-                btn.className = BTN_SAVE_DEFAULT;
+                btn.className = BTN_SOLID;
             }
 
             this._bindProcessEditEvents(part.id);
             this._bindOffalEditEvents(part.id);
             this._bindSketchModal(part);
+            this._bindMaterialChangeDownloads();
         } catch (error) {
             contentEl.innerHTML = `
                 <div class="p-4 m-4 bg-app-deep border border-line">
@@ -562,6 +607,23 @@ export const PartsPage = {
                 </div>
             `;
         }
+    },
+
+    _bindMaterialChangeDownloads() {
+        document.querySelectorAll('[data-ecm-download]').forEach((button) => {
+            button.addEventListener('click', async () => {
+                const uploadLogId = Number(button.getAttribute('data-ecm-download'));
+                if (!uploadLogId) return;
+                try {
+                    await downloadMaterialChangeFile(
+                        uploadLogId,
+                        button.getAttribute('data-filename') || '',
+                    );
+                } catch (error) {
+                    showToast(error?.message || '下载失败', 'error');
+                }
+            });
+        });
     },
 
     _bindSketchModal(part) {
@@ -674,14 +736,14 @@ export const PartsPage = {
         const btn = document.getElementById('saveOffalBtn');
         if (!btn || btn.dataset.active === 'true') return;
         btn.dataset.active = 'true';
-        btn.className = 'h-7 px-3 text-[10px] text-ink-onbrand bg-brand border border-brand rounded-sm hover:bg-brand-hover transition-all tracking-wide';
+        btn.className = BTN_SOLID;
     },
 
     _activateSaveButton() {
         const btn = document.getElementById('saveProcessBtn');
         if (!btn || btn.dataset.active === 'true') return;
         btn.dataset.active = 'true';
-        btn.className = BTN_SAVE_ACTIVE;
+        btn.className = BTN_SOLID;
     },
 
     _collectProcessEdits() {
@@ -714,7 +776,7 @@ export const PartsPage = {
             const saveBtn = document.getElementById('saveProcessBtn');
             if (saveBtn) {
                 saveBtn.dataset.active = 'false';
-                saveBtn.className = BTN_SAVE_DEFAULT;
+                saveBtn.className = BTN_SOLID;
             }
             this.loadParts(partsState.currentPage);
             this.showDetail(partId);
@@ -832,14 +894,24 @@ export const PartsPage = {
             showToast('无删除权限', 'warning');
             return;
         }
-        if (!confirm('确定要删除这个零件吗？已有冲压加工费时无法删除。')) return;
+        const part = partsState.items.find((row) => Number(row.id) === Number(partId));
+        const confirmed = await window.confirmAction(
+            part
+                ? '即将永久移除以下零件，并同时删除其关联工序。此操作不可恢复。'
+                : '即将永久移除该零件，并同时删除其关联工序。此操作不可恢复。',
+            {
+                title: '确认删除零件',
+                confirmLabel: '确认彻底删除',
+                specs: part ? partDeleteSpecs(part) : [],
+            },
+        );
+        if (!confirmed) return;
         try {
             await HttpClient.delete(`${PARTS_API}/${partId}`);
             showToast('删除成功', 'success');
             this.loadParts(partsState.currentPage);
         } catch (error) {
             console.error('删除失败:', error);
-            showToast(error.message || '删除失败', 'error');
         }
     },
 

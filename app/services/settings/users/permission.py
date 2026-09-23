@@ -24,10 +24,18 @@ _DESIGN_CHANGE_MENUS = (
     Perm.MENU_ENGINEERING_CHANGE_UPLOAD,
     Perm.MENU_ENGINEERING_CHANGE_ORDER_LIST,
 )
+_MATERIAL_CHANGE_MENUS = (
+    Perm.MENU_ENGINEERING_CHANGE_MATERIAL_UPLOAD,
+    Perm.MENU_ENGINEERING_CHANGE_MATERIAL_LIST,
+)
 
 
 def _has_design_change_menu(codes: list[str]) -> bool:
     return any(code in _DESIGN_CHANGE_MENUS for code in codes)
+
+
+def _has_material_change_menu(codes: list[str]) -> bool:
+    return any(code in _MATERIAL_CHANGE_MENUS for code in codes)
 
 
 class PermissionService:
@@ -96,6 +104,8 @@ class PermissionService:
         - 若无任何 is_admin，将 username=admin 标为管理员
         - 非管理员：无权限记录则写 defaults；有记录则补 mandatory
         - 已有设计变更上传或列表菜单的用户，补上设计变更分组码
+        - 已有材料变更上传或列表菜单的用户，补上材料变更分组码
+        - 不给设计变更用户自动补材料变更
         """
         users = self.user_repo.list_all(db)
         admin_count = sum(1 for u in users if u.is_admin)
@@ -115,6 +125,8 @@ class PermissionService:
                 extra = list(get_mandatory())
                 if _has_design_change_menu(existing):
                     extra.append(Perm.MENU_ENGINEERING_CHANGE_DESIGN_GROUP)
+                if _has_material_change_menu(existing):
+                    extra.append(Perm.MENU_ENGINEERING_CHANGE_MATERIAL_GROUP)
                 self.perm_repo.ensure_codes(db, u.id, extra)
 
         db.commit()

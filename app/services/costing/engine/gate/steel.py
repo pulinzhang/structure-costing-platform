@@ -50,7 +50,7 @@ def check_steel_chain(
         message=(
             f"基价覆盖完整，展开 {report.row_count} 行"
             if report.base_ok
-            else f"基价覆盖不全：{report.no_base_count} 个规格无匹配"
+            else f"基价覆盖不全：{report.no_base_count} 个牌号无匹配"
         ),
         location=location,
         year=year,

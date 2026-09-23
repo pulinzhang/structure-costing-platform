@@ -2,7 +2,14 @@
  * 采购对象批量上传供应商
  */
 
-import { BTN_FILE_SELECT, BTN_GHOST, BTN_UPLOAD_SUBMIT, UPLOAD_DROPZONE, UPLOAD_INPUT, UPLOAD_LABEL, HUD_LED } from '../../../../ui/classes.js?v=13';
+import { UPLOAD_DROPZONE, UPLOAD_INPUT, UPLOAD_LABEL, HUD_LED } from '../../../../ui/classes.js?v=13';
+import {
+    uploadBrowseButtonHtml,
+    uploadFileHintHtml,
+    uploadResetButtonHtml,
+    uploadSubmitButtonHtml,
+    uploadTemplateButtonHtml,
+} from '../../../../ui/upload-actions.js?v=2';
 
 export function procurementObjectSupplierUploadTemplate() {
     return `
@@ -13,12 +20,7 @@ export function procurementObjectSupplierUploadTemplate() {
                         ${window.svgIcon('file-earmark-excel', 'w-3.5 h-3.5 text-ink-dim')}
                         <h5 class="text-xs font-semibold text-ink-muted mb-0">采购对象供应商导入</h5>
                     </div>
-                    <button type="button"
-                            id="poSupplierUploadTemplateBtn"
-                            class="inline-flex items-center gap-1.5 bg-transparent text-ink-muted border border-line px-3 py-1.5 text-[11px] font-medium rounded-sm hover:border-brand hover:text-brand transition-all duration-150">
-                        ${window.svgIcon('download', 'w-3.5 h-3.5')}
-                        下载模板
-                    </button>
+                    ${uploadTemplateButtonHtml('poSupplierUploadTemplateBtn')}
                 </div>
                 <div class="p-5">
                     <form id="poSupplierUploadForm">
@@ -73,12 +75,9 @@ export function procurementObjectSupplierUploadTemplate() {
                                         <div id="poSupplierUploadDropIdle" class="flex flex-col items-center gap-0">
                                             ${window.svgIcon('upload', 'w-10 h-10 text-ink-dim mx-auto mb-4')}
                                             <h5 id="poSupplierUploadTitle" class="text-xs font-medium text-ink-muted mb-1.5">拖拽文件到此处上传</h5>
-                                            <p id="poSupplierUploadHint" class="text-[11px] text-ink-dim mb-5">或点击下方按钮选择文件</p>
+                                            ${uploadFileHintHtml('poSupplierUploadHint')}
                                             <input type="file" id="poSupplierUploadFileInput" class="hidden" accept=".xlsx">
-                                            <button type="button" id="poSupplierUploadSelectFileBtn" class="${BTN_FILE_SELECT}">
-                                                ${window.svgIcon('folder', 'w-3.5 h-3.5')}
-                                                选择文件
-                                            </button>
+                                            ${uploadBrowseButtonHtml('poSupplierUploadSelectFileBtn')}
                                             <p class="text-[10px] text-ink-dim mt-5 mb-0">仅 .xlsx · 同步导入 · 只改第一页供应商列</p>
                                         </div>
                                         <div id="poSupplierUploadProgressPanel" class="hidden text-left w-full">
@@ -96,8 +95,8 @@ export function procurementObjectSupplierUploadTemplate() {
                                     </div>
                                     <div id="poSupplierUploadFilePreview" class="hidden mb-4"></div>
                                     <div class="flex items-center justify-end gap-3">
-                                        <button type="button" id="poSupplierUploadResetBtn" class="${BTN_GHOST}">重置</button>
-                                        <button type="submit" id="poSupplierUploadSubmitBtn" disabled class="${BTN_UPLOAD_SUBMIT}">上传</button>
+                                        ${uploadResetButtonHtml('poSupplierUploadResetBtn')}
+                                        ${uploadSubmitButtonHtml('poSupplierUploadSubmitBtn')}
                                     </div>
                                 </div>
                             </div>

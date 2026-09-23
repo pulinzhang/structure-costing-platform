@@ -4,7 +4,7 @@
 
 import {
     assemblyCostCalcTemplate,
-} from './template.js?v=15';
+} from './template.js?v=16';
 import {
     DEFAULT_PAGE_SIZE,
     bindPagination,
@@ -13,6 +13,7 @@ import {
 import {
     formatDurationSeconds,
 } from '../../../../domain/duration.js?v=3';
+import { opsIconButtonHtml } from '../../../../ui/hud-table.js?v=2';
 
 const API_BASE = '/api/costing/assembly-costs';
 const CASCADE_API = '/api/bom/filters/cascade';
@@ -352,8 +353,27 @@ function renderHistoryRows(items) {
         const meta = STATUS_META[row.status] || { label: row.status, className: 'text-ink-muted' };
         const query = `?year=${encodeURIComponent(row.year)}&month=${encodeURIComponent(row.month)}&location=${encodeURIComponent(row.location)}&vehicle_model=${encodeURIComponent(row.vehicle_model)}`;
         const versionLabel = row.bom_version ? String(row.bom_version) : '—';
+        const reportBtn = opsIconButtonHtml({
+            action: 'open-report',
+            title: '报告',
+            icon: window.svgIcon('file-earmark-text', 'w-3.5 h-3.5'),
+            attrs: `data-id="${row.id}"`,
+        });
+        const resultBtn = opsIconButtonHtml({
+            action: 'jump-list',
+            title: '结果',
+            icon: window.svgIcon('external-link', 'w-3.5 h-3.5'),
+            attrs: `data-query="${esc(query)}"`,
+        });
+        const deleteBtn = calcState.canDelete ? opsIconButtonHtml({
+            action: 'delete-log',
+            danger: true,
+            title: '含计算中：删除可释放锁',
+            icon: window.svgIcon('trash', 'w-3.5 h-3.5'),
+            attrs: `data-id="${row.id}"`,
+        }) : '';
         return `
-            <tr class="hover:bg-app-surface">
+            <tr class="group hover:bg-app-surface">
                 <td class="py-2 px-2 font-mono text-ink-dim whitespace-nowrap">${esc(formatDateTime(row.started_at))}</td>
                 <td class="py-2 px-2 font-mono text-ink-dim whitespace-nowrap">${esc(formatDateTime(row.finished_at))}</td>
                 <td class="py-2 px-2 font-mono text-right tabular-nums text-ink-dim whitespace-nowrap">${esc(formatDurationSeconds(row))}</td>
@@ -368,12 +388,8 @@ function renderHistoryRows(items) {
                 <td class="py-2 px-2 text-right font-mono text-warn">${esc(row.partial_count)}</td>
                 <td class="py-2 px-2 text-right font-mono text-danger">${esc(row.failed_count)}</td>
                 <td class="py-2 px-2 text-right font-mono">${esc(row.skipped_approved_count)}</td>
-                <td class="py-2 px-2 text-right whitespace-nowrap">
-                    <button data-action="open-report" data-id="${row.id}"
-                            class="text-[10px] text-ink-muted hover:text-ink mr-2">报告</button>
-                    <button data-action="jump-list" data-query="${esc(query)}"
-                            class="text-[10px] text-ink-muted hover:text-ink mr-2">结果</button>
-                    ${calcState.canDelete ? `<button data-action="delete-log" data-id="${row.id}" class="text-[10px] text-danger hover:text-danger/80" title="含计算中：删除可释放锁">删除</button>` : ''}
+                <td class="py-2 px-1 text-right whitespace-nowrap">
+                    <div class="inline-flex items-center justify-end">${reportBtn}${resultBtn}${deleteBtn}</div>
                 </td>
             </tr>
         `;
@@ -382,7 +398,7 @@ function renderHistoryRows(items) {
 
 async function deleteAllCalcLogs() {
     if (!calcState.canDelete) return;
-    if (!window.confirm('确定删除全部计算历史？仅删除日志，不影响已落库结果。计算中的记录删除后将释放锁。')) {
+    if (!await window.confirmAction('确定删除全部计算历史？仅删除日志，不影响已落库结果。计算中的记录删除后将释放锁。')) {
         return;
     }
     try {
@@ -397,7 +413,7 @@ async function deleteAllCalcLogs() {
 
 async function deleteCalcLog(logId) {
     if (!calcState.canDelete) return;
-    if (!window.confirm('确认删除该计算日志？计算中的记录删除后将释放锁，可重新提交。')) return;
+    if (!await window.confirmAction('确认删除该计算日志？计算中的记录删除后将释放锁，可重新提交。')) return;
     try {
         await HttpClient.delete(`${CALC_LOGS_API}/${logId}`);
         showToast('已删除计算日志', 'success');

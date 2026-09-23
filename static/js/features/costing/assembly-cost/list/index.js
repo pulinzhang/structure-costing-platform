@@ -4,13 +4,13 @@ import {
     renderLacRows,
     updateLacHud,
     updateLacTableHead,
-} from './template.js?v=52';
+} from './template.js?v=54';
 import {
     DEFAULT_PAGE_SIZE,
     bindPagination,
     paintPagination,
 } from '../../../../ui/page-size.js?v=6';
-import { bindMoreMenu } from '../../../../ui/more-menu.js?v=5';
+import { bindMoreMenu } from '../../../../ui/more-menu.js?v=6';
 import { bindFilterBar } from '../../../../ui/filter-bar.js?v=4';
 import { setSearchBusy } from '../../../../ui/search-busy.js?v=4';
 
@@ -705,7 +705,7 @@ async function batchDelete() {
     if (!listState.canDelete) return showToast('无删除权限', 'warning');
     const scope = requireBatchScope('批量删除');
     if (!scope) return;
-    if (!window.confirm(
+    if (!await window.confirmAction(
         '确认删除该年该月、该基地、该项目的全部未审核核价卡？'
         + '本次不看列表是财务还是零件成本，也不看版本筛选。已审核将跳过。',
     )) return;

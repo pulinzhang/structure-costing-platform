@@ -58,6 +58,7 @@ from app.services.bom.welding_process_breakdown.query import (
 )
 from app.services.masterdata.location.service import LocationService
 from app.services.masterdata.vehicle_model.service import VehicleModelService
+from app.services.settings.schema_comment.service import ensure_deletable
 
 
 class BomWeldingProcessBreakdownService:
@@ -267,4 +268,10 @@ class BomWeldingProcessBreakdownService:
             return
         if row.audit_status == AUDIT_APPROVED:
             raise BusinessException(EC_ROLLBACK_BLOCKED, code=409)
+        ensure_deletable(
+            db,
+            "bom_welding_process_breakdown_node",
+            [{"id": node_id}],
+            subject="该焊接工艺拆解",
+        )
         self.repository.delete_node_by_id(db, node_id)

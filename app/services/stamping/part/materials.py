@@ -2,13 +2,18 @@
 
 from __future__ import annotations
 
+from collections.abc import Callable, Sequence
 from decimal import Decimal
 
 from sqlalchemy.orm import Session
 
-from app.models.stamping import StampingPart
+from app.models.stamping import StampingPart, StampingTailorWeldBlank
 from app.repositories.stamping.part.repository import StampingPartRepository
-from app.repositories.stamping.part.types import MaterialSpecRow
+from app.repositories.stamping.part.types import (
+    MaterialAsOfIdentity,
+    MaterialAsOfRow,
+    MaterialSpecRow,
+)
 from app.schemas.dto.stamping_part_dto import StampingMaterialQuery
 from app.schemas.vo.stamping_vo import StampingMaterialResponse, StampingPartListFilterOptions
 from app.services.masterdata.location.service import LocationService
@@ -20,12 +25,16 @@ def nonempty_decimals(values: list[Decimal | None]) -> list[Decimal]:
     return [value for value in values if value is not None]
 
 
-def material_row_from_part(part: StampingPart) -> StampingMaterialResponse:
-    """普通件用主表尺寸；拼焊件用各子片料厚/长/宽（JSON 拼接在 VO）。"""
-    blanks = sorted(
+def _sorted_blanks(part: StampingPart) -> list[StampingTailorWeldBlank]:
+    return sorted(
         list(part.tailor_weld_blanks or []),
         key=lambda blank: (blank.blank_seq or 0, blank.id or 0),
     )
+
+
+def material_row_from_part(part: StampingPart) -> StampingMaterialResponse:
+    """普通件用主表尺寸；拼焊件用各子片料厚/长/宽（JSON 拼接在 VO）。"""
+    blanks = _sorted_blanks(part)
     material = (part.material or "").strip() or None
     if part.is_tailor_welded and len(blanks) >= 2:
         if not material:
@@ -161,8 +170,131 @@ def list_distinct_spec_grades(
 def list_material_specs(
     repository: StampingPartRepository, db: Session, *, location: str
 ) -> list[MaterialSpecRow]:
-    """列出该基地去重后的 基地 + 材料(钢种) + 厚度（含拼焊子片，钢价计算用）。"""
+    """列出该基地去重后的 基地 + 材料(钢种) + 厚度（含拼焊子片，统计用，无年月）。"""
     loc = location.strip()
     if not loc:
         return []
     return repository.list_material_specs(db, location=loc)
+
+
+def _part_material_row(
+    part: StampingPart, material: str, *, blank_id: int | None, thickness: Decimal | None
+) -> MaterialAsOfRow:
+    return {
+        "part_id": part.id,
+        "location": part.location or "",
+        "material": material,
+        "thickness": thickness,
+        "blank_id": blank_id,
+    }
+
+
+def _blank_rows(part: StampingPart) -> list[MaterialAsOfRow]:
+    return [
+        _part_material_row(
+            part,
+            (blank.material or ""),
+            blank_id=blank.id,
+            thickness=blank.thickness,
+        )
+        for blank in _sorted_blanks(part)
+    ]
+
+
+MaterialOverlay = Callable[
+    [Session, Sequence[MaterialAsOfIdentity], int, int],
+    dict[int, str],
+]
+
+_material_overlay: MaterialOverlay | None = None
+
+
+def bind_material_overlay(overlay: MaterialOverlay) -> None:
+    """启动时绑上材料变更的批量叠切点。没绑定时行上就是工艺列。"""
+    global _material_overlay
+    _material_overlay = overlay
+
+
+def _can_overlay_material(part: StampingPart) -> bool:
+    """拼焊按子片，不允许材料变更，不叠切点。利废和副产品也不叠。"""
+    return not (part.is_tailor_welded or part.is_offal_nested or part.is_scrap_byproduct)
+
+
+def list_process_materials_as_of(
+    repository: StampingPartRepository,
+    db: Session,
+    *,
+    location: str,
+    year: int,
+    month: int,
+    vehicle_model: str | None = None,
+) -> tuple[list[MaterialAsOfRow], list[MaterialAsOfIdentity]]:
+    """该月工艺列。不叠材料变更。身份只给直接下游自己去叠切点。"""
+    loc = location.strip()
+    if not loc:
+        return [], []
+    vehicle = vehicle_model.strip() if vehicle_model else None
+    parts = repository.list_in_period_with_blanks(
+        db,
+        location=loc,
+        as_of_year=year,
+        as_of_month=month,
+        vehicle_model=vehicle,
+    )
+    identities: list[MaterialAsOfIdentity] = []
+    rows: list[MaterialAsOfRow] = []
+    for part in parts:
+        if _can_overlay_material(part):
+            identities.append(
+                {
+                    "part_id": part.id,
+                    "location": part.location or "",
+                    "stamping_supplier": part.stamping_supplier or "",
+                    "vehicle_model": part.vehicle_model or "",
+                    "part_number": part.part_number or "",
+                    "material": part.material or "",
+                }
+            )
+        if part.is_tailor_welded:
+            rows.append(
+                _part_material_row(
+                    part, part.material or "", blank_id=None, thickness=part.thickness
+                )
+            )
+            rows.extend(_blank_rows(part))
+            continue
+        rows.append(
+            _part_material_row(part, part.material or "", blank_id=None, thickness=part.thickness)
+        )
+    return rows, identities
+
+
+def list_materials_as_of(
+    repository: StampingPartRepository,
+    db: Session,
+    *,
+    location: str,
+    year: int,
+    month: int,
+    vehicle_model: str | None = None,
+) -> list[MaterialAsOfRow]:
+    """该月材料。只给普通件叠已绑定的切点；拼焊子片保持子片列。"""
+    rows, identities = list_process_materials_as_of(
+        repository,
+        db,
+        location=location,
+        year=year,
+        month=month,
+        vehicle_model=vehicle_model,
+    )
+    overlay = _material_overlay
+    if overlay is None or not identities:
+        return rows
+    resolved = overlay(db, identities, year, month)
+    overlaid: list[MaterialAsOfRow] = []
+    for row in rows:
+        material = row["material"]
+        if row["blank_id"] is None and row["part_id"] in resolved:
+            material = resolved[row["part_id"]]
+        overlaid.append({**row, "material": material})
+    return overlaid

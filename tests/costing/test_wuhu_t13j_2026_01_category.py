@@ -9,6 +9,7 @@ from types import SimpleNamespace
 import pytest
 from sqlalchemy.orm import Session, selectinload
 
+from app.common.period import is_in_period
 from app.models.stamping import StampingPart, StampingTailorWeldBlank
 from app.services.costing.stamping_part_cost.calc.resolvers import PriceResolver
 from app.services.costing.steel_price.calc.models import (
@@ -141,16 +142,47 @@ def test_t13j_process_grades_map_to_cold_or_galv(db_session: Session) -> None:
     assert len(grades) == 15
 
 
+def _t13j_period_spec_keys(db: Session, year: int, month: int) -> set[tuple[str, Decimal]]:
+    """与钢材 Step1 同一 period_hit：该月仍有效的 T13J 工艺规格（含拼焊子片）。"""
+    parts = (
+        db.query(StampingPart)
+        .options(selectinload(StampingPart.tailor_weld_blanks))
+        .filter(
+            StampingPart.location == LOCATION,
+            StampingPart.vehicle_model == VEHICLE_MODEL,
+        )
+        .all()
+    )
+    keys: set[tuple[str, Decimal]] = set()
+    for part in parts:
+        if not is_in_period(
+            effective_year=part.effective_year,
+            effective_month=part.effective_month,
+            expiry_year=part.expiry_year,
+            expiry_month=part.expiry_month,
+            as_of_year=year,
+            as_of_month=month,
+        ):
+            continue
+        grade = (part.material or "").strip()
+        if grade and part.thickness is not None:
+            keys.add((grade, Decimal(str(part.thickness))))
+        for blank in part.tailor_weld_blanks or []:
+            blank_grade = (blank.material or "").strip()
+            if blank_grade and blank.thickness is not None:
+                keys.add((blank_grade, Decimal(str(blank.thickness))))
+    return keys
+
+
 @pytest.mark.integration
 def test_t13j_loader_keeps_every_grade_thickness(db_session: Session) -> None:
     loaded = MaterialThicknessLoader().load(db_session, _request())
     if not loaded:
         pytest.skip(f"无材料行: {LOCATION}")
-    t13j = _t13j_process_spec_rows(db_session)
-    t13j_keys = {(str(row["material"]).strip(), Decimal(str(row["thickness"]))) for row in t13j}
+    t13j_keys = _t13j_period_spec_keys(db_session, YEAR, MONTH)
     loaded_keys = {(row.material, row.thickness) for row in loaded}
     assert t13j_keys <= loaded_keys
-    assert len(t13j_keys) == 34
+    assert t13j_keys
     assert "DC01" in {row.material for row in loaded}
     assert "DC03" in {row.material for row in loaded}
     assert "DC51D+Z" in {row.material for row in loaded}

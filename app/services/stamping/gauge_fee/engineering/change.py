@@ -13,6 +13,7 @@ from app.exceptions.base import BusinessException
 from app.repositories.stamping.gauge_fee.repository import StampingGaugeFeeRepository
 from app.schemas.dto.stamping_gauge_fee_dto import StampingGaugeFeeInsert
 from app.schemas.vo.user_vo import UserVO
+from app.services.settings.schema_comment.service import ensure_deletable
 
 
 @dataclass(slots=True, frozen=True)
@@ -84,4 +85,5 @@ def delete_for_engineering_change_rollback(
     record = repository.get_by_id(db, fee_id)
     if record is None:
         return
+    ensure_deletable(db, "stamping_gauge_fees", [{"id": record.id}], subject="该检具费")
     repository.delete(db, record)

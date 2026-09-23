@@ -2,10 +2,10 @@
  * 供应商一览 — HUD 密表 + 抽屉；有搜索 / 分页 / 导出
  */
 
-import { HUD_SHELL, DRAWER_SHELL, DRAWER_BACKDROP, HUD_BAND, OPS_TH, BTN_HUD_CREATE, BTN_HUD_SAVE, BTN_HUD_CHIP } from '../../../../ui/classes.js?v=13';
+import { HUD_SHELL, DRAWER_SHELL, DRAWER_BACKDROP, HUD_BAND, OPS_TH, BTN_HUD_CREATE, BTN_HUD_SAVE, BTN_HUD_CHIP, BTN_GHOST, BTN_SOLID, BTN_SOLID_DANGER } from '../../../../ui/classes.js?v=13';
 import { hudTableHtml, hudRowHtml, opsIconButtonHtml } from '../../../../ui/hud-table.js?v=2';
 
-import { moreMenuItemHtml, moreMenuShellHtml } from '../../../../ui/more-menu.js?v=5';
+import { moreMenuItemHtml, moreMenuShellHtml } from '../../../../ui/more-menu.js?v=6';
 
 export function supplierListTemplate() {
     return `
@@ -116,8 +116,8 @@ export function supplierListTemplate() {
                 </form>
             </div>
             <div class="px-5 py-3 border-t border-line flex items-center justify-end gap-2 bg-app-surface shrink-0">
-                <button type="button" id="cancelSupplierCreateBtn" class="px-4 py-1.5 text-xs text-ink-muted border border-line hover:text-ink">取消</button>
-                <button type="button" id="submitSupplierCreateBtn" class="${BTN_HUD_SAVE}">保存</button>
+                <button type="button" id="cancelSupplierCreateBtn" class="${BTN_GHOST}">取消</button>
+                <button type="button" id="submitSupplierCreateBtn" class="${BTN_SOLID}">保存</button>
             </div>
         </div>
 
@@ -165,7 +165,7 @@ export function supplierListTemplate() {
                     <button type="submit" id="submitSupplierEditAliasBtn" class="${BTN_HUD_CHIP} shrink-0">添加</button>
                 </form>
                 <div class="flex justify-end">
-                    <button type="button" id="submitSupplierEditBtn" class="${BTN_HUD_CHIP}">保存资料</button>
+                    <button type="button" id="submitSupplierEditBtn" class="${BTN_SOLID}">保存资料</button>
                 </div>
             </div>
         </div>
@@ -186,7 +186,7 @@ export function supplierListTemplate() {
                 <p class="text-[11px] text-ink-faint mt-3" id="supplierToggleHint">禁用后不能再按此供应商新引入；列表筛选仍可见。</p>
             </div>
             <div class="px-5 py-3 border-t border-line flex items-center justify-end gap-2 bg-app-surface shrink-0">
-                <button type="button" id="cancelSupplierToggleBtn" class="px-4 py-1.5 text-xs text-ink-muted border border-line">取消</button>
+                <button type="button" id="cancelSupplierToggleBtn" class="${BTN_GHOST}">取消</button>
                 <button type="button" id="confirmSupplierToggleBtn" class="${BTN_HUD_SAVE}">确认禁用</button>
             </div>
         </div>
@@ -207,8 +207,8 @@ export function supplierListTemplate() {
                 <p class="text-[11px] text-ink-faint mt-3">仍被引用则不能删除。别名会一并删除。</p>
             </div>
             <div class="px-5 py-3 border-t border-line flex items-center justify-end gap-2 bg-app-surface shrink-0">
-                <button type="button" id="cancelSupplierDeleteBtn" class="px-4 py-1.5 text-xs text-ink-muted border border-line">取消</button>
-                <button type="button" id="confirmSupplierDeleteBtn" class="bg-danger hover:bg-brand-hover text-ink-onbrand px-5 py-1.5 text-xs font-semibold">删除</button>
+                <button type="button" id="cancelSupplierDeleteBtn" class="${BTN_GHOST}">取消</button>
+                <button type="button" id="confirmSupplierDeleteBtn" class="${BTN_SOLID_DANGER}">删除</button>
             </div>
         </div>
     `;
@@ -239,7 +239,12 @@ export function renderSupplierRows(records) {
             })
             : '';
         const toggleBtn = canUpdate
-            ? `<button type="button" data-action="toggle" data-enabled="${isEnabled ? '1' : '0'}" class="px-1.5 h-7 text-[10px] text-ink-dim hover:text-brand-hud opacity-0 group-hover:opacity-100 focus:opacity-100" title="${toggleLabel}">${toggleLabel}</button>`
+            ? opsIconButtonHtml({
+                action: 'toggle',
+                title: toggleLabel,
+                icon: window.svgIcon(isEnabled ? 'ban' : 'check-circle', 'w-3.5 h-3.5'),
+                attrs: `data-enabled="${isEnabled ? '1' : '0'}"`,
+            })
             : '';
         const deleteBtn = canDelete
             ? opsIconButtonHtml({

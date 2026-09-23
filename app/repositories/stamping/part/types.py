@@ -17,11 +17,32 @@ class StampingPartFilterOptionValues(TypedDict):
 
 
 class MaterialSpecRow(TypedDict):
-    """去重后的材料规格行（钢价 Step1）。"""
+    """去重后的材料规格行（钢价 Step1 统计仍用，无年月）。"""
 
     location: str
     material: str
     thickness: Decimal
+
+
+class MaterialAsOfIdentity(TypedDict):
+    """普通件身份，交给当月材料解析。"""
+
+    part_id: int
+    location: str
+    stamping_supplier: str
+    vehicle_model: str
+    part_number: str
+    material: str
+
+
+class MaterialAsOfRow(TypedDict):
+    """该月取材质一行。blank_id 空 = 零件行。"""
+
+    part_id: int
+    location: str
+    material: str
+    thickness: Decimal | None
+    blank_id: int | None
 
 
 class StampingPartScopeIdentity(TypedDict):

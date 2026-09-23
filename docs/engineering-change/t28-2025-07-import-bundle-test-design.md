@@ -5,7 +5,7 @@
 > 一本 Excel、五种改法。变更单五行，后面三张表和日常导入模板相同。  
 > 材料清单 **只写变化的行**。改图要把那条链上换了号的层都写出来（改图层 + 上级分总成）；没变的零件不要抄过来。  
 > **用量不变**：换号、带走的件用量抄变更前总成；此件不装写 0；增加零件按文件用量。  
-> 生成：运行时 `build_engineering_change_template` → 上传页「下载模板」（对照一本）；文档副本 [samples/build_t28_2025_07_import_bundles.py](samples/build_t28_2025_07_import_bundles.py) → [samples/t28-2025-07-import-bundle.xlsx](samples/t28-2025-07-import-bundle.xlsx) **以及** 五种改法各一份（§14）
+> 生成：运行时 `build_engineering_change_template` → 上传页「下载模板」（对照一本，生效 2026年07月）。`docs/engineering-change/samples` 不再存放 T28 副本，落盘样表只留芜湖 T13J。
 
 ---
 
@@ -47,11 +47,7 @@
         ↓ 一本工程变更导入样表（五个交货总成，可整本上传）
 ```
 
-重新生成文档副本（与上传页「下载模板」同一 builder）：
-
-```text
-python -X utf8 docs/engineering-change/samples/build_t28_2025_07_import_bundles.py
-```
+重新生成请走上传页「下载模板」，或调用 `build_engineering_change_template`。样表目录不再写出 T28 文件。
 
 ---
 

@@ -41,6 +41,9 @@ from app.models.costing import (
 )
 from app.models.engineering_change import (
     EngineeringChangeEffectLink,
+    EngineeringChangeMaterialEffectLink,
+    EngineeringChangeMaterialOrder,
+    EngineeringChangeMaterialUploadLog,
     EngineeringChangeOrder,
     EngineeringChangeUploadLog,
 )
@@ -56,6 +59,8 @@ from app.models.masterdata import (
 )
 from app.models.settings import (
     OperationLog,
+    RefHint,
+    SchemaComment,
     SystemConfig,
     User,
     UserPermission,
@@ -110,6 +115,9 @@ __all__ = [
     "EngineeringChangeOrder",
     "EngineeringChangeEffectLink",
     "EngineeringChangeUploadLog",
+    "EngineeringChangeMaterialEffectLink",
+    "EngineeringChangeMaterialOrder",
+    "EngineeringChangeMaterialUploadLog",
     "LlmAnalysisReport",
     "Location",
     "LocationAlias",
@@ -117,6 +125,8 @@ __all__ = [
     "SupplierAlias",
     "VehicleModel",
     "OperationLog",
+    "RefHint",
+    "SchemaComment",
     "StampingDieFee",
     "StampingDieFeeCalcLog",
     "StampingDieFeeItem",

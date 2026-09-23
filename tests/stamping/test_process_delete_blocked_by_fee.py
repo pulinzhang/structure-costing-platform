@@ -153,11 +153,10 @@ def test_delete_part_blocked_when_fee_exists(memory_db: Session) -> None:
     part = _add_part(memory_db)
     fee = _add_fee(memory_db, part)
 
-    with pytest.raises(BusinessException, match="冲压加工费列表") as caught:
+    with pytest.raises(BusinessException, match="仍被引用，不能删除") as caught:
         StampingPartService().delete(memory_db, part.id)
-    assert "2026年" in caught.value.message
-    assert "未审核" in caught.value.message
-    assert "冲压零件价格一览" not in caught.value.message
+    assert "冲压加工费" not in caught.value.message
+    assert "冲压零件价格" not in caught.value.message
 
     assert memory_db.get(StampingPart, part.id) is not None
     memory_db.delete(fee)
@@ -170,7 +169,7 @@ def test_batch_delete_blocked_when_fee_exists(memory_db: Session) -> None:
     part = _add_part(memory_db)
     _add_fee(memory_db, part)
 
-    with pytest.raises(BusinessException, match="冲压加工费列表") as caught:
+    with pytest.raises(BusinessException, match="仍被引用，不能删除") as caught:
         StampingPartService().batch_delete(
             memory_db,
             StampingPartBatchDeleteDTO(
@@ -179,7 +178,7 @@ def test_batch_delete_blocked_when_fee_exists(memory_db: Session) -> None:
                 version=VERSION,
             ),
         )
-    assert "2026年" in caught.value.message
+    assert "冲压加工费" not in caught.value.message
     assert memory_db.get(StampingPart, part.id) is not None
 
 
@@ -207,10 +206,9 @@ def test_delete_part_blocked_by_part_cost(memory_db: Session) -> None:
     part = _add_part(memory_db)
     cost = _add_cost(memory_db, part)
 
-    with pytest.raises(BusinessException, match="冲压零件价格一览") as caught:
+    with pytest.raises(BusinessException, match="仍被引用，不能删除") as caught:
         StampingPartService().delete(memory_db, part.id)
-    assert "2026年01月" in caught.value.message
-    assert "未审核" in caught.value.message
+    assert "冲压零件价格" not in caught.value.message
     assert "加工费" not in caught.value.message
     assert memory_db.get(StampingPart, part.id) is not None
 
@@ -224,10 +222,10 @@ def test_delete_part_blocked_by_approved_part_cost(memory_db: Session) -> None:
     part = _add_part(memory_db)
     _add_cost(memory_db, part, approved=True)
 
-    with pytest.raises(BusinessException, match="已审核") as caught:
+    with pytest.raises(BusinessException, match="仍被引用，不能删除") as caught:
         StampingPartService().delete(memory_db, part.id)
-    assert "反审核" in caught.value.message
-    assert "冲压零件价格一览" in caught.value.message
+    assert "反审核" not in caught.value.message
+    assert "冲压零件价格" not in caught.value.message
 
 
 def test_delete_part_blocked_by_fee_and_part_cost(memory_db: Session) -> None:
@@ -237,27 +235,9 @@ def test_delete_part_blocked_by_fee_and_part_cost(memory_db: Session) -> None:
 
     with pytest.raises(BusinessException) as caught:
         StampingPartService().delete(memory_db, part.id)
-    assert "冲压零件价格一览" in caught.value.message
-    assert "冲压加工费列表" in caught.value.message
-
-
-def test_rollback_message_uses_cost_row_scope(memory_db: Session) -> None:
-    from app.common.engineering_change_gates import EFFECT_PROCESS_PART
-    from app.services.bom.bom.delete_block import explain_rollback_blocked
-
-    part = _add_part(memory_db)
-    _add_cost(memory_db, part, approved=True)
-    message = explain_rollback_blocked(
-        memory_db,
-        [(EFFECT_PROCESS_PART, part.id)],
-        location="别处",
-        vehicle_model="别的项目",
-    )
-    assert "冲压零件价格一览" in message
-    assert "已审核" in message
-    assert LOCATION in message
-    assert "工程变更 → 设计变更 → 工程变更单列表" in message
-    assert "别处" not in message
+    assert "冲压零件价格" not in caught.value.message
+    assert "冲压加工费" not in caught.value.message
+    assert "仍被引用，不能删除" in caught.value.message
 
 
 def test_orphan_source_part_id_rejected(memory_db: Session) -> None:

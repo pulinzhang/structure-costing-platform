@@ -2,7 +2,7 @@
  * 采购对象批量上传供应商
  */
 
-import { procurementObjectSupplierUploadTemplate } from './template.js?v=13';
+import { procurementObjectSupplierUploadTemplate } from './template.js?v=15';
 import { bindSyncUploadProgress } from '../../../../ui/sync-upload-progress.js?v=3';
 import { loadSnapshotCascade } from '../snapshot-cascade.js?v=5';
 

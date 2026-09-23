@@ -4,7 +4,7 @@
  */
 
 import { paginationBarHtml } from '../../../../ui/page-size.js?v=6';
-import { filterSelect, BTN_ABORT } from '../../../../ui/classes.js?v=13';
+import { filterSelect, BTN_ABORT, BTN_GHOST } from '../../../../ui/classes.js?v=13';
 
 
 export function l0WeldingFeeCalcTemplate() {
@@ -23,7 +23,7 @@ export function l0WeldingFeeCalcTemplate() {
                     ${filterSelect('l0wfCalcVehicleModel', '项目', true)}
 
                     <button id="l0wfCalcResetBtn"
-                            class="inline-flex items-center gap-1 h-7 px-3 text-[11px] font-medium text-ink-dim hover:text-ink-muted transition-all duration-150">
+                            class="${BTN_GHOST}">
                         重置
                     </button>
                 </div>

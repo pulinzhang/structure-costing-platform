@@ -153,3 +153,21 @@ class EngineeringChangeOrderRepository:
             )
             .all()
         )
+
+    def list_active_success_by_project(
+        self, db: Session, *, project_code: str
+    ) -> list[EngineeringChangeOrder]:
+        """该项目仍有效的成功设计变更单。"""
+        return (
+            db.query(EngineeringChangeOrder)
+            .join(
+                EngineeringChangeUploadLog,
+                EngineeringChangeUploadLog.id == EngineeringChangeOrder.upload_log_id,
+            )
+            .filter(
+                EngineeringChangeUploadLog.status == "success",
+                EngineeringChangeOrder.status == "active",
+                EngineeringChangeOrder.project_code == project_code,
+            )
+            .all()
+        )

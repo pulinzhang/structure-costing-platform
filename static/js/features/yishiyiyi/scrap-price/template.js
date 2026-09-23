@@ -1,11 +1,12 @@
-import { DRAWER_BACKDROP } from '../../../ui/classes.js?v=13';
 /**
  * 废料月度销售价 — 价格矩阵视觉层（非表格填表）
  * 基地锚点 · 净价 Hero · 扣费弱化 · 备注隐式 · 中文极简
  * DOM ID / 字段 / 事件契约保持不变
  */
 
-import { moreMenuItemHtml, moreMenuShellHtml } from '../../../ui/more-menu.js?v=5';
+import { DRAWER_BACKDROP, BTN_GHOST, BTN_SOLID } from '../../../ui/classes.js?v=13';
+
+import { moreMenuItemHtml, moreMenuShellHtml } from '../../../ui/more-menu.js?v=6';
 
 /** 金额展示：固定 2 位小数 + 千分位（输入框用，空值返回 ''） */
 export function fmtPrice(value) {
@@ -114,7 +115,7 @@ export function scrapPriceTemplate() {
                         ].join(''),
                     })}
                     <button id="btnScrapSave"
-                            class="inline-flex items-center h-8 px-4 text-[12px] font-semibold bg-brand text-ink-onbrand hover:bg-brand-hover transition-colors">
+                            class="${BTN_SOLID}">
                         保存
                     </button>
                 </div>
@@ -248,7 +249,7 @@ export function scrapPriceTemplate() {
 
             <div class="px-5 py-4 border-t border-app-surface flex items-center justify-between gap-3 shrink-0 bg-app-main">
                 <button type="button" id="cancelScrapCopy"
-                        class="h-8 px-2 text-[12px] text-ink-muted hover:text-ink transition-colors shrink-0">
+                        class="${BTN_GHOST} shrink-0">
                     取消
                 </button>
                 <button type="button" id="confirmScrapCopy"

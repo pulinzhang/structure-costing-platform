@@ -7,8 +7,8 @@ import {
     renderHudCards,
     renderTableBody,
     vehicleModelListTemplate,
-} from './template.js?v=23';
-import { bindMoreMenu } from '../../../../ui/more-menu.js?v=5';
+} from './template.js?v=24';
+import { bindMoreMenu } from '../../../../ui/more-menu.js?v=6';
 
 const API_BASE = '/api/masterdata/vehicle-models';
 const DRAWER_ANIMATION_MS = 300;
