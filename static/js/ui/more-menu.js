@@ -6,10 +6,10 @@
 import { BTN_MORE } from './classes.js?v=13';
 
 const ITEM_CLASS =
-    'w-full px-3.5 py-2 text-left text-[12px] text-ink-muted hover:bg-app-surface hover:text-ink transition-colors';
+    'w-full px-3.5 py-2 text-left text-[12px] text-ink-muted hover:bg-brand hover:text-ink-onbrand transition-colors';
 
 const ITEM_DANGER_CLASS =
-    'w-full px-3.5 py-2 text-left text-[12px] text-ink-muted hover:bg-app-surface hover:text-danger transition-colors';
+    'w-full px-3.5 py-2 text-left text-[12px] text-ink-muted hover:bg-brand hover:text-ink-onbrand transition-colors';
 
 const MENU_CLASS =
     'hidden absolute right-0 top-full mt-1 z-[40] min-w-[132px] py-1 bg-app-surface border border-line shadow-[0_8px_24px_rgb(var(--overlay)/0.55)]';

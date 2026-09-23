@@ -8,7 +8,7 @@ import { filterBarHtml } from '../../../../ui/filter-bar.js?v=4';
 import { hudTableHtml, hudRowHtml, opsIconButtonHtml } from '../../../../ui/hud-table.js?v=2';
 import { hudKpiCardHtml } from '../../../../ui/hud-kpi.js?v=1';
 
-import { moreMenuItemHtml, moreMenuShellHtml } from '../../../../ui/more-menu.js?v=5';
+import { moreMenuItemHtml, moreMenuShellHtml } from '../../../../ui/more-menu.js?v=6';
 import { partShortCodeCellHtml, partNumberNameCellHtml } from '../../../../domain/part-identity.js?v=5';
 
 export function formatFee4(value) {
@@ -48,7 +48,7 @@ export function pkgTransportFeeTemplate() {
                                 ].join(''),
                             })}
                             <button id="btnExportPkg" type="button"
-                                    class="inline-flex items-center gap-1.5 bg-transparent text-ink-dim border border-line-hud px-3 py-1.5 text-[11px] font-medium rounded-md hover:border-brand-hud/50 hover:text-brand-hud transition-all">
+                                    class="${BTN_GHOST}">
                                 ${window.svgIcon('download', 'w-3 h-3')} Excel
                             </button>
                         </div>
@@ -162,7 +162,7 @@ function batchAuditDrawerHtml() {
                 </div>
             </div>
             <div class="px-6 py-4 border-t border-app-elevated flex justify-end gap-2 shrink-0">
-                <button type="button" id="cancelPkgBatchAuditBtn" class="px-4 py-2 text-[11px] text-ink-muted border border-line rounded">取消</button>
+                <button type="button" id="cancelPkgBatchAuditBtn" class="${BTN_GHOST}">取消</button>
                 <button type="button" id="confirmPkgBatchAuditBtn" class="${BTN_SOLID}">确认提交</button>
             </div>
         </div>
@@ -237,7 +237,7 @@ function editDrawerHtml() {
                 </div>
             </div>
             <div class="px-6 py-4 border-t border-app-elevated flex justify-end gap-2 shrink-0">
-                <button type="button" id="cancelPkgEditBtn" class="px-4 py-2 text-[11px] text-ink-muted border border-line rounded">取消</button>
+                <button type="button" id="cancelPkgEditBtn" class="${BTN_GHOST}">取消</button>
                 <button type="button" id="confirmPkgEditBtn" class="${BTN_SOLID}">保存</button>
             </div>
         </div>
@@ -261,7 +261,7 @@ function deleteDrawerHtml() {
                 <p class="text-xs text-ink-muted" id="pkgDeleteHint">确定删除该条包装运输费吗？此操作不可恢复。</p>
             </div>
             <div class="px-6 py-4 border-t border-app-elevated flex justify-end gap-2 shrink-0">
-                <button type="button" id="cancelPkgDeleteBtn" class="px-4 py-2 text-[11px] text-ink-muted border border-line rounded">取消</button>
+                <button type="button" id="cancelPkgDeleteBtn" class="${BTN_GHOST}">取消</button>
                 <button type="button" id="confirmPkgDeleteBtn" class="${BTN_SOLID_DANGER}">确认删除</button>
             </div>
         </div>

@@ -2,7 +2,8 @@
  * 材料变更上传页
  */
 
-import { materialChangeUploadTemplate } from './template.js?v=4';
+import { materialChangeUploadTemplate } from './template.js?v=6';
+import { uploadSubmitLabelHtml } from '../../../../ui/upload-actions.js?v=2';
 import { can } from '../../../../core/permissions.js?v=8';
 import {
     setDropzoneDragActive,
@@ -13,7 +14,6 @@ import { fillAsOfSelects } from '../../../common/period-ui.js?v=7';
 const POLL_INTERVAL_MS = 2000;
 const MAX_RECENT_UPLOADS = 8;
 const API = '/api/engineering-change/material';
-const SUBMIT_IDLE_HTML = `<svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12"></path></svg> 上传`;
 
 const MaterialChangeUploadPage = {
     selectedFile: null,
@@ -291,9 +291,7 @@ const MaterialChangeUploadPage = {
         const submitBtn = document.getElementById('ecmUploadSubmitBtn');
         if (submitBtn) {
             submitBtn.disabled = isUploading || !this.selectedFile;
-            submitBtn.innerHTML = isUploading
-                ? `${window.svgIcon('spinner', 'w-3.5 h-3.5')} 解析中...`
-                : SUBMIT_IDLE_HTML;
+            submitBtn.innerHTML = uploadSubmitLabelHtml(isUploading);
         }
         ['ecmUploadResetBtn', 'ecmUploadLocation', 'ecmUploadVehicleModel', 'ecmUploadYear', 'ecmUploadMonth', 'ecmUploadTemplateBtn']
             .forEach((id) => {

@@ -9,16 +9,15 @@ import {
     renderDetailContent,
     updatePartsHudScope,
     updatePartsHud,
-} from './template.js?v=59';
+} from './template.js?v=60';
 import { can } from '../../../../core/permissions.js?v=8';
 import { hudRowHtml, opsIconButtonHtml } from '../../../../ui/hud-table.js?v=2';
-import { bindMoreMenu } from '../../../../ui/more-menu.js?v=5';
+import { bindMoreMenu } from '../../../../ui/more-menu.js?v=6';
 import { bindFilterBar } from '../../../../ui/filter-bar.js?v=4';
 import { fmtPeriodRange } from '../../../common/period-ui.js?v=4';
 import { downloadMaterialChangeFile } from '../../../engineering-change/material-change/download.js?v=1';
 import {
-    BTN_SAVE_ACTIVE,
-    BTN_SAVE_DEFAULT,
+    BTN_SOLID,
     SKETCH_PLACEHOLDER,
     SKETCH_THUMBNAIL,
     ZOOM_OVERLAY,
@@ -591,7 +590,7 @@ export const PartsPage = {
             const btn = document.getElementById('saveProcessBtn');
             if (btn) {
                 btn.dataset.active = 'false';
-                btn.className = BTN_SAVE_DEFAULT;
+                btn.className = BTN_SOLID;
             }
 
             this._bindProcessEditEvents(part.id);
@@ -737,14 +736,14 @@ export const PartsPage = {
         const btn = document.getElementById('saveOffalBtn');
         if (!btn || btn.dataset.active === 'true') return;
         btn.dataset.active = 'true';
-        btn.className = 'h-7 px-3 text-[10px] text-ink-onbrand bg-brand border border-brand rounded-sm hover:bg-brand-hover transition-all tracking-wide';
+        btn.className = BTN_SOLID;
     },
 
     _activateSaveButton() {
         const btn = document.getElementById('saveProcessBtn');
         if (!btn || btn.dataset.active === 'true') return;
         btn.dataset.active = 'true';
-        btn.className = BTN_SAVE_ACTIVE;
+        btn.className = BTN_SOLID;
     },
 
     _collectProcessEdits() {
@@ -777,7 +776,7 @@ export const PartsPage = {
             const saveBtn = document.getElementById('saveProcessBtn');
             if (saveBtn) {
                 saveBtn.dataset.active = 'false';
-                saveBtn.className = BTN_SAVE_DEFAULT;
+                saveBtn.className = BTN_SOLID;
             }
             this.loadParts(partsState.currentPage);
             this.showDetail(partId);

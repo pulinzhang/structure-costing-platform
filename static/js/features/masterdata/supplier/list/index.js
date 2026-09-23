@@ -8,12 +8,12 @@ import {
     DEFAULT_PAGE_SIZE,
     normalizePageSize,
 } from '../../../../ui/page-size.js?v=6';
-import { bindMoreMenu } from '../../../../ui/more-menu.js?v=5';
+import { bindMoreMenu } from '../../../../ui/more-menu.js?v=6';
 import {
     renderAliasItems,
     renderSupplierRows,
     supplierListTemplate,
-} from './template.js?v=23';
+} from './template.js?v=25';
 
 const API_BASE = '/api/masterdata/suppliers';
 const DRAWER_ANIMATION_MS = 300;

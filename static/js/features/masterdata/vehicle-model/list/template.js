@@ -2,8 +2,8 @@
  * 项目一览 — HUD 密表，按基地分卡 / 分段
  */
 
-import { moreMenuItemHtml, moreMenuShellHtml } from '../../../../ui/more-menu.js?v=5';
-import { HUD_SHELL, DRAWER_SHELL, DRAWER_BACKDROP, HUD_BAND, OPS_TH, BTN_HUD_CREATE, BTN_HUD_SAVE, HUD_FILTER } from '../../../../ui/classes.js?v=13';
+import { moreMenuItemHtml, moreMenuShellHtml } from '../../../../ui/more-menu.js?v=6';
+import { HUD_SHELL, DRAWER_SHELL, DRAWER_BACKDROP, HUD_BAND, OPS_TH, BTN_HUD_CREATE, HUD_FILTER, BTN_GHOST, BTN_SOLID, BTN_SOLID_DANGER } from '../../../../ui/classes.js?v=13';
 import { hudTableHtml, hudRowHtml, opsIconButtonHtml } from '../../../../ui/hud-table.js?v=2';
 
 
@@ -144,8 +144,8 @@ export function vehicleModelListTemplate() {
                 </form>
             </div>
             <div class="px-5 py-3 border-t border-line flex items-center justify-end gap-2 bg-app-surface shrink-0">
-                <button type="button" id="vmCancelCreate" class="px-4 py-1.5 text-xs text-ink-muted border border-line hover:text-ink">取消</button>
-                <button type="button" id="vmSubmitCreate" class="${BTN_HUD_SAVE}">保存</button>
+                <button type="button" id="vmCancelCreate" class="${BTN_GHOST}">取消</button>
+                <button type="button" id="vmSubmitCreate" class="${BTN_SOLID}">保存</button>
             </div>
         </div>
 
@@ -198,8 +198,8 @@ export function vehicleModelListTemplate() {
                 </div>
             </div>
             <div class="px-5 py-3 border-t border-line flex items-center justify-end gap-2 bg-app-surface shrink-0">
-                <button type="button" id="vmCancelEdit" class="px-4 py-1.5 text-xs text-ink-muted border border-line hover:text-ink">取消</button>
-                <button type="button" id="vmSubmitEdit" class="${BTN_HUD_SAVE}">保存</button>
+                <button type="button" id="vmCancelEdit" class="${BTN_GHOST}">取消</button>
+                <button type="button" id="vmSubmitEdit" class="${BTN_SOLID}">保存</button>
             </div>
         </div>
 
@@ -219,8 +219,8 @@ export function vehicleModelListTemplate() {
                 <p class="text-[11px] text-ink-faint mt-3">仍被引用时无法删除。</p>
             </div>
             <div class="px-5 py-3 border-t border-line flex items-center justify-end gap-2 bg-app-surface shrink-0">
-                <button type="button" id="vmCancelDelete" class="px-4 py-1.5 text-xs text-ink-muted border border-line">取消</button>
-                <button type="button" id="vmConfirmDelete" class="bg-danger hover:bg-brand-hover text-ink-onbrand px-5 py-1.5 text-xs font-semibold">删除</button>
+                <button type="button" id="vmCancelDelete" class="${BTN_GHOST}">取消</button>
+                <button type="button" id="vmConfirmDelete" class="${BTN_SOLID_DANGER}">删除</button>
             </div>
         </div>
     `;

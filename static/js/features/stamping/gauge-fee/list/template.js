@@ -3,12 +3,12 @@
  * 布局对齐零件列表：HUD + 胶囊筛选（默认收起）
  */
 
-import { filterSelect, filterInput, HUD_SHELL, DRAWER_SHELL, DRAWER_BACKDROP, HUD_FILTER, FILTER_LABEL, BTN_GHOST, HUD_BAND, OPS_TH, BTN_HUD_SAVE } from '../../../../ui/classes.js?v=13';
+import { filterSelect, filterInput, HUD_SHELL, DRAWER_SHELL, DRAWER_BACKDROP, HUD_FILTER, FILTER_LABEL, BTN_GHOST, HUD_BAND, OPS_TH, BTN_SOLID, BTN_SOLID_DANGER } from '../../../../ui/classes.js?v=13';
 import { filterBarHtml } from '../../../../ui/filter-bar.js?v=4';
 import { hudTableHtml, hudRowHtml, opsIconButtonHtml } from '../../../../ui/hud-table.js?v=2';
 import { hudKpiCardHtml } from '../../../../ui/hud-kpi.js?v=1';
 
-import { moreMenuItemHtml, moreMenuShellHtml } from '../../../../ui/more-menu.js?v=5';
+import { moreMenuItemHtml, moreMenuShellHtml } from '../../../../ui/more-menu.js?v=6';
 import { partShortCodeCellHtml, partNumberNameCellHtml } from '../../../../domain/part-identity.js?v=5';
 
 function canOp(code) {
@@ -162,9 +162,9 @@ export function gaugeFeeListTemplate() {
             </div>
             <div class="px-5 py-3 border-t border-line flex items-center justify-end gap-2 bg-app-surface shrink-0">
                 <button type="button" id="gflCancelEdit"
-                        class="px-4 py-1.5 text-xs text-ink-muted hover:text-ink border border-line hover:bg-app-elevated transition-all">取消</button>
+                        class="${BTN_GHOST}">取消</button>
                 <button type="button" id="gflSubmitEdit"
-                        class="${BTN_HUD_SAVE} transition-all">保存</button>
+                        class="${BTN_SOLID}">保存</button>
             </div>
         </div>
 
@@ -181,8 +181,8 @@ export function gaugeFeeListTemplate() {
                 <p class="mt-2 text-[11px] text-ink-dim">不影响冲压工艺。</p>
             </div>
             <div class="mt-auto px-5 py-3 border-t border-line flex justify-end gap-2">
-                <button type="button" id="gflCancelDelete" class="px-4 py-1.5 text-xs text-ink-muted border border-line">取消</button>
-                <button type="button" id="gflConfirmDelete" class="bg-danger text-ink-onbrand px-4 py-1.5 text-xs font-semibold">删除</button>
+                <button type="button" id="gflCancelDelete" class="${BTN_GHOST}">取消</button>
+                <button type="button" id="gflConfirmDelete" class="${BTN_SOLID_DANGER}">删除</button>
             </div>
         </div>
     `;

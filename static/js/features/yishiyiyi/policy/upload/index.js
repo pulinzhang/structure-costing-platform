@@ -1,4 +1,5 @@
-import { policyUploadTemplate } from './template.js?v=7';
+import { policyUploadTemplate } from './template.js?v=9';
+import { uploadSubmitLabelHtml } from '../../../../ui/upload-actions.js?v=2';
 
 const MAX_RECENT_UPLOADS = 8;
 const POLL_INTERVAL_MS = 2000;
@@ -298,9 +299,7 @@ const PolicyUploadPage = {
 
         if (button) {
             button.disabled = isUploading || !this.selectedFile;
-            button.innerHTML = isUploading
-                ? `${window.svgIcon('spinner', 'w-3.5 h-3.5')} 解析中...`
-                : `<svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12"></path></svg> 导入政策`;
+            button.innerHTML = uploadSubmitLabelHtml(isUploading);
         }
         if (resetButton) resetButton.disabled = isUploading;
         if (yearInput) yearInput.disabled = isUploading;

@@ -3,6 +3,8 @@
  * 系统设置 — 卡片网格布局
  */
 
+import { BTN_SOLID } from '../../../ui/classes.js?v=13';
+
 function fieldLabel(text, tip) {
     const tipHtml = tip
         ? `<span class="inline-flex text-ink-faint hover:text-ink-muted cursor-help"
@@ -233,7 +235,7 @@ export function settingsTemplate() {
                         恢复默认
                     </button>
                     <button id="btnSaveSettings" type="button"
-                            class="inline-flex items-center gap-1.5 h-9 px-4 text-xs font-semibold text-ink-onbrand bg-brand border border-brand rounded-sm hover:bg-brand-hover hover:border-brand-hover active:scale-[0.98] transition-all disabled:opacity-40 disabled:cursor-not-allowed">
+                            class="${BTN_SOLID} disabled:opacity-40 disabled:cursor-not-allowed">
                         ${window.svgIcon('check-circle', 'w-3.5 h-3.5')}
                         保存设置
                     </button>

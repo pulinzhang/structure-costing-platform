@@ -7,7 +7,7 @@ import { filterBarHtml } from '../../../../ui/filter-bar.js?v=4';
 import { hudTableHtml, hudRowHtml, opsIconButtonHtml } from '../../../../ui/hud-table.js?v=2';
 import { hudKpiCardHtml } from '../../../../ui/hud-kpi.js?v=1';
 
-import { moreMenuItemHtml, moreMenuShellHtml } from '../../../../ui/more-menu.js?v=5';
+import { moreMenuItemHtml, moreMenuShellHtml } from '../../../../ui/more-menu.js?v=6';
 import { CONFIRM_LABELS, KIND_LABELS } from '../../../bom/procurement-object/labels.js?v=4';
 import {
     partShortCodeCellHtml,
@@ -201,7 +201,7 @@ function batchAuditDrawerHtml() {
                 </div>
             </div>
             <div class="px-6 py-4 border-t border-app-elevated flex items-center justify-end gap-2 shrink-0">
-                <button type="button" id="cancelLacBatchAuditBtn" class="inline-flex items-center gap-1.5 bg-transparent text-ink-muted border border-line px-4 py-2 text-[11px] font-medium rounded hover:border-ink-muted hover:text-ink transition-all">取消</button>
+                <button type="button" id="cancelLacBatchAuditBtn" class="${BTN_GHOST}">取消</button>
                 <button type="button" id="confirmLacBatchAuditBtn" class="${BTN_SOLID}">
                     确认提交
                 </button>
@@ -251,10 +251,10 @@ export function renderLacRows(records, view = 'finance') {
             icon: window.svgIcon('eye', 'w-3.5 h-3.5'),
             attrs: `data-id="${esc(row.id)}"`,
         })}${opsIconButtonHtml({
-            extraClass: 'btn-open-restore px-1.5 text-[10px] tracking-wide',
+            extraClass: 'btn-open-restore',
             title: '计算过程',
-            icon: '计算过程',
-            attrs: `data-year="${esc(row.year)}" data-month="${esc(row.month)}" data-part-number="${esc(row.part_number)}" data-location="${esc(row.location || '')}" data-vehicle-model="${esc(row.vehicle_model || '')}" data-bom-version="${esc(row.bom_version || '')}" style="width:auto"`,
+            icon: window.svgIcon('file-earmark-text', 'w-3.5 h-3.5'),
+            attrs: `data-year="${esc(row.year)}" data-month="${esc(row.month)}" data-part-number="${esc(row.part_number)}" data-location="${esc(row.location || '')}" data-vehicle-model="${esc(row.vehicle_model || '')}" data-bom-version="${esc(row.bom_version || '')}"`,
         })}`;
         if (view === 'procurement') {
             return hudRowHtml({

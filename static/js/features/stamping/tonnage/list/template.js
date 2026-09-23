@@ -9,7 +9,7 @@ import { filterBarHtml } from '../../../../ui/filter-bar.js?v=4';
 import { hudTableHtml, hudRowHtml, opsIconButtonHtml } from '../../../../ui/hud-table.js?v=2';
 import { hudKpiCardHtml } from '../../../../ui/hud-kpi.js?v=1';
 
-import { moreMenuItemHtml, moreMenuShellHtml } from '../../../../ui/more-menu.js?v=5';
+import { moreMenuItemHtml, moreMenuShellHtml } from '../../../../ui/more-menu.js?v=6';
 
 /** 格式化为固定 3 位小数字符串；非法值返回 '-'。 */
 export function formatPricePerStroke3(value) {
@@ -153,7 +153,7 @@ function batchAuditDrawerHtml(prefix) {
                 </div>
             </div>
             <div class="px-6 py-4 border-t border-app-elevated flex items-center justify-end gap-2 shrink-0">
-                <button type="button" id="cancel${prefix.charAt(0).toUpperCase() + prefix.slice(1)}BatchAuditBtn" class="inline-flex items-center gap-1.5 bg-transparent text-ink-muted border border-line px-4 py-2 text-[11px] font-medium rounded hover:border-ink-muted hover:text-ink transition-all">取消</button>
+                <button type="button" id="cancel${prefix.charAt(0).toUpperCase() + prefix.slice(1)}BatchAuditBtn" class="${BTN_GHOST}">取消</button>
                 <button type="button" id="confirm${prefix.charAt(0).toUpperCase() + prefix.slice(1)}BatchAuditBtn" class="${BTN_SOLID}">确认提交</button>
             </div>
         </div>
@@ -207,7 +207,7 @@ function editDrawerHtml() {
                 </form>
             </div>
             <div class="px-6 py-4 border-t border-app-elevated flex items-center justify-end gap-2 shrink-0">
-                <button type="button" id="cancelEditBtn" class="inline-flex items-center gap-1.5 bg-transparent text-ink-muted border border-line px-4 py-2 text-[11px] font-medium rounded hover:border-ink-muted hover:text-ink transition-all">取消</button>
+                <button type="button" id="cancelEditBtn" class="${BTN_GHOST}">取消</button>
                 <button type="button" id="submitEditBtn" class="${BTN_SOLID}">
                     ${window.svgIcon('archive', 'w-3.5 h-3.5')}
                     保存
@@ -241,7 +241,7 @@ function deleteDrawerHtml() {
                 <p class="text-[11px] text-ink-dim">已审核记录不可删除。此操作不可撤销。</p>
             </div>
             <div class="px-6 py-4 border-t border-app-elevated flex items-center justify-end gap-2 shrink-0">
-                <button type="button" id="cancelDeleteBtn" class="inline-flex items-center gap-1.5 bg-transparent text-ink-muted border border-line px-4 py-2 text-[11px] font-medium rounded hover:border-ink-muted hover:text-ink transition-all">取消</button>
+                <button type="button" id="cancelDeleteBtn" class="${BTN_GHOST}">取消</button>
                 <button type="button" id="confirmDeleteBtn" class="${BTN_SOLID_DANGER}">
                     ${window.svgIcon('trash', 'w-3.5 h-3.5')}
                     删除

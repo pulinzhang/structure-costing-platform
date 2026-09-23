@@ -2,10 +2,10 @@
  * 牌号分类档案 — HUD 密表 + 抽屉增改
  */
 
-import { HUD_SHELL, DRAWER_BACKDROP, DRAWER_SHELL, HUD_BAND, OPS_TH, BTN_HUD_CREATE, BTN_HUD_SAVE, HUD_FILTER } from '../../../ui/classes.js?v=13';
+import { HUD_SHELL, DRAWER_BACKDROP, DRAWER_SHELL, HUD_BAND, OPS_TH, BTN_HUD_CREATE, HUD_FILTER, BTN_GHOST, BTN_SOLID, BTN_SOLID_DANGER } from '../../../ui/classes.js?v=13';
 import { hudTableHtml, hudRowHtml, opsIconButtonHtml } from '../../../ui/hud-table.js?v=2';
 
-import { moreMenuItemHtml, moreMenuShellHtml } from '../../../ui/more-menu.js?v=5';
+import { moreMenuItemHtml, moreMenuShellHtml } from '../../../ui/more-menu.js?v=6';
 
 export const CATEGORY_TABS = Object.freeze([
     { id: 'all', label: '全部' },
@@ -136,9 +136,9 @@ export function steelGradeCategoryTemplate() {
             </div>
             <div class="px-5 py-3 border-t border-line flex items-center justify-end gap-2 bg-app-surface shrink-0">
                     <button type="button" id="sgcCancelEdit"
-                        class="px-4 py-1.5 text-xs text-ink-muted border border-line hover:text-ink">取消</button>
+                        class="${BTN_GHOST}">取消</button>
                 <button type="button" id="sgcSubmitEdit"
-                        class="${BTN_HUD_SAVE} transition-all">保存</button>
+                        class="${BTN_SOLID}">保存</button>
             </div>
         </div>
 
@@ -160,9 +160,9 @@ export function steelGradeCategoryTemplate() {
             </div>
             <div class="px-5 py-3 border-t border-line flex items-center justify-end gap-2 bg-app-surface shrink-0">
                 <button type="button" id="sgcCancelDelete"
-                        class="px-4 py-1.5 text-xs text-ink-muted border border-line">取消</button>
+                        class="${BTN_GHOST}">取消</button>
                 <button type="button" id="sgcConfirmDelete"
-                        class="bg-danger hover:bg-brand-hover text-ink-onbrand px-5 py-1.5 text-xs font-semibold">删除</button>
+                        class="${BTN_SOLID_DANGER}">删除</button>
             </div>
         </div>
     `;

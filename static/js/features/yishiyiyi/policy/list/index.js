@@ -5,7 +5,7 @@
  */
 
 import { policyDownloadTemplate, renderPolicyRows } from './template.js?v=50';
-import { bindMoreMenu } from '../../../../ui/more-menu.js?v=5';
+import { bindMoreMenu } from '../../../../ui/more-menu.js?v=6';
 import {
     DEFAULT_PREVIEW_PAGE_SIZE,
     PREVIEW_PAGE_SIZE_OPTIONS,

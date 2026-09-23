@@ -3,7 +3,7 @@
  * 个人资料 + 安全设置（两张独立卡片，操作物理隔离）
  */
 
-import { HUD_LED } from '../../../ui/classes.js?v=13';
+import { HUD_LED, BTN_SOLID } from '../../../ui/classes.js?v=13';
 
 export function profileLoadingTemplate() {
     return `
@@ -117,7 +117,7 @@ export function profileTemplate(user = {}) {
 
                     <div class="px-5 py-4 border-t border-line-subtle bg-app-main flex items-center justify-end">
                         <button type="button" id="btnSaveProfile"
-                                class="inline-flex items-center gap-1.5 bg-brand hover:bg-brand-hover text-ink-onbrand px-4 py-2 text-xs font-semibold rounded-sm transition-all">
+                                class="${BTN_SOLID}">
                             ${window.svgIcon('archive', 'w-3.5 h-3.5')}
                             保存基本资料
                         </button>

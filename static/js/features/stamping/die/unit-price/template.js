@@ -2,7 +2,7 @@
  * 冲压模具单价档案 — HUD 密表 + 抽屉增改
  */
 
-import { HUD_SHELL, DRAWER_BACKDROP, DRAWER_SHELL, HUD_BAND, OPS_TH, filterSelect, BTN_GHOST, FILTER_LABEL, HUD_FILTER, BTN_SOLID_DANGER, BTN_HUD_SAVE } from '../../../../ui/classes.js?v=13';
+import { HUD_SHELL, DRAWER_BACKDROP, DRAWER_SHELL, HUD_BAND, OPS_TH, filterSelect, BTN_GHOST, FILTER_LABEL, HUD_FILTER, BTN_SOLID_DANGER, BTN_HUD_CREATE, BTN_SOLID } from '../../../../ui/classes.js?v=13';
 import { filterBarHtml } from '../../../../ui/filter-bar.js?v=4';
 import { hudTableHtml, hudRowHtml, opsIconButtonHtml } from '../../../../ui/hud-table.js?v=2';
 
@@ -22,7 +22,7 @@ export function dieUnitPriceTemplate() {
                             <p class="text-[11px] text-ink-faint">按基地 + 项目维护钢板模 / 级进模单价与分摊台数，不必先有冲压工艺</p>
                         </div>
                         <button type="button" id="dupAddBtn"
-                                class="inline-flex items-center gap-1.5 bg-brand-hud text-ink-onbrand px-3 py-1.5 text-[11px] font-semibold rounded hover:bg-brand transition-all">
+                                class="${BTN_HUD_CREATE}">
                             ${window.svgIcon('plus', 'w-3 h-3')}
                             新增
                         </button>
@@ -152,9 +152,9 @@ export function dieUnitPriceTemplate() {
             </div>
             <div class="px-5 py-3 border-t border-line flex items-center justify-end gap-2 bg-app-surface shrink-0">
                 <button type="button" id="dupCancelEdit"
-                        class="px-4 py-1.5 text-xs text-ink-muted hover:text-ink border border-line hover:bg-app-elevated transition-all">取消</button>
+                        class="${BTN_GHOST}">取消</button>
                 <button type="button" id="dupSubmitEdit"
-                        class="${BTN_HUD_SAVE} transition-all">保存</button>
+                        class="${BTN_SOLID}">保存</button>
             </div>
         </div>
 
@@ -175,7 +175,7 @@ export function dieUnitPriceTemplate() {
             </div>
             <div class="px-6 py-4 border-t border-app-elevated flex items-center justify-end gap-2 shrink-0">
                 <button type="button" id="dupCancelDelete"
-                        class="inline-flex items-center bg-transparent text-ink-muted border border-line px-4 py-2 text-[11px] font-medium rounded hover:text-ink">取消</button>
+                        class="${BTN_GHOST}">取消</button>
                 <button type="button" id="dupConfirmDelete"
                         class="${BTN_SOLID_DANGER}">删除</button>
             </div>

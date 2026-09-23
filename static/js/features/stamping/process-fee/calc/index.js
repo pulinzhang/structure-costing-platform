@@ -4,9 +4,10 @@
  */
 
 import { DRAWER_CLOSE, DRAWER_SHELL, DRAWER_BACKDROP } from '../../../../ui/classes.js?v=13';
+import { opsIconButtonHtml } from '../../../../ui/hud-table.js?v=2';
 import {
     processFeeCalcTemplate,
-} from './template.js?v=32';
+} from './template.js?v=33';
 import {
     DEFAULT_PAGE_SIZE,
     bindPagination,
@@ -337,9 +338,31 @@ function renderHistoryRows(items) {
         const filterText = filterParts.length ? filterParts.join(' / ') : '全部';
         const createdBy = item.created_by || item.operator_name || '-';
         const isProcessing = item.status === 'processing';
+        const processBtn = isProcessing ? '' : opsIconButtonHtml({
+            extraClass: 'calc-view-process-btn',
+            title: '过程',
+            icon: window.svgIcon('file-earmark-text', 'w-3.5 h-3.5'),
+            attrs: `data-log-id="${esc(item.id)}"`,
+        });
+        const resultBtn = isProcessing || item.status === 'failed' ? '' : opsIconButtonHtml({
+            extraClass: 'calc-view-result-btn',
+            title: '结果',
+            icon: window.svgIcon('external-link', 'w-3.5 h-3.5'),
+            attrs: `data-year="${esc(item.year)}" data-location="${esc(item.location || '')}" data-vehicle="${esc(item.vehicle_model || '')}" data-version="${esc(item.version || '')}"`,
+        });
+        const deleteBtn = calcState.canDelete !== false ? opsIconButtonHtml({
+            extraClass: 'calc-delete-log-btn',
+            danger: true,
+            title: '含计算中：删除可释放锁',
+            icon: window.svgIcon('trash', 'w-3.5 h-3.5'),
+            attrs: `data-log-id="${esc(item.id)}"`,
+        }) : '';
+        const processingMark = isProcessing
+            ? '<span class="text-[9px] text-ink-faint mr-1">进行中</span>'
+            : '';
 
         return `
-            <tr class="hover:bg-ink/[0.02] transition-colors text-ink-muted" data-log-id="${esc(item.id)}">
+            <tr class="group hover:bg-ink/[0.02] transition-colors text-ink-muted" data-log-id="${esc(item.id)}">
                 <td class="py-2 px-2 font-mono text-ink-dim whitespace-nowrap">${esc(formatDateTime(item.started_at))}</td>
                 <td class="py-2 px-2 font-mono text-ink-dim whitespace-nowrap">${esc(formatDateTime(item.finished_at))}</td>
                 <td class="py-2 px-2 font-mono text-right tabular-nums text-ink-dim whitespace-nowrap">${esc(formatDurationSeconds(item))}</td>
@@ -354,27 +377,8 @@ function renderHistoryRows(items) {
                 <td class="py-2 px-2 font-mono text-right tabular-nums ${Number(item.failed_count) > 0 ? 'text-danger' : 'text-ink-dim'}">${fmtInt(item.failed_count)}</td>
                 <td class="py-2 px-2 font-mono text-right tabular-nums text-ink-dim" title="含废料副产品（按规则记 0）">${fmtInt(item.zero_fee_count)}</td>
                 <td class="py-2 px-2 font-mono text-right tabular-nums text-ink-dim">${fmtInt(item.skipped_approved_count)}</td>
-                <td class="py-2 px-2 text-right whitespace-nowrap">
-                    ${isProcessing ? `
-                    <span class="text-[9px] text-ink-faint mr-2">进行中</span>
-                    ` : `
-                    <button type="button"
-                            class="calc-view-process-btn text-[9px] text-ink-dim hover:text-ink mr-2"
-                            data-log-id="${esc(item.id)}">过程</button>
-                    ${item.status === 'failed' ? '' : `
-                    <button type="button"
-                            class="calc-view-result-btn text-[9px] text-ink-dim hover:text-ink mr-2"
-                            data-year="${esc(item.year)}"
-                            data-location="${esc(item.location || '')}"
-                            data-vehicle="${esc(item.vehicle_model || '')}"
-                            data-version="${esc(item.version || '')}">结果</button>
-                    `}
-                    `}
-                    ${calcState.canDelete !== false ? `
-                    <button type="button"
-                            class="calc-delete-log-btn text-[9px] text-ink-dim hover:text-danger"
-                            data-log-id="${esc(item.id)}"
-                            title="含计算中：删除可释放锁">删除</button>` : ''}
+                <td class="py-2 px-1 text-right whitespace-nowrap">
+                    <div class="inline-flex items-center justify-end">${processingMark}${processBtn}${resultBtn}${deleteBtn}</div>
                 </td>
             </tr>
         `;

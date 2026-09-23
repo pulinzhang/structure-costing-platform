@@ -6,8 +6,8 @@
  * 明细抽屉 / renderDetailContent 保持不变
  */
 
-import { moreMenuItemHtml, moreMenuShellHtml } from '../../../../ui/more-menu.js?v=5';
-import { BRABUS_PANEL, BRABUS_PANEL_HEADER, BRABUS_SECTION_HEADER, BRABUS_TABLE_WRAPPER, BTN_SAVE_DEFAULT, DIE_TYPE_SELECT, filterSelect, filterInput, HUD_SHELL, DRAWER_SHELL, DRAWER_BACKDROP, DRAWER_CLOSE, HUD_BAND, BTN_GHOST, OPS_TH, TH_KEY, TH_TEXT, TH_NUM, HUD_LED } from '../../../../ui/classes.js?v=13';
+import { moreMenuItemHtml, moreMenuShellHtml } from '../../../../ui/more-menu.js?v=6';
+import { BRABUS_PANEL, BRABUS_PANEL_HEADER, BRABUS_SECTION_HEADER, BRABUS_TABLE_WRAPPER, DIE_TYPE_SELECT, filterSelect, filterInput, HUD_SHELL, DRAWER_SHELL, DRAWER_BACKDROP, DRAWER_CLOSE, HUD_BAND, BTN_GHOST, OPS_TH, TH_KEY, TH_TEXT, TH_NUM, HUD_LED, BTN_SOLID } from '../../../../ui/classes.js?v=13';
 import { filterBarHtml } from '../../../../ui/filter-bar.js?v=4';
 import { hudTableHtml } from '../../../../ui/hud-table.js?v=2';
 import { hudKpiCardHtml } from '../../../../ui/hud-kpi.js?v=1';
@@ -244,7 +244,7 @@ function renderOffalRows(part, canUpdate) {
                         </button>
                         <span id="offalNestedLabel" class="text-[11px] text-ink-muted tracking-wide">${isOn ? '是' : '否'}</span>
                         <button type="button" id="saveOffalBtn" data-active="false"
-                                class="h-7 px-3 text-[10px] text-ink-faint border border-line bg-transparent rounded-sm hover:text-brand hover:border-brand/50 transition-all tracking-wide">
+                                class="${BTN_SOLID}">
                             保存利废
                         </button>
                     </div>
@@ -517,7 +517,7 @@ export function renderDetailContent(part, options = {}) {
                 <div class="flex justify-center">
                     <button type="button" id="saveProcessBtn"
                             data-active="false"
-                            class="${BTN_SAVE_DEFAULT}">
+                            class="${BTN_SOLID}">
                         <span class="tracking-[0.2em]">保存</span>
                     </button>
                 </div>

@@ -3,7 +3,8 @@
  * 与冲压工艺上传同一模式：task_id + 进度轮询
  */
 
-import { bomUploadTemplate } from './template.js?v=12';
+import { bomUploadTemplate } from './template.js?v=14';
+import { uploadSubmitLabelHtml } from '../../../../ui/upload-actions.js?v=2';
 import { can } from '../../../../core/permissions.js?v=8';
 import {
     SOP_INTRO,
@@ -401,9 +402,7 @@ const BomUploadPage = {
         const vehicle = document.getElementById('bomUploadVehicleModel');
         const templateBtn = document.getElementById('bomUploadTemplateBtn');
         if (submitBtn) {
-            submitBtn.innerHTML = isUploading
-                ? `${window.svgIcon('spinner', 'w-3.5 h-3.5')} 解析中...`
-                : `<svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12"></path></svg> 上传`;
+            submitBtn.innerHTML = uploadSubmitLabelHtml(isUploading);
         }
         this.updateSubmitEnabled();
         if (resetBtn) resetBtn.disabled = isUploading;

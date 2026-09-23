@@ -2,7 +2,7 @@
  * 供应商上传页 — 同步导入
  */
 
-import { supplierUploadTemplate } from './template.js?v=10';
+import { supplierUploadTemplate } from './template.js?v=12';
 import { bindSyncUploadProgress } from '../../../../ui/sync-upload-progress.js?v=3';
 
 const API_BASE = '/api/masterdata/suppliers';

@@ -1,8 +1,9 @@
 import { DRAWER_SHELL, DRAWER_BACKDROP } from '../../../../ui/classes.js?v=13';
+import { opsIconButtonHtml } from '../../../../ui/hud-table.js?v=2';
 import {
     dieFeeCalcTemplate,
     CALC_HISTORY_COLSPAN,
-} from './template.js?v=17';
+} from './template.js?v=18';
 import {
     DEFAULT_PAGE_SIZE,
     bindPagination,
@@ -302,8 +303,30 @@ function renderHistoryRows(items) {
     body.innerHTML = items.map((item) => {
         const status = STATUS_META[item.status] || STATUS_META.failed;
         const isProcessing = item.status === 'processing';
+        const processBtn = isProcessing ? '' : opsIconButtonHtml({
+            extraClass: 'calc-view-process-btn',
+            title: '过程',
+            icon: window.svgIcon('file-earmark-text', 'w-3.5 h-3.5'),
+            attrs: `data-log-id="${esc(item.id)}"`,
+        });
+        const resultBtn = isProcessing || item.status === 'failed' ? '' : opsIconButtonHtml({
+            extraClass: 'calc-view-result-btn',
+            title: '结果',
+            icon: window.svgIcon('external-link', 'w-3.5 h-3.5'),
+            attrs: `data-year="${esc(item.year)}" data-location="${esc(item.location || '')}" data-vehicle="${esc(item.vehicle_model || '')}" data-version="${esc(item.version || '')}"`,
+        });
+        const deleteBtn = calcState.canDelete !== false && !isProcessing ? opsIconButtonHtml({
+            extraClass: 'calc-delete-log-btn',
+            danger: true,
+            title: '删除',
+            icon: window.svgIcon('trash', 'w-3.5 h-3.5'),
+            attrs: `data-log-id="${esc(item.id)}"`,
+        }) : '';
+        const processingMark = isProcessing
+            ? '<span class="text-[9px] text-ink-faint">进行中</span>'
+            : '';
         return `
-            <tr class="hover:bg-ink/[0.02] text-ink-muted">
+            <tr class="group hover:bg-ink/[0.02] text-ink-muted">
                 <td class="py-2 px-2 font-mono text-ink-dim whitespace-nowrap">${esc(formatDateTime(item.started_at))}</td>
                 <td class="py-2 px-2 font-mono text-ink-dim whitespace-nowrap">${esc(formatDateTime(item.finished_at))}</td>
                 <td class="py-2 px-2 font-mono text-right tabular-nums text-ink-dim whitespace-nowrap">${esc(formatDurationSeconds(item))}</td>
@@ -317,17 +340,8 @@ function renderHistoryRows(items) {
                 <td class="py-2 px-2 font-mono text-right tabular-nums text-ink-dim">${fmtInt(item.total_parts)}</td>
                 <td class="py-2 px-2 font-mono text-right tabular-nums text-ink-dim">${fmtInt(item.success_count)}</td>
                 <td class="py-2 px-2 font-mono text-right tabular-nums text-ink-dim">${fmtInt(item.skipped_no_die_count)}</td>
-                <td class="py-2 px-2 text-right whitespace-nowrap">
-                    ${isProcessing ? '<span class="text-[9px] text-ink-faint">进行中</span>' : `
-                    <button type="button" class="calc-view-process-btn text-[9px] text-ink-dim hover:text-ink mr-2" data-log-id="${esc(item.id)}">过程</button>
-                    ${item.status === 'failed' ? '' : `
-                    <button type="button" class="calc-view-result-btn text-[9px] text-ink-dim hover:text-ink mr-2"
-                        data-year="${esc(item.year)}" data-location="${esc(item.location || '')}"
-                        data-vehicle="${esc(item.vehicle_model || '')}"
-                        data-version="${esc(item.version || '')}">结果</button>`}
-                    `}
-                    ${calcState.canDelete !== false && !isProcessing ? `
-                    <button type="button" class="calc-delete-log-btn text-[9px] text-ink-dim hover:text-danger" data-log-id="${esc(item.id)}">删除</button>` : ''}
+                <td class="py-2 px-1 text-right whitespace-nowrap">
+                    <div class="inline-flex items-center justify-end">${processingMark}${processBtn}${resultBtn}${deleteBtn}</div>
                 </td>
             </tr>`;
     }).join('');

@@ -8,7 +8,7 @@ import { filterBarHtml } from '../../../../ui/filter-bar.js?v=4';
 import { hudTableHtml, hudRowHtml, opsIconButtonHtml } from '../../../../ui/hud-table.js?v=2';
 import { hudKpiCardHtml, paintHudKpiAlert } from '../../../../ui/hud-kpi.js?v=1';
 
-import { moreMenuItemHtml, moreMenuShellHtml } from '../../../../ui/more-menu.js?v=5';
+import { moreMenuItemHtml, moreMenuShellHtml } from '../../../../ui/more-menu.js?v=6';
 import { partShortCodeCellHtml, partNumberNameCellHtml } from '../../../../domain/part-identity.js?v=5';
 
 export function processFeeListTemplate() {
@@ -172,7 +172,7 @@ export function processFeeListTemplate() {
                 </div>
             </div>
             <div class="px-6 py-4 border-t border-app-elevated flex items-center justify-end gap-2 shrink-0">
-                <button type="button" id="cancelFeeBatchAuditBtn" class="inline-flex items-center gap-1.5 bg-transparent text-ink-muted border border-line px-4 py-2 text-[11px] font-medium rounded hover:border-ink-muted hover:text-ink transition-all">取消</button>
+                <button type="button" id="cancelFeeBatchAuditBtn" class="${BTN_GHOST}">取消</button>
                 <button type="button" id="confirmFeeBatchAuditBtn" class="${BTN_SOLID}">
                     确认提交
                 </button>
@@ -255,7 +255,7 @@ export function processFeeListTemplate() {
                 </form>
             </div>
             <div class="px-6 py-4 border-t border-app-elevated flex items-center justify-end gap-2 shrink-0">
-                <button type="button" id="cancelFeeEditBtn" class="inline-flex items-center gap-1.5 bg-transparent text-ink-muted border border-line px-4 py-2 text-[11px] font-medium rounded hover:border-ink-muted hover:text-ink transition-all">取消</button>
+                <button type="button" id="cancelFeeEditBtn" class="${BTN_GHOST}">取消</button>
                 <button type="button" id="submitFeeEditBtn" class="${BTN_SOLID}">
                     ${window.svgIcon('archive', 'w-3.5 h-3.5')}
                     保存

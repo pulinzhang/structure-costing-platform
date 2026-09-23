@@ -3,7 +3,7 @@
  */
 
 import { paginationBarHtml } from '../../../ui/page-size.js?v=6';
-import { HUD_FILTER, HUD_INPUT, BTN_FILTER_SEARCH } from '../../../ui/classes.js?v=13';
+import { HUD_FILTER, HUD_INPUT, BTN_FILTER_SEARCH, BTN_GHOST } from '../../../ui/classes.js?v=13';
 
 export function logsTemplate() {
     return `
@@ -38,18 +38,18 @@ export function logsTemplate() {
                                class="${HUD_INPUT}">
 
                         <button id="btnFilter"
-                                class="${BTN_FILTER_SEARCH} h-8">
+                                class="${BTN_FILTER_SEARCH} h-7">
                             ${window.svgIcon('search', 'w-3 h-3')}
                             查询
                         </button>
                         <button id="btnResetFilter"
-                                class="h-8 px-3 text-[11px] text-ink-dim hover:text-ink-muted transition-all">
+                                class="${BTN_GHOST}">
                             重置
                         </button>
                     </div>
 
                     <button id="btnExportLogs"
-                            class="h-8 inline-flex items-center gap-1.5 bg-transparent text-ink-muted border border-line px-3 text-xs hover:border-brand hover:text-brand transition-all">
+                            class="${BTN_GHOST}">
                         ${window.svgIcon('download', 'w-3.5 h-3.5')}
                         导出
                     </button>

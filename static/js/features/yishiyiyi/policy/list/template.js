@@ -10,7 +10,7 @@ import {
     PREVIEW_PAGE_SIZE_OPTIONS,
     paginationBarHtml,
 } from '../../../../ui/page-size.js?v=6';
-import { moreMenuItemHtml, moreMenuShellHtml } from '../../../../ui/more-menu.js?v=5';
+import { moreMenuItemHtml, moreMenuShellHtml } from '../../../../ui/more-menu.js?v=6';
 
 export function policyDownloadTemplate() {
     return `

@@ -9,8 +9,8 @@ import {
     pricePerStrokeInputValue,
     parsePricePerStrokeInput,
     updateTonnageHud,
-} from './template.js?v=40';
-import { bindMoreMenu } from '../../../../ui/more-menu.js?v=5';
+} from './template.js?v=41';
+import { bindMoreMenu } from '../../../../ui/more-menu.js?v=6';
 import { bindFilterBar } from '../../../../ui/filter-bar.js?v=4';
 import {
     DEFAULT_PAGE_SIZE,

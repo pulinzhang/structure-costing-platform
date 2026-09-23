@@ -1,6 +1,6 @@
-import { dieListTemplate } from './template.js?v=29';
+import { dieListTemplate } from './template.js?v=30';
 import { hudRowHtml, opsIconButtonHtml } from '../../../../ui/hud-table.js?v=2';
-import { bindMoreMenu } from '../../../../ui/more-menu.js?v=5';
+import { bindMoreMenu } from '../../../../ui/more-menu.js?v=6';
 import { bindFilterBar } from '../../../../ui/filter-bar.js?v=4';
 import {
     DEFAULT_PAGE_SIZE,

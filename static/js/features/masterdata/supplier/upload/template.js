@@ -2,12 +2,14 @@
  * 供应商上传 — 核价厂档补录；列：缩写 / 全称 / 对外代码 / 别名
  */
 
+import { UPLOAD_DROPZONE } from '../../../../ui/classes.js?v=13';
 import {
-    BTN_FILE_SELECT,
-    BTN_GHOST,
-    BTN_UPLOAD_SUBMIT,
-    UPLOAD_DROPZONE,
-} from '../../../../ui/classes.js?v=13';
+    uploadBrowseButtonHtml,
+    uploadFileHintHtml,
+    uploadResetButtonHtml,
+    uploadSubmitButtonHtml,
+    uploadTemplateButtonHtml,
+} from '../../../../ui/upload-actions.js?v=2';
 
 export function supplierUploadTemplate() {
     return `
@@ -18,12 +20,7 @@ export function supplierUploadTemplate() {
                         <span class="w-1 h-3.5 bg-brand-hud"></span>
                         <h5 class="text-xs font-semibold text-ink mb-0 tracking-wider">供应商补档</h5>
                     </div>
-                    <button type="button"
-                            id="supplierUploadTemplateBtn"
-                            class="inline-flex items-center gap-1.5 bg-transparent text-ink-muted border border-line-hud px-3 py-1.5 text-[11px] font-medium rounded-md hover:border-brand-hud/50 hover:text-brand-hud transition-all">
-                        ${window.svgIcon('download', 'w-3 h-3')}
-                        下载模板
-                    </button>
+                    ${uploadTemplateButtonHtml('supplierUploadTemplateBtn')}
                 </div>
                 <div class="p-5">
                     <form id="supplierUploadForm">
@@ -31,12 +28,9 @@ export function supplierUploadTemplate() {
                             <div id="supplierUploadDropIdle" class="flex flex-col items-center gap-0">
                                 ${window.svgIcon('upload', 'w-10 h-10 text-ink-dim mx-auto mb-4')}
                                 <h5 id="supplierUploadTitle" class="text-xs font-medium text-ink-muted mb-1.5">拖入 Excel</h5>
-                                <p id="supplierUploadHint" class="text-[11px] text-ink-dim mb-5">或点下方选择文件</p>
+                                ${uploadFileHintHtml('supplierUploadHint')}
                                 <input type="file" id="supplierUploadFileInput" class="hidden" accept=".xlsx,.xls">
-                                <button type="button" id="supplierUploadSelectFileBtn" class="${BTN_FILE_SELECT}">
-                                    ${window.svgIcon('folder', 'w-3.5 h-3.5')}
-                                    选择文件
-                                </button>
+                                ${uploadBrowseButtonHtml('supplierUploadSelectFileBtn')}
                                 <p class="text-[10px] text-ink-faint mt-5 mb-0">.xlsx / .xls · 同步写入</p>
                             </div>
                             <div id="supplierUploadProgressPanel" class="hidden text-left w-full">
@@ -54,8 +48,8 @@ export function supplierUploadTemplate() {
                         </div>
                         <div id="supplierUploadFilePreview" class="hidden mb-4"></div>
                         <div class="flex items-center justify-end gap-3">
-                            <button type="button" id="supplierUploadResetBtn" class="${BTN_GHOST}">重置</button>
-                            <button type="submit" id="supplierUploadSubmitBtn" disabled class="${BTN_UPLOAD_SUBMIT}">上传</button>
+                            ${uploadResetButtonHtml('supplierUploadResetBtn')}
+                            ${uploadSubmitButtonHtml('supplierUploadSubmitBtn')}
                         </div>
                     </form>
                 </div>

@@ -3,7 +3,14 @@
  * 基地 + 年度 + 项目必选；支持生产样例表或平台扁平模板
  */
 
-import { BTN_FILE_SELECT, BTN_GHOST, BTN_UPLOAD_SUBMIT, UPLOAD_DROPZONE, UPLOAD_INPUT, UPLOAD_LABEL, HUD_LED } from '../../../../ui/classes.js?v=13';
+import { UPLOAD_DROPZONE, UPLOAD_INPUT, UPLOAD_LABEL, HUD_LED } from '../../../../ui/classes.js?v=13';
+import {
+    uploadBrowseButtonHtml,
+    uploadFileHintHtml,
+    uploadResetButtonHtml,
+    uploadSubmitButtonHtml,
+    uploadTemplateButtonHtml,
+} from '../../../../ui/upload-actions.js?v=2';
 
 export function pkgTransportFeeUploadTemplate() {
     return `
@@ -14,12 +21,7 @@ export function pkgTransportFeeUploadTemplate() {
                         ${window.svgIcon('file-earmark-excel', 'w-3.5 h-3.5 text-ink-dim')}
                         <h5 class="text-xs font-semibold text-ink-muted mb-0">包装运输费导入</h5>
                     </div>
-                    <button type="button"
-                            id="pkgTransportFeeUploadTemplateBtn"
-                            class="inline-flex items-center gap-1.5 bg-transparent text-ink-muted border border-line px-3 py-1.5 text-[11px] font-medium rounded-sm hover:border-brand hover:text-brand transition-all duration-150">
-                        <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"></path></svg>
-                        下载模板
-                    </button>
+                    ${uploadTemplateButtonHtml('pkgTransportFeeUploadTemplateBtn')}
                 </div>
                 <div class="p-5">
                     <form id="pkgTransportFeeUploadForm">
@@ -82,12 +84,9 @@ export function pkgTransportFeeUploadTemplate() {
                                                 </svg>
                                             </div>
                                             <h5 id="pkgTransportFeeUploadTitle" class="text-[11px] text-ink-dim font-semibold tracking-widest uppercase mb-1">拖拽文件到此处</h5>
-                                            <p id="pkgTransportFeeUploadHint" class="text-[10px] text-ink-faint mb-6">或点击下方按钮选择文件</p>
+                                            ${uploadFileHintHtml('pkgTransportFeeUploadHint')}
                                             <input type="file" id="pkgTransportFeeUploadFileInput" class="hidden" accept=".xlsx">
-                                            <button type="button" id="pkgTransportFeeUploadSelectFileBtn" class="${BTN_FILE_SELECT}">
-                                                ${window.svgIcon('folder', 'w-3.5 h-3.5')}
-                                                浏览文件
-                                            </button>
+                                            ${uploadBrowseButtonHtml('pkgTransportFeeUploadSelectFileBtn')}
                                             <p class="text-[10px] text-ink-faint mt-4 mb-0">仅 .xlsx · 同步导入（读已算好的费用，不重算公式）</p>
                                         </div>
                                         <div id="pkgTransportFeeUploadProgressPanel" class="hidden text-left w-full">
@@ -105,8 +104,8 @@ export function pkgTransportFeeUploadTemplate() {
                                     </div>
                                     <div id="pkgTransportFeeUploadFilePreview" class="hidden mb-4"></div>
                                     <div class="flex items-center justify-end gap-3">
-                                        <button type="button" id="pkgTransportFeeUploadResetBtn" class="${BTN_GHOST}">重置</button>
-                                        <button type="submit" id="pkgTransportFeeUploadSubmitBtn" disabled class="${BTN_UPLOAD_SUBMIT}">上传</button>
+                                        ${uploadResetButtonHtml('pkgTransportFeeUploadResetBtn')}
+                                        ${uploadSubmitButtonHtml('pkgTransportFeeUploadSubmitBtn')}
                                     </div>
                                 </div>
                             </div>

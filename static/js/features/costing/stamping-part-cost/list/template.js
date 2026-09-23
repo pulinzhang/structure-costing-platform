@@ -4,12 +4,12 @@
  * HUD：总成本为靶心；冲压件 / 成本构成 / 审核进度为辅卡
  */
 
-import { HUD_SHELL, BTN_GHOST, OPS_ICON, filterSelect, filterInput, DRAWER_CLOSE, DRAWER_SHELL, DRAWER_BACKDROP, TH_KEY, TH_TEXT, TH_NUM, TH_FOCUS, HUD_BAND, OPS_TH, HUD_LED, BTN_SOLID } from '../../../../ui/classes.js?v=13';
+import { HUD_SHELL, BTN_GHOST, filterSelect, filterInput, DRAWER_CLOSE, DRAWER_SHELL, DRAWER_BACKDROP, TH_KEY, TH_TEXT, TH_NUM, TH_FOCUS, HUD_BAND, OPS_TH, HUD_LED, BTN_SOLID } from '../../../../ui/classes.js?v=13';
 import { filterBarHtml } from '../../../../ui/filter-bar.js?v=4';
-import { hudTableHtml, hudRowHtml } from '../../../../ui/hud-table.js?v=2';
+import { hudTableHtml, hudRowHtml, opsIconButtonHtml } from '../../../../ui/hud-table.js?v=2';
 import { hudKpiCardHtml } from '../../../../ui/hud-kpi.js?v=1';
 
-import { moreMenuItemHtml, moreMenuShellHtml } from '../../../../ui/more-menu.js?v=5';
+import { moreMenuItemHtml, moreMenuShellHtml } from '../../../../ui/more-menu.js?v=6';
 import { partShortCodeCellHtml, partNumberNameCellHtml } from '../../../../domain/part-identity.js?v=5';
 
 export function partCostListTemplate() {
@@ -228,7 +228,7 @@ function batchAuditDrawerHtml() {
                 </div>
             </div>
             <div class="px-6 py-4 border-t border-app-elevated flex items-center justify-end gap-2 shrink-0">
-                <button type="button" id="cancelCostBatchAuditBtn" class="inline-flex items-center gap-1.5 bg-transparent text-ink-muted border border-line px-4 py-2 text-[11px] font-medium rounded hover:border-ink-muted hover:text-ink transition-all">取消</button>
+                <button type="button" id="cancelCostBatchAuditBtn" class="${BTN_GHOST}">取消</button>
                 <button type="button" id="confirmCostBatchAuditBtn" class="${BTN_SOLID}">
                     确认提交
                 </button>
@@ -258,16 +258,12 @@ export function renderCostRows(records, columnFlags = {}) {
         const actionIcon = fail
             ? window.svgIcon('pencil', 'w-3.5 h-3.5')
             : window.svgIcon('eye', 'w-3.5 h-3.5');
-        const actionTone = fail
-            ? 'text-brand-hud hover:text-brand-hud'
-            : 'text-ink-faint hover:text-ink-muted';
-        const actionBtn = `
-            <button type="button"
-                    class="btn-open-detail ${OPS_ICON} ${actionTone}"
-                    data-action="open-detail"
-                    data-id="${esc(row.id)}" title="${actionTitle}" aria-label="${actionTitle}">
-                ${actionIcon}
-            </button>`;
+        const actionBtn = opsIconButtonHtml({
+            extraClass: fail ? 'btn-open-detail text-brand-hud hover:text-brand-hud' : 'btn-open-detail',
+            title: actionTitle,
+            icon: actionIcon,
+            attrs: `data-action="open-detail" data-id="${esc(row.id)}"`,
+        });
         return hudRowHtml({
             extraClass: 'cost-row',
             cellsHtml: `
