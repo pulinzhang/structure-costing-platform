@@ -46,12 +46,12 @@ def _row(change_order: ChangeOrderRowParsed) -> str:
 
 
 def parse_effective_period_text(text: str) -> tuple[int, int]:
-    """解析变更单「2025年07月」→ (2025, 7)。"""
+    """解析变更单「2026年07月」→ (2026, 7)。"""
     raw = (text or "").strip()
     match = _PERIOD_TEXT_RE.match(raw)
     if not match:
         raise BusinessException(
-            f"{EC_EFFECTIVE_MISMATCH}：工程变更单写成{quoted(raw)}，请写成「2025年07月」这种。"
+            f"{EC_EFFECTIVE_MISMATCH}：工程变更单写成{quoted(raw)}，请写成「2026年07月」这种。"
         )
     year = int(match.group(1))
     month = int(match.group(2))

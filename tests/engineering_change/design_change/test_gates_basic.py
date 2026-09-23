@@ -164,7 +164,7 @@ def test_template_passes_import_change_order_and_bom_l0_gates() -> None:
     validate_change_order_rows(
         rows,
         page_vehicle_model="T28",
-        page_effective_year=2025,
+        page_effective_year=2026,
         page_effective_month=7,
     )
     parsed = parse_bom_excel(content, sheet_name=SHEET_BOM)
@@ -699,7 +699,7 @@ def test_scenario_template_parses_and_passes_gates(scenario) -> None:
     validate_change_order_rows(
         rows,
         page_vehicle_model="T28",
-        page_effective_year=2025,
+        page_effective_year=2026,
         page_effective_month=7,
     )
     parsed = parse_bom_excel(content, sheet_name=SHEET_BOM)

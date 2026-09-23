@@ -412,3 +412,20 @@ class StampingPartRepository:
 
     def list_material_specs(self, db: Session, *, location: str) -> list[MaterialSpecRow]:
         return self._material_specs.list_material_specs(db, location=location)
+
+    def list_in_period_with_blanks(
+        self,
+        db: Session,
+        *,
+        location: str,
+        as_of_year: int,
+        as_of_month: int,
+        vehicle_model: str | None = None,
+    ) -> list[StampingPart]:
+        return self._queries.list_in_period_with_blanks(
+            db,
+            location=location,
+            as_of_year=as_of_year,
+            as_of_month=as_of_month,
+            vehicle_model=vehicle_model,
+        )

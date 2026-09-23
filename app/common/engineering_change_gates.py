@@ -145,7 +145,7 @@ def require_bom_header_version(value: str | None) -> str:
     if not text:
         raise BusinessException(
             f"{EC_BOM_HEADER_VERSION_REQUIRED}。"
-            "请打开「车身件材料清单」，在第 2 行「版本：」后面填上，例如 EC-202507。没填就不能导入。"
+            "请打开「车身件材料清单」，在第 2 行「版本：」后面填上，例如 EC-202607。没填就不能导入。"
         )
     return text
 
@@ -199,7 +199,6 @@ EC_PROCESS_SHARED_OLD = "这个旧号还装在别的总成上，不能按改图�
 EC_SHEET_REQUIRED = "缺工程变更单 / 车身件材料清单 / 冲压工艺确认表"
 EC_EFFECTIVE_TOO_EARLY = "生效年月必须晚于旧总成生效月"
 EC_ROLLBACK_BLOCKED = "其后还有未回滚的变更，或对象已审未反审，不能删本次"
-EC_ROLLBACK_REFERENCED = "这次回滚没有完成。"
 EC_INTERNAL_REQUIRED = "交货总成、分总成必须有内部号"
 EC_ASSEMBLY_SKETCH_REQUIRED = "交货总成必须有总成图"
 EC_PART_SKETCH_REQUIRED = "一级、二级零件必须有单件图示"

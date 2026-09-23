@@ -1365,6 +1365,47 @@
               ]
             }
           ]
+        },
+        {
+          "code": "menu:engineering-change-material-group",
+          "label": "材料变更",
+          "type": "group",
+          "children": [
+            {
+              "code": "menu:engineering-change-material-upload",
+              "label": "上传材料变更",
+              "type": "menu",
+              "children": [
+                {
+                  "code": "op:engineering-change-material-upload:view",
+                  "label": "查看",
+                  "type": "op"
+                },
+                {
+                  "code": "op:engineering-change-material-upload:upload",
+                  "label": "上传",
+                  "type": "op"
+                }
+              ]
+            },
+            {
+              "code": "menu:engineering-change-material-list",
+              "label": "材料变更列表",
+              "type": "menu",
+              "children": [
+                {
+                  "code": "op:engineering-change-material-list:view",
+                  "label": "查看",
+                  "type": "op"
+                },
+                {
+                  "code": "op:engineering-change-material-list:delete",
+                  "label": "整本回滚",
+                  "type": "op"
+                }
+              ]
+            }
+          ]
         }
       ]
     },

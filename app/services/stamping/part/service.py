@@ -7,7 +7,7 @@ from sqlalchemy.orm import Session
 from app.models.stamping import StampingPart
 from app.repositories.stamping.part.process import StampingProcessRepository
 from app.repositories.stamping.part.repository import StampingPartRepository
-from app.repositories.stamping.part.types import MaterialSpecRow
+from app.repositories.stamping.part.types import MaterialAsOfRow, MaterialSpecRow
 from app.schemas.dto.stamping_part_dto import (
     StampingCascadeFilterQuery,
     StampingMaterialQuery,
@@ -65,6 +65,9 @@ from app.services.stamping.part.materials import (
 )
 from app.services.stamping.part.materials import (
     list_materials as list_materials_fn,
+)
+from app.services.stamping.part.materials import (
+    list_materials_as_of as list_materials_as_of_fn,
 )
 from app.services.stamping.part.mutations import (
     batch_delete_parts,
@@ -162,6 +165,24 @@ class StampingPartService:
 
     def list_material_specs(self, db: Session, *, location: str) -> list[MaterialSpecRow]:
         return list_material_specs_fn(self.repository, db, location=location)
+
+    def list_materials_as_of(
+        self,
+        db: Session,
+        *,
+        location: str,
+        year: int,
+        month: int,
+        vehicle_model: str | None = None,
+    ) -> list[MaterialAsOfRow]:
+        return list_materials_as_of_fn(
+            self.repository,
+            db,
+            location=location,
+            year=year,
+            month=month,
+            vehicle_model=vehicle_model,
+        )
 
     def get_by_id(self, db: Session, part_id: int) -> StampingPartWithProcessesResponse:
         return get_by_id_fn(self.repository, db, part_id)

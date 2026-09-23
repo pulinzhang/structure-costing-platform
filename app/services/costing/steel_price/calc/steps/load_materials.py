@@ -11,10 +11,7 @@ from app.services.stamping.part.service import StampingPartService
 
 
 class MaterialThicknessLoader:
-    """从该基地冲压件规格去重得到 基地 + 牌号 + 厚度（含拼焊子片，不按车型）。"""
-
-    def __init__(self) -> None:
-        self.stamping_service = StampingPartService()
+    """从该基地该月仍有效的冲压件取材质（含拼焊子片，不按车型）。"""
 
     def load(
         self,
@@ -24,13 +21,18 @@ class MaterialThicknessLoader:
         scope_location = request.location.strip()
         if not scope_location:
             return []
-        raw_rows = self.stamping_service.list_material_specs(db, location=scope_location)
+        raw_rows = StampingPartService().list_materials_as_of(
+            db,
+            location=scope_location,
+            year=request.year,
+            month=request.month,
+        )
         result: list[MaterialThicknessRow] = []
         seen: set[tuple[str, str, str]] = set()
         for row in raw_rows:
-            row_location = (row.get("location") or "").strip()
-            material = (row.get("material") or "").strip()
-            thickness = row.get("thickness")
+            row_location = (row["location"] or "").strip()
+            material = (row["material"] or "").strip()
+            thickness = row["thickness"]
             if not row_location or not material or thickness is None:
                 continue
             thickness_decimal = Decimal(str(thickness))

@@ -17,6 +17,7 @@ def on_startup() -> None:
     AuxiliaryDatabaseConfig.create_tables()
     _ensure_bom_node_part_number_index()
     _seed_if_empty()
+    _bind_material_overlay()
     _log_startup()
 
 
@@ -59,6 +60,15 @@ def _seed_if_empty() -> None:
         ensure_schema_reference_seed(db)
     finally:
         db.close()
+
+
+def _bind_material_overlay() -> None:
+    from app.services.engineering_change.material_change.overlay import (
+        overlay_materials_for_parts,
+    )
+    from app.services.stamping.part.materials import bind_material_overlay
+
+    bind_material_overlay(overlay_materials_for_parts)
 
 
 def _log_startup() -> None:

@@ -139,6 +139,8 @@ def is_procurement_object_fee_confusion(question: str) -> bool:
 
 _ENGINEERING_CHANGE_TOPIC_TERMS: tuple[str, ...] = (
     "工程变更",
+    "材料变更",
+    "设计变更",
     "设变",
     "变更单",
     "停用件",

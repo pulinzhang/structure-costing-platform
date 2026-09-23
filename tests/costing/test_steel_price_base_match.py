@@ -1,10 +1,17 @@
 """钢材联动取基价：与中标厚度一览相同，只认基价表牌号（O/0 视为同一字符）。"""
 
+from decimal import Decimal
 from types import SimpleNamespace
+from unittest.mock import MagicMock
 
 from app.common.steel_grade import grade_match_key, stored_grade
 from app.services.costing.steel_price.calc.category import resolve_canonical_category
+from app.services.costing.steel_price.calc.models import (
+    MaterialThicknessRow,
+    SteelPriceCalcRequest,
+)
 from app.services.costing.steel_price.calc.steps.enrich_base_price import (
+    BasePriceEnricher,
     select_winning_base_records,
 )
 
@@ -96,6 +103,42 @@ def test_select_keeps_one_spec_per_mill_grade() -> None:
     assert len(picked) == 1
     assert picked[0].width == 1250
     assert picked[0].base_price == 3742
+
+
+def test_missing_grade_is_reported_once_per_grade(monkeypatch) -> None:
+    """同一牌号多种厚度、以及 O/0 写法，缺基价只报一条。"""
+    enricher = BasePriceEnricher()
+    archive = {
+        "DC04": SimpleNamespace(category_name="冷轧"),
+        "DC03": SimpleNamespace(category_name="冷轧"),
+        "DCO4": SimpleNamespace(category_name="冷轧"),
+    }
+    monkeypatch.setattr(
+        enricher._grade_category_service,
+        "map_grades",
+        lambda db, grades: archive,
+    )
+    monkeypatch.setattr(
+        enricher.base_price_service,
+        "list_for_calc",
+        lambda db, year, month, location: [],
+    )
+    rows, count, details = enricher.enrich(
+        MagicMock(),
+        SteelPriceCalcRequest(year=2025, month=7, location="芜湖"),
+        [
+            MaterialThicknessRow(location="芜湖", material="DC04", thickness=Decimal("0.65")),
+            MaterialThicknessRow(location="芜湖", material="DC03", thickness=Decimal("1.2")),
+            MaterialThicknessRow(location="芜湖", material="DC04", thickness=Decimal("1")),
+            MaterialThicknessRow(location="芜湖", material="DCO4", thickness=Decimal("0.8")),
+        ],
+    )
+    assert rows == []
+    assert count == 2
+    assert details == [
+        "[芜湖] DC04 大类=冷轧 基价表无该牌号",
+        "[芜湖] DC03 大类=冷轧 基价表无该牌号",
+    ]
 
 
 def test_resolve_canonical_category_from_archive_or_literal() -> None:

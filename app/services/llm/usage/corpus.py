@@ -61,15 +61,17 @@ def _extract_section(html: str, section_id: str) -> str:
 
 
 def _extract_faq_qa(html: str, heading: str) -> str:
-    """帮助 FAQ 唯一正文：h3 + 紧随的 p，禁止另写一份。"""
-    pattern = re.compile(
-        rf"<h3>\s*{re.escape(heading)}\s*</h3>\s*<p>(.*?)</p>",
-        re.DOTALL | re.IGNORECASE,
+    """帮助 FAQ 唯一正文：现网 strong + span，旧稿 h3 + p。禁止另写一份。"""
+    escaped = re.escape(heading)
+    patterns = (
+        rf"<strong>\s*{escaped}\s*</strong>\s*<span>(.*?)</span>",
+        rf"<h3>\s*{escaped}\s*</h3>\s*<p>(.*?)</p>",
     )
-    match = pattern.search(html)
-    if not match:
-        return ""
-    return _strip_html(f"{heading} {match.group(1)}")
+    for pattern in patterns:
+        match = re.compile(pattern, re.DOTALL | re.IGNORECASE).search(html)
+        if match:
+            return _strip_html(f"{heading} {match.group(1)}")
+    return ""
 
 
 def _read_helper_page(name: str) -> str:
@@ -179,7 +181,7 @@ def _extra_faq_chunks(help_html: str) -> list[CorpusChunk]:
     effect_faq = _extract_faq_qa(help_html, effect_heading)
     if not effect_faq:
         raise ValueError("help.html 缺少工程变更生效月 FAQ")
-    add_part_heading = "增加零件进采购对象后，厂家要不要自己填？"
+    add_part_heading = "增加零件进入采购对象后，厂家是否须自行填写？"
     add_part_faq = _extract_faq_qa(help_html, add_part_heading)
     effect_faq = f"{effect_faq} {add_part_faq}".strip()
     return [
@@ -275,7 +277,7 @@ def _extra_faq_chunks(help_html: str) -> list[CorpusChunk]:
             text=(
                 "上传入口在侧栏各模块的「上传」页：冲压工艺文件、模具布点、冲次单价、检具费、"
                 "材料清单、焊接单价、包装运输、年度零件价、基准价与加减价政策等。"
-                "投产后改图换号请走「工程变更 → 设计变更 → 上传工程变更」，不要在材料清单/工艺/布点页整包覆盖新号。"
+                "投产后改图换号请走「工程变更 → 设计变更 → 上传工程变更」；零件号不动、只换材料和料厚请走「工程变更 → 材料变更 → 上传材料变更」。不要在材料清单/工艺/布点页整包覆盖新号。"
                 "上传前确认基地、项目、清单版本、年月维度与本次核价一致；列表页只读核对，写入靠上传或计算页。"
             ),
             source_page="help.html",
@@ -287,7 +289,7 @@ def _extra_faq_chunks(help_html: str) -> list[CorpusChunk]:
             title="材料清单在哪里",
             text=(
                 "材料清单在「焊接工程 → 材料清单列表」维护，它是整棵核价树的主数据。"
-                "产品结构、结构图与清单列表共用同一套 BOM 数据；其它菜单多为给树上的节点挂价钱。"
+                "产品结构、零件用在哪与清单列表共用同一套 BOM 数据；其它菜单多为给树上的节点挂价钱。"
             ),
             source_page="help.html",
             anchor="menu",
@@ -493,6 +495,9 @@ def load_corpus_chunks() -> tuple[CorpusChunk, ...]:
                 "变更单",
                 "零件汇总",
                 "材料清单换号",
+                "设计变更",
+                "材料变更",
+                "工程变更单（材质）",
             ),
         ),
         CorpusChunk(
@@ -505,7 +510,7 @@ def load_corpus_chunks() -> tuple[CorpusChunk, ...]:
         ),
         CorpusChunk(
             chunk_id="costing-pages",
-            title="核价模块怎么用",
+            title="核价怎么用",
             text=_extract_section(help_html, "costing-pages"),
             source_page="help.html",
             anchor="costing-pages",

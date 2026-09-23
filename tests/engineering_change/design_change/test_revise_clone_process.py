@@ -142,7 +142,7 @@ def test_t2aa_process_sheet_keeps_revised_part_sketch() -> None:
     from app.parsers.engineering_change.design_change.sheet_extract import SHEET_PROCESS
     from app.parsers.stamping.stamping_parser import parse_stamping_excel
 
-    sample = Path("docs/engineering-change/samples/工程变更导入T2AA-1.xlsx")
+    sample = Path("tests/engineering_change/design_change/fixtures/工程变更导入T2AA-1.xlsx")
     parsed = parse_stamping_excel(str(sample), sheet_title=SHEET_PROCESS)
     png = parsed.images_by_part.get("551005982AB")
     assert png, "工程变更工艺确认表 5982AB 必须抽出零件简图，不能落到旧号图上"

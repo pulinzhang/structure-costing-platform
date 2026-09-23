@@ -4,13 +4,17 @@ from __future__ import annotations
 
 from dataclasses import dataclass, field
 from datetime import datetime
+from decimal import Decimal
+from typing import TypedDict
 
 from sqlalchemy.orm import Session
 
 from app.common.audit import AUDIT_APPROVED, audit_create, audit_update
 from app.common.timezone import now
 from app.models.stamping import StampingPart
+from app.models.yishiyiyi import StampingScrapPrice
 from app.schemas.dto.stamping_part_cost_dto import (
+    StampingPartCostCalcAmounts,
     StampingPartCostCalcDTO,
     StampingPartCostUpsertPayload,
 )
@@ -27,13 +31,24 @@ from app.services.costing.stamping_part_cost.calc.orchestrator.rates import Part
 from app.services.costing.stamping_part_cost.calc.orchestrator.upsert import (
     build_part_cost_upsert,
 )
-from app.services.costing.stamping_part_cost.calc.part_calculator import (
-    PartCostCalculator,
-    part_snapshot,
-)
-from app.services.costing.stamping_part_cost.calc.tailor_weld_calculator import (
-    TailorWeldPartCostCalculator,
-)
+from app.services.costing.stamping_part_cost.calc.part_calculator import part_snapshot
+
+
+class _SharedPartCostCall(TypedDict):
+    part: StampingPart
+    year: int
+    month: int
+    supplier: str
+    scrap: StampingScrapPrice
+    scrap_ton_price: Decimal
+    density: Decimal
+    loss_rate: Decimal
+    recovery_rate: Decimal
+    finance_rate: Decimal
+    management_rate: Decimal
+    warehouse_packaging_rate: Decimal
+    pretax_profit_rate: Decimal
+    swing_shear_fee_per_ton: Decimal
 
 
 @dataclass(slots=True)
@@ -86,12 +101,37 @@ class BatchCalculationEngine:
     def _part_supplier(part: StampingPart) -> str:
         return (part.stamping_supplier or "").strip()
 
-    def _select_calculator(
-        self, part: StampingPart
-    ) -> PartCostCalculator | TailorWeldPartCostCalculator:
+    def _calc_part_cost(
+        self,
+        db: Session,
+        *,
+        part: StampingPart,
+        year: int,
+        month: int,
+        scrap: StampingScrapPrice,
+        scrap_ton_price: Decimal,
+        material: str | None,
+    ) -> StampingPartCostCalcAmounts | StampingPartCostFailedItemVO:
+        rates = self._rates
+        shared: _SharedPartCostCall = {
+            "part": part,
+            "year": year,
+            "month": month,
+            "supplier": self._part_supplier(part),
+            "scrap": scrap,
+            "scrap_ton_price": scrap_ton_price,
+            "density": rates.density,
+            "loss_rate": rates.loss_rate,
+            "recovery_rate": rates.recovery_rate,
+            "finance_rate": rates.finance_rate,
+            "management_rate": rates.management_rate,
+            "warehouse_packaging_rate": rates.warehouse_packaging_rate,
+            "pretax_profit_rate": rates.pretax_profit_rate,
+            "swing_shear_fee_per_ton": rates.swing_shear_fee_per_ton,
+        }
         if part.is_tailor_welded:
-            return self._deps.tailor_weld_calculator
-        return self._deps.part_calculator
+            return self._deps.tailor_weld_calculator.calc_part_cost(db, **shared)
+        return self._deps.part_calculator.calc_part_cost(db, **shared, material=material)
 
     def _process_part(
         self,
@@ -123,22 +163,15 @@ class BatchCalculationEngine:
             outcome.skipped_approved_count += 1
             return
 
-        row_or_error = self._select_calculator(part).calc_part_cost(
+        resolved_material = None if part.is_tailor_welded else ctx.material_by_part_id.get(part.id)
+        row_or_error = self._calc_part_cost(
             db,
             part=part,
             year=dto.year,
             month=dto.month,
-            supplier=self._part_supplier(part),
             scrap=ctx.scrap,
             scrap_ton_price=ctx.scrap_ton_price,
-            density=rates.density,
-            loss_rate=rates.loss_rate,
-            recovery_rate=rates.recovery_rate,
-            finance_rate=rates.finance_rate,
-            management_rate=rates.management_rate,
-            warehouse_packaging_rate=rates.warehouse_packaging_rate,
-            pretax_profit_rate=rates.pretax_profit_rate,
-            swing_shear_fee_per_ton=rates.swing_shear_fee_per_ton,
+            material=resolved_material,
         )
         created_by = None if existing else existing_created_by
         updated_by = existing_updated_by if existing else new_updated_by
@@ -152,6 +185,9 @@ class BatchCalculationEngine:
             amounts = row_or_error
             calc_status = STATUS_SUCCESS
             fail_reason = None
+        snapshot = part_snapshot(part)
+        if not part.is_tailor_welded and resolved_material is not None:
+            snapshot.material = resolved_material
         outcome.upsert_rows.append(
             build_part_cost_upsert(
                 year=dto.year,
@@ -159,7 +195,7 @@ class BatchCalculationEngine:
                 location=part.location,
                 supplier=self._part_supplier(part),
                 part=part,
-                snapshot=part_snapshot(part),  # 含是否利废 / 利用哪类废料，按本月落库
+                snapshot=snapshot,  # 含是否利废 / 利用哪类废料，按本月落库
                 density=rates.density,
                 loss_rate=rates.loss_rate,
                 recovery_rate=rates.recovery_rate,

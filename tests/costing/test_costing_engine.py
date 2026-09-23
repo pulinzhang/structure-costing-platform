@@ -29,6 +29,39 @@ def _stub_no_dies(monkeypatch: pytest.MonkeyPatch) -> None:
     )
 
 
+def test_base_price_gate_counts_missing_grades(monkeypatch: pytest.MonkeyPatch) -> None:
+    from app.services.costing.engine.gate.steel import check_steel_chain
+    from app.services.costing.steel_price.calc.coverage import SteelCoverageReport
+
+    report = SteelCoverageReport(
+        row_count=10,
+        no_base_count=2,
+        missing_base=[
+            "[芜湖] DC04 大类=冷轧 基价表无该牌号",
+            "[芜湖] DC03 大类=冷轧 基价表无该牌号",
+        ],
+        base_ok=False,
+        thickness_missing=[],
+        has_materials=True,
+    )
+    monkeypatch.setattr(
+        "app.services.costing.engine.gate.steel.inspect_steel_coverage",
+        lambda db, request: report,
+    )
+    discovery = DiscoveryResult(
+        location="芜湖",
+        year=2025,
+        month=7,
+        l0_scopes=[],
+        vehicle_models=[],
+    )
+    items = check_steel_chain(MagicMock(), discovery)
+    assert items[0].code == "base_price"
+    assert items[0].ok is False
+    assert items[0].message == "基价覆盖不全：2 个牌号无匹配"
+    assert items[0].missing == report.missing_base
+
+
 def test_thickness_policy_is_hard_gate() -> None:
     assert "thickness_policy" not in SOFT_UPLOAD_GATE_CODES
     assert "packaging_transport" in SOFT_UPLOAD_GATE_CODES

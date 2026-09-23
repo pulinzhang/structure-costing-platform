@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from datetime import datetime
 from decimal import Decimal
 
@@ -27,6 +27,7 @@ from app.services.costing.stamping_part_cost.calc.orchestrator.rates import (
 from app.services.costing.stamping_part_cost.calc.orchestrator.ready import collect_calc_ready
 from app.services.costing.stamping_part_cost.calc.scope import require_calc_scope
 from app.services.masterdata.vehicle_model.service import VehicleModelService
+from app.services.stamping.part.service import StampingPartService
 
 
 @dataclass(frozen=True, slots=True)
@@ -39,6 +40,7 @@ class CalcPrepContext:
     ready: StampingPartCostCalcReadyVO
     started_at: datetime
     detail_lines: list[str]
+    material_by_part_id: dict[int, str] = field(default_factory=dict)
 
 
 def prepare_calc_run(
@@ -106,6 +108,16 @@ def prepare_calc_run(
             "没有有效期内的冲压零件"
         )
     detail_lines.append(f"匹配零件 {len(parts)} 件")
+    material_rows = StampingPartService().list_materials_as_of(
+        db,
+        location=location,
+        year=dto.year,
+        month=dto.month,
+        vehicle_model=vehicle_model,
+    )
+    material_by_part_id = {
+        row["part_id"]: row["material"] for row in material_rows if row["blank_id"] is None
+    }
 
     return CalcPrepContext(
         location=location,
@@ -113,6 +125,7 @@ def prepare_calc_run(
         scrap=scrap,
         scrap_ton_price=scrap_ton_price,
         parts=parts,
+        material_by_part_id=material_by_part_id,
         ready=ready,
         started_at=started_at,
         detail_lines=detail_lines,

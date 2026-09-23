@@ -41,6 +41,9 @@ from app.models.costing import (
 )
 from app.models.engineering_change import (
     EngineeringChangeEffectLink,
+    EngineeringChangeMaterialEffectLink,
+    EngineeringChangeMaterialOrder,
+    EngineeringChangeMaterialUploadLog,
     EngineeringChangeOrder,
     EngineeringChangeUploadLog,
 )
@@ -112,6 +115,9 @@ __all__ = [
     "EngineeringChangeOrder",
     "EngineeringChangeEffectLink",
     "EngineeringChangeUploadLog",
+    "EngineeringChangeMaterialEffectLink",
+    "EngineeringChangeMaterialOrder",
+    "EngineeringChangeMaterialUploadLog",
     "LlmAnalysisReport",
     "Location",
     "LocationAlias",

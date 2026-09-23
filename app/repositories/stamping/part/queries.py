@@ -346,6 +346,37 @@ class StampingPartQueries:
             .all()
         )
 
+    def list_in_period_with_blanks(
+        self,
+        db: Session,
+        *,
+        location: str,
+        as_of_year: int,
+        as_of_month: int,
+        vehicle_model: str | None = None,
+    ) -> list[StampingPart]:
+        """该月仍有效的零件 + 拼焊子片。不加载工序。"""
+        from sqlalchemy.orm import selectinload
+
+        q = db.query(StampingPart).filter(StampingPart.location == location)
+        if vehicle_model is not None:
+            q = q.filter(StampingPart.vehicle_model == vehicle_model)
+        q = q.filter(
+            period_hit_clause(
+                StampingPart.effective_year,
+                StampingPart.effective_month,
+                StampingPart.expiry_year,
+                StampingPart.expiry_month,
+                as_of_year,
+                as_of_month,
+            )
+        )
+        return (
+            q.options(selectinload(StampingPart.tailor_weld_blanks))
+            .order_by(*_PART_LIST_ORDER)
+            .all()
+        )
+
     def list_for_export(
         self,
         db: Session,

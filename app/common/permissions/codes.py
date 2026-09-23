@@ -342,6 +342,20 @@ class Perm:
     ENGINEERING_CHANGE_ORDER_LIST_VIEW = "op:engineering-change-order-list:view"  # 查看
     ENGINEERING_CHANGE_ORDER_LIST_DELETE = "op:engineering-change-order-list:delete"  # 删除回滚
 
+    MENU_ENGINEERING_CHANGE_MATERIAL_GROUP = "menu:engineering-change-material-group"  # 材料变更
+    MENU_ENGINEERING_CHANGE_MATERIAL_UPLOAD = (
+        "menu:engineering-change-material-upload"  # 上传材料变更
+    )
+    ENGINEERING_CHANGE_MATERIAL_UPLOAD_VIEW = "op:engineering-change-material-upload:view"  # 查看
+    ENGINEERING_CHANGE_MATERIAL_UPLOAD_UPLOAD = (
+        "op:engineering-change-material-upload:upload"  # 上传
+    )
+    MENU_ENGINEERING_CHANGE_MATERIAL_LIST = "menu:engineering-change-material-list"  # 材料变更列表
+    ENGINEERING_CHANGE_MATERIAL_LIST_VIEW = "op:engineering-change-material-list:view"  # 查看
+    ENGINEERING_CHANGE_MATERIAL_LIST_DELETE = (
+        "op:engineering-change-material-list:delete"  # 整本回滚
+    )
+
     MENU_MASTERDATA = "menu:masterdata"  # 主数据
 
     MENU_LOCATION = "menu:location"  # 基地
