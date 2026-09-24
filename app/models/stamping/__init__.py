@@ -7,6 +7,7 @@ from app.models.stamping.die_fee_item import StampingDieFeeItem
 from app.models.stamping.die_unit_price import StampingDieUnitPrice
 from app.models.stamping.gauge_fee import StampingGaugeFee
 from app.models.stamping.part import StampingPart, StampingProcess
+from app.models.stamping.part_material_change import StampingPartMaterialChange
 from app.models.stamping.process_fee import StampingProcessFee
 from app.models.stamping.process_fee_calc_log import StampingProcessFeeCalcLog
 from app.models.stamping.process_fee_item import StampingProcessFeeItem
@@ -22,6 +23,7 @@ __all__ = [
     "StampingDieUnitPrice",
     "StampingGaugeFee",
     "StampingPart",
+    "StampingPartMaterialChange",
     "StampingProcess",
     "StampingProcessFee",
     "StampingProcessFeeCalcLog",

@@ -1,13 +1,8 @@
 # 工程变更
 
-跨切片能力（BOM / 冲压 / 核价）。两条通道都挂在一级 **工程变更** 下（不新开一级）：
-
-- **设计变更**已落地：侧栏二级分组「设计变更」→ 上传 / 列表；代码在 `app/services/engineering_change/design_change/`。接口仍是 `/api/engineering-change`。
-- **材料变更**这次只占目录和空前缀 `/api/engineering-change/material`，侧栏还没有分组。落地按刀：[material-change/](material-change/README.md)；菜单在第 3 刀。服务包：[占位说明](../../app/services/engineering_change/material_change/README.md)。
+跨切片能力（BOM / 冲压 / 核价）。本文只写**设计变更**：侧栏二级分组「设计变更」→ 上传 / 列表；代码在 `app/services/engineering_change/design_change/`。接口是 `/api/engineering-change`。材料变更不在本文，见 [材料变更设计](../material-change/README.md)。
 
 有效期与核价按月见 [bom-process-die-effective-period-design.md](bom-process-die-effective-period-design.md)。设计变更门禁从严：一本一个项目号；材料清单与确认表版本必须同一字；生效月须在项目期内；必须先有 SOP 采购对象清单头；版本与清单头不得凑合。
-
-**材料变更**（同号换材料、不影响互换性）不要塞进设计变更的四句变更类型。本节其余条目只描述已落地的设计变更。
 
 > 2–4 年后敢改：先读本节，再下钻长设计稿。长稿与代码冲突时以**代码 + 本节**为准。
 
@@ -40,7 +35,7 @@
 
 ### 为什么同号换材料不塞进改图？
 
-`DC01` 与 `DC03` 是冲压 `material` 上两个不同的字。零件价按 `material` 全等 + 料厚匹配当月钢材联动价；两个字会匹配到两条不同的联动价。上游已给出切到 DC03 且不影响互换性时，核价对象仍是同一零件号，但生效月及之后必须按 `DC03` 去匹配，不能继续按工艺行上的 `DC01`。现网改图以换号为门、同号跳过、换号还抄旧 `material`，UNIQUE 又不许同号第二行工艺。另做 [材料变更设计](material-change/README.md)：独立 Excel、独立列表；**变更版本写在变更单上（变一次一本、原件存档），不写进工艺 UNIQUE。** 工艺行不改字；当月材料走解析器。禁止在旧行上改 `material`，禁止为这一条去拆工艺 UNIQUE。禁止在本通道另起一套 `grade` 字段名。
+同号换材料不在设计变更四句里。见 [材料变更设计](../material-change/README.md)。改图换号抄的是旧号投产 `material`，另把该零件已有材料变更历史抄到新零件。同号换材料仍走材料变更。不在本文改工艺那一格。
 
 ### 为什么新旧号只认工程变更单，不收口到字母进一位？
 
@@ -194,7 +189,7 @@ Router → EngineeringChangeUploadService.start_upload
 上游内核（勿把业务搬回 EC）：
 
 - `app/services/bom/bom/change_tree_plant/`
-- `app/services/stamping/part/engineering/change.py`
+- `app/services/stamping/part/engineering/design_change/service.py`
 - `app/services/stamping/die/engineering/change.py`
 - `app/services/stamping/gauge_fee/engineering/change.py`
 - `app/services/stamping/die_fee/engineering/change.py`
@@ -208,7 +203,6 @@ Router → EngineeringChangeUploadService.start_upload
 | 文档 | 说明 |
 |------|------|
 | [part-number-revision-design.md](part-number-revision-design.md) | 领域契约（样表即规格、§4 写入、§8 产品）；**落地状态以本节为准** |
-| [material-change/](material-change/README.md) | 材料变更（设计定稿，业务未落地）：同号切材料；按刀 0–5 落地。样表 06 月第一刀、07 月再变回去，见 [material-change/samples/](material-change/samples/README.md)。旧入口 [stamping-material-change-design.md](stamping-material-change-design.md) 只作跳转 |
 | [bom-process-die-effective-period-design.md](bom-process-die-effective-period-design.md) | 交货总成 / 工艺 / 布点生失效（已落地） |
 | [t28-2025-07-import-bundle-test-design.md](t28-2025-07-import-bundle-test-design.md) | 青岛 T28 下载模板怎么填（上传页生成，样表目录不存放副本） |
 | [t13j-2026-05-import-bundle-test-design.md](t13j-2026-05-import-bundle-test-design.md) | 芜湖 T13J · 2026-05 测试样本（对照一本 + 五份夹具）。样表目录只留这一套 |
@@ -216,4 +210,4 @@ Router → EngineeringChangeUploadService.start_upload
 | [samples/t13j-2026-05-stop.xlsx](samples/t13j-2026-05-stop.xlsx) 等五份 | T13J 单种改法夹具 |
 | [samples/build_t13j_2026_05_import_bundles.py](samples/build_t13j_2026_05_import_bundles.py) | 写出 T13J 对照一本 + 五种改法各一份 |
 
-一口价年内分段已否决，见 [effective-period-design.md](../costing/effective-period-design.md)。本目录的生失效不要跟着停。
+一口价年内分段已否决，见 [effective-period-design.md](../../costing/effective-period-design.md)。本目录的生失效不要跟着停。

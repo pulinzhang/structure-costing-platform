@@ -2,13 +2,14 @@
 
 > 状态：**设计定稿，业务已落地。** 前缀 `/api/engineering-change/material`。  
 > 对人说 **材料变更**（对仗「设计变更」）。冲压域字段 material，对人说材料。不要另叫 grade/牌号。不要和 BOM「材料清单」混称。  
-> 旧长稿已拆到本目录。入口：[工程变更地图](../README.md)、[服务包占位](../../../app/services/engineering_change/material_change/README.md)。
+> 旧长稿已拆到本目录。入口：[工程变更地图](../README.md)、[服务包](../../../app/services/engineering_change/material_change/README.md)。  
+> 网页整套测试和两本样表：[samples/](samples/README.md)。
 
 ---
 
 ## 一句话
 
-互换性不影响时，同号从生效月切开材料。Excel 记在本通道。**一个接口：** 钢材联动和零件单价都调 `list_materials_as_of`。不改 `list_with_processes`，不改零件价相等那一行。
+互换性不影响时，同号从生效月切开材料。Excel 记在本通道。历史记在冲压零件上。**一个接口：** 钢材联动和零件单价都调 `list_materials_as_of`。零件明细用同一次详情里的 `material_changes`。不改 `list_with_processes`，不改零件价相等那一行。
 
 ---
 
@@ -23,7 +24,7 @@
 | 2 | [02-upload-gates.md](02-upload-gates.md) | Excel、`ECM_*` 中文、MIXED 查哪、模板/异步上传 | 1 |
 | 3 | [03-menu-list-rollback.md](03-menu-list-rollback.md) | 菜单路径、权限、API、整本回滚、原件 | 2 |
 | 4 | [04-steel-and-part-cost.md](04-steel-and-part-cost.md) | `list_materials_as_of`：钢材与零件价共用这一个取材质接口 | 1 |
-| 5 | [05-engine-display-revise.md](05-engine-display-revise.md) | 本通道 records；改图调本通道抄历史 | 3 |
+| 5 | [05-engine-display-revise.md](05-engine-display-revise.md) | 零件详情带回历史。改图把冲压历史抄到新零件 | 3 |
 | — | [06-test.md](06-test.md) | 成功两本 + 负例清单（随 2–3 刀测） | 2 |
 
 禁止给设计变更四句加第五句。禁止把叠出的材料写回 `stamping_parts.material`。禁止改 `app/common`。禁止改零件价 `grade ==` 与核价引擎。

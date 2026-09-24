@@ -1,11 +1,11 @@
-"""落切点、链接、成功头。"""
+"""落本通道切点单、链接、成功头。历史已由管线写入冲压，这里不再插。"""
 
 from __future__ import annotations
 
 from sqlalchemy.orm import Session
 
 from app.common.audit import audit_create, audit_update
-from app.exceptions.base import NotFoundException
+from app.exceptions.base import BusinessException, NotFoundException
 from app.repositories.engineering_change.material_change.effect_link_repository import (
     MaterialChangeEffectLinkInsert,
     MaterialChangeEffectLinkRepository,
@@ -21,6 +21,7 @@ from app.repositories.engineering_change.material_change.upload_log_repository i
 from app.schemas.vo.engineering_change.material_change import MaterialChangeUploadResultVO
 from app.schemas.vo.user_vo import UserVO
 from app.services.engineering_change.material_change.upload.orchestrator.types import (
+    MaterialChangePipeline,
     MaterialChangePrepared,
     ProgressCallback,
 )
@@ -34,6 +35,7 @@ _link_repo = MaterialChangeEffectLinkRepository()
 def persist_material_change_result(
     db: Session,
     prepared: MaterialChangePrepared,
+    pipeline: MaterialChangePipeline,
     current_user: UserVO,
     *,
     on_progress: ProgressCallback | None = None,
@@ -43,10 +45,13 @@ def persist_material_change_result(
     log_row = _log_repo.get_by_id(db, prepared.log_id)
     if log_row is None:
         raise NotFoundException("材料变更上传记录不存在")
+    if len(pipeline.links) != len(prepared.rows):
+        raise BusinessException("这次导入对不上材料变更单的行，没有保存成功。请再传一次。")
     audit = audit_create(current_user)
     order_ids: list[int] = []
     sample = prepared.rows[0].parsed
-    for gated in prepared.rows:
+    for link in pipeline.links:
+        gated = prepared.rows[link.row_index]
         parsed = gated.parsed
         order = _order_repo.create(
             db,
@@ -78,7 +83,8 @@ def persist_material_change_result(
                 upload_log_id=log_row.id,
                 order_id=order.id,
                 effect_kind=_EFFECT_KIND,
-                before_id=gated.source_part_id,
+                before_id=link.before_id,
+                after_id=link.after_id,
             ),
         )
         order_ids.append(order.id)

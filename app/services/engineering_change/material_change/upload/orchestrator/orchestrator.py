@@ -32,8 +32,10 @@ class MaterialChangeOrchestrator:
         on_progress: ProgressCallback | None = None,
     ) -> MaterialChangeUploadResultVO:
         prepared = prepare_material_change_run(db, args, on_progress=on_progress)
-        pipeline = run_material_change_pipeline(db, prepared, on_progress=on_progress)
-        return persist_material_change_result(db, pipeline, current_user, on_progress=on_progress)
+        pipeline = run_material_change_pipeline(db, prepared, current_user, on_progress=on_progress)
+        return persist_material_change_result(
+            db, prepared, pipeline, current_user, on_progress=on_progress
+        )
 
     def mark_log_failed(self, db: Session, log_id: int, message: str, current_user: UserVO) -> None:
         mark_material_change_failed(db, log_id, message, current_user)

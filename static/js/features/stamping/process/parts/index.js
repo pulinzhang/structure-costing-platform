@@ -9,13 +9,12 @@ import {
     renderDetailContent,
     updatePartsHudScope,
     updatePartsHud,
-} from './template.js?v=60';
+} from './template.js?v=61';
 import { can } from '../../../../core/permissions.js?v=8';
 import { hudRowHtml, opsIconButtonHtml } from '../../../../ui/hud-table.js?v=2';
 import { bindMoreMenu } from '../../../../ui/more-menu.js?v=6';
 import { bindFilterBar } from '../../../../ui/filter-bar.js?v=4';
 import { fmtPeriodRange } from '../../../common/period-ui.js?v=4';
-import { downloadMaterialChangeFile } from '../../../engineering-change/material-change/download.js?v=1';
 import {
     BTN_SOLID,
     SKETCH_PLACEHOLDER,
@@ -238,14 +237,12 @@ export const PartsPage = {
 
         pageContent?.addEventListener('click', (e) => {
             const btn = e.target.closest('button[data-action]');
-            if (btn) {
-                e.stopPropagation();
-                const id = Number(btn.getAttribute('data-id'));
-                const action = btn.getAttribute('data-action');
-                if (action === 'detail') this.showDetail(id);
-                else if (action === 'delete') this.deletePart(id);
-                return;
-            }
+            if (!btn || !btn.hasAttribute('data-id')) return;
+            e.stopPropagation();
+            const id = Number(btn.getAttribute('data-id'));
+            const action = btn.getAttribute('data-action');
+            if (action === 'detail') this.showDetail(id);
+            else if (action === 'delete') this.deletePart(id);
         });
     },
 
@@ -562,19 +559,6 @@ export const PartsPage = {
         try {
             const result = await HttpClient.get(`${PARTS_API}/${partId}`);
             const part = result.data?.data ?? result.data ?? result;
-            let materialRecords = [];
-            try {
-                const recordsRes = await HttpClient.get(
-                    `/api/engineering-change/material/parts/${partId}/records`,
-                    { skipToast: true },
-                );
-                materialRecords = Array.isArray(recordsRes?.data) ? recordsRes.data : [];
-            } catch (_error) {
-                materialRecords = [];
-            }
-            const canDownloadMaterialFile = typeof can === 'function'
-                ? can('op:engineering-change-material-list:view')
-                : false;
             contentEl.innerHTML = renderDetailContent(part, {
                 canUpdate: this.canUpdate !== false,
                 periodLabel: fmtPeriodRange(
@@ -583,8 +567,6 @@ export const PartsPage = {
                     part.expiry_year,
                     part.expiry_month,
                 ),
-                materialRecords,
-                canDownloadMaterialFile,
             });
 
             const btn = document.getElementById('saveProcessBtn');
@@ -596,7 +578,6 @@ export const PartsPage = {
             this._bindProcessEditEvents(part.id);
             this._bindOffalEditEvents(part.id);
             this._bindSketchModal(part);
-            this._bindMaterialChangeDownloads();
         } catch (error) {
             contentEl.innerHTML = `
                 <div class="p-4 m-4 bg-app-deep border border-line">
@@ -607,23 +588,6 @@ export const PartsPage = {
                 </div>
             `;
         }
-    },
-
-    _bindMaterialChangeDownloads() {
-        document.querySelectorAll('[data-ecm-download]').forEach((button) => {
-            button.addEventListener('click', async () => {
-                const uploadLogId = Number(button.getAttribute('data-ecm-download'));
-                if (!uploadLogId) return;
-                try {
-                    await downloadMaterialChangeFile(
-                        uploadLogId,
-                        button.getAttribute('data-filename') || '',
-                    );
-                } catch (error) {
-                    showToast(error?.message || '下载失败', 'error');
-                }
-            });
-        });
     },
 
     _bindSketchModal(part) {

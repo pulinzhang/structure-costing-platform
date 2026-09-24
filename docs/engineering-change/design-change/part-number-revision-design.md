@@ -2,7 +2,7 @@
 
 > 新切片：投产之后的日常设变。使用方：采购、商务核价。入口 `app/services/engineering_change/`（指挥家 `upload/orchestrator`：prepare → pipeline → persist）。地图见 [README.md](README.md)。  
 > **规格就是上传页下载的这一本**：运行时 `build_engineering_change_template`（青岛 T28，生效 2026年07月）。落盘样表只留芜湖 T13J · 2026年05月：[t13j-2026-05-import-bundle.xlsx](samples/t13j-2026-05-import-bundle.xlsx)。怎么填、写几行、用什么列，打开样表看；本文只写样表上看不见的系统行为。  
-> 前提：[有效期](bom-process-die-effective-period-design.md)。关联：[项目](../masterdata/vehicle-model-design.md)、[材料清单 / 采购对象](../bom/bom-procurement-objects-design.md)、[采购价格协议](../costing/procurement-contract-report-design.md)、[冲压工艺确认表](../stamping/stamping-process-confirmation-design.md)、[模具布点](../stamping/stamping-die-management-design.md)、[总成月核价](../costing/assembly-costing-design.md)、[月度引擎](../costing/costing-engine-design.md)。
+> 前提：[有效期](bom-process-die-effective-period-design.md)。关联：[项目](../../masterdata/vehicle-model-design.md)、[材料清单 / 采购对象](../../bom/bom-procurement-objects-design.md)、[采购价格协议](../../costing/procurement-contract-report-design.md)、[冲压工艺确认表](../../stamping/stamping-process-confirmation-design.md)、[模具布点](../../stamping/stamping-die-management-design.md)、[总成月核价](../../costing/assembly-costing-design.md)、[月度引擎](../../costing/costing-engine-design.md)。
 
 **规则（样表已经示范的，不再展开）：**
 
@@ -161,7 +161,7 @@ BOM、冲压工艺确认、模具布点同一套：**旧的到期，不是删掉
 
 有效期针对「一棵对象」，不针对整包头。材料清单写在 **总成树根**；工艺、布点写在 **零件行**。头上 D/00 只标记 SOP。子孙节点落库仍抄树根同一套生失效。采购对象行 **不落** 生失效四列（列表 join 树根展示；与拆解同一纪律）。工程变更 Excel **没有** 采购对象表。
 
-项目下的总成、工艺、布点 **默认按年+月过滤**（没选月 = **本月**）。采购对象**列表**默认包含已过期、不按年+月裁，见 [采购对象 §14](../bom/bom-procurement-objects-design.md)。核价 / 签约 / 引擎仍按账期月命中。禁止走现网「整包覆盖」把未出现在文件里的树、工艺行或布点行删掉。
+项目下的总成、工艺、布点 **默认按年+月过滤**（没选月 = **本月**）。采购对象**列表**默认包含已过期、不按年+月裁，见 [采购对象 §14](../../bom/bom-procurement-objects-design.md)。核价 / 签约 / 引擎仍按账期月命中。禁止走现网「整包覆盖」把未出现在文件里的树、工艺行或布点行删掉。
 
 ### 4.1 清单库：按树对齐
 
@@ -201,7 +201,7 @@ SOP 再导：只更新 **生效月 = 项目 SOP 开始月** 且仍有效的树�
 
 | 文件里的零件号 | 系统做 |
 |----------------|--------|
-| 新号 | **旧号、新号都只认工程变更单，禁止按茎猜前驱、禁止把 AA 加成 AB。** 工艺/布点换号表 **不含** 层级=总成的改图（交货总成不是冲压工艺行）。一级/二级改图：旧号=变更前零件、新号=变更后零件。工艺表该行零件号必须等于这个新号。**先**让该旧号在同厂同项目仍有效的工艺行 **到期**到生效年月的前一月（行不删，有则继承 `seq_no`）；**再启用新行**。版本=本张工艺确认表表头，**且必须与材料清单表头版本同一字**（空表体、完成停止也不例外）。**改图换号：零件信息除零件号、版本、生失效外整行抄变更前那个旧号，工序整表相同**（确认表只用来出门禁/简图，不重写材料、尺寸、工序）。**材料变更历史一并抄到新号**（切点行另插，`copied_from_order_id` 指向旧号那刀；禁止把解析后的材料写进新号工艺 `material`）。细则 [材料变更第 5 刀](material-change/05-engine-display-revise.md) §3。确认表零件简图落到 `{基地}/{项目}/{表头版本}/{新零件号}.png`：工程变更从原 xlsx 的「冲压工艺确认表」抽图（抽出来的单表会丢掉 WMF）。表里有图则写入新号工艺 `sketch_url`。**换号后的零件不准抄旧号图**；表里没图则新号工艺为空。增加零件：新号=变更后零件，无变更前零件可对 → 按确认表新插，`seq_no = max+1`，**不停任何旧工艺** |
+| 新号 | **旧号、新号都只认工程变更单，禁止按茎猜前驱、禁止把 AA 加成 AB。** 工艺/布点换号表 **不含** 层级=总成的改图（交货总成不是冲压工艺行）。一级/二级改图：旧号=变更前零件、新号=变更后零件。工艺表该行零件号必须等于这个新号。**先**让该旧号在同厂同项目仍有效的工艺行 **到期**到生效年月的前一月（行不删，有则继承 `seq_no`）；**再启用新行**。版本=本张工艺确认表表头，**且必须与材料清单表头版本同一字**（空表体、完成停止也不例外）。**改图换号：零件信息除零件号、版本、生失效外整行抄变更前那个旧号，工序整表相同**（确认表只用来出门禁/简图，不重写材料、尺寸、工序）。材料变更历史与工序一样整表抄到新零件（调冲压插入，不写材料变更单）。禁止把解析后的材料写进新号工艺 `material`。回滚设变按效果链接里的历史 id 删除抄来的行。确认表零件简图落到 `{基地}/{项目}/{表头版本}/{新零件号}.png`：工程变更从原 xlsx 的「冲压工艺确认表」抽图（抽出来的单表会丢掉 WMF）。表里有图则写入新号工艺 `sketch_url`。**换号后的零件不准抄旧号图**；表里没图则新号工艺为空。增加零件：新号=变更后零件，无变更前零件可对 → 按确认表新插，`seq_no = max+1`，**不停任何旧工艺** |
 | 已有号 | **一律跳过** |
 | 表体空 | **不插、不到期** |
 | 文件没有的旧号 | **不删、不到期**。只有变更单改图钉明的旧号才到期 |
@@ -238,7 +238,7 @@ SOP 再导：只更新 **生效月 = 项目 SOP 开始月** 且仍有效的树�
 
 #### 4.3.1 检具费：改图有则抄
 
-另表 `stamping_gauge_fees`，唯一键 `location` + `vehicle_model` + `part_number`。细则见 [stamping-gauge-fee-design.md](../stamping/stamping-gauge-fee-design.md)。
+另表 `stamping_gauge_fees`，唯一键 `location` + `vehicle_model` + `part_number`。细则见 [stamping-gauge-fee-design.md](../../stamping/stamping-gauge-fee-design.md)。
 
 | 变更单 | 系统做 |
 |------|--------|
@@ -251,7 +251,7 @@ SOP 再导：只更新 **生效月 = 项目 SOP 开始月** 且仍有效的树�
 
 #### 4.3.2 模具费结果：改图有则抄
 
-抄的是已落库年度结果 `stamping_die_fees`（含各序 `stamping_die_fee_items`），**不是**再跑一次模具费计算、不写 calc_log。细则见 [stamping-die-fee-design.md](../stamping/stamping-die-fee-design.md)。
+抄的是已落库年度结果 `stamping_die_fees`（含各序 `stamping_die_fee_items`），**不是**再跑一次模具费计算、不写 calc_log。细则见 [stamping-die-fee-design.md](../../stamping/stamping-die-fee-design.md)。
 
 | 变更单 | 系统做 |
 |------|--------|
@@ -262,11 +262,11 @@ SOP 再导：只更新 **生效月 = 项目 SOP 开始月** 且仍有效的树�
 `effect_link`：`EFFECT_DIE_FEE`；`before_id` = 旧主表 id，`after_id` = 新主表 id（明细随主表级联）。  
 **回滚必须删除 `after_id` 新主表（级联明细）**；旧行不动。链接 `sort_no` 排在布点之后，逆序回滚时 **先删模具费/检具费再滚布点**（避免 `source_die_part_id` `RESTRICT` 挡删布点）。
 
-与核价引擎互补：引擎 `annual_die_fee` 按「该年+基地+项目已有**任意**模具费行则整项跳过」判定（不做布点↔费用逐件对齐）。旧号已有结果时靠本条抄到新号；旧号无结果时仍靠引擎补算。见 [costing-engine-design.md](../costing/costing-engine-design.md) §5.2。
+与核价引擎互补：引擎 `annual_die_fee` 按「该年+基地+项目已有**任意**模具费行则整项跳过」判定（不做布点↔费用逐件对齐）。旧号已有结果时靠本条抄到新号；旧号无结果时仍靠引擎补算。见 [costing-engine-design.md](../../costing/costing-engine-design.md) §5.2。
 
 ### 4.4 采购对象：设变导入后自动带出
 
-**导入后不必再点「开始生成」。** 种树成功后，同一事务按现网分类规则扫新树插行。对象行 **不加** 生失效四列；展示与过期筛 **只认所属 L0 树根**（列表默认包含已过期，不按变更月裁）。细则见 [bom-procurement-objects-design.md](../bom/bom-procurement-objects-design.md) §0.1 / §14。清单**列表取件**：**基地 + 项目**，**必须爬到树根**；版本可选=L0 版本字浏览；**不要**用材料清单表头 `EC-*` 去找清单头（头上仍是 snapshot SOP 字）。「版本」三义见[采购对象清单](../bom/bom-procurement-objects-design.md)文首词典（与协议同形）。
+**导入后不必再点「开始生成」。** 种树成功后，同一事务按现网分类规则扫新树插行。对象行 **不加** 生失效四列；展示与过期筛 **只认所属 L0 树根**（列表默认包含已过期，不按变更月裁）。细则见 [bom-procurement-objects-design.md](../../bom/bom-procurement-objects-design.md) §0.1 / §14。清单**列表取件**：**基地 + 项目**，**必须爬到树根**；版本可选=L0 版本字浏览；**不要**用材料清单表头 `EC-*` 去找清单头（头上仍是 snapshot SOP 字）。「版本」三义见[采购对象清单](../../bom/bom-procurement-objects-design.md)文首词典（与协议同形）。
 
 该 snapshot 一旦有工程变更写入的树，采购对象 / 拆解「开始生成」拒绝（门禁之 2）。缺对象只能工程变更重传。**生成页只读 snapshot（SOP）**；设变增量不走生成页。
 
@@ -288,7 +288,7 @@ prep **整单**（含只做完成停止）必须已经有 SOP 生成过的采购
 
 **不得**调用现网整包 `POST /generate`。**禁止**按新节点 `weld_info` 重新自动拆（用户可能已改过过程量）。
 
-做法：只认种树给出的 `旧 bom_nodes.id → 新 bom_nodes.id` 对照。读对照键上旧树已有拆解结果，为每个对新节点 **再插一套**：主表身份对齐新节点；过程量等结果字段与 **全部明细行**（可多行）从旧结果照抄；rollup 按新树重算。旧拆解行不动。此件不装未进对照的节点不抄。增加零件等无旧拆解可对的新节点 **不插、不重拆**。新行审核态待审。`bom_version` **抄新树根字**，不抄 snapshot 头。完成停止不插。门禁之 2、之 3 见 §4.6。细则见 [welding-process-breakdown-design.md](../bom/welding-process-breakdown-design.md)。
+做法：只认种树给出的 `旧 bom_nodes.id → 新 bom_nodes.id` 对照。读对照键上旧树已有拆解结果，为每个对新节点 **再插一套**：主表身份对齐新节点；过程量等结果字段与 **全部明细行**（可多行）从旧结果照抄；rollup 按新树重算。旧拆解行不动。此件不装未进对照的节点不抄。增加零件等无旧拆解可对的新节点 **不插、不重拆**。新行审核态待审。`bom_version` **抄新树根字**，不抄 snapshot 头。完成停止不插。门禁之 2、之 3 见 §4.6。细则见 [welding-process-breakdown-design.md](../../bom/welding-process-breakdown-design.md)。
 
 ### 4.5 价表与核算
 
@@ -378,27 +378,23 @@ BOM / 工艺 / 布点的 Parser、UNIQUE、引擎发现键、`create_node`、投
 | Parser | 本切片只抽表 + 变更单解析；材料清单与工艺确认交给对应切片 Parser。布点不抽表 |
 | 门禁文案 | `app/common/engineering_change_gates.py`，供 bom / 拆解 / 引擎共用 |
 
+材料变更不在本文。
+
 ```
 app/
-├── routers/engineering_change/
-│   ├── design_change/                   # upload.py · crud.py
-│   └── material_change/                 # 前缀占位，无接口
-├── services/engineering_change/
-│   ├── design_change/
-│   │   ├── upload/                      # service · start_upload · template_builder
-│   │   │                                # orchestrator/ · gates/ · persist/
-│   │   └── list/                        # 工程变更单列表：query · rollback
-│   └── material_change/                 # 占位，不写业务
-├── parsers/engineering_change/{design_change,material_change}/
-├── repositories/engineering_change/{design_change,material_change}/
-├── models/engineering_change/
-│   ├── design_change/                 # upload_log · change_order · effect_link
-│   └── material_change/               # 占位，还没有表
+├── routers/engineering_change/design_change/   # upload.py · crud.py
+├── services/engineering_change/design_change/
+│   ├── upload/                      # service · start_upload · template_builder
+│   │                                # orchestrator/ · gates/ · persist/
+│   └── list/                        # 工程变更单列表：query · rollback
+├── parsers/engineering_change/design_change/
+├── repositories/engineering_change/design_change/
+├── models/engineering_change/design_change/    # upload_log · change_order · effect_link
 ├── schemas/dto|vo/engineering_change/design_change.py
 └── common/engineering_change_gates.py
 ```
 
-设计变更 `prefix=/api/engineering-change`。材料变更前缀 `/api/engineering-change/material` 已挂上、零个接口。任务类型 `engineering_change_upload`。测试在 `tests/engineering_change/design_change/`，材料前缀锁在 `tests/engineering_change/material_change/`。
+设计变更 `prefix=/api/engineering-change`。任务类型 `engineering_change_upload`。测试在 `tests/engineering_change/design_change/`。
 
 前端：`static/js/features/engineering-change/design-change/{upload,list}/`。侧栏「工程变更 → 设计变更」。页面键仍是 `engineering-change-upload`、`engineering-change-order-list`。
 
@@ -468,7 +464,7 @@ app/
 
 ### 8.6 权限
 
-不要绑投产三页。一级分组 `menu:engineering-change` 在权限树里排在 `menu:file-trace` 之后（与侧栏同序，少用）。其下是「设计变更」分组，再挂上传 / 工程变更单列表。`defaults` / `mandatory` 不加入。按 [permission-design §0](../permission-design.md) 九步一次做齐。
+不要绑投产三页。一级分组 `menu:engineering-change` 在权限树里排在 `menu:file-trace` 之后（与侧栏同序，少用）。其下是「设计变更」分组，再挂上传 / 工程变更单列表。`defaults` / `mandatory` 不加入。按 [permission-design §0](../../permission-design.md) 九步一次做齐。
 
 | code | 用途 |
 |------|------|

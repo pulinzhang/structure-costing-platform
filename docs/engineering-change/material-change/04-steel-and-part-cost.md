@@ -3,7 +3,7 @@
 > 落地：冲压新增 **`list_materials_as_of`**。钢材联动 Step1、零件单价 prepare **都只调它**。不改 `list_with_processes`，不改 `list_material_specs` 现网签名，不改零件价 `grade == material` 那一行。  
 > 契约：[00-contract.md](00-contract.md)　目录：[README.md](README.md)
 
-解析只有本通道 `resolve_material` 一份（门禁「变更前」已经在用，不含本本）。本刀只把同一解析批量接到核算。
+当月材料只在冲压域：`list_materials_as_of` 读 `stamping_part_material_changes`，把生效月不晚于账期的最后一刀 `after_material` 叠到工艺列上。门禁向冲压要同一结果。冲压不 import 材料变更。
 
 ---
 
@@ -36,7 +36,7 @@
 
 | 件 | material | thickness |
 |---|---|---|
-| 普通件 | `resolve_material`（无切点 = 工艺列） | 工艺 `thickness`，不叠 |
+| 普通件 | 工艺列再叠冲压历史（无历史 = 工艺列） | 工艺 `thickness`，不叠 |
 | 拼焊子片 | 子片列（本通道不切拼焊）。总成该月无效则不带 | 子片列 |
 | 利废 / 副产品 | 工艺列，不叠 | 工艺列 |
 
@@ -44,7 +44,7 @@
 
 只返回行。禁止给 session 里的 `StampingPart.material` 赋值，禁止 flush/commit 回工艺表。不加载工序。
 
-冲压是上游，本方法所在模块不 import 材料变更。应用启动时绑定与 `resolve_material` 同一套叠法的批量函数，避免按件再查工艺；没绑定 = 行上的材料就是工艺列。核价代码只出现 `list_materials_as_of(...)`。
+冲压自己读历史表。不在启动时绑定下游函数。核价代码只出现 `list_materials_as_of(...)`。
 
 ---
 

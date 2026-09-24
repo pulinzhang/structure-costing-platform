@@ -1,4 +1,7 @@
-"""工程变更工艺零件：当月命中、改图抄行、插行、回滚。"""
+"""设计变更工艺零件入口。
+
+一个零件按顺序写完再写下个：clone 出的零件一行、每一道工序、每一条材料变更历史。
+"""
 
 from __future__ import annotations
 
@@ -8,45 +11,31 @@ from app.repositories.stamping.part.process import StampingProcessRepository
 from app.repositories.stamping.part.repository import StampingPartRepository
 from app.schemas.dto.stamping_upload_dto import PartData, ProcessData
 from app.schemas.vo.user_vo import UserVO
-from app.services.stamping.part.engineering.change import (
-    MISS_NOT_AS_OF,
-    MISS_SUPPLIER_UNKNOWN,
+from app.services.stamping.part.engineering.design_change.as_of import (
+    get_part_as_of,
+    list_parts_as_of,
+    process_material_on_file,
+)
+from app.services.stamping.part.engineering.design_change.clone import clone_revise_from_predecessor
+from app.services.stamping.part.engineering.design_change.insert import (
+    insert_material_changes_for_engineering_change,
+    insert_part_for_engineering_change,
+    insert_processes_for_engineering_change,
+)
+from app.services.stamping.part.engineering.design_change.rollback import (
+    rollback_engineering_change_part,
+)
+from app.services.stamping.part.engineering.design_change.types import (
+    EngineeringChangeMaterialHistoryClone,
     EngineeringChangePartAsOfRow,
     EngineeringChangeProcessPartResult,
     EngineeringChangeProcessPartSpec,
 )
-from app.services.stamping.part.engineering.change import (
-    clone_revise_from_predecessor as clone_revise_from_predecessor_fn,
-)
-from app.services.stamping.part.engineering.change import (
-    get_part_as_of as get_part_as_of_fn,
-)
-from app.services.stamping.part.engineering.change import (
-    insert_for_engineering_change as insert_for_engineering_change_fn,
-)
-from app.services.stamping.part.engineering.change import (
-    list_parts_as_of as list_parts_as_of_fn,
-)
-from app.services.stamping.part.engineering.change import (
-    process_material_on_file as process_material_on_file_fn,
-)
-from app.services.stamping.part.engineering.change import (
-    rollback_engineering_change_part as rollback_engineering_change_part_fn,
-)
 from app.services.stamping.part.rules.part_seq_validator import next_consecutive_seq_no
 
-__all__ = [
-    "EngineeringChangePartAsOfRow",
-    "EngineeringChangeProcessPartResult",
-    "EngineeringChangeProcessPartSpec",
-    "MISS_NOT_AS_OF",
-    "MISS_SUPPLIER_UNKNOWN",
-    "StampingEngineeringService",
-]
 
-
-class StampingEngineeringService:
-    """工程变更对工艺零件的读写。"""
+class StampingDesignChangeService:
+    """设计变更对工艺零件的读写。一个零件写完 clone 出的零件、工序、材料变更历史，再写下个。"""
 
     def __init__(self) -> None:
         self.repository = StampingPartRepository()
@@ -61,8 +50,8 @@ class StampingEngineeringService:
         as_of_year: int,
         as_of_month: int,
     ) -> list[EngineeringChangePartAsOfRow]:
-        """工程变更：当月命中零件号。"""
-        return list_parts_as_of_fn(
+        """设计变更：当月命中零件号。"""
+        return list_parts_as_of(
             self.repository,
             db,
             location=location,
@@ -82,7 +71,7 @@ class StampingEngineeringService:
         as_of_year: int,
         as_of_month: int,
     ) -> tuple[EngineeringChangePartAsOfRow | None, str | None]:
-        return get_part_as_of_fn(
+        return get_part_as_of(
             self.repository,
             db,
             location=location,
@@ -94,7 +83,7 @@ class StampingEngineeringService:
         )
 
     def process_material_on_file(self, db: Session, material: str) -> bool:
-        return process_material_on_file_fn(db, material)
+        return process_material_on_file(db, material)
 
     def next_seq_no_in_scope_for_engineering_change(
         self,
@@ -103,7 +92,7 @@ class StampingEngineeringService:
         location: str,
         vehicle_model: str,
     ) -> int:
-        """工程变更增加零件：该厂该项目已有 seq_no（含已失效）的 max+1。"""
+        """设计变更增加零件：该厂该项目已有 seq_no（含已失效）的 max+1。"""
         existing_parts = self.repository.list_by_location_and_vehicle(
             db, location=location, vehicle_model=vehicle_model
         )
@@ -122,9 +111,9 @@ class StampingEngineeringService:
         expiry_month: int | None,
         created_by: str | None,
         updated_by: str | None,
-    ) -> tuple[PartData, list[ProcessData]]:
-        """工程变更改图：除零件号、版本、生失效外整行抄旧号，工序相同。"""
-        return clone_revise_from_predecessor_fn(
+    ) -> tuple[PartData, list[ProcessData], list[EngineeringChangeMaterialHistoryClone]]:
+        """clone 旧零件的零件一行、全部工序、全部材料变更历史，不写库。"""
+        return clone_revise_from_predecessor(
             self.repository,
             self.process_repository,
             db,
@@ -145,14 +134,36 @@ class StampingEngineeringService:
         specs: list[EngineeringChangeProcessPartSpec],
         current_user: UserVO,
     ) -> list[EngineeringChangeProcessPartResult]:
-        """工程变更插工艺零件（不 commit）。"""
-        return insert_for_engineering_change_fn(
-            self.repository,
-            self.process_repository,
-            db,
-            specs,
-            current_user,
-        )
+        """每个零件按顺序写入 clone 出的三样（不 commit）。增加零件没有材料变更历史。"""
+        results: list[EngineeringChangeProcessPartResult] = []
+        for spec in specs:
+            part_id, predecessor_id = insert_part_for_engineering_change(
+                self.repository,
+                db,
+                spec,
+                current_user,
+            )
+            insert_processes_for_engineering_change(
+                self.process_repository,
+                db,
+                part_id=part_id,
+                processes=spec.processes,
+                current_user=current_user,
+            )
+            history_ids = insert_material_changes_for_engineering_change(
+                db,
+                part_id=part_id,
+                material_changes=spec.material_changes,
+                current_user=current_user,
+            )
+            results.append(
+                EngineeringChangeProcessPartResult(
+                    part_id=part_id,
+                    predecessor_id=predecessor_id,
+                    material_history_ids=history_ids,
+                )
+            )
+        return results
 
     def rollback_engineering_change_part(
         self,
@@ -162,8 +173,8 @@ class StampingEngineeringService:
         before_part_id: int | None,
         current_user: UserVO,
     ) -> None:
-        """工程变更回滚工艺零件（不 commit）。"""
-        rollback_engineering_change_part_fn(
+        """设计变更回滚工艺零件（不 commit）。"""
+        rollback_engineering_change_part(
             self.repository,
             self.process_repository,
             db,

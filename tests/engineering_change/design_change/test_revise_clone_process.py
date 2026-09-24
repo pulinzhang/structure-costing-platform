@@ -1,4 +1,4 @@
-"""改图换号：冲压零件除号/版本/生失效外整行抄旧号，工序相同。"""
+"""改图换号：clone 零件、全部工序、全部材料变更历史。"""
 
 from __future__ import annotations
 
@@ -9,7 +9,7 @@ from app.parsers.stamping.models.part import Part
 from app.services.engineering_change.design_change.upload.persist.process import (
     _part_from_confirmation_sheet,
 )
-from app.services.stamping.part.engineering.change import clone_revise_part_payload
+from app.services.stamping.part.engineering.design_change.clone import clone_revise_part_payload
 
 
 def test_revise_clones_part_and_identical_processes() -> None:
@@ -65,9 +65,30 @@ def test_revise_clones_part_and_identical_processes() -> None:
             remark=None,
         ),
     ]
-    part_data, processes = clone_revise_part_payload(
+    old_material_changes = [
+        SimpleNamespace(
+            id=11,
+            effective_year=2024,
+            effective_month=3,
+            before_material="DC01",
+            after_material="DC51D+Z",
+            before_thickness=Decimal("1.0000"),
+            after_thickness=Decimal("1.2000"),
+        ),
+        SimpleNamespace(
+            id=12,
+            effective_year=2025,
+            effective_month=1,
+            before_material="DC51D+Z",
+            after_material="DC56D+Z",
+            before_thickness=Decimal("1.2000"),
+            after_thickness=Decimal("0.8000"),
+        ),
+    ]
+    part_data, processes, material_changes = clone_revise_part_payload(
         old_part,
         old_processes,
+        old_material_changes,
         new_part_number="501006875AB",
         version="EC-202507",
         effective_year=2025,
@@ -112,6 +133,17 @@ def test_revise_clones_part_and_identical_processes() -> None:
     assert processes[1].process_order == 2
     assert processes[1].cost_ratio == Decimal("0.50")
     assert processes[1].die_sets == 2
+    assert len(material_changes) == 2
+    assert material_changes[0].source_id == 11
+    assert material_changes[0].effective_year == 2024
+    assert material_changes[0].effective_month == 3
+    assert material_changes[0].before_material == "DC01"
+    assert material_changes[0].after_material == "DC51D+Z"
+    assert material_changes[0].before_thickness == Decimal("1.0000")
+    assert material_changes[0].after_thickness == Decimal("1.2000")
+    assert material_changes[1].source_id == 12
+    assert material_changes[1].after_material == "DC56D+Z"
+    assert material_changes[1].after_thickness == Decimal("0.8000")
 
 
 def test_save_process_sketches_writes_png(tmp_path, monkeypatch) -> None:
@@ -150,7 +182,9 @@ def test_t2aa_process_sheet_keeps_revised_part_sketch() -> None:
 
 
 def test_revise_remaps_tailor_weld_blank_part_number() -> None:
-    from app.services.stamping.part.engineering.change import _remapped_blank_part_number
+    from app.services.stamping.part.engineering.design_change.insert import (
+        _remapped_blank_part_number,
+    )
 
     assert (
         _remapped_blank_part_number(

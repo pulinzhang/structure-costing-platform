@@ -269,6 +269,7 @@ def is_not_install_row(
 # --- effect_kind ---
 EFFECT_ASSEMBLY_L0 = "assembly_l0"
 EFFECT_PROCESS_PART = "process_part"
+EFFECT_PART_MATERIAL_CHANGE = "part_material_change"
 EFFECT_DIE_PART = "die_part"
 EFFECT_GAUGE_FEE = "gauge_fee"
 EFFECT_DIE_FEE = "die_fee"

@@ -13,7 +13,6 @@ from app.schemas.common.page_result import PageResult
 from app.schemas.dto.engineering_change.material_change import MaterialChangeUploadQueryDTO
 from app.schemas.vo.async_task_vo import AsyncTaskAcceptedVO, AsyncTaskProgressVO
 from app.schemas.vo.engineering_change.material_change import (
-    MaterialChangeRecordVO,
     MaterialChangeUploadListRowVO,
     MaterialChangeUploadResultVO,
 )
@@ -24,7 +23,6 @@ from app.services.async_task.service import (
     AsyncTaskService,
 )
 from app.services.engineering_change.material_change.list.query import MaterialChangeQueryService
-from app.services.engineering_change.material_change.list.records import list_part_records
 from app.services.engineering_change.material_change.list.rollback import (
     MaterialChangeRollbackService,
 )
@@ -158,22 +156,3 @@ def delete_upload(
 ) -> ApiResponse[None]:
     _rollback_service.rollback(db, upload_log_id, current_user)
     return ApiResponse.deleted(message="已删除材料变更")
-
-
-@router.get(
-    "/parts/{part_id:int}/records",
-    response_model=ApiResponse[list[MaterialChangeRecordVO]],
-)
-def get_part_records(
-    part_id: int,
-    db: Session = Depends(get_db),
-    current_user: UserVO = Depends(
-        require_any_perm(
-            Perm.STAMPING_PARTS_VIEW,
-            Perm.ENGINEERING_CHANGE_MATERIAL_LIST_VIEW,
-        )
-    ),
-) -> ApiResponse[list[MaterialChangeRecordVO]]:
-    _ = current_user
-    items = list_part_records(db, part_id)
-    return ApiResponse.ok(data=items)

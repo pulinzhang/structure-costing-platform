@@ -39,5 +39,7 @@ class EngineeringChangeMaterialEffectLink(Base):
     effect_kind: Mapped[str] = mapped_column(
         String(40), nullable=False, comment="只准 material_cutover"
     )
-    before_id: Mapped[int] = mapped_column(Integer, nullable=False, comment="source_part_id")
-    after_id: Mapped[int | None] = mapped_column(Integer, nullable=True, comment="空")
+    before_id: Mapped[int] = mapped_column(Integer, nullable=False, comment="工艺行 id")
+    after_id: Mapped[int | None] = mapped_column(
+        Integer, nullable=True, comment="冲压材料变更历史 id"
+    )

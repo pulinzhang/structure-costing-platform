@@ -28,7 +28,7 @@ from app.parsers.engineering_change.design_change.sheet_extract import SHEET_PRO
 from app.parsers.stamping.models.parse_result import ParserResult
 from app.parsers.stamping.stamping_parser import parse_stamping_excel
 from app.services.bom.bom.engineering import BomEngineeringService
-from app.services.stamping.part.engineering.service import StampingEngineeringService
+from app.services.stamping.part.engineering.design_change.service import StampingDesignChangeService
 
 
 @dataclass(slots=True)
@@ -86,14 +86,14 @@ def validate_process_hard_gates(
     effective_month: int,
     process_part_numbers: set[str],
     bom_service: BomEngineeringService | None = None,
-    stamping_service: StampingEngineeringService | None = None,
+    stamping_service: StampingDesignChangeService | None = None,
 ) -> dict[str, str]:
     """
     整本工艺硬门禁。完成停止 / 此件不装：该行不必出工艺。
     返回改图钉明的旧号→新号（工艺/布点只停变更单写出的旧号，不按茎猜）。
     """
     bom = bom_service or BomEngineeringService()
-    stamping = stamping_service or StampingEngineeringService()
+    stamping = stamping_service or StampingDesignChangeService()
     process_numbers = process_part_numbers
     as_of_rows = stamping.list_parts_as_of_for_engineering_change(
         db,

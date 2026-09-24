@@ -1,12 +1,17 @@
-# 材料变更（占位）
+# 材料变更 Service（`engineering_change/material_change/`）
 
-同号只切 `material`。这次只有目录，没有业务。设计按刀落地，见 [docs/engineering-change/material-change/](../../../../docs/engineering-change/material-change/README.md)。
+同号只切材料。本包只存这一本 Excel。历史的写入和删除调 `StampingMaterialChangeService`。读工艺身份调 `StampingDesignChangeService`。
 
-落地时写入 catalog：
+| 你要做什么 | 打开 |
+|---|---|
+| 列表 / 回滚 | [list/README.md](list/README.md) |
+| 下载模板 / 入队上传 | [upload/README.md](upload/README.md) |
 
-- 分组 `menu:engineering-change-material-group`，与设计变更并列，挂一级「工程变更」
-- `menu:engineering-change-material-upload` / `menu:engineering-change-material-list`
-- 任务类型 `engineering_change_material_upload`
-- 接口前缀：`/api/engineering-change/material`
+禁止本包 `__init__.py` 再导出。HTTP 仍在 `/api/engineering-change/material`。设计见 [docs/engineering-change/material-change/](../../../../docs/engineering-change/material-change/README.md)。
 
-路由包 `__init__.py` 不要转发 `router`。
+## 目录
+
+| 目录 / 文件 | 职责 |
+|------|------|
+| `list/` | 查询与回滚 |
+| `upload/` | 模板、门禁、编排 |

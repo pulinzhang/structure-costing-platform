@@ -4,13 +4,13 @@
 > 不要做上传页。不改零件价计算器。  
 > 契约：[00-contract.md](00-contract.md)　目录：[README.md](README.md)
 
-切点表在本通道。当月材料只有 **`resolve_material`** 一份：门禁「变更前」调它（不含本本）；第 4 刀 `list_materials_as_of` 批量调它。`list_with_processes` 不叠。门禁常量放本通道包，禁止改 `app/common/`。
+Excel 切点单在本通道。材料变更历史在冲压表 `stamping_part_material_changes`（与工序同级，只挂 `stamping_parts`）。当月材料只在冲压 `list_materials_as_of`：门禁「变更前」调冲压服务读该零件历史。`list_with_processes` 不叠。门禁文案在解析器 `codes.py`，禁止改 `app/common/`。冲压不读切点单，本通道不查询历史表。
 
 ---
 
 ## 1. 工艺表不动
 
-`stamping_parts` / `stamping_tailor_weld_blanks`：零 insert；零 update `material` / `version` / **生失效四列**；零同号第二行。上传、回滚都一样。
+`stamping_parts` / `stamping_tailor_weld_blanks`：零 insert；零 update `material` / `version` / **生失效四列**；零同号第二行。上传只往 `stamping_part_material_changes` 插历史，回滚按 id 删这些历史行。
 
 全部切点回滚完之后，该零件 `effective_year` / `effective_month` / `expiry_year` / `expiry_month` 必须仍是第一刀之前的字（115AA 工艺 2025年01月起那一套，不因 06/07 材料变更而改）。
 
@@ -42,7 +42,7 @@
 
 Excel 一行 = 一刀。1 头 : N 行。
 
-关键列（类型对齐设计变更单）：`upload_log_id` Integer FK 头 RESTRICT；`upload_file_id` Integer FK 文件 RESTRICT；`change_version` `String(20)`；`excel_row` Integer 可空（改图抄来的切点没有 Excel 行）；`location` `String(50)`；`stamping_supplier` `String(100)` FK 供应商 RESTRICT；`vehicle_model` `String(50)`；`effective_year` / `effective_month` Integer（**切点开始月，必须落库**）；`part_number` `String(50)`；`before_material` / `after_material` `String(50)`，FK **与 `stamping_parts.material` 同一条**（档案表现网名 `steel_grade_categories`，改字 CASCADE、RESTRICT 删档；**切点列禁止叫 `grade`**）；`before_thickness` / `after_thickness` `Numeric(10, 4)`（与工艺 `thickness` 同精度；**不叠回工艺料厚**）；`interchangeability` `String(20)` 存「不影响互换性」六字；`part_name` `String(200)`；`source_part_id` Integer FK 工艺 RESTRICT；`copied_from_order_id` Integer 可空 FK 本表切点 RESTRICT（**改图抄历史**：指向旧号那一行；Excel 上传的为空）；审计 Mixin。
+关键列（类型对齐设计变更单）：`upload_log_id` Integer FK 头 RESTRICT；`upload_file_id` Integer FK 文件 RESTRICT；`change_version` `String(20)`；`excel_row` Integer（本通道 Excel 行号）；`location` `String(50)`；`stamping_supplier` `String(100)` FK 供应商 RESTRICT；`vehicle_model` `String(50)`；`effective_year` / `effective_month` Integer（**切点开始月，必须落库**）；`part_number` `String(50)`；`before_material` / `after_material` `String(50)`，FK **与 `stamping_parts.material` 同一条**（档案表现网名 `steel_grade_categories`，改字 CASCADE、RESTRICT 删档；**切点列禁止叫 `grade`**）；`before_thickness` / `after_thickness` `Numeric(10, 4)`（与工艺 `thickness` 同精度；**不叠回工艺料厚**）；`interchangeability` `String(20)` 存「不影响互换性」六字；`part_name` `String(200)`；`source_part_id` Integer FK 工艺 RESTRICT；审计 Mixin。切点只来自本通道 Excel，没有抄行外键。
 
 索引：身份+生效月 UNIQUE；`source_part_id`；`upload_log_id`。
 
@@ -84,7 +84,7 @@ Excel 一行 = 一刀。1 头 : N 行。
 
 只为准回滚记账。`effect_kind` 只准 `material_cutover`。`after_id` 空。`before_id` = `source_part_id`。`order_id` FK 切点 RESTRICT。
 
-回滚删序：链接 → 切点（含改图抄到新号的那些行，见第 5 刀）→ 头。不留 `rolled_back` 行。不改工艺行。拦法见第 3 刀：按 **基地 + 冲压工厂 + 项目 + 零件号** 还有没有更晚切点，不是「项目上随便一本更晚就全拦」。
+回滚删序：链接 → 切点 → 头。不留 `rolled_back` 行。不改工艺行。拦法见第 3 刀：按 **基地 + 冲压工厂 + 项目 + 零件号** 还有没有更晚切点，不是「项目上随便一本更晚就全拦」。
 
 ---
 
@@ -98,21 +98,21 @@ SOP 把投产 `material` 改掉、该号上 **还有切点**：解析器仍从�
 
 | 对象 | 规则 |
 |------|------|
-| 工艺行 | 有切点则删挡；禁止 CASCADE 切点。IntegrityError 走现网引用保护，不改冲压删挡文案 |
-| 改图后 AA | 到期不删行；切点仍叠 AA。新号 AB 另有抄来的切点行，不是孤儿 |
+| 工艺行 | 有历史则 `stamping_part_material_changes.part_id` RESTRICT 删挡；切点单 `source_part_id` 同样 RESTRICT。禁止 CASCADE。IntegrityError 走现网引用保护，不改冲压删挡文案 |
+| 改图后 AA | 到期不删行；AA 上的历史仍在。新号 AB 有设计变更抄来的 `stamping_part_material_changes` 行 |
 | 钢材 / 零件价 | 不 FK 切点；回滚后快照故意留下 |
 | 失败头 `upload_file_id` | 非空则文件行必须先在 |
 | pending 头 | 不得占成功版本 UNIQUE |
 
 ---
 
-## 6. 当月材料（只在 `resolve_material`）
+## 6. 当月材料（只在冲压 `list_materials_as_of`）
 
-普通件 `material` = 工艺列再叠该身份生效月 ≤ as_of 的 `after_material`。无切点 = 工艺列。拼焊 / 利废 / 副产品不叠，仍是投产列。料厚不叠。
+普通件 `material` = 工艺列再叠该零件历史里生效月 ≤ as_of 的 `after_material`。无历史 = 工艺列。拼焊 / 利废 / 副产品不叠，仍是投产列。料厚不叠。
 
 **禁止写回表。** 禁止在 `list_with_processes` 的返回对象上改 `material`。
 
-上传门禁「变更前」= 对该件调 `resolve_material`（该月、不含本本）。第 4 刀批量调用同一函数，见 [04-steel-and-part-cost.md](04-steel-and-part-cost.md)。不要第二套解析器。
+上传门禁「变更前」= 向冲压要该零件当月材料（本本尚未写入历史）。见 [04-steel-and-part-cost.md](04-steel-and-part-cost.md)。不要在本通道再写一套解析器。
 
 本刀单测：无切点=工艺字；一刀前后月；两刀排队。不要测钢价公式。
 
@@ -127,4 +127,4 @@ SOP 把投产 `material` 改掉、该号上 **还有切点**：解析器仍从�
 - [ ] 同月或更早月第二刀 UNIQUE 拒
 - [ ] 有切点时删工艺 IntegrityError（不改冲压删挡文案）
 - [ ] 成功头 UNIQUE 含冲压工厂：振华 `MAT-202506` 不挡全鑫同项目同月同版本
-- [ ] SOP 再导更新同行，`stamping_parts.id` 不变；切点 `copied_from_order_id` 可空
+- [ ] SOP 再导更新同行，`stamping_parts.id` 不变
