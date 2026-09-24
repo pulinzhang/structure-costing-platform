@@ -18,7 +18,7 @@ from app.schemas.vo.stamping_vo import StampingMaterialResponse, StampingPartLis
 from app.services.masterdata.location.service import LocationService
 from app.services.masterdata.supplier.service import SupplierService
 from app.services.masterdata.vehicle_model.service import VehicleModelService
-from app.services.stamping.part.engineering.material_change import overlay_materials_by_part
+from app.services.stamping.part.engineering.material_change import StampingMaterialChangeService
 
 
 def nonempty_decimals(values: list[Decimal | None]) -> list[Decimal]:
@@ -275,7 +275,7 @@ def list_materials_as_of(
     )
     if not identities:
         return rows
-    resolved = overlay_materials_by_part(
+    resolved = StampingMaterialChangeService().overlay_by_part(
         db,
         [identity["part_id"] for identity in identities],
         {identity["part_id"]: identity["material"] for identity in identities},

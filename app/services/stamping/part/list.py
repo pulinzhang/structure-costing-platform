@@ -19,7 +19,7 @@ from app.schemas.vo.stamping_vo import (
 from app.services.masterdata.location.service import LocationService
 from app.services.masterdata.supplier.service import SupplierService
 from app.services.masterdata.vehicle_model.service import VehicleModelService
-from app.services.stamping.part.engineering.material_change import material_changes_for_detail
+from app.services.stamping.part.engineering.material_change import StampingMaterialChangeService
 
 
 def count_parts(repository: StampingPartRepository, db: Session) -> int:
@@ -223,5 +223,5 @@ def get_by_id(
     if not part:
         raise NotFoundException(f"零件不存在: id={part_id}")
     detail = StampingPartWithProcessesResponse.model_validate(part)
-    detail.material_changes = material_changes_for_detail(db, part.id)
+    detail.material_changes = StampingMaterialChangeService().for_detail(db, part.id)
     return detail

@@ -16,7 +16,7 @@ from app.services.stamping.part.engineering.design_change.types import (
 )
 from app.services.stamping.part.engineering.material_change import (
     MaterialChangeHistoryRow,
-    list_material_changes,
+    StampingMaterialChangeService,
 )
 
 
@@ -125,7 +125,7 @@ def clone_revise_from_predecessor(
     if old_part is None:
         raise NotFoundException(f"变更前冲压零件不存在: id={predecessor_id}")
     old_processes = process_repo.get_by_part_id(db, predecessor_id)
-    old_material_changes = list_material_changes(db, predecessor_id)
+    old_material_changes = StampingMaterialChangeService().list_for_part(db, predecessor_id)
     return clone_revise_part_payload(
         old_part,
         old_processes,
