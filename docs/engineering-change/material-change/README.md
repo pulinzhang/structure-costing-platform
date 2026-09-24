@@ -2,7 +2,8 @@
 
 > 状态：**设计定稿，业务已落地。** 前缀 `/api/engineering-change/material`。  
 > 对人说 **材料变更**（对仗「设计变更」）。冲压域字段 material，对人说材料。不要另叫 grade/牌号。不要和 BOM「材料清单」混称。  
-> 旧长稿已拆到本目录。入口：[工程变更地图](../README.md)、[服务包占位](../../../app/services/engineering_change/material_change/README.md)。
+> 旧长稿已拆到本目录。入口：[工程变更地图](../README.md)、[服务包](../../../app/services/engineering_change/material_change/README.md)。  
+> 网页整套测试和两本样表：[samples/](samples/README.md)。
 
 ---
 

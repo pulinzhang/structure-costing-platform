@@ -19,6 +19,10 @@ _log_repo = MaterialChangeUploadLogRepository()
 
 
 def list_part_records(db: Session, part_id: int) -> list[MaterialChangeRecordVO]:
+    """这一号身份上的成功切点，按生效月升序。有效止是下一刀的前一月。
+
+    改图抄来的行已经换成新零件号，落在新号的身份上。这里不要再按工艺行 id 丢掉。
+    """
     part = StampingPartService().get_by_id(db, part_id)
     orders = _order_repo.list_success_for_identity(
         db,
@@ -29,12 +33,10 @@ def list_part_records(db: Session, part_id: int) -> list[MaterialChangeRecordVO]
     )
     records: list[MaterialChangeRecordVO] = []
     for index, order in enumerate(orders):
-        if order.source_part_id != part.id:
-            continue
+        nxt = orders[index + 1] if index + 1 < len(orders) else None
         valid_until_year: int | None = None
         valid_until_month: int | None = None
-        if index + 1 < len(orders):
-            nxt = orders[index + 1]
+        if nxt is not None:
             valid_until_year, valid_until_month = previous_month(
                 nxt.effective_year, nxt.effective_month
             )

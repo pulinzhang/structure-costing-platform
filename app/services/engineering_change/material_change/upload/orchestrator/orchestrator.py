@@ -1,4 +1,4 @@
-"""材料变更指挥家：prepare → pipeline → persist。"""
+"""材料变更指挥家：prepare → persist。"""
 
 from __future__ import annotations
 
@@ -9,9 +9,6 @@ from app.schemas.vo.user_vo import UserVO
 from app.services.engineering_change.material_change.upload.orchestrator.persist import (
     mark_material_change_failed,
     persist_material_change_result,
-)
-from app.services.engineering_change.material_change.upload.orchestrator.pipeline import (
-    run_material_change_pipeline,
 )
 from app.services.engineering_change.material_change.upload.orchestrator.prep import (
     prepare_material_change_run,
@@ -32,8 +29,7 @@ class MaterialChangeOrchestrator:
         on_progress: ProgressCallback | None = None,
     ) -> MaterialChangeUploadResultVO:
         prepared = prepare_material_change_run(db, args, on_progress=on_progress)
-        pipeline = run_material_change_pipeline(db, prepared, on_progress=on_progress)
-        return persist_material_change_result(db, pipeline, current_user, on_progress=on_progress)
+        return persist_material_change_result(db, prepared, current_user, on_progress=on_progress)
 
     def mark_log_failed(self, db: Session, log_id: int, message: str, current_user: UserVO) -> None:
         mark_material_change_failed(db, log_id, message, current_user)

@@ -238,14 +238,12 @@ export const PartsPage = {
 
         pageContent?.addEventListener('click', (e) => {
             const btn = e.target.closest('button[data-action]');
-            if (btn) {
-                e.stopPropagation();
-                const id = Number(btn.getAttribute('data-id'));
-                const action = btn.getAttribute('data-action');
-                if (action === 'detail') this.showDetail(id);
-                else if (action === 'delete') this.deletePart(id);
-                return;
-            }
+            if (!btn || !btn.hasAttribute('data-id')) return;
+            e.stopPropagation();
+            const id = Number(btn.getAttribute('data-id'));
+            const action = btn.getAttribute('data-action');
+            if (action === 'detail') this.showDetail(id);
+            else if (action === 'delete') this.deletePart(id);
         });
     },
 

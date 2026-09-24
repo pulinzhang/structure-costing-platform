@@ -75,6 +75,9 @@ ehthumbs.db
 docs/合伙人备忘*.md
 docs/*商业计划*
 
+# 材料变更网页测试现场改出来的负例，跑完会删
+docs/engineering-change/material-change/samples/_cases/
+
 # Logs
 *.log
 *.log.*

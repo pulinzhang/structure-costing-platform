@@ -1,3 +1,5 @@
-# 材料变更 Repository 占位
+# 材料变更 Repository（`repositories/engineering_change/material_change/`）
 
-不写查询。见 [服务包 README](../../../services/engineering_change/material_change/README.md)。
+上传头、切点、效果链接。不在这里 `commit`。
+
+见 [服务包 README](../../../services/engineering_change/material_change/README.md)。

@@ -39,6 +39,7 @@ def persist_material_change_result(
     on_progress: ProgressCallback | None = None,
 ) -> MaterialChangeUploadResultVO:
     if on_progress:
+        on_progress(55, "正在准备切点")
         on_progress(80, "正在写入切点")
     log_row = _log_repo.get_by_id(db, prepared.log_id)
     if log_row is None:
