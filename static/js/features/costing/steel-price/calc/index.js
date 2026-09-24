@@ -3,7 +3,7 @@
  * 钢价计算 —过滤条件 + 异步后台计算 + 进度轮询 + 历史过程日志
  */
 
-import { steelPriceCalcTemplate } from './template.js?v=19';
+import { steelPriceCalcTemplate } from './template.js?v=20';
 import { DRAWER_CLOSE, DRAWER_SHELL, DRAWER_BACKDROP } from '../../../../ui/classes.js?v=13';
 import { opsIconButtonHtml } from '../../../../ui/hud-table.js?v=2';
 
@@ -236,7 +236,7 @@ function renderHistoryRows(items) {
         const deleteBtn = calcState.canDelete !== false ? opsIconButtonHtml({
             extraClass: 'calc-delete-log-btn',
             danger: true,
-            title: '含计算中：删除可释放锁',
+            title: '有正在计算的：删掉后就可以重新算',
             icon: window.svgIcon('trash', 'w-3.5 h-3.5'),
             attrs: `data-log-id="${esc(item.id)}"`,
         }) : '';
@@ -289,7 +289,7 @@ async function deleteAllCalcLogs() {
         showToast('无删除权限', 'warning');
         return;
     }
-    if (!await window.confirmAction('确定删除全部计算历史？仅删除日志，不影响已落库的钢材价格。计算中的记录删除后将释放锁。')) {
+    if (!await window.confirmAction('确定删除全部计算历史？只删记录，不影响已经算好的钢材价格。正在计算的删掉之后就可以重新算。')) {
         return;
     }
     try {
@@ -308,7 +308,7 @@ async function deleteCalcLog(logId) {
         showToast('无删除权限', 'warning');
         return;
     }
-    if (!await window.confirmAction('确定删除这条计算历史？计算中的记录删除后将释放锁；仅删除日志，不影响已落库的钢材价格。')) {
+    if (!await window.confirmAction('确定删除这条计算历史？只删记录，不影响已经算好的钢材价格。正在计算的删掉之后就可以重新算。')) {
         return;
     }
     try {

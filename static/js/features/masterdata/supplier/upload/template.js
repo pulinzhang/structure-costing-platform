@@ -64,18 +64,18 @@ export function supplierUploadTemplate() {
                         <div>
                             <h6 class="text-[10px] tracking-wider text-ink-faint mb-2">列</h6>
                             <ul class="list-disc list-inside text-xs text-ink-dim space-y-1.5">
-                                <li><span class="text-ink-muted">缩写</span>：上屏短名</li>
-                                <li><span class="text-ink-muted">全称</span>：与执照一致，落库主键</li>
-                                <li><span class="text-ink-muted">对外代码</span>：对接码，不进工艺列</li>
-                                <li><span class="text-ink-muted">别名</span>：可空，吸收表头乱写</li>
+                                <li><span class="text-ink-muted">缩写</span>：页面上显示的短名</li>
+                                <li><span class="text-ink-muted">全称</span>：与执照一致，系统按全称认出这家供应商</li>
+                                <li><span class="text-ink-muted">对外代码</span>：给外部系统用，工艺表不显示这一列</li>
+                                <li><span class="text-ink-muted">别名</span>：可以空着，用来认表头里写法不一样的名字</li>
                             </ul>
                         </div>
                         <div>
                             <h6 class="text-[10px] tracking-wider text-ink-faint mb-2">规则</h6>
                             <ul class="list-disc list-inside text-xs text-ink-dim space-y-1.5">
                                 <li>已有全称则跳过，不覆盖</li>
-                                <li>任一行失败整单不写</li>
-                                <li>改启用 / 别名到一览抽屉</li>
+                                <li>有一行不对，这一整份都不写入</li>
+                                <li>要改是否启用或别名，到供应商一览里点开这一行</li>
                             </ul>
                         </div>
                         <a href="#/supplier-list" class="block text-[11px] text-brand-hud hover:text-brand-active">打开供应商一览 →</a>

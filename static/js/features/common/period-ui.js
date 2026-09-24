@@ -5,10 +5,10 @@
 import { FILTER_LABEL, HUD_FILTER } from '../../ui/classes.js?v=13';
 
 export const SOP_INTRO =
-    '本页只导入 SOP（该项目第一次标准化投产）。投产使用后换号、新旧并存，必须走工程变更，不要在本页操作。';
+    '本页只导入第一次投产。投产之后要换零件号，请走工程变更，不要在本页操作。';
 
 export const SOP_EXISTING =
-    '该项目已有 SOP。再导只更新文件里已有对象的属性，不会删除未出现的行。文件里出现新号将整单拒绝。换号请走工程变更。';
+    '这个项目已经投产。再传只更新文件里已经有的行，不会删掉文件里没写的行。文件里出现新零件号会整份拒绝。换零件号请走工程变更。';
 
 export function fmtPeriodRange(effectiveYear, effectiveMonth, expiryYear, expiryMonth) {
     const start = typeof fmtPeriod === 'function'
@@ -188,7 +188,7 @@ export function sopBannerHtml() {
     return `
         <div id="sopBanner" class="mx-5 mt-4 mb-0 px-4 py-3 border border-line bg-app-surface text-[11px] text-ink-muted leading-relaxed">
             <p class="text-warn mb-1">${SOP_INTRO}</p>
-            <p id="sopBannerDetail" class="text-ink-muted mb-0">选项目后显示本文件按项目 SOP 时段。</p>
+            <p id="sopBannerDetail" class="text-ink-muted mb-0">选项目后显示这份文件按项目档案的开始月和结束月。</p>
         </div>
     `;
 }
@@ -201,10 +201,10 @@ export function renderSopBanner({ hasSop, startLabel, endLabel }) {
         return;
     }
     if (startLabel) {
-        detail.textContent = `本文件按项目 SOP 时段：${startLabel} – ${endLabel || '未结束'}。时段来自项目档案，本页不能改。`;
+        detail.textContent = `这份文件按项目档案的时间：${startLabel} – ${endLabel || '未结束'}。时间来自项目档案，本页不能改。`;
         return;
     }
-    detail.textContent = '本文件按项目档案登记的开始月–结束月写入。时段本页不能改。';
+    detail.textContent = '这份文件按项目档案登记的开始月到结束月写入。时间本页不能改。';
 }
 
 export async function loadProjectPeriod(location, vehicleModel) {

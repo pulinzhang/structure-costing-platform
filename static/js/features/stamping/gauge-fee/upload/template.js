@@ -107,8 +107,8 @@ export function gaugeFeeUploadTemplate() {
                 <div class="p-4 space-y-3 text-[11px] text-ink-muted leading-relaxed">
                     <p class="text-warn">模板零件来自该基地+项目的模具布点。没有模具布点则无需维护检具费，请先上传模具布点。</p>
                     <p>检具费（万元）、项目分摊数量（万台）必填，不能为空或负数。模板预填 0.8 万 / 10 万台 / 生效。</p>
-                    <p>上传按基地+项目整包覆盖，不算年度分摊，不进成品 I7。</p>
-                    <p>Excel 中的零件号必须属于该范围模具布点，否则整单拒绝。</p>
+                    <p>再上传会按这个基地和项目整份替换。不算年度分摊，也不算进成品价格。</p>
+                    <p>Excel 里的零件号必须已经在这个基地和项目的模具布点里，否则整份不收。</p>
                 </div>
             </div>
         </div>

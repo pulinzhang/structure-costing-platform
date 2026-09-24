@@ -100,7 +100,7 @@ export function partsTemplate() {
                 ${hudTableHtml({
                     prefix: 'parts',
                     tableId: 'partsTable',
-                    minWidth: '1460px',
+                    minWidth: '1540px',
                     headHtml: `
                                 <th class="p-0 w-0"></th>
                                 <th class="${TH_TEXT} whitespace-nowrap w-14">图纸</th>
@@ -111,6 +111,7 @@ export function partsTemplate() {
                                 <th class="${TH_TEXT} whitespace-nowrap">版本</th>
                                 <th class="${TH_TEXT} whitespace-nowrap border-r border-line-hud">冲压工厂</th>
                                 <th class="${TH_TEXT} whitespace-nowrap">材料</th>
+                                <th class="${TH_TEXT} whitespace-nowrap">材料变更</th>
                                 <th class="${TH_TEXT} whitespace-nowrap">利废</th>
                                 <th class="${TH_TEXT} whitespace-nowrap">废料副产品</th>
                                 <th class="${TH_TEXT} whitespace-nowrap">摆剪</th>

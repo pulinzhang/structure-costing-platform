@@ -89,6 +89,7 @@ class StampingPartListResponse(BaseModel):
     part_number: str
     part_name: str | None = None
     material: str | None = None
+    has_material_change: bool = False
     thickness: Decimal | None = None
     part_weight: Decimal | None = None
     stamping_supplier: str

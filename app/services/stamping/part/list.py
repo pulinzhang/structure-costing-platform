@@ -19,7 +19,9 @@ from app.schemas.vo.stamping_vo import (
 from app.services.masterdata.location.service import LocationService
 from app.services.masterdata.supplier.service import SupplierService
 from app.services.masterdata.vehicle_model.service import VehicleModelService
-from app.services.stamping.part.engineering.material_change import StampingMaterialChangeService
+from app.services.stamping.part.engineering.material_change import (
+    StampingMaterialChangeService,
+)
 
 
 def count_parts(repository: StampingPartRepository, db: Session) -> int:
@@ -127,11 +129,13 @@ def list_parts(
     # 一次聚合查询补齐每行工序数（避免 ORM lazy load 触发 N+1）
     part_ids = [p.id for p in parts]
     process_counts = repository.count_processes_by_part_ids(db, part_ids)
+    changed_part_ids = StampingMaterialChangeService().part_ids_with_history(db, part_ids)
 
     rows = []
     for p in parts:
         row = StampingPartListResponse.model_validate(p)
         row.process_count = process_counts.get(p.id, 0)
+        row.has_material_change = p.id in changed_part_ids
         rows.append(row)
 
     raw = repository.get_filter_options(db)

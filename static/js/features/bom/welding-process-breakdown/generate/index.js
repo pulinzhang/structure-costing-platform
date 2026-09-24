@@ -341,7 +341,7 @@ function renderHistoryRows(items) {
         const deleteBtn = genState.canDeleteLog ? opsIconButtonHtml({
             extraClass: 'calc-delete-log-btn',
             danger: true,
-            title: '含拆解中：删除可释放锁',
+            title: '有正在拆解的：删掉后就可以重新拆',
             icon: window.svgIcon('trash', 'w-3.5 h-3.5'),
             attrs: `data-log-id="${esc(item.id)}"`,
         }) : '';
@@ -386,7 +386,7 @@ function renderHistoryRows(items) {
 
 async function deleteAllGenerateLogs() {
     if (!genState.canDeleteLog) return;
-    if (!await window.confirmAction('确定删除全部拆解历史？仅删除日志，不影响已落库的拆解数据。拆解中的记录删除后将释放锁。')) {
+    if (!await window.confirmAction('确定删除全部拆解历史？只删记录，不影响已经拆好的数据。正在拆解的删掉之后就可以重新拆。')) {
         return;
     }
     try {
@@ -401,7 +401,7 @@ async function deleteAllGenerateLogs() {
 
 async function deleteCalcLog(logId) {
     if (!logId || !genState.canDeleteLog) return;
-    if (!await window.confirmAction('确定删除这条拆解历史？拆解中的记录删除后将释放锁；仅删除日志，不影响已落库的拆解数据。')) {
+    if (!await window.confirmAction('确定删除这条拆解历史？只删记录，不影响已经拆好的数据。正在拆解的删掉之后就可以重新拆。')) {
         return;
     }
     try {

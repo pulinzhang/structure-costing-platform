@@ -368,7 +368,7 @@ function renderHistoryRows(items) {
         const deleteBtn = calcState.canDelete ? opsIconButtonHtml({
             action: 'delete-log',
             danger: true,
-            title: '含计算中：删除可释放锁',
+            title: '有正在计算的：删掉后就可以重新算',
             icon: window.svgIcon('trash', 'w-3.5 h-3.5'),
             attrs: `data-id="${row.id}"`,
         }) : '';
@@ -398,7 +398,7 @@ function renderHistoryRows(items) {
 
 async function deleteAllCalcLogs() {
     if (!calcState.canDelete) return;
-    if (!await window.confirmAction('确定删除全部计算历史？仅删除日志，不影响已落库结果。计算中的记录删除后将释放锁。')) {
+    if (!await window.confirmAction('确定删除全部计算历史？只删记录，不影响已经算好的结果。正在计算的删掉之后就可以重新算。')) {
         return;
     }
     try {
@@ -413,7 +413,7 @@ async function deleteAllCalcLogs() {
 
 async function deleteCalcLog(logId) {
     if (!calcState.canDelete) return;
-    if (!await window.confirmAction('确认删除该计算日志？计算中的记录删除后将释放锁，可重新提交。')) return;
+    if (!await window.confirmAction('确定删除这条计算记录？正在计算的删掉之后就可以重新算。')) return;
     try {
         await HttpClient.delete(`${CALC_LOGS_API}/${logId}`);
         showToast('已删除计算日志', 'success');

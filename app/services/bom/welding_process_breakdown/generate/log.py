@@ -282,7 +282,7 @@ class BomWeldingProcessBreakdownGenerateLogService:
         self.mark_failed(
             db,
             log_id=record.id,
-            message=f"拆解超时（超过 {hours} 小时），已自动释放锁",
+            message=f"拆解超时（超过 {hours} 小时），已停止这次拆解，可以重新拆。",
             detail_text=(
                 f"僵死锁回收：processing 超过 {hours} 小时未结束，"
                 f"started_at={record.started_at.isoformat(timespec='seconds')}"

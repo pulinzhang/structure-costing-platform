@@ -198,4 +198,4 @@ class EngineeringChangeRollbackService:
             )
             return
         logger.info("回滚未识别 effect_kind=%s id=%s", kind, link.id)
-        raise BusinessException(f"回滚未识别效果类型: {kind}")
+        raise BusinessException(f"撤销时遇到不认识的记录（{kind}），请联系管理员。")

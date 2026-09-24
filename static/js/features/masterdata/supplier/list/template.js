@@ -15,7 +15,7 @@ export function supplierListTemplate() {
                     <div class="flex items-start justify-between gap-4 mb-3">
                         <div class="min-w-0">
                             <h2 class="text-[13px] font-semibold text-ink tracking-wide">供应商</h2>
-                            <p class="mt-1 text-[11px] text-ink-faint">核价树上游厂档：缩写上屏，全称对表头，启用后才能引入</p>
+                            <p class="mt-1 text-[11px] text-ink-faint">缩写显示在页面上，全称用来对表头。停用之后不能再选用。</p>
                         </div>
                         <div class="flex items-center gap-1.5 shrink-0">
                             ${moreMenuShellHtml({
@@ -104,7 +104,7 @@ export function supplierListTemplate() {
                     <div>
                         <label class="text-[10px] font-semibold text-ink-dim tracking-wider mb-1 block">对外代码 <span class="text-brand-hud">*</span></label>
                         <input type="text" id="supplierCreateErpCode" required maxlength="50"
-                               placeholder="对外对接码"
+                               placeholder="给外部系统用的代码"
                                class="w-full h-8 px-3 text-xs bg-app-hud border border-line text-ink placeholder:text-ink-dim focus:outline-none focus:border-brand-active">
                     </div>
                     <div>

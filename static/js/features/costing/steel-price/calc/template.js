@@ -53,7 +53,7 @@ export function steelPriceCalcTemplate() {
 
                 <div class="flex items-center gap-3">
                     <span id="reCalcNotice" class="text-[9px] text-ink-dim">
-                        统计可按项目看基价/政策/规格覆盖（一车多厂）；计算仍按基地全量牌号+料厚落库
+                        统计可以按项目看基价、政策和规格盖住了多少（一个项目可以有多个工厂）；算出来的价格仍按基地、全部牌号和料厚保存
                     </span>
                     <button id="startCalcBtn"
                             class="${BTN_ABORT}">

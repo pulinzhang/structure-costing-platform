@@ -3,7 +3,7 @@
  * 与冲压工艺上传同一模式：task_id + 进度轮询
  */
 
-import { bomUploadTemplate } from './template.js?v=14';
+import { bomUploadTemplate } from './template.js?v=15';
 import { uploadSubmitLabelHtml } from '../../../../ui/upload-actions.js?v=2';
 import { can } from '../../../../core/permissions.js?v=8';
 import {
@@ -11,7 +11,7 @@ import {
     loadProjectPeriod,
     renderSopBanner,
     sopBannerHtml,
-} from '../../../common/period-ui.js?v=7';
+} from '../../../common/period-ui.js?v=9';
 
 const MAX_FILE_SIZE = 50 * 1024 * 1024;
 const POLL_INTERVAL_MS = 2000;
@@ -111,7 +111,7 @@ const BomUploadPage = {
             if (vehicleEl) {
                 const currentVehicle = vehicleEl.value;
                 const placeholder = location
-                    ? (vehicles.length ? '请选择项目' : '该基地本月无可引入项目')
+                    ? (vehicles.length ? '请选择项目' : '这个月没有可以上传的项目')
                     : '请先选择采购基地';
                 vehicleEl.innerHTML = `<option value="">${esc(placeholder)}</option>` +
                     vehicles.map((code) => `<option value="${esc(code)}">${esc(code)}</option>`).join('');

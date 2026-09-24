@@ -94,6 +94,9 @@ class StampingMaterialChangeService:
                 raise NotFoundException(f"材料变更历史不存在: id={history_id}")
             _repo.delete(db, row)
 
+    def part_ids_with_history(self, db: Session, part_ids: list[int]) -> set[int]:
+        return _repo.part_ids_with_history(db, part_ids)
+
     def list_for_part(self, db: Session, part_id: int) -> list[MaterialChangeHistoryRow]:
         return [_to_row(row) for row in _repo.list_by_part_id(db, part_id)]
 

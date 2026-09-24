@@ -365,7 +365,7 @@ function renderHistoryRows(items) {
 
 async function deleteAllCalcLogs() {
     if (calcState.canDelete === false) return;
-    if (!await window.confirmAction('确定删除全部计算历史？仅删除日志，不影响已落库模具费。进行中的记录不会删除。')) {
+    if (!await window.confirmAction('确定删除全部计算历史？只删记录，不影响已经算好的模具费。正在计算的不会删。')) {
         return;
     }
     try {
@@ -380,7 +380,7 @@ async function deleteAllCalcLogs() {
 
 async function deleteCalcLog(logId) {
     if (!logId || calcState.canDelete === false) return;
-    if (!await window.confirmAction('确定删除这条计算历史？仅删日志，不影响已落库模具费。')) return;
+    if (!await window.confirmAction('确定删除这条计算历史？只删记录，不影响已经算好的模具费。')) return;
     try {
         await HttpClient.delete(`${CALC_LOGS_API}/${logId}`);
         showToast('删除成功', 'success');

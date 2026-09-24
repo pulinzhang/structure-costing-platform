@@ -234,7 +234,7 @@ function ringPeriodChip(yearId, monthId, label) {
 
 function pcrIdentityHintHtml(isAssembly) {
     if (isAssembly) {
-        return '打开即加载最近一次核价的基地 / 项目 / 月份（版本默认全部）。总成整包一份协议，不筛供应商。导出须选全部版本。';
+        return '打开就带出最近一次核价的基地、项目和月份（版本默认全部）。总成签一份协议，不按供应商筛选。导出必须选全部版本。';
     }
     return '打开即加载最近一次核价的基地 / 项目 / 月份（版本默认全部）。采购对象导出<span class="text-brand-hud/70">必须选定供应商</span>，且须选全部版本。';
 }
