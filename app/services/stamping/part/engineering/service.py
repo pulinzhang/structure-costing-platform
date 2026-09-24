@@ -33,6 +33,25 @@ from app.services.stamping.part.engineering.change import (
 from app.services.stamping.part.engineering.change import (
     rollback_engineering_change_part as rollback_engineering_change_part_fn,
 )
+from app.services.stamping.part.engineering.material_change import (
+    MaterialChangeHistoryRow,
+    MaterialChangeHistorySpec,
+)
+from app.services.stamping.part.engineering.material_change import (
+    delete_material_changes as delete_material_changes_fn,
+)
+from app.services.stamping.part.engineering.material_change import (
+    has_later_material_change as has_later_material_change_fn,
+)
+from app.services.stamping.part.engineering.material_change import (
+    insert_material_changes as insert_material_changes_fn,
+)
+from app.services.stamping.part.engineering.material_change import (
+    list_material_changes as list_material_changes_fn,
+)
+from app.services.stamping.part.engineering.material_change import (
+    material_after_as_of as material_after_as_of_fn,
+)
 from app.services.stamping.part.rules.part_seq_validator import next_consecutive_seq_no
 
 __all__ = [
@@ -41,6 +60,8 @@ __all__ = [
     "EngineeringChangeProcessPartSpec",
     "MISS_NOT_AS_OF",
     "MISS_SUPPLIER_UNKNOWN",
+    "MaterialChangeHistoryRow",
+    "MaterialChangeHistorySpec",
     "StampingEngineeringService",
 ]
 
@@ -152,6 +173,52 @@ class StampingEngineeringService:
             db,
             specs,
             current_user,
+        )
+
+    def insert_material_changes(
+        self,
+        db: Session,
+        specs: list[MaterialChangeHistorySpec],
+        current_user: UserVO,
+    ) -> list[int]:
+        """写入材料变更历史（不 commit）。"""
+        return insert_material_changes_fn(db, specs, current_user)
+
+    def delete_material_changes(self, db: Session, history_ids: list[int]) -> None:
+        """按历史行 id 删除（不 commit）。"""
+        delete_material_changes_fn(db, history_ids)
+
+    def list_material_changes(self, db: Session, part_id: int) -> list[MaterialChangeHistoryRow]:
+        return list_material_changes_fn(db, part_id)
+
+    def has_later_material_change(
+        self,
+        db: Session,
+        *,
+        part_id: int,
+        effective_year: int,
+        effective_month: int,
+    ) -> bool:
+        return has_later_material_change_fn(
+            db,
+            part_id=part_id,
+            effective_year=effective_year,
+            effective_month=effective_month,
+        )
+
+    def material_after_as_of(
+        self,
+        process_material: str | None,
+        rows: list[MaterialChangeHistoryRow],
+        *,
+        as_of_year: int,
+        as_of_month: int,
+    ) -> str | None:
+        return material_after_as_of_fn(
+            process_material,
+            rows,
+            as_of_year=as_of_year,
+            as_of_month=as_of_month,
         )
 
     def rollback_engineering_change_part(

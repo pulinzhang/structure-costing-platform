@@ -11,17 +11,7 @@ from sqlalchemy.orm import Session
 from app.common.engineering_change_gates import listed, quoted
 from app.common.period import format_period, period
 from app.exceptions.base import BusinessException
-from app.parsers.engineering_change.material_change.order_parser import (
-    MaterialChangeParsedRow,
-    parse_material_change_workbook,
-)
-from app.repositories.engineering_change.material_change.order_repository import (
-    MaterialChangeOrderRepository,
-)
-from app.repositories.engineering_change.material_change.upload_log_repository import (
-    MaterialChangeUploadLogRepository,
-)
-from app.services.engineering_change.material_change.codes import (
+from app.parsers.engineering_change.material_change.codes import (
     ECM_AFTER_EQUALS_BEFORE,
     ECM_AFTER_MATERIAL_UNKNOWN,
     ECM_BEFORE_MATERIAL,
@@ -54,7 +44,13 @@ from app.services.engineering_change.material_change.codes import (
     ecm_row,
     ecm_sheet,
 )
-from app.services.engineering_change.material_change.overlay import resolve_material
+from app.parsers.engineering_change.material_change.order_parser import (
+    MaterialChangeParsedRow,
+    parse_material_change_workbook,
+)
+from app.repositories.engineering_change.material_change.upload_log_repository import (
+    MaterialChangeUploadLogRepository,
+)
 from app.services.masterdata.vehicle_model.service import VehicleModelService
 from app.services.stamping.part.engineering.service import (
     MISS_NOT_AS_OF,
@@ -121,7 +117,7 @@ def gate_workbook(
                 "已经在列表里。请换更晚的月份，或先删掉原来那本。",
             )
         )
-    return [_gate_row(db, row, log_id) for row in rows]
+    return [_gate_row(db, row) for row in rows]
 
 
 def _gate_book_shape(
@@ -284,7 +280,6 @@ def _gate_pending(
 def _gate_row(
     db: Session,
     row: MaterialChangeParsedRow,
-    log_id: int,
 ) -> MaterialChangeGatedRow:
     engineering = StampingEngineeringService()
     part, miss = engineering.get_part_as_of(
@@ -384,13 +379,7 @@ def _gate_row(
                 "请改到工艺开始之后的月份。",
             )
         )
-    existing = MaterialChangeOrderRepository().list_success_for_identity(
-        db,
-        location=row.location,
-        stamping_supplier=row.stamping_supplier,
-        vehicle_model=row.vehicle_model,
-        part_number=row.part_number,
-    )
+    existing = engineering.list_material_changes(db, part.id)
     if existing:
         earliest = existing[0]
         if part.material != earliest.before_material:
@@ -440,15 +429,11 @@ def _gate_row(
                 f"写成{quoted(row.after_material)}。请改成材料档案里已有的牌号。",
             )
         )
-    expected = resolve_material(
-        db,
-        location=row.location,
-        stamping_supplier=row.stamping_supplier,
-        vehicle_model=row.vehicle_model,
-        part_number=row.part_number,
+    expected = engineering.material_after_as_of(
+        part.material,
+        existing,
         as_of_year=row.effective_year,
         as_of_month=row.effective_month,
-        exclude_upload_log_id=log_id,
     )
     if row.before_material != expected:
         raise BusinessException(

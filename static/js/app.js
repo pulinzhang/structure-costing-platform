@@ -31,7 +31,7 @@ import {
 import { bootLlmAssistant } from './llm-assistant/boot.js?v=58';
 import { pageConfig as dashboardPage }      from './features/dashboard/index.js?v=19';
 import { pageConfig as stampingUploadPage } from './features/stamping/process/upload/index.js?v=71';
-import { pageConfig as stampingPartsPage }  from './features/stamping/process/parts/index.js?v=86';
+import { pageConfig as stampingPartsPage }  from './features/stamping/process/parts/index.js?v=87';
 import { pageConfig as stampingDieUploadPage } from './features/stamping/die/upload/index.js?v=25';
 import { pageConfig as stampingDieListPage } from './features/stamping/die/list/index.js?v=42';
 import { pageConfig as stampingDieUnitPricePage } from './features/stamping/die/unit-price/index.js?v=27';

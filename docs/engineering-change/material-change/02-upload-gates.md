@@ -129,8 +129,8 @@ HEADERS = (基地, 项目, 变更版本, 生效年月, 冲压工厂, 零件号, 
 对每一数据行：
 
 ```
-expected_before = resolve_material(基地, 厂, 项目, 零件号, 本本年, 本本月)
-# 本本尚未 persist，解析器只叠库里已成功的切点
+expected_before = 冲压服务按该零件历史叠出的当月材料（无历史 = 工艺列）
+# 本本尚未 persist，历史里还没有这一本
 if 格子.变更前材料 != expected_before:
     拒 ECM_BEFORE_MATERIAL
 ```

@@ -41,18 +41,3 @@ class MaterialChangeUploadListRowVO(BaseModel):
 class MaterialChangeUploadResultVO(BaseModel):
     log_id: int
     order_ids: list[int] = Field(default_factory=list)
-
-
-class MaterialChangeRecordVO(BaseModel):
-    change_version: str
-    effective_year: int
-    effective_month: int
-    valid_until_year: int | None = None
-    valid_until_month: int | None = None
-    before_material: str
-    after_material: str
-    before_thickness: Decimal
-    after_thickness: Decimal
-    stamping_supplier: str
-    original_filename: str
-    upload_log_id: int

@@ -2,7 +2,6 @@
 
 from __future__ import annotations
 
-from collections.abc import Callable, Sequence
 from decimal import Decimal
 
 from sqlalchemy.orm import Session
@@ -19,6 +18,7 @@ from app.schemas.vo.stamping_vo import StampingMaterialResponse, StampingPartLis
 from app.services.masterdata.location.service import LocationService
 from app.services.masterdata.supplier.service import SupplierService
 from app.services.masterdata.vehicle_model.service import VehicleModelService
+from app.services.stamping.part.engineering.material_change import overlay_materials_by_part
 
 
 def nonempty_decimals(values: list[Decimal | None]) -> list[Decimal]:
@@ -201,20 +201,6 @@ def _blank_rows(part: StampingPart) -> list[MaterialAsOfRow]:
     ]
 
 
-MaterialOverlay = Callable[
-    [Session, Sequence[MaterialAsOfIdentity], int, int],
-    dict[int, str],
-]
-
-_material_overlay: MaterialOverlay | None = None
-
-
-def bind_material_overlay(overlay: MaterialOverlay) -> None:
-    """启动时绑上材料变更的批量叠切点。没绑定时行上就是工艺列。"""
-    global _material_overlay
-    _material_overlay = overlay
-
-
 def _can_overlay_material(part: StampingPart) -> bool:
     """拼焊按子片，不允许材料变更，不叠切点。利废和副产品也不叠。"""
     return not (part.is_tailor_welded or part.is_offal_nested or part.is_scrap_byproduct)
@@ -229,7 +215,7 @@ def list_process_materials_as_of(
     month: int,
     vehicle_model: str | None = None,
 ) -> tuple[list[MaterialAsOfRow], list[MaterialAsOfIdentity]]:
-    """该月工艺列。不叠材料变更。身份只给直接下游自己去叠切点。"""
+    """该月工艺列。身份供本函数叠材料变更历史。"""
     loc = location.strip()
     if not loc:
         return [], []
@@ -278,7 +264,7 @@ def list_materials_as_of(
     month: int,
     vehicle_model: str | None = None,
 ) -> list[MaterialAsOfRow]:
-    """该月材料。只给普通件叠已绑定的切点；拼焊子片保持子片列。"""
+    """该月材料。普通件叠本域材料变更历史；拼焊子片保持子片列。"""
     rows, identities = list_process_materials_as_of(
         repository,
         db,
@@ -287,10 +273,15 @@ def list_materials_as_of(
         month=month,
         vehicle_model=vehicle_model,
     )
-    overlay = _material_overlay
-    if overlay is None or not identities:
+    if not identities:
         return rows
-    resolved = overlay(db, identities, year, month)
+    resolved = overlay_materials_by_part(
+        db,
+        [identity["part_id"] for identity in identities],
+        {identity["part_id"]: identity["material"] for identity in identities},
+        year,
+        month,
+    )
     overlaid: list[MaterialAsOfRow] = []
     for row in rows:
         material = row["material"]

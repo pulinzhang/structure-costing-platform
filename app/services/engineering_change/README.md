@@ -19,4 +19,4 @@ Excel 入队改图、列表、回滚。算法在上游 `bom/`、`stamping/` 的 
 |------|------|
 | `design_change/list/` | 查询与回滚 |
 | `design_change/upload/` | 模板、门禁、persist、编排 |
-| `material_change/` | 同号切材料：上传、列表、回滚、当月材料 |
+| `material_change/` | 同号切材料：上传、列表、回滚 |

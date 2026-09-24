@@ -24,3 +24,17 @@ class MaterialChangeExecuteArgs:
 class MaterialChangePrepared:
     log_id: int
     rows: list[MaterialChangeGatedRow]
+
+
+@dataclass(slots=True)
+class MaterialChangeHistoryLink:
+    """管线写入冲压后的一条效果。row_index 对准备好的 Excel 行。"""
+
+    row_index: int
+    before_id: int
+    after_id: int
+
+
+@dataclass(slots=True)
+class MaterialChangePipeline:
+    links: list[MaterialChangeHistoryLink]

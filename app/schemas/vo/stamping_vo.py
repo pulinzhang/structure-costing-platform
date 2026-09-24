@@ -138,6 +138,23 @@ class StampingProcessResponse(BaseModel):
         return format_money(value, Q2, 2)
 
 
+class StampingPartMaterialChangeResponse(BaseModel):
+    """零件明细里的一刀材料变更。有效止是下一刀的前一月。"""
+
+    effective_year: int
+    effective_month: int
+    valid_until_year: int | None = None
+    valid_until_month: int | None = None
+    before_material: str
+    after_material: str
+    before_thickness: Decimal
+    after_thickness: Decimal
+
+    @field_serializer("before_thickness", "after_thickness")
+    def serialize_thickness(self, value: Decimal) -> str:
+        return format_money(value, Q4, 4)
+
+
 class StampingPartWithProcessesResponse(BaseModel):
     """冲压零件（含工序列表）响应 VO"""
 
@@ -189,6 +206,7 @@ class StampingPartWithProcessesResponse(BaseModel):
     created_at: datetime | None = None
     updated_at: datetime | None = None
     processes: list[StampingProcessResponse] = []
+    material_changes: list[StampingPartMaterialChangeResponse] = []
 
     @field_serializer("created_at", "updated_at")
     def serialize_datetime(self, value: Any) -> Any:

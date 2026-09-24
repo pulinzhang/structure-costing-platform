@@ -5,7 +5,6 @@ from __future__ import annotations
 from dataclasses import dataclass
 from decimal import Decimal
 
-from sqlalchemy import and_, or_
 from sqlalchemy.orm import Session
 
 from app.models.engineering_change.material_change.order import EngineeringChangeMaterialOrder
@@ -115,99 +114,6 @@ class MaterialChangeOrderRepository:
             db.query(EngineeringChangeMaterialOrder)
             .filter(EngineeringChangeMaterialOrder.upload_log_id == upload_log_id)
             .order_by(EngineeringChangeMaterialOrder.excel_row.asc())
-            .all()
-        )
-
-    def list_success_for_identity(
-        self,
-        db: Session,
-        *,
-        location: str,
-        stamping_supplier: str,
-        vehicle_model: str,
-        part_number: str,
-    ) -> list[EngineeringChangeMaterialOrder]:
-        return (
-            db.query(EngineeringChangeMaterialOrder)
-            .join(
-                EngineeringChangeMaterialUploadLog,
-                EngineeringChangeMaterialUploadLog.id
-                == EngineeringChangeMaterialOrder.upload_log_id,
-            )
-            .filter(
-                EngineeringChangeMaterialUploadLog.status == "success",
-                EngineeringChangeMaterialOrder.location == location,
-                EngineeringChangeMaterialOrder.stamping_supplier == stamping_supplier,
-                EngineeringChangeMaterialOrder.vehicle_model == vehicle_model,
-                EngineeringChangeMaterialOrder.part_number == part_number,
-            )
-            .order_by(
-                EngineeringChangeMaterialOrder.effective_year.asc(),
-                EngineeringChangeMaterialOrder.effective_month.asc(),
-                EngineeringChangeMaterialOrder.id.asc(),
-            )
-            .all()
-        )
-
-    def has_later_success(
-        self,
-        db: Session,
-        *,
-        location: str,
-        stamping_supplier: str,
-        vehicle_model: str,
-        part_number: str,
-        effective_year: int,
-        effective_month: int,
-    ) -> bool:
-        return (
-            db.query(EngineeringChangeMaterialOrder.id)
-            .join(
-                EngineeringChangeMaterialUploadLog,
-                EngineeringChangeMaterialUploadLog.id
-                == EngineeringChangeMaterialOrder.upload_log_id,
-            )
-            .filter(
-                EngineeringChangeMaterialUploadLog.status == "success",
-                EngineeringChangeMaterialOrder.location == location,
-                EngineeringChangeMaterialOrder.stamping_supplier == stamping_supplier,
-                EngineeringChangeMaterialOrder.vehicle_model == vehicle_model,
-                EngineeringChangeMaterialOrder.part_number == part_number,
-                or_(
-                    EngineeringChangeMaterialOrder.effective_year > effective_year,
-                    and_(
-                        EngineeringChangeMaterialOrder.effective_year == effective_year,
-                        EngineeringChangeMaterialOrder.effective_month > effective_month,
-                    ),
-                ),
-            )
-            .first()
-            is not None
-        )
-
-    def list_success_in_location(
-        self, db: Session, *, location: str
-    ) -> list[EngineeringChangeMaterialOrder]:
-        """该基地全部成功切点，按身份和生效月升序。"""
-        return (
-            db.query(EngineeringChangeMaterialOrder)
-            .join(
-                EngineeringChangeMaterialUploadLog,
-                EngineeringChangeMaterialUploadLog.id
-                == EngineeringChangeMaterialOrder.upload_log_id,
-            )
-            .filter(
-                EngineeringChangeMaterialUploadLog.status == "success",
-                EngineeringChangeMaterialOrder.location == location,
-            )
-            .order_by(
-                EngineeringChangeMaterialOrder.stamping_supplier.asc(),
-                EngineeringChangeMaterialOrder.vehicle_model.asc(),
-                EngineeringChangeMaterialOrder.part_number.asc(),
-                EngineeringChangeMaterialOrder.effective_year.asc(),
-                EngineeringChangeMaterialOrder.effective_month.asc(),
-                EngineeringChangeMaterialOrder.id.asc(),
-            )
             .all()
         )
 

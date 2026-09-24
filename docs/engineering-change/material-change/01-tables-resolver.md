@@ -4,13 +4,13 @@
 > 不要做上传页。不改零件价计算器。  
 > 契约：[00-contract.md](00-contract.md)　目录：[README.md](README.md)
 
-切点表在本通道。当月材料只有 **`resolve_material`** 一份：门禁「变更前」调它（不含本本）；第 4 刀 `list_materials_as_of` 批量调它。`list_with_processes` 不叠。门禁常量放本通道包，禁止改 `app/common/`。
+Excel 切点单在本通道。材料变更历史在冲压表 `stamping_part_material_changes`（与工序同级，只挂 `stamping_parts`）。当月材料只在冲压 `list_materials_as_of`：门禁「变更前」调冲压服务读该零件历史。`list_with_processes` 不叠。门禁文案在解析器 `codes.py`，禁止改 `app/common/`。冲压不读切点单，本通道不查询历史表。
 
 ---
 
 ## 1. 工艺表不动
 
-`stamping_parts` / `stamping_tailor_weld_blanks`：零 insert；零 update `material` / `version` / **生失效四列**；零同号第二行。上传、回滚都一样。
+`stamping_parts` / `stamping_tailor_weld_blanks`：零 insert；零 update `material` / `version` / **生失效四列**；零同号第二行。上传只往 `stamping_part_material_changes` 插历史，回滚按 id 删这些历史行。
 
 全部切点回滚完之后，该零件 `effective_year` / `effective_month` / `expiry_year` / `expiry_month` 必须仍是第一刀之前的字（115AA 工艺 2025年01月起那一套，不因 06/07 材料变更而改）。
 
@@ -98,7 +98,7 @@ SOP 把投产 `material` 改掉、该号上 **还有切点**：解析器仍从�
 
 | 对象 | 规则 |
 |------|------|
-| 工艺行 | 有切点则删挡；禁止 CASCADE 切点。IntegrityError 走现网引用保护，不改冲压删挡文案 |
+| 工艺行 | 有历史则 `stamping_part_material_changes.part_id` RESTRICT 删挡；切点单 `source_part_id` 同样 RESTRICT。禁止 CASCADE。IntegrityError 走现网引用保护，不改冲压删挡文案 |
 | 改图后 AA | 到期不删行；切点仍叠 AA。新号 AB 没有抄来的切点行 |
 | 钢材 / 零件价 | 不 FK 切点；回滚后快照故意留下 |
 | 失败头 `upload_file_id` | 非空则文件行必须先在 |
@@ -106,13 +106,13 @@ SOP 把投产 `material` 改掉、该号上 **还有切点**：解析器仍从�
 
 ---
 
-## 6. 当月材料（只在 `resolve_material`）
+## 6. 当月材料（只在冲压 `list_materials_as_of`）
 
-普通件 `material` = 工艺列再叠该身份生效月 ≤ as_of 的 `after_material`。无切点 = 工艺列。拼焊 / 利废 / 副产品不叠，仍是投产列。料厚不叠。
+普通件 `material` = 工艺列再叠该零件历史里生效月 ≤ as_of 的 `after_material`。无历史 = 工艺列。拼焊 / 利废 / 副产品不叠，仍是投产列。料厚不叠。
 
 **禁止写回表。** 禁止在 `list_with_processes` 的返回对象上改 `material`。
 
-上传门禁「变更前」= 对该件调 `resolve_material`（该月、不含本本）。第 4 刀批量调用同一函数，见 [04-steel-and-part-cost.md](04-steel-and-part-cost.md)。不要第二套解析器。
+上传门禁「变更前」= 向冲压要该零件当月材料（本本尚未写入历史）。见 [04-steel-and-part-cost.md](04-steel-and-part-cost.md)。不要在本通道再写一套解析器。
 
 本刀单测：无切点=工艺字；一刀前后月；两刀排队。不要测钢价公式。
 

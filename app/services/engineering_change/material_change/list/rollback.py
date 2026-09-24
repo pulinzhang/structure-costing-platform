@@ -1,4 +1,4 @@
-"""整本回滚：只删本通道头 / 切点 / 链接。"""
+"""整本回滚：先按链接让冲压删历史，再删本通道链接、切点单、头。"""
 
 from __future__ import annotations
 
@@ -7,6 +7,11 @@ from sqlalchemy.orm import Session
 from app.common.engineering_change_gates import quoted
 from app.common.period import format_period
 from app.exceptions.base import BusinessException, NotFoundException
+from app.parsers.engineering_change.material_change.codes import (
+    ECM_PENDING_VERSION,
+    ECM_ROLLBACK_BLOCKED,
+    ecm_sheet,
+)
 from app.repositories.engineering_change.material_change.effect_link_repository import (
     MaterialChangeEffectLinkRepository,
 )
@@ -17,12 +22,7 @@ from app.repositories.engineering_change.material_change.upload_log_repository i
     MaterialChangeUploadLogRepository,
 )
 from app.schemas.vo.user_vo import UserVO
-from app.services.engineering_change.material_change.codes import (
-    ECM_PENDING_VERSION,
-    ECM_ROLLBACK_BLOCKED,
-    ecm_sheet,
-)
-from app.services.stamping.part.service import StampingPartService
+from app.services.stamping.part.engineering.service import StampingEngineeringService
 
 _log_repo = MaterialChangeUploadLogRepository()
 _order_repo = MaterialChangeOrderRepository()
@@ -45,14 +45,12 @@ class MaterialChangeRollbackService:
                 code=409,
             )
         orders = _order_repo.list_by_upload_log_id(db, upload_log_id)
+        engineering = StampingEngineeringService()
         if log_row.status == "success":
             for order in orders:
-                if _order_repo.has_later_success(
+                if engineering.has_later_material_change(
                     db,
-                    location=order.location,
-                    stamping_supplier=order.stamping_supplier,
-                    vehicle_model=order.vehicle_model,
-                    part_number=order.part_number,
+                    part_id=order.source_part_id,
                     effective_year=order.effective_year,
                     effective_month=order.effective_month,
                 ):
@@ -65,8 +63,11 @@ class MaterialChangeRollbackService:
                         ),
                         code=409,
                     )
-                StampingPartService().get_by_id(db, order.source_part_id)
         links = _link_repo.list_by_upload_log_id(db, upload_log_id)
+        if log_row.status == "success":
+            for link in links:
+                if link.after_id is not None:
+                    engineering.delete_material_changes(db, [link.after_id])
         for link in links:
             _link_repo.delete(db, link)
         for order in orders:

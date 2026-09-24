@@ -10,4 +10,3 @@
 | GET | `/uploads` | 列表 |
 | GET | `/uploads/{upload_log_id}/file` | 原件 |
 | DELETE | `/uploads/{upload_log_id}` | 整本回滚 |
-| GET | `/parts/{part_id}/records` | 零件抽屉切点 |

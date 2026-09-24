@@ -84,7 +84,7 @@ T13J 两本：`MAT-202506` DC01→DC03，`MAT-202507` DC03→DC01。工艺行始
 
 已否决：同号第二行工艺；在旧行上改 `material`。
 
-已定：工艺行仍是投产那一行。切点在材料变更单上。当月材料 = 解析器按账期月叠切点。
+已定：工艺行仍是投产那一行。材料变更历史在冲压零件下，与工序同级。本通道只存这一本 Excel。当月材料由冲压 `list_materials_as_of` 按历史叠出。
 
 禁止给四句加第五句。禁止写回 `stamping_parts.version`。**禁止写生失效四列**（`effective_year` / `effective_month` / `expiry_year` / `expiry_month`）。材料变更不是改图，不到期、不另开一段有效期。
 
@@ -106,15 +106,16 @@ SOP 再导可改投产列。该号上 **已经有切点** 时：再上传材料�
 
 ## 2.1 切片边界（禁止蠕虫）
 
-说白了：这是 **冲压零件的材料变动**。切点记在本通道。**一个接口：** `list_materials_as_of`。零件价计算器、钢材 `grade ==` 不改。禁止改 `app/common`。核价引擎不改。`list_with_processes` 不叠材料。
+说白了：材料变动属于冲压零件。历史表在冲压域。本通道只存 Excel。**一个接口：** `list_materials_as_of`。零件价计算器、钢材 `grade ==` 不改。禁止改 `app/common`。核价引擎不改。`list_with_processes` 不叠材料。零件明细不另开接口，`GET /api/stamping/parts/{id}` 带回 `material_changes`。
 
 | 准 | 不准 |
 |----|------|
-| 本通道：Excel 切点、上传、列表、回滚 | 改零件价公式、改核价引擎 |
-| 钢材 Step1、零件价 prepare 都调 `list_materials_as_of` | costing 查切点表；改 `list_with_processes` 叠材料 |
+| 本通道：Excel、上传、列表、整本回滚（回滚时调冲压删历史） | 改零件价公式、改核价引擎；本通道查询历史表 |
+| 冲压：历史的插入、删除、按零件列出、当月叠材料 | 冲压 import 本通道或读切点单 |
+| 钢材 Step1、零件价 prepare 都调 `list_materials_as_of` | costing 查历史表；改 `list_with_processes` 叠材料 |
 | `list_material_specs(location)` 保持现网，只给统计 | 给它加年月；新开规格 HTTP；改 `GET /materials` |
-| 普通件材料来自 `resolve_material`，只出现在返回行上 | 给 session 里的 `StampingPart.material` 赋值或 flush 回工艺列 |
-| 向冲压读工艺身份与生失效 | 设变调用本通道抄切点或删抄行；本通道查设计变更单；改 `clone_revise_part_payload` 写切点；解析值写入新号工艺 `material` |
+| 普通件材料来自冲压历史叠在工艺列上，只出现在返回行上 | 给 session 里的 `StampingPart.material` 赋值或 flush 回工艺列 |
+| 向冲压读工艺身份与生失效，并调用其服务写入或删除历史 | 设变调用本通道抄历史；本通道查设计变更单；改 `clone_revise_part_payload` 写历史；解析值写入新号工艺 `material` |
 
 ---
 
