@@ -173,3 +173,53 @@ def overlay_materials_by_part(
         )
         resolved[part_id] = material or ""
     return resolved
+
+
+class StampingMaterialChangeService:
+    """材料变更历史的插入、删除、列出。不改工艺行。"""
+
+    def insert(
+        self,
+        db: Session,
+        specs: list[MaterialChangeHistorySpec],
+        current_user: UserVO,
+    ) -> list[int]:
+        """写入材料变更历史（不 commit）。"""
+        return insert_material_changes(db, specs, current_user)
+
+    def delete(self, db: Session, history_ids: list[int]) -> None:
+        """按历史行 id 删除（不 commit）。"""
+        delete_material_changes(db, history_ids)
+
+    def list_for_part(self, db: Session, part_id: int) -> list[MaterialChangeHistoryRow]:
+        return list_material_changes(db, part_id)
+
+    def has_later(
+        self,
+        db: Session,
+        *,
+        part_id: int,
+        effective_year: int,
+        effective_month: int,
+    ) -> bool:
+        return has_later_material_change(
+            db,
+            part_id=part_id,
+            effective_year=effective_year,
+            effective_month=effective_month,
+        )
+
+    def after_as_of(
+        self,
+        process_material: str | None,
+        rows: list[MaterialChangeHistoryRow],
+        *,
+        as_of_year: int,
+        as_of_month: int,
+    ) -> str | None:
+        return material_after_as_of(
+            process_material,
+            rows,
+            as_of_year=as_of_year,
+            as_of_month=as_of_month,
+        )

@@ -99,7 +99,7 @@ SOP 把投产 `material` 改掉、该号上 **还有切点**：解析器仍从�
 | 对象 | 规则 |
 |------|------|
 | 工艺行 | 有历史则 `stamping_part_material_changes.part_id` RESTRICT 删挡；切点单 `source_part_id` 同样 RESTRICT。禁止 CASCADE。IntegrityError 走现网引用保护，不改冲压删挡文案 |
-| 改图后 AA | 到期不删行；切点仍叠 AA。新号 AB 没有抄来的切点行 |
+| 改图后 AA | 到期不删行；AA 上的历史仍在。新号 AB 有设计变更抄来的 `stamping_part_material_changes` 行 |
 | 钢材 / 零件价 | 不 FK 切点；回滚后快照故意留下 |
 | 失败头 `upload_file_id` | 非空则文件行必须先在 |
 | pending 头 | 不得占成功版本 UNIQUE |

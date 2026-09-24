@@ -52,11 +52,12 @@ from app.repositories.engineering_change.material_change.upload_log_repository i
     MaterialChangeUploadLogRepository,
 )
 from app.services.masterdata.vehicle_model.service import VehicleModelService
-from app.services.stamping.part.engineering.service import (
+from app.services.stamping.part.engineering.design_change.service import StampingDesignChangeService
+from app.services.stamping.part.engineering.design_change.types import (
     MISS_NOT_AS_OF,
     MISS_SUPPLIER_UNKNOWN,
-    StampingEngineeringService,
 )
+from app.services.stamping.part.engineering.material_change import StampingMaterialChangeService
 
 _VERSION_RE = re.compile(r"^MAT-(\d{6})$")
 _THICKNESS_RE = re.compile(r"^\d+(\.\d{1,2})?$")
@@ -281,8 +282,9 @@ def _gate_row(
     db: Session,
     row: MaterialChangeParsedRow,
 ) -> MaterialChangeGatedRow:
-    engineering = StampingEngineeringService()
-    part, miss = engineering.get_part_as_of(
+    parts = StampingDesignChangeService()
+    materials = StampingMaterialChangeService()
+    part, miss = parts.get_part_as_of(
         db,
         location=row.location,
         stamping_supplier=row.stamping_supplier,
@@ -379,7 +381,7 @@ def _gate_row(
                 "请改到工艺开始之后的月份。",
             )
         )
-    existing = engineering.list_material_changes(db, part.id)
+    existing = materials.list_for_part(db, part.id)
     if existing:
         earliest = existing[0]
         if part.material != earliest.before_material:
@@ -411,7 +413,7 @@ def _gate_row(
         part_effective_year=part.effective_year,
         part_effective_month=part.effective_month,
     )
-    if not engineering.process_material_on_file(db, row.before_material):
+    if not parts.process_material_on_file(db, row.before_material):
         raise BusinessException(
             _tell(
                 row,
@@ -420,7 +422,7 @@ def _gate_row(
                 f"写成{quoted(row.before_material)}。请改成材料档案里已有的牌号。",
             )
         )
-    if not engineering.process_material_on_file(db, row.after_material):
+    if not parts.process_material_on_file(db, row.after_material):
         raise BusinessException(
             _tell(
                 row,
@@ -429,7 +431,7 @@ def _gate_row(
                 f"写成{quoted(row.after_material)}。请改成材料档案里已有的牌号。",
             )
         )
-    expected = engineering.material_after_as_of(
+    expected = materials.after_as_of(
         part.material,
         existing,
         as_of_year=row.effective_year,

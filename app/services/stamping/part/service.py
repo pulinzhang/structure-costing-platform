@@ -1,4 +1,4 @@
-"""冲压零件列表与增删改。工程变更见 engineering/service.py。"""
+"""冲压零件列表与增删改。设计变更见 engineering/design_change/，材料变更历史见 engineering/material_change.py。"""
 
 from __future__ import annotations
 

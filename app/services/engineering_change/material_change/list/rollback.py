@@ -22,7 +22,7 @@ from app.repositories.engineering_change.material_change.upload_log_repository i
     MaterialChangeUploadLogRepository,
 )
 from app.schemas.vo.user_vo import UserVO
-from app.services.stamping.part.engineering.service import StampingEngineeringService
+from app.services.stamping.part.engineering.material_change import StampingMaterialChangeService
 
 _log_repo = MaterialChangeUploadLogRepository()
 _order_repo = MaterialChangeOrderRepository()
@@ -45,10 +45,10 @@ class MaterialChangeRollbackService:
                 code=409,
             )
         orders = _order_repo.list_by_upload_log_id(db, upload_log_id)
-        engineering = StampingEngineeringService()
+        materials = StampingMaterialChangeService()
         if log_row.status == "success":
             for order in orders:
-                if engineering.has_later_material_change(
+                if materials.has_later(
                     db,
                     part_id=order.source_part_id,
                     effective_year=order.effective_year,
@@ -67,7 +67,7 @@ class MaterialChangeRollbackService:
         if log_row.status == "success":
             for link in links:
                 if link.after_id is not None:
-                    engineering.delete_material_changes(db, [link.after_id])
+                    materials.delete(db, [link.after_id])
         for link in links:
             _link_repo.delete(db, link)
         for order in orders:

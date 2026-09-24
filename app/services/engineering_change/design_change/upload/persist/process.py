@@ -1,8 +1,8 @@
 """
 工程变更工艺按号增行。
 
-改图换号：确认表只出新号；零件信息除零件号、版本、生失效外整行抄变更前零件，
-工序整表相同。表页「序号」不互校，改图继承旧行。旧号只认工程变更单，禁止按茎猜前驱。增加零件不停旧号，按确认表新插。
+改图换号：一个零件写完再写下个。clone 出零件一行（换零件号、版本、生失效）、每一道工序、每一条材料变更历史，再按这个顺序写入。
+表页「序号」不互校，改图继承旧行。旧号只认工程变更单，禁止按茎猜前驱。增加零件不停旧号，按确认表新插，不抄历史。
 已有号一律跳过（改工艺走投产页，避免 8 月工程变更改行污染 7 月账）。
 增加零件序号 = 该厂该项目已有 seq_no（含已失效）的 max+1，不信确认表序号列。
 """
@@ -15,6 +15,7 @@ from sqlalchemy.orm import Session
 
 from app.common.audit import audit_create
 from app.common.engineering_change_gates import (
+    EFFECT_PART_MATERIAL_CHANGE,
     EFFECT_PROCESS_PART,
     require_ec_sheet_versions,
 )
@@ -29,10 +30,11 @@ from app.schemas.vo.user_vo import UserVO
 from app.services.engineering_change.design_change.upload.gates.process_gates import (
     parse_process_confirmation,
 )
-from app.services.stamping.part.engineering.service import (
+from app.services.stamping.part.engineering.design_change.service import StampingDesignChangeService
+from app.services.stamping.part.engineering.design_change.types import (
+    EngineeringChangeMaterialHistoryClone,
     EngineeringChangePartAsOfRow,
     EngineeringChangeProcessPartSpec,
-    StampingEngineeringService,
 )
 from app.services.stamping.part.upload.persist.files import save_part_sketches
 
@@ -61,7 +63,7 @@ def persist_process_parts(
     if not parsed.parts:
         return [], 0, sheet_version
 
-    stamping = StampingEngineeringService()
+    stamping = StampingDesignChangeService()
     as_of_rows = stamping.list_parts_as_of_for_engineering_change(
         db,
         location=location,
@@ -97,8 +99,9 @@ def persist_process_parts(
         if old_number:
             old_row = _find_as_of_part(as_of_rows, old_number, stamping_supplier=supplier)
 
+        material_changes: list[EngineeringChangeMaterialHistoryClone] = []
         if old_row is not None:
-            part_data, processes = stamping.clone_revise_for_engineering_change(
+            part_data, processes, material_changes = stamping.clone_revise_for_engineering_change(
                 db,
                 predecessor_id=old_row.id,
                 new_part_number=part_number,
@@ -135,6 +138,7 @@ def persist_process_parts(
             EngineeringChangeProcessPartSpec(
                 part_data=part_data,
                 processes=processes,
+                material_changes=material_changes,
                 expire_predecessor_id=old_row.id if old_row is not None else None,
                 predecessor_expiry_year=prev_year if old_row is not None else None,
                 predecessor_expiry_month=prev_month if old_row is not None else None,
@@ -156,6 +160,18 @@ def persist_process_parts(
             )
         )
         sort_no += 1
+        # 该零件 clone 来的每一条材料变更历史各一条链接；回滚先删这些历史，再删零件（工序随零件删）。
+        for before_history_id, after_history_id in result.material_history_ids:
+            links.append(
+                EngineeringChangeEffectLinkInsert(
+                    change_order_id=change_order_index,
+                    effect_kind=EFFECT_PART_MATERIAL_CHANGE,
+                    before_id=before_history_id,
+                    after_id=after_history_id,
+                    sort_no=sort_no,
+                )
+            )
+            sort_no += 1
     return links, len(results), sheet_version
 
 

@@ -94,7 +94,7 @@ T13J 两本：`MAT-202506` DC01→DC03，`MAT-202507` DC03→DC01。工艺行始
 
 | 事 | 规则 |
 |----|------|
-| 先材料、后改图 | 工艺 **整行抄旧号**（投产 `material` 仍是旧号那一格，不准改写成解析值）。切点仍挂旧号，不另插到新号 |
+| 先材料、后改图 | 工艺 **整行抄旧号**（投产 `material` 仍是旧号那一格，不准改写成解析值）。历史整表插到新零件 |
 | 先改图、后材料 | 切点打在 **当前仍有效的零件号**（AB），只来自本通道 Excel |
 | 同一零件同一月既改图又改材料 | **整单拒收**。只问冲压：该号生效月等于本本切点月。不查设计变更单 |
 | 切点月已停号 | 工艺对该月 `is_in_period` 为假 → 不能切材料。停号只认生失效四列 |
@@ -115,7 +115,7 @@ SOP 再导可改投产列。该号上 **已经有切点** 时：再上传材料�
 | 钢材 Step1、零件价 prepare 都调 `list_materials_as_of` | costing 查历史表；改 `list_with_processes` 叠材料 |
 | `list_material_specs(location)` 保持现网，只给统计 | 给它加年月；新开规格 HTTP；改 `GET /materials` |
 | 普通件材料来自冲压历史叠在工艺列上，只出现在返回行上 | 给 session 里的 `StampingPart.material` 赋值或 flush 回工艺列 |
-| 向冲压读工艺身份与生失效，并调用其服务写入或删除历史 | 设变调用本通道抄历史；本通道查设计变更单；改 `clone_revise_part_payload` 写历史；解析值写入新号工艺 `material` |
+| 向冲压读工艺身份与生失效时调 `StampingDesignChangeService`。写入或删除历史时调 `StampingMaterialChangeService`。设变抄历史也调后者 | 设变调用本通道抄历史；本通道查设计变更单；改 `clone_revise_part_payload` 写历史；解析值写入新号工艺 `material` |
 
 ---
 

@@ -35,7 +35,7 @@
 
 ### 为什么同号换材料不塞进改图？
 
-同号换材料不在设计变更四句里。见 [材料变更设计](../material-change/README.md)。改图换号仍整行抄旧号工艺，含投产 `material`，不在本文改那一格。
+同号换材料不在设计变更四句里。见 [材料变更设计](../material-change/README.md)。改图换号抄的是旧号投产 `material`，另把该零件已有材料变更历史抄到新零件。同号换材料仍走材料变更。不在本文改工艺那一格。
 
 ### 为什么新旧号只认工程变更单，不收口到字母进一位？
 
@@ -189,7 +189,7 @@ Router → EngineeringChangeUploadService.start_upload
 上游内核（勿把业务搬回 EC）：
 
 - `app/services/bom/bom/change_tree_plant/`
-- `app/services/stamping/part/engineering/change.py`
+- `app/services/stamping/part/engineering/design_change/service.py`
 - `app/services/stamping/die/engineering/change.py`
 - `app/services/stamping/gauge_fee/engineering/change.py`
 - `app/services/stamping/die_fee/engineering/change.py`

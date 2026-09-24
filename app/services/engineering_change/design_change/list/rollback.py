@@ -21,6 +21,7 @@ from app.common.engineering_change_gates import (
     EFFECT_DIE_PART,
     EFFECT_GAUGE_FEE,
     EFFECT_PACKAGING_FEE,
+    EFFECT_PART_MATERIAL_CHANGE,
     EFFECT_PROCESS_PART,
     EFFECT_PROCUREMENT_LIST,
     EFFECT_PROCUREMENT_OBJECT,
@@ -47,7 +48,8 @@ from app.services.settings.schema_comment.service import STILL_REFERENCED, ensur
 from app.services.stamping.die.engineering.service import StampingDieEngineeringService
 from app.services.stamping.die_fee.service import StampingDieFeeService
 from app.services.stamping.gauge_fee.service import StampingGaugeFeeService
-from app.services.stamping.part.engineering.service import StampingEngineeringService
+from app.services.stamping.part.engineering.design_change.service import StampingDesignChangeService
+from app.services.stamping.part.engineering.material_change import StampingMaterialChangeService
 
 logger = logging.getLogger("service.engineering_change.rollback")
 
@@ -60,7 +62,8 @@ class EngineeringChangeRollbackService:
         self.bom_service = BomEngineeringService()
         self.po_service = BomProcurementObjectService()
         self.breakdown_service = BomWeldingProcessBreakdownService()
-        self.stamping_service = StampingEngineeringService()
+        self.stamping_service = StampingDesignChangeService()
+        self.material_service = StampingMaterialChangeService()
         self.die_service = StampingDieEngineeringService()
         self.gauge_fee_service = StampingGaugeFeeService()
         self.die_fee_service = StampingDieFeeService()
@@ -174,6 +177,9 @@ class EngineeringChangeRollbackService:
                 self.bom_service.clear_l0_expiry(
                     db, root_id=link.before_id, current_user=current_user
                 )
+            return
+        if kind == EFFECT_PART_MATERIAL_CHANGE and link.after_id:
+            self.material_service.delete(db, [link.after_id])
             return
         if kind == EFFECT_PROCESS_PART:
             self.stamping_service.rollback_engineering_change_part(

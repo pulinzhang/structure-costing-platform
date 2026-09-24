@@ -11,9 +11,9 @@ from app.services.engineering_change.material_change.upload.orchestrator.types i
     MaterialChangePrepared,
     ProgressCallback,
 )
-from app.services.stamping.part.engineering.service import (
+from app.services.stamping.part.engineering.material_change import (
     MaterialChangeHistorySpec,
-    StampingEngineeringService,
+    StampingMaterialChangeService,
 )
 
 
@@ -26,7 +26,7 @@ def run_material_change_pipeline(
 ) -> MaterialChangePipeline:
     if on_progress:
         on_progress(55, "正在写入材料变更历史")
-    history_ids = StampingEngineeringService().insert_material_changes(
+    history_ids = StampingMaterialChangeService().insert(
         db,
         [
             MaterialChangeHistorySpec(

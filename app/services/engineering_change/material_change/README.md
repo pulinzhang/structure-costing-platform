@@ -1,6 +1,6 @@
 # 材料变更 Service（`engineering_change/material_change/`）
 
-同号只切材料。本包只存这一本 Excel。材料变更历史在冲压域，上传和回滚只调冲压服务。
+同号只切材料。本包只存这一本 Excel。历史的写入和删除调 `StampingMaterialChangeService`。读工艺身份调 `StampingDesignChangeService`。
 
 | 你要做什么 | 打开 |
 |---|---|
