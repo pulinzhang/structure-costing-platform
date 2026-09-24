@@ -232,7 +232,7 @@ def test_require_introducible_by_code_ambiguous(memory_db: Session) -> None:
     _seed(memory_db)
     _create(memory_db, location="青岛", vehicle_model="T13J")
     _create(memory_db, location="大连", vehicle_model="T13J")
-    with pytest.raises(BusinessException, match="多个可引入基地"):
+    with pytest.raises(BusinessException, match="这个月都能做"):
         VehicleModelService().require_introducible_by_code(memory_db, "T13J", 2026, 6)
 
 

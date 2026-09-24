@@ -27,14 +27,14 @@ export function engineeringChangeListTemplate() {
                             valueHtml: '全部范围',
                         })}
                         ${hudKpiCardHtml({
-                            title: '变更单行',
+                            title: '总成',
                             valueId: 'ecListHudTotal',
                             valueHtml: '—',
-                            meta: '变化记录条数，不是换树数量，也不是采购件数量',
+                            meta: '每个总成一行，不是零件个数',
                         })}
                     </div>
                     <p class="mt-3 text-[10px] text-ink-dim leading-snug tracking-wide">
-                        变更单 → 树坑 → 树 → 换树 → 盖章 → 数采购件（分总成和冲压件以新版本号存在了新树上）
+                        列表按变更单的每一行显示。删掉任意一行，这一整本都会撤销。
                     </p>
                 </div>
                 <div class="px-5 py-3 border-b border-line-subtle bg-gradient-to-b from-app-hud to-app-deep">
@@ -77,7 +77,7 @@ export function engineeringChangeListTemplate() {
                                 重置
                             </button>`,
                         ].join(''),
-                        hintHtml: '删除即回滚：撤销本次上传的全部变更，并物理删除本记录。同一文件的全部变更单行一起去掉。',
+                        hintHtml: '点删除会撤销这一整本工程变更，并删掉这条记录。同一文件里的变更一起去掉。',
                     })}
                 </div>
                 ${hudTableHtml({
@@ -183,7 +183,7 @@ export function renderEcListRows(records, { canDelete }) {
         const deleteBtn = canDeleteRow
             ? opsIconButtonHtml({
                 action: 'delete',
-                title: '删除（整次回滚）',
+                title: '删除（撤销这一整本）',
                 icon: window.svgIcon('trash', 'w-3.5 h-3.5'),
                 danger: true,
                 attrs: `data-upload-log-id="${logId}"`,

@@ -6,7 +6,7 @@ import {
     materialChangeListTemplate,
     renderEcmDetailBody,
     renderEcmListRows,
-} from './template.js?v=3';
+} from './template.js?v=6';
 import {
     DEFAULT_PAGE_SIZE,
     bindPagination,
@@ -185,10 +185,10 @@ async function handleActionClick(event) {
         return;
     }
     if (action !== 'delete') return;
-    if (!await window.confirmAction('删除即回滚。将撤销本次上传的全部切点并删除本记录，同一文件的全部变更单行都会去掉。')) return;
+    if (!await window.confirmAction('确定删除？会撤销这一整本材料变更，同一文件里的零件一起去掉。')) return;
     HttpClient.delete(`${API}/uploads/${uploadLogId}`)
         .then(() => {
-            showToast('已删除并回滚', 'success');
+            showToast('已撤销这一整本', 'success');
             closeDrawer();
             loadData(state.page);
         })

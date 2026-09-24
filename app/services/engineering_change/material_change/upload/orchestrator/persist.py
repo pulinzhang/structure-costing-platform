@@ -41,7 +41,7 @@ def persist_material_change_result(
     on_progress: ProgressCallback | None = None,
 ) -> MaterialChangeUploadResultVO:
     if on_progress:
-        on_progress(80, "正在写入切点")
+        on_progress(80, "正在写入材料变更")
     log_row = _log_repo.get_by_id(db, prepared.log_id)
     if log_row is None:
         raise NotFoundException("材料变更上传记录不存在")
@@ -93,7 +93,7 @@ def persist_material_change_result(
         log_row,
         MaterialChangeUploadLogUpdate(
             status="success",
-            message=f"材料变更成功：{len(order_ids)} 行切点",
+            message=f"材料变更成功，改了 {len(order_ids)} 个零件。",
             stamping_supplier=sample.stamping_supplier,
             change_version=sample.change_version,
             part_count=len(order_ids),

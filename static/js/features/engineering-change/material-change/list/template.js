@@ -21,14 +21,14 @@ export function materialChangeListTemplate() {
                             valueHtml: '全部范围',
                         })}
                         ${hudKpiCardHtml({
-                            title: '变更单行',
+                            title: '零件',
                             valueId: 'ecmListHudTotal',
                             valueHtml: '—',
-                            meta: '材料变更单行数，不是上传头数',
+                            meta: '每个零件一行，不是上传了几本',
                         })}
                     </div>
                     <p class="mt-3 text-[10px] text-ink-dim leading-snug tracking-wide">
-                        一本成功 Excel 列出每一行切点。删除按整本回滚，同一文件的行一起去掉。
+                        一本 Excel 里每个零件一行。删除会撤销这一整本，同一文件里的零件一起去掉。
                     </p>
                 </div>
                 <div class="px-5 py-3 border-b border-line-subtle bg-gradient-to-b from-app-hud to-app-deep">
@@ -60,7 +60,7 @@ export function materialChangeListTemplate() {
                                 重置
                             </button>`,
                         ].join(''),
-                        hintHtml: '删除即回滚：撤销本次上传的全部切点，并物理删除本记录。同一文件的全部变更单行一起去掉。',
+                        hintHtml: '点删除会撤销这一整本材料变更，并删掉这条记录。同一文件里的零件一起去掉。',
                     })}
                 </div>
                 ${hudTableHtml({
@@ -168,7 +168,7 @@ export function renderEcmListRows(records, { canDelete }) {
         const deleteBtn = canDeleteRow
             ? opsIconButtonHtml({
                 action: 'delete',
-                title: '删除（整次回滚）',
+                title: '删除（撤销这一整本）',
                 icon: window.svgIcon('trash', 'w-3.5 h-3.5'),
                 danger: true,
                 attrs: `data-upload-log-id="${logId}"`,
@@ -217,11 +217,18 @@ function detailDrawerHtml() {
     `;
 }
 
+function operatorMessage(message) {
+    const text = String(message || '').trim();
+    const legacy = text.match(/^材料变更成功：(\d+) 行切点$/);
+    if (legacy) return `材料变更成功，改了 ${legacy[1]} 个零件。`;
+    return text;
+}
+
 export function renderEcmDetailBody(row) {
     const status = row.status || '';
     const isFailed = status === 'failed';
     const reasonTitle = isFailed ? '失败原因' : '说明';
-    const message = String(row.message || '').trim();
+    const message = operatorMessage(row.message);
     const reasonSection = message
         ? `<div>
                 <div class="text-[9px] tracking-wider mb-2 ${isFailed ? 'text-brand-hud' : 'text-ink-faint'}">${reasonTitle}</div>

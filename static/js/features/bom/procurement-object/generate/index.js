@@ -421,7 +421,7 @@ async function startGenerate() {
     if (startBtn) startBtn.disabled = true;
     showProgress(15, '正在读取材料清单树');
     try {
-        showProgress(55, '正在分类并落库');
+        showProgress(55, '正在分类并保存');
         const res = await HttpClient.post(GENERATE_API, {
             location,
             vehicle_model: vehicleModel,

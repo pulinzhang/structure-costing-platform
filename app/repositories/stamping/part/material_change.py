@@ -46,6 +46,17 @@ class StampingPartMaterialChangeRepository:
             .all()
         )
 
+    def part_ids_with_history(self, db: Session, part_ids: list[int]) -> set[int]:
+        if not part_ids:
+            return set()
+        rows = (
+            db.query(StampingPartMaterialChange.part_id)
+            .filter(StampingPartMaterialChange.part_id.in_(part_ids))
+            .distinct()
+            .all()
+        )
+        return {int(row[0]) for row in rows}
+
     def list_by_part_ids(
         self, db: Session, part_ids: list[int]
     ) -> list[StampingPartMaterialChange]:

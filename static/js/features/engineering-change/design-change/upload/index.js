@@ -2,7 +2,7 @@
  * 工程变更上传页 — 异步 task_id + 拖拽区原位进度（对齐布点 / 工艺上传）
  */
 
-import { engineeringChangeUploadTemplate } from './template.js?v=20';
+import { engineeringChangeUploadTemplate } from './template.js?v=21';
 import { uploadSubmitLabelHtml } from '../../../../ui/upload-actions.js?v=2';
 import { can } from '../../../../core/permissions.js?v=8';
 import {
@@ -148,7 +148,7 @@ const EngineeringChangeUploadPage = {
                 : [];
             this.fillSelect('ecUploadLocation', locations, '请选择采购基地', location);
             const vehiclePlaceholder = location
-                ? (vehicles.length ? '请选择项目' : '该基地该月无可引入项目')
+                ? (vehicles.length ? '请选择项目' : '这个月没有可以上传的项目')
                 : '请先选择采购基地';
             const currentVehicle = vehicles.includes(keptVehicle) ? keptVehicle : '';
             this.fillSelect('ecUploadVehicleModel', vehicles, vehiclePlaceholder, currentVehicle);
@@ -436,7 +436,7 @@ const EngineeringChangeUploadPage = {
                     const changeOrderCount = Array.isArray(result.change_order_ids)
                         ? result.change_order_ids.length
                         : 0;
-                    const summary = `${changeOrderCount} 行变更单`;
+                    const summary = `${changeOrderCount} 个总成`;
                     showToast(data?.msg || `工程变更上传成功：${summary}`, 'success');
                     this.addRecentUpload(fileName, scopeLabel, summary);
                     this.activeTaskId = null;

@@ -2,7 +2,7 @@
  * 材料变更上传页
  */
 
-import { materialChangeUploadTemplate } from './template.js?v=6';
+import { materialChangeUploadTemplate } from './template.js?v=7';
 import { uploadSubmitLabelHtml } from '../../../../ui/upload-actions.js?v=2';
 import { can } from '../../../../core/permissions.js?v=8';
 import {
@@ -143,7 +143,7 @@ const MaterialChangeUploadPage = {
                 : [];
             this.fillSelect('ecmUploadLocation', locations, '请选择采购基地', location);
             const vehiclePlaceholder = location
-                ? (vehicles.length ? '请选择项目' : '该基地该月无可引入项目')
+                ? (vehicles.length ? '请选择项目' : '这个月没有可以上传的项目')
                 : '请先选择采购基地';
             const currentVehicle = vehicles.includes(keptVehicle) ? keptVehicle : '';
             this.fillSelect('ecmUploadVehicleModel', vehicles, vehiclePlaceholder, currentVehicle);
@@ -362,8 +362,8 @@ const MaterialChangeUploadPage = {
                     this.stopPolling();
                     const result = data?.result || {};
                     const count = Array.isArray(result.order_ids) ? result.order_ids.length : 0;
-                    showToast(data?.msg || `材料变更上传成功：${count} 行切点`, 'success');
-                    this.addRecentUpload(fileName, scopeLabel, `${count} 行切点`);
+                    showToast(data?.msg || `材料变更成功，改了 ${count} 个零件。`, 'success');
+                    this.addRecentUpload(fileName, scopeLabel, `${count} 个零件`);
                     this.activeTaskId = null;
                     this.setUploading(false);
                     this.clearSelectedFile();

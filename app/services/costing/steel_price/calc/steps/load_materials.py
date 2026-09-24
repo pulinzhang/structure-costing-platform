@@ -11,7 +11,7 @@ from app.services.stamping.part.service import StampingPartService
 
 
 class MaterialThicknessLoader:
-    """从该基地该月仍有效的冲压件取材质（含拼焊子片，不按车型）。"""
+    """从该基地该月仍有效、且项目在有效期内的冲压件取材质（含拼焊子片，不按车型）。"""
 
     def load(
         self,

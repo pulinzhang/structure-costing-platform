@@ -105,7 +105,7 @@ class SteelPricePipeline:
                 log_builder.line(f"match_status={key}: {count}")
             progress.report(70, "Step4 完成：宽度加减价已跳过")
 
-            progress.report(75, "Step5：结果落库...")
+            progress.report(75, "正在保存计算结果...")
             log_builder.section("Step5 结果落库")
             persist_stats = self._deps.steel_price_service.save_calc_batch(
                 db,

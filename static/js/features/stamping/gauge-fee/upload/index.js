@@ -2,7 +2,7 @@
  * 冲压检具费同步上传
  */
 
-import { gaugeFeeUploadTemplate } from './template.js?v=13';
+import { gaugeFeeUploadTemplate } from './template.js?v=15';
 import { setDropzoneDragActive } from '../../../../ui/upload-dropzone.js?v=3';
 import { bindSyncUploadProgress } from '../../../../ui/sync-upload-progress.js?v=3';
 

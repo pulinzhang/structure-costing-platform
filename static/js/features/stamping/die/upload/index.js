@@ -1,4 +1,4 @@
-import { dieUploadTemplate } from './template.js?v=19';
+import { dieUploadTemplate } from './template.js?v=20';
 import { uploadSubmitLabelHtml } from '../../../../ui/upload-actions.js?v=2';
 import {
     setDropzoneDragActive,
@@ -9,7 +9,7 @@ import {
     loadProjectPeriod,
     renderSopBanner,
     sopBannerHtml,
-} from '../../../common/period-ui.js?v=7';
+} from '../../../common/period-ui.js?v=9';
 
 const MAX_RECENT_UPLOADS = 8;
 const POLL_INTERVAL_MS = 2000;
@@ -143,7 +143,7 @@ export const DieUploadPage = {
             }
             const vehicles = location ? (data.vehicle_models || []) : [];
             const vehiclePlaceholder = location
-                ? (vehicles.length ? '请选择项目' : '该基地本月无可引入项目')
+                ? (vehicles.length ? '请选择项目' : '这个月没有可以上传的项目')
                 : '请先选择采购基地';
             this.fillSelect('dieVehicleModel', vehicles, vehiclePlaceholder);
             await this.refreshSopBanner();

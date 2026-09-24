@@ -49,7 +49,7 @@ export function dieUploadTemplate() {
                                             class="${UPLOAD_INPUT} hud-filter w-[280px]">
                                         <option value="">请先选择采购基地</option>
                                     </select>
-                                    <p class="mt-2 text-[10px] text-ink-faint">必选该月可引入项目。须与文件名或标题里的项目一致。</p>
+                                    <p class="mt-2 text-[10px] text-ink-faint">必选这个月可以上传的项目。须和文件名或标题里的项目一致。</p>
                                 </div>
                             </div>
                             <div class="h-px bg-app-surface mx-6 mb-4"></div>
@@ -119,7 +119,7 @@ export function dieUploadTemplate() {
                         </div>
                     </div>
                     <div class="p-4 space-y-3 text-[11px] text-ink-muted leading-relaxed">
-                        <p>请先选择采购基地，再选择该月可引入项目。</p>
+                        <p>请先选择采购基地，再选择这个月可以上传的项目。</p>
                         <p>文件名或标题里的项目必须和所选一致，不一致将退回、不会入库。</p>
                         <p>本页不选冲压厂：开模时尚无定点供应商。</p>
                         <p>模具编号可空，系统按规则自动编号；已填写的编号保持不变。</p>
@@ -127,7 +127,7 @@ export function dieUploadTemplate() {
                         <p class="font-mono text-[10px] text-ink-dim leading-relaxed">
                             示意：<span class="text-ink-muted">T13J项目冲压模具布点工艺清单.xlsx</span>
                         </p>
-                        <p>本表是模具费用计算依据：本页只入库几何与分摊比例，不算金额。金额在「冲压模具费计算」或自动核价引擎（有布点且当年无结果时补算）。第一次 SOP 抄项目起止；已有 SOP 后再导只更新文件里已有零件，不删未出现的号。文件含新号将整单拒绝。已改的分摊比例会按零件号保留（废料副产品除外，一律 0）。</p>
+                        <p>本表用来算模具费：本页只保存尺寸和分摊比例，不算金额。金额在「冲压模具费计算」里算。第一次投产按项目的起止时间；已经投产后再传，只更新文件里已有的零件，不会删掉没写到的零件号。文件里出现新零件号会整份拒绝。已经改过的分摊比例按零件号保留（废料副产品除外，一律记 0）。</p>
                         <p>同一零件的工序号不能重复。不导入简图与费用列。</p>
                     </div>
                 </div>

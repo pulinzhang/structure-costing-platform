@@ -242,7 +242,7 @@ export function renderHudCards(locations, filterLocation, asOfYear, asOfMonth) {
             <div class="mt-1 text-[18px] font-bold tabular-nums text-ink">${totalProjects}
                 <span class="text-[10px] text-ink-faint font-medium ml-1">项目</span>
             </div>
-            <div class="text-[10px] text-ink-muted mt-1">该月可引入 ${totalIntroducible}</div>
+            <div class="text-[10px] text-ink-muted mt-1">这个月有效 ${totalIntroducible}</div>
         </button>
     `];
     locations.forEach((card) => {
@@ -261,7 +261,7 @@ export function renderHudCards(locations, filterLocation, asOfYear, asOfMonth) {
                 <div class="mt-1 text-[18px] font-bold tabular-nums text-ink">${card.project_count || 0}
                     <span class="text-[10px] text-ink-faint font-medium ml-1">项目</span>
                 </div>
-                <div class="text-[10px] text-ink-muted mt-1">该月可引入 ${intro}</div>
+                <div class="text-[10px] text-ink-muted mt-1">这个月有效 ${intro}</div>
                 <div class="text-[9px] text-ink-faint mt-0.5">未生效 ${card.pending_count || 0} · 已失效 ${card.expired_count || 0}</div>
             </button>
         `);
@@ -330,7 +330,7 @@ export function renderTableBody(locations, items, filterLocation, canUpdate, can
                     <td class="${numCell}">${esc(effective)}</td>
                     <td class="${numCell}">${esc(expiry)}</td>
                     <td class="${numCell}">${esc(supplied)}<span class="text-[9px] text-ink-faint ml-1">台</span></td>
-                    <td class="px-2 py-2 text-center text-[9px] font-medium tracking-[0.08em] text-ink-faint">${esc(row.period_status)}</td>`,
+                    <td class="px-2 py-2 text-center text-[9px] font-medium tracking-[0.08em] text-ink-faint">${esc(row.period_status === '可引入' ? '这个月有效' : row.period_status)}</td>`,
                 opsHtml: `<div class="inline-flex items-center justify-center gap-0.5 whitespace-nowrap">${editBtn}${deleteBtn}</div>`,
             }));
         });

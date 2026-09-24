@@ -3,13 +3,13 @@
  * 冲压工艺上传 — 异步 task_id + 进度轮询
  */
 
-import { uploadTemplate } from './template.js?v=25';
+import { uploadTemplate } from './template.js?v=26';
 import { uploadSubmitLabelHtml } from '../../../../ui/upload-actions.js?v=2';
 import {
     setDropzoneDragActive,
     setDropzoneFileSelected,
 } from '../../../../ui/upload-dropzone.js?v=3';
-import { SOP_INTRO, sopBannerHtml } from '../../../common/period-ui.js?v=7';
+import { SOP_INTRO, sopBannerHtml } from '../../../common/period-ui.js?v=9';
 
 const MAX_RECENT_UPLOADS = 8;
 const POLL_INTERVAL_MS = 2000;
@@ -32,7 +32,7 @@ export const UploadPage = {
             slot.innerHTML = sopBannerHtml();
             const detail = document.getElementById('sopBannerDetail');
             if (detail) {
-                detail.textContent = '工艺页只选文件。已有 SOP 时文件含新号将整单拒绝，换号请走工程变更。';
+                detail.textContent = '工艺页只选文件。已经投产后再传，文件里出现新零件号会整份拒绝，换零件号请走工程变更。';
             }
             const intro = document.querySelector('#sopBanner p');
             if (intro) intro.textContent = SOP_INTRO;

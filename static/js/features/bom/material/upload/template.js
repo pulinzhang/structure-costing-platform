@@ -61,7 +61,7 @@ export function bomUploadTemplate() {
                                             class="${UPLOAD_INPUT} hud-filter w-[280px]">
                                         <option value="">请先选择采购基地</option>
                                     </select>
-                                    <p class="mt-1.5 text-[11px] text-ink-dim">必选该月可引入项目。文件代号须与所选一致。</p>
+                                    <p class="mt-1.5 text-[11px] text-ink-dim">必选这个月可以上传的项目。文件里的项目代号必须和所选一致。</p>
                                 </div>
                             </div>
 
@@ -175,16 +175,16 @@ export function bomUploadTemplate() {
                             <h6 class="text-[10px] uppercase tracking-wider text-ink-dim mb-2">文件要求</h6>
                             <ul class="list-disc list-inside text-xs text-ink-dim space-y-1.5">
                                 <li>车身件产品材料清单 Excel（.xlsx / .xls）</li>
-                                <li>含三级稀疏树：总成 / 一级 / 二级</li>
+                                <li>要写出总成、一级、二级</li>
                                 <li>项目、版本从文件头自动解析</li>
                             </ul>
                         </div>
                         <div>
                             <h6 class="text-[10px] uppercase tracking-wider text-ink-dim mb-2">对齐规则</h6>
                             <ul class="list-disc list-inside text-xs text-ink-dim space-y-1.5">
-                                <li>第一次 SOP 抄项目起止；已有 SOP 后再导只更新文件里已有总成</li>
-                                <li>文件里出现新号将整单拒绝，换号请走工程变更</li>
-                                <li>未出现在文件里的树留下，不整包覆盖</li>
+                                <li>第一次投产按项目的起止时间；已经投产后再传，只更新文件里已有的总成</li>
+                                <li>文件里出现新零件号会整份拒绝，换零件号请走工程变更</li>
+                                <li>文件里没写到的总成会留下，不会整份删掉重来</li>
                                 <li>有内部号的物料必须一物一码（同一零件号对应唯一内部号，反之亦然）</li>
                                 <li>同一分总成挂在不同总成下时，焊信与二级子件单车用量必须相同</li>
                             </ul>

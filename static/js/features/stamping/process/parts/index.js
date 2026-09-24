@@ -9,7 +9,7 @@ import {
     renderDetailContent,
     updatePartsHudScope,
     updatePartsHud,
-} from './template.js?v=61';
+} from './template.js?v=62';
 import { can } from '../../../../core/permissions.js?v=8';
 import { hudRowHtml, opsIconButtonHtml } from '../../../../ui/hud-table.js?v=2';
 import { bindMoreMenu } from '../../../../ui/more-menu.js?v=6';
@@ -58,6 +58,13 @@ function scrapByproductCell(part) {
         return '<span class="text-ink-faint">—</span>';
     }
     return '<span class="inline-flex items-center px-1.5 py-0.5 text-[9px] tracking-wide text-ink-muted bg-app-rowhover border border-line-hud" title="废料副产品，不算冲压费">是</span>';
+}
+
+function materialChangeCell(part) {
+    if (!part.has_material_change) {
+        return '<span class="text-ink-faint">—</span>';
+    }
+    return '<span class="inline-flex items-center px-1.5 py-0.5 text-[9px] tracking-wide text-ink-muted bg-app-hud border border-line-hud" title="该零件有材料变更">是</span>';
 }
 
 function swingShearCell(part) {
@@ -461,6 +468,7 @@ export const PartsPage = {
                 <td class="${cell} ${muted}">${esc(part.version) || '—'}</td>
                 <td class="${cell} ${muted} font-sans border-r border-line-hud">${esc(part.stamping_supplier) || '—'}</td>
                 <td class="${cell} ${muted} font-sans">${esc(part.material) || '—'}</td>
+                <td class="${cell}">${materialChangeCell(part)}</td>
                 <td class="${cell}">${offalCell(part)}</td>
                 <td class="${cell}">${scrapByproductCell(part)}</td>
                 <td class="${cell}">${swingShearCell(part)}</td>

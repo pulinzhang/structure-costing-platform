@@ -96,7 +96,7 @@ class AssemblyCostCalcLogService:
         return self.calc_log_repo.expire_stale_processing(
             db,
             older_than=cutoff,
-            message="计算超时未完成，已自动释放锁",
+            message="计算超时未完成，已停止这次计算，可以重新算。",
         )
 
     def begin_processing(

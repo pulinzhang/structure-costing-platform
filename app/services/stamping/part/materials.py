@@ -215,18 +215,25 @@ def list_process_materials_as_of(
     month: int,
     vehicle_model: str | None = None,
 ) -> tuple[list[MaterialAsOfRow], list[MaterialAsOfIdentity]]:
-    """该月工艺列。身份供本函数叠材料变更历史。"""
+    """该月工艺列。零件行命中账期，且项目在该月有效期内。身份供本函数叠材料变更历史。"""
     loc = location.strip()
     if not loc:
         return [], []
     vehicle = vehicle_model.strip() if vehicle_model else None
-    parts = repository.list_in_period_with_blanks(
-        db,
-        location=loc,
-        as_of_year=year,
-        as_of_month=month,
-        vehicle_model=vehicle,
-    )
+    introducible = set(VehicleModelService().list_introducible(db, loc, year, month))
+    if vehicle is not None and vehicle not in introducible:
+        return [], []
+    parts = [
+        part
+        for part in repository.list_in_period_with_blanks(
+            db,
+            location=loc,
+            as_of_year=year,
+            as_of_month=month,
+            vehicle_model=vehicle,
+        )
+        if (part.vehicle_model or "").strip() in introducible
+    ]
     identities: list[MaterialAsOfIdentity] = []
     rows: list[MaterialAsOfRow] = []
     for part in parts:
@@ -264,7 +271,7 @@ def list_materials_as_of(
     month: int,
     vehicle_model: str | None = None,
 ) -> list[MaterialAsOfRow]:
-    """该月材料。普通件叠本域材料变更历史；拼焊子片保持子片列。"""
+    """该月材料。零件行命中账期，且项目在该月有效期内。普通件叠本域材料变更历史；拼焊子片保持子片列。"""
     rows, identities = list_process_materials_as_of(
         repository,
         db,

@@ -29,7 +29,7 @@ from app.schemas.vo.vehicle_model_vo import (
 from app.services.masterdata.location.service import LocationService
 
 PLACEHOLDER_CODES = frozenset({"UNKNOWN"})
-PAGE_HINT = "请到项目一览手工增加或上传（#/vehicle-model-list）"
+PAGE_HINT = "请到「项目一览」里新增或上传。"
 FILE_MISMATCH = "文件项目为 {parsed}，与填写的项目 {selected} 不一致"
 
 __all__ = [
@@ -211,13 +211,13 @@ def require_introducible_by_code(
     if len(introducible) > 1:
         names = "、".join(row.location for row in introducible)
         raise BusinessException(
-            f"项目 {code} 挂在多个可引入基地（{names}），无法自动确定。" f"{PAGE_HINT}"
+            f"项目 {code} 在这些基地这个月都能做（{names}），系统无法确定用哪一个。" f"{PAGE_HINT}"
         )
     if len(rows) == 1:
         return require_introducible(
             repository, location_service, db, rows[0].location, code, year, month
         )
-    raise BusinessException(f"没有可引入的项目 {code}，{PAGE_HINT}")
+    raise BusinessException(f"这个月不能上传项目 {code}，{PAGE_HINT}")
 
 
 def require_overlaps_year(

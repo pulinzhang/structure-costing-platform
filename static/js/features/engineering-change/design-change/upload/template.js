@@ -41,7 +41,7 @@ export function engineeringChangeUploadTemplate() {
                                             <option value="">请先选择采购基地</option>
                                         </select>
                                     </div>
-                                    <p class="mt-2 text-[10px] text-ink-faint">必选。基地定位投产清单；项目须该生效月可引入，且与工程变更单一致。</p>
+                                    <p class="mt-2 text-[10px] text-ink-faint">必选。用基地找到投产清单。这个月这个项目必须还在做，并且和工程变更单上的项目一致。</p>
                                 </div>
                             </div>
                             <div class="h-px bg-app-surface mx-6 mb-4"></div>
@@ -59,7 +59,7 @@ export function engineeringChangeUploadTemplate() {
                                         <select id="ecUploadMonth" name="effective_month" required
                                                 class="${UPLOAD_INPUT} hud-filter w-[120px]"></select>
                                     </div>
-                                    <p class="mt-2 text-[10px] text-ink-faint">须与工程变更单生效年月一致。从该月起用新树，前一月旧月账仍看见变更前总成。</p>
+                                    <p class="mt-2 text-[10px] text-ink-faint">须和工程变更单上的生效年月一致。从这个月起用新零件号，上个月仍按变更前的总成结账。</p>
                                 </div>
                             </div>
                             <div class="h-px bg-app-surface mx-6 mb-4"></div>
@@ -158,9 +158,9 @@ export function engineeringChangeUploadTemplate() {
                         <p>下载模板即青岛 T28 五种填法样表。整本一次上传，后台解析，本页看进度。</p>
                         <p>工程变更单一行一种改法：完成停止 / 改图 / 增加零件 / 此件不装。同一本可以多行，也可以只有一行。</p>
                         <p>上方基地、项目、生效年月须与 Excel 互校。项目、生效年月必须和工程变更单一致。</p>
-                        <p>硬门禁三张表：工程变更单、车身件材料清单、冲压工艺确认表。工程变更不要「零件汇总」；模具按变更单从旧号逻辑建立，简图从工艺确认表抄过去。</p>
-                        <p>Excel 只写改了什么；系统种的是完整新树。筛 EC 版本才是数采购件。</p>
-                        <p class="text-warn">改图后不要再走投产三页整包覆盖。换号只走本页。</p>
+                        <p>必须有三张表：工程变更单、车身件材料清单、冲压工艺确认表。不要「零件汇总」。有旧模具布点的，系统按变更单建到新零件号上，简图从工艺确认表抄过去。</p>
+                        <p>Excel 只写改了什么。系统会按整份材料清单启用新总成。要看采购件，请筛选这次变更后的版本。</p>
+                        <p class="text-warn">改图之后，不要再在投产的材料清单、工艺、布点三页整份覆盖。换零件号只在本页上传。</p>
                     </div>
                 </div>
                 <div class="bg-app-surface border border-line">

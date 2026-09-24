@@ -5,7 +5,7 @@ from __future__ import annotations
 from app.common.timezone import now
 from app.exceptions.base import BusinessException
 
-SOP_NEW_NUMBER_REJECT = "该项目已有 SOP，不能在本页新增。换号与切点请走工程变更。"
+SOP_NEW_NUMBER_REJECT = "该项目已有 SOP，不能在本页新增。换零件号请走设计变更。"
 
 
 def period(year: int, month: int) -> tuple[int, int]:

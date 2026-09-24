@@ -6,7 +6,7 @@ import {
     engineeringChangeListTemplate,
     renderEcDetailBody,
     renderEcListRows,
-} from './template.js?v=39';
+} from './template.js?v=41';
 import {
     DEFAULT_PAGE_SIZE,
     bindPagination,
@@ -188,10 +188,10 @@ async function handleActionClick(event) {
         return;
     }
     if (action !== 'delete') return;
-    if (!await window.confirmAction('删除即回滚。将撤销本次上传的全部变更并删除本记录，同一文件的全部变更单行都会去掉。')) return;
+    if (!await window.confirmAction('确定删除？会撤销这一整本工程变更，同一文件里的变更一起去掉。')) return;
     HttpClient.delete(`${API}/change-orders/${uploadLogId}`)
         .then(() => {
-            showToast('已删除并回滚', 'success');
+            showToast('已撤销这一整本', 'success');
             loadData(state.page);
         })
         .catch(() => {

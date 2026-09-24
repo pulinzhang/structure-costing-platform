@@ -7,7 +7,7 @@ import {
     renderHudCards,
     renderTableBody,
     vehicleModelListTemplate,
-} from './template.js?v=24';
+} from './template.js?v=25';
 import { bindMoreMenu } from '../../../../ui/more-menu.js?v=6';
 
 const API_BASE = '/api/masterdata/vehicle-models';

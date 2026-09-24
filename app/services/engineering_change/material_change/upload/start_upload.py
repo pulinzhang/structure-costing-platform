@@ -143,7 +143,7 @@ def start_upload(
             )
         return WorkerTaskOutcome(
             status=STATUS_COMPLETED,
-            message=f"材料变更成功：{len(result.order_ids)} 行切点",
+            message=f"材料变更成功，改了 {len(result.order_ids)} 个零件。",
             result=result.model_dump(),
         )
 
