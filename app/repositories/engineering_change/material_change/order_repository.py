@@ -44,7 +44,6 @@ class MaterialChangeOrderInsert:
     source_part_id: int
     created_by: str | None
     updated_by: str | None
-    copied_from_order_id: int | None = None
 
 
 class MaterialChangeOrderRepository:
@@ -61,16 +60,12 @@ class MaterialChangeOrderRepository:
         effective_month: int | None = None,
         status: str | None = None,
     ) -> tuple[list[MaterialChangeOrderListRow], int]:
-        """一本成功 Excel 出 N 行切点。抄来的行不进列表。无切点的头仍出一行。"""
+        """一本成功 Excel 出 N 行切点。无切点的头仍出一行。"""
         query = db.query(
             EngineeringChangeMaterialUploadLog, EngineeringChangeMaterialOrder
         ).outerjoin(
             EngineeringChangeMaterialOrder,
-            and_(
-                EngineeringChangeMaterialOrder.upload_log_id
-                == EngineeringChangeMaterialUploadLog.id,
-                EngineeringChangeMaterialOrder.copied_from_order_id.is_(None),
-            ),
+            EngineeringChangeMaterialOrder.upload_log_id == EngineeringChangeMaterialUploadLog.id,
         )
         if location:
             query = query.filter(EngineeringChangeMaterialUploadLog.location == location)
@@ -212,41 +207,6 @@ class MaterialChangeOrderRepository:
                 EngineeringChangeMaterialOrder.effective_year.asc(),
                 EngineeringChangeMaterialOrder.effective_month.asc(),
                 EngineeringChangeMaterialOrder.id.asc(),
-            )
-            .all()
-        )
-
-    def list_success_by_source_part(
-        self, db: Session, source_part_id: int
-    ) -> list[EngineeringChangeMaterialOrder]:
-        """旧号上全部成功切点，含改图抄来的。"""
-        return (
-            db.query(EngineeringChangeMaterialOrder)
-            .join(
-                EngineeringChangeMaterialUploadLog,
-                EngineeringChangeMaterialUploadLog.id
-                == EngineeringChangeMaterialOrder.upload_log_id,
-            )
-            .filter(
-                EngineeringChangeMaterialUploadLog.status == "success",
-                EngineeringChangeMaterialOrder.source_part_id == source_part_id,
-            )
-            .order_by(
-                EngineeringChangeMaterialOrder.effective_year.asc(),
-                EngineeringChangeMaterialOrder.effective_month.asc(),
-                EngineeringChangeMaterialOrder.id.asc(),
-            )
-            .all()
-        )
-
-    def list_copies_by_source_part(
-        self, db: Session, source_part_id: int
-    ) -> list[EngineeringChangeMaterialOrder]:
-        return (
-            db.query(EngineeringChangeMaterialOrder)
-            .filter(
-                EngineeringChangeMaterialOrder.source_part_id == source_part_id,
-                EngineeringChangeMaterialOrder.copied_from_order_id.isnot(None),
             )
             .all()
         )

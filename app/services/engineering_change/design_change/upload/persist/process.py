@@ -29,7 +29,6 @@ from app.schemas.vo.user_vo import UserVO
 from app.services.engineering_change.design_change.upload.gates.process_gates import (
     parse_process_confirmation,
 )
-from app.services.engineering_change.material_change.copy import copy_cutovers
 from app.services.stamping.part.engineering.service import (
     EngineeringChangePartAsOfRow,
     EngineeringChangeProcessPartSpec,
@@ -156,8 +155,6 @@ def persist_process_parts(
                 sort_no=sort_no,
             )
         )
-        if result.predecessor_id is not None:
-            copy_cutovers(db, result.predecessor_id, result.part_id)
         sort_no += 1
     return links, len(results), sheet_version
 

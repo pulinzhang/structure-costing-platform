@@ -43,7 +43,6 @@ from app.services.bom.bom.engineering import BomEngineeringService
 from app.services.bom.packaging_transport_fee.service import BomPackagingTransportFeeService
 from app.services.bom.procurement_object.service import BomProcurementObjectService
 from app.services.bom.welding_process_breakdown.service import BomWeldingProcessBreakdownService
-from app.services.engineering_change.material_change.copy import delete_copied_cutovers
 from app.services.settings.schema_comment.service import STILL_REFERENCED, ensure_deletable
 from app.services.stamping.die.engineering.service import StampingDieEngineeringService
 from app.services.stamping.die_fee.service import StampingDieFeeService
@@ -177,8 +176,6 @@ class EngineeringChangeRollbackService:
                 )
             return
         if kind == EFFECT_PROCESS_PART:
-            if link.after_id is not None:
-                delete_copied_cutovers(db, link.after_id)
             self.stamping_service.rollback_engineering_change_part(
                 db,
                 after_part_id=link.after_id,

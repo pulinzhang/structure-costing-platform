@@ -15,17 +15,11 @@ from app.parsers.engineering_change.material_change.order_parser import (
     MaterialChangeParsedRow,
     parse_material_change_workbook,
 )
-from app.repositories.engineering_change.design_change.change_order_repository import (
-    EngineeringChangeOrderRepository,
-)
 from app.repositories.engineering_change.material_change.order_repository import (
     MaterialChangeOrderRepository,
 )
 from app.repositories.engineering_change.material_change.upload_log_repository import (
     MaterialChangeUploadLogRepository,
-)
-from app.services.engineering_change.design_change.upload.gates.validate import (
-    parse_effective_period_text,
 )
 from app.services.engineering_change.material_change.codes import (
     ECM_AFTER_EQUALS_BEFORE,
@@ -377,7 +371,7 @@ def _gate_row(
                 "这是废料副产品。请把这一行从本子里删掉。",
             )
         )
-    if period(row.effective_year, row.effective_month) <= period(
+    if period(row.effective_year, row.effective_month) < period(
         part.effective_year, part.effective_month
     ):
         raise BusinessException(
@@ -423,7 +417,11 @@ def _gate_row(
                     "请改到那之后的月份。",
                 )
             )
-    _gate_mixed(db, row)
+    _gate_mixed(
+        row,
+        part_effective_year=part.effective_year,
+        part_effective_month=part.effective_month,
+    )
     if not engineering.process_material_on_file(db, row.before_material):
         raise BusinessException(
             _tell(
@@ -536,26 +534,21 @@ def _gate_thickness(
     return before_t, after_t
 
 
-def _gate_mixed(db: Session, row: MaterialChangeParsedRow) -> None:
-    orders = EngineeringChangeOrderRepository().list_active_success_by_project(
-        db, project_code=row.vehicle_model
+def _gate_mixed(
+    row: MaterialChangeParsedRow,
+    *,
+    part_effective_year: int,
+    part_effective_month: int,
+) -> None:
+    if row.effective_year != part_effective_year or row.effective_month != part_effective_month:
+        return
+    raise BusinessException(
+        _tell(
+            row,
+            "零件号",
+            ECM_MIXED_WITH_REVISE,
+            f"零件{quoted(row.part_number)}在"
+            f"{format_period(row.effective_year, row.effective_month)}才开始有工艺。"
+            "请换一个月再改材料。",
+        )
     )
-    for order in orders:
-        try:
-            year, month = parse_effective_period_text(order.effective_period_text)
-        except BusinessException:
-            continue
-        if year != row.effective_year or month != row.effective_month:
-            continue
-        hits = {order.before_part_number, order.after_part_number}
-        if row.part_number in hits:
-            raise BusinessException(
-                _tell(
-                    row,
-                    "零件号",
-                    ECM_MIXED_WITH_REVISE,
-                    f"零件{quoted(row.part_number)}在"
-                    f"{format_period(row.effective_year, row.effective_month)}已经有设计变更。"
-                    "请换一个月再改材料。",
-                )
-            )

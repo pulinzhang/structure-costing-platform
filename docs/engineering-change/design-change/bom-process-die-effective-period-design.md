@@ -4,12 +4,12 @@
 > **本期范围：** BOM / 冲压工艺 / 模具布点三块自身（表、导入按对象对齐、单条改期、本切片列表/树按月命中），以及 **冲压加工费 / 冲压模具费按零件（布点）年交集取件**、**冲压零件价格计算按零件月命中取件**、**总成核价按节点月命中取件**、**核价引擎发现按零件/L0 as_of 再滤项目月**。  
 > **拆解与焊接费（计算已落地）：** 拆解表不落生失效，取期 join `source_node_id` 再认 **L0 树根**。`#/bom-welding-fee-calc` 入参 **年 + 基地 + 项目**，跟拆解列表，按树根年交集取树；**不靠版本号、不靠 snapshot**。见 §6。  
 > **本期仍不动：** LLM、零件用在哪。下游其它入口仍可能按现网读全量。  
-> **采购对象（列表 / 设变插行已落地）：** 对象行不落四列；列表默认包含已过期、join 树根；整包 generate 门禁见 [采购对象 §14](../bom/bom-procurement-objects-design.md)。  
+> **采购对象（列表 / 设变插行已落地）：** 对象行不落四列；列表默认包含已过期、join 树根；整包 generate 门禁见 [采购对象 §14](../../bom/bom-procurement-objects-design.md)。  
 > 本文不是工程变更，也不是一口价年内分段。  
-> 关联：[材料清单 / 采购对象](../bom/bom-procurement-objects-design.md)、[冲压工艺确认表](../stamping/stamping-process-confirmation-design.md)、[模具布点](../stamping/stamping-die-management-design.md)、[焊接工艺拆解](../bom/welding-process-breakdown-design.md)、[焊接费](../bom/welding-fee-design.md)、[项目](../masterdata/vehicle-model-design.md)、[核价引擎](../costing/costing-engine-design.md)。  
+> 关联：[材料清单 / 采购对象](../../bom/bom-procurement-objects-design.md)、[冲压工艺确认表](../../stamping/stamping-process-confirmation-design.md)、[模具布点](../../stamping/stamping-die-management-design.md)、[焊接工艺拆解](../../bom/welding-process-breakdown-design.md)、[焊接费](../../bom/welding-fee-design.md)、[项目](../../masterdata/vehicle-model-design.md)、[核价引擎](../../costing/costing-engine-design.md)。  
 > 工程变更切点入口（以后；**设计让步给现网**，落地只改三条写入门禁）：[工程变更](part-number-revision-design.md)。  
-> 协议价年内分段已否决，见 [年度协议价生效期](../costing/effective-period-design.md)。本文的生失效继续按现网。  
-> 下游 as_of：总成月核价与引擎 `start_run` 已接零件/节点月命中；计算身份另按账期问项目期。采购对象列表是档案（默认包含已过期、join 树根），见 [采购对象 §14](../bom/bom-procurement-objects-design.md)；核价侧仍按账期月裁树。
+> 协议价年内分段已否决，见 [年度协议价生效期](../../costing/effective-period-design.md)。本文的生失效继续按现网。  
+> 下游 as_of：总成月核价与引擎 `start_run` 已接零件/节点月命中；计算身份另按账期问项目期。采购对象列表是档案（默认包含已过期、join 树根），见 [采购对象 §14](../../bom/bom-procurement-objects-design.md)；核价侧仍按账期月裁树。
 
 ---
 
@@ -296,7 +296,7 @@ L0 生效 <= 该年该月  且  （失效空  或  失效 >= 该年该月）
 
 再留下 `list_introducible(账期年, 月)` 里的项目。**禁止**用项目期当零件/树取件 WHERE。项目该月已失效 → **不进计划**（即使对象失效为空）。as_of 两边都空 → 不能启动，去零件列表 / 产品结构核对有效期。as_of 有件但项目期裁空 → 去项目一览（门禁 code `vehicle_model_period`）。
 
-子计算补算沿用各自计点：冲压加工费 / 模具费 / 焊接费问 **年交集**；零件价 / 总成问 **月命中**。身份：月度 `require_introducible`，年度 `require_overlaps_year`。见 [costing-engine-design.md](../costing/costing-engine-design.md) §5.1、§6.2。
+子计算补算沿用各自计点：冲压加工费 / 模具费 / 焊接费问 **年交集**；零件价 / 总成问 **月命中**。身份：月度 `require_introducible`，年度 `require_overlaps_year`。见 [costing-engine-design.md](../../costing/costing-engine-design.md) §5.1、§6.2。
 
 ---
 
@@ -364,7 +364,7 @@ L0 生效 <= 该年该月  且  （失效空  或  失效 >= 该年该月）
 
 **禁止** join `bom_snapshots` 问期（头上无这四列），也 **禁止** 用项目 `require_overlaps_year` 当取件 WHERE，也 **禁止** 用 L1/L2 本行生失效筛期。四年后改树期口径只改 `period_trees`。
 
-切片正文：[焊接工艺拆解](../bom/welding-process-breakdown-design.md)。焊接费计算已按 §6.3 落地。
+切片正文：[焊接工艺拆解](../../bom/welding-process-breakdown-design.md)。焊接费计算已按 §6.3 落地。
 
 ### 6.1 拆解行上有什么、没有什么
 
@@ -406,7 +406,7 @@ year, location, vehicle_model
 
 **不要** `bom_version`，**不要** `snapshot_id`，**不要**选层级。计算页不出版本下拉；项目下拉只带年、不带月。身份 `require_overlaps_year`（账期年）。取件按 **L0 树根** 年交集，**禁止**用项目期当取件 WHERE，**禁止**用 L1/L2 本行期。一次算拆解里出现过的全部 level。
 
-必须先有 [焊接工艺拆解](../bom/welding-process-breakdown-design.md) 列表，**禁止**再扫 `weld_info` 认人：
+必须先有 [焊接工艺拆解](../../bom/welding-process-breakdown-design.md) 列表，**禁止**再扫 `weld_info` 认人：
 
 ```text
 该基地 + 该项目 的全部拆解行（不按版本过滤）
@@ -528,13 +528,13 @@ year, location, vehicle_model
 | 不做 | 说明 |
 |------|------|
 | 采购对象 / LLM 就绪按月裁树 | 总成核价与引擎发现已按节点/零件月命中。`list_by_snapshot` 全量读法仍给结构页等 |
-| 采购对象列表默认按月 as_of | **否决。** 列表是档案：默认包含已过期；生失效 join 树根一列；对象行仍不落四列。见 [采购对象 §14](../bom/bom-procurement-objects-design.md) |
+| 采购对象列表默认按月 as_of | **否决。** 列表是档案：默认包含已过期；生失效 join 树根一列；对象行仍不落四列。见 [采购对象 §14](../../bom/bom-procurement-objects-design.md) |
 | 拆解结果表补生失效四列 | **否决。** 期 join source 节点，见 §6 |
 | 零件用在哪 as_of | 仍按整份 snapshot |
 | 工艺批量删改键、布点批量删改键 | 本期导入不再走它们；管理删除可暂留现网 |
 | 工程变更菜单、工程变更 Excel、变更头自动种树 | [part-number-revision-design.md](part-number-revision-design.md)。SOP 三页不做切点月、不种新号 |
 | AB 继承 SOP 序号、设变给新树插采购对象并抄确认 | 同上 |
-| 一口价/焊接单价年内分段 | **已否决。** [effective-period-design.md](../costing/effective-period-design.md) |
+| 一口价/焊接单价年内分段 | **已否决。** [effective-period-design.md](../../costing/effective-period-design.md) |
 | 取价 AB 回退 AA；库内复制出新号 | 否决 |
 
 本期 SOP 三页只负责第一次投产导入，以及之后对 **已有号** 的属性再导（不删未出现的行）。改图路径等工程变更。列表仍可单条改期（纠错 SOP 时段），不要当成设变作业。冲压加工费 / 模具费 / 焊接费计算已接零件（布点、节点）年交集；冲压零件价格 / 总成核价 / 引擎发现已接月命中。

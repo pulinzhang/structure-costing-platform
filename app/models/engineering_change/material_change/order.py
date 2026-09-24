@@ -37,7 +37,7 @@ class EngineeringChangeMaterialOrder(AuditUserMixin, Base):
     )
     change_version: Mapped[str] = mapped_column(String(20), nullable=False, comment="MAT-YYYYMM")
     excel_row: Mapped[int | None] = mapped_column(
-        Integer, nullable=True, comment="Excel 行号；改图抄来的为空"
+        Integer, nullable=True, comment="本通道 Excel 行号"
     )
     location: Mapped[str] = mapped_column(String(50), nullable=False, comment="基地")
     stamping_supplier: Mapped[str] = mapped_column(
@@ -86,16 +86,6 @@ class EngineeringChangeMaterialOrder(AuditUserMixin, Base):
         nullable=False,
         index=True,
         comment="工艺行 id",
-    )
-    copied_from_order_id: Mapped[int | None] = mapped_column(
-        Integer,
-        ForeignKey(
-            "engineering_change_material_orders.id",
-            ondelete="RESTRICT",
-            onupdate="RESTRICT",
-        ),
-        nullable=True,
-        comment="改图抄自旧号切点；Excel 上传为空",
     )
 
     __table_args__ = (

@@ -69,11 +69,7 @@ class MaterialChangeRollbackService:
         links = _link_repo.list_by_upload_log_id(db, upload_log_id)
         for link in links:
             _link_repo.delete(db, link)
-        copies = [order for order in orders if order.copied_from_order_id is not None]
-        originals = [order for order in orders if order.copied_from_order_id is None]
-        for order in copies:
-            _order_repo.delete(db, order)
-        for order in originals:
+        for order in orders:
             _order_repo.delete(db, order)
         _log_repo.delete(db, log_row)
         db.commit()

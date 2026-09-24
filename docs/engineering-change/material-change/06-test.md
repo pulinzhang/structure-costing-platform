@@ -36,7 +36,7 @@
 | 有切点后 SOP 改工艺材料再传下一本 | `ECM_PROCESS_MATERIAL_CHANGED` |
 | 失败头点删除 | 头消失、切点仍为零、再下原件 404 |
 | 振华已成功 MAT-202506，全鑫同项目同月再传同版本 | 过（版本占用按厂） |
-| MIXED：设计变更 `project_code` 与工艺 `vehicle_model` 不是同一规范字 | 不命中 `ECM_MIXED_WITH_REVISE` |
+| MIXED：工艺生效月不等于本本切点月 | 不命中 `ECM_MIXED_WITH_REVISE` |
 
 ---
 

@@ -109,9 +109,9 @@ HEADERS = (基地, 项目, 变更版本, 生效年月, 冲压工厂, 零件号, 
 | `is_tailor_welded` | `ECM_TAILOR_WELD_FORBIDDEN` |
 | `is_offal_nested` | `ECM_OFFAL_FORBIDDEN` |
 | `is_scrap_byproduct` | `ECM_BYPRODUCT_FORBIDDEN` |
-| 切点月不晚于工艺生效月 | `ECM_EFFECTIVE_TOO_EARLY` |
+| 切点月早于工艺生效月 | `ECM_EFFECTIVE_TOO_EARLY` |
 | 生效月项目 `require_introducible` 不过 | `ECM_PROJECT_PERIOD` |
-| 本行零件号 + 本本生效月，已有 **未回滚** 的设计变更单（见 §4.2） | `ECM_MIXED_WITH_REVISE` |
+| 工艺生效月等于本本切点月（见 §4.2） | `ECM_MIXED_WITH_REVISE` |
 | 该号已有切点，且工艺 `material` ≠ 最早一刀 `before_material`（见 §4.4） | `ECM_PROCESS_MATERIAL_CHANGED` |
 | 该身份已有切点，且本本生效月不晚于最晚切点 | `ECM_CUTOVER_NOT_LATER` |
 | 变更前不在材料档案（全等） | `ECM_BEFORE_MATERIAL_UNKNOWN` |
@@ -160,17 +160,11 @@ if abs(after_t - before_t) / before_t > Decimal("0.20"): 拒 ECM_THICKNESS_DELTA
 
 恰好 20% 过；大于 20% 拒。
 
-### 4.2 与设计变更同月（`ECM_MIXED_WITH_REVISE`）
+### 4.2 与改图同一生效月（`ECM_MIXED_WITH_REVISE`）
 
-只查 **`engineering_change_orders`**，且上传头 `engineering_change_upload_logs.status = success`，变更单 `status = active`（未回滚）。
+不查设计变更单。只问冲压：该号 `effective_year` / `effective_month` 是否等于本本切点月。相等 → 整本拒。改图新号的生效月就是改图那个月，所以同月改材料会撞上。早于工艺生效月走 `ECM_EFFECTIVE_TOO_EARLY`，不走本条。
 
-命中条件（同时）：
-
-1. `project_code` 全等 = 本行项目 = 工艺行 `vehicle_model`（**必须同一规范字**，禁止别名互认）  
-2. 该行 `effective_period_text` 解析出的年+月 = 本本生效年+月  
-3. 本行 **零件号** 全等命中 `before_part_number` **或** `after_part_number`（完成停止变更后零件为空，只对变更前）
-
-不要用变更前/后 **总成** 号去对冲压件。同号不同月不拒（新号可再切材料）。切点月工艺已到期 = 已停号，走 `ECM_PART_NOT_AS_OF`，不要另开一套扫变更单。T13J 06 样表 115/116 不是 05 月改图那两号，不撞 §4.2。
+同号不同月不拒（新号下月可再切材料）。切点月工艺已到期 = 已停号，走 `ECM_PART_NOT_AS_OF`。T13J 06 样表 115/116 的工艺生效月不是 06 月，不撞 §4.2。
 
 拼焊 / 利废 / 副产品：格子写了 DC01→DC03 也拒。
 
@@ -185,9 +179,9 @@ if abs(after_t - before_t) / before_t > Decimal("0.20"): 拒 ECM_THICKNESS_DELTA
 | `is_in_period` 真 | 号还活着，继续后面的门 |
 | `is_in_period` 假 | **该月已停号** → `ECM_PART_NOT_AS_OF` |
 
-禁止再做：按 `engineering_change_orders.change_type=改图` 且 `before_part_number` 命中就整段历史都拒（会把旧号最后几个仍有效月也误拦）。完成停止 / 此件不装本来就不停工艺行，扫变更单会判错。
+禁止再做：按设计变更单 `change_type=改图` 去翻整段历史（会把旧号最后几个仍有效月也误拦）。完成停止 / 此件不装本来就不停工艺行。停号与同月改图都只认生失效四列。
 
-例：T13J 05 月改图 `551003095AA` 用到 04 月到期。06 月材料变更写 `551003095AA` → `ECM_PART_NOT_AS_OF`。04 月仍有效，不因「库里有过改图」去拒。05 月写新号 `551003095AB` → 同月 `ECM_MIXED_WITH_REVISE`。
+例：T13J 05 月改图 `551003095AA` 用到 04 月到期，新号 `551003095AB` 从 05 月生效。06 月材料变更写 `551003095AA` → `ECM_PART_NOT_AS_OF`。04 月仍有效，不因「库里有过改图」去拒。05 月写新号 `551003095AB` → 工艺生效月等于切点月 → `ECM_MIXED_WITH_REVISE`。
 
 钢价 Step1 现网不按月、已停号仍进规格：第 4 刀改，见 [04-steel-and-part-cost.md](04-steel-and-part-cost.md) §1。本通道上传门禁不靠扫变更单剔停号。
 
