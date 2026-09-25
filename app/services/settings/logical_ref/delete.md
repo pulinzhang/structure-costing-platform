@@ -2,7 +2,7 @@
 
 只读这一份就能看懂 `service.py` 的 `ensure_logical_deletable`。它不发现外键，不读外键配置。外键是另一次调用。
 
-配置在 `logical_ref`（结果表是什么、表名）和 `logical_ref_filter`（过滤）。种子在 `seeds/`。表结构和算子见 `docs/settings/logical-ref-design.md`。
+配置在 `logical_ref`（结果表是什么、表名）和 `logical_ref_filter`（过滤）。种子在正在删的那张表所属模块。表结构和算子见 `docs/settings/logical-ref-design.md`。
 
 本函数不 `commit`，不开新连接。返回即允许调用方 `DELETE`。抛异常则调用方不删。
 

@@ -62,6 +62,29 @@ class SteelPriceWrites:
         logger.info("删除钢材价格: id=%s", record_id)
         return True
 
+    def list_unaudited_ids(
+        self,
+        db: Session,
+        *,
+        year: int,
+        month: int,
+        location: str,
+        category_name: str | None = None,
+        grade: str | None = None,
+        steel_mill: str | None = None,
+    ) -> list[int]:
+        """与批量删除同一套未审核条件，只返回主键。"""
+        query = self._queries._build_condition_query(
+            db,
+            year=year,
+            month=month,
+            location=location,
+            category_name=category_name,
+            grade=grade,
+            steel_mill=steel_mill,
+        ).filter(SteelPrice.audit_status != AUDIT_APPROVED)
+        return [int(row[0]) for row in query.with_entities(SteelPrice.id).all()]
+
     def delete_unaudited_by_conditions(
         self,
         db: Session,

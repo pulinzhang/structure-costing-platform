@@ -29,6 +29,7 @@ from app.services.costing.steel_price.pricing import (
     compute_final_price,
     ensure_not_approved,
 )
+from app.services.settings.logical_ref.service import ensure_logical_deletable
 
 logger = logging.getLogger("service.steel_price")
 
@@ -181,6 +182,13 @@ def delete_steel_price(repository: SteelPriceRepository, db: Session, record_id:
 
     ensure_not_approved(record)
 
+    ensure_logical_deletable(
+        db,
+        "steel_prices",
+        [{"id": record_id}],
+        subject="该钢材联动价",
+    )
+
     try:
         success = repository.delete(db, record_id)
         if not success:
@@ -219,6 +227,21 @@ def batch_delete_steel_prices(
             category_name=category_name,
             grade=grade,
             steel_mill=steel_mill,
+        )
+        record_ids = repository.list_unaudited_ids(
+            db,
+            year=data.year,
+            month=data.month,
+            location=location,
+            category_name=category_name,
+            grade=grade,
+            steel_mill=steel_mill,
+        )
+        ensure_logical_deletable(
+            db,
+            "steel_prices",
+            [{"id": record_id} for record_id in record_ids],
+            subject="该钢材联动价",
         )
         deleted_count = repository.delete_unaudited_by_conditions(
             db,

@@ -226,6 +226,27 @@ class SteelPriceRepository:
     def delete(self, db: Session, record_id: int) -> bool:
         return self._writes.delete(db, record_id)
 
+    def list_unaudited_ids(
+        self,
+        db: Session,
+        *,
+        year: int,
+        month: int,
+        location: str,
+        category_name: str | None = None,
+        grade: str | None = None,
+        steel_mill: str | None = None,
+    ) -> list[int]:
+        return self._writes.list_unaudited_ids(
+            db,
+            year=year,
+            month=month,
+            location=location,
+            category_name=category_name,
+            grade=grade,
+            steel_mill=steel_mill,
+        )
+
     def delete_unaudited_by_conditions(
         self,
         db: Session,
