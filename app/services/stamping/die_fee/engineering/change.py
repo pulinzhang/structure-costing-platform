@@ -13,7 +13,7 @@ from app.repositories.stamping.die.repository import StampingDiePartRepository
 from app.repositories.stamping.die_fee.repository import StampingDieFeeRepository
 from app.schemas.dto.stamping_die_fee_dto import DieFeeInsertPayload, DieFeeItemPayload
 from app.schemas.vo.user_vo import UserVO
-from app.services.settings.schema_comment.service import ensure_deletable
+from app.services.settings.foreign_key.service import ensure_deletable
 
 
 @dataclass(slots=True, frozen=True)

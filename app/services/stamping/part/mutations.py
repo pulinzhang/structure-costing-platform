@@ -34,7 +34,8 @@ from app.services.masterdata.steel_grade_category.service import (
     SteelGradeCategoryService,
 )
 from app.services.masterdata.supplier.service import SupplierService
-from app.services.settings.schema_comment.service import STILL_REFERENCED, ensure_deletable
+from app.services.settings.foreign_key.service import STILL_REFERENCED, ensure_deletable
+from app.services.settings.logical_ref.service import ensure_logical_deletable
 
 logger = logging.getLogger("service.stamping")
 
@@ -42,7 +43,15 @@ logger = logging.getLogger("service.stamping")
 def delete_part(repository: StampingPartRepository, db: Session, part_id: int) -> None:
     """删除零件（硬删除，不写审计字段）。"""
     try:
+        # 外键：只查指向本行的 RESTRICT。已有测试覆盖，不读 logical_ref。
         ensure_deletable(
+            db,
+            "stamping_parts",
+            [{"id": part_id}],
+            subject="该冲压零件",
+        )
+        # 逻辑引用：按 logical_ref 里本表的配置数下游。样例是工艺材料挡住钢材联动。
+        ensure_logical_deletable(
             db,
             "stamping_parts",
             [{"id": part_id}],
@@ -162,7 +171,14 @@ def batch_delete_parts(
     ]
     try:
         if part_ids:
+            # 外键与逻辑引用分开。前者不读 logical_ref，后者不发现外键。
             ensure_deletable(
+                db,
+                "stamping_parts",
+                [{"id": part_id} for part_id in part_ids],
+                subject="这些冲压零件",
+            )
+            ensure_logical_deletable(
                 db,
                 "stamping_parts",
                 [{"id": part_id} for part_id in part_ids],

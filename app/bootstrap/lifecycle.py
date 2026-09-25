@@ -48,7 +48,8 @@ def _seed_if_empty() -> None:
     from app.services.masterdata.steel_grade_category.service import (
         SteelGradeCategoryService,
     )
-    from app.services.settings.schema_comment.seed import ensure_schema_reference_seed
+    from app.services.settings.foreign_key.seed import ensure_schema_reference_seed
+    from app.services.settings.logical_ref.seed import ensure_logical_ref_seed
     from app.services.settings.users.service import UserService
 
     session_factory = DatabaseConfig.get_session_factory()
@@ -57,6 +58,7 @@ def _seed_if_empty() -> None:
         UserService().ensure_default_admin(db)
         SteelGradeCategoryService().ensure_seed_if_empty(db)
         ensure_schema_reference_seed(db)
+        ensure_logical_ref_seed(db)
     finally:
         db.close()
 

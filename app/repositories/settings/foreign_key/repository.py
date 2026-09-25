@@ -8,12 +8,23 @@ from dataclasses import dataclass
 from sqlalchemy import text
 from sqlalchemy.orm import Session
 
-from app.models.settings.ref_hint import RefHint
-from app.models.settings.schema_comment import SchemaComment
+from app.models.settings.foreign_key.ref_hint import RefHint
+from app.models.settings.foreign_key.schema_comment import SchemaComment
 
 _IDENTIFIER = re.compile(r"^[A-Za-z_][A-Za-z0-9_]*$")
+
 _CHUNK = 400
 _BLOCKING = frozenset({"RESTRICT", "NO ACTION"})
+
+
+def is_plain_identifier(name: str) -> bool:
+    return _IDENTIFIER.fullmatch(name) is not None
+
+
+def _quote(name: str) -> str:
+    if not is_plain_identifier(name):
+        raise ValueError(f"非法标识符: {name}")
+    return f'"{name}"'
 
 
 @dataclass(frozen=True)
@@ -26,16 +37,6 @@ class ForeignKeyRef:
     parent_columns: tuple[str, ...]
     child_columns: tuple[str, ...]
     on_delete: str
-
-
-def is_plain_identifier(name: str) -> bool:
-    return _IDENTIFIER.fullmatch(name) is not None
-
-
-def _quote(name: str) -> str:
-    if not is_plain_identifier(name):
-        raise ValueError(f"非法标识符: {name}")
-    return f'"{name}"'
 
 
 class SchemaCommentRepository:

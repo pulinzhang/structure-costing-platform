@@ -18,7 +18,7 @@ from app.repositories.stamping.die.repository import (
 )
 from app.schemas.dto.stamping_die_dto import StampingDiePartInsert, StampingDieProcessInsert
 from app.schemas.vo.user_vo import UserVO
-from app.services.settings.schema_comment.service import ensure_deletable
+from app.services.settings.foreign_key.service import ensure_deletable
 
 
 @dataclass(slots=True)

@@ -185,9 +185,9 @@ SQLite 删除失败时只有 `FOREIGN KEY constraint failed`。用户看不到�
 
 | 角色 | 位置 |
 |------|------|
-| 表注释 | `app/models/settings/schema_comment.py` |
-| 引用话术 | `app/models/settings/ref_hint.py` |
-| 种子 | `app/services/settings/schema_comment/seed.py` |
+| 表注释 | `app/models/settings/foreign_key/schema_comment.py` |
+| 引用话术 | `app/models/settings/foreign_key/ref_hint.py` |
+| 种子 | `app/services/settings/foreign_key/seed.py` |
 | 启动写入 | `app/bootstrap/lifecycle.py` 的现有种子步骤 |
 | 发现、计数、话术 | 设置切片一处 Service。收调用方 `Session`、父表名、按列名的键值、可选主语 |
 | 各切片删除 | 本切片 Service 在该条 `DELETE` 之前调用 |
@@ -211,3 +211,11 @@ SQLite 删除失败时只有 `FOREIGN KEY constraint failed`。用户看不到�
 检查通过之后仍然被外键拒绝的，文案为「仍被引用，不能删除」。
 
 改主键仍译成「仍被引用，不能修改」。本文不覆盖。
+
+材料变更历史的删除（含整本回滚里删历史行）在该条 `DELETE` 之前调用 `ensure_logical_deletable`。外键检查仍是 `ensure_deletable`，两条不合并。
+
+---
+
+## 9. 逻辑引用
+
+计算结果表不能用外键挡住时，另见 `docs/settings/logical-ref-design.md`。本文只覆盖外键发现。

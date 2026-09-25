@@ -34,7 +34,7 @@ from app.services.masterdata.supplier.identity import (
     require_row,
     to_vo,
 )
-from app.services.settings.schema_comment.service import STILL_REFERENCED, ensure_deletable
+from app.services.settings.foreign_key.service import STILL_REFERENCED, ensure_deletable
 
 logger = logging.getLogger("service.supplier")
 

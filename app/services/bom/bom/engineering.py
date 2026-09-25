@@ -20,7 +20,7 @@ from app.services.bom.bom.change_tree_plant.types import BomChangePlantResult, B
 from app.services.bom.bom.period import BomPeriodService
 from app.services.bom.bom.snapshot import BomSnapshotService
 from app.services.bom.bom.trees import collect_subtree
-from app.services.settings.schema_comment.service import ensure_deletable
+from app.services.settings.foreign_key.service import ensure_deletable
 
 __all__ = [
     "BomChangePlantResult",

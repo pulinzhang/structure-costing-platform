@@ -8,7 +8,8 @@ from app.common.audit import audit_update
 from app.repositories.stamping.part.process import StampingProcessRepository
 from app.repositories.stamping.part.repository import StampingPartRepository
 from app.schemas.vo.user_vo import UserVO
-from app.services.settings.schema_comment.service import ensure_deletable
+from app.services.settings.foreign_key.service import ensure_deletable
+from app.services.settings.logical_ref.service import ensure_logical_deletable
 
 
 def rollback_engineering_change_part(
@@ -22,7 +23,14 @@ def rollback_engineering_change_part(
 ) -> None:
     """删新零件及其工序，清空旧零件失效月。不删材料变更历史。只 flush。"""
     if after_part_id is not None:
+        # 外键与逻辑引用分开。前者不读 logical_ref，后者不发现外键。
         ensure_deletable(
+            db,
+            "stamping_parts",
+            [{"id": after_part_id}],
+            subject="该冲压零件",
+        )
+        ensure_logical_deletable(
             db,
             "stamping_parts",
             [{"id": after_part_id}],

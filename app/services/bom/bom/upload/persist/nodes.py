@@ -22,7 +22,7 @@ from app.services.bom.bom.upload.gates.validate import (
 )
 from app.services.file_trace.register import register_existing
 from app.services.masterdata.vehicle_model.service import VehicleModelService
-from app.services.settings.schema_comment.service import STILL_REFERENCED, ensure_deletable
+from app.services.settings.foreign_key.service import STILL_REFERENCED, ensure_deletable
 
 # Excel 列号（1-based）：各层级「零件号」列，与 node_parser 一致
 _EXCEL_PART_COL_BY_LEVEL = {0: 3, 1: 9, 2: 14}

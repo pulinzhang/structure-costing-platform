@@ -16,7 +16,7 @@ from app.repositories.bom.packaging_transport_fee_repository import (
 )
 from app.schemas.dto.bom_packaging_transport_fee_dto import BomPackagingTransportFeeCreate
 from app.schemas.vo.user_vo import UserVO
-from app.services.settings.schema_comment.service import ensure_deletable
+from app.services.settings.foreign_key.service import ensure_deletable
 
 
 @dataclass(slots=True, frozen=True)

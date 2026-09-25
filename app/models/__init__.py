@@ -58,6 +58,8 @@ from app.models.masterdata import (
     VehicleModel,
 )
 from app.models.settings import (
+    LogicalRef,
+    LogicalRefFilter,
     OperationLog,
     RefHint,
     SchemaComment,
@@ -125,6 +127,8 @@ __all__ = [
     "Supplier",
     "SupplierAlias",
     "VehicleModel",
+    "LogicalRef",
+    "LogicalRefFilter",
     "OperationLog",
     "RefHint",
     "SchemaComment",

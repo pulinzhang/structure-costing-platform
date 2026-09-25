@@ -21,3 +21,5 @@ HTTP：`/api/auth`、`/api/settings/users`、`/api/settings`、`/api/settings/sy
 | `users/` | 认证、用户、权限 |
 | `system/` | 系统参数 |
 | `logs/` | 操作日志 |
+| `foreign_key/` | 外键删除检查。与 `logical_ref/` 不互相引用 |
+| `logical_ref/` | 逻辑引用删除检查。与 `foreign_key/` 不互相引用 |

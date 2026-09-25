@@ -19,12 +19,12 @@ from app.bootstrap.exception_handlers import register_exception_handlers
 from app.exceptions.base import BusinessException
 from app.exceptions.handlers import business_exception_handler
 from app.middleware.operation_log_middleware import OperationLogMiddleware
+from app.models.settings.foreign_key.ref_hint import RefHint
+from app.models.settings.foreign_key.schema_comment import SchemaComment
 from app.models.settings.operation_log import OperationLog
-from app.models.settings.ref_hint import RefHint
-from app.models.settings.schema_comment import SchemaComment
+from app.services.settings.foreign_key.seed import ensure_schema_reference_seed
+from app.services.settings.foreign_key.service import STILL_REFERENCED, ensure_deletable
 from app.services.settings.logs.service import OperationLogService
-from app.services.settings.schema_comment.seed import ensure_schema_reference_seed
-from app.services.settings.schema_comment.service import STILL_REFERENCED, ensure_deletable
 
 
 def _request() -> Request:

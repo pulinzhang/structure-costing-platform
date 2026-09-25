@@ -106,8 +106,9 @@ app/
 | 父不读子 | 父不查询、不 `count`、不 JOIN 子表，不为改/删探子行。父 Model 不 `relationship` 子、不 import 子 Model。同切片附属行同样遵守 |
 | 子表外键指回 | 子表声明 `ForeignKey(..., ondelete="RESTRICT", onupdate="RESTRICT")`。子可以按该外键读直接父。父不知道子 |
 | 只拦直接下一跳 | 禁止给全库同名字段都挂父外键 |
-| 引擎拒绝、应用翻译 | 删除之前由设置切片做动态引用检查。接口返回业务名、条数和建议。操作日志的失败原因仍是「仍被引用，不能删除」，同一段全文写入 `detail`。父切片不写子表名。其后插入的引用，以及改主键，仍是 `IntegrityError` → 「仍被引用，不能删除」 / 「仍被引用，不能修改」 |
+| 引擎拒绝、应用翻译 | 删除之前由设置切片做动态引用检查。接口返回业务名、条数和建议。操作日志的失败原因仍是「仍被引用，不能删除」，同一段全文写入 `detail`。父切片不写子表名。其后插入的引用，以及改主键，仍是 `IntegrityError` → 「仍被引用，不能删除」 / 「仍被引用，不能修改」。已有外键保持，禁止用配置表替换 |
 | 有 FK 则改主键与删除都要提供 | 非主键（启用/禁用）外键不管；禁止只用 `ondelete` 或用禁用代替未声明 FK |
+| 无外键的计算结果 | 删除检查与外键发现分开。`logical_ref` 写明结果表是什么、表名；`logical_ref_filter` 写明过滤（结果表哪一列、怎么比、值从哪来）；`ensure_logical_deletable` 只把这些过滤拼成 `COUNT`，不写进 `ensure_deletable`。算子是列相等、账期 **≥**、账期 ≤（空值不封顶）、早于下一行（一月的前一月是上一年十二月）。少登记，或把 ≥ 配成相等，都会漏。样例：零件工艺材料、材料变更 → 钢材联动。拼焊子片这次不登记 |
 
 `CASCADE` 仅附属行（明细、权限行；`ondelete` 与 `onupdate` 都 `CASCADE`）。独立主数据互引用 `RESTRICT`。SQLite 须 `PRAGMA foreign_keys=ON`。不加 FK 的父实体不准改主键、不准删除，只保留禁用。
 
@@ -179,7 +180,7 @@ app/
 ## 六、检查清单（仅本文件范围）
 
 - 业务判断 → Service；SQL → Repository；HTTP → Router；表结构 → Model；解析 → Parser（仅 Service 调）
-- 上游不得依赖下游；自己只读自己和直接的父，父不读子 → §3.3；结果表溯源指针 `SET NULL` 仅 §3.3 封闭名单
+- 上游不得依赖下游；自己只读自己和直接的父，父不读子 → §3.3；结果表溯源指针 `SET NULL` 仅 §3.3 封闭名单；无外键的计算结果删除检查只补 `logical_ref` 与 `logical_ref_filter`（结果表是什么、表名、过滤），样例是零件工艺材料与材料变更对钢材联动，禁止把账期 ≥ 生效写成相等
 - 有 `task_id` 的 worker 壳不在 Router、不在切片复制 runner；旁路 Session 与同步 Excel 仅 §五封闭名单
 - HTTP 错误只抛 `NotFoundException` / `BusinessException`；Orchestrator 主方法无 `for`/写库 → 指挥家宪法
 - 对 Router 的成功体是 VO 或 `list_()`，不是匿名元组（分页与下载除外）；禁止 Router 构造结果 VO

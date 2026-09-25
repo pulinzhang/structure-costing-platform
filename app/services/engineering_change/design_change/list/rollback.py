@@ -44,7 +44,7 @@ from app.services.bom.bom.engineering import BomEngineeringService
 from app.services.bom.packaging_transport_fee.service import BomPackagingTransportFeeService
 from app.services.bom.procurement_object.service import BomProcurementObjectService
 from app.services.bom.welding_process_breakdown.service import BomWeldingProcessBreakdownService
-from app.services.settings.schema_comment.service import STILL_REFERENCED, ensure_deletable
+from app.services.settings.foreign_key.service import STILL_REFERENCED, ensure_deletable
 from app.services.stamping.die.engineering.service import StampingDieEngineeringService
 from app.services.stamping.die_fee.service import StampingDieFeeService
 from app.services.stamping.gauge_fee.service import StampingGaugeFeeService
