@@ -43,7 +43,11 @@ _stamping_service = StampingPartService()
 _export_service = StampingPartExportService()
 
 
-@router.get("/parts/list", response_model=ApiResponse[PageResult[StampingPartListResponse]])
+@router.get(
+    "/parts/list",
+    response_model=ApiResponse[PageResult[StampingPartListResponse]],
+    summary="分页查询冲压零件",
+)
 def list_parts(
     query: StampingPartQuery = Depends(),
     db: Session = Depends(get_db),
@@ -69,7 +73,7 @@ def _xlsx_response(content: bytes, filename: str) -> StreamingResponse:
     )
 
 
-@router.get("/parts/export-download")
+@router.get("/parts/export-download", summary="按基地 + 年 + 月导出工艺确认表")
 def export_download(
     location: str = Query(..., min_length=1, description="采购基地"),
     year: int | None = Query(None, ge=2000, le=2100, description="导出命中年"),
@@ -98,7 +102,10 @@ def export_download(
     return _xlsx_response(content, filename)
 
 
-@router.get("/parts/steel-purchase-export-download")
+@router.get(
+    "/parts/steel-purchase-export-download",
+    summary="按基地导出钢材采购测算；冲压工厂、项目、版本、零件号可选",
+)
 def steel_purchase_export_download(
     location: str = Query(..., min_length=1, description="采购基地"),
     stamping_supplier: str | None = Query(None, description="冲压工厂"),
@@ -124,6 +131,7 @@ def steel_purchase_export_download(
 @router.post(
     "/parts/batch-delete",
     response_model=ApiResponse[StampingPartBatchDeleteResultVO],
+    summary="按基地 + 项目 + 版本批量删除零件；冲压工厂可选",
 )
 def batch_delete_parts(
     body: StampingPartBatchDeleteDTO,
@@ -140,7 +148,11 @@ def batch_delete_parts(
     )
 
 
-@router.get("/parts/{part_id:int}", response_model=ApiResponse[StampingPartWithProcessesResponse])
+@router.get(
+    "/parts/{part_id:int}",
+    response_model=ApiResponse[StampingPartWithProcessesResponse],
+    summary="获取单个零件（包含工序）",
+)
 def get_part(
     part_id: int,
     db: Session = Depends(get_db),
@@ -154,6 +166,7 @@ def get_part(
 @router.patch(
     "/parts/{part_id:int}/offal",
     response_model=ApiResponse[StampingPartResponse],
+    summary="零件详情纠错：是否利废、利用哪类废料",
 )
 def update_part_offal(
     part_id: int,
@@ -166,7 +179,9 @@ def update_part_offal(
     return ApiResponse.updated(data=vo, message="利废设置已保存")
 
 
-@router.delete("/parts/{part_id:int}", response_model=ApiResponse[None])
+@router.delete(
+    "/parts/{part_id:int}", response_model=ApiResponse[None], summary="删除零件（同时删除关联工序）"
+)
 def delete_part(
     part_id: int,
     db: Session = Depends(get_db),
@@ -177,7 +192,11 @@ def delete_part(
     return ApiResponse.deleted(message="零件删除成功")
 
 
-@router.get("/materials", response_model=ApiResponse[PageResult[StampingMaterialResponse]])
+@router.get(
+    "/materials",
+    response_model=ApiResponse[PageResult[StampingMaterialResponse]],
+    summary="分页查询冲压材料",
+)
 def list_materials(
     query: StampingMaterialQuery = Depends(),
     db: Session = Depends(get_db),
@@ -199,6 +218,7 @@ def list_materials(
 @router.get(
     "/filters/cascade",
     response_model=ApiResponse[StampingCascadeFilterOptionsVO],
+    summary="冲压级联筛选选项：基地 → 项目 → 版本 → 冲压工厂",
 )
 def get_cascade_filters(
     query: StampingCascadeFilterQuery = Depends(),
@@ -220,7 +240,11 @@ def get_cascade_filters(
     return ApiResponse.ok(data=options, message="获取成功")
 
 
-@router.patch("/processes/{process_id:int}", response_model=ApiResponse[StampingProcessResponse])
+@router.patch(
+    "/processes/{process_id:int}",
+    response_model=ApiResponse[StampingProcessResponse],
+    summary="更新工序（如成本系数）",
+)
 def update_process(
     process_id: int,
     body: StampingProcessUpdate,
@@ -232,7 +256,11 @@ def update_process(
     return ApiResponse.ok(data=result, message="工序更新成功")
 
 
-@router.put("/parts/{part_id:int}/processes", response_model=ApiResponse[BatchUpdateResponse])
+@router.put(
+    "/parts/{part_id:int}/processes",
+    response_model=ApiResponse[BatchUpdateResponse],
+    summary="批量更新零件的所有工序",
+)
 def batch_update_processes(
     part_id: int,
     body: list[StampingProcessItemUpdate],

@@ -21,7 +21,7 @@ router = APIRouter(prefix="/api/settings/system", tags=["系统设置 API"])
 _service = SettingsService()
 
 
-@router.get("/config", response_model=ApiResponse[ConfigVO])
+@router.get("/config", response_model=ApiResponse[ConfigVO], summary="获取系统配置")
 def get_config(
     db: Session = Depends(get_db),
     aux_db: Session = Depends(get_auxiliary_db),
@@ -32,7 +32,7 @@ def get_config(
     return ApiResponse.ok(data=_service.get_config(db, aux_db), message="获取成功")
 
 
-@router.put("/config", response_model=ApiResponse[ConfigVO])
+@router.put("/config", response_model=ApiResponse[ConfigVO], summary="更新系统配置")
 def update_config(
     dto: SystemConfigUpdateDTO,
     db: Session = Depends(get_db),

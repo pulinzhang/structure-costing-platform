@@ -46,6 +46,7 @@ _import_service = BomPackagingTransportFeeImportService()
 @router.get(
     "/paginate",
     response_model=ApiResponse[PageResult[BomPackagingTransportFeeResponse]],
+    summary="分页查询包装运输费",
 )
 def paginate(
     query: BomPackagingTransportFeeQuery = Depends(),
@@ -63,7 +64,9 @@ def paginate(
     )
 
 
-@router.get("/filters/locations", response_model=ApiResponse[list[str]])
+@router.get(
+    "/filters/locations", response_model=ApiResponse[list[str]], summary="获取包装运输费基地列表"
+)
 def get_locations(
     db: Session = Depends(get_db),
     current_user: UserVO = Depends(require_perm(Perm.BOM_PACKAGING_TRANSPORT_FEE_VIEW)),
@@ -71,7 +74,9 @@ def get_locations(
     return ApiResponse.ok(data=_service.get_locations(db))
 
 
-@router.get("/filters/years", response_model=ApiResponse[list[int]])
+@router.get(
+    "/filters/years", response_model=ApiResponse[list[int]], summary="获取包装运输费年份列表"
+)
 def get_years(
     db: Session = Depends(get_db),
     current_user: UserVO = Depends(require_perm(Perm.BOM_PACKAGING_TRANSPORT_FEE_VIEW)),
@@ -79,7 +84,11 @@ def get_years(
     return ApiResponse.ok(data=_service.get_years(db))
 
 
-@router.get("/filters/vehicle-models", response_model=ApiResponse[list[str]])
+@router.get(
+    "/filters/vehicle-models",
+    response_model=ApiResponse[list[str]],
+    summary="获取包装运输费项目列表",
+)
 def get_vehicle_models(
     db: Session = Depends(get_db),
     current_user: UserVO = Depends(require_perm(Perm.BOM_PACKAGING_TRANSPORT_FEE_VIEW)),
@@ -87,7 +96,7 @@ def get_vehicle_models(
     return ApiResponse.ok(data=_service.get_vehicle_models(db))
 
 
-@router.get("/export")
+@router.get("/export", summary="按筛选导出包装运输费")
 def export_excel(
     location: str | None = Query(None, description="采购基地"),
     year: int | None = Query(None, ge=2000, le=2100, description="年份"),
@@ -109,7 +118,7 @@ def export_excel(
     )
 
 
-@router.get("/template")
+@router.get("/template", summary="下载包装运输费导入模板")
 def download_import_template(
     current_user: UserVO = Depends(require_perm(Perm.BOM_PACKAGING_TRANSPORT_FEE_UPLOAD_VIEW)),
 ) -> StreamingResponse:
@@ -124,6 +133,7 @@ def download_import_template(
 @router.post(
     "/upload",
     response_model=ApiResponse[BomPackagingTransportFeeImportResultVO],
+    summary="同步导入包装运输费",
 )
 async def upload_excel(
     location: str = Form(..., description="采购基地（必填）"),
@@ -149,6 +159,7 @@ async def upload_excel(
 @router.post(
     "/batch-delete",
     response_model=ApiResponse[BomPackagingTransportFeeBatchDeleteResultVO],
+    summary="按范围批量删除包装运输费",
 )
 def batch_delete(
     body: BomPackagingTransportFeeBatchDeleteDTO,
@@ -167,6 +178,7 @@ def batch_delete(
 @router.post(
     "/batch-approve",
     response_model=ApiResponse[BomPackagingTransportFeeBatchAuditResultVO],
+    summary="按范围批量审核通过包装运输费",
 )
 def batch_approve(
     body: BomPackagingTransportFeeBatchApproveDTO,
@@ -180,6 +192,7 @@ def batch_approve(
 @router.post(
     "/batch-reverse-audit",
     response_model=ApiResponse[BomPackagingTransportFeeBatchAuditResultVO],
+    summary="按范围批量反审核包装运输费",
 )
 def batch_reverse_audit(
     body: BomPackagingTransportFeeBatchReverseAuditDTO,
@@ -194,6 +207,7 @@ def batch_reverse_audit(
     "",
     response_model=ApiResponse[BomPackagingTransportFeeResponse],
     status_code=status.HTTP_201_CREATED,
+    summary="创建包装运输费",
 )
 def create(
     body: BomPackagingTransportFeeCreate,
@@ -204,7 +218,11 @@ def create(
     return ApiResponse.created(data=record, message="创建成功")
 
 
-@router.get("/{id:int}", response_model=ApiResponse[BomPackagingTransportFeeResponse])
+@router.get(
+    "/{id:int}",
+    response_model=ApiResponse[BomPackagingTransportFeeResponse],
+    summary="查看包装运输费",
+)
 def get_by_id(
     id: int,
     db: Session = Depends(get_db),
@@ -214,7 +232,11 @@ def get_by_id(
     return ApiResponse.ok(data=record, message="获取成功")
 
 
-@router.put("/{id:int}", response_model=ApiResponse[BomPackagingTransportFeeResponse])
+@router.put(
+    "/{id:int}",
+    response_model=ApiResponse[BomPackagingTransportFeeResponse],
+    summary="更新包装运输费",
+)
 def update(
     id: int,
     body: BomPackagingTransportFeeUpdate,
@@ -225,7 +247,7 @@ def update(
     return ApiResponse.updated(data=record, message="更新成功")
 
 
-@router.delete("/{id:int}", response_model=ApiResponse[None])
+@router.delete("/{id:int}", response_model=ApiResponse[None], summary="删除包装运输费")
 def delete(
     id: int,
     db: Session = Depends(get_db),

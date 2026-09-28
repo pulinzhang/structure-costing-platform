@@ -59,6 +59,7 @@ _async_task_service = AsyncTaskService()
 @router.get(
     "/filters/years",
     response_model=ApiResponse[list[int]],
+    summary="获取冲压加工费年份列表",
 )
 def list_years(
     db: Session = Depends(get_db),
@@ -76,6 +77,7 @@ def list_years(
 @router.get(
     "/filters/locations",
     response_model=ApiResponse[list[str]],
+    summary="获取冲压加工费基地列表",
 )
 def list_locations(
     year: int | None = Query(None, description="年度"),
@@ -94,6 +96,7 @@ def list_locations(
 @router.get(
     "/filters/suppliers",
     response_model=ApiResponse[list[str]],
+    summary="获取冲压加工费供应商列表",
 )
 def list_suppliers(
     year: int | None = Query(None, description="年度"),
@@ -121,6 +124,7 @@ def list_suppliers(
 @router.get(
     "/filters/vehicle-models",
     response_model=ApiResponse[list[str]],
+    summary="获取冲压加工费项目列表",
 )
 def list_vehicle_models(
     year: int | None = Query(None, description="年度"),
@@ -146,6 +150,7 @@ def list_vehicle_models(
 @router.get(
     "/filters/versions",
     response_model=ApiResponse[list[str]],
+    summary="获取冲压加工费版本列表",
 )
 def list_versions(
     year: int | None = Query(None, description="年度"),
@@ -173,6 +178,7 @@ def list_versions(
 @router.get(
     "/calc/ready",
     response_model=ApiResponse[StampingProcessFeeCalcReadyVO],
+    summary="查询冲压加工费计算就绪状态",
 )
 def get_calc_ready(
     year: int = Query(..., ge=2000, le=2100),
@@ -195,6 +201,7 @@ def get_calc_ready(
 @router.get(
     "/calc/logs",
     response_model=ApiResponse[PageResult[StampingProcessFeeCalcLogVO]],
+    summary="分页查询冲压加工费计算日志",
 )
 def list_calc_logs(
     year: int | None = Query(None),
@@ -225,6 +232,7 @@ def list_calc_logs(
 @router.get(
     "/calc/logs/{log_id:int}",
     response_model=ApiResponse[StampingProcessFeeCalcLogVO],
+    summary="查看冲压加工费计算日志",
 )
 def get_calc_log(
     log_id: int,
@@ -238,6 +246,7 @@ def get_calc_log(
 @router.delete(
     "/calc/logs",
     response_model=ApiResponse[DeletedCountVO],
+    summary="删除全部冲压加工费计算日志",
 )
 def delete_all_calc_logs(
     db: Session = Depends(get_db),
@@ -250,6 +259,7 @@ def delete_all_calc_logs(
 @router.delete(
     "/calc/logs/{log_id:int}",
     response_model=ApiResponse[None],
+    summary="删除一条冲压加工费计算日志",
 )
 def delete_calc_log(
     log_id: int,
@@ -263,6 +273,7 @@ def delete_calc_log(
 @router.get(
     "/calc/tasks/{task_id}",
     response_model=ApiResponse[AsyncTaskProgressVO],
+    summary="查询冲压加工费计算进度",
 )
 def get_calc_task_progress(
     task_id: str,
@@ -283,6 +294,7 @@ def get_calc_task_progress(
 @router.post(
     "/calc",
     response_model=ApiResponse[AsyncTaskAcceptedVO],
+    summary="提交冲压加工费异步计算",
 )
 def calculate(
     dto: StampingProcessFeeCalcDTO,
@@ -301,6 +313,7 @@ def calculate(
 @router.get(
     "",
     response_model=ApiResponse[PageResult[StampingProcessFeeVO]],
+    summary="分页查询冲压加工费",
 )
 def list_fees(
     query: StampingProcessFeeQuery = Depends(),
@@ -318,7 +331,7 @@ def list_fees(
     )
 
 
-@router.get("/export-download")
+@router.get("/export-download", summary="按当前筛选条件导出冲压加工费 Excel")
 def export_download(
     year: int | None = Query(None, ge=2000, le=2100, description="年度"),
     location: str | None = Query(None, description="基地"),
@@ -352,6 +365,7 @@ def export_download(
 @router.get(
     "/{fee_id:int}",
     response_model=ApiResponse[StampingProcessFeeVO],
+    summary="查看冲压加工费",
 )
 def get_fee(
     fee_id: int,
@@ -365,6 +379,7 @@ def get_fee(
 @router.patch(
     "/{fee_id:int}",
     response_model=ApiResponse[StampingProcessFeeVO],
+    summary="修改冲压加工费其他费用",
 )
 def update_other_fee(
     fee_id: int,
@@ -379,6 +394,7 @@ def update_other_fee(
 @router.post(
     "/batch-delete",
     response_model=ApiResponse[StampingProcessFeeBatchDeleteResultVO],
+    summary="批量删除冲压加工费",
 )
 def batch_delete_fees(
     dto: StampingProcessFeeDeleteDTO,
@@ -395,6 +411,7 @@ def batch_delete_fees(
 @router.post(
     "/batch-approve",
     response_model=ApiResponse[StampingProcessFeeBatchAuditResultVO],
+    summary="批量审核通过冲压加工费",
 )
 def batch_approve_fees(
     dto: StampingProcessFeeBatchApproveDTO,
@@ -411,6 +428,7 @@ def batch_approve_fees(
 @router.post(
     "/batch-reverse-audit",
     response_model=ApiResponse[StampingProcessFeeBatchAuditResultVO],
+    summary="批量反审核冲压加工费",
 )
 def batch_reverse_audit_fees(
     dto: StampingProcessFeeBatchReverseAuditDTO,

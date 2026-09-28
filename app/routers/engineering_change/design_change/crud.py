@@ -28,6 +28,7 @@ _rollback_service = EngineeringChangeRollbackService()
 @router.get(
     "/change-orders",
     response_model=ApiResponse[PageResult[EngineeringChangeListRowVO]],
+    summary="分页查询设计变更",
 )
 def list_change_orders(
     query: EngineeringChangeOrderQueryDTO = Depends(),
@@ -45,7 +46,7 @@ def list_change_orders(
     )
 
 
-@router.get("/change-orders/{upload_log_id:int}/original-file")
+@router.get("/change-orders/{upload_log_id:int}/original-file", summary="下载设计变更原文件")
 def download_change_order_original(
     upload_log_id: int,
     db: Session = Depends(get_db),
@@ -68,6 +69,7 @@ def download_change_order_original(
 @router.delete(
     "/change-orders/{upload_log_id:int}",
     response_model=ApiResponse[None],
+    summary="删除设计变更上传记录",
 )
 def delete_change_order_upload(
     upload_log_id: int,

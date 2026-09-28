@@ -36,6 +36,7 @@ _base_price_service = SteelBasePriceService()
 @router.get(
     "/options",
     response_model=ApiResponse[SteelBasePriceFilterOptionsVO],
+    summary="筛选下拉（复用基准价维度）",
 )
 def get_options(
     db: Session = Depends(get_db),
@@ -53,6 +54,7 @@ def get_options(
 @router.get(
     "/export-preview",
     response_model=ApiResponse[PageResult[WinningThicknessRowVO]],
+    summary="预览中标钢厂厚度价格列表",
 )
 def export_preview(
     year: int | None = Query(None, ge=2000, le=2100, description="年度"),
@@ -91,6 +93,7 @@ def export_preview(
 @router.get(
     "/export-download",
     response_model=None,
+    summary="下载中标钢厂厚度价格列表 Excel",
 )
 def export_download(
     year: int | None = Query(None, ge=2000, le=2100, description="年度"),

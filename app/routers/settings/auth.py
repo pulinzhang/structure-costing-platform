@@ -26,6 +26,7 @@ _user_service = UserService()
 @router.get(
     "/login-key",
     response_model=ApiResponse[LoginKeyVO],
+    summary="签发一次性登录公钥",
 )
 def login_key(
     request: Request,
@@ -40,6 +41,7 @@ def login_key(
 @router.post(
     "/login",
     response_model=ApiResponse[LoginVO],
+    summary="账号密码登录，返回 token",
 )
 def login(
     dto: UserLoginDTO,
@@ -56,6 +58,7 @@ def login(
 @router.post(
     "/touch",
     response_model=ApiResponse[UserVO],
+    summary="心跳：校验 token 是否仍有效，不顺延空闲计时",
 )
 def touch(current_user: UserVO = Depends(get_current_user_no_touch)) -> ApiResponse[UserVO]:
     """心跳：校验 token 是否仍有效，不顺延空闲计时"""
@@ -65,6 +68,7 @@ def touch(current_user: UserVO = Depends(get_current_user_no_touch)) -> ApiRespo
 @router.get(
     "/me",
     response_model=ApiResponse[UserVO],
+    summary="获取当前登录用户",
 )
 def me(current_user: UserVO = Depends(get_current_user)) -> ApiResponse[UserVO]:
     """获取当前登录用户（主库最新资料）"""
@@ -74,6 +78,7 @@ def me(current_user: UserVO = Depends(get_current_user)) -> ApiResponse[UserVO]:
 @router.put(
     "/me",
     response_model=ApiResponse[UserVO],
+    summary="当前用户更新个人资料，并同步 token 快照",
 )
 def update_me(
     dto: UserSelfUpdateDTO,
@@ -90,6 +95,7 @@ def update_me(
 @router.post(
     "/avatar",
     response_model=ApiResponse[AvatarUploadVO],
+    summary="上传头像到 uploads/avatars/",
 )
 async def upload_avatar(
     file: UploadFile = File(..., description="头像图片"),
@@ -115,6 +121,7 @@ async def upload_avatar(
 @router.put(
     "/password",
     response_model=ApiResponse[UserVO],
+    summary="当前用户修改密码：必须验证旧密码；默认注销其他设备",
 )
 def change_password(
     dto: UserSelfPasswordUpdateDTO,
@@ -136,6 +143,7 @@ def change_password(
 @router.post(
     "/logout",
     response_model=ApiResponse[None],
+    summary="退出登录：删除服务端 token",
 )
 def logout(
     token_db: Session = Depends(get_auxiliary_db),

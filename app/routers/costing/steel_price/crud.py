@@ -38,6 +38,7 @@ _steel_price_export_service = SteelPriceExportService()
 @router.get(
     "",
     response_model=ApiResponse[PageResult[SteelPriceResponse]],
+    summary="分页浏览钢材价格",
 )
 def list_steel_prices(
     query: SteelPriceQuery = Depends(),
@@ -58,6 +59,7 @@ def list_steel_prices(
 @router.post(
     "/batch-delete",
     response_model=ApiResponse[SteelPriceBatchDeleteResultVO],
+    summary="按筛选条件批量删除未审核钢材价格",
 )
 def batch_delete_steel_prices(
     body: SteelPriceBatchDeleteDTO,
@@ -76,6 +78,7 @@ def batch_delete_steel_prices(
 @router.post(
     "/batch-approve",
     response_model=ApiResponse[SteelPriceBatchAuditResultVO],
+    summary="按年度+月份+基地批量审核通过",
 )
 def batch_approve_steel_prices(
     body: SteelPriceBatchApproveDTO,
@@ -94,6 +97,7 @@ def batch_approve_steel_prices(
 @router.post(
     "/batch-reverse-audit",
     response_model=ApiResponse[SteelPriceBatchAuditResultVO],
+    summary="按年度+月份+基地批量反审核",
 )
 def batch_reverse_audit_steel_prices(
     body: SteelPriceBatchReverseAuditDTO,
@@ -109,7 +113,7 @@ def batch_reverse_audit_steel_prices(
     return ApiResponse.ok(data=result, message=result.message)
 
 
-@router.get("/export-download")
+@router.get("/export-download", summary="按当前筛选条件导出钢材联动价格 Excel")
 def export_download(
     year: int | None = Query(None, ge=2000, le=2100, description="年度"),
     month: int | None = Query(None, ge=1, le=12, description="月份"),
@@ -147,6 +151,7 @@ def export_download(
 @router.get(
     "/{record_id:int}",
     response_model=ApiResponse[SteelPriceResponse],
+    summary="查看单条钢材价格",
 )
 def get_steel_price(
     record_id: int,
@@ -161,6 +166,7 @@ def get_steel_price(
 @router.put(
     "/{record_id:int}",
     response_model=ApiResponse[SteelPriceResponse],
+    summary="更新钢材价格（已审核通过不可改）",
 )
 def update_steel_price(
     record_id: int,
@@ -176,6 +182,7 @@ def update_steel_price(
 @router.delete(
     "/{record_id:int}",
     response_model=ApiResponse[None],
+    summary="删除钢材价格（已审核通过不可删）",
 )
 def delete_steel_price(
     record_id: int,

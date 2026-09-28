@@ -50,6 +50,7 @@ _report_export_service = AssemblyCostCalcReportExportService()
 @router.get(
     "/filters/years",
     response_model=ApiResponse[list[int]],
+    summary="获取总成核价可核算年度",
 )
 def list_years(
     db: Session = Depends(get_db),
@@ -68,6 +69,7 @@ def list_years(
 @router.get(
     "/calc/ready",
     response_model=ApiResponse[AssemblyCostCalcReadyVO],
+    summary="查询总成核价计算就绪状态",
 )
 def get_calc_ready(
     year: int = Query(..., ge=2000, le=2100),
@@ -90,6 +92,7 @@ def get_calc_ready(
 @router.get(
     "/calc/logs",
     response_model=ApiResponse[PageResult[AssemblyCostCalcLogVO]],
+    summary="分页查询总成核价计算日志",
 )
 def list_calc_logs(
     year: int | None = Query(None),
@@ -124,6 +127,7 @@ def list_calc_logs(
 @router.get(
     "/calc/logs/{log_id:int}",
     response_model=ApiResponse[AssemblyCostCalcLogVO],
+    summary="查看总成核价计算日志",
 )
 def get_calc_log(
     log_id: int,
@@ -134,7 +138,7 @@ def get_calc_log(
     return ApiResponse.ok(data=record)
 
 
-@router.get("/calc/logs/{log_id:int}/export-download")
+@router.get("/calc/logs/{log_id:int}/export-download", summary="导出本条计算日志的浅色报告 Excel")
 def export_calc_report(
     log_id: int,
     keyword: str | None = Query(None, description="零件号、名称、说明"),
@@ -167,6 +171,7 @@ def export_calc_report(
 @router.delete(
     "/calc/logs",
     response_model=ApiResponse[DeletedCountVO],
+    summary="删除全部总成核价计算日志",
 )
 def delete_all_calc_logs(
     db: Session = Depends(get_db),
@@ -179,6 +184,7 @@ def delete_all_calc_logs(
 @router.delete(
     "/calc/logs/{log_id:int}",
     response_model=ApiResponse[None],
+    summary="删除一条总成核价计算日志",
 )
 def delete_calc_log(
     log_id: int,
@@ -192,6 +198,7 @@ def delete_calc_log(
 @router.get(
     "/calc/tasks/{task_id}",
     response_model=ApiResponse[AsyncTaskProgressVO],
+    summary="查询总成核价计算进度",
 )
 def get_calc_task_progress(
     task_id: str,
@@ -212,6 +219,7 @@ def get_calc_task_progress(
 @router.post(
     "/calc",
     response_model=ApiResponse[AsyncTaskAcceptedVO],
+    summary="提交总成核价异步计算",
 )
 def calculate(
     dto: AssemblyCostCalcDTO,

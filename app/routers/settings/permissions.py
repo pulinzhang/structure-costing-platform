@@ -20,6 +20,7 @@ _permission_service = PermissionService()
 @router.get(
     "/permissions/tree",
     response_model=ApiResponse[list[PermissionNodeVO]],
+    summary="返回权限目录树（仅管理员）",
 )
 def get_permission_tree(
     current_user: UserVO = Depends(require_admin_user),
@@ -32,6 +33,7 @@ def get_permission_tree(
 @router.get(
     "/users/{user_id:int}/permissions",
     response_model=ApiResponse[list[str]],
+    summary="获取指定用户已授权权限码",
 )
 def get_user_permissions(
     user_id: int,
@@ -46,6 +48,7 @@ def get_user_permissions(
 @router.put(
     "/users/{user_id:int}/permissions",
     response_model=ApiResponse[list[str]],
+    summary="覆盖保存用户权限",
 )
 def set_user_permissions(
     user_id: int,

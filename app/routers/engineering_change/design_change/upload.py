@@ -28,7 +28,7 @@ _async_task_service = AsyncTaskService()
 _upload_service = EngineeringChangeUploadService()
 
 
-@router.get("/template")
+@router.get("/template", summary="下载设计变更导入模板")
 def download_template(
     current_user: UserVO = Depends(require_perm(Perm.ENGINEERING_CHANGE_UPLOAD_UPLOAD)),
 ) -> StreamingResponse:
@@ -41,7 +41,7 @@ def download_template(
     )
 
 
-@router.post("/upload", response_model=ApiResponse[AsyncTaskAcceptedVO])
+@router.post("/upload", response_model=ApiResponse[AsyncTaskAcceptedVO], summary="上传设计变更")
 async def upload_engineering_change(
     location: str = Form(...),
     vehicle_model: str = Form(...),
@@ -68,6 +68,7 @@ async def upload_engineering_change(
 @router.get(
     "/upload/tasks/{task_id}",
     response_model=ApiResponse[AsyncTaskProgressVO],
+    summary="查询设计变更上传进度",
 )
 def get_upload_task(
     task_id: str,

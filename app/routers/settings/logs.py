@@ -24,6 +24,7 @@ _service = OperationLogService()
 @router.get(
     "",
     response_model=ApiResponse[PageResult[OperationLogVO]],
+    summary="分页查询操作日志",
 )
 def list_operation_logs(
     query: OperationLogQuery = Depends(),
@@ -42,7 +43,7 @@ def list_operation_logs(
     )
 
 
-@router.get("/export-download")
+@router.get("/export-download", summary="按筛选条件导出操作日志 Excel")
 def export_operation_logs(
     username: str | None = Query(None),
     client_ip: str | None = Query(None),

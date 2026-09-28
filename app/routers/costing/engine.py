@@ -27,6 +27,7 @@ _service = CostingEngineService()
 @router.get(
     "/ready",
     response_model=ApiResponse[CostingEngineReadyVO],
+    summary="查询核价引擎就绪状态",
 )
 def get_ready(
     location: str = Query(..., min_length=1, description="生产基地"),
@@ -42,6 +43,7 @@ def get_ready(
 @router.post(
     "/runs",
     response_model=ApiResponse[AsyncTaskAcceptedVO],
+    summary="提交核价引擎运行",
 )
 def start_run(
     dto: CostingEngineRunCreateDTO,
@@ -55,6 +57,7 @@ def start_run(
 @router.get(
     "/tasks/{task_id}",
     response_model=ApiResponse[AsyncTaskProgressVO],
+    summary="查询核价引擎任务进度",
 )
 def get_task_progress(
     task_id: str,
@@ -68,6 +71,7 @@ def get_task_progress(
 @router.get(
     "/runs/{run_id:int}",
     response_model=ApiResponse[CostingEngineRunVO],
+    summary="查看核价引擎运行",
 )
 def get_run(
     run_id: int,
@@ -80,6 +84,7 @@ def get_run(
 @router.get(
     "/runs",
     response_model=ApiResponse[PageResult[CostingEngineRunListItemVO]],
+    summary="分页查询核价引擎运行",
 )
 def list_runs(
     location: str | None = Query(None),
@@ -111,6 +116,7 @@ def list_runs(
 @router.delete(
     "/runs",
     response_model=ApiResponse[DeletedCountVO],
+    summary="删除全部核价引擎运行记录",
 )
 def delete_all_runs(
     db: Session = Depends(get_db),
@@ -126,6 +132,7 @@ def delete_all_runs(
 @router.delete(
     "/runs/{run_id:int}",
     response_model=ApiResponse[None],
+    summary="删除一条核价引擎运行记录",
 )
 def delete_run(
     run_id: int,

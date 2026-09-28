@@ -41,6 +41,7 @@ _async_task_service = AsyncTaskService()
 @router.get(
     "/filters/years",
     response_model=ApiResponse[list[int]],
+    summary="获取冲压零件价格可核算年度",
 )
 def list_years(
     db: Session = Depends(get_db),
@@ -58,6 +59,7 @@ def list_years(
 @router.get(
     "/calc/ready",
     response_model=ApiResponse[StampingPartCostCalcReadyVO],
+    summary="查询冲压零件价格计算就绪状态",
 )
 def get_calc_ready(
     year: int = Query(..., ge=2000, le=2100),
@@ -80,6 +82,7 @@ def get_calc_ready(
 @router.get(
     "/calc/logs",
     response_model=ApiResponse[PageResult[StampingPartCostCalcLogVO]],
+    summary="分页查询冲压零件价格计算日志",
 )
 def list_calc_logs(
     year: int | None = Query(None),
@@ -112,6 +115,7 @@ def list_calc_logs(
 @router.get(
     "/calc/logs/{log_id:int}",
     response_model=ApiResponse[StampingPartCostCalcLogVO],
+    summary="查看冲压零件价格计算日志",
 )
 def get_calc_log(
     log_id: int,
@@ -125,6 +129,7 @@ def get_calc_log(
 @router.delete(
     "/calc/logs",
     response_model=ApiResponse[DeletedCountVO],
+    summary="删除全部冲压零件价格计算日志",
 )
 def delete_all_calc_logs(
     db: Session = Depends(get_db),
@@ -137,6 +142,7 @@ def delete_all_calc_logs(
 @router.delete(
     "/calc/logs/{log_id:int}",
     response_model=ApiResponse[None],
+    summary="删除一条冲压零件价格计算日志",
 )
 def delete_calc_log(
     log_id: int,
@@ -150,6 +156,7 @@ def delete_calc_log(
 @router.get(
     "/calc/tasks/{task_id}",
     response_model=ApiResponse[AsyncTaskProgressVO],
+    summary="查询冲压零件价格计算进度",
 )
 def get_calc_task_progress(
     task_id: str,
@@ -170,6 +177,7 @@ def get_calc_task_progress(
 @router.post(
     "/calc",
     response_model=ApiResponse[AsyncTaskAcceptedVO],
+    summary="提交冲压零件价格异步计算",
 )
 def calculate(
     dto: StampingPartCostCalcDTO,

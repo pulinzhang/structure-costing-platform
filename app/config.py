@@ -50,6 +50,10 @@ class Settings(BaseSettings):
     # 登录会话：无业务请求超时（分钟）。未配置时默认 15；心跳 /api/auth/touch 不续期
     TOKEN_IDLE_MINUTES: int = Field(default=15, ge=1, le=1440)
 
+    # API 文档入口（/docs、/redoc、/openapi.json）的 HTTP Basic。两者都非空才允许登录。/redoc 转到 /docs
+    SWAGGER_USERNAME: str = ""
+    SWAGGER_PASSWORD: str = ""
+
     @field_validator("TOKEN_IDLE_MINUTES", mode="before")
     @classmethod
     def _default_token_idle_minutes(cls, value: object) -> object:

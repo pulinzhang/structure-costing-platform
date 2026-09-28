@@ -38,6 +38,7 @@ _policy_service = SteelPricePolicyService()
 @router.get(
     "",
     response_model=ApiResponse[PageResult[PolicyListResponse]],
+    summary="分页筛选政策列表",
 )
 def list_policies(
     query: PolicyQuery = Depends(),
@@ -64,6 +65,7 @@ def list_policies(
 @router.get(
     "/options",
     response_model=ApiResponse[PolicyOptionsResponse],
+    summary="获取政策筛选下拉选项",
 )
 def get_policy_options(
     db: Session = Depends(get_db),
@@ -82,6 +84,7 @@ def get_policy_options(
 @router.delete(
     "/batch",
     response_model=ApiResponse[None],
+    summary="根据条件批量删除政策",
 )
 def batch_delete_policies(
     year: int | None = None,
@@ -106,6 +109,7 @@ def batch_delete_policies(
 @router.post(
     "/match",
     response_model=ApiResponse[PolicyMatchResponse],
+    summary="根据政策维度与尺寸值，匹配阶梯明细并返回加减价金额",
 )
 def match_ladder(
     body: PolicyMatchRequest,
@@ -130,6 +134,7 @@ def match_ladder(
 @router.get(
     "/{policy_id:int}",
     response_model=ApiResponse[PolicyDetailResponse],
+    summary="查看钢价政策详情",
 )
 def get_policy(
     policy_id: int,
@@ -149,6 +154,7 @@ def get_policy(
 @router.post(
     "",
     response_model=ApiResponse[PolicyDetailResponse],
+    summary="原子创建政策（含阶梯明细）",
 )
 def create_policy(
     body: PolicyCreate,
@@ -163,6 +169,7 @@ def create_policy(
 @router.put(
     "/{policy_id:int}",
     response_model=ApiResponse[PolicyDetailResponse],
+    summary="更新政策（支持更新政策头字段和整组替换阶梯明细）",
 )
 def update_policy(
     policy_id: int,
@@ -178,6 +185,7 @@ def update_policy(
 @router.delete(
     "/{policy_id:int}",
     response_model=ApiResponse[None],
+    summary="删除政策（含级联删除全部阶梯明细）",
 )
 def delete_policy(
     policy_id: int,
@@ -192,6 +200,7 @@ def delete_policy(
 @router.post(
     "/{policy_id:int}/items",
     response_model=ApiResponse[LadderItemResponse],
+    summary="向指定政策新增一条阶梯明细",
 )
 def add_ladder_item(
     policy_id: int,
@@ -207,6 +216,7 @@ def add_ladder_item(
 @router.put(
     "/{policy_id:int}/items/{item_id:int}",
     response_model=ApiResponse[LadderItemResponse],
+    summary="更新指定政策下的单条阶梯明细",
 )
 def update_ladder_item(
     policy_id: int,
@@ -223,6 +233,7 @@ def update_ladder_item(
 @router.delete(
     "/{policy_id:int}/items/{item_id:int}",
     response_model=ApiResponse[None],
+    summary="删除指定政策下的单条阶梯明细",
 )
 def delete_ladder_item(
     policy_id: int,

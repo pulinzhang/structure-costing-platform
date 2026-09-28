@@ -26,6 +26,7 @@ _auth_service = AuthService()
 @router.get(
     "",
     response_model=ApiResponse[PageResult[UserVO]],
+    summary="分页查询用户",
 )
 def list_users(
     query: UserQueryDTO = Depends(),
@@ -47,6 +48,7 @@ def list_users(
 @router.get(
     "/all",
     response_model=ApiResponse[list[UserVO]],
+    summary="获取全部用户（不分页）",
 )
 def list_all_users(
     db: Session = Depends(get_db),
@@ -60,6 +62,7 @@ def list_all_users(
 @router.get(
     "/{user_id:int}",
     response_model=ApiResponse[UserVO],
+    summary="获取单个用户",
 )
 def get_user(
     user_id: int,
@@ -75,6 +78,7 @@ def get_user(
     "",
     response_model=ApiResponse[UserVO],
     status_code=status.HTTP_201_CREATED,
+    summary="创建用户",
 )
 def create_user(
     dto: UserCreateDTO,
@@ -89,6 +93,7 @@ def create_user(
 @router.put(
     "/{user_id:int}",
     response_model=ApiResponse[UserVO],
+    summary="更新用户资料；若停用账号则立即作废其全部登录会话",
 )
 def update_user(
     user_id: int,
@@ -111,6 +116,7 @@ def update_user(
 @router.put(
     "/{user_id:int}/password",
     response_model=ApiResponse[UserVO],
+    summary="管理员重置密码：改密后作废该用户全部会话，强制重新登录",
 )
 def update_password(
     user_id: int,
@@ -129,6 +135,7 @@ def update_password(
 @router.delete(
     "/{user_id:int}",
     response_model=ApiResponse[None],
+    summary="删除用户并作废其登录会话",
 )
 def delete_user(
     user_id: int,

@@ -34,6 +34,7 @@ _async_task_service = AsyncTaskService()
 @router.get(
     "/calc/logs",
     response_model=ApiResponse[PageResult[SteelPriceCalcLogVO]],
+    summary="分页查询钢价计算历史",
 )
 def list_calc_logs(
     year: int | None = Query(None, ge=2000, le=2100, description="核价年度"),
@@ -64,6 +65,7 @@ def list_calc_logs(
 @router.get(
     "/calc/logs/{log_id:int}",
     response_model=ApiResponse[SteelPriceCalcLogVO],
+    summary="查看单次计算全过程",
 )
 def get_calc_log(
     log_id: int,
@@ -78,6 +80,7 @@ def get_calc_log(
 @router.delete(
     "/calc/logs",
     response_model=ApiResponse[DeletedCountVO],
+    summary="删除全部钢价计算日志",
 )
 def delete_all_calc_logs(
     db: Session = Depends(get_db),
@@ -90,6 +93,7 @@ def delete_all_calc_logs(
 @router.delete(
     "/calc/logs/{log_id:int}",
     response_model=ApiResponse[None],
+    summary="删除一条计算历史日志",
 )
 def delete_calc_log(
     log_id: int,
@@ -104,6 +108,7 @@ def delete_calc_log(
 @router.get(
     "/calc/tasks/{task_id}",
     response_model=ApiResponse[AsyncTaskProgressVO],
+    summary="查询钢价计算任务进度",
 )
 def get_steel_price_calc_task_progress(
     task_id: str,
@@ -126,6 +131,7 @@ def get_steel_price_calc_task_progress(
 @router.post(
     "/calc",
     response_model=ApiResponse[AsyncTaskAcceptedVO],
+    summary="提交钢价联动异步计算",
 )
 def calculate_steel_prices(
     body: SteelPriceCalcDTO,

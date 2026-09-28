@@ -34,6 +34,7 @@ _service = LlmAnalysisReportService()
 @router.post(
     "/reports",
     response_model=ApiResponse[LlmAnalysisReportTaskVO],
+    summary="提交分析报告任务",
 )
 def create_report(
     dto: LlmAnalysisReportCreateDTO,
@@ -49,6 +50,7 @@ def create_report(
 @router.get(
     "/reports/{report_id:int}",
     response_model=ApiResponse[LlmAnalysisReportVO],
+    summary="查看分析报告",
 )
 def get_report(
     report_id: int,
@@ -62,6 +64,7 @@ def get_report(
 @router.get(
     "/reports",
     response_model=ApiResponse[PageResult[LlmAnalysisReportListItemVO]],
+    summary="分页查询分析报告",
 )
 def list_reports(
     location: str | None = Query(None),
@@ -99,6 +102,7 @@ def list_reports(
 @router.delete(
     "/reports/{report_id:int}",
     response_model=ApiResponse[None],
+    summary="删除分析报告",
 )
 def delete_report(
     report_id: int,
@@ -112,6 +116,7 @@ def delete_report(
 @router.get(
     "/tasks/{task_id}",
     response_model=ApiResponse[AsyncTaskProgressVO],
+    summary="查询分析报告任务进度",
 )
 def get_task(
     task_id: str,
