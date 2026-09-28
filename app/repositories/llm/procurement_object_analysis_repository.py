@@ -1,4 +1,4 @@
-"""采购对象清单 — LLM 只读查询。"""
+"""采购对象列表 — LLM 只读查询。"""
 
 from __future__ import annotations
 

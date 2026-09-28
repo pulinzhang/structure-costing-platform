@@ -137,7 +137,7 @@ def _faq_chunks(faq_text: str) -> list[CorpusChunk]:
                     "（关机、关浏览器），系统仍认为该范围正在计算。"
                     "打开「核价 → 总成核价计算」（即成品核价计算页），在页面下方计算历史中找到状态为「计算中」的记录，"
                     "点删除，再重新开始计算。"
-                    "删除只清掉这条计算记录，不会撤掉已经写入总成核价一览的数据。"
+                    "删除只清掉这条计算记录，不会撤掉已经写入总成核价列表的数据。"
                 ),
                 source_page="help.html",
                 anchor="faq",
@@ -277,7 +277,7 @@ def _extra_faq_chunks(help_html: str) -> list[CorpusChunk]:
             text=(
                 "上传入口在侧栏各模块的「上传」页：冲压工艺文件、模具布点、冲次单价、检具费、"
                 "材料清单、焊接单价、包装运输、年度零件价、基准价与加减价政策等。"
-                "投产后改图、换零件号请走「工程变更 → 设计变更 → 上传工程变更」；零件号不动、只换材料和料厚请走「工程变更 → 材料变更 → 上传材料变更」。不要在材料清单、工艺、布点页整份重传覆盖。"
+                "投产后改图、换零件号请走「工程变更 → 设计变更 → 上传设计变更」；零件号不动、只换材料和料厚请走「工程变更 → 材料变更 → 上传材料变更」。不要在材料清单、工艺、布点页整份重传覆盖。"
                 "上传前确认基地、项目、清单版本、年月维度与本次核价一致；列表页只读核对，写入靠上传或计算页。"
             ),
             source_page="help.html",
@@ -330,7 +330,7 @@ def _extra_faq_chunks(help_html: str) -> list[CorpusChunk]:
         ),
         CorpusChunk(
             chunk_id="procurement",
-            title="采购对象清单在哪里",
+            title="采购对象列表在哪里",
             text=(
                 "采购对象在「焊接工程 → 采购对象」：从材料清单生成集合。"
                 "列入退化供货件、分总成、冲压件；标准件/胶等与异常进核对区。"
@@ -346,7 +346,7 @@ def _extra_faq_chunks(help_html: str) -> list[CorpusChunk]:
             title="总成核价（成品核价）在哪",
             text=(
                 "核价菜单「总成核价」核算材料清单根节点（供货总成 / 成品）的月总账与总费用。"
-                "计算页 #/assembly-cost-calc，一览 #/assembly-cost。旧称成品核价 / L0。"
+                "计算页 #/assembly-cost-calc，列表 #/assembly-cost。旧称成品核价 / L0。"
                 "卡住时在计算历史里删掉「计算中」的记录，再重新计算。"
             ),
             source_page="help.html",
@@ -362,7 +362,7 @@ def _extra_faq_chunks(help_html: str) -> list[CorpusChunk]:
                 "只读查询 + 导出协议，不算价、不落结果表。先算总成核价才有结算价。"
                 "两个按钮切换：默认「采购对象」可以筛选供应商、一家一份；「总成」不筛选供应商、签一份协议、乙方在现场填写。"
                 "窗口最多 12 个月；打开默认最近一次核价的单月。缺结算价显示斜杠。"
-                "采购对象视图须先生成焊接工程里的采购对象清单；总成视图不依赖清单。"
+                "采购对象视图须先生成焊接工程里的采购对象列表；总成视图不依赖清单。"
             ),
             source_page="help.html",
             anchor="procurement-contract-report",
@@ -381,8 +381,8 @@ def _extra_faq_chunks(help_html: str) -> list[CorpusChunk]:
             chunk_id="audit",
             title="列表怎么审核",
             text=(
-                "审核在各结果列表页操作列：总成核价一览、冲压零件价格一览、焊接费列表、"
-                "冲压模具费列表、采购对象清单。待审核行可点审核；已审核可按权限反审核。"
+                "审核在各结果列表页操作列：总成核价列表、冲压零件价格列表、焊接费列表、"
+                "冲压模具费列表、采购对象列表。待审核行可点审核；已审核可按权限反审核。"
                 "列表页只改审核状态，不算价。问「还有多少待审核」请用智能体查数，不要只问怎么点。"
             ),
             source_page="help.html",
@@ -393,13 +393,13 @@ def _extra_faq_chunks(help_html: str) -> list[CorpusChunk]:
             chunk_id="calc_run",
             title="计算页在哪",
             text=(
-                "写入靠计算页，不在一览上改价。"
+                "写入靠计算页，不在列表上改价。"
                 "冲压零件价格计算 #/stamping-part-cost-calc；"
                 "总成核价计算 #/assembly-cost-calc；"
                 "冲压模具费计算 #/stamping-die-fee-calc；"
                 "冲压加工费计算在冲压工程计算页；"
                 "焊接费计算 #/bom-welding-fee-calc。"
-                "算完后到对应一览核对并审核。"
+                "算完后到对应列表核对并审核。"
             ),
             source_page="help.html",
             anchor="costing-pages",
@@ -416,9 +416,9 @@ def _extra_faq_chunks(help_html: str) -> list[CorpusChunk]:
         ),
         CorpusChunk(
             chunk_id="yishiyiyi_extra",
-            title="中标钢厂厚度价格一览",
+            title="中标钢厂厚度价格列表",
             text=(
-                "一事一议 → 中标钢厂厚度价格一览表：选定年/月/基地后预览或导出中标基价叠厚度加减价，不改核价库。"
+                "一事一议 → 中标钢厂厚度价格列表：选定年/月/基地后预览或导出中标基价叠厚度加减价，不改核价库。"
             ),
             source_page="help.html",
             anchor="yishiyiyi",

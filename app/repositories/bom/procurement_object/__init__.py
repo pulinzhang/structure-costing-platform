@@ -1,1 +1,1 @@
-"""采购对象清单 Repository 子包。"""
+"""采购对象列表 Repository 子包。"""

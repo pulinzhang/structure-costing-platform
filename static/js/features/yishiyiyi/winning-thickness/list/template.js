@@ -1,5 +1,5 @@
 /**
- * 中标钢厂厚度价格一览表 — 页面模板
+ * 中标钢厂厚度价格列表 — 页面模板
  * 必填基地/年/月；中标基价叠厚度加减价后外发
  */
 
@@ -18,7 +18,7 @@ export function winningThicknessDownloadTemplate() {
                 <div class="flex items-center justify-between px-5 py-3.5 border-b border-line-subtle">
                     <div class="flex items-center gap-3">
                         <div class="${HUD_LED}"></div>
-                        <h2 class="text-[12px] font-semibold text-ink-muted tracking-wide">中标钢厂厚度价格一览表</h2>
+                        <h2 class="text-[12px] font-semibold text-ink-muted tracking-wide">中标钢厂厚度价格列表</h2>
                     </div>
                     <div class="flex items-center gap-2">
                         <button id="btnExportWinningThickness"

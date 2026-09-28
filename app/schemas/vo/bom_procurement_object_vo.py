@@ -1,4 +1,4 @@
-"""采购对象清单 VO。"""
+"""采购对象列表 VO。"""
 
 from datetime import datetime
 from decimal import Decimal

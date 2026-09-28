@@ -22,6 +22,7 @@ _WINNING_THICKNESS_TERMS: tuple[str, ...] = (
     "中标钢厂厚度",
     "厚度价格一览",
     "厚度价格一览表",
+    "厚度价格列表",
 )
 _POLICY_TERMS: tuple[str, ...] = (
     "加减价",

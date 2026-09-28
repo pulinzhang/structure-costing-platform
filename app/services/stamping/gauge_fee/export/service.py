@@ -117,7 +117,7 @@ class StampingGaugeFeeExportService:
         stamp: datetime,
     ) -> None:
         sheet.merge_cells(start_row=1, start_column=1, end_row=1, end_column=_COL_COUNT)
-        title = sheet.cell(row=1, column=1, value="冲压检具费一览")
+        title = sheet.cell(row=1, column=1, value="冲压检具费列表")
         title.font = Font(name=_FONT, size=16, bold=True, color="FFFFFF")
         title.fill = _TITLE_FILL
         title.alignment = Alignment(horizontal="left", vertical="center", indent=1)

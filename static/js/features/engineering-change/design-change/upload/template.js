@@ -18,7 +18,7 @@ export function engineeringChangeUploadTemplate() {
                 <div class="px-5 py-3 border-b border-line-subtle flex items-center justify-between gap-3">
                     <div class="flex items-center gap-2.5">
                         ${window.svgIcon('file-earmark-excel', 'w-3.5 h-3.5 text-ink-dim')}
-                        <h5 class="text-xs font-semibold text-ink-muted mb-0">上传工程变更</h5>
+                        <h5 class="text-xs font-semibold text-ink-muted mb-0">上传设计变更</h5>
                     </div>
                     ${uploadTemplateButtonHtml('ecUploadTemplateBtn')}
                 </div>
@@ -99,7 +99,7 @@ export function engineeringChangeUploadTemplate() {
                                             <div class="flex items-center justify-between gap-3 mb-3">
                                                 <div class="flex items-center gap-2 min-w-0">
                                                     ${window.svgIcon('spinner', 'w-4 h-4 text-brand')}
-                                                    <h5 id="ecProgressTitle" class="text-xs font-medium text-ink truncate mb-0">正在解析工程变更...</h5>
+                                                    <h5 id="ecProgressTitle" class="text-xs font-medium text-ink truncate mb-0">正在解析设计变更...</h5>
                                                 </div>
                                                 <span id="ecProgressPercent" class="text-xs font-mono tabular-nums text-brand shrink-0">0%</span>
                                             </div>

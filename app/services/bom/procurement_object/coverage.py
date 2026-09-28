@@ -47,7 +47,7 @@ def evaluate_procurement_object_coverage(
 
     list_header = BomProcurementObjectRepository().get_list_by_snapshot_id(db, snapshot.id)
     if list_header is None:
-        return ProcurementObjectCoverage(False, "请先生成采购对象清单", 0, expected_count)
+        return ProcurementObjectCoverage(False, "请先生成采购对象列表", 0, expected_count)
 
     objects = BomProcurementObjectRepository().list_objects_by_list_id(db, list_header.id)
     present_ids = {

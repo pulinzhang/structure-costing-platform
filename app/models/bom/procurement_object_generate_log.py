@@ -1,4 +1,4 @@
-"""BOM 采购对象清单 — 生成批次日志。"""
+"""BOM 采购对象列表 — 生成批次日志。"""
 
 from datetime import datetime
 

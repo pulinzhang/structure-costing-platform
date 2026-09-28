@@ -1,5 +1,5 @@
 """
-中标钢厂厚度价格一览表路由
+中标钢厂厚度价格列表路由
 预览默认按当年收窄（年度可改/可清空）；年 / 月 / 基地 / 钢厂 / 分类 / 牌号可选。导出须选定年度和月份（一事一议按月定价）。
 """
 
@@ -27,7 +27,7 @@ logger = get_logger("router.winning_thickness")
 
 DEFAULT_PREVIEW_PAGE_SIZE = 500
 
-router = APIRouter(prefix="/api/yishiyiyi/winning-thickness", tags=["中标钢厂厚度价格一览表"])
+router = APIRouter(prefix="/api/yishiyiyi/winning-thickness", tags=["中标钢厂厚度价格列表"])
 
 _export_service = WinningThicknessExportService()
 _base_price_service = SteelBasePriceService()
@@ -66,7 +66,7 @@ def export_preview(
     db: Session = Depends(get_db),
     current_user: UserVO = Depends(require_perm(Perm.WINNING_THICKNESS_DOWNLOAD_VIEW)),
 ) -> ApiResponse[PageResult[WinningThicknessRowVO]]:
-    """预览中标钢厂厚度价格一览。"""
+    """预览中标钢厂厚度价格列表。"""
     items, total = _export_service.preview(
         db,
         year=year,
@@ -102,7 +102,7 @@ def export_download(
     db: Session = Depends(get_db),
     current_user: UserVO = Depends(require_perm(Perm.WINNING_THICKNESS_DOWNLOAD_EXPORT)),
 ) -> StreamingResponse:
-    """下载中标钢厂厚度价格一览表 Excel（一览 + 计算用 + 使用示例）。"""
+    """下载中标钢厂厚度价格列表 Excel（一览 + 计算用 + 使用示例）。"""
     content, filename = _export_service.export(
         db,
         year=year,

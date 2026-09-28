@@ -29,7 +29,7 @@ from app.schemas.vo.vehicle_model_vo import (
 from app.services.masterdata.location.service import LocationService
 
 PLACEHOLDER_CODES = frozenset({"UNKNOWN"})
-PAGE_HINT = "请到「项目一览」里新增或上传。"
+PAGE_HINT = "请到「项目列表」里新增或上传。"
 FILE_MISMATCH = "文件项目为 {parsed}，与填写的项目 {selected} 不一致"
 
 __all__ = [
@@ -165,7 +165,7 @@ def require_introducible(
         raise BusinessException(
             f"该项目尚未生效：你选的是{year}年{month}月，项目从"
             f"{record.effective_year}年{record.effective_month}月才开始。"
-            f"请改年月，或到项目一览核对开始月。{PAGE_HINT}"
+            f"请改年月，或到项目列表核对开始月。{PAGE_HINT}"
         )
     if not is_not_expired(record, year, month):
         end = (
@@ -175,7 +175,7 @@ def require_introducible(
         )
         raise BusinessException(
             f"该项目已失效：你选的是{year}年{month}月，项目用到{end}就结束了。"
-            f"请改年月，或到项目一览核对结束月。{PAGE_HINT}"
+            f"请改年月，或到项目列表核对结束月。{PAGE_HINT}"
         )
     return (canonical, record.vehicle_model)
 

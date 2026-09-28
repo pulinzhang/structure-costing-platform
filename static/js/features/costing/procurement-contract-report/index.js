@@ -479,7 +479,7 @@ function setQaBanner(filters) {
     if (!banner) return;
     if (filters && filters.qa_passed === false) {
         const detail = filters.qa_error_text ? `：${esc(filters.qa_error_text)}` : '';
-        banner.textContent = `采购对象清单检测未通过${detail}`;
+        banner.textContent = `采购对象列表检测未通过${detail}`;
         banner.classList.remove('hidden');
         return;
     }
@@ -488,7 +488,7 @@ function setQaBanner(filters) {
 }
 
 function missingListMessage() {
-    return '请先生成采购对象清单。<a href="#/bom-procurement-object" class="text-brand-hud hover:underline">去生成</a>';
+    return '请先生成采购对象列表。<a href="#/bom-procurement-object" class="text-brand-hud hover:underline">去生成</a>';
 }
 
 async function loadList(page = 1) {
@@ -532,7 +532,7 @@ async function loadList(page = 1) {
         const emptyHint = filters.empty_hint
             ? (isAssemblyView()
                 ? esc(filters.empty_hint)
-                : `${esc(filters.empty_hint)} <a href="#/bom-procurement-object-list" class="text-brand-hud hover:underline">去采购对象清单</a>`)
+                : `${esc(filters.empty_hint)} <a href="#/bom-procurement-object-list" class="text-brand-hud hover:underline">去采购对象列表</a>`)
             : '当前范围没有可展示的价目行';
         setListEmpty(listState.items.length === 0, emptyHint);
         const pageInfo = document.getElementById('pcrPageInfo');
@@ -548,7 +548,7 @@ async function loadList(page = 1) {
         setQaBanner(null);
         const message = String(error?.message || '');
         let emptyText;
-        if (!isAssemblyView() && message.includes('采购对象清单')) {
+        if (!isAssemblyView() && message.includes('采购对象列表')) {
             emptyText = missingListMessage();
         } else if (isAssemblyView() && message.includes('材料清单')) {
             emptyText = '未找到对应材料清单。<a href="#/bom-upload" class="text-brand-hud hover:underline">去上传材料清单</a>';

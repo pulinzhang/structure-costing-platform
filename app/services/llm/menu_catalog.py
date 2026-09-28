@@ -34,7 +34,7 @@ SUBJECT_MENU: dict[str, MenuTarget] = {
     ),
     "stamping_part": MenuTarget(
         hash_page="stamping-part-cost",
-        label="打开冲压零件价格一览",
+        label="打开冲压零件价格列表",
     ),
     "stamping_tonnage": MenuTarget(
         hash_page="stamping-tonnage",
@@ -46,15 +46,15 @@ SUBJECT_MENU: dict[str, MenuTarget] = {
     ),
     "l0": MenuTarget(
         hash_page="assembly-cost",
-        label="打开总成核价一览",
+        label="打开总成核价列表",
     ),
     "cost_total": MenuTarget(
         hash_page="assembly-cost",
-        label="打开总成核价一览",
+        label="打开总成核价列表",
     ),
     "steel_price": MenuTarget(
         hash_page="steel-price-list",
-        label="打开冲压钢材联动价一览",
+        label="打开冲压钢材联动价列表",
     ),
     "steel_price_policy": MenuTarget(
         hash_page="steel-price-policy-download",
@@ -66,7 +66,7 @@ SUBJECT_MENU: dict[str, MenuTarget] = {
     ),
     "winning_thickness": MenuTarget(
         hash_page="winning-thickness-download",
-        label="打开中标钢厂厚度价格一览表",
+        label="打开中标钢厂厚度价格列表",
     ),
     "scrap_price": MenuTarget(
         hash_page="scrap-price",
@@ -98,11 +98,11 @@ SUBJECT_MENU: dict[str, MenuTarget] = {
     ),
     "part": MenuTarget(
         hash_page="assembly-cost",
-        label="打开总成核价一览",
+        label="打开总成核价列表",
     ),
     "ops_workbench": MenuTarget(
         hash_page="assembly-cost",
-        label="打开总成核价一览",
+        label="打开总成核价列表",
     ),
     "stamping_die_fee": MenuTarget(
         hash_page="stamping-die-fee",
@@ -114,15 +114,15 @@ SUBJECT_MENU: dict[str, MenuTarget] = {
     ),
     "procurement_object": MenuTarget(
         hash_page="bom-procurement-object-list",
-        label="打开采购对象清单",
+        label="打开采购对象列表",
     ),
     "engineering_change": MenuTarget(
         hash_page="engineering-change-order-list",
-        label="打开工程变更单列表",
+        label="打开设计变更列表",
     ),
 }
 
-# 侧栏「列表/一览」页覆盖查检（上传/计算页不在此列）
+# 侧栏列表页覆盖查检（上传/计算页不在此列）
 MENU_COVERAGE: tuple[MenuCoverageItem, ...] = (
     # 一事一议
     MenuCoverageItem(
@@ -139,7 +139,7 @@ MENU_COVERAGE: tuple[MenuCoverageItem, ...] = (
     ),
     MenuCoverageItem(
         "winning-thickness-download",
-        "中标钢厂厚度价格一览表",
+        "中标钢厂厚度价格列表",
         "winning_thickness",
         "complete",
     ),
@@ -224,19 +224,19 @@ MENU_COVERAGE: tuple[MenuCoverageItem, ...] = (
     # 核价
     MenuCoverageItem(
         "steel-price-list",
-        "冲压钢材联动价一览",
+        "冲压钢材联动价列表",
         "steel_price",
         "complete",
     ),
     MenuCoverageItem(
         "stamping-part-cost",
-        "冲压零件价格一览",
+        "冲压零件价格列表",
         "stamping_part",
         "complete",
     ),
     MenuCoverageItem(
         "assembly-cost",
-        "总成核价一览",
+        "总成核价列表",
         "l0",
         "complete",
         "cost_total 同落点",
@@ -255,13 +255,13 @@ MENU_COVERAGE: tuple[MenuCoverageItem, ...] = (
     ),
     MenuCoverageItem(
         "bom-procurement-object-list",
-        "采购对象清单",
+        "采购对象列表",
         "procurement_object",
         "complete",
     ),
     MenuCoverageItem(
         "engineering-change-order-list",
-        "工程变更单列表",
+        "设计变更列表",
         "engineering_change",
         "complete",
     ),

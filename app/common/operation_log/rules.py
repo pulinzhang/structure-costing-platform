@@ -40,7 +40,7 @@ _MODULE_RULES: list[tuple[str, str]] = [
     ("/api/costing/engine", "核价引擎"),
     ("/api/yishiyiyi/policy", "加减价政策"),
     ("/api/yishiyiyi/base-price", "基准价格"),
-    ("/api/yishiyiyi/winning-thickness", "中标钢厂厚度价格一览表"),
+    ("/api/yishiyiyi/winning-thickness", "中标钢厂厚度价格列表"),
     ("/api/settings/users", "用户管理"),
     ("/api/settings/permissions", "权限管理"),
     ("/api/auth", "登录认证"),
@@ -185,9 +185,9 @@ def _describe_sensitive_query(
         summary = f"{parent} / {action}{suffix} · {method.upper()} {path_only}"
         return meta["menu_label"], action, summary[:255]
     return (
-        "总成核价一览",
+        "总成核价列表",
         action,
-        f"总成核价一览 / {action}{suffix} · {method.upper()} {path_only}"[:255],
+        f"总成核价列表 / {action}{suffix} · {method.upper()} {path_only}"[:255],
     )
 
 

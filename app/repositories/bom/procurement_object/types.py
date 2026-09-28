@@ -1,4 +1,4 @@
-"""采购对象清单筛选形状。"""
+"""采购对象列表筛选形状。"""
 
 from typing import TypedDict
 

@@ -1,4 +1,4 @@
-"""采购对象清单 Repository。
+"""采购对象列表 Repository。
 
 查询见 procurement_object/queries.py，写入见 writes.py。
 本文件是门面：独立查询/写入类，这里只委托。"""
@@ -35,7 +35,7 @@ __all__ = [
 
 
 class BomProcurementObjectRepository:
-    """采购对象清单数据访问。"""
+    """采购对象列表数据访问。"""
 
     def __init__(self) -> None:
         self._queries = BomProcurementObjectQueries()

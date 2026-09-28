@@ -12,7 +12,7 @@
  * │   │   └── parts/             # 冲压零件列表
  * │   ├── die/                   # 冲压模具
  * │   │   ├── upload/            # 上传模具布点
- * │   │   ├── list/              # 模具清单
+ * │   │   ├── list/              # 模具列表
  * │   │   └── unit-price/        # 模具单价
  * │   ├── gauge-fee/             # 冲压检具费
  * │   │   ├── upload/
@@ -35,7 +35,7 @@
  * │   ├── packaging-transport-fee/  # 包装运输费
  * │   │   ├── upload/
  * │   │   └── list/
- * │   ├── procurement-object/     # 采购对象清单
+ * │   ├── procurement-object/     # 采购对象列表
  * │   │   ├── generate/
  * │   │   ├── list/
  * │   │   └── supplier-upload/
@@ -55,7 +55,7 @@
  * │   ├── base-price/            # 基准价格
  * │   │   ├── upload/
  * │   │   └── list/
- * │   ├── winning-thickness/     # 中标钢厂厚度价格一览表
+ * │   ├── winning-thickness/     # 中标钢厂厚度价格列表
  * │   │   └── list/
  * │   └── scrap-price/           # 废料月度销售价
  * ├── costing/                   # 核价
@@ -121,9 +121,9 @@ export const pageMeta = {
         breadcrumb: ['冲压工程', '冲压模具', '上传模具布点'],
     },
     'stamping-die-list': {
-        title: '模具清单',
+        title: '模具列表',
         en: 'DIE_LAYOUT_LIST',
-        breadcrumb: ['冲压工程', '冲压模具', '模具清单'],
+        breadcrumb: ['冲压工程', '冲压模具', '模具列表'],
     },
     'stamping-die-unit-price': {
         title: '模具单价',
@@ -171,9 +171,9 @@ export const pageMeta = {
         breadcrumb: ['冲压工程', '冲压加工费', '冲压加工费列表'],
     },
     'steel-price-list': {
-        title: '冲压钢材联动价一览',
+        title: '冲压钢材联动价列表',
         en: 'STAMPING_STEEL_LINKAGE_LIST',
-        breadcrumb: ['核价', '冲压钢材联动价', '冲压钢材联动价一览'],
+        breadcrumb: ['核价', '冲压钢材联动价', '冲压钢材联动价列表'],
     },
     'steel-price-calc': {
         title: '冲压钢材联动计算',
@@ -186,9 +186,9 @@ export const pageMeta = {
         breadcrumb: ['核价', '冲压零件价格核算', '冲压零件价格计算'],
     },
     'stamping-part-cost': {
-        title: '冲压零件价格一览',
+        title: '冲压零件价格列表',
         en: 'PART_COST_LIST',
-        breadcrumb: ['核价', '冲压零件价格核算', '冲压零件价格一览'],
+        breadcrumb: ['核价', '冲压零件价格核算', '冲压零件价格列表'],
     },
     'assembly-cost-calc': {
         title: '总成核价计算',
@@ -196,9 +196,9 @@ export const pageMeta = {
         breadcrumb: ['核价', '总成核价', '总成核价计算'],
     },
     'assembly-cost': {
-        title: '总成核价一览',
+        title: '总成核价列表',
         en: 'ASSEMBLY_COST_LIST',
-        breadcrumb: ['核价', '总成核价', '总成核价一览'],
+        breadcrumb: ['核价', '总成核价', '总成核价列表'],
     },
     'procurement-contract-report': {
         title: '采购价格协议',
@@ -231,9 +231,9 @@ export const pageMeta = {
         breadcrumb: ['主数据', '牌号分类'],
     },
     'winning-thickness-download': {
-        title: '中标钢厂厚度价格一览表',
+        title: '中标钢厂厚度价格列表',
         en: 'WINNING_MILL_THICKNESS_PRICE_LIST',
-        breadcrumb: ['一事一议', '中标钢厂厚度价格一览表'],
+        breadcrumb: ['一事一议', '中标钢厂厚度价格列表'],
     },
     'scrap-price': {
         title: '废料月度销售价',
@@ -286,14 +286,14 @@ export const pageMeta = {
         breadcrumb: ['焊接工程', '包装运输费', '包装运输费列表'],
     },
     'bom-procurement-object': {
-        title: '生成采购对象清单',
+        title: '生成采购对象列表',
         en: 'PROCUREMENT_OBJECT_GENERATE',
         breadcrumb: ['焊接工程', '采购对象', '生成'],
     },
     'bom-procurement-object-list': {
-        title: '采购对象清单',
+        title: '采购对象列表',
         en: 'PROCUREMENT_OBJECT_LIST',
-        breadcrumb: ['焊接工程', '采购对象', '采购对象清单'],
+        breadcrumb: ['焊接工程', '采购对象', '采购对象列表'],
     },
     'bom-procurement-object-supplier-upload': {
         title: '上传供应商',
@@ -331,14 +331,14 @@ export const pageMeta = {
         breadcrumb: ['焊接工程', '焊接费', '列表'],
     },
     'engineering-change-upload': {
-        title: '上传工程变更',
+        title: '上传设计变更',
         en: 'ENGINEERING_CHANGE_UPLOAD',
-        breadcrumb: ['工程变更', '设计变更', '上传工程变更'],
+        breadcrumb: ['工程变更', '设计变更', '上传设计变更'],
     },
     'engineering-change-order-list': {
-        title: '工程变更单列表',
+        title: '设计变更列表',
         en: 'ENGINEERING_CHANGE_ORDER_LIST',
-        breadcrumb: ['工程变更', '设计变更', '工程变更单列表'],
+        breadcrumb: ['工程变更', '设计变更', '设计变更列表'],
     },
     'engineering-change-material-upload': {
         title: '上传材料变更',
@@ -371,9 +371,9 @@ export const pageMeta = {
         breadcrumb: ['主数据', '项目', '上传'],
     },
     'vehicle-model-list': {
-        title: '项目一览',
+        title: '项目列表',
         en: 'PROJECT',
-        breadcrumb: ['主数据', '项目', '一览'],
+        breadcrumb: ['主数据', '项目', '项目列表'],
     },
     'supplier-upload': {
         title: '供应商上传',
@@ -381,9 +381,9 @@ export const pageMeta = {
         breadcrumb: ['主数据', '供应商', '上传'],
     },
     'supplier-list': {
-        title: '供应商一览',
+        title: '供应商列表',
         en: 'SUPPLIER',
-        breadcrumb: ['主数据', '供应商', '一览'],
+        breadcrumb: ['主数据', '供应商', '供应商列表'],
     },
     settings: {
         title: '系统设置',

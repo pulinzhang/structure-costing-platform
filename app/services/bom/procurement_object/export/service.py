@@ -1,4 +1,4 @@
-"""采购对象清单导出编排：取数 → 分 sheet 渲染 → 水印文件名。"""
+"""采购对象列表导出编排：取数 → 分 sheet 渲染 → 水印文件名。"""
 
 from __future__ import annotations
 

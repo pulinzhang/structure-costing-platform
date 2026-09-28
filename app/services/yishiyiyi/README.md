@@ -7,7 +7,7 @@
 | 厚度加减价政策 | `policy/` |
 | 钢材基准价格 | `base_price/` |
 | 废料月度销售价 | `scrap_price/` |
-| 中标钢厂厚度价格一览 | `winning_thickness/` |
+| 中标钢厂厚度价格列表 | `winning_thickness/` |
 
 禁止本包 `__init__.py` 再导出。
 

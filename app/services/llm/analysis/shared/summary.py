@@ -101,7 +101,7 @@ def build_summary(
 
 
 def build_stamping_summary(rows: list[StampingPartPeriodRow]) -> SummaryPayload:
-    """冲压零件价格一览口径的 summary（对齐 #/stamping-part-cost）。"""
+    """冲压零件价格列表口径的 summary（对齐 #/stamping-part-cost）。"""
     if not rows:
         return {
             "subject": "stamping_part",
@@ -158,7 +158,7 @@ def build_stamping_summary(rows: list[StampingPartPeriodRow]) -> SummaryPayload:
 
 
 def build_steel_summary(rows: list[SteelMonthlyAvgRow]) -> SummaryPayload:
-    """钢材联动价一览口径的 summary（对齐 #/steel-price-list）。"""
+    """钢材联动价列表口径的 summary（对齐 #/steel-price-list）。"""
     if not rows:
         return {
             "subject": "steel_price",

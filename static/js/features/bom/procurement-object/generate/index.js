@@ -1,5 +1,5 @@
 /**
- * 采购对象清单生成页
+ * 采购对象列表生成页
  */
 
 import { DRAWER_CLOSE, DRAWER_SHELL, DRAWER_BACKDROP } from '../../../../ui/classes.js?v=13';
@@ -238,7 +238,7 @@ function updateProgress(progress, msg, status) {
             titleEl.textContent = '生成失败';
             titleEl.className = 'text-xs font-medium text-danger truncate mb-0';
         } else {
-            titleEl.textContent = '正在生成采购对象清单...';
+            titleEl.textContent = '正在生成采购对象列表...';
             titleEl.className = 'text-xs font-medium text-ink truncate mb-0';
         }
     }
@@ -427,14 +427,14 @@ async function startGenerate() {
             vehicle_model: vehicleModel,
             bom_version: bomVersion,
         });
-        updateProgress(100, res.message || '已写入采购对象清单', 'completed');
+        updateProgress(100, res.message || '已写入采购对象列表', 'completed');
         showToast(res.message || '生成成功', 'success');
         await loadPrepStats();
         await loadGenHistory(1);
     } catch (error) {
         const failMsg = error?.message || '生成失败';
         updateProgress(100, failMsg, 'failed');
-        console.error('生成采购对象清单失败', error);
+        console.error('生成采购对象列表失败', error);
         loadGenHistory(1);
     } finally {
         genState.isGenerating = false;

@@ -1,4 +1,4 @@
-"""采购对象清单 DTO。"""
+"""采购对象列表 DTO。"""
 
 from dataclasses import dataclass
 from datetime import datetime
@@ -28,7 +28,7 @@ class BomProcurementObjectScopeDTO(BaseModel):
 
 
 class BomProcurementObjectGenerateDTO(BaseModel):
-    """生成采购对象清单：必须带 snapshot 头版本（SOP）。"""
+    """生成采购对象列表：必须带 snapshot 头版本（SOP）。"""
 
     location: str = Field(..., min_length=1, max_length=50)
     vehicle_model: str = Field(..., min_length=1, max_length=50)

@@ -268,7 +268,7 @@ class StampingAnalysis:
         return out
 
     def run_stamping_part(self, db: Session, query: AnalysisQuery) -> AnalysisRunResult:
-        """对齐「冲压零件价格一览」#/stamping-part-cost。"""
+        """对齐「冲压零件价格列表」#/stamping-part-cost。"""
         tr = query.time_range
         peek_previous_month = query.time_range.month_span() == 1 and any(
             kind in query.analyses for kind in ("risk", "drivers", "trend")

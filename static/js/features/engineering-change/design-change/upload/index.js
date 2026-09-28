@@ -345,7 +345,7 @@ const EngineeringChangeUploadPage = {
                 titleEl.textContent = '解析失败';
                 titleEl.className = 'text-xs font-medium text-danger truncate mb-0';
             } else {
-                titleEl.textContent = '正在解析工程变更...';
+                titleEl.textContent = '正在解析设计变更...';
                 titleEl.className = 'text-xs font-medium text-ink truncate mb-0';
             }
         }
@@ -375,7 +375,7 @@ const EngineeringChangeUploadPage = {
     async downloadTemplate() {
         try {
             const { blob, filename } = await HttpClient.download(`${API}/template`, {
-                defaultFilename: '工程变更导入模板.xlsx',
+                defaultFilename: '设计变更导入模板.xlsx',
                 skipToast: true,
             });
             const url = window.URL.createObjectURL(blob);
@@ -437,7 +437,7 @@ const EngineeringChangeUploadPage = {
                         ? result.change_order_ids.length
                         : 0;
                     const summary = `${changeOrderCount} 个总成`;
-                    showToast(data?.msg || `工程变更上传成功：${summary}`, 'success');
+                    showToast(data?.msg || `设计变更上传成功：${summary}`, 'success');
                     this.addRecentUpload(fileName, scopeLabel, summary);
                     this.activeTaskId = null;
                     this.setUploading(false);

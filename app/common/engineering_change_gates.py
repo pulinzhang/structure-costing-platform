@@ -131,7 +131,7 @@ EC_AFTER_PART_NOT_ON_BOM = "工程变更单变更后零件有、材料清单没�
 EC_BOM_HEADER_VERSION_REQUIRED = "车身件材料清单表头版本必须填写"
 EC_PROCESS_HEADER_VERSION_REQUIRED = "冲压工艺确认表表头版本必须填写"
 EC_BOM_PROCESS_VERSION_MISMATCH = "车身件材料清单和冲压工艺确认表的版本必须写成同一个字"
-EC_PROCUREMENT_LIST_REQUIRED = "请先到焊接工程生成采购对象清单"
+EC_PROCUREMENT_LIST_REQUIRED = "请先到焊接工程生成采购对象列表"
 EC_PROCUREMENT_LIST_REQUIRED_DETAIL = (
     f"{EC_PROCUREMENT_LIST_REQUIRED}。"
     "打开「焊接工程 → 采购对象」，对这个基地和项目点一次生成。"

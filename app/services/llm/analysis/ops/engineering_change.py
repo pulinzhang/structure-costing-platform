@@ -174,7 +174,7 @@ def _pick_stamping_side(
         "month": month_key(picked.year, picked.month),
         "unit_price": money_str(picked.unit_cost),
         "price_label": "冲压单价",
-        "price_source": "冲压零件价格一览",
+        "price_source": "冲压零件价格列表",
         "calc_status": picked.calc_status,
         "bom_version": None,
     }

@@ -1,5 +1,5 @@
 /**
- * 采购对象清单列表 — HUD 密表（对齐冲压零件价格一览）
+ * 采购对象列表列表 — HUD 密表（对齐冲压零件价格列表）
  */
 
 import { filterSelect, filterInput, HUD_SHELL, HUD_BAND, OPS_TH, BTN_GHOST, DRAWER_BACKDROP, BTN_SOLID_DANGER, HUD_FILTER, BTN_SOLID } from '../../../../ui/classes.js?v=13';
@@ -221,7 +221,7 @@ function confirmDrawerHtml() {
                         <div id="poConfirmSupplierMenu"
                              class="hidden absolute left-0 right-0 top-full mt-1 max-h-48 overflow-y-auto bg-app-main border border-line z-[90]"></div>
                     </div>
-                    <p class="text-[10px] text-ink-faint">点选匹配结果，不必一次拉全量。找不到请到供应商一览补档（#/supplier-list），或用内部号到 ERP 联查。自制会清空供应商。</p>
+                    <p class="text-[10px] text-ink-faint">点选匹配结果，不必一次拉全量。找不到请到供应商列表补档（#/supplier-list），或用内部号到 ERP 联查。自制会清空供应商。</p>
                 </label>
                 <label class="space-y-1 block">
                     <span class="text-[10px] text-ink-dim">确认备注</span>

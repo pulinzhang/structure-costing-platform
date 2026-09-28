@@ -85,7 +85,7 @@ const GATE_LABELS = {
     system_rates: '系统费率',
     annual_process_fee: '冲压加工费',
     annual_die_fee: '冲压模具费',
-    annual_procurement_object: '采购对象清单',
+    annual_procurement_object: '采购对象列表',
     annual_welding_breakdown: '焊接工艺拆解',
     annual_welding_fee: '焊接费',
 };
@@ -114,7 +114,7 @@ const STEP_STAGE_META = {
         action: '去看模具费',
     },
     annual_procurement_object: {
-        label: '采购对象清单',
+        label: '采购对象列表',
         page: 'bom-procurement-object',
         action: '去生成采购对象',
     },

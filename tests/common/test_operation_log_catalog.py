@@ -67,7 +67,7 @@ def test_assembly_cost_restore_get_is_recorded() -> None:
         Perm.ASSEMBLY_COST_VIEW,
         query_string="year=2026&month=1&part_number=T13J-001&location=芜湖",
     )
-    assert module == "总成核价一览"
+    assert module == "总成核价列表"
     assert action == "查看计算过程"
     assert "查看计算过程" in summary
     assert "基地 芜湖" in summary
@@ -85,7 +85,7 @@ def test_catalog_filter_options_include_menus_and_ops() -> None:
     assert Perm.ASSEMBLY_COST_VIEW in op_codes
     view = next(item for item in operations if item["code"] == Perm.ASSEMBLY_COST_VIEW)
     assert view["parent_code"] == Perm.MENU_ASSEMBLY_COST
-    assert "总成核价一览" in view["breadcrumb"]
+    assert "总成核价列表" in view["breadcrumb"]
     assert Perm.MENU_STAMPING in menu_codes
 
 

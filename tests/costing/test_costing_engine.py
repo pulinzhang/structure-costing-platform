@@ -99,7 +99,7 @@ def test_gate_navigate_hard_stop_codes_have_page() -> None:
         if code == "vehicle_model_period":
             assert nav.page == "vehicle-model-list"
             assert nav.query.get("location") == "青岛"
-            assert nav.label == "去项目一览"
+            assert nav.label == "去项目列表"
         if code == "base_price":
             assert nav.query.get("year") == 2025
             assert nav.query.get("month") == 1
@@ -290,7 +290,7 @@ def test_check_period_projects_empty_does_not_send_to_archive() -> None:
     assert item.ok is False
     assert item.code == "vehicle_model"
     assert "可引入" not in item.message
-    assert "项目一览" not in item.message
+    assert "项目列表" not in item.message
     assert item.navigate is not None
     assert item.navigate.page == "stamping-parts"
 
@@ -311,7 +311,7 @@ def test_check_period_projects_filtered_empty_goes_to_archive() -> None:
     item = check_period_projects(discovery, "青岛", 2026, 7)
     assert item.ok is False
     assert item.code == "vehicle_model_period"
-    assert "项目一览" in item.message
+    assert "项目列表" in item.message
     assert item.navigate is not None
     assert item.navigate.page == "vehicle-model-list"
 

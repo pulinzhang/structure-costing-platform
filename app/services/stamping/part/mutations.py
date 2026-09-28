@@ -148,7 +148,7 @@ def batch_delete_parts(
 
     supplier_names = SupplierService().names_for_query(db, supplier)
     if supplier and supplier_names is not None and not supplier_names:
-        raise BusinessException("没有该供应商，请到供应商一览手工增加或上传（#/supplier-list）")
+        raise BusinessException("没有该供应商，请到供应商列表手工增加或上传（#/supplier-list）")
 
     part_ids = [
         part.id

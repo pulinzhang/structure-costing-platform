@@ -16,7 +16,7 @@ class StampingDiePartQuery(BaseModel):
     size: int = Field(10, ge=1, le=100)
     year: int | None = Field(None, ge=2000, le=2100, description="查看年；空则墙钟")
     month: int | None = Field(None, ge=1, le=12, description="查看月；与年同空或同有")
-    include_expired: bool = Field(False, description="含已失效；模具清单不提供开关")
+    include_expired: bool = Field(False, description="含已失效；模具列表不提供开关")
 
     @field_validator("part_number", mode="before")
     @classmethod

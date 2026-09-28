@@ -1,5 +1,5 @@
 /**
- * 采购对象清单列表
+ * 采购对象列表列表
  */
 
 import {
@@ -465,7 +465,7 @@ async function loadList(page) {
         paintPagination('poPagination', listState.page, listState.totalPages);
         loadSummaryBanner();
     } catch (error) {
-        console.error('加载采购对象清单失败', error);
+        console.error('加载采购对象列表失败', error);
     } finally {
         setListLoading(false);
     }
@@ -720,7 +720,7 @@ async function exportExcel() {
     try {
         const { blob, filename } = await HttpClient.download(`${API_BASE}/export`, {
             params,
-            defaultFilename: '采购对象清单.xlsx',
+            defaultFilename: '采购对象列表.xlsx',
         });
         const url = window.URL.createObjectURL(blob);
         const anchor = document.createElement('a');

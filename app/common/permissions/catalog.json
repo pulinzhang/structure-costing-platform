@@ -241,7 +241,7 @@
             },
             {
               "code": "menu:stamping-die-list",
-              "label": "模具清单",
+              "label": "模具列表",
               "type": "menu",
               "children": [
                 {
@@ -699,7 +699,7 @@
           "children": [
             {
               "code": "menu:bom-procurement-object",
-              "label": "生成采购对象清单",
+              "label": "生成",
               "type": "menu",
               "children": [
                 {
@@ -711,7 +711,7 @@
             },
             {
               "code": "menu:bom-procurement-object-list",
-              "label": "采购对象清单",
+              "label": "采购对象列表",
               "type": "menu",
               "children": [
                 {
@@ -993,7 +993,7 @@
         },
         {
           "code": "menu:winning-thickness-download",
-          "label": "中标钢厂厚度价格一览表",
+          "label": "中标钢厂厚度价格列表",
           "type": "menu",
           "children": [
             {
@@ -1081,7 +1081,7 @@
             },
             {
               "code": "menu:steel-price-list",
-              "label": "冲压钢材联动价一览",
+              "label": "冲压钢材联动价列表",
               "type": "menu",
               "children": [
                 {
@@ -1147,7 +1147,7 @@
             },
             {
               "code": "menu:stamping-part-cost",
-              "label": "冲压零件价格一览",
+              "label": "冲压零件价格列表",
               "type": "menu",
               "children": [
                 {
@@ -1213,7 +1213,7 @@
             },
             {
               "code": "menu:assembly-cost",
-              "label": "总成核价一览",
+              "label": "总成核价列表",
               "type": "menu",
               "children": [
                 {
@@ -1332,7 +1332,7 @@
           "children": [
             {
               "code": "menu:engineering-change-upload",
-              "label": "上传工程变更",
+              "label": "上传设计变更",
               "type": "menu",
               "children": [
                 {
@@ -1349,7 +1349,7 @@
             },
             {
               "code": "menu:engineering-change-order-list",
-              "label": "工程变更单列表",
+              "label": "设计变更列表",
               "type": "menu",
               "children": [
                 {
@@ -1465,7 +1465,7 @@
             },
             {
               "code": "menu:vehicle-model-list",
-              "label": "一览表",
+              "label": "项目列表",
               "type": "menu",
               "children": [
                 {
@@ -1521,7 +1521,7 @@
             },
             {
               "code": "menu:supplier-list",
-              "label": "一览表",
+              "label": "供应商列表",
               "type": "menu",
               "children": [
                 {

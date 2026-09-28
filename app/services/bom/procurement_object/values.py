@@ -1,4 +1,4 @@
-"""采购对象清单导出 — 行值、检测摘要、文件名。"""
+"""采购对象列表导出 — 行值、检测摘要、文件名。"""
 
 from __future__ import annotations
 
@@ -44,7 +44,7 @@ def scope_text(query: BomProcurementObjectQuery) -> str:
 
 
 def build_filename(query: BomProcurementObjectQuery, stamp: datetime) -> str:
-    parts = ["采购对象清单"]
+    parts = ["采购对象列表"]
     if query.location:
         parts.append(query.location.strip())
     if query.vehicle_model:

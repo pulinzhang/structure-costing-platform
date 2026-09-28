@@ -9,8 +9,8 @@ from app.models.masterdata.supplier import Supplier
 from app.repositories.masterdata.supplier.supplier_repository import SupplierRepository
 from app.schemas.vo.supplier_vo import SupplierVO
 
-PAGE_HINT = "请到供应商一览手工增加或上传（#/supplier-list）"
-DISABLED_HINT = "请到供应商一览启用（#/supplier-list）"
+PAGE_HINT = "请到供应商列表手工增加或上传（#/supplier-list）"
+DISABLED_HINT = "请到供应商列表启用（#/supplier-list）"
 
 
 def to_vo(row: Supplier) -> SupplierVO:

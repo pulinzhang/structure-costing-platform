@@ -84,7 +84,7 @@ from app.services.stamping.process_fee.calc.orchestrator.ready import (
 )
 from tests.masterdata.location_fixtures import insert_sample_locations
 
-ARCHIVE = "项目一览"
+ARCHIVE = "项目列表"
 
 
 @pytest.fixture

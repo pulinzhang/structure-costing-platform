@@ -521,7 +521,7 @@ def test_sum_vehicle_total_sums_all_window_months() -> None:
 
 def test_missing_list_is_not_found(db: Session) -> None:
     _seed_masters(db)
-    with pytest.raises(NotFoundException, match="请先生成采购对象清单"):
+    with pytest.raises(NotFoundException, match="请先生成采购对象列表"):
         ProcurementContractReportService().paginate(db, _query())
 
 

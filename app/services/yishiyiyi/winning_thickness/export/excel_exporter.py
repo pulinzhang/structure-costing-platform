@@ -1,4 +1,4 @@
-"""中标钢厂厚度价格一览 Excel 生成（编排入口）。"""
+"""中标钢厂厚度价格列表 Excel 生成（编排入口）。"""
 
 from __future__ import annotations
 
@@ -90,7 +90,7 @@ class WinningThicknessExporter:
         filename = build_filename(year=year, month=month, location=location or None)
         content = workbook_to_xlsx_bytes(wb, current_user)
         logger.info(
-            "导出中标钢厂厚度价格一览表完成: filename=%s rows=%d",
+            "导出中标钢厂厚度价格列表完成: filename=%s rows=%d",
             filename,
             len(export_rows),
         )

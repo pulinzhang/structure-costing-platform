@@ -65,7 +65,7 @@ class Perm:
     STAMPING_DIE_UPLOAD_VIEW = "op:stamping-die-upload:view"  # 查看
     STAMPING_DIE_UPLOAD_UPLOAD = "op:stamping-die-upload:upload"  # 上传
 
-    MENU_STAMPING_DIE_LIST = "menu:stamping-die-list"  # 模具清单
+    MENU_STAMPING_DIE_LIST = "menu:stamping-die-list"  # 模具列表
     STAMPING_DIE_LIST_VIEW = "op:stamping-die-list:view"  # 查询
     STAMPING_DIE_LIST_UPDATE = "op:stamping-die-list:update"  # 编辑
     STAMPING_DIE_LIST_DELETE = "op:stamping-die-list:delete"  # 删除
@@ -173,10 +173,10 @@ class Perm:
 
     MENU_BOM_PROCUREMENT_OBJECT_GROUP = "menu:bom-procurement-object-group"  # 采购对象
 
-    MENU_BOM_PROCUREMENT_OBJECT = "menu:bom-procurement-object"  # 生成采购对象清单
+    MENU_BOM_PROCUREMENT_OBJECT = "menu:bom-procurement-object"  # 生成
     BOM_PROCUREMENT_OBJECT_GENERATE = "op:bom-procurement-object:generate"  # 生成
 
-    MENU_BOM_PROCUREMENT_OBJECT_LIST = "menu:bom-procurement-object-list"  # 采购对象清单
+    MENU_BOM_PROCUREMENT_OBJECT_LIST = "menu:bom-procurement-object-list"  # 采购对象列表
     BOM_PROCUREMENT_OBJECT_LIST_VIEW = "op:bom-procurement-object-list:view"  # 查询
     BOM_PROCUREMENT_OBJECT_LIST_UPDATE = "op:bom-procurement-object-list:update"  # 确认
     BOM_PROCUREMENT_OBJECT_LIST_DELETE = "op:bom-procurement-object-list:delete"  # 删除
@@ -255,7 +255,7 @@ class Perm:
     BASE_PRICE_DOWNLOAD_EXPORT = "op:base-price-download:export"  # 导出
     BASE_PRICE_DOWNLOAD_DELETE = "op:base-price-download:delete"  # 批量删除
 
-    MENU_WINNING_THICKNESS_DOWNLOAD = "menu:winning-thickness-download"  # 中标钢厂厚度价格一览表
+    MENU_WINNING_THICKNESS_DOWNLOAD = "menu:winning-thickness-download"  # 中标钢厂厚度价格列表
     WINNING_THICKNESS_DOWNLOAD_VIEW = "op:winning-thickness-download:view"  # 预览
     WINNING_THICKNESS_DOWNLOAD_EXPORT = "op:winning-thickness-download:export"  # 导出
 
@@ -276,7 +276,7 @@ class Perm:
     STEEL_PRICE_CALC_RUN = "op:steel-price-calc:run"  # 开始计算
     STEEL_PRICE_CALC_DELETE = "op:steel-price-calc:delete"  # 删除日志
 
-    MENU_STEEL_PRICE_LIST = "menu:steel-price-list"  # 冲压钢材联动价一览
+    MENU_STEEL_PRICE_LIST = "menu:steel-price-list"  # 冲压钢材联动价列表
     STEEL_PRICE_LIST_VIEW = "op:steel-price-list:view"  # 查询
     STEEL_PRICE_LIST_UPDATE = "op:steel-price-list:update"  # 编辑
     STEEL_PRICE_LIST_DELETE = "op:steel-price-list:delete"  # 删除
@@ -291,7 +291,7 @@ class Perm:
     STAMPING_PART_COST_CALC_RUN = "op:stamping-part-cost-calc:run"  # 计算
     STAMPING_PART_COST_CALC_DELETE = "op:stamping-part-cost-calc:delete"  # 删除日志
 
-    MENU_STAMPING_PART_COST = "menu:stamping-part-cost"  # 冲压零件价格一览
+    MENU_STAMPING_PART_COST = "menu:stamping-part-cost"  # 冲压零件价格列表
     STAMPING_PART_COST_VIEW = "op:stamping-part-cost:view"  # 查询
     STAMPING_PART_COST_UPDATE = "op:stamping-part-cost:update"  # 失败手工改价
     STAMPING_PART_COST_DELETE = "op:stamping-part-cost:delete"  # 删除
@@ -306,7 +306,7 @@ class Perm:
     ASSEMBLY_COST_CALC_RUN = "op:assembly-cost-calc:run"  # 计算
     ASSEMBLY_COST_CALC_DELETE = "op:assembly-cost-calc:delete"  # 删除日志
 
-    MENU_ASSEMBLY_COST = "menu:assembly-cost"  # 总成核价一览
+    MENU_ASSEMBLY_COST = "menu:assembly-cost"  # 总成核价列表
     ASSEMBLY_COST_VIEW = "op:assembly-cost:view"  # 查询
     ASSEMBLY_COST_DELETE = "op:assembly-cost:delete"  # 删除
     ASSEMBLY_COST_APPROVE = "op:assembly-cost:approve"  # 审核通过
@@ -334,11 +334,11 @@ class Perm:
 
     MENU_ENGINEERING_CHANGE_DESIGN_GROUP = "menu:engineering-change-design-group"  # 设计变更
 
-    MENU_ENGINEERING_CHANGE_UPLOAD = "menu:engineering-change-upload"  # 上传工程变更
+    MENU_ENGINEERING_CHANGE_UPLOAD = "menu:engineering-change-upload"  # 上传设计变更
     ENGINEERING_CHANGE_UPLOAD_VIEW = "op:engineering-change-upload:view"  # 查看
     ENGINEERING_CHANGE_UPLOAD_UPLOAD = "op:engineering-change-upload:upload"  # 上传
 
-    MENU_ENGINEERING_CHANGE_ORDER_LIST = "menu:engineering-change-order-list"  # 工程变更单列表
+    MENU_ENGINEERING_CHANGE_ORDER_LIST = "menu:engineering-change-order-list"  # 设计变更列表
     ENGINEERING_CHANGE_ORDER_LIST_VIEW = "op:engineering-change-order-list:view"  # 查看
     ENGINEERING_CHANGE_ORDER_LIST_DELETE = "op:engineering-change-order-list:delete"  # 删除回滚
 
@@ -370,7 +370,7 @@ class Perm:
     VEHICLE_MODEL_UPLOAD_VIEW = "op:vehicle-model-upload:view"  # 查看
     VEHICLE_MODEL_UPLOAD_UPLOAD = "op:vehicle-model-upload:upload"  # 导入
 
-    MENU_VEHICLE_MODEL_LIST = "menu:vehicle-model-list"  # 一览表
+    MENU_VEHICLE_MODEL_LIST = "menu:vehicle-model-list"  # 项目列表
     VEHICLE_MODEL_LIST_VIEW = "op:vehicle-model-list:view"  # 查看
     VEHICLE_MODEL_LIST_EXPORT = "op:vehicle-model-list:export"  # 导出
     VEHICLE_MODEL_LIST_CREATE = "op:vehicle-model-list:create"  # 新增
@@ -383,7 +383,7 @@ class Perm:
     SUPPLIER_UPLOAD_VIEW = "op:supplier-upload:view"  # 查看
     SUPPLIER_UPLOAD_UPLOAD = "op:supplier-upload:upload"  # 导入
 
-    MENU_SUPPLIER_LIST = "menu:supplier-list"  # 一览表
+    MENU_SUPPLIER_LIST = "menu:supplier-list"  # 供应商列表
     SUPPLIER_LIST_VIEW = "op:supplier-list:view"  # 查看
     SUPPLIER_LIST_EXPORT = "op:supplier-list:export"  # 导出
     SUPPLIER_LIST_CREATE = "op:supplier-list:create"  # 新增

@@ -1,4 +1,4 @@
-"""采购对象清单 — ORM 行转 VO；列表/导出共用树根期。"""
+"""采购对象列表 — ORM 行转 VO；列表/导出共用树根期。"""
 
 from __future__ import annotations
 

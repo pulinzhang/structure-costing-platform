@@ -1,5 +1,5 @@
 """
-采购对象清单 — 门面 Service
+采购对象列表 — 门面 Service
 
 Router 只依赖本类。生成 / 日志 / 审核下沉到子服务；分类与导出仍是独立模块。
 """
@@ -79,7 +79,7 @@ class ProcurementObjectListFilters(TypedDict):
 
 
 class BomProcurementObjectService:
-    """采购对象清单门面（查询 + 委托生成 / 日志 / 审核）。"""
+    """采购对象列表门面（查询 + 委托生成 / 日志 / 审核）。"""
 
     def __init__(self) -> None:
         self.repository = BomProcurementObjectRepository()
@@ -146,7 +146,7 @@ class BomProcurementObjectService:
             vehicle_model=vehicle_model.strip(),
         )
         if not headers:
-            raise NotFoundException("尚未生成采购对象清单")
+            raise NotFoundException("尚未生成采购对象列表")
         base = BomProcurementObjectListVO.model_validate(headers[0])
         qa_passed = all(bool(header.qa_passed) for header in headers)
         error_parts = [
@@ -318,7 +318,7 @@ class BomProcurementObjectService:
         return self._audit_service.batch_delete(db, dto, current_user)
 
     def get_list_id_by_snapshot(self, db: Session, snapshot_id: int) -> int | None:
-        """工程变更：snapshot 上是否已有采购对象清单头。"""
+        """工程变更：snapshot 上是否已有采购对象列表头。"""
         header = self.repository.get_list_by_snapshot_id(db, snapshot_id)
         return header.id if header is not None else None
 
@@ -349,6 +349,6 @@ class BomProcurementObjectService:
         if objects:
             return
         ensure_deletable(
-            db, "bom_procurement_object_lists", [{"id": header.id}], subject="该采购对象清单"
+            db, "bom_procurement_object_lists", [{"id": header.id}], subject="该采购对象列表"
         )
         self.repository.delete_list(db, header)

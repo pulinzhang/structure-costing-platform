@@ -75,10 +75,10 @@ export function supplierUploadTemplate() {
                             <ul class="list-disc list-inside text-xs text-ink-dim space-y-1.5">
                                 <li>已有全称则跳过，不覆盖</li>
                                 <li>有一行不对，这一整份都不写入</li>
-                                <li>要改是否启用或别名，到供应商一览里点开这一行</li>
+                                <li>要改是否启用或别名，到供应商列表里点开这一行</li>
                             </ul>
                         </div>
-                        <a href="#/supplier-list" class="block text-[11px] text-brand-hud hover:text-brand-active">打开供应商一览 →</a>
+                        <a href="#/supplier-list" class="block text-[11px] text-brand-hud hover:text-brand-active">打开供应商列表 →</a>
                     </div>
                 </div>
             </div>

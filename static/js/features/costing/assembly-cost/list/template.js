@@ -1,5 +1,5 @@
 /**
- * 总成核价一览 — Brabus Carbon & Precision Dark（对齐冲压零件价格一览 HUD）
+ * 总成核价列表 — Brabus Carbon & Precision Dark（对齐冲压零件价格列表 HUD）
  */
 
 import { filterSelect, filterInput, HUD_SHELL, DRAWER_CLOSE, DRAWER_SHELL, DRAWER_BACKDROP, HUD_BAND, BTN_GHOST, TH_ROW, OPS_TH, HUD_LED, BTN_SOLID } from '../../../../ui/classes.js?v=13';
@@ -63,7 +63,7 @@ export function assemblyCostListTemplate() {
                                         moreMenuItemHtml({ id: 'lacBatchDeleteBtn', label: '批量删除', danger: true }),
                                     ].join(''),
                                 })}
-                                <div class="flex items-center gap-1.5" role="group" aria-label="一览视图">
+                                <div class="flex items-center gap-1.5" role="group" aria-label="列表视图">
                                     <button id="lacViewFinanceBtn" type="button"
                                             class="px-3 py-1.5 text-[11px] font-medium rounded-md bg-brand-hud/10 border border-brand-hud/50 text-brand-hud transition-all">
                                         财务（总成）

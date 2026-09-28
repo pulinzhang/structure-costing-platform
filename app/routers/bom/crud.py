@@ -37,7 +37,7 @@ _bom_read = require_any_perm(
     Perm.BOM_MATERIAL_VIEW,
 )
 # 级联下拉：结构/上传/材料清单/焊接拆解/包装运输费/采购对象/年度零件价/
-# 总成核价一览与计算 / 工程变更均可读取
+# 总成核价列表与计算 / 工程变更均可读取
 _bom_cascade_read = require_any_perm(
     Perm.BOM_STRUCTURE_VIEW,
     Perm.BOM_UPLOAD_VIEW,
