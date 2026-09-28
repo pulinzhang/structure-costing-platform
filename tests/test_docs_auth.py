@@ -77,7 +77,12 @@ def test_docs_html_uses_local_assets() -> None:
     assert '"forceDarkModeState": "light"' in response.text
     assert '"hideDarkModeToggle": true' in response.text
     script_at = response.text.find("/static/js/vendor/scalar/api-reference.js")
-    menu_css_at = response.text.find("font-sidebar:is(:hover, :focus-visible)")
+    menu_css_at = response.text.find("font-sidebar:not(:hover)")
+    assert "font-sidebar-active:not(.bg-sidebar-b-active):not(:hover)" in response.text
+    assert '"showSidebar"' not in response.text
+    assert '"defaultOpenFirstTag": false' in response.text
+    assert "#description/introduction" not in response.text
+    assert "syncSidebarSections" in response.text
     assert script_at != -1
     assert menu_css_at > script_at
     assert "#666666" in response.text
