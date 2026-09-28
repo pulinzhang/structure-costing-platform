@@ -13,6 +13,7 @@ from app.config import settings as app_settings
 from app.repositories.settings.login_security_repository import LoginSecurityRepository
 from app.repositories.settings.system.system_config_repository import SystemConfigRepository
 from app.schemas.dto.settings_dto import (
+    DEFAULT_BASE_PRICE_PROCESSING_FEE_LIMIT,
     SystemConfigPatch,
     SystemConfigUpdateDTO,
     SystemConfigWrite,
@@ -36,6 +37,8 @@ DEFAULT_FINISHED_WAREHOUSE_PACKAGING_RATE = Decimal("0.01")  # 1%
 DEFAULT_FINISHED_SCRAP_RATE = Decimal("0.003")  # 千分之 3
 DEFAULT_FINISHED_PRETAX_PROFIT_RATE = Decimal("0.02")  # 2%
 DEFAULT_SWING_SHEAR_PROCESS_FEE_PER_TON = Decimal("150")  # 元/吨
+DEFAULT_BASE_PRICE_MONTH_MOVE_LIMIT = Decimal("300")  # 元/吨；极端月份再在设置里调高
+DEFAULT_BODY_PANEL_MAX_THICKNESS = Decimal("3.00")  # mm；大于此值的乘用车车身件料厚整批拒绝
 SAMPLE_PROCUREMENT_AGREEMENT_REMARKS = (
     "1、本附件为双方签署的《{company_name}采购主合同》（编号：__________________）\n"
     "不可分割的部分，经双方签字、盖章后生效。\n"
@@ -106,6 +109,9 @@ class SettingsService:
                 finished_scrap_rate=DEFAULT_FINISHED_SCRAP_RATE,
                 finished_pretax_profit_rate=DEFAULT_FINISHED_PRETAX_PROFIT_RATE,
                 swing_shear_process_fee_per_ton=DEFAULT_SWING_SHEAR_PROCESS_FEE_PER_TON,
+                base_price_month_move_limit=DEFAULT_BASE_PRICE_MONTH_MOVE_LIMIT,
+                base_price_processing_fee_limit=DEFAULT_BASE_PRICE_PROCESSING_FEE_LIMIT,
+                body_panel_max_thickness=DEFAULT_BODY_PANEL_MAX_THICKNESS,
                 login_lock_minutes=login_lock_minutes,
             )
         return ConfigVO(
@@ -141,9 +147,21 @@ class SettingsService:
                 getattr(row, "finished_pretax_profit_rate", None),
                 DEFAULT_FINISHED_PRETAX_PROFIT_RATE,
             ),
-            swing_shear_process_fee_per_ton=self._normalize_yuan_per_ton(
+            swing_shear_process_fee_per_ton=self._normalize_non_negative_q2(
                 getattr(row, "swing_shear_process_fee_per_ton", None),
                 DEFAULT_SWING_SHEAR_PROCESS_FEE_PER_TON,
+            ),
+            base_price_month_move_limit=self._normalize_non_negative_q2(
+                getattr(row, "base_price_month_move_limit", None),
+                DEFAULT_BASE_PRICE_MONTH_MOVE_LIMIT,
+            ),
+            base_price_processing_fee_limit=self._normalize_non_negative_q2(
+                getattr(row, "base_price_processing_fee_limit", None),
+                DEFAULT_BASE_PRICE_PROCESSING_FEE_LIMIT,
+            ),
+            body_panel_max_thickness=self._normalize_non_negative_q2(
+                getattr(row, "body_panel_max_thickness", None),
+                DEFAULT_BODY_PANEL_MAX_THICKNESS,
             ),
             login_lock_minutes=login_lock_minutes,
         )
@@ -178,6 +196,9 @@ class SettingsService:
         finished_scrap_rate = quantize_money(dto.finished_scrap_rate, Q6)
         finished_pretax_profit_rate = quantize_money(dto.finished_pretax_profit_rate, Q6)
         swing_shear_process_fee_per_ton = quantize_money(dto.swing_shear_process_fee_per_ton, Q2)
+        base_price_month_move_limit = quantize_money(dto.base_price_month_move_limit, Q2)
+        base_price_processing_fee_limit = quantize_money(dto.base_price_processing_fee_limit, Q2)
+        body_panel_max_thickness = quantize_money(dto.body_panel_max_thickness, Q2)
         row = self.repository.get_singleton(db)
         if row is None:
             self.repository.create_singleton(
@@ -195,6 +216,9 @@ class SettingsService:
                     finished_scrap_rate=finished_scrap_rate,
                     finished_pretax_profit_rate=finished_pretax_profit_rate,
                     swing_shear_process_fee_per_ton=swing_shear_process_fee_per_ton,
+                    base_price_month_move_limit=base_price_month_move_limit,
+                    base_price_processing_fee_limit=base_price_processing_fee_limit,
+                    body_panel_max_thickness=body_panel_max_thickness,
                     created_by=audit["created_by"],
                     updated_by=audit["updated_by"],
                 ),
@@ -216,6 +240,9 @@ class SettingsService:
                     finished_scrap_rate=finished_scrap_rate,
                     finished_pretax_profit_rate=finished_pretax_profit_rate,
                     swing_shear_process_fee_per_ton=swing_shear_process_fee_per_ton,
+                    base_price_month_move_limit=base_price_month_move_limit,
+                    base_price_processing_fee_limit=base_price_processing_fee_limit,
+                    body_panel_max_thickness=body_panel_max_thickness,
                     updated_by=audit_update(current_user)["updated_by"],
                 ),
             )
@@ -293,12 +320,42 @@ class SettingsService:
             DEFAULT_FINISHED_PRETAX_PROFIT_RATE,
         )
 
+    def get_base_price_processing_fee_limit(self, db: Session) -> Decimal:
+        """基准价加工费上限（元/吨），即设置里保存的那个数。大于此值整批拒绝。"""
+        row = self.repository.get_singleton(db)
+        if row is None:
+            return DEFAULT_BASE_PRICE_PROCESSING_FEE_LIMIT
+        return self._normalize_non_negative_q2(
+            getattr(row, "base_price_processing_fee_limit", None),
+            DEFAULT_BASE_PRICE_PROCESSING_FEE_LIMIT,
+        )
+
+    def get_body_panel_max_thickness(self, db: Session) -> Decimal:
+        """基准价参考规格：乘用车车身件料厚上限（mm）。大于此值整批拒绝，等于此值允许。"""
+        row = self.repository.get_singleton(db)
+        if row is None:
+            return DEFAULT_BODY_PANEL_MAX_THICKNESS
+        return self._normalize_non_negative_q2(
+            getattr(row, "body_panel_max_thickness", None),
+            DEFAULT_BODY_PANEL_MAX_THICKNESS,
+        )
+
+    def get_base_price_month_move_limit(self, db: Session) -> Decimal:
+        """基准价导入：同一基地同一规格，单价加加工费相对上月允许的最大涨跌（元/吨）。"""
+        row = self.repository.get_singleton(db)
+        if row is None:
+            return DEFAULT_BASE_PRICE_MONTH_MOVE_LIMIT
+        return self._normalize_non_negative_q2(
+            getattr(row, "base_price_month_move_limit", None),
+            DEFAULT_BASE_PRICE_MONTH_MOVE_LIMIT,
+        )
+
     def get_swing_shear_process_fee_per_ton(self, db: Session) -> Decimal:
         """核价用：摆剪件加到钢价上的元/吨，无效或缺失则回退 150。"""
         row = self.repository.get_singleton(db)
         if row is None:
             return DEFAULT_SWING_SHEAR_PROCESS_FEE_PER_TON
-        return self._normalize_yuan_per_ton(
+        return self._normalize_non_negative_q2(
             getattr(row, "swing_shear_process_fee_per_ton", None),
             DEFAULT_SWING_SHEAR_PROCESS_FEE_PER_TON,
         )
@@ -360,8 +417,8 @@ class SettingsService:
         return quantize_money(rate, Q6)
 
     @staticmethod
-    def _normalize_yuan_per_ton(value: Any, default: Decimal) -> Decimal:
-        """元/吨（≥0）。"""
+    def _normalize_non_negative_q2(value: Any, default: Decimal) -> Decimal:
+        """非负数值，两位小数。元/吨与毫米共用。"""
         try:
             amount = Decimal(str(value))
         except (InvalidOperation, TypeError, ValueError):

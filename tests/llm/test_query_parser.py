@@ -1056,3 +1056,171 @@ def test_query_parser_policy_colloquial_anomaly() -> None:
     assert query.time_range.end == "2025-12"
     assert "trend" in query.analyses
     assert "drivers" in query.analyses
+
+
+def _parse_without_draft_time(question: str):
+    parser = QueryParser()
+    db = MagicMock()
+    parser._extractor.extract = MagicMock(
+        return_value={"time_range": {}, "filters": {}, "compare_locations": []}
+    )
+    return parser.parse(db, user_question=question)
+
+
+def test_query_parser_base_price_month_move_since_year_keeps_order_filter() -> None:
+    parser = QueryParser()
+    db = MagicMock()
+    _mock_aligner(parser)
+    parser._extractor.extract = MagicMock(
+        return_value={
+            "time_range": {"start": "2025-01", "end": "2026-09"},
+            "filters": {"location": "青岛基地"},
+            "compare_locations": [],
+        }
+    )
+    query = parser.parse(
+        db,
+        user_question="2025年以来，青岛基地，基准价，环比相差500的有那一些",
+    )
+    assert query.subject == "steel_base_price"
+    assert query.filters.get("month_move_over") == "500"
+    assert query.filters.get("location") == "青岛"
+    assert query.time_range.start == "2025-01"
+    assert query.time_range.end == "2026-09"
+
+
+def test_query_parser_base_price_month_move_lists_named_gap() -> None:
+    query = _parse_without_draft_time("基准价，环比相差500的有那一些")
+    assert query.subject == "steel_base_price"
+    assert query.filters.get("month_move_over") == "500"
+    assert query.time_range.start == "2000-01"
+    assert query.time_range.end == "2099-12"
+
+
+def test_query_parser_base_price_month_move_keeps_named_year() -> None:
+    query = _parse_without_draft_time("现网基准价，按现在的月度涨跌范围，有多少条超300了？")
+    assert query.filters.get("month_move_over") == "300"
+    assert query.time_range.start == "2000-01"
+
+    named_year = _parse_without_draft_time("2026年基准价环比相差200的有哪些")
+    assert named_year.filters.get("month_move_over") == "200"
+    assert named_year.time_range.start == "2026-01"
+    assert named_year.time_range.end == "2026-12"
+
+
+def test_build_base_price_month_move_over_uses_landed_price() -> None:
+    from app.repositories.llm.base_price_analysis_repository import BasePricePeriodRow
+    from app.services.llm.analysis.steel.base_price import build_base_price_month_move_over
+
+    def row(
+        year: int,
+        month: int,
+        mill: str,
+        price: str,
+        *,
+        location: str = "青岛",
+        grade: str = "HC440/780DHD+Z",
+    ):
+        return BasePricePeriodRow(
+            year=year,
+            month=month,
+            location=location,
+            steel_mill=mill,
+            category_name="镀锌",
+            grade=grade,
+            spec="1.00*1250.00",
+            base_price=Decimal(price),
+            processing_fee=Decimal("120"),
+            thick=Decimal("1.00"),
+            width=Decimal("1250.00"),
+        )
+
+    rows = [
+        row(2026, 1, "邯钢", "4000"),
+        row(2026, 2, "邯钢", "4500"),
+        row(2026, 1, "宝钢", "4000", grade="DC01"),
+        row(2026, 2, "宝钢", "4600", grade="DC01"),
+        row(2025, 12, "首钢", "5000", grade="HC500LAD+Z"),
+        row(2026, 1, "唐钢", "5700", grade="HC500LAD+Z"),
+        row(2026, 1, "马钢", "3000", location="芜湖", grade="SPHC"),
+        row(2026, 1, "包钢", "3100", location="芜湖", grade="SPHC"),
+        row(2026, 2, "鞍钢", "4000", location="芜湖", grade="SPHC"),
+        row(2026, 1, "本钢", "2000", grade="HC180B"),
+        row(2026, 3, "本钢", "4000", grade="HC180B"),
+    ]
+    result = build_base_price_month_move_over(
+        rows,
+        limit=Decimal("500"),
+        window_start=(2026, 1),
+    )
+    assert result["count"] == 2
+    lines = [str(item["line"]) for item in result["items"]]
+    assert lines[0].startswith("2026年01月 青岛 HC500LAD+Z")
+    assert lines[1].startswith("2026年02月 青岛 DC01")
+    assert any("DC01" in line and "+600.00" in line for line in lines)
+    assert any(
+        "HC500LAD+Z" in line and "上月钢厂首钢" in line and "+700.00" in line for line in lines
+    )
+    assert all("HC440" not in line for line in lines)
+    assert all("SPHC" not in line for line in lines)
+    assert all("HC180B" not in line for line in lines)
+
+
+def test_apply_base_price_month_move_order_replaces_magnitude_table() -> None:
+    from app.services.llm.analysis.steel.base_price import apply_base_price_month_move_order
+
+    result = {
+        "kind": "base_price_month_move_over",
+        "count": 2,
+        "note": "大于 500 元/吨的有 2 条。",
+        "items": [
+            {
+                "period": "2025年02月",
+                "location": "青岛",
+                "grade": "HC500LAD+Z",
+                "spec": "1.0*1250",
+                "steel_mill": "鞍本",
+                "previous_steel_mill": "首钢",
+                "base_price": "5000.00",
+                "previous_base_price": "5922.00",
+                "change": "-922.00",
+            },
+            {
+                "period": "2026年01月",
+                "location": "青岛",
+                "grade": "HC440/780DHD+Z",
+                "spec": "1.0*1250",
+                "steel_mill": "邯钢",
+                "previous_steel_mill": "邯钢",
+                "base_price": "5363.00",
+                "previous_base_price": "6611.00",
+                "change": "-1248.00",
+            },
+        ],
+    }
+    model_answer = """大于 500 的有 2 条，按跌幅从大到小：
+
+| 年 | 月 | 基地 | 牌号 | 变动 |
+| --- | --- | --- | --- | --- |
+| 2026 | 01 | 青岛 | HC440/780DHD+Z | -1248.00 |
+| 2025 | 02 | 青岛 | HC500LAD+Z | -922.00 |
+
+1. 2026年01月 青岛 HC440/780DHD+Z，变动 -1248.00
+"""
+    pinned = apply_base_price_month_move_order(model_answer, result)
+    assert "从大到小" not in pinned
+    assert pinned.index("2025年02月") < pinned.index("2026年01月")
+    first = pinned.index("HC500LAD+Z")
+    second = pinned.index("HC440/780DHD+Z")
+    assert first < second
+    assert "这次基准价" not in pinned
+    assert "这次钢厂" not in pinned
+    assert "本月钢厂" in pinned
+    assert pinned.index("| 年月 | 基地 | 牌号 |") < first
+    assert "本月基准价（元/吨）" in pinned
+    with_advice = apply_base_price_month_move_order(
+        "大于 500 的有 2 条。\n\n风险提示\n跨月不一定每月都有数。\n\n建议\n到基准价格列表核对。",
+        result,
+    )
+    assert with_advice.index("| 年月 |") < with_advice.index("风险提示")
+    assert with_advice.index("风险提示") < with_advice.index("建议")

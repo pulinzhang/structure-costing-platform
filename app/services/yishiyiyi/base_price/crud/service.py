@@ -28,8 +28,42 @@ from app.services.masterdata.location.service import LocationService
 from app.services.masterdata.steel_grade_category.service import (
     SteelGradeCategoryService,
 )
+from app.services.settings.system.service import SettingsService
+from app.services.yishiyiyi.base_price.gate import (
+    AwardLine,
+    previous_period,
+    reject_excessive_month_moves,
+    reject_invalid_base_price_award,
+    reject_processing_fee_over_limit,
+)
 
 logger = logging.getLogger("service.steel_base_price.crud")
+
+
+def _reject_line_against_previous_month(
+    db: Session,
+    repository: SteelBasePriceRepository,
+    line: AwardLine,
+    *,
+    year: int,
+    month: int,
+) -> None:
+    prev_year, prev_month = previous_period(year, month)
+    previous_rows = repository.list_by_year_month(db, year=prev_year, month=prev_month)
+    previous = [
+        AwardLine(
+            location=row.location,
+            steel_mill=row.steel_mill,
+            grade=row.grade,
+            thick=row.thick,
+            width=row.width,
+            base_price=row.base_price,
+            processing_fee=row.processing_fee,
+        )
+        for row in previous_rows
+    ]
+    limit = SettingsService().get_base_price_month_move_limit(db)
+    reject_excessive_month_moves([line], previous, limit=limit)
 
 
 class SteelBasePriceCrudService:
@@ -94,6 +128,44 @@ class SteelBasePriceCrudService:
                     "category_name": archive.category_name,
                 }
             )
+            stored = self.repository.list_by_year_month(db, year=body.year, month=body.month)
+            incoming = [
+                AwardLine(
+                    location=body.location,
+                    grade=body.grade,
+                    steel_mill=body.steel_mill,
+                    thick=body.thick,
+                    width=body.width,
+                    processing_fee=body.processing_fee,
+                    base_price=body.base_price,
+                    excel_row=body.excel_row,
+                )
+            ]
+            reject_invalid_base_price_award(
+                incoming,
+                [
+                    AwardLine(
+                        location=row.location,
+                        grade=row.grade,
+                        steel_mill=row.steel_mill,
+                        thick=row.thick,
+                        width=row.width,
+                    )
+                    for row in stored
+                ],
+                max_thickness=SettingsService().get_body_panel_max_thickness(db),
+            )
+            reject_processing_fee_over_limit(
+                incoming,
+                limit=SettingsService().get_base_price_processing_fee_limit(db),
+            )
+            _reject_line_against_previous_month(
+                db,
+                self.repository,
+                incoming[0],
+                year=body.year,
+                month=body.month,
+            )
             audit = audit_create(current_user)
             record = self.repository.create(
                 db,
@@ -123,7 +195,37 @@ class SteelBasePriceCrudService:
     ) -> SteelBasePriceResponse:
         if not body.model_fields_set:
             raise BusinessException("没有提供任何更新字段")
+        price_fields = body.model_fields_set & {"base_price", "processing_fee"}
         try:
+            existing = self.repository.get_by_id(db, record_id)
+            if existing is None:
+                raise NotFoundException("记录不存在")
+            if price_fields:
+                line = AwardLine(
+                    location=existing.location,
+                    grade=existing.grade,
+                    steel_mill=existing.steel_mill,
+                    thick=existing.thick,
+                    width=existing.width,
+                    base_price=body.base_price
+                    if body.base_price is not None
+                    else existing.base_price,
+                    processing_fee=body.processing_fee
+                    if body.processing_fee is not None
+                    else existing.processing_fee,
+                )
+                if body.processing_fee is not None:
+                    reject_processing_fee_over_limit(
+                        [line],
+                        limit=SettingsService().get_base_price_processing_fee_limit(db),
+                    )
+                _reject_line_against_previous_month(
+                    db,
+                    self.repository,
+                    line,
+                    year=existing.year,
+                    month=existing.month,
+                )
             record = self.repository.update(
                 db,
                 record_id,

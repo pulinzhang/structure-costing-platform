@@ -118,7 +118,10 @@ export function basePriceUploadTemplate() {
                         <ul class="list-disc list-inside text-xs text-ink-dim space-y-1.5 mb-4">
                             <li>表头位于第4-5行，数据从第6行开始</li>
                             <li>包含钢种、牌号、参考规格及各基地的中标钢厂和到厂价格</li>
-                            <li>具体列位置由后端解析器自动识别</li>
+                            <li>各基地价格列之后必须有表头含「加工费」的列，每个牌号填数字（元/吨）</li>
+                            <li>没有加工费列，或单元格为空、不是数字时整批拒绝。不会改读旁边的价格，也不会填默认加工费</li>
+                            <li>单价加加工费相对上月同一基地、同一规格的涨跌，超出系统设置里的基准价月度价格变动范围（默认 ±300 元/吨）则整批拒绝</li>
+                            <li>加工费大于系统设置里的基准价加工费上限则整批拒绝</li>
                         </ul>
                         <h6 class="${UPLOAD_LABEL} mb-2.5">Upsert 规则</h6>
                         <ul class="list-disc list-inside text-xs text-ink-dim space-y-1.5 mb-4">

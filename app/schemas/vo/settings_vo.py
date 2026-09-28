@@ -34,6 +34,18 @@ class ConfigVO(BaseModel):
     swing_shear_process_fee_per_ton: Decimal = Field(
         ..., description="摆剪件加到钢价上的金额（元/吨）"
     )
+    base_price_month_move_limit: Decimal = Field(
+        ...,
+        description="基准价月涨跌限额（元/吨）。同一基地同一规格，单价加加工费相对上月超过此值则整批拒绝",
+    )
+    base_price_processing_fee_limit: Decimal = Field(
+        ...,
+        description="基准价加工费上限（元/吨）。大于此值整批拒绝，等于此值允许",
+    )
+    body_panel_max_thickness: Decimal = Field(
+        ...,
+        description="乘用车车身钢板冲压件料厚上限（mm）。参考规格厚度大于此值则整批拒绝，等于此值允许",
+    )
     login_lock_minutes: int = Field(..., description="连续登录失败 3 次后的锁定分钟数")
 
     @field_serializer("steel_density")
@@ -52,6 +64,11 @@ class ConfigVO(BaseModel):
     def serialize_rate(self, value: Decimal) -> str:
         return format_money(value, Q6, 6)
 
-    @field_serializer("swing_shear_process_fee_per_ton")
-    def serialize_swing_shear_fee(self, value: Decimal) -> str:
+    @field_serializer(
+        "swing_shear_process_fee_per_ton",
+        "base_price_month_move_limit",
+        "base_price_processing_fee_limit",
+        "body_panel_max_thickness",
+    )
+    def serialize_yuan_per_ton(self, value: Decimal) -> str:
         return format_money(value, Q2, 2)

@@ -23,6 +23,8 @@ class BasePricePeriodRow:
     spec: str
     base_price: Decimal
     processing_fee: Decimal
+    thick: Decimal | None = None
+    width: Decimal | None = None
 
 
 class BasePriceAnalysisRepository:
@@ -75,6 +77,8 @@ class BasePriceAnalysisRepository:
                     spec=str(row.spec),
                     base_price=Decimal(str(row.base_price)),
                     processing_fee=Decimal(str(row.processing_fee)),
+                    thick=Decimal(str(row.thick)),
+                    width=Decimal(str(row.width)),
                 )
             )
         return rows

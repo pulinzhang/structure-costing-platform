@@ -507,9 +507,10 @@ def test_restore_documents_skip_duplicate_process_sheet() -> None:
         density=None,
         material_loss_rate=None,
         scrap_recovery_rate=None,
+        material="HC180Y",
         sheet_length=None,
         sheet_width=None,
-        thickness=None,
+        thickness=Decimal("0.6"),
         parts_per_sheet=None,
         swing_shear_fee_per_ton=None,
         scrap_price_id=None,
@@ -546,7 +547,7 @@ def test_restore_documents_skip_duplicate_process_sheet() -> None:
         price_kind="steel_plate",
         items=[],
     )
-    service._build_stamping(
+    vo = service._build_stamping(
         db=MagicMock(),
         item=_item(part_number="502007795AA"),
         short="7795",
@@ -560,6 +561,8 @@ def test_restore_documents_skip_duplicate_process_sheet() -> None:
         exceptions=[],
         documents=documents,
     )
+    assert vo.material == "HC180Y"
+    assert vo.model_dump(mode="json")["thickness"] == "0.6"
     names = [(doc.filename, doc.excel_row, doc.file_category_label) for doc in documents]
     assert (
         "T13J项目冲压工艺确认表-全鑫.xlsx",

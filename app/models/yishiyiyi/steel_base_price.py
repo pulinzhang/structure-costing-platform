@@ -96,7 +96,7 @@ class SteelBasePrice(AuditUserMixin, Base):
 
     # 【复合唯一约束 + 高性能组合索引】
     __table_args__ = (
-        # 确保同批次、同基地、同钢厂牌号、同规格不会重复写入
+        # 比写入门禁更宽：含钢厂、类别、厚度、宽度。一个月一个钢厂是门禁，不要改这把键。
         UniqueConstraint(
             "year",
             "month",

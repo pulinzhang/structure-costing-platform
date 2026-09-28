@@ -9,6 +9,7 @@ from pydantic import BaseModel, ConfigDict, Field, field_serializer
 
 from app.common.money import Q4
 from app.common.timezone import datetime_to_iso
+from app.services.costing.steel_price.spec_format import format_thickness
 
 
 def _money_str(value: Decimal | None) -> str | None:
@@ -141,6 +142,7 @@ class RestoreStampingVO(BaseModel):
     density: Decimal | None = None
     material_loss_rate: Decimal | None = None
     scrap_recovery_rate: Decimal | None = None
+    material: str | None = None
     sheet_length: Decimal | None = None
     sheet_width: Decimal | None = None
     thickness: Decimal | None = None
@@ -172,6 +174,13 @@ class RestoreStampingVO(BaseModel):
     finished_pretax_profit_fee: Decimal | None = None
     excel_filename: str | None = None
     excel_row: int | None = None
+
+    @field_serializer("thickness")
+    def _ser_thickness(self, value: Decimal | None) -> str | None:
+        if value is None:
+            return None
+        text = format_thickness(value)
+        return text or None
 
     @field_serializer(
         "unit_cost",

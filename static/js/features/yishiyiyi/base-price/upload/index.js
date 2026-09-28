@@ -3,7 +3,7 @@
  * 基准价格上传 — 异步 task_id + 进度轮询
  */
 
-import { basePriceUploadTemplate } from './template.js?v=46';
+import { basePriceUploadTemplate } from './template.js?v=55';
 import { uploadSubmitLabelHtml } from '../../../../ui/upload-actions.js?v=2';
 
 const POLL_INTERVAL_MS = 2000;
@@ -207,7 +207,10 @@ const BasePriceUploadPage = {
         if (actionEl) actionEl.classList.toggle('hidden', !isMissingGrade);
 
         if (titleEl) {
-            if (status === 'completed') {
+            if (status === 'completed-warn') {
+                titleEl.textContent = '解析成功，请看宽度';
+                titleEl.className = 'text-xs font-medium text-warn mb-0';
+            } else if (status === 'completed') {
                 titleEl.textContent = '解析成功';
                 titleEl.className = 'text-xs font-medium text-ok truncate mb-0';
             } else if (isMissingGrade) {
@@ -222,7 +225,10 @@ const BasePriceUploadPage = {
             }
         }
 
-        if (status === 'completed' && bar) {
+        if (status === 'completed-warn' && bar) {
+            bar.className = 'h-full bg-warn transition-all duration-300';
+            if (percentEl) percentEl.className = 'text-xs font-mono tabular-nums text-warn shrink-0';
+        } else if (status === 'completed' && bar) {
             bar.className = 'h-full bg-ok transition-all duration-300';
             if (percentEl) percentEl.className = 'text-xs font-mono tabular-nums text-ok shrink-0';
         } else if (status === 'failed' && bar) {
@@ -308,12 +314,24 @@ const BasePriceUploadPage = {
                     const created = result.created_count || 0;
                     const updated = result.updated_count || 0;
                     const total = result.total || 0;
+                    const widthWarnings = Array.isArray(result.width_warnings)
+                        ? result.width_warnings
+                        : [];
                     const doneMsg = `导入完成：新增 ${created} 条，更新 ${updated} 条，共 ${total} 条`;
-                    this.updateProgress(100, doneMsg, 'completed');
-                    showToast(doneMsg, 'success');
                     this.activeTaskId = null;
                     this.setUploading(false);
                     this.clearSelectedFile();
+                    if (widthWarnings.length) {
+                        this.updateProgress(
+                            100,
+                            `${doneMsg}\n${widthWarnings.join('\n')}`,
+                            'completed-warn',
+                        );
+                        showToast('导入完成，参考宽度有告警，请看一眼', 'warning');
+                        return;
+                    }
+                    this.updateProgress(100, doneMsg, 'completed');
+                    showToast(doneMsg, 'success');
                     setTimeout(() => {
                         if (!this.isUploading) this.hideProgress();
                     }, 1800);

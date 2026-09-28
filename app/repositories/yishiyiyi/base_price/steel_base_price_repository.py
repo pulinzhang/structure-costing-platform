@@ -160,6 +160,14 @@ class SteelBasePriceRepository:
             "specs": specs,
         }
 
+    def list_by_year_month(self, db: Session, *, year: int, month: int) -> list[SteelBasePrice]:
+        """某年月的全部基准价，供与上月对照单价+加工费。"""
+        return (
+            db.query(SteelBasePrice)
+            .filter(SteelBasePrice.year == year, SteelBasePrice.month == month)
+            .all()
+        )
+
     def get_distinct_months_for_year(self, db: Session, year: int) -> list[int]:
         results = (
             db.query(SteelBasePrice.month)

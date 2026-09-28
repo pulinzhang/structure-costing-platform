@@ -84,3 +84,21 @@ class SystemConfig(AuditUserMixin, Base):
         default=Decimal("150"),
         comment="摆剪件加到钢价上的金额（元/吨），默认 150",
     )
+    base_price_month_move_limit: Mapped[Decimal] = mapped_column(
+        Numeric(12, 2),
+        nullable=False,
+        default=Decimal("300"),
+        comment="基准价月涨跌限额（元/吨）。同一基地同一规格，单价加加工费相对上月超过此值则整批拒绝。默认 300",
+    )
+    base_price_processing_fee_limit: Mapped[Decimal] = mapped_column(
+        Numeric(12, 2),
+        nullable=False,
+        default=Decimal("120"),
+        comment="基准价加工费上限（元/吨）。大于此值整批拒绝，等于此值允许",
+    )
+    body_panel_max_thickness: Mapped[Decimal] = mapped_column(
+        Numeric(7, 2),
+        nullable=False,
+        default=Decimal("3.00"),
+        comment="乘用车车身钢板冲压件料厚上限（mm）。参考规格厚度大于此值则整批拒绝。默认 3.00，等于此值允许",
+    )

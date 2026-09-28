@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+from decimal import Decimal
+
 from sqlalchemy.orm import Session
 
 from app.repositories.llm.base_price_analysis_repository import BasePriceAnalysisRepository
@@ -20,6 +22,7 @@ from app.services.llm.analysis.shared.summary import build_steel_summary
 from app.services.llm.analysis.steel.base_price import (
     build_base_price_drivers,
     build_base_price_mom_anomalies,
+    build_base_price_month_move_over,
     build_base_price_summary,
     build_base_price_trend,
 )
@@ -98,6 +101,9 @@ class SteelAnalysis:
 
     def run_steel_base_price(self, db: Session, query: AnalysisQuery) -> AnalysisRunResult:
         """对齐「基准价格列表」#/base-price-download。"""
+        over_text = query.filter_get("month_move_over")
+        if over_text is not None:
+            return self._run_base_price_month_move(db, query, Decimal(over_text))
         tr = query.time_range
         rows = self._base_price_repo.query_rows(
             db,
@@ -136,6 +142,44 @@ class SteelAnalysis:
             }
             for row in rows[:50]
         ]
+        return out
+
+    def _run_base_price_month_move(
+        self,
+        db: Session,
+        query: AnalysisQuery,
+        limit: Decimal,
+    ) -> AnalysisRunResult:
+        """问句里点了相差金额。只列单价加加工费的环比，不混入均价异常。"""
+        tr = query.time_range
+        if tr.start_month <= 1:
+            start_year, start_month = tr.start_year - 1, 12
+        else:
+            start_year, start_month = tr.start_year, tr.start_month - 1
+        rows = self._base_price_repo.query_rows(
+            db,
+            start_year=start_year,
+            start_month=start_month,
+            end_year=tr.end_year,
+            end_month=tr.end_month,
+            location=query.location(),
+            steel_mill=query.filter_get("steel_mill"),
+            category_name=query.filter_get("category_name"),
+            grade=query.filter_get("grade"),
+            limit=50_000,
+        )
+        window_start = (tr.start_year, tr.start_month)
+        in_window = [row for row in rows if (row.year, row.month) >= window_start]
+        out = AnalysisRunResult(
+            comparability=resolve_comparability(query.comparison_basis),
+            has_data=bool(in_window),
+            data_message="" if in_window else "当前范围无基准价格数据",
+        )
+        if not in_window:
+            return out
+        payload = build_base_price_month_move_over(rows, limit=limit, window_start=window_start)
+        out.data_message = str(payload.get("note") or "")
+        out.result = payload
         return out
 
     def run_winning_thickness(self, db: Session, query: AnalysisQuery) -> AnalysisRunResult:
