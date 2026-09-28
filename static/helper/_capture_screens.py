@@ -69,17 +69,7 @@ def main() -> None:
                 continue
             url = f"{BASE}{route}"
             page.goto(url, wait_until="domcontentloaded")
-            time.sleep(1.2)
-            if wait_text:
-                with contextlib.suppress(Exception):
-                    page.wait_for_selector(wait_text, timeout=8000)
-            else:
-                # wait for page content mount
-                try:
-                    page.wait_for_selector("#pageContent", timeout=8000)
-                    time.sleep(0.8)
-                except Exception:
-                    time.sleep(1.0)
+            _wait_page_ready(page, wait_text)
             page.screenshot(path=str(OUT / filename), full_page=False)
             print(f"saved {filename}")
 
@@ -102,17 +92,36 @@ def main() -> None:
         print(f"done -> {OUT}")
 
 
-def _capture_llm(page) -> None:
-    """顶栏浮窗 + 打印新开页（/llm-analysis-report）。"""
-    page.goto(f"{BASE}/app#/dashboard", wait_until="domcontentloaded")
-    time.sleep(1.0)
+def _wait_page_ready(page, wait_text: str | None) -> None:
+    """等页面挂上，并等列表「查询中」结束再截。"""
+    time.sleep(0.4)
+    if wait_text:
+        with contextlib.suppress(Exception):
+            page.wait_for_selector(wait_text, timeout=8000)
+    else:
+        with contextlib.suppress(Exception):
+            page.wait_for_selector("#pageContent", timeout=8000)
     with contextlib.suppress(Exception):
-        page.wait_for_selector("#llmAssistantEntryBtn", timeout=10000)
-    page.locator("#llmAssistantEntryBtn").click()
+        page.wait_for_function(
+            """() => ![...document.querySelectorAll('button')].some(
+                (btn) => (btn.textContent || '').includes('查询中')
+            )""",
+            timeout=20000,
+        )
+    time.sleep(0.6)
+
+
+def _capture_llm(page) -> None:
+    """右侧圆钮浮窗 + 打印新开页（/llm-analysis-report）。"""
+    page.goto(f"{BASE}/app#/dashboard", wait_until="domcontentloaded")
+    dock = page.locator("#llmAssistantDock")
+    dock.wait_for(state="visible", timeout=15000)
+    dock.click()
     page.wait_for_selector("#llmAssistantPanel:not(.hidden)", timeout=10000)
 
     report_id = _first_succeeded_report_id(page)
     if report_id is not None:
+        page.locator("#llmAssistantPanel header").hover()
         page.locator("#llmBtnHistory").click()
         with contextlib.suppress(Exception):
             page.wait_for_selector(
@@ -124,12 +133,22 @@ def _capture_llm(page) -> None:
             opener.first.click()
             with contextlib.suppress(Exception):
                 page.wait_for_selector("#llmThread .llm-md", timeout=15000)
-            time.sleep(0.8)
+            time.sleep(0.6)
         else:
             time.sleep(0.6)
     else:
         time.sleep(0.8)
 
+    # 最大化后整屏都是对话；滚到问句，并悬停标题让清空 / 历史 / 最大化 / 收起露出来。
+    header = page.locator("#llmAssistantPanel header")
+    header.hover()
+    maximize = page.locator("#llmBtnMaximize")
+    if maximize.count():
+        maximize.click()
+        time.sleep(0.4)
+    page.locator("#llmThread").evaluate("element => { element.scrollTop = 0; }")
+    header.hover()
+    time.sleep(0.5)
     page.screenshot(path=str(OUT / "28-llm-assistant.png"), full_page=False)
     print("saved 28-llm-assistant.png")
 
@@ -182,11 +201,23 @@ def _first_succeeded_report_id(page) -> int | None:
             fallback.append(int(raw_id))
         else:
             costing.append(int(raw_id))
+    for report_id in costing + fallback:
+        if not _report_uses_old_list_name(page, headers, report_id):
+            return report_id
     if costing:
         return costing[0]
     if fallback:
         return fallback[0]
     return None
+
+
+def _report_uses_old_list_name(page, headers: dict, report_id: int) -> bool:
+    """历史分析正文里的旧称呼（一览）不要再拍进帮助图。"""
+    response = page.request.get(f"{BASE}/api/llm/reports/{report_id}", headers=headers)
+    if not response.ok:
+        return True
+    markdown = str((response.json().get("data") or {}).get("markdown_content") or "")
+    return "一览" in markdown
 
 
 def _capture_assembly_restore(page) -> None:

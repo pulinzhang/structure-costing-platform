@@ -275,6 +275,107 @@ def test_carry_ne_particle_does_not_keep_stamping_subject() -> None:
     assert query.part_number() is None
 
 
+def _previous_part(*, subject: str = "stamping_part") -> AnalysisQuery:
+    return _previous(
+        subject=subject,
+        filters={
+            "location": "青岛",
+            "vehicle_model": "T28",
+            "part_number": "501006875AA",
+            "tonnage": "800",
+            "policy_type": "WIDTH",
+        },
+    )
+
+
+def test_carry_short_question_does_not_keep_part_or_subject() -> None:
+    parser, db = _parser_with_draft(
+        {
+            "time_range": {"start": "2026-09", "end": "2026-09"},
+            "filters": {},
+            "compare_locations": [],
+        }
+    )
+    query = parser.parse(db, user_question="成本怎么样", previous_query=_previous_part())
+    assert query.part_number() is None
+    assert query.filter_get("tonnage") is None
+    assert query.subject == "cost_total"
+    assert query.location() == "青岛"
+    assert query.vehicle_model() == "T28"
+    assert query.time_range.start == "2026-01"
+
+
+def test_carry_haiyou_and_which_parts_drop_part_number() -> None:
+    parser, db = _parser_with_draft(
+        {
+            "time_range": {"start": "2026-09", "end": "2026-09"},
+            "filters": {},
+            "compare_locations": [],
+        }
+    )
+    query = parser.parse(db, user_question="还有哪些零件偏高", previous_query=_previous_part())
+    assert query.part_number() is None
+    assert query.location() == "青岛"
+
+
+def test_carry_yinggai_policy_does_not_keep_part() -> None:
+    parser, db = _parser_with_draft(
+        {
+            "time_range": {"start": "2026-09", "end": "2026-09"},
+            "filters": {},
+            "compare_locations": [],
+        }
+    )
+    query = parser.parse(db, user_question="应该看厚度政策", previous_query=_previous_part())
+    assert query.part_number() is None
+    assert query.filter_get("policy_type") == "THICKNESS"
+    assert query.subject == "steel_price_policy"
+    assert query.location() == "青岛"
+
+
+def test_carry_na_me_and_zai_ci_do_not_keep_part() -> None:
+    parser, db = _parser_with_draft(
+        {
+            "time_range": {"start": "2026-09", "end": "2026-09"},
+            "filters": {},
+            "compare_locations": [],
+        }
+    )
+    for question in ("那么成本怎么样", "再次核算一下"):
+        query = parser.parse(db, user_question=question, previous_query=_previous_part())
+        assert query.part_number() is None, question
+        assert query.subject == "cost_total", question
+
+
+def test_carry_zai_kan_still_keeps_part() -> None:
+    parser, db = _parser_with_draft(
+        {
+            "time_range": {"start": "2026-09", "end": "2026-09"},
+            "filters": {},
+            "compare_locations": [],
+        }
+    )
+    query = parser.parse(db, user_question="再看下", previous_query=_previous_part())
+    assert query.part_number() == "501006875AA"
+    assert query.subject == "stamping_part"
+
+
+def test_carry_new_topic_with_na_drops_part() -> None:
+    parser, db = _parser_with_draft(
+        {
+            "time_range": {"start": "2026-09", "end": "2026-09"},
+            "filters": {},
+            "compare_locations": [],
+        }
+    )
+    query = parser.parse(db, user_question="那厚度政策呢", previous_query=_previous_part())
+    assert query.part_number() is None
+    assert query.filter_get("policy_type") == "THICKNESS"
+    assert query.subject == "steel_price_policy"
+    assert query.location() == "青岛"
+    assert query.time_range.start == "2026-01"
+
+
 def test_carry_without_previous_uses_draft_time() -> None:
     parser, db = _parser_with_draft(
         {
