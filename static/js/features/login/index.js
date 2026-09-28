@@ -226,32 +226,18 @@ function clearLoginError() {
     el.classList.add('hidden');
 }
 
-function bytesToBase64(bytes) {
-    let raw = '';
-    bytes.forEach((value) => {
-        raw += String.fromCharCode(value);
-    });
-    return btoa(raw);
-}
-
-async function encryptPassword(publicKeySpki, password) {
-    if (!window.crypto?.subtle) {
-        throw new Error('这个地址不能加密密码。请改用 127.0.0.1 打开登录页，或使用 https');
+function encryptPassword(publicKeySpki, password) {
+    const forgeApi = window.forge;
+    if (!forgeApi?.pki || !forgeApi.md?.sha256) {
+        throw new Error('登录加密组件没有加载，请刷新页面后再试');
     }
-    const binary = Uint8Array.from(atob(publicKeySpki), (char) => char.charCodeAt(0));
-    const key = await window.crypto.subtle.importKey(
-        'spki',
-        binary,
-        { name: 'RSA-OAEP', hash: 'SHA-256' },
-        false,
-        ['encrypt'],
-    );
-    const cipher = await window.crypto.subtle.encrypt(
-        { name: 'RSA-OAEP' },
-        key,
-        new TextEncoder().encode(password),
-    );
-    return bytesToBase64(new Uint8Array(cipher));
+    const der = forgeApi.util.decode64(publicKeySpki);
+    const publicKey = forgeApi.pki.publicKeyFromAsn1(forgeApi.asn1.fromDer(der));
+    const encrypted = publicKey.encrypt(forgeApi.util.encodeUtf8(password), 'RSA-OAEP', {
+        md: forgeApi.md.sha256.create(),
+        mgf1: { md: forgeApi.md.sha256.create() },
+    });
+    return forgeApi.util.encode64(encrypted);
 }
 
 function setButtonLoading(btn, isLoading) {

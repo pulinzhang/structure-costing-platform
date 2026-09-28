@@ -3,7 +3,7 @@
  */
 
 import { loginTemplate } from './template.js';
-import { LoginPage } from './index.js?v=18';
+import { LoginPage } from './index.js?v=19';
 
 const root = document.getElementById('loginRoot');
 if (root) {
