@@ -271,6 +271,7 @@ def build_base_price_month_move_over(
 _TABLE_LINE = re.compile(r"^\s*\|")
 _LISTED_PERIOD_LINE = re.compile(r"^\s*(?:[-*+]|\d{1,3}[.)、])?\s*\d{4}\s*年\s*\d{1,2}\s*月")
 _MAGNITUDE_ORDER_LINE = re.compile(r"从大到小|从小到大|按变动|跌幅最大|降幅最大|幅度最大")
+_ADVICE_HEADING = re.compile(r"^\s*(?:#{1,3}\s*)?(?:\*\*)?(?:风险提示|建议)(?:\*\*)?\s*[:：]?\s*$")
 _TABLE_COLUMNS = (
     "period",
     "location",
@@ -317,7 +318,9 @@ def apply_base_price_month_move_order(markdown: str, result: Mapping[str, object
     items = result.get("items")
     table = render_base_price_month_move_table(items) if isinstance(items, list) else ""
     if table:
-        return f"{body}\n\n{table}" if body else table
+        lead, advice = _split_advice(body)
+        parts = [part for part in (lead, table, advice) if part]
+        return "\n\n".join(parts)
     note = result.get("note")
     if isinstance(note, str) and note and note not in body:
         return f"{body}\n\n{note}".strip() if body else note
@@ -328,6 +331,15 @@ def _table_cell(item: Mapping[str, object], key: str) -> str:
     value = item.get(key)
     text = "" if value is None else str(value)
     return text.replace("|", "｜")
+
+
+def _split_advice(body: str) -> tuple[str, str]:
+    """风险提示和建议留在表下面。"""
+    lines = body.splitlines()
+    for index, line in enumerate(lines):
+        if _ADVICE_HEADING.match(line):
+            return _collapse_blank_lines(lines[:index]), _collapse_blank_lines(lines[index:])
+    return body, ""
 
 
 def _collapse_blank_lines(lines: list[str]) -> str:

@@ -1218,3 +1218,9 @@ def test_apply_base_price_month_move_order_replaces_magnitude_table() -> None:
     assert "本月钢厂" in pinned
     assert pinned.index("| 年月 | 基地 | 牌号 |") < first
     assert "本月基准价（元/吨）" in pinned
+    with_advice = apply_base_price_month_move_order(
+        "大于 500 的有 2 条。\n\n风险提示\n跨月不一定每月都有数。\n\n建议\n到基准价格列表核对。",
+        result,
+    )
+    assert with_advice.index("| 年月 |") < with_advice.index("风险提示")
+    assert with_advice.index("风险提示") < with_advice.index("建议")

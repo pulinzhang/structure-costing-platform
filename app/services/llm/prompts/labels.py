@@ -70,6 +70,8 @@ def sanitize_report_markdown(content: str) -> str:
         )
     result = re.sub(r"\bdashboard\b", "分析", result, flags=re.IGNORECASE)
     result = re.sub(r"仪表盘", "分析", result)
+    result = result.replace("这次钢厂", "本月钢厂")
+    result = result.replace("这次基准价", "本月基准价")
     filtered_lines = [
         line for line in result.splitlines() if not _BOILERPLATE_LINE_RE.match(line.strip())
     ]
