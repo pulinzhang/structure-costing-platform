@@ -12,16 +12,10 @@ from sqlalchemy.pool import StaticPool
 from app.database import Base
 from app.exceptions.base import BusinessException
 from app.models.settings.logical_ref.model import LogicalRef, LogicalRefFilter
-from app.services.costing.steel_price.logical_ref_seed import (
-    ensure as ensure_steel_price_logical_ref,
-)
+from app.services.settings.logical_ref.seed import ensure_logical_ref_seed
 from app.services.settings.logical_ref.service import ensure_logical_deletable
 from app.services.stamping.part.engineering import material_change as material_change_module
-from app.services.stamping.part.engineering.logical_ref_seed import (
-    ensure as ensure_material_change_logical_ref,
-)
 from app.services.stamping.part.engineering.material_change import StampingMaterialChangeService
-from app.services.stamping.part.logical_ref_seed import ensure as ensure_part_logical_ref
 
 
 @pytest.fixture
@@ -63,7 +57,7 @@ def memory_db() -> Generator[Session, None, None]:
         bind=engine,
         tables=[LogicalRef.__table__, LogicalRefFilter.__table__],
     )
-    _ensure_logical_ref_seeds(session)
+    ensure_logical_ref_seed(session)
     try:
         yield session
     finally:
@@ -231,12 +225,6 @@ def test_other_location_and_numeric_thickness(memory_db: Session) -> None:
     assert "1 条" in caught.value.message
 
 
-def _ensure_logical_ref_seeds(db: Session) -> None:
-    ensure_part_logical_ref(db)
-    ensure_material_change_logical_ref(db)
-    ensure_steel_price_logical_ref(db)
-
-
 def test_seed_leaves_existing_configuration(memory_db: Session) -> None:
     memory_db.execute(
         text(
@@ -257,7 +245,7 @@ def test_seed_leaves_existing_configuration(memory_db: Session) -> None:
         )
     )
     memory_db.commit()
-    _ensure_logical_ref_seeds(memory_db)
+    ensure_logical_ref_seed(memory_db)
     hint = memory_db.execute(
         text(
             "SELECT hint FROM logical_ref "
@@ -285,7 +273,6 @@ def test_seed_has_only_the_steel_sample(memory_db: Session) -> None:
     assert rows == [
         ("stamping_part_material_changes", "steel_prices"),
         ("stamping_parts", "steel_prices"),
-        ("steel_prices", "stamping_part_costs"),
     ]
 
 
@@ -297,28 +284,6 @@ def _blocks(db: Session, table: str, row_id: int) -> bool:
         assert "核价 → 冲压钢材联动价 → 冲压钢材联动价一览" in caught.message
         return True
     return False
-
-
-def test_steel_price_blocked_when_part_cost_copied_it(memory_db: Session) -> None:
-    memory_db.execute(
-        text("CREATE TABLE stamping_part_costs (id INTEGER PRIMARY KEY, steel_price_id INTEGER)")
-    )
-    memory_db.execute(
-        text(
-            "INSERT INTO steel_prices (id, year, month, location, grade, thickness) "
-            "VALUES (7, 2024, 3, '芜湖', 'DC01', 1.5)"
-        )
-    )
-    memory_db.execute(
-        text("INSERT INTO stamping_part_costs (id, steel_price_id) VALUES (1, NULL), (2, 8)")
-    )
-    memory_db.commit()
-    ensure_logical_deletable(memory_db, "steel_prices", [{"id": 7}], subject="该钢材联动价")
-    memory_db.execute(text("UPDATE stamping_part_costs SET steel_price_id = 7 WHERE id = 1"))
-    memory_db.commit()
-    with pytest.raises(BusinessException, match="冲压零件价格") as caught:
-        ensure_logical_deletable(memory_db, "steel_prices", [{"id": 7}], subject="该钢材联动价")
-    assert "冲压零件价格一览" in caught.value.message
 
 
 def test_part_window_month_by_month(memory_db: Session) -> None:

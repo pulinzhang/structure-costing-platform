@@ -1,9 +1,6 @@
 """删冲压零件时挡住的结果表。只维护这一张。"""
 
-from sqlalchemy.orm import Session
-
 from app.models.settings.logical_ref.model import LogicalRef, LogicalRefFilter
-from app.repositories.settings.logical_ref.repository import LogicalRefRepository
 
 _DELETED = "stamping_parts"
 _RESULT = "steel_prices"
@@ -79,9 +76,3 @@ def rows() -> tuple[LogicalRef, list[LogicalRefFilter]]:
         ),
     ]
     return head, filters
-
-
-def ensure(db: Session) -> None:
-    head, filters = rows()
-    LogicalRefRepository().insert_if_absent(db, head, filters)
-    db.commit()

@@ -110,13 +110,12 @@ WHERE EXISTS (
 
 结果表表名 `steel_prices`，是钢材联动价。钢材联动没有零件号。同一基地、同一牌号、同一料厚有结果就会挡住，不限零件。料厚按数值比较，`1.5` 与 `1.5000` 算同一条。
 
-这次登记三份。拼焊子片不登记：子片随零件级联删除，子片材料产生的钢材联动挡不住。加工费、模具费、总成核价不登记。
+这次只登记这两份。拼焊子片不登记：子片随零件级联删除，子片材料产生的钢材联动挡不住。零件价、加工费、模具费、总成核价不登记。
 
 过滤列以种子为准，文档不另抄一份。
 
-- 删 `stamping_parts`：`app/services/stamping/part/logical_ref_seed.py`
-- 删 `stamping_part_material_changes`：`app/services/stamping/part/engineering/logical_ref_seed.py`。料厚用零件的 `thickness`，不用 `after_thickness`。材料变更自己没有失效列。止月是下一刀生效的前一月，并且还要落在零件生失效之内。
-- 删 `steel_prices`：`app/services/costing/steel_price/logical_ref_seed.py`。冲压零件价格抄材料价时记下 `steel_price_id`，等于被删行 `id` 就挡住。空指针不挡。
+- 删 `stamping_parts`：`app/services/settings/logical_ref/seeds/stamping_parts.py`
+- 删 `stamping_part_material_changes`：`app/services/settings/logical_ref/seeds/material_change.py`。料厚用零件的 `thickness`，不用 `after_thickness`。材料变更自己没有失效列。止月是下一刀生效的前一月，并且还要落在零件生失效之内。
 
 ---
 
@@ -130,9 +129,9 @@ WHERE EXISTS (
 | 生成查询 | `app/repositories/settings/logical_ref/sql.py` |
 | 读写 | `app/repositories/settings/logical_ref/repository.py` |
 | 检查 | `app/services/settings/logical_ref/service.py` 的 `ensure_logical_deletable` |
-| 零件工艺材料种子 | `app/services/stamping/part/logical_ref_seed.py` |
-| 材料变更种子 | `app/services/stamping/part/engineering/logical_ref_seed.py` |
-| 钢材联动种子 | `app/services/costing/steel_price/logical_ref_seed.py` |
-| 启动 | `app/bootstrap/lifecycle.py` 在外键种子之后分别调用这三份 |
+| 写入入口 | `app/services/settings/logical_ref/seed.py` |
+| 零件工艺材料种子 | `app/services/settings/logical_ref/seeds/stamping_parts.py` |
+| 材料变更种子 | `app/services/settings/logical_ref/seeds/material_change.py` |
+| 启动 | `app/bootstrap/lifecycle.py` 在外键种子之后调用 |
 
-删除调用点：冲压零件删除、材料变更删除（含材料变更回滚里删历史行）、设计变更回滚里删新建零件、钢材联动价单条与批量删除。调用处只传正在删的表和键。
+删除调用点：冲压零件删除、材料变更删除（含材料变更回滚里删历史行）、设计变更回滚里删新建零件。调用处只传正在删的表和键，不写 `steel_prices` 的列。
