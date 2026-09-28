@@ -4,7 +4,7 @@ from __future__ import annotations
 
 from sqlalchemy.orm import Session
 
-from app.repositories.settings.foreign_key.repository import SchemaCommentRepository
+from app.repositories.settings.schema_comment.repository import SchemaCommentRepository
 
 _COMMENTS: tuple[tuple[str, str, str, str], ...] = (
     ("locations", "masterdata", "基地", "location"),
@@ -22,7 +22,6 @@ _COMMENTS: tuple[tuple[str, str, str, str], ...] = (
     ("ref_hint", "settings", "引用话术", "reference hint"),
     ("async_tasks", "settings", "异步任务", "async task"),
     ("stamping_parts", "stamping", "冲压零件", "stamping part"),
-    ("stamping_part_material_changes", "stamping", "冲压材料变更", "part material change"),
     ("stamping_processes", "stamping", "冲压工序", "stamping process"),
     ("stamping_process_fees", "stamping", "冲压加工费", "process fee"),
     ("stamping_process_fee_items", "stamping", "冲压加工费明细", "process fee item"),
@@ -181,7 +180,7 @@ _MENU: dict[str, str] = {
 
 
 def ensure_schema_reference_seed(db: Session) -> None:
-    """按键插入或更新。种子未列出的行留在库里。只写表注释和引用话术。"""
+    """按键插入或更新。种子未列出的行留在库里。"""
     repository = SchemaCommentRepository()
     for table_name, slice_name, name_zh, name_en in _COMMENTS:
         repository.upsert_comment(

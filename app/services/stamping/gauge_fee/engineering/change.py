@@ -13,7 +13,7 @@ from app.exceptions.base import BusinessException
 from app.repositories.stamping.gauge_fee.repository import StampingGaugeFeeRepository
 from app.schemas.dto.stamping_gauge_fee_dto import StampingGaugeFeeInsert
 from app.schemas.vo.user_vo import UserVO
-from app.services.settings.foreign_key.service import ensure_deletable
+from app.services.settings.schema_comment.service import ensure_deletable
 
 
 @dataclass(slots=True, frozen=True)

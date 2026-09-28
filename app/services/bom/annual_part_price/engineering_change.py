@@ -13,7 +13,7 @@ from app.models.bom.annual_part_price import BomAnnualPartPrice
 from app.repositories.bom.annual_part_price_repository import BomAnnualPartPriceRepository
 from app.schemas.dto.bom_annual_part_price_dto import BomAnnualPartPriceCreate
 from app.schemas.vo.user_vo import UserVO
-from app.services.settings.foreign_key.service import ensure_deletable
+from app.services.settings.schema_comment.service import ensure_deletable
 
 
 @dataclass(slots=True, frozen=True)

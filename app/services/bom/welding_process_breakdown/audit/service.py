@@ -25,7 +25,7 @@ from app.schemas.vo.bom_welding_process_breakdown_vo import (
 )
 from app.schemas.vo.user_vo import UserVO
 from app.services.bom.bom.period import BomPeriodService
-from app.services.settings.foreign_key.service import STILL_REFERENCED, ensure_deletable
+from app.services.settings.schema_comment.service import STILL_REFERENCED, ensure_deletable
 
 
 def _normalize_scope(

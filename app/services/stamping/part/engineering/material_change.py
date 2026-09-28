@@ -18,8 +18,6 @@ from app.repositories.stamping.part.material_change import (
 )
 from app.schemas.vo.stamping_vo import StampingPartMaterialChangeResponse
 from app.schemas.vo.user_vo import UserVO
-from app.services.settings.foreign_key.service import ensure_deletable
-from app.services.settings.logical_ref.service import ensure_logical_deletable
 
 _repo = StampingPartMaterialChangeRepository()
 
@@ -94,20 +92,6 @@ class StampingMaterialChangeService:
             row = _repo.get_by_id(db, history_id)
             if row is None:
                 raise NotFoundException(f"材料变更历史不存在: id={history_id}")
-            # 外键：只查指向本行的 RESTRICT。已有测试覆盖，不读 logical_ref。
-            ensure_deletable(
-                db,
-                "stamping_part_material_changes",
-                [{"id": history_id}],
-                subject="该材料变更",
-            )
-            # 逻辑引用：不查外键。配置写明结果表是什么、表名、过滤条件，生成器拼查询。
-            ensure_logical_deletable(
-                db,
-                "stamping_part_material_changes",
-                [{"id": history_id}],
-                subject="该材料变更",
-            )
             _repo.delete(db, row)
 
     def part_ids_with_history(self, db: Session, part_ids: list[int]) -> set[int]:

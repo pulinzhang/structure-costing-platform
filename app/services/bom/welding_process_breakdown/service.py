@@ -58,7 +58,7 @@ from app.services.bom.welding_process_breakdown.query import (
 )
 from app.services.masterdata.location.service import LocationService
 from app.services.masterdata.vehicle_model.service import VehicleModelService
-from app.services.settings.foreign_key.service import ensure_deletable
+from app.services.settings.schema_comment.service import ensure_deletable
 
 
 class BomWeldingProcessBreakdownService:

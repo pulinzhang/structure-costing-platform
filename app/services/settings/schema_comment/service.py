@@ -8,14 +8,14 @@ from collections.abc import Mapping, Sequence
 from sqlalchemy.orm import Session
 
 from app.exceptions.base import BusinessException
-from app.repositories.settings.foreign_key.repository import (
+from app.repositories.settings.schema_comment.repository import (
     ForeignKeyRef,
     SchemaCommentRepository,
     is_blocking,
     is_plain_identifier,
 )
 
-logger = logging.getLogger("service.settings.foreign_key")
+logger = logging.getLogger("service.settings.schema_comment")
 
 STILL_REFERENCED = "仍被引用，不能删除"
 
@@ -26,7 +26,7 @@ def ensure_deletable(
     key_rows: Sequence[Mapping[str, object]],
     subject: str | None = None,
 ) -> None:
-    """只按外键计数。不读 logical_ref。有挡住删除的引用则抛 BusinessException。不 commit，不开新连接。"""
+    """有挡住删除的引用则抛 BusinessException。不 commit，不开新连接。"""
     if not key_rows:
         return
     if not is_plain_identifier(parent_table):

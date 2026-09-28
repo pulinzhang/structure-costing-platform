@@ -36,7 +36,7 @@ from app.services.masterdata.vehicle_model.identity import (
     to_vo,
     validate_period,
 )
-from app.services.settings.foreign_key.service import STILL_REFERENCED, ensure_deletable
+from app.services.settings.schema_comment.service import STILL_REFERENCED, ensure_deletable
 
 logger = logging.getLogger("service.vehicle_model")
 

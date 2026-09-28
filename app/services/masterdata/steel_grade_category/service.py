@@ -39,7 +39,7 @@ from app.services.masterdata.steel_grade_category.catalog import (
     build_template as build_catalog_template,
 )
 from app.services.masterdata.steel_grade_category.seed import SEED_STEEL_GRADE_CATEGORIES
-from app.services.settings.foreign_key.service import STILL_REFERENCED, ensure_deletable
+from app.services.settings.schema_comment.service import STILL_REFERENCED, ensure_deletable
 
 logger = logging.getLogger("service.steel_grade_category")
 

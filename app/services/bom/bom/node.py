@@ -18,7 +18,7 @@ from app.schemas.vo.bom_vo import BomNodeTreeVO, BomNodeVO
 from app.schemas.vo.user_vo import UserVO
 from app.services.bom.bom.trees import descendant_ids
 from app.services.masterdata.vehicle_model.service import VehicleModelService
-from app.services.settings.foreign_key.service import STILL_REFERENCED, ensure_deletable
+from app.services.settings.schema_comment.service import STILL_REFERENCED, ensure_deletable
 
 logger = logging.getLogger("service.bom.node")
 

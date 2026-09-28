@@ -21,7 +21,7 @@ from app.schemas.dto.location_dto import (
 )
 from app.schemas.vo.location_vo import LocationVO
 from app.schemas.vo.user_vo import UserVO
-from app.services.settings.foreign_key.service import STILL_REFERENCED, ensure_deletable
+from app.services.settings.schema_comment.service import STILL_REFERENCED, ensure_deletable
 
 logger = logging.getLogger("service.location")
 

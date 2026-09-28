@@ -20,7 +20,7 @@ from app.schemas.vo.bom_vo import BomCascadeFilterOptionsVO, BomSnapshotVO
 from app.schemas.vo.user_vo import UserVO
 from app.services.masterdata.location.service import LocationService
 from app.services.masterdata.vehicle_model.service import VehicleModelService
-from app.services.settings.foreign_key.service import STILL_REFERENCED, ensure_deletable
+from app.services.settings.schema_comment.service import STILL_REFERENCED, ensure_deletable
 
 logger = logging.getLogger("service.bom.snapshot")
 
