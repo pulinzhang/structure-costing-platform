@@ -336,19 +336,34 @@ function addMoney(values) {
     return any ? total.toFixed(4) : '';
 }
 
+function thicknessText(value) {
+    const number = Number(value);
+    if (!Number.isFinite(number)) return display(value);
+    const text = String(number);
+    return text.includes('.') ? text : `${text}.0`;
+}
+
+function materialBasis(st) {
+    const steel = st.steel || {};
+    const bits = [];
+    if (hasValue(st.material)) bits.push(`材质 ${display(st.material)}`);
+    if (hasValue(st.thickness)) bits.push(`厚度 ${thicknessText(st.thickness)} mm`);
+    if (steel.steel_mill || hasValue(steel.steel_ton_price)) {
+        bits.push(`${display(steel.steel_mill)} ${money(steel.steel_ton_price)} 元/吨`);
+    }
+    return bits.join('  ');
+}
+
 function stampingBlock(node) {
     const st = node.stamping;
     if (!st) return '';
     if (st.record_missing) {
         return `<div class="facts">${fact('说明', display(st.missing_reason))}</div>`;
     }
-    const steel = st.steel || {};
     const material = st.is_offal_nested
         ? `利用废料 ${money(st.material_net_per_part)}`
         : money(st.material_net_per_part);
-    const mill = steel.steel_mill || steel.steel_ton_price
-        ? `${display(steel.steel_mill)} ${money(steel.steel_ton_price)} 元/吨`
-        : '';
+    const basis = materialBasis(st);
     const otherTotal = addMoney([
         st.finished_warehouse_packaging_fee,
         st.finished_management_fee,
@@ -360,7 +375,7 @@ function stampingBlock(node) {
     return `
         <div class="facts fee-ledger">
             ${fact('材料', material)}
-            ${mill ? `<div class="fact-note">${mill}</div>` : ''}
+            ${basis ? `<div class="fact-note">${basis}</div>` : ''}
             ${fact('加工费', money(st.process_fee_amount))}
             ${fact('模具费', money(st.die_fee_amount))}
             ${hasValue(st.gauge_fee_amount) && Number(st.gauge_fee_amount) !== 0 ? fact('检具费', money(st.gauge_fee_amount)) : ''}

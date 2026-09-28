@@ -187,6 +187,7 @@ class RestoreStamping:
             scrap_recovery_rate=Decimal(str(picked.scrap_recovery_rate))
             if picked.scrap_recovery_rate is not None
             else None,
+            material=(picked.material or "").strip() or None,
             sheet_length=_opt_money(picked.sheet_length),
             sheet_width=_opt_money(picked.sheet_width),
             thickness=_opt_money(picked.thickness),
