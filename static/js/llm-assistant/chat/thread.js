@@ -3,7 +3,7 @@
  */
 
 import { humanizeUserFacingError } from '../errors.js';
-import { EXPORT_ICON_BTN_CLASS, llmIconPrint, llmIconWord } from '../icons.js';
+import { EXPORT_ICON_BTN_CLASS, llmIconCopy, llmIconPrint, llmIconWord } from '../icons.js?v=2';
 import { renderMarkdown } from '../markdown/render.js?v=4';
 import { canExportAssistantMessage } from '../export/document.js';
 
@@ -53,10 +53,11 @@ function renderMessage(msg) {
 
     if (isUser) {
         return `
-<div class="flex justify-end" data-msg-id="${escAttr(msg.id)}">
+<div class="group flex flex-col items-end" data-msg-id="${escAttr(msg.id)}">
   <div class="max-w-[85%] px-3.5 py-2 rounded-2xl bg-app-elevated text-[13px] leading-relaxed text-ink">
     ${body}
   </div>
+  ${renderQuestionCopy(msg)}
 </div>`;
     }
 
@@ -83,6 +84,17 @@ function renderPeriodChip(msg) {
         .map((item) => esc(String(item)))
         .join(' · ');
     return `<p class="text-[11px] text-ink-faint mb-2">${esc(period)}${extra ? ` · ${extra}` : ''}</p>`;
+}
+
+function renderQuestionCopy(msg) {
+    const text = String(msg.content || '').trim();
+    if (!text) return '';
+    return `
+<div class="mt-1 h-6 opacity-0 transition-opacity group-hover:opacity-100 focus-within:opacity-100">
+  <button type="button" data-llm-copy-question data-msg-id="${escAttr(msg.id)}"
+    class="${EXPORT_ICON_BTN_CLASS}"
+    title="复制问题" aria-label="复制问题">${llmIconCopy()}</button>
+</div>`;
 }
 
 function renderExportToolbar(msg) {

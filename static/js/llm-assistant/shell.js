@@ -6,7 +6,7 @@
 import { createReport, getReport } from './api.js';
 import { mountComposer, setComposerBusy, setComposerCarry } from './chat/composer.js?v=9';
 import { humanizeUserFacingError } from './errors.js';
-import { renderThread } from './chat/thread.js?v=18';
+import { renderThread } from './chat/thread.js?v=21';
 import { printAssistantMessage, closePrintPreview } from './export/print.js?v=13';
 import { downloadWordDocument } from './export/word.js?v=8';
 import { findPrompt, fillPromptTemplate } from './prompts/catalog.js?v=9';
@@ -98,6 +98,14 @@ export function createShell(options) {
     });
 
     els.thread?.addEventListener('click', (event) => {
+        const copyBtn = event.target.closest('[data-llm-copy-question]');
+        if (copyBtn) {
+            const msgId = copyBtn.getAttribute('data-msg-id');
+            const msg = messages.find((item) => item.id === msgId);
+            const text = String(msg?.content || '').trim();
+            if (text) void copyQuestionText(text);
+            return;
+        }
         const exportBtn = event.target.closest('[data-llm-export]');
         if (exportBtn) {
             const msgId = exportBtn.getAttribute('data-msg-id');
@@ -114,6 +122,37 @@ export function createShell(options) {
             return;
         }
     });
+
+    async function copyQuestionText(text) {
+        try {
+            if (navigator.clipboard?.writeText) {
+                await navigator.clipboard.writeText(text);
+            } else {
+                copyWithTextarea(text);
+            }
+            window.showToast?.('已复制', 'success');
+        } catch (_error) {
+            try {
+                copyWithTextarea(text);
+                window.showToast?.('已复制', 'success');
+            } catch (_fallbackError) {
+                window.showToast?.('复制失败', 'error');
+            }
+        }
+    }
+
+    function copyWithTextarea(text) {
+        const area = document.createElement('textarea');
+        area.value = text;
+        area.setAttribute('readonly', '');
+        area.style.position = 'fixed';
+        area.style.left = '-9999px';
+        document.body.appendChild(area);
+        area.select();
+        const copied = document.execCommand('copy');
+        area.remove();
+        if (!copied) throw new Error('copy failed');
+    }
 
     function storageKey() {
         return buildStorageKey(getUserId());
