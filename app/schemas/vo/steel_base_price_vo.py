@@ -65,6 +65,7 @@ class SteelBasePriceImportResultResponse(BaseModel):
     total: int = 0
     warnings: list[str] | None = None
     errors: list[str] | None = None
+    width_warnings: list[str] | None = None
 
 
 class SteelBasePriceExportRow(BaseModel):

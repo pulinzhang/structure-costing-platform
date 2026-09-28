@@ -52,7 +52,7 @@ import { pageConfig as assemblyCostPage } from './features/costing/assembly-cost
 import { pageConfig as procurementContractReportPage } from './features/costing/procurement-contract-report/index.js?v=57';
 import { pageConfig as steelPricePolicyUploadPage } from './features/yishiyiyi/policy/upload/index.js?v=48';
 import { pageConfig as steelPricePolicyDownloadPage } from './features/yishiyiyi/policy/list/index.js?v=60';
-import { pageConfig as basePriceUploadPage } from './features/yishiyiyi/base-price/upload/index.js?v=51';
+import { pageConfig as basePriceUploadPage } from './features/yishiyiyi/base-price/upload/index.js?v=60';
 import { pageConfig as basePriceDownloadPage } from './features/yishiyiyi/base-price/list/index.js?v=54';
 import { pageConfig as winningThicknessDownloadPage } from './features/yishiyiyi/winning-thickness/list/index.js?v=29';
 import { pageConfig as steelGradeCategoryPage } from './features/masterdata/steel-grade-category/index.js?v=29';
@@ -86,7 +86,7 @@ import { pageConfig as vehicleModelUploadPage } from './features/masterdata/vehi
 import { pageConfig as vehicleModelListPage } from './features/masterdata/vehicle-model/list/index.js?v=26';
 import { pageConfig as supplierUploadPage } from './features/masterdata/supplier/upload/index.js?v=15';
 import { pageConfig as supplierListPage } from './features/masterdata/supplier/list/index.js?v=29';
-import { pageConfig as settingsPage }       from './features/settings/system/index.js?v=30';
+import { pageConfig as settingsPage }       from './features/settings/system/index.js?v=38';
 import { pageConfig as settingsUsersPage }  from './features/settings/users/index.js?v=30';
 import { pageConfig as settingsLogsPage }   from './features/settings/logs/index.js?v=26';
 import { pageConfig as settingsProfilePage } from './features/settings/profile/index.js?v=16';

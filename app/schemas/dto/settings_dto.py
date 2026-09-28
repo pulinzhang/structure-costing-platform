@@ -8,6 +8,9 @@ from pydantic import BaseModel, Field, field_validator
 
 from app.common.money import Q2, Q4, Q6, quantize_money
 
+DEFAULT_BASE_PRICE_PROCESSING_FEE_LIMIT = Decimal("120")
+MAX_BASE_PRICE_PROCESSING_FEE_LIMIT = 300
+
 
 class SystemConfigUpdateDTO(BaseModel):
     """更新系统配置"""
@@ -77,6 +80,24 @@ class SystemConfigUpdateDTO(BaseModel):
         le=100000,
         description="摆剪件加到钢价上的金额（元/吨）",
     )
+    base_price_month_move_limit: Decimal = Field(
+        ...,
+        ge=0,
+        le=100000,
+        description="基准价月涨跌限额（元/吨）。同一基地同一规格，单价加加工费相对上月超过此值则整批拒绝",
+    )
+    base_price_processing_fee_limit: Decimal = Field(
+        ...,
+        ge=0,
+        le=MAX_BASE_PRICE_PROCESSING_FEE_LIMIT,
+        description="基准价加工费上限（元/吨）。大于此值整批拒绝，等于此值允许",
+    )
+    body_panel_max_thickness: Decimal = Field(
+        ...,
+        ge=0,
+        le=100,
+        description="乘用车车身钢板冲压件料厚上限（mm）。参考规格厚度大于此值则整批拒绝，等于此值允许",
+    )
     login_lock_minutes: int = Field(
         ...,
         ge=1,
@@ -103,9 +124,15 @@ class SystemConfigUpdateDTO(BaseModel):
     def _coerce_rate(cls, value: Any) -> Decimal:
         return quantize_money(value, Q6)
 
-    @field_validator("swing_shear_process_fee_per_ton", mode="before")
+    @field_validator(
+        "swing_shear_process_fee_per_ton",
+        "base_price_month_move_limit",
+        "base_price_processing_fee_limit",
+        "body_panel_max_thickness",
+        mode="before",
+    )
     @classmethod
-    def _coerce_swing_shear_fee(cls, value: Any) -> Decimal:
+    def _coerce_yuan_per_ton(cls, value: Any) -> Decimal:
         return quantize_money(value, Q2)
 
     @field_validator("company_name", "procurement_agreement_remarks", mode="before")
@@ -130,6 +157,9 @@ class SystemConfigWrite:
     finished_scrap_rate: Decimal
     finished_pretax_profit_rate: Decimal
     swing_shear_process_fee_per_ton: Decimal
+    base_price_month_move_limit: Decimal
+    base_price_processing_fee_limit: Decimal
+    body_panel_max_thickness: Decimal
     created_by: str
     updated_by: str
 
@@ -149,4 +179,7 @@ class SystemConfigPatch(TypedDict, total=False):
     finished_scrap_rate: Decimal
     finished_pretax_profit_rate: Decimal
     swing_shear_process_fee_per_ton: Decimal
+    base_price_month_move_limit: Decimal
+    base_price_processing_fee_limit: Decimal
+    body_panel_max_thickness: Decimal
     updated_by: str

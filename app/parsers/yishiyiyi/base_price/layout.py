@@ -11,7 +11,6 @@ _NON_LOCATION_HEADERS = frozenset({"合计", "厚度加减价", "未税合计", 
 _PREFERRED_SHEETS = ("Sheet1", "发布价汇总价", "总价格", "汇总价格")
 _DATA_START_COL = 4
 DEFAULT_SPEC_COL = 3
-DEFAULT_FEE_COL = 8
 
 
 def find_data_sheet(workbook: Any) -> Any | None:

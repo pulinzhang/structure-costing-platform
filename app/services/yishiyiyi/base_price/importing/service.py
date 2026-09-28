@@ -32,6 +32,16 @@ from app.services.masterdata.location.service import LocationService
 from app.services.masterdata.steel_grade_category.service import (
     SteelGradeCategoryService,
 )
+from app.services.settings.system.service import SettingsService
+from app.services.yishiyiyi.base_price.gate import (
+    AwardLine,
+    previous_period,
+    reject_excessive_month_moves,
+    reject_invalid_base_price_award,
+    reject_processing_fee_over_limit,
+    sample_text,
+    unexpected_reference_width_warnings,
+)
 from app.services.yishiyiyi.base_price.importing.template_builder import (
     build_steel_base_price_template,
 )
@@ -65,27 +75,96 @@ def _is_numeric_steel_mill(steel_mill: object) -> bool:
         return False
 
 
+def _award_from_write(write: SteelBasePriceWrite) -> AwardLine:
+    return AwardLine(
+        location=write.location,
+        grade=write.grade,
+        steel_mill=write.steel_mill,
+        thick=write.thick,
+        width=write.width,
+        category_name=write.category_name,
+        processing_fee=write.processing_fee,
+        base_price=write.base_price,
+        excel_row=write.excel_row,
+    )
+
+
+def _reject_invalid_award(
+    db: Session,
+    repository: SteelBasePriceRepository,
+    writes: list[SteelBasePriceWrite],
+    incoming: list[AwardLine],
+) -> None:
+    """同一年月、基地、牌号只能有一个中标钢厂；参考规格不合法则整批拒绝，不写库。"""
+    if not writes:
+        return
+    stored = repository.list_by_year_month(db, year=writes[0].year, month=writes[0].month)
+    reject_invalid_base_price_award(
+        incoming,
+        [
+            AwardLine(
+                location=row.location,
+                grade=row.grade,
+                steel_mill=row.steel_mill,
+                thick=row.thick,
+                width=row.width,
+            )
+            for row in stored
+        ],
+        max_thickness=SettingsService().get_body_panel_max_thickness(db),
+    )
+
+
+def _reject_excessive_month_moves(
+    db: Session,
+    repository: SteelBasePriceRepository,
+    writes: list[SteelBasePriceWrite],
+    incoming: list[AwardLine],
+) -> None:
+    """上月同一参考规格的单价加加工费超出设置范围则整批拒绝，不写库。"""
+    if not writes:
+        return
+    prev_year, prev_month = previous_period(writes[0].year, writes[0].month)
+    previous_rows = repository.list_by_year_month(db, year=prev_year, month=prev_month)
+    previous = [
+        AwardLine(
+            location=row.location,
+            grade=row.grade,
+            steel_mill=row.steel_mill,
+            thick=row.thick,
+            width=row.width,
+            base_price=row.base_price,
+            processing_fee=row.processing_fee,
+        )
+        for row in previous_rows
+    ]
+    limit = SettingsService().get_base_price_month_move_limit(db)
+    reject_excessive_month_moves(incoming, previous, limit=limit)
+
+
+def _raise_if_processing_fee_rejected(errors: list[str]) -> None:
+    """加工费缺列或单元格不是数字时整批拒绝，避免把旁边的价格或默认金额写进去。"""
+    fee_errors = [item for item in errors if "加工费" in item]
+    if fee_errors:
+        raise BusinessException("；".join(fee_errors))
+
+
 def _assert_steel_mills_not_numeric(records: list[dict[str, object]]) -> None:
     """导入小锁：任一钢厂为数字则整批拒绝，避免列错位脏数据入库。"""
     bad_samples: list[str] = []
-    bad_count = 0
     for record in records:
         mill = record.get("steel_mill")
         if not _is_numeric_steel_mill(mill):
             continue
-        bad_count += 1
-        if len(bad_samples) >= 5:
-            continue
         excel_row = record.get("excel_row")
         location = record.get("location")
         bad_samples.append(f"第{excel_row}行/{location}基地→钢厂「{mill}」")
-    if bad_count == 0:
+    if not bad_samples:
         return
-    sample_text = "；".join(bad_samples)
-    more = f"等共 {bad_count} 处" if bad_count > len(bad_samples) else f"共 {bad_count} 处"
     raise BusinessException(
-        f"钢厂不能为数字（疑似表格列错位或格式不正确）：{sample_text}（{more}）。"
-        "请核对各基地「中标钢厂」列是否对齐后再导入。"
+        "钢厂不能为数字（疑似表格列错位或格式不正确）："
+        + sample_text(bad_samples)
+        + "。请核对各基地「中标钢厂」列是否对齐后再导入。"
     )
 
 
@@ -105,8 +184,8 @@ def _base_price_write_from_record(
     if not isinstance(base_price, Decimal):
         base_price = Decimal(str(base_price))
     if processing_fee is None:
-        processing_fee = Decimal("0")
-    elif not isinstance(processing_fee, Decimal):
+        raise BusinessException("加工费缺失，不能导入")
+    if not isinstance(processing_fee, Decimal):
         processing_fee = Decimal(str(processing_fee))
     if thick is not None and not isinstance(thick, Decimal):
         thick = Decimal(str(thick))
@@ -218,6 +297,7 @@ class SteelBasePriceImportService:
             location_lookup=lookup,
             carry_mills=carry_mills,
         )
+        _raise_if_processing_fee_rejected(parse_result.errors)
         _assert_steel_mills_not_numeric(parse_result.records)
         # lookup 只过滤宽表列；落库仍走写入门禁。
         unique_locations = {
@@ -267,6 +347,14 @@ class SteelBasePriceImportService:
 
         grade_warnings = _canonicalize_grade_and_category(db, writes)
         parse_result.warnings.extend(grade_warnings)
+        incoming = [_award_from_write(write) for write in writes]
+        reject_processing_fee_over_limit(
+            incoming,
+            limit=SettingsService().get_base_price_processing_fee_limit(db),
+        )
+        width_warnings = unexpected_reference_width_warnings(incoming)
+        _reject_invalid_award(db, self.repository, writes, incoming)
+        _reject_excessive_month_moves(db, self.repository, writes, incoming)
         _report(50, f"解析完成，共 {len(writes)} 条，正在写入数据库...")
         try:
             counts = self.repository.upsert(db, writes)
@@ -309,4 +397,5 @@ class SteelBasePriceImportService:
             total=counts["created"] + counts["updated"],
             warnings=parse_result.warnings,
             errors=parse_result.errors,
+            width_warnings=width_warnings,
         )

@@ -11,7 +11,6 @@ from typing import Any
 
 from app.parsers.yishiyiyi.base_price.cells import cell_decimal, cell_text, parse_spec
 from app.parsers.yishiyiyi.base_price.layout import (
-    DEFAULT_FEE_COL,
     DEFAULT_SPEC_COL,
     extract_base_configs,
     find_data_sheet,
@@ -22,8 +21,12 @@ from app.parsers.yishiyiyi.base_price.mill_sheet import extract_grade_mill_map
 from app.parsers.yishiyiyi.base_price.models import ParsedContext, ParseResult
 from app.parsers.yishiyiyi.base_price.xls_compat import open_workbook
 
-_DEFAULT_PROCESSING_FEE = Decimal("120.00")
 _DATA_START_ROW = 6
+_FEE_COLUMN_MISSING = (
+    "未找到加工费列。表头第4或第5行必须有一列包含「加工费」"
+    "（正式发布价在各基地价格列之后，表头为「加工费(加工中心成品自提)」）。"
+    "不会改读其它列，也不会填默认加工费。"
+)
 
 CarryMillLookup = dict[tuple[str, str], str]
 
@@ -82,8 +85,8 @@ def parse_base_price_excel(
 
     fee_col = find_processing_fee_col(sheet)
     if fee_col is None:
-        fee_col = DEFAULT_FEE_COL
-        result.warnings.append(f"未找到加工费列，使用默认列索引 {DEFAULT_FEE_COL}")
+        result.errors.append(_FEE_COLUMN_MISSING)
+        return result
 
     context = ParsedContext(
         base_configs=base_configs,
@@ -105,25 +108,39 @@ def _append_data_rows(
 ) -> None:
     skip_count = 0
     missing_mill_count = 0
-    processed_rows = 0
-    for row in sheet.iter_rows(min_row=_DATA_START_ROW, values_only=True):
-        seq = row[0]
+    missing_fee_rows: list[int] = []
+    for offset, row in enumerate(sheet.iter_rows(min_row=_DATA_START_ROW, values_only=True)):
+        seq = row[0] if row else None
         if seq is None:
             continue
         try:
             int(seq)
         except (ValueError, TypeError):
             continue
-        excel_row_num = _DATA_START_ROW + processed_rows
+        excel_row_num = _DATA_START_ROW + offset
+        steel_type = cell_text(row[1]) if len(row) > 1 else ""
+        grade = cell_text(row[2]) if len(row) > 2 else ""
+        if not steel_type or not grade:
+            skip_count += 1
+            continue
         fee_raw = row[fee_col] if len(row) > fee_col else None
-        processing_fee = cell_decimal(fee_raw) or _DEFAULT_PROCESSING_FEE
+        processing_fee = cell_decimal(fee_raw)
+        if processing_fee is None or processing_fee < 0:
+            missing_fee_rows.append(excel_row_num)
+            continue
         records, missing_mills = _map_row_to_records(row, context, excel_row_num, processing_fee)
         missing_mill_count += missing_mills
         if records:
             result.records.extend(records)
         else:
             skip_count += 1
-        processed_rows += 1
+    if missing_fee_rows:
+        sample = "、".join(str(row_num) for row_num in missing_fee_rows[:8])
+        extra = f"等共 {len(missing_fee_rows)} 行" if len(missing_fee_rows) > 8 else ""
+        result.errors.append(
+            f"第{sample}行加工费为空或不是数字{extra}。"
+            "加工费必须填写在表头含「加工费」的列里，不能留空，也不会用默认金额或其它列代替。"
+        )
     if skip_count > 0:
         result.warnings.append(f"跳过 {skip_count} 行（钢种或牌号为空或无法解析）")
     if missing_mill_count > 0:

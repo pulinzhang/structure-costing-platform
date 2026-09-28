@@ -32,6 +32,8 @@ def _price_only_workbook() -> bytes:
     sheet1["D6"] = "1.0*1250"
     sheet1["E6"] = 4096
     sheet1["F6"] = 4090
+    sheet1["G4"] = "加工费(加工中心成品自提)"
+    sheet1["G6"] = 120
 
     sheet2 = workbook.create_sheet("Sheet2")
     sheet2["A1"] = "2月订单芜湖基地钢板集采牌号对应钢厂如下："
@@ -83,11 +85,14 @@ def test_carry_mill_only_when_grade_missing_from_sheet2() -> None:
     sheet1["C6"] = "DC51D+Z"
     sheet1["D6"] = "1.0*1250"
     sheet1["E6"] = 3880
+    sheet1["F4"] = "加工费(加工中心成品自提)"
+    sheet1["F6"] = 120
     sheet1["A7"] = 2
     sheet1["B7"] = "冷轧"
     sheet1["C7"] = "DC01"
     sheet1["D7"] = "1.0*1250"
     sheet1["E7"] = 3500
+    sheet1["F7"] = 80
     sheet2 = workbook.create_sheet("Sheet2")
     sheet2["A1"] = "2月订单芜湖基地钢板集采牌号对应钢厂如下："
     sheet2["A2"] = "马钢:"
@@ -123,6 +128,8 @@ def test_swapped_mill_price_cells() -> None:
     sheet["D6"] = "1.0*1250"
     sheet["E6"] = 4049
     sheet["F6"] = "VAMA"
+    sheet["G4"] = "加工费(加工中心成品自提)"
+    sheet["G6"] = 120
     buffer = BytesIO()
     workbook.save(buffer)
     result = parse_base_price_excel(
@@ -154,6 +161,8 @@ def test_mixed_price_only_and_mill_columns() -> None:
     sheet["E6"] = 4096
     sheet["F6"] = "山钢"
     sheet["G6"] = 4080
+    sheet["H4"] = "加工费(加工中心成品自提)"
+    sheet["H6"] = 120
     sheet2 = workbook.create_sheet("Sheet2")
     sheet2["A1"] = "芜湖基地牌号对应钢厂如下："
     sheet2["A2"] = "马钢:"
@@ -197,6 +206,7 @@ def test_sample_price_only_file_resolves_wuhu_mill() -> None:
         row for row in result.records if row["grade"] == "DC51D+Z" and row["location"] == "芜湖"
     )
     assert sample["steel_mill"] == "马钢"
+    assert int(sample["processing_fee"]) == 120
 
 
 def test_june_sample_qingdao_uses_sheet2_mill_despite_wuhu_title() -> None:
@@ -227,3 +237,104 @@ def test_june_sample_qingdao_uses_sheet2_mill_despite_wuhu_title() -> None:
     assert int(wuhu["base_price"]) == 4096
     assert qingdao["steel_mill"] == "马钢"
     assert int(qingdao["base_price"]) == 3880
+    assert int(wuhu["processing_fee"]) == 120
+    assert int(qingdao["processing_fee"]) == 120
+
+
+def test_missing_fee_column_does_not_read_neighboring_price() -> None:
+    """模板缺加工费列时，第 9 列往往是基地到厂价，不能当成加工费。"""
+    workbook = Workbook()
+    sheet = workbook.active
+    sheet.title = "7月"
+    sheet["A4"] = "序号"
+    sheet["B4"] = "钢种"
+    sheet["C4"] = "牌号"
+    sheet["E4"] = "参考规格"
+    sheet["F4"] = "芜湖基地"
+    sheet["H4"] = "青岛基地"
+    sheet["F5"] = "钢厂"
+    sheet["G5"] = "到厂原卷承兑价格"
+    sheet["H5"] = "钢厂"
+    sheet["I5"] = "到厂原卷承兑价格"
+    sheet["A6"] = 1
+    sheet["B6"] = "镀锌"
+    sheet["C6"] = "DC51D+Z"
+    sheet["E6"] = "1.0*1250"
+    sheet["F6"] = "邯钢"
+    sheet["G6"] = 3969
+    sheet["H6"] = "邯钢"
+    sheet["I6"] = 3950
+    buffer = BytesIO()
+    workbook.save(buffer)
+    result = parse_base_price_excel(
+        buffer.getvalue(),
+        location_lookup={"芜湖基地": "芜湖", "青岛基地": "青岛"},
+    )
+    assert result.records == []
+    assert any("未找到加工费列" in error for error in result.errors)
+    assert all("3950" not in error for error in result.errors)
+
+
+def test_blank_processing_fee_is_rejected() -> None:
+    workbook = Workbook()
+    sheet = workbook.active
+    sheet.title = "Sheet1"
+    sheet["A4"] = "序号"
+    sheet["B4"] = "钢种"
+    sheet["C4"] = "牌号"
+    sheet["D4"] = "参考规格"
+    sheet["E4"] = "芜湖"
+    sheet["E5"] = "到厂原卷承兑价格"
+    sheet["F4"] = "加工费(加工中心成品自提)"
+    sheet["A6"] = 1
+    sheet["B6"] = "镀锌"
+    sheet["C6"] = "DC51D+Z"
+    sheet["D6"] = "1.0*1250"
+    sheet["E6"] = 3969
+    buffer = BytesIO()
+    workbook.save(buffer)
+    result = parse_base_price_excel(buffer.getvalue(), location_lookup={"芜湖": "芜湖"})
+    assert result.records == []
+    assert any("加工费为空或不是数字" in error for error in result.errors)
+
+
+def test_processing_fee_reads_labeled_column() -> None:
+    workbook = Workbook()
+    sheet = workbook.active
+    sheet.title = "Sheet1"
+    sheet["A4"] = "序号"
+    sheet["B4"] = "钢种"
+    sheet["C4"] = "牌号"
+    sheet["D4"] = "参考规格"
+    sheet["E4"] = "芜湖"
+    sheet["E5"] = "中标钢厂"
+    sheet["F5"] = "到厂原卷承兑价格"
+    sheet["G4"] = "加工费(加工中心成品自提)"
+    sheet["A6"] = 1
+    sheet["B6"] = "镀锌"
+    sheet["C6"] = "DC51D+Z"
+    sheet["D6"] = "1.0*1250"
+    sheet["E6"] = "邯钢"
+    sheet["F6"] = 3969
+    sheet["G6"] = 80
+    buffer = BytesIO()
+    workbook.save(buffer)
+    result = parse_base_price_excel(buffer.getvalue(), location_lookup={"芜湖": "芜湖"})
+    assert not result.errors
+    assert len(result.records) == 1
+    assert int(result.records[0]["base_price"]) == 3969
+    assert int(result.records[0]["processing_fee"]) == 80
+
+
+def test_template_includes_processing_fee_column() -> None:
+    from app.services.yishiyiyi.base_price.importing.template_builder import (
+        build_steel_base_price_template,
+        sample_location_lookup,
+    )
+
+    content, _filename = build_steel_base_price_template()
+    result = parse_base_price_excel(content, location_lookup=sample_location_lookup())
+    assert not result.errors
+    assert result.records
+    assert {int(row["processing_fee"]) for row in result.records} == {120}
+    assert all(int(row["base_price"]) > 1000 for row in result.records)

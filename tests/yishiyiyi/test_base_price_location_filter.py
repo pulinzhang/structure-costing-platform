@@ -70,6 +70,8 @@ def _wide_table_bytes() -> bytes:
     sheet["G6"] = 5000
     sheet["H6"] = "本钢"
     sheet["I6"] = 5100
+    sheet["J4"] = "加工费(加工中心成品自提)"
+    sheet["J6"] = 120
     buffer = BytesIO()
     workbook.save(buffer)
     return buffer.getvalue()

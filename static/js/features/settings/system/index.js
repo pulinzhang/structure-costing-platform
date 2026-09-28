@@ -5,7 +5,7 @@
  * 密度按 4 位小数；各类「率」界面按 2 位小数（‰ / %），提交时再换算为小数串。
  */
 
-import { settingsTemplate } from './template.js?v=28';
+import { settingsTemplate } from './template.js?v=35';
 
 const API = '/api/settings/system/config';
 const DEFAULT_APP_NAME = '结构件自动核价平台';
@@ -18,6 +18,9 @@ const DEFAULT_FINISHED_WAREHOUSE_PACKAGING_PERCENT = '1.00';
 const DEFAULT_FINISHED_SCRAP_PERMILLE = '3.00';
 const DEFAULT_FINISHED_PRETAX_PROFIT_PERCENT = '2.00';
 const DEFAULT_SWING_SHEAR_PROCESS_FEE_PER_TON = '150.00';
+const DEFAULT_BASE_PRICE_MONTH_MOVE_LIMIT = '300.00';
+const DEFAULT_BASE_PRICE_PROCESSING_FEE_LIMIT = '120.00';
+const DEFAULT_BODY_PANEL_MAX_THICKNESS = '3.00';
 const DEFAULT_LOGIN_LOCK_MINUTES = '15';
 
 const RATE_INPUT_IDS = [
@@ -32,6 +35,9 @@ const RATE_INPUT_IDS = [
     'settingsFinishedScrapPermille',
     'settingsFinishedPretaxProfitPercent',
     'settingsSwingShearProcessFeePerTon',
+    'settingsBasePriceMonthMoveLimit',
+    'settingsBasePriceProcessingFeeLimit',
+    'settingsBodyPanelMaxThickness',
     'settingsLoginLockMinutes',
 ];
 
@@ -95,6 +101,9 @@ function applyFormValues({
     scrapPermille,
     pretaxProfitPercent,
     swingShearFeePerTon,
+    basePriceMonthMoveLimit,
+    basePriceProcessingFeeLimit,
+    bodyPanelMaxThickness,
     loginLockMinutes,
 }) {
     const companyEl = document.getElementById('settingsCompanyName');
@@ -121,6 +130,12 @@ function applyFormValues({
     if (pretaxEl) pretaxEl.value = pretaxProfitPercent;
     const swingShearEl = document.getElementById('settingsSwingShearProcessFeePerTon');
     if (swingShearEl) swingShearEl.value = swingShearFeePerTon;
+    const moveLimitEl = document.getElementById('settingsBasePriceMonthMoveLimit');
+    if (moveLimitEl) moveLimitEl.value = basePriceMonthMoveLimit;
+    const feeLimitEl = document.getElementById('settingsBasePriceProcessingFeeLimit');
+    if (feeLimitEl) feeLimitEl.value = basePriceProcessingFeeLimit;
+    const bodyPanelEl = document.getElementById('settingsBodyPanelMaxThickness');
+    if (bodyPanelEl) bodyPanelEl.value = bodyPanelMaxThickness;
     const loginLockEl = document.getElementById('settingsLoginLockMinutes');
     if (loginLockEl && loginLockMinutes != null) loginLockEl.value = loginLockMinutes;
 }
@@ -161,6 +176,9 @@ export const SettingsPage = {
             scrapPermille: DEFAULT_FINISHED_SCRAP_PERMILLE,
             pretaxProfitPercent: DEFAULT_FINISHED_PRETAX_PROFIT_PERCENT,
             swingShearFeePerTon: DEFAULT_SWING_SHEAR_PROCESS_FEE_PER_TON,
+            basePriceMonthMoveLimit: DEFAULT_BASE_PRICE_MONTH_MOVE_LIMIT,
+            basePriceProcessingFeeLimit: DEFAULT_BASE_PRICE_PROCESSING_FEE_LIMIT,
+            bodyPanelMaxThickness: DEFAULT_BODY_PANEL_MAX_THICKNESS,
             loginLockMinutes: DEFAULT_LOGIN_LOCK_MINUTES,
         });
         showToast('已填入默认值，点击保存后生效', 'success');
@@ -214,6 +232,24 @@ export const SettingsPage = {
                         ? fee
                         : DEFAULT_SWING_SHEAR_PROCESS_FEE_PER_TON;
                 })(),
+                basePriceMonthMoveLimit: (() => {
+                    const limit = formatDecimalFixed(data.base_price_month_move_limit, 2);
+                    return limit != null && compareDecimalStrings(limit, '0') >= 0
+                        ? limit
+                        : DEFAULT_BASE_PRICE_MONTH_MOVE_LIMIT;
+                })(),
+                basePriceProcessingFeeLimit: (() => {
+                    const limit = formatDecimalFixed(data.base_price_processing_fee_limit, 2);
+                    return limit != null && compareDecimalStrings(limit, '0') >= 0
+                        ? limit
+                        : DEFAULT_BASE_PRICE_PROCESSING_FEE_LIMIT;
+                })(),
+                bodyPanelMaxThickness: (() => {
+                    const thickness = formatDecimalFixed(data.body_panel_max_thickness, 2);
+                    return thickness != null && compareDecimalStrings(thickness, '0') >= 0
+                        ? thickness
+                        : DEFAULT_BODY_PANEL_MAX_THICKNESS;
+                })(),
                 loginLockMinutes: normalizeLoginLockMinutes(data.login_lock_minutes),
             });
         } catch (error) {
@@ -257,6 +293,15 @@ export const SettingsPage = {
         );
         const swingShearFeePerTon = parseDecimalInput(
             document.getElementById('settingsSwingShearProcessFeePerTon')?.value, 2,
+        );
+        const basePriceMonthMoveLimit = parseDecimalInput(
+            document.getElementById('settingsBasePriceMonthMoveLimit')?.value, 2,
+        );
+        const basePriceProcessingFeeLimit = parseDecimalInput(
+            document.getElementById('settingsBasePriceProcessingFeeLimit')?.value, 2,
+        );
+        const bodyPanelMaxThickness = parseDecimalInput(
+            document.getElementById('settingsBodyPanelMaxThickness')?.value, 2,
         );
         const loginLockMinutes = Number.parseInt(
             document.getElementById('settingsLoginLockMinutes')?.value || '',
@@ -322,6 +367,30 @@ export const SettingsPage = {
             showToast('摆剪工序加工费须为 0~100000 元/吨', 'warning');
             return;
         }
+        if (
+            basePriceMonthMoveLimit == null
+            || compareDecimalStrings(basePriceMonthMoveLimit, '0') < 0
+            || compareDecimalStrings(basePriceMonthMoveLimit, '100000') > 0
+        ) {
+            showToast('基准价月度价格变动范围须为 ±0 ~ ±100000 元/吨', 'warning');
+            return;
+        }
+        if (
+            basePriceProcessingFeeLimit == null
+            || compareDecimalStrings(basePriceProcessingFeeLimit, '0') < 0
+            || compareDecimalStrings(basePriceProcessingFeeLimit, '300') > 0
+        ) {
+            showToast('基准价加工费上限须为 0 ~ 300 元/吨', 'warning');
+            return;
+        }
+        if (
+            bodyPanelMaxThickness == null
+            || compareDecimalStrings(bodyPanelMaxThickness, '0') < 0
+            || compareDecimalStrings(bodyPanelMaxThickness, '100') > 0
+        ) {
+            showToast('车身件料厚上限须为 0 ~ 100 mm', 'warning');
+            return;
+        }
         if (!Number.isInteger(loginLockMinutes) || loginLockMinutes < 1 || loginLockMinutes > 1440) {
             showToast('登录锁定分钟须为 1~1440', 'warning');
             return;
@@ -369,6 +438,9 @@ export const SettingsPage = {
                 finished_scrap_rate: finishedScrapRate,
                 finished_pretax_profit_rate: finishedPretaxProfitRate,
                 swing_shear_process_fee_per_ton: swingShearFeePerTon,
+                base_price_month_move_limit: basePriceMonthMoveLimit,
+                base_price_processing_fee_limit: basePriceProcessingFeeLimit,
+                body_panel_max_thickness: bodyPanelMaxThickness,
                 login_lock_minutes: loginLockMinutes,
             });
             const data = res.data || {};
@@ -415,6 +487,18 @@ export const SettingsPage = {
                     ? (formatDecimalFixed(data.swing_shear_process_fee_per_ton, 2)
                         || swingShearFeePerTon)
                     : swingShearFeePerTon,
+                basePriceMonthMoveLimit: data.base_price_month_move_limit != null
+                    ? (formatDecimalFixed(data.base_price_month_move_limit, 2)
+                        || basePriceMonthMoveLimit)
+                    : basePriceMonthMoveLimit,
+                basePriceProcessingFeeLimit: data.base_price_processing_fee_limit != null
+                    ? (formatDecimalFixed(data.base_price_processing_fee_limit, 2)
+                        || basePriceProcessingFeeLimit)
+                    : basePriceProcessingFeeLimit,
+                bodyPanelMaxThickness: data.body_panel_max_thickness != null
+                    ? (formatDecimalFixed(data.body_panel_max_thickness, 2)
+                        || bodyPanelMaxThickness)
+                    : bodyPanelMaxThickness,
                 loginLockMinutes: normalizeLoginLockMinutes(
                     data.login_lock_minutes != null ? data.login_lock_minutes : loginLockMinutes,
                 ),

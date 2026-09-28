@@ -29,14 +29,20 @@ function suffixInput({
     placeholder,
     helper = '',
     inputmode = 'decimal',
+    prefix = '',
 }) {
+    const prefixHtml = prefix
+        ? `<span class="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-3 text-xs text-ink">${prefix}</span>`
+        : '';
+    const padClass = prefix ? 'pl-8' : 'pl-3';
     return `
         <div>
             ${fieldLabel(label, tip)}
             <div class="relative">
+                ${prefixHtml}
                 <input id="${id}" type="number" step="${step}" min="${min}" max="${max}"
                        inputmode="${inputmode}"
-                       class="w-full h-9 pl-3 pr-12 text-xs text-right bg-app-deep border border-line rounded-sm text-ink tabular-nums focus:outline-none focus:border-brand-active transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                       class="w-full h-9 ${padClass} pr-12 text-xs text-right bg-app-deep border border-line rounded-sm text-ink tabular-nums focus:outline-none focus:border-brand-active transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                        placeholder="${placeholder}">
                 <span class="pointer-events-none absolute inset-y-0 right-0 flex items-center pr-3 text-[10px] text-ink-dim">${unit}</span>
             </div>
@@ -152,6 +158,42 @@ export function settingsTemplate() {
         placeholder: '150',
         helper: '工艺确认表出现「摆剪」的零件会带此加价',
     });
+    const basePriceFeeLimitField = suffixInput({
+        id: 'settingsBasePriceProcessingFeeLimit',
+        label: '基准价加工费上限',
+        tip: '防止把到厂价写进加工费。大于此值整批拒绝，等于此值可以写入。',
+        unit: '元/吨',
+        prefix: '≤',
+        step: '0.01',
+        min: '0',
+        max: '300',
+        placeholder: '120',
+        helper: '默认 120 元/吨。大于此值整批拒绝，等于此值可以写入。改完后下一次导入生效',
+    });
+    const bodyPanelMaxThicknessField = suffixInput({
+        id: 'settingsBodyPanelMaxThickness',
+        label: '车身件料厚上限',
+        tip: '参考规格厚度大于此值则整批拒绝。乘用车车身钢板冲压件不应达到此厚度，超出后属于商用车适用范围。',
+        unit: 'mm',
+        prefix: '>',
+        step: '0.01',
+        min: '0',
+        max: '100',
+        placeholder: '3.00',
+        helper: '默认 3.00 mm。大于此值整批拒绝，等于此值可以写入。改完后下一次导入生效',
+    });
+    const basePriceMoveLimitField = suffixInput({
+        id: 'settingsBasePriceMonthMoveLimit',
+        label: '基准价月度价格变动范围',
+        tip: '同一基地、同一规格，单价加加工费相对上月超出 ± 此值则整批拒绝。默认 ±300 元/吨。金融危机等极端月份再调高，例如 ±800。',
+        unit: '元/吨',
+        prefix: '±',
+        step: '0.01',
+        min: '0',
+        max: '100000',
+        placeholder: '300',
+        helper: '默认 ±300 元/吨。只拦基准价导入和手工改价，改完后下一次导入生效',
+    });
 
     return `
         <div class="relative">
@@ -204,6 +246,19 @@ export function settingsTemplate() {
                         ${warehousePackagingField}
                         ${scrapField}
                         ${pretaxField}
+                    </div>
+                </section>
+
+                <!-- 基准价 -->
+                <section class="xl:col-span-12 bg-app-surface border border-line">
+                    <div class="px-4 py-2.5 border-b border-line-subtle flex items-center gap-2">
+                        <div class="w-[2px] h-3.5 bg-brand rounded-[1px]"></div>
+                        <h3 class="text-[10px] font-semibold uppercase tracking-[0.14em] text-ink-dim">基准价</h3>
+                    </div>
+                    <div class="p-4 grid grid-cols-1 md:grid-cols-3 gap-4">
+                        ${basePriceFeeLimitField}
+                        ${basePriceMoveLimitField}
+                        ${bodyPanelMaxThicknessField}
                     </div>
                 </section>
 

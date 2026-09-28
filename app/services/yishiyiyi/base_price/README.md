@@ -59,12 +59,14 @@ app/services/yishiyiyi/base_price/
 ├── README.md
 ├── __init__.py                         # 只作包标记，不汇总导出
 ├── service.py                          # 薄门面：只委托
+├── gate.py                             # 写入门禁：中标钢厂、参考规格、加工费、月度涨跌、宽度告警
 ├── crud/
 │   ├── __init__.py
 │   └── service.py                      # CRUD、批量删除、核价取数、统计
 ├── importing/
 │   ├── __init__.py
-│   └── service.py                      # 归档 + 解析 + upsert
+│   ├── service.py                      # 归档 + 解析 + upsert
+│   └── template_builder.py             # 导入模板
 └── export/
     ├── __init__.py
     ├── service.py                      # 导出预览查询、调导出器
@@ -85,6 +87,8 @@ SteelBasePriceService            （门面）
    └── export.SteelBasePriceExportService
              └── SteelBasePriceExporter
 
+crud / importing 写之前调用 gate.py
+
 SteelBasePriceExportService      （也可由 Router 直接调 .export）
         │
         ▼
@@ -95,7 +99,8 @@ parsers.yishiyiyi.base_price     （仅 importing 调用）
 | 子包 | 负责 | 不负责 |
 |------|------|--------|
 | `crud/` | 分页、详情、增删改、批量删、筛选项、`list_for_calc`、条件 count | 导入、xlsx 字节 |
-| `importing/` | 源文件归档、Parser、upsert、进度回调 | HTTP、Excel 样式 |
+| `gate.py` | 写入前拒绝或告警 | 查库、落库 |
+| `importing/` | 源文件归档、Parser、upsert、进度回调、导入模板 | HTTP、Excel 样式 |
 | `export/` | 导出预览扁平行、生成 xlsx | CRUD 写操作 |
 
 门面可暴露 `service.repository`；优先走门面方法。
@@ -106,18 +111,37 @@ parsers.yishiyiyi.base_price     （仅 importing 调用）
 
 ### 5.1 导入（`importing`）
 
-- 整批 **单事务**：失败全回滚。
+- 整批 **单事务**：门禁拒绝则整批不写库。
+- 加工费列必须存在，单元格必须是数字。不猜列、不填 120、不填 0。
 - 牌号 / 钢种：`SteelGradeCategoryService.require_matched_grades`（内部 `match_by_grade_key`）命中后落档案 `grade` 与档案大类（Excel `DCO1`、档案 `DC01` → 存 `DC01`）。工艺导入同一入口。
-- Repository `upsert`：按业务唯一键创建或更新。
+- 基地必须是已启用的规范名。钢厂是自由文本，纯数字整批拒绝。
+- Repository `upsert`：按表唯一键创建或更新。表唯一键是年、月、基地、钢厂、类别、牌号、厚度、宽度，比下面的中标门禁更宽，不要改成「一个月一个钢厂」。
 - 导入前按年/月归档（`save_steel_price_upload`，`FILE_KIND_BASE_PRICE`），便于与政策文件成对核对。
 - 进度通过 `ProgressCallback` 上报；进度写辅助库，不与本事务写锁耦合。
 
-### 5.2 导出（`export`）
+### 5.2 写入门禁（`gate.py`）
+
+调用方先按年月取出行。两把钥匙不要和表唯一键混用。
+
+| 钥匙 | 身份 | 结果 |
+|------|------|------|
+| 中标 `winning_mill_key` | 基地 + 牌号 | 同一个月只能有一个钢厂。同一钢厂、不同参考厚度可以。要换钢厂，先删掉原来那一条 |
+| 月度涨跌 `month_move_key` | 基地 + 牌号 + 参考厚度 + 参考宽度 | 单价加加工费相对上月超出「基准价月度价格变动范围」则整批拒绝。等于该范围可以写入。钢厂优先对同一家；上月这一规格只有一条时，钢厂换了也对照那一条。对不上就不猜，本条放行 |
+
+另外三条：
+
+- 参考厚度、参考宽度为空则整批拒绝。厚度大于设置里的「车身件料厚上限」则整批拒绝，等于上限可以写入。默认 3.00 mm。
+- 加工费大于设置里的「基准价加工费上限」则整批拒绝，等于上限可以写入。默认 120 元/吨。设置页填写时不能超过 300。
+- 冷轧、酸洗常见宽度 1250 mm，镀锌常见 1250 和 1500 mm。其它宽度只告警，仍然写入。宽度不参与定价。
+
+手工改单价或加工费走同一套月度涨跌和加工费上限。
+
+### 5.3 导出（`export`）
 
 - `list_for_export`：前端预览分页。  
 - `export`：查全量筛选结果后交给 `SteelBasePriceExporter` 写工作簿。
 
-### 5.3 核价取数（`crud`）
+### 5.4 核价取数（`crud`）
 
 - `list_for_calc`：返回 ORM 列表（含 id），供 `costing/steel_price` 联动计算溯源，不做 VO 转换。
 
@@ -127,8 +151,10 @@ parsers.yishiyiyi.base_price     （仅 importing 调用）
 
 | 模块 | 职责 |
 |------|------|
-| `crud/service.py` | 列表字段 / 写操作审计 |
-| `importing/service.py` | 导入 upsert 策略、进度分段 |
+| `gate.py` | 中标、参考规格、加工费上限、月度涨跌、宽度告警 |
+| `crud/service.py` | 列表字段 / 写操作审计；改价前调门禁 |
+| `importing/service.py` | 导入 upsert 策略、进度分段；写入前调门禁 |
+| `importing/template_builder.py` | 导入模板与填写说明 |
 | `export/service.py` | 导出预览字段 |
 | `export/excel_exporter.py` | Excel 列与样式 |
 
