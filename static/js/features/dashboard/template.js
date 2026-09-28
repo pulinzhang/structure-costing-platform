@@ -136,7 +136,7 @@ export function dashboardTemplate() {
                 </p>
                 <div class="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-2" id="dashActions">
                     ${actionLink({ page: 'stamping-process-fee', label: '审核加工费', sub: '待审 / 待补价清单' })}
-                    ${actionLink({ page: 'steel-price-list', label: '审核钢材联动价', sub: '本期联动价一览' })}
+                    ${actionLink({ page: 'steel-price-list', label: '审核钢材联动价', sub: '本期联动价列表' })}
                     ${actionLink({ page: 'stamping-part-cost', label: '审核冲压零件价格', sub: '本期冲压件核价确认' })}
                     ${actionLink({ page: 'steel-price-calc', label: '发起钢材联动计算', sub: '基价 + 政策 → 联动价' })}
                     ${actionLink({ page: 'stamping-part-cost-calc', label: '发起冲压零件价格计算', sub: '材料 + 加工费 + 模具/检具' })}

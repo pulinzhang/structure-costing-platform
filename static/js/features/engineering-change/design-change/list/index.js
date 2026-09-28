@@ -188,7 +188,7 @@ async function handleActionClick(event) {
         return;
     }
     if (action !== 'delete') return;
-    if (!await window.confirmAction('确定删除？会撤销这一整本工程变更，同一文件里的变更一起去掉。')) return;
+    if (!await window.confirmAction('确定删除？会撤销这一整本设计变更，同一文件里的变更一起去掉。')) return;
     HttpClient.delete(`${API}/change-orders/${uploadLogId}`)
         .then(() => {
             showToast('已撤销这一整本', 'success');
@@ -278,7 +278,7 @@ async function loadData(page) {
             state.total > 0 ? Math.ceil(state.total / state.pageSize) : 0,
         );
         if (!state.records.length) {
-            renderEmpty('暂无记录', '请先上传工程变更，或调整筛选条件');
+            renderEmpty('暂无记录', '请先上传设计变更，或调整筛选条件');
             const totalEl = document.getElementById('ecListHudTotal');
             if (totalEl) totalEl.textContent = '0';
         }

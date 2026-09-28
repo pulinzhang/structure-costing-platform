@@ -1,4 +1,4 @@
-"""采购对象清单 — 单条确认与按范围批量审核 / 反审核 / 删除。"""
+"""采购对象列表 — 单条确认与按范围批量审核 / 反审核 / 删除。"""
 
 from __future__ import annotations
 
@@ -62,7 +62,7 @@ class BomProcurementObjectAuditService:
             raise BusinessException("核对区行禁止确认")
         header = self.repository.get_list_by_id(db, row.list_id)
         if header is None:
-            raise NotFoundException("所属采购对象清单不存在")
+            raise NotFoundException("所属采购对象列表不存在")
         if row.audit_status == AUDIT_APPROVED:
             return row_to_vo(db, self.repository, row)
         operator = display_name(current_user)
@@ -104,7 +104,7 @@ class BomProcurementObjectAuditService:
             raise BusinessException("核对区行禁止指定供应商")
         header = self.repository.get_list_by_id(db, row.list_id)
         if header is None:
-            raise NotFoundException("所属采购对象清单不存在")
+            raise NotFoundException("所属采购对象列表不存在")
         if row.audit_status == AUDIT_APPROVED:
             return row_to_vo(db, self.repository, row)
         canonical = None if raw is None else SupplierService().require_enabled(db, raw)
@@ -117,7 +117,7 @@ class BomProcurementObjectAuditService:
         except IntegrityError:
             db.rollback()
             raise BusinessException(
-                "没有该供应商，请到供应商一览手工增加或上传（#/supplier-list）"
+                "没有该供应商，请到供应商列表手工增加或上传（#/supplier-list）"
             ) from None
         except BusinessException:
             db.rollback()
@@ -290,5 +290,5 @@ class BomProcurementObjectAuditService:
             db, location=location_text, vehicle_model=model_text
         )
         if not headers:
-            raise NotFoundException("尚未生成采购对象清单")
+            raise NotFoundException("尚未生成采购对象列表")
         return location_text, model_text, version_text

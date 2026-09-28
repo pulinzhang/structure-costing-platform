@@ -139,7 +139,7 @@ class SteelAnalysis:
         return out
 
     def run_winning_thickness(self, db: Session, query: AnalysisQuery) -> AnalysisRunResult:
-        """对齐「中标钢厂厚度价格一览表」#/winning-thickness-download。"""
+        """对齐「中标钢厂厚度价格列表」#/winning-thickness-download。"""
         tr = query.time_range
         location = (query.location() or "").strip()
         if not location:

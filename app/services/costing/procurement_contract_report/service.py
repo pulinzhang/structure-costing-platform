@@ -56,7 +56,7 @@ from app.services.masterdata.supplier.service import SupplierService
 _SECTION_OBJECT = "object"
 _EMPTY_OBJECT_HINT = "当前范围没有采购对象行"
 _EMPTY_ASSEMBLY_HINT = "当前范围没有供货总成"
-_MISSING_OBJECT_LIST = "请先生成采购对象清单"
+_MISSING_OBJECT_LIST = "请先生成采购对象列表"
 _EXPORT_ALL_VERSIONS = "导出协议须选全部版本"
 
 

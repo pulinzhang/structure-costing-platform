@@ -1,5 +1,5 @@
 /**
- * 供应商一览 — 面板 + 表 + 抽屉；搜索 / 分页 / 导出 / 删除
+ * 供应商列表 — 面板 + 表 + 抽屉；搜索 / 分页 / 导出 / 删除
  */
 
 import {
@@ -451,7 +451,7 @@ async function exportExcel() {
         if (listState.isEnabled === 'false') params.is_enabled = false;
         const { blob, filename } = await HttpClient.download(`${API_BASE}/export`, {
             params,
-            defaultFilename: '供应商一览.xlsx',
+            defaultFilename: '供应商列表.xlsx',
         });
         const url = window.URL.createObjectURL(blob);
         const anchor = document.createElement('a');

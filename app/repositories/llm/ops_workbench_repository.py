@@ -79,7 +79,7 @@ class OpsWorkbenchRepository:
         total, pending, incomplete = q.one()
         return WorkbenchBoardRow(
             slice_id="assembly_cost",
-            label="总成核价一览",
+            label="总成核价列表",
             hash_page="assembly-cost",
             grain="month",
             row_count=int(total or 0),
@@ -116,7 +116,7 @@ class OpsWorkbenchRepository:
         total, pending, incomplete = q.one()
         return WorkbenchBoardRow(
             slice_id="stamping_part",
-            label="冲压零件价格一览",
+            label="冲压零件价格列表",
             hash_page="stamping-part-cost",
             grain="month",
             row_count=int(total or 0),
@@ -205,7 +205,7 @@ class OpsWorkbenchRepository:
         if latest is None:
             return WorkbenchBoardRow(
                 slice_id="procurement_object",
-                label="采购对象清单",
+                label="采购对象列表",
                 hash_page="bom-procurement-object-list",
                 grain="list",
                 row_count=0,
@@ -232,7 +232,7 @@ class OpsWorkbenchRepository:
         total, pending_audit, anomaly, pending_confirm = q.one()
         return WorkbenchBoardRow(
             slice_id="procurement_object",
-            label="采购对象清单",
+            label="采购对象列表",
             hash_page="bom-procurement-object-list",
             grain="list",
             row_count=int(total or 0),

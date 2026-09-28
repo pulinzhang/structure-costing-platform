@@ -251,7 +251,7 @@ def test_seed_upsert_keeps_extra_row(memory_db: Session) -> None:
     assert comment.name_zh == "基地"
     hint = memory_db.get(RefHint, ("locations", "vehicle_models"))
     assert hint is not None
-    assert hint.hint == "请到「主数据 → 项目 → 一览」处理"
+    assert hint.hint == "请到「主数据 → 项目 → 项目列表」处理"
     memory_db.add(
         RefHint(parent_table="locations", child_table="kept_child", hint="请先处理这些保留")
     )

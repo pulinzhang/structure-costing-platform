@@ -1,4 +1,4 @@
-"""采购对象清单 — 工程变更种树后按新树插行（不走整包 generate）。"""
+"""采购对象列表 — 工程变更种树后按新树插行（不走整包 generate）。"""
 
 from __future__ import annotations
 

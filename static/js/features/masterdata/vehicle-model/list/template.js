@@ -1,5 +1,5 @@
 /**
- * 项目一览 — HUD 密表，按基地分卡 / 分段
+ * 项目列表 — HUD 密表，按基地分卡 / 分段
  */
 
 import { moreMenuItemHtml, moreMenuShellHtml } from '../../../../ui/more-menu.js?v=6';

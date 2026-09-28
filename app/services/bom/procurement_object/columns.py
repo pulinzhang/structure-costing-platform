@@ -1,4 +1,4 @@
-"""采购对象清单导出 — 列布局（无 openpyxl）。"""
+"""采购对象列表导出 — 列布局（无 openpyxl）。"""
 
 from __future__ import annotations
 

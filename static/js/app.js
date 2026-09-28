@@ -16,10 +16,10 @@
  */
 
 import { installConfirmDialog } from './ui/confirm-dialog.js?v=6';
-import { installDeleteErrorDialog } from './ui/error-dialog.js?v=9';
+import { installDeleteErrorDialog } from './ui/error-dialog.js?v=11';
 import { bindCurrentRowOnOps } from './ui/table-row.js?v=3';
 import { bindHudSelects, closeHudSelectMenu } from './ui/hud-select.js?v=1';
-import { pageMeta } from './features/index.js?v=52';
+import { pageMeta } from './features/index.js?v=54';
 
 // 页面导入（路径与 index.html 菜单树 / features 目录对齐）
 import { getUserSession, initUserMenu, startTokenHeartbeat, updateUserSession } from './features/login/index.js?v=20';

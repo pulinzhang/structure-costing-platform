@@ -239,7 +239,7 @@ async function deleteOne(deleteBtn) {
     const ok = await window.confirmAction(
         `确认删除材料清单？\n${location} / ${vehicleModel} / ${bomVersion}\n`
         + '树节点将一并清除，不可恢复。\n'
-        + '若已有采购对象清单或焊接工艺拆解，须先删除下游。',
+        + '若已有采购对象列表或焊接工艺拆解，须先删除下游。',
     );
     if (!ok) return;
 

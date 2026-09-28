@@ -1,5 +1,5 @@
 /**
- * 采购对象清单 — 生成页（对齐冲压零件价格计算壳 + 焊接拆解历史）
+ * 采购对象列表 — 生成页（对齐冲压零件价格计算壳 + 焊接拆解历史）
  */
 
 import { paginationBarHtml } from '../../../../ui/page-size.js?v=6';
@@ -12,10 +12,10 @@ export function procurementObjectGenerateTemplate() {
         <div class="space-y-4 w-full font-sans antialiased text-ink">
 
             <div class="flex items-center justify-between pb-2 border-b border-line-subtle">
-                <h1 class="text-xs font-bold text-ink tracking-wider">生成采购对象清单</h1>
+                <h1 class="text-xs font-bold text-ink tracking-wider">生成采购对象列表</h1>
                 <a href="#/bom-procurement-object-list"
                    class="text-[10px] text-ink-dim hover:text-brand-hud transition-colors">
-                    前往采购对象清单 →
+                    前往采购对象列表 →
                 </a>
             </div>
 
@@ -78,7 +78,7 @@ export function procurementObjectGenerateTemplate() {
                 <div class="flex items-center justify-between gap-3 mb-2.5">
                     <div class="flex items-center gap-2 min-w-0">
                         <div id="poGenProgressSpinner" class="w-3.5 h-3.5 border-2 border-line border-brand rounded-full animate-spin shrink-0"></div>
-                        <h5 id="poGenProgressTitle" class="text-xs font-medium text-ink truncate mb-0">正在生成采购对象清单...</h5>
+                        <h5 id="poGenProgressTitle" class="text-xs font-medium text-ink truncate mb-0">正在生成采购对象列表...</h5>
                     </div>
                     <span id="poGenProgressPercent" class="text-xs font-mono tabular-nums text-brand shrink-0">0%</span>
                 </div>

@@ -473,7 +473,7 @@ def test_export_matches_import_template_and_parses(memory_db: Session) -> None:
     _create(memory_db, location="青岛", vehicle_model="T28", effective_year=2025, effective_month=1)
     service = VehicleModelService()
     content, filename = service.export_excel(memory_db, current_user=SYSTEM_USER)
-    assert filename.startswith("项目一览_")
+    assert filename.startswith("项目列表_")
     assert filename.endswith(".xlsx")
     workbook = load_workbook(BytesIO(content))
     headers = [cell.value for cell in workbook.worksheets[0][1]]

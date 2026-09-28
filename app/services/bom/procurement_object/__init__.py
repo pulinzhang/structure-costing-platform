@@ -1,4 +1,4 @@
-"""采购对象清单服务包
+"""采购对象列表服务包
 
 改前先读：docs/bom/bom-procurement-objects-design.md 文首「改前必读」+ §14。
 指定对方：docs/bom/bom-procurement-object-supplier-design.md。

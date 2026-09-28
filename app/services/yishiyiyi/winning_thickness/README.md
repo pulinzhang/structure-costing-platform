@@ -1,6 +1,6 @@
-# 中标钢厂厚度价格一览 Service（`yishiyiyi/winning_thickness`）
+# 中标钢厂厚度价格列表 Service（`yishiyiyi/winning_thickness`）
 
-> 一事一议 · 中标钢厂厚度价格一览（派生报表）  
+> 一事一议 · 中标钢厂厚度价格列表（派生报表）  
 > 路径：`app/services/yishiyiyi/winning_thickness/`
 
 采用「根门面 + 按关注点子包」组织，与 `yishiyiyi/policy`、`yishiyiyi/base_price` 一致。

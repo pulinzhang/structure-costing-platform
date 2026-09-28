@@ -1,4 +1,4 @@
-"""采购对象清单 — 按范围下载窄表 / 上传改供应商。
+"""采购对象列表 — 按范围下载窄表 / 上传改供应商。
 
 范围与生成页同形：基地 + 项目 + snapshot 头版本 → `snapshot_scope.require_snapshot`
 → `get_list_by_snapshot_id`。禁止 L0/EC 浏览、禁止「全部版本」凑合。
@@ -44,7 +44,7 @@ from app.utils.bom_procurement_object_supplier_archive import (
 
 logger = logging.getLogger("service.bom.procurement_object.supplier_upload")
 
-_PAGE_HINT = "请到供应商一览手工增加或上传（#/supplier-list）"
+_PAGE_HINT = "请到供应商列表手工增加或上传（#/supplier-list）"
 
 
 class BomProcurementObjectSupplierUploadService:
@@ -181,7 +181,7 @@ class BomProcurementObjectSupplierUploadService:
         )
         header = self.repository.get_list_by_snapshot_id(db, snapshot.id)
         if header is None:
-            raise NotFoundException("尚未生成采购对象清单")
+            raise NotFoundException("尚未生成采购对象列表")
         rows = [
             row
             for row in self.repository.list_objects_by_list_id(db, header.id)

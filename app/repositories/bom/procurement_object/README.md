@@ -1,4 +1,4 @@
-# 采购对象清单 Repository（`procurement_object/`）
+# 采购对象列表 Repository（`procurement_object/`）
 
 对外入口：上一级 `procurement_object_repository.py` 的
 `BomProcurementObjectRepository`、`ProcurementObjectAuditSummary`、

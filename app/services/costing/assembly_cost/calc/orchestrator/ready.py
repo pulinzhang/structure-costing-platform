@@ -162,7 +162,7 @@ def collect_calc_ready(
             ready = False
             missing_n = len(expected_ids - set_c)
             message = (
-                "请先生成采购对象清单"
+                "请先生成采购对象列表"
                 if not set_c
                 else f"采购对象未齐（缺 {missing_n}），请重新生成"
             )

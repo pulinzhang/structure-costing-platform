@@ -1,5 +1,5 @@
 /**
- * 生失效展示 / 年+月筛 / SOP 上传说明（对齐项目一览 fillYearMonthSelects）。
+ * 生失效展示 / 年+月筛 / SOP 上传说明（对齐项目列表 fillYearMonthSelects）。
  */
 
 import { FILTER_LABEL, HUD_FILTER } from '../../ui/classes.js?v=13';

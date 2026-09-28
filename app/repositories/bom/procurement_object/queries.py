@@ -1,4 +1,4 @@
-"""采购对象清单查询：清单/对象、分页、导出、HUD、生成日志。"""
+"""采购对象列表查询：清单/对象、分页、导出、HUD、生成日志。"""
 
 from sqlalchemy import func
 from sqlalchemy.orm import Query, Session

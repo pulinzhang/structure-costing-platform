@@ -80,7 +80,7 @@ def test_complete_menu_question_routes_correctly(case) -> None:
         pytest.param(
             next(c for c in complete_cases() if c.hash_page == "winning-thickness-download"),
             {"year": "2025", "month": "1", "location": "青岛"},
-            id="中标钢厂厚度价格一览表",
+            id="中标钢厂厚度价格列表",
         ),
         pytest.param(
             next(c for c in complete_cases() if c.hash_page == "scrap-price"),
@@ -101,7 +101,7 @@ def test_complete_menu_question_routes_correctly(case) -> None:
                 "start": "2025-01",
                 "end": "2025-01",
             },
-            id="冲压钢材联动价一览",
+            id="冲压钢材联动价列表",
         ),
         pytest.param(
             next(c for c in complete_cases() if c.hash_page == "stamping-part-cost"),
@@ -112,7 +112,7 @@ def test_complete_menu_question_routes_correctly(case) -> None:
                 "start": "2025-01",
                 "end": "2025-01",
             },
-            id="冲压零件价格一览",
+            id="冲压零件价格列表",
         ),
         pytest.param(
             next(c for c in complete_cases() if c.hash_page == "assembly-cost"),
@@ -123,7 +123,7 @@ def test_complete_menu_question_routes_correctly(case) -> None:
                 "start": "2025-01",
                 "end": "2025-01",
             },
-            id="总成核价一览",
+            id="总成核价列表",
         ),
     ],
 )

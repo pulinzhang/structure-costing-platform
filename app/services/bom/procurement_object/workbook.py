@@ -1,4 +1,4 @@
-"""采购对象清单导出 — openpyxl 渲染（不访问 DB）。"""
+"""采购对象列表导出 — openpyxl 渲染（不访问 DB）。"""
 
 from __future__ import annotations
 
@@ -157,7 +157,7 @@ def write_banner(
 ) -> None:
     indent = Alignment(horizontal="left", vertical="center", indent=1)
     sheet.merge_cells(start_row=1, start_column=1, end_row=1, end_column=COL_COUNT)
-    title = sheet.cell(row=1, column=1, value=f"采购对象清单 · {sheet_title}")
+    title = sheet.cell(row=1, column=1, value=f"采购对象列表 · {sheet_title}")
     title.font = FONT_TITLE
     title.fill = FILL_TITLE
     title.alignment = indent
@@ -355,7 +355,7 @@ def write_data_sheet(
     sheet.print_area = f"A1:{get_column_letter(COL_COUNT)}{last_row}"
     _set_footer_text(
         cast(_HeaderFooterItem | None, sheet.oddFooter),
-        left=f"采购对象清单 · {sheet_title}",
+        left=f"采购对象列表 · {sheet_title}",
         center="按 Excel 行号对照原件",
         right="第 &P 页 / 共 &N 页",
     )

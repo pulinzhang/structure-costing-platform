@@ -1,5 +1,5 @@
 """
-中标钢厂厚度价格一览（门面）
+中标钢厂厚度价格列表（门面）
 
 行组装见 assemble；Excel 见 export。
 """
@@ -23,7 +23,7 @@ __all__ = ["WinningThicknessExportService"]
 
 class WinningThicknessExportService:
     """
-    中标钢厂厚度价格一览表：基价 × 大类厚度阶梯，含加工费。
+    中标钢厂厚度价格列表：基价 × 大类厚度阶梯，含加工费。
 
     以基价表为据：仅当期有中标基价的牌号才输出。
     预览/导出均为「扁平行」：每个牌号按 CATEGORY 厚度政策展开全部区间，

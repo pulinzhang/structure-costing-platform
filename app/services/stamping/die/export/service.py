@@ -1,4 +1,4 @@
-"""模具清单导出（对齐冲压工艺确认表版式）。"""
+"""模具列表导出（对齐冲压工艺确认表版式）。"""
 
 from __future__ import annotations
 
@@ -127,8 +127,8 @@ class StampingDieExportService:
         workbook = Workbook()
         sheet = workbook.active
         if not isinstance(sheet, Worksheet):
-            sheet = workbook.create_sheet("模具清单")
-        sheet.title = "模具清单"
+            sheet = workbook.create_sheet("模具列表")
+        sheet.title = "模具列表"
 
         process_count = sum(len(part.processes or []) for part in parts)
         self._write_banner(

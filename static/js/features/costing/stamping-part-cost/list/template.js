@@ -1,6 +1,6 @@
 /**
  * Stamping Part Cost List Template
- * 冲压零件价格一览—Brabus Carbon & Precision Dark
+ * 冲压零件价格列表—Brabus Carbon & Precision Dark
  * HUD：总成本为靶心；冲压件 / 成本构成 / 审核进度为辅卡
  */
 

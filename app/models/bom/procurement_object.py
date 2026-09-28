@@ -1,4 +1,4 @@
-"""采购对象清单数据模型。"""
+"""采购对象列表数据模型。"""
 
 from datetime import datetime
 from decimal import Decimal
@@ -22,7 +22,7 @@ from app.models.common.audit_mixin import AuditUserMixin
 
 
 class BomProcurementObjectList(AuditUserMixin, Base):
-    """一版材料清单对应的一份采购对象清单头。"""
+    """一版材料清单对应的一份采购对象列表头。"""
 
     __tablename__ = "bom_procurement_object_lists"
 
@@ -70,7 +70,7 @@ class BomProcurementObjectList(AuditUserMixin, Base):
 
 
 class BomProcurementObject(AuditUserMixin, Base):
-    """采购对象清单行。"""
+    """采购对象列表行。"""
 
     __tablename__ = "bom_procurement_objects"
 
@@ -80,7 +80,7 @@ class BomProcurementObject(AuditUserMixin, Base):
         Integer,
         ForeignKey("bom_procurement_object_lists.id", ondelete="CASCADE"),
         nullable=False,
-        comment="所属采购对象清单",
+        comment="所属采购对象列表",
     )
     section: Mapped[str] = mapped_column(
         String(20), nullable=False, comment="object / other_leaf / anomaly"

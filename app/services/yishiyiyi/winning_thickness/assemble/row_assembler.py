@@ -1,4 +1,4 @@
-"""中标钢厂厚度价格一览：基价表驱动 × 档案大类 × CATEGORY 厚度政策。"""
+"""中标钢厂厚度价格列表：基价表驱动 × 档案大类 × CATEGORY 厚度政策。"""
 
 from __future__ import annotations
 
@@ -185,7 +185,7 @@ class WinningThicknessRowAssembler:
             )
         )
         logger.info(
-            "中标钢厂厚度价格一览组装完成: year=%s month=%s location=%s "
+            "中标钢厂厚度价格列表组装完成: year=%s month=%s location=%s "
             "bases=%d archive_grades=%d rows=%d",
             year,
             month,

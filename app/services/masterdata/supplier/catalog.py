@@ -156,4 +156,4 @@ def export_excel(
         is_enabled=is_enabled,
     )
     stamp = now().strftime("%Y%m%d_%H%M%S")
-    return workbook_to_xlsx_bytes(workbook, current_user), f"供应商一览_{stamp}.xlsx"
+    return workbook_to_xlsx_bytes(workbook, current_user), f"供应商列表_{stamp}.xlsx"

@@ -58,7 +58,7 @@ export function procurementObjectSupplierUploadTemplate() {
                                         </select>
                                     </div>
                                 </div>
-                                <p class="ml-6 mt-1.5 text-[11px] text-ink-dim">须已生成该范围采购对象清单。模板按零件号去重；内部号给人看，方便到 ERP 联查。第二页目录只对照，导入不读。检测未通过仍可上传待审行；已审跳过。</p>
+                                <p class="ml-6 mt-1.5 text-[11px] text-ink-dim">须已生成该范围采购对象列表。模板按零件号去重；内部号给人看，方便到 ERP 联查。第二页目录只对照，导入不读。检测未通过仍可上传待审行；已审跳过。</p>
                                 <div id="poSupplierUploadQaBanner"
                                      class="ml-6 mt-2 hidden text-[11px] text-brand-hud bg-brand-hud/10 border border-brand/30 px-3 py-2 leading-relaxed"></div>
                             </div>

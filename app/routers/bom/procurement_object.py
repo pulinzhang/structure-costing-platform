@@ -1,4 +1,4 @@
-"""采购对象清单路由。"""
+"""采购对象列表路由。"""
 
 from urllib.parse import quote
 
@@ -42,7 +42,7 @@ from app.utils.response import ApiResponse
 
 router = APIRouter(
     prefix="/api/bom/procurement-objects",
-    tags=["BOM 采购对象清单 API"],
+    tags=["BOM 采购对象列表 API"],
 )
 
 _service = BomProcurementObjectService()
@@ -330,5 +330,5 @@ def batch_delete(
             f"已删除 {result.deleted_count} 条，" f"跳过已审 {result.skipped_approved_count} 条"
         )
     else:
-        message = f"已删除采购对象清单（{result.deleted_count} 条）"
+        message = f"已删除采购对象列表（{result.deleted_count} 条）"
     return ApiResponse.ok(data=result, message=message)

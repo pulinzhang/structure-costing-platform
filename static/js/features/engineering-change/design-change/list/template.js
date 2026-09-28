@@ -77,7 +77,7 @@ export function engineeringChangeListTemplate() {
                                 重置
                             </button>`,
                         ].join(''),
-                        hintHtml: '点删除会撤销这一整本工程变更，并删掉这条记录。同一文件里的变更一起去掉。',
+                        hintHtml: '点删除会撤销这一整本设计变更，并删掉这条记录。同一文件里的变更一起去掉。',
                     })}
                 </div>
                 ${hudTableHtml({
@@ -115,7 +115,7 @@ export function engineeringChangeListTemplate() {
                                 <th class="px-2 py-2 text-left text-[9px] font-medium tracking-[0.08em] text-ink-faint">上传时间</th>
                                 <th class="px-2 py-2 text-center text-[9px] font-medium tracking-[0.06em] text-ink-faint">状态</th>
                                 <th class="${OPS_TH}" aria-label="操作"></th>`,
-                    empty: { title: '暂无记录', hint: '请先上传工程变更，或调整筛选条件' },
+                    empty: { title: '暂无记录', hint: '请先上传设计变更，或调整筛选条件' },
                     loading: true,
                 })}
             </div>
@@ -223,7 +223,7 @@ function detailDrawerHtml() {
             <div class="px-5 py-3.5 flex items-center justify-between shrink-0 border-b border-app-elevated">
                 <h5 class="text-[11px] font-semibold tracking-wider text-ink-muted flex items-center gap-2.5 uppercase">
                     <span style="width:3px;height:14px;display:inline-block"></span>
-                    工程变更详情
+                    设计变更详情
                 </h5>
                 <button type="button" id="ecDetailCloseBtn"
                         class="${DRAWER_CLOSE}">

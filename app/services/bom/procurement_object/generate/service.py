@@ -1,4 +1,4 @@
-"""采购对象清单 — 从材料清单树生成。
+"""采购对象列表 — 从材料清单树生成。
 
 列入规则在 classify：退化仅 L0（无子件，或全部 L1 无内部号）。L1 有内部号才列入采购对象。
 
@@ -123,7 +123,7 @@ class BomProcurementObjectGenerateService:
             nodes = self.node_repo.list_by_snapshot(db, snapshot.id)
             node_count = len(nodes)
             if not nodes:
-                raise BusinessException("该材料清单没有节点，无法生成采购对象清单")
+                raise BusinessException("该材料清单没有节点，无法生成采购对象列表")
             sop_year, sop_month, _, _ = VehicleModelService().project_sop_period(
                 db, location, vehicle_model
             )
@@ -257,7 +257,7 @@ class BomProcurementObjectGenerateService:
             raise
         except Exception:
             db.rollback()
-            logger.exception("生成采购对象清单失败")
+            logger.exception("生成采购对象列表失败")
             self.log_service.persist_failed(
                 db,
                 current_user=current_user,

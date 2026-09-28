@@ -1,4 +1,4 @@
-"""中标钢厂厚度价格一览表 VO。"""
+"""中标钢厂厚度价格列表 VO。"""
 
 from decimal import Decimal
 

@@ -1,4 +1,4 @@
-"""采购对象清单 — 生成批次日志。"""
+"""采购对象列表 — 生成批次日志。"""
 
 from __future__ import annotations
 

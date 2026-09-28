@@ -223,7 +223,7 @@ class OpsAnalysis:
         out = AnalysisRunResult(
             comparability=resolve_comparability(query.comparison_basis),
             has_data=bool(rows),
-            data_message=(f"采购对象行={len(rows)}" if rows else "当前范围无采购对象清单"),
+            data_message=(f"采购对象行={len(rows)}" if rows else "当前范围无采购对象列表"),
         )
         parts_result: dict[str, AnalysisResultLeafPayload] = {}
         if "summary" in query.analyses:

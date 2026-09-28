@@ -1,5 +1,5 @@
 /**
- * 项目一览 — HUD 分卡筛选 + 抽屉 CRUD，不分页
+ * 项目列表 — HUD 分卡筛选 + 抽屉 CRUD，不分页
  */
 
 import {
@@ -372,7 +372,7 @@ async function exportExcel() {
         if (listState.filterLocation) params.location = listState.filterLocation;
         const { blob, filename } = await HttpClient.download(`${API_BASE}/export`, {
             params,
-            defaultFilename: '项目一览.xlsx',
+            defaultFilename: '项目列表.xlsx',
         });
         const url = window.URL.createObjectURL(blob);
         const anchor = document.createElement('a');

@@ -1,4 +1,4 @@
-# 采购对象清单 Service（`bom/procurement_object/`）
+# 采购对象列表 Service（`bom/procurement_object/`）
 
 从 BOM 生成采购对象、审核、供应商上传、Excel 导出。
 

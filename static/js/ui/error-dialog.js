@@ -4,7 +4,7 @@
  * 引用明细是无框列表，路径能对上侧栏时给出跳转。
  */
 
-import { pageMeta } from '../features/index.js?v=52';
+import { pageMeta } from '../features/index.js?v=54';
 
 const DEFAULT_MESSAGE = '操作失败';
 const COPY_IDLE = '复制错误日志';

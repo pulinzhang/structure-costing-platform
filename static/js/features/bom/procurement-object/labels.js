@@ -1,5 +1,5 @@
 /**
- * 采购对象清单 — 对人展示的文案（内部码仍用 other_leaf / l0_degenerate）。
+ * 采购对象列表 — 对人展示的文案（内部码仍用 other_leaf / l0_degenerate）。
  */
 
 export const KIND_LABELS = {

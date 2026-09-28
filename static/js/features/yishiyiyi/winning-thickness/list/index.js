@@ -1,5 +1,5 @@
 /**
- * 中标钢厂厚度价格一览表 — 页面逻辑
+ * 中标钢厂厚度价格列表 — 页面逻辑
  *
  * 预览为扁平行：每个牌号 × 各厚度阶梯一行；前端按牌号合并展示。
  */
@@ -344,7 +344,7 @@ async function exportExcel() {
         applyFiltersToParams(params, filters);
         const period = fmtPeriod(filters.year, filters.month);
         const defaultName = [
-            '中标钢厂厚度价格一览表',
+            '中标钢厂厚度价格列表',
             period,
             filters.location,
         ].filter(Boolean).join('_') + '.xlsx';

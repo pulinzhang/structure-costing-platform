@@ -76,10 +76,10 @@ export function vehicleModelUploadTemplate() {
                             <ul class="list-disc list-inside text-xs text-ink-dim space-y-1.5">
                                 <li>已有基地+代号则跳过</li>
                                 <li>任一行失败整单不写</li>
-                                <li>改期 / 台数到一览抽屉</li>
+                                <li>改期 / 台数到项目列表抽屉</li>
                             </ul>
                         </div>
-                        <a href="#/vehicle-model-list" class="block text-[11px] text-brand-hud hover:text-brand-active">打开项目一览 →</a>
+                        <a href="#/vehicle-model-list" class="block text-[11px] text-brand-hud hover:text-brand-active">打开项目列表 →</a>
                     </div>
                 </div>
             </div>

@@ -1,4 +1,4 @@
-"""采购对象清单 Service 测试（内存 SQLite）。"""
+"""采购对象列表 Service 测试（内存 SQLite）。"""
 
 from __future__ import annotations
 
@@ -388,7 +388,7 @@ def test_engineering_change_rollback_delete_keeps_header_when_rows_remain(db: Se
 def test_insert_for_new_tree_requires_header(db: Session) -> None:
     _seed_tree(db)
     snapshot = db.query(BomSnapshot).one()
-    with pytest.raises(BusinessException, match="采购对象清单"):
+    with pytest.raises(BusinessException, match="采购对象列表"):
         BomProcurementObjectInsertService().insert_for_new_tree(
             db,
             snapshot_id=snapshot.id,
@@ -525,12 +525,12 @@ def test_export_workbook_has_styled_sheets_without_cover(db: Session) -> None:
         BomProcurementObjectQuery(location="芜湖", vehicle_model="T13J", bom_version="V3"),
         SYSTEM_USER,
     )
-    assert filename.startswith("采购对象清单_芜湖_T13J_V3_")
+    assert filename.startswith("采购对象列表_芜湖_T13J_V3_")
     assert filename.endswith(".xlsx")
     workbook = load_workbook(BytesIO(content))
     assert workbook.sheetnames == ["采购对象", "标准件及胶等", "异常"]
     object_sheet = workbook["采购对象"]
-    assert object_sheet["A1"].value == "采购对象清单 · 采购对象"
+    assert object_sheet["A1"].value == "采购对象列表 · 采购对象"
     assert object_sheet["A4"].value == "对着原件"
     assert object_sheet["A5"].value == "Excel行号"
     assert object_sheet["C5"].value == "零件号"
