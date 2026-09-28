@@ -77,6 +77,12 @@ class SystemConfigUpdateDTO(BaseModel):
         le=100000,
         description="摆剪件加到钢价上的金额（元/吨）",
     )
+    login_lock_minutes: int = Field(
+        ...,
+        ge=1,
+        le=1440,
+        description="连续登录失败 3 次后的锁定分钟数（存在辅助库）",
+    )
 
     @field_validator("steel_density", mode="before")
     @classmethod

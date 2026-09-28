@@ -226,6 +226,34 @@ function clearLoginError() {
     el.classList.add('hidden');
 }
 
+function bytesToBase64(bytes) {
+    let raw = '';
+    bytes.forEach((value) => {
+        raw += String.fromCharCode(value);
+    });
+    return btoa(raw);
+}
+
+async function encryptPassword(publicKeySpki, password) {
+    if (!window.crypto?.subtle) {
+        throw new Error('这个地址不能加密密码。请改用 127.0.0.1 打开登录页，或使用 https');
+    }
+    const binary = Uint8Array.from(atob(publicKeySpki), (char) => char.charCodeAt(0));
+    const key = await window.crypto.subtle.importKey(
+        'spki',
+        binary,
+        { name: 'RSA-OAEP', hash: 'SHA-256' },
+        false,
+        ['encrypt'],
+    );
+    const cipher = await window.crypto.subtle.encrypt(
+        { name: 'RSA-OAEP' },
+        key,
+        new TextEncoder().encode(password),
+    );
+    return bytesToBase64(new Uint8Array(cipher));
+}
+
 function setButtonLoading(btn, isLoading) {
     if (!btn) return;
     btn.disabled = isLoading;
@@ -274,7 +302,14 @@ export const LoginPage = {
         setButtonLoading(btn, true);
 
         try {
-            const res = await HttpClient.post('/api/auth/login', { username, password }, { skipAuth: true });
+            const keyRes = await HttpClient.get('/api/auth/login-key', { skipAuth: true, skipToast: true });
+            const key = keyRes.data || {};
+            const passwordCipher = await encryptPassword(key.public_key_spki, password);
+            const res = await HttpClient.post('/api/auth/login', {
+                username,
+                key_id: key.key_id,
+                password_cipher: passwordCipher,
+            }, { skipAuth: true, skipToast: true });
             const payload = res.data || {};
             const user = payload.user || {};
 

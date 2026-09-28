@@ -10,6 +10,7 @@ from sqlalchemy.orm import Session
 from app.common.audit import audit_create, audit_update
 from app.common.money import Q2, Q4, Q6, quantize_money
 from app.config import settings as app_settings
+from app.repositories.settings.login_security_repository import LoginSecurityRepository
 from app.repositories.settings.system.system_config_repository import SystemConfigRepository
 from app.schemas.dto.settings_dto import (
     SystemConfigPatch,
@@ -75,6 +76,7 @@ class SettingsService:
 
     def __init__(self) -> None:
         self.repository = SystemConfigRepository()
+        self.login_security_repo = LoginSecurityRepository()
 
     @staticmethod
     def _display_app_name(raw: str | None) -> str:
@@ -83,7 +85,8 @@ class SettingsService:
             return DEFAULT_APP_NAME
         return name
 
-    def get_config(self, db: Session) -> ConfigVO:
+    def get_config(self, db: Session, aux_db: Session | None = None) -> ConfigVO:
+        login_lock_minutes = self._login_lock_minutes(aux_db)
         row = self.repository.get_singleton(db)
         if row is None:
             return ConfigVO(
@@ -103,6 +106,7 @@ class SettingsService:
                 finished_scrap_rate=DEFAULT_FINISHED_SCRAP_RATE,
                 finished_pretax_profit_rate=DEFAULT_FINISHED_PRETAX_PROFIT_RATE,
                 swing_shear_process_fee_per_ton=DEFAULT_SWING_SHEAR_PROCESS_FEE_PER_TON,
+                login_lock_minutes=login_lock_minutes,
             )
         return ConfigVO(
             app_name=SettingsService._display_app_name(row.app_name),
@@ -141,14 +145,24 @@ class SettingsService:
                 getattr(row, "swing_shear_process_fee_per_ton", None),
                 DEFAULT_SWING_SHEAR_PROCESS_FEE_PER_TON,
             ),
+            login_lock_minutes=login_lock_minutes,
         )
+
+    def _login_lock_minutes(self, aux_db: Session | None) -> int:
+        if aux_db is None:
+            return 15
+        return self.login_security_repo.get_lock_minutes(aux_db)
 
     def update_config(
         self,
         db: Session,
+        aux_db: Session,
         dto: SystemConfigUpdateDTO,
         current_user: UserVO,
     ) -> ConfigVO:
+        updated_by = audit_update(current_user)["updated_by"] or ""
+        self.login_security_repo.save_lock_minutes(aux_db, dto.login_lock_minutes, updated_by)
+        aux_db.commit()
         app_name = SettingsService._display_app_name(dto.app_name)
         company_name = dto.company_name
         remarks = dto.procurement_agreement_remarks
@@ -206,7 +220,7 @@ class SettingsService:
                 ),
             )
         db.commit()
-        return self.get_config(db)
+        return self.get_config(db, aux_db)
 
     def get_steel_density(self, db: Session) -> Decimal:
         """核价用：读系统配置密度，无效或缺失则回退 7.85。"""

@@ -99,10 +99,13 @@ class UserQueryDTO(BaseModel):
 
 
 class UserLoginDTO(BaseModel):
-    """登录请求"""
+    """登录请求。密码是一次性公钥加密后的 Base64，不再接收明文。"""
 
     username: str = Field(..., min_length=1, max_length=50, description="登录账号")
-    password: str = Field(..., min_length=1, max_length=64, description="登录密码")
+    key_id: str = Field(..., min_length=16, max_length=64, description="一次性钥匙编号")
+    password_cipher: str = Field(
+        ..., min_length=1, max_length=2048, description="RSA-OAEP 密文 Base64"
+    )
 
 
 @dataclass(slots=True)

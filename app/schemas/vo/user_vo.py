@@ -39,6 +39,13 @@ class LoginVO(BaseModel):
     user: UserVO
 
 
+class LoginKeyVO(BaseModel):
+    """一次性登录公钥。私钥不下发。"""
+
+    key_id: str
+    public_key_spki: str
+
+
 class AvatarUploadVO(BaseModel):
     """头像上传结果：相对路径 URL，如 /uploads/avatars/xxx.png"""
 

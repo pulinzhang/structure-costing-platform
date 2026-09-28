@@ -122,6 +122,7 @@ def update_password(
     """管理员重置密码：改密后作废该用户全部会话，强制重新登录"""
     user = _user_service.update_password(db, user_id, dto, current_user=current_user)
     _auth_service.revoke_all_sessions(token_db, user.id)
+    _auth_service.clear_login_lock(token_db, user.id)
     return ApiResponse.updated(data=user, message="密码已更新")
 
 
@@ -138,4 +139,5 @@ def delete_user(
     """删除用户并作废其登录会话"""
     _user_service.delete(db, user_id, current_user=current_user)
     _auth_service.revoke_all_sessions(token_db, user_id)
+    _auth_service.clear_login_lock(token_db, user_id)
     return ApiResponse.deleted(message="删除成功")

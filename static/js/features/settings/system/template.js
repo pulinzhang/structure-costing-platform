@@ -129,6 +129,18 @@ export function settingsTemplate() {
         max: '100',
         placeholder: '2',
     });
+    const loginLockField = suffixInput({
+        id: 'settingsLoginLockMinutes',
+        label: '登录锁定',
+        tip: '连续输错 3 次后锁定该账号；只影响下一次锁定',
+        unit: '分钟',
+        step: '1',
+        min: '1',
+        max: '1440',
+        placeholder: '15',
+        helper: '默认 15 分钟。改完后保存才生效',
+        inputmode: 'numeric',
+    });
     const swingShearFeeField = suffixInput({
         id: 'settingsSwingShearProcessFeePerTon',
         label: '摆剪钢价加价',
@@ -159,6 +171,9 @@ export function settingsTemplate() {
                             <div class="text-[10px] text-ink-faint tracking-[0.06em] mb-1">当前版本</div>
                             <span id="settingsVersionTag"
                                   class="inline-flex items-center h-6 px-2 text-[11px] tracking-[0.04em] text-ink-muted bg-app-deep border border-line rounded-sm">—</span>
+                        </div>
+                        <div class="md:col-span-4">
+                            ${loginLockField}
                         </div>
                     </div>
                 </section>
