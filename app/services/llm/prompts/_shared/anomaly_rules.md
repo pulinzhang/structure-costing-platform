@@ -55,7 +55,8 @@
 | 用户口语 | 实际数据 | 异常线索 JSON | 核对入口（正文可写） |
 |---------|---------|--------------|-------------------|
 | 加减价 / 厚度加减 / 宽度加价 | 加减价政策列表（`steel_price_policy`） | `policy_anomalies.items` | 加减价政策列表 |
-| 中标价 / 基准价 | 基准价格列表（`steel_base_price`） | `base_price_anomalies.items` | 基准价格列表 |
+| 中标价 / 基准价有无异常 | 基准价格列表（`steel_base_price`） | `base_price_anomalies.items` | 基准价格列表 |
+| 基准价环比相差 / 超多少 | 基准价格列表（`steel_base_price`） | `base_price_month_move_over.table`（系统按年、月、基地、牌号原样接上，模型不得重排） | 基准价格列表 |
 
 - 用户问加减价有无异常、传错、跳变时：按 `comparison_advice_rules.md`「加减价探查类」出表；**正文沿用用户口语「加减价」**，不要刻意改成「加减价政策」除非需要指明菜单页。
 - 禁止把加减价异常写成基准价异常，或混用「中标厚度一览」。

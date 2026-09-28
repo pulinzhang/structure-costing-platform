@@ -6,6 +6,7 @@ import json
 from dataclasses import dataclass
 
 from app.schemas.llm.analysis_snapshot import AnalysisSnapshot
+from app.services.llm.analysis.steel.base_price import apply_base_price_month_move_order
 from app.services.llm.catalog.field_labels import (
     AGGREGATE_FIELD_LABELS,
     L0_FIELD_LABELS,
@@ -118,8 +119,11 @@ class LlmReportGenerator:
             max_tokens=prompt.max_tokens,
         )
         combined_prompt = f"{system}\n\n{user}"
+        markdown = sanitize_report_markdown(result.content)
+        if isinstance(snapshot.result, dict):
+            markdown = apply_base_price_month_move_order(markdown, snapshot.result)
         return GeneratedReport(
-            markdown_content=sanitize_report_markdown(result.content),
+            markdown_content=markdown,
             prompt_version=prompt.prompt_version,
             prompt_hash=combined_hash,
             llm_model=result.model,
@@ -206,6 +210,20 @@ class LlmReportGenerator:
                 snapshot=snapshot,
                 error_hint=error_hint,
             )
+
+        if isinstance(snapshot.result, dict):
+            pinned = apply_base_price_month_move_order("", snapshot.result)
+            if snapshot.result.get("kind") == "base_price_month_move_over" and pinned:
+                question = snapshot.query.user_question
+                return "\n".join(
+                    [
+                        f"## {question}",
+                        "",
+                        f"模型暂不可用（{error_hint}），以下按年、月、基地、牌号列出：",
+                        "",
+                        pinned,
+                    ]
+                )
 
         summary = snapshot.summary or {}
         question = snapshot.query.user_question

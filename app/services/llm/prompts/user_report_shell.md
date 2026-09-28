@@ -23,6 +23,7 @@
 2h. **总成核价 / 冲压核价概况与趋势**：必须引用 `period_missing_supplier`。有外发未指定供应商时**必须列表零件号**提醒；无则写「未见外发缺供应商」。
 2i. **工程变更设变件供应商**：引用 `ec_procurement_supplier` 四类；缺供应商必列零件号。
 2j. **工程变更变更前/后单价比较**：按 `comparison_advice_rules`「工程变更单价比较类」；只引用 `comparison.items` / `jump_up_items`，禁止编造差额。
+2k. **基准价环比相差 / 超多少**：`result.kind` 为 `base_price_month_move_over` 时，只写有几条。不要自己画表，不要按变动大小举例。清单已按年、月、基地、牌号排好，年月是一列。钢厂列是「本月钢厂」，不要写成「这次钢厂」。价格列是「本月基准价（元/吨）」，不要写成「这次基准价」。系统会把 `table` 原样接在回答后面。禁止改用 `base_price_anomalies`。
 3. 数字只能来自上述 JSON；禁止编造。
 3. 金额单位是 **元**，禁止写成万元，禁止 ÷10000。
 4. **全文中文白话**；禁止英文字段名、代码术语；遵守 `_shared/chinese_style_rules.md`。

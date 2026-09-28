@@ -357,11 +357,16 @@ class DomainAnomaliesPayload(TypedDict, total=False):
     kind: Literal[
         "policy_anomalies",
         "base_price_anomalies",
+        "base_price_month_move_over",
         "annual_price_anomalies",
         "standard_part_anomalies",
     ]
     items: Sequence[object]
     top_n: int
+    count: int
+    note: str
+    lines: list[str]
+    table: str
     threshold: str
     conversion_factor_min: str
     subject: str

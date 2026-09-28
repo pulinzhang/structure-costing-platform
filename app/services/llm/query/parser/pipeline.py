@@ -8,7 +8,7 @@ from app.common.part_number import extract_part_number_from_text, sanitize_part_
 from app.common.timezone import now
 from app.common.tonnage import extract_tonnage_from_text
 from app.repositories.llm.cost_analysis.repository import L0CostAnalysisRepository
-from app.schemas.llm.analysis_query import AnalysisQuery
+from app.schemas.llm.analysis_query import AnalysisQuery, TimeRange
 from app.schemas.llm.parser_draft import ParserDraft
 from app.services.llm.client.openai_compatible import LlmClientError
 from app.services.llm.comparison_basis import default_comparison_basis
@@ -20,6 +20,7 @@ from app.services.llm.query.intent_router import (
     detect_query_mode,
 )
 from app.services.llm.query.parser.analyses import resolve_analyses
+from app.services.llm.query.parser.base_price_move import month_move_over_amount
 from app.services.llm.query.parser.carry import (
     apply_carried_filters,
     resolve_carried_subject,
@@ -334,6 +335,13 @@ class QueryParser:
                 filters["policy_type"] = "THICKNESS"
             elif "宽度" in question and "加价" in question:
                 filters["policy_type"] = "WIDTH"
+        amount = month_move_over_amount(question)
+        if amount is not None and subject == "steel_base_price":
+            filters["month_move_over"] = amount
+            if not question_has_explicit_time(question):
+                time_range = TimeRange(start="2000-01", end="2099-12")
+                parser_fallback_level = 1
+                parser_data_message = "没有写月份，按库里全部基准价看单价加加工费的环比"
 
         return AnalysisQuery(
             time_range=time_range,
