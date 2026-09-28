@@ -28,6 +28,7 @@ class OperationLogRepository:
         db: Session,
         *,
         username: str | None = None,
+        client_ip: str | None = None,
         permission_code: str | None = None,
         permission_codes: list[str] | None = None,
         menu_labels: list[str] | None = None,
@@ -44,6 +45,7 @@ class OperationLogRepository:
         q = self._filtered_query(
             db,
             username=username,
+            client_ip=client_ip,
             permission_code=permission_code,
             permission_codes=permission_codes,
             menu_labels=menu_labels,
@@ -64,6 +66,7 @@ class OperationLogRepository:
         db: Session,
         *,
         username: str | None = None,
+        client_ip: str | None = None,
         permission_code: str | None = None,
         permission_codes: list[str] | None = None,
         menu_labels: list[str] | None = None,
@@ -79,6 +82,7 @@ class OperationLogRepository:
         q = self._filtered_query(
             db,
             username=username,
+            client_ip=client_ip,
             permission_code=permission_code,
             permission_codes=permission_codes,
             menu_labels=menu_labels,
@@ -143,6 +147,7 @@ class OperationLogRepository:
         db: Session,
         *,
         username: str | None,
+        client_ip: str | None,
         permission_code: str | None,
         permission_codes: list[str] | None,
         menu_labels: list[str] | None,
@@ -163,6 +168,8 @@ class OperationLogRepository:
                     OperationLog.operator_name.like(keyword),
                 )
             )
+        if client_ip and client_ip.strip():
+            q = q.filter(OperationLog.client_ip.like(f"%{client_ip.strip()}%"))
         if login_only:
             q = q.filter(
                 or_(

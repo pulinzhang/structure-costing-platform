@@ -88,7 +88,7 @@ import { pageConfig as supplierUploadPage } from './features/masterdata/supplier
 import { pageConfig as supplierListPage } from './features/masterdata/supplier/list/index.js?v=29';
 import { pageConfig as settingsPage }       from './features/settings/system/index.js?v=29';
 import { pageConfig as settingsUsersPage }  from './features/settings/users/index.js?v=30';
-import { pageConfig as settingsLogsPage }   from './features/settings/logs/index.js?v=25';
+import { pageConfig as settingsLogsPage }   from './features/settings/logs/index.js?v=26';
 import { pageConfig as settingsProfilePage } from './features/settings/profile/index.js?v=16';
 
 // 未登录禁止进入主应用：不渲染业务页，避免请求 dashboard 等后端

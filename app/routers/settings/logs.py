@@ -45,6 +45,7 @@ def list_operation_logs(
 @router.get("/export-download")
 def export_operation_logs(
     username: str | None = Query(None),
+    client_ip: str | None = Query(None),
     menu_code: str | None = Query(None),
     permission_code: str | None = Query(None),
     module: str | None = Query(None),
@@ -60,6 +61,7 @@ def export_operation_logs(
     content, filename = _service.export(
         db,
         username=username,
+        client_ip=client_ip,
         menu_code=menu_code,
         permission_code=permission_code,
         module=module,

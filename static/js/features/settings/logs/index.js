@@ -2,7 +2,7 @@
  * 操作日志 — 对接 /api/settings/logs，筛选项来自权限目录
  */
 
-import { logsTemplate, renderTableRows } from './template.js?v=20';
+import { logsTemplate, renderTableRows } from './template.js?v=21';
 import {
     DEFAULT_PAGE_SIZE,
     bindPagination,
@@ -17,6 +17,7 @@ const logsState = {
     pageSize: DEFAULT_PAGE_SIZE,
     totalPages: 1,
     username: '',
+    clientIp: '',
     menuCode: '',
     permissionCode: '',
     success: '',
@@ -51,6 +52,7 @@ function init() {
 function collectFilters() {
     return {
         username: (document.getElementById('filterUsername')?.value || '').trim(),
+        clientIp: (document.getElementById('filterClientIp')?.value || '').trim(),
         menuCode: document.getElementById('filterMenu')?.value || '',
         permissionCode: document.getElementById('filterPermission')?.value || '',
         success: document.getElementById('filterSuccess')?.value || '',
@@ -62,6 +64,7 @@ function collectFilters() {
 function applyFiltersToState() {
     const filters = collectFilters();
     logsState.username = filters.username;
+    logsState.clientIp = filters.clientIp;
     logsState.menuCode = filters.menuCode;
     logsState.permissionCode = filters.permissionCode;
     logsState.success = filters.success;
@@ -75,6 +78,7 @@ function buildQueryParams(page) {
         size: logsState.pageSize,
     };
     if (logsState.username) params.username = logsState.username;
+    if (logsState.clientIp) params.client_ip = logsState.clientIp;
     if (logsState.menuCode) params.menu_code = logsState.menuCode;
     if (logsState.permissionCode) params.permission_code = logsState.permissionCode;
     if (logsState.success !== '') params.success = logsState.success;
@@ -221,7 +225,7 @@ function bindEvents() {
     });
 
     document.getElementById('btnResetFilter')?.addEventListener('click', () => {
-        ['filterUsername', 'filterMenu', 'filterPermission', 'filterSuccess', 'filterCreatedFrom', 'filterCreatedTo']
+        ['filterUsername', 'filterClientIp', 'filterMenu', 'filterPermission', 'filterSuccess', 'filterCreatedFrom', 'filterCreatedTo']
             .forEach((id) => {
                 const el = document.getElementById(id);
                 if (el) el.value = '';
@@ -231,11 +235,13 @@ function bindEvents() {
         loadData(1);
     });
 
-    document.getElementById('filterUsername')?.addEventListener('keydown', (event) => {
-        if (event.key === 'Enter') {
-            applyFiltersToState();
-            loadData(1);
-        }
+    ['filterUsername', 'filterClientIp'].forEach((id) => {
+        document.getElementById(id)?.addEventListener('keydown', (event) => {
+            if (event.key === 'Enter') {
+                applyFiltersToState();
+                loadData(1);
+            }
+        });
     });
 
     document.getElementById('filterMenu')?.addEventListener('change', () => {

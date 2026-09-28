@@ -33,6 +33,7 @@ class OperationLogQuery(BaseModel):
     """操作日志分页查询。"""
 
     username: str | None = None
+    client_ip: str | None = None
     menu_code: str | None = None
     permission_code: str | None = None
     module: str | None = None
