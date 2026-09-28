@@ -7,7 +7,7 @@ import { DRAWER_CLOSE, DRAWER_SHELL, DRAWER_BACKDROP } from '../../../../ui/clas
 import { opsIconButtonHtml } from '../../../../ui/hud-table.js?v=2';
 import {
     weldingProcessBreakdownGenerateTemplate,
-} from './template.js?v=14';
+} from './template.js?v=15';
 import {
     DEFAULT_PAGE_SIZE,
     bindPagination,
@@ -500,7 +500,7 @@ async function startGenerate() {
     const vehicleModel = genState.vehicleModel || val('wpbGenModel');
     const bomVersion = genState.bomVersion || val('wpbGenVersion');
     if (!location || !vehicleModel || !bomVersion) {
-        showToast('请从级联下拉选定基地、项目、版本', 'warning');
+        showToast('先选基地、项目、版本', 'warning');
         return;
     }
     if (!genState.stats.ready) {

@@ -7,7 +7,7 @@ import { DRAWER_CLOSE, DRAWER_SHELL, DRAWER_BACKDROP } from '../../../../ui/clas
 import { opsIconButtonHtml } from '../../../../ui/hud-table.js?v=2';
 import {
     processFeeCalcTemplate,
-} from './template.js?v=33';
+} from './template.js?v=34';
 import {
     DEFAULT_PAGE_SIZE,
     bindPagination,
@@ -29,7 +29,7 @@ const DUPLICATE_SCOPE_CALC_MESSAGE = '当前年度/基地/项目正在计算中�
 /** 操作页固定要项目；后端允许「项目或工厂」以便引擎按厂补算。 */
 const SCOPE_REQUIRED_MESSAGE = '须选定年度、基地、项目。';
 const READY_FALLBACK =
-    '提示：级联为年度 → 基地 → 项目 → 版本。计算须选定年度、基地、项目，覆盖该车各冲压工厂。零件按冲压件有效期与该年有交集的才算，不是按项目档案期。并确保存在冲次单价。';
+    '提示：先选年度、基地、项目（版本可不选）。一次算出本项目各冲压工厂的加工费。只算这一年还在用的零件，不按项目档案的起止时间。冲次单价必须有。';
 
 const STATUS_META = {
     processing: { label: '计算中', className: 'text-ink-muted' },

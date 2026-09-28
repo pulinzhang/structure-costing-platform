@@ -3,7 +3,7 @@
  * 基准价格列表页面逻辑
  */
 
-import { basePriceDownloadTemplate } from './template.js?v=45';
+import { basePriceDownloadTemplate } from './template.js?v=46';
 import { bindMoreMenu } from '../../../../ui/more-menu.js?v=6';
 import {
     DEFAULT_PREVIEW_PAGE_SIZE,
@@ -15,7 +15,7 @@ import { setSearchBusy } from '../../../../ui/search-busy.js?v=4';
 import {
     requireExportYearMonth,
     selectDefaultYear,
-} from '../../../common/period-ui.js?v=6';
+} from '../../../common/period-ui.js?v=7';
 
 /** @type {{ setOpen: (isOpen: boolean) => void, close: () => void, unbind: () => void } | null} */
 let moreMenu = null;

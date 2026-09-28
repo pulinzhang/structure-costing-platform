@@ -59,7 +59,7 @@
       <div class="hub-cards">
         <a class="hub-card" href="help.html">
           <h2>帮助</h2>
-          <p>登录、侧栏、冲压 / 焊接 / 一事一议 / 核价、采购价格协议、文件溯源、工程变更（设计变更、材料变更）、主数据、设置、<strong>AI 助理</strong>、Excel 导出、后端接口。</p>
+          <p>登录、侧栏、冲压 / 焊接 / 一事一议 / 核价、采购价格协议、文件溯源、工程变更（设计变更、材料变更）、主数据、设置、<strong>AI 助理</strong>、Excel 导出。</p>
         </a>
         <a class="hub-card" href="knowledge.html">
           <h2>知识库</h2>
@@ -91,6 +91,42 @@
           三块分开看。
           导出 PDF：打开 <a href="print-all.html">整本打印</a>
           （合并帮助 + 知识库 + 样例后一次另存）。
+        </div>
+      </section>
+
+      <section id="api-docs">
+        <h2>后端接口</h2>
+        <p class="lead">浏览器打开接口文档，用下面的账号登录。这套账号只用于文档页，不能登录核价系统。</p>
+        <ul class="spec-list">
+          <li>
+            <strong>地址</strong>
+            <span>与系统同一台服务器，路径 <a href="/docs" target="_blank" rel="noopener noreferrer">/docs</a>。</span>
+          </li>
+          <li>
+            <strong>用户名</strong>
+            <span>admin</span>
+          </li>
+          <li>
+            <strong>密码</strong>
+            <span>490781893457</span>
+          </li>
+        </ul>
+        <ol class="steps">
+          <li>
+            <strong>打开文档</strong>
+            在浏览器地址栏输入系统地址，末尾加上 /docs。弹出登录框后填写上面的用户名和密码。
+          </li>
+          <li>
+            <strong>查找接口</strong>
+            左侧菜单与系统功能菜单一致。搜索框可按路径或说明过滤。
+          </li>
+          <li>
+            <strong>试调</strong>
+            打开一条接口，点「测试请求」，填好参数后发送。业务接口还要带核价系统登录后的令牌，请求头写 Authorization: Bearer 令牌，或 X-Token。文档登录不能代替系统登录。
+          </li>
+        </ol>
+        <div class="callout">
+          核价系统仍用登录页上的账号。这里的密码只打开 /docs。
         </div>
       </section>
 

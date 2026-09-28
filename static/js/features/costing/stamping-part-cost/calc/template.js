@@ -63,7 +63,7 @@ export function partCostCalcTemplate() {
 
                 <div class="flex items-center gap-3">
                     <span id="reCalcNotice" class="text-[9px] text-ink-dim">
-                        按零件牌号+料厚取钢材联动价（多钢厂取最低）；再次计算覆盖未审核，已审核跳过
+                        钢材价按零件的牌号和料厚取，好几家钢厂时用最低的。再算一次时，没审核的会重写，已经审核的不动。
                     </span>
                     <button id="startCalcBtn"
                             class="${BTN_ABORT}">
@@ -89,7 +89,7 @@ export function partCostCalcTemplate() {
             </div>
 
             <div id="dataReadyErrorBanner" class="hidden text-[10px] text-warn bg-app-hud px-2.5 py-1.5 border-l-2 border-warn/40">
-                提示：须选定年度、月份、基地、项目。计算覆盖该车各冲压工厂。并确保钢材联动价、废料月度价、加工费与匹配零件均已就绪。模具费、检具费缺档按 0 计入。
+                提示：先选年度、月份、基地、项目，一次算出本项目各冲压工厂的零件价。匹配零件、钢材联动价、废料月度价、加工费必须有数；模具费、检具费没有就按 0。
             </div>
 
             <div class="pt-2">

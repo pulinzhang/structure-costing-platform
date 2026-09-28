@@ -68,7 +68,7 @@ export function policyDownloadTemplate() {
                     <div class="bg-app-deep border border-line-subtle rounded p-3">
                         <p class="text-[11px] text-ink-muted leading-5">
                             <span class="text-ink-muted font-medium">说明：</span>
-                            打开默认当年；年度、月份、钢厂、钢种大类、牌号为可选筛（一事一议按月定价）。导出须选定年度和月份。删除须选择年度与月份，钢厂可选（不选则删除该年月全部钢厂数据）。
+                            打开默认当年。年度、月份、钢厂、钢种大类、牌号都可以不选。导出必须先选年度和月份。删除必须先选年度和月份；钢厂可不选，不选就删掉该年该月全部钢厂。
                         </p>
                     </div>
                 </div>
@@ -121,7 +121,7 @@ export function policyDownloadTemplate() {
                                 <tbody id="policyPreviewBody" class="divide-y divide-line-subtle">
                                     <tr>
                                         <td colspan="20" class="px-4 py-8 text-center text-ink-dim text-xs">
-                                            当前筛选下暂无数据；打开默认当年，筛选项只作收窄
+                                            当前筛选下暂无数据；打开默认当年，筛选项用来缩小范围
                                         </td>
                                     </tr>
                                 </tbody>

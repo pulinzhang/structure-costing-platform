@@ -14,11 +14,11 @@ import { setSearchBusy } from '../../../../ui/search-busy.js?v=4';
 import {
     winningThicknessDownloadTemplate,
     renderWinningThicknessRows,
-} from './template.js?v=24';
+} from './template.js?v=25';
 import {
     requireExportYearMonth,
     selectDefaultYear,
-} from '../../../common/period-ui.js?v=6';
+} from '../../../common/period-ui.js?v=7';
 
 const winningThicknessState = {
     records: [],

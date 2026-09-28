@@ -164,7 +164,7 @@ export function annualPartPriceUploadTemplate() {
                             <h6 class="text-[10px] uppercase tracking-wider text-ink-dim mb-2">写入规则</h6>
                             <ul class="list-disc list-inside text-xs text-ink-dim space-y-1.5">
                                 <li>下载模板须先选基地、项目、年度，且该基地该项目已有材料清单</li>
-                                <li>唯一键 = 基地 + 年度 + 零件号；同键则更新，否则新增；仅 .xlsx</li>
+                                <li>同一条按基地、年度、零件号区分。一样的就更新，没有的就新增。只接受 .xlsx</li>
                                 <li>列表导出含基地/年份/审核列；导入只读模板同列（基地/年度以本页选择为准）</li>
                                 <li>已审核记录导入不会覆盖，所以会出现「更新 0 条」；改价须先在列表反审核</li>
                             </ul>

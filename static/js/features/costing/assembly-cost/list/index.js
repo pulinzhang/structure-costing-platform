@@ -4,7 +4,7 @@ import {
     renderLacRows,
     updateLacHud,
     updateLacTableHead,
-} from './template.js?v=54';
+} from './template.js?v=55';
 import {
     DEFAULT_PAGE_SIZE,
     bindPagination,
@@ -127,8 +127,8 @@ function syncViewButtons() {
     }
     if (exportBtn) {
         exportBtn.title = isProcurement
-            ? '导出零件成本（成本一览 + 材料明细 + 焊接费）。须选定年/月/基地/项目；版本可不选。'
-            : '导出成品核价（一览 + 材料明细 + 焊接费 + 间接费用；金额为系统快照）';
+            ? '导出零件成本（成本一览、材料明细、焊接费）。先选年、月、基地、项目；版本可不选。'
+            : '导出总成核价（一览、材料明细、焊接费、间接费用）。金额是当时算好存下来的。';
     }
     if (bundleBtn && listState.canExport) {
         bundleBtn.classList.toggle('hidden', isProcurement);

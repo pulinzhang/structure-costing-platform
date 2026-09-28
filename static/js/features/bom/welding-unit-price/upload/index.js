@@ -4,7 +4,7 @@ import { HUD_LED } from '../../../../ui/classes.js?v=13';
  * 同步导入：基地 + 年度必选，仅 .xlsx
  */
 
-import { weldingUnitPriceUploadTemplate } from './template.js?v=16';
+import { weldingUnitPriceUploadTemplate } from './template.js?v=17';
 import { bindSyncUploadProgress } from '../../../../ui/sync-upload-progress.js?v=3';
 
 const API_BASE = '/api/bom/welding-unit-price';

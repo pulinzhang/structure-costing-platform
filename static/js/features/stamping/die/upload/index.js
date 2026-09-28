@@ -1,4 +1,4 @@
-import { dieUploadTemplate } from './template.js?v=20';
+import { dieUploadTemplate } from './template.js?v=21';
 import { uploadSubmitLabelHtml } from '../../../../ui/upload-actions.js?v=2';
 import {
     setDropzoneDragActive,

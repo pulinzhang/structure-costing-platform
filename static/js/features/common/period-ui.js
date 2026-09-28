@@ -231,7 +231,7 @@ export async function loadProjectPeriod(location, vehicleModel) {
 
 /** 一事一议列表：年度筛默认当年（可改 / 可清空）。 */
 export const EXPORT_YEAR_MONTH_REQUIRED_MESSAGE =
-    '导出须选定年度和月份（一事一议按月定价）';
+    '导出要先选年度和月份。';
 
 export function selectDefaultYear(selectId) {
     const select = document.getElementById(selectId);

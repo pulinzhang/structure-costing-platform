@@ -77,13 +77,13 @@ export function assemblyCostListTemplate() {
                             <div class="flex items-center gap-1.5 flex-wrap justify-end">
                             <button id="lacExportBtn" type="button"
                                     class="${BTN_GHOST}"
-                                    title="导出成品核价（一览 + 材料明细 + 焊接费 + 间接费用；金额为系统快照）">
+                                    title="导出总成核价（一览、材料明细、焊接费、间接费用）。金额是当时算好存下来的。">
                                 ${window.svgIcon('download', 'w-3 h-3')}
                                 <span id="lacExportBtnLabel">总成核价</span>
                             </button>
                             <button id="lacExportBundleBtn" type="button"
                                     class="${BTN_GHOST}"
-                                    title="导出月度核对：成品核价（总成）+ 冲压零件核价 + 焊接费 + 加工费 + 钢材联动等。须选定年/月/基地/项目；版本可不选（空=该月全部）。">
+                                    title="导出月度核对：总成价、冲压零件价、焊接费、加工费、钢材联动价等放在一个文件里。先选年、月、基地、项目；版本可不选，不选就是该月全部。">
                                 ${window.svgIcon('download', 'w-3 h-3')}
                                 月度核对
                             </button>
@@ -115,7 +115,7 @@ export function assemblyCostListTemplate() {
                                 重置
                             </button>`,
                         ].join(''),
-                        hintHtml: '批量删除 / 审核 / 反审核 / 零件成本 / 月度核对须选定年度、月份、基地、项目；版本可不选（同月可有多个工程变更字）。反审核后可重新计算覆盖。',
+                        hintHtml: '批量删除、审核、反审核、零件成本、月度核对，都要先选年度、月份、基地、项目。版本可不选（同一个月可能有多个工程变更字）。反审核之后才能再算并重写。',
                     })}
                 </div>
 

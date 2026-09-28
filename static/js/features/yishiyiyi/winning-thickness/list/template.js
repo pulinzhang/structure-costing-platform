@@ -51,9 +51,7 @@ export function winningThicknessDownloadTemplate() {
                     <div class="bg-app-deep border border-line-subtle rounded p-3">
                         <p class="text-[11px] text-ink-muted leading-5">
                             <span class="text-ink-muted font-medium">说明：</span>
-                            打开默认当年；年度、月份、基地等为可选筛（一事一议按月定价）。
-                            以中标基价为据，按档案大类匹配 CATEGORY 厚度政策；
-                            每个牌号展开全部厚度阶梯（一行一区间），最终价 = 基准价 + 厚度加减价 + 加工费。导出须选定年度和月份。
+                            打开默认当年。年度、月份、基地都可以不选。按中标基价，用牌号分类里的钢种去对厚度加减价。每个牌号列出全部厚度区间，一行一个区间。最终价 = 基准价 + 厚度加减价 + 加工费。导出必须先选年度和月份。
                         </p>
                     </div>
                 </div>
@@ -88,7 +86,7 @@ export function winningThicknessDownloadTemplate() {
                                 <tbody id="winningThicknessPreviewBody" class="divide-y divide-line-subtle">
                                     <tr>
                                         <td colspan="10" class="px-4 py-8 text-center text-ink-dim text-xs">
-                                            当前筛选下暂无数据；打开默认当年，筛选项只作收窄
+                                            当前筛选下暂无数据；打开默认当年，筛选项用来缩小范围
                                         </td>
                                     </tr>
                                 </tbody>

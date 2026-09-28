@@ -9,7 +9,7 @@ import {
     renderDetailContent,
     updatePartsHudScope,
     updatePartsHud,
-} from './template.js?v=62';
+} from './template.js?v=63';
 import { can } from '../../../../core/permissions.js?v=8';
 import { hudRowHtml, opsIconButtonHtml } from '../../../../ui/hud-table.js?v=2';
 import { bindMoreMenu } from '../../../../ui/more-menu.js?v=6';

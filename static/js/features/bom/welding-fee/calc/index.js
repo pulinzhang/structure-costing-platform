@@ -7,7 +7,7 @@ import { DRAWER_CLOSE, DRAWER_SHELL, DRAWER_BACKDROP } from '../../../../ui/clas
 import { opsIconButtonHtml } from '../../../../ui/hud-table.js?v=2';
 import {
     l0WeldingFeeCalcTemplate,
-} from './template.js?v=20';
+} from './template.js?v=21';
 import {
     DEFAULT_PAGE_SIZE,
     bindPagination,
@@ -29,7 +29,7 @@ const POLL_INTERVAL_MS = 1500;
 const DUPLICATE_SCOPE_CALC_MESSAGE = '当前范围正在计算中，请勿重复提交。';
 const SCOPE_REQUIRED_MESSAGE = '须选定年度、基地、项目。';
 const READY_FALLBACK =
-    '提示：须选定年度、基地、项目；并确保存在有效期内的焊接工艺拆解与该年焊接单价。';
+    '提示：先选年度、基地、项目。这一年还有效的焊接工艺拆解，以及当年焊接单价，都必须有。';
 
 const STATUS_META = {
     processing: { label: '计算中', className: 'text-ink-muted' },

@@ -61,7 +61,7 @@ export function procurementObjectGenerateTemplate() {
 
                 <div class="flex items-center gap-3">
                     <span id="poGenNotice" class="text-[9px] text-ink-dim">
-                        从材料清单树生成采购对象；同一版本再生成带回确认，已审须先反审核
+                        从材料清单生成采购件。同一个版本再生成时，会带回上次确认的结果；已经审核的要先反审核。
                     </span>
                     <button id="poGenSubmitBtn"
                             class="${BTN_ABORT}">
@@ -71,7 +71,7 @@ export function procurementObjectGenerateTemplate() {
             </div>
 
             <p class="text-[9px] text-ink-faint leading-relaxed px-1 -mt-1">
-                供货总成无子件，或全部一级件都没有内部号，按退化供货件列入。一级件有内部号才进采购对象。
+                供货总成没有子件，或者下面第一层零件都没有内部号，就按这件供货总成列入。第一层零件有内部号，才进采购对象。
             </p>
 
             <div id="poGenProgressPanel" class="hidden border border-line bg-app-surface px-4 py-3">

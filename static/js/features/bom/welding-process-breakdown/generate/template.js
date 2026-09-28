@@ -50,7 +50,7 @@ export function weldingProcessBreakdownGenerateTemplate() {
 
                 <div class="flex items-center gap-3">
                     <span id="reGenNotice" class="text-[9px] text-ink-dim">
-                        再次拆解将覆盖未审核数据；已审核范围须先反审核
+                        再拆一次时，没审核的会重写。已经审核的，要先反审核。
                     </span>
                     <button id="wpbGenSubmitBtn" type="button"
                             class="${BTN_ABORT}">
@@ -76,7 +76,7 @@ export function weldingProcessBreakdownGenerateTemplate() {
             </div>
 
             <div id="dataReadyErrorBanner" class="hidden text-[10px] text-warn bg-app-hud px-2.5 py-1.5 border-l-2 border-warn/40">
-                提示：请选定基地 / 项目 / 版本，且材料清单需有焊接原文、无已审拆解。
+                提示：先选基地、项目、版本。材料清单里要有焊接原文，并且还没有已审核的拆解。
             </div>
 
             <div class="pt-2">

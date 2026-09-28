@@ -67,7 +67,7 @@ export function assemblyCostCalcTemplate() {
                 </div>
 
                 <div class="flex items-center gap-3">
-                    <span class="text-[9px] text-ink-dim">再次计算覆盖未审核；已审核跳过</span>
+                    <span class="text-[9px] text-ink-dim">再算一次时，没审核的会重写，已经审核的不动。</span>
                     <button id="lacStartCalcBtn"
                             class="${BTN_ABORT}"
                             disabled>

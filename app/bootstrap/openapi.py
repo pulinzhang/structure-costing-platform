@@ -138,7 +138,7 @@ def _configuration_json(openapi_url: str) -> str:
         "persistAuth": True,
         "documentDownloadType": "both",
         "searchHotKey": "k",
-        "showSidebar": True,
+        "defaultOpenFirstTag": False,
         "orderRequiredPropertiesFirst": True,
         "operationsSorter": "method",
         "favicon": _FAVICON_URL,
@@ -171,11 +171,58 @@ def _scalar_page(*, openapi_url: str, title: str) -> str:
     <div id="app"></div>
     <script src="{_SCALAR_JS_URL}"></script>
     <script>
-      // 没有锚点时选中简介。Scalar 只在哈希对上侧栏 id 时才标选中。
-      if (!location.hash) {{
-        history.replaceState(null, "", "#description/introduction");
-      }}
       Scalar.createApiReference("#app", {_configuration_json(openapi_url)});
+      const openSectionTitles = new Set();
+      function sectionHeading(target) {{
+        if (!(target instanceof Element)) return null;
+        const heading = target.closest("div.font-sidebar");
+        if (!(heading instanceof HTMLElement)) return null;
+        const list = heading.nextElementSibling;
+        if (!list || list.tagName !== "UL") return null;
+        return heading;
+      }}
+      function syncSidebarSections() {{
+        document.querySelectorAll("div.font-sidebar").forEach((heading) => {{
+          if (!(heading instanceof HTMLElement) || !sectionHeading(heading)) return;
+          const title = (heading.textContent || "").trim();
+          const open = openSectionTitles.has(title);
+          heading.classList.toggle("is-collapsed", !open);
+          heading.setAttribute("role", "button");
+          heading.tabIndex = 0;
+          heading.setAttribute("aria-expanded", open ? "true" : "false");
+        }});
+      }}
+      function toggleSidebarSection(heading) {{
+        const title = (heading.textContent || "").trim();
+        const open = heading.classList.contains("is-collapsed");
+        heading.classList.toggle("is-collapsed", !open);
+        heading.setAttribute("aria-expanded", open ? "true" : "false");
+        if (open) openSectionTitles.add(title);
+        else openSectionTitles.delete(title);
+      }}
+      document.addEventListener("click", (event) => {{
+        const heading = sectionHeading(event.target);
+        if (!heading) return;
+        event.preventDefault();
+        event.stopPropagation();
+        toggleSidebarSection(heading);
+      }}, true);
+      document.addEventListener("keydown", (event) => {{
+        if (event.key !== "Enter" && event.key !== " ") return;
+        const heading = sectionHeading(event.target);
+        if (!heading) return;
+        event.preventDefault();
+        event.stopPropagation();
+        toggleSidebarSection(heading);
+      }}, true);
+      const docsRoot = document.getElementById("app");
+      if (docsRoot) {{
+        syncSidebarSections();
+        new MutationObserver(syncSidebarSections).observe(docsRoot, {{
+          childList: true,
+          subtree: true,
+        }});
+      }}
     </script>
     <!-- 样式放在 Scalar 注入之后，菜单悬停和选中才能压过组件类。 -->
     <style>

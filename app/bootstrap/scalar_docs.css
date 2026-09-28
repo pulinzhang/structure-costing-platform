@@ -91,17 +91,55 @@ html .light-mode {
     background: var(--scalar-scrollbar-color);
 }
 
-/* 分组名对齐 .nav-label。组件不给分组名悬停类。 */
+/* 一级标题后面的列表默认收起。标题节点带 is-collapsed，不依赖外层容器。 */
+.scalar-app div.font-sidebar.is-collapsed + ul {
+    display: none;
+}
+
 .scalar-app div.font-sidebar {
-    margin: 24px 0 8px;
-    padding: 0;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin: 2px 0;
+    padding: 8px 12px;
     border-radius: 0;
-    font-size: 11px;
+    font-size: 14px;
     line-height: 1.4;
     font-weight: var(--scalar-sidebar-font-weight);
     color: var(--scalar-sidebar-color-2);
     background: transparent;
-    cursor: default;
+    cursor: pointer;
+}
+
+.scalar-app div.font-sidebar::after {
+    content: "";
+    flex: none;
+    width: 6px;
+    height: 6px;
+    margin-left: 12px;
+    border-right: 1.5px solid currentColor;
+    border-bottom: 1.5px solid currentColor;
+    transform: rotate(-45deg);
+}
+
+.scalar-app div.font-sidebar:not(.is-collapsed)::after {
+    transform: rotate(45deg);
+}
+
+.scalar-app div.font-sidebar:not(:hover),
+.scalar-app div.font-sidebar:not(:hover) * {
+    color: var(--scalar-sidebar-color-2);
+}
+
+.scalar-app div.font-sidebar:hover {
+    color: var(--scalar-sidebar-item-hover-color);
+    background: var(--scalar-sidebar-item-hover-background);
+    font-weight: var(--scalar-sidebar-font-weight-active);
+}
+
+.scalar-app div.font-sidebar:hover * {
+    color: var(--scalar-sidebar-item-hover-color);
+    background: transparent;
 }
 
 .scalar-app :is(button, a, div).font-sidebar > .h-lh {
@@ -129,23 +167,28 @@ html .light-mode {
     cursor: pointer;
 }
 
-.scalar-app :is(button, a).font-sidebar:is(.bg-sidebar-b-active, .text-sidebar-c-active) {
-    color: var(--scalar-sidebar-color-active);
-    background: var(--scalar-sidebar-item-active-background);
-    font-weight: var(--scalar-sidebar-font-weight-active);
-    cursor: pointer;
+.scalar-app :is(button, a).font-sidebar:not(:hover),
+.scalar-app :is(button, a).font-sidebar:not(:hover) * {
+    color: var(--scalar-sidebar-color-2);
+    background: transparent;
+    font-weight: var(--scalar-sidebar-font-weight);
 }
 
-.scalar-app :is(button, a).font-sidebar:is(:hover, :focus-visible),
-.scalar-app :is(button, a).font-sidebar:is(.bg-sidebar-b-active, .text-sidebar-c-active):is(:hover, :focus-visible) {
+.scalar-app :is(button, a).font-sidebar:hover {
     color: var(--scalar-sidebar-item-hover-color);
     background: var(--scalar-sidebar-item-hover-background);
     font-weight: var(--scalar-sidebar-font-weight-active);
-    outline: none;
 }
 
-.scalar-app :is(button, a).font-sidebar:is(.bg-sidebar-b-active, .text-sidebar-c-active) *,
-.scalar-app :is(button, a).font-sidebar:is(:hover, :focus-visible) * {
-    color: var(--scalar-sidebar-color-active);
+.scalar-app :is(button, a).font-sidebar:hover * {
+    color: var(--scalar-sidebar-item-hover-color);
     background: transparent;
+}
+
+/* 子项选中时，父级只剩 font-sidebar-active，字色会被标成白色且没有底。未悬停时改回灰色。 */
+.scalar-app :is(button, a).font-sidebar-active:not(.bg-sidebar-b-active):not(:hover),
+.scalar-app :is(button, a).font-sidebar-active:not(.bg-sidebar-b-active):not(:hover) * {
+    color: var(--scalar-sidebar-color-2);
+    background: transparent;
+    font-weight: var(--scalar-sidebar-font-weight);
 }

@@ -77,7 +77,7 @@ export function pkgTransportFeeTemplate() {
                                 重置
                             </button>`,
                         ].join(''),
-                        hintHtml: '批量删除 / 审核 / 反审核须同时选定基地、年度和项目。已审核不可删除、不可修改。',
+                        hintHtml: '批量删除、审核、反审核要同时选基地、年度和项目。已经审核的不能删、不能改。',
                     })}
                 </div>
 

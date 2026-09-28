@@ -56,7 +56,7 @@ export function dieListTemplate() {
                                 重置
                             </button>`,
                         ].join(''),
-                        alwaysHintHtml: '进入即显示全部；基地/项目/零件号可选收窄。删除本范围、导出须选定基地+项目。',
+                        alwaysHintHtml: '打开就列出全部。基地、项目、零件号用来缩小范围。删除当前范围、导出，必须先选基地和项目。',
                     })}
                 </div>
                 ${hudTableHtml({
