@@ -171,7 +171,7 @@ export function tonnageUploadTemplate() {
                         <div>
                             <h6 class="text-[10px] uppercase tracking-wider text-ink-dim mb-2">写入规则</h6>
                             <ul class="list-disc list-inside text-xs text-ink-dim space-y-1.5">
-                                <li>唯一键：基地 + 年度 + 吨位</li>
+                                <li>同一条按基地、年度、吨位区分，不能重复</li>
                                 <li>已存在则更新单价，不存在则新增</li>
                                 <li>列表导出含基地/年份/审核列；导入只读名称/单位/单价（基地/年度以本页选择为准）</li>
                                 <li>仅支持 .xlsx，同步导入无需等待队列</li>

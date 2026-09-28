@@ -54,7 +54,7 @@ export function l0WeldingFeeCalcTemplate() {
 
                 <div class="flex items-center gap-3">
                     <span id="l0wfReCalcNotice" class="text-[9px] text-ink-dim">
-                        再次计算覆盖未审核，已审核按行跳过
+                        再算一次时，没审核的会重写；已经审核的那一行不动。
                     </span>
                     <button id="l0wfStartCalcBtn"
                             class="${BTN_ABORT}">
@@ -80,7 +80,7 @@ export function l0WeldingFeeCalcTemplate() {
             </div>
 
             <div id="l0wfDataReadyErrorBanner" class="hidden text-[10px] text-warn bg-app-hud px-2.5 py-1.5 border-l-2 border-warn/40">
-                提示：须选定年度、基地、项目；并确保存在有效期内的焊接工艺拆解与该年焊接单价。
+                提示：先选年度、基地、项目。这一年还有效的焊接工艺拆解，以及当年焊接单价，都必须有。
             </div>
 
             <div class="pt-2">

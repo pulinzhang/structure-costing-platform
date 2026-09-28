@@ -75,7 +75,7 @@ export function tonnagePriceTemplate() {
                                 重置
                             </button>`,
                         ].join(''),
-                        hintHtml: '批量删除 / 审核 / 反审核须同时选定基地和年度（与上传条件对等）。已审核记录不可删除、不可修改。',
+                        hintHtml: '批量删除、审核、反审核要同时选基地和年度。已经审核的不能删、不能改。',
                     })}
                 </div>
 

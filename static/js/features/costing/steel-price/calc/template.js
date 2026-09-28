@@ -53,7 +53,7 @@ export function steelPriceCalcTemplate() {
 
                 <div class="flex items-center gap-3">
                     <span id="reCalcNotice" class="text-[9px] text-ink-dim">
-                        统计可以按项目看基价、政策和规格盖住了多少（一个项目可以有多个工厂）；算出来的价格仍按基地、全部牌号和料厚保存
+                        上面的数字可以按项目看基价、调价和规格齐了多少（一个项目可以有多个工厂）。算出来的价格按基地保存，包含全部牌号和料厚。
                     </span>
                     <button id="startCalcBtn"
                             class="${BTN_ABORT}">
@@ -80,7 +80,7 @@ export function steelPriceCalcTemplate() {
             </div>
 
             <div id="dataReadyErrorBanner" class="hidden text-[10px] text-warn bg-app-hud px-2.5 py-1.5 border-l-2 border-warn/40">
-                提示：当前所选年月缺失中标基价或调价规则，无法计算。
+                提示：先选基地、年度、月份。中标基价、调价规则、厚度规格都必须有，才能算。
             </div>
 
             <!-- 计算历史：对齐批次日志字段-->

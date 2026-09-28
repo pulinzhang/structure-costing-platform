@@ -74,7 +74,7 @@ export function steelPriceListTemplate() {
                             { capsuleId: 'steelCapsuleLocation', idleLabel: '全部基地' },
                             { capsuleId: 'steelCapsuleMill', idleLabel: '全部钢厂' },
                         ],
-                        alwaysHintHtml: '批量审核 / 反审核 / 删除须选定年度 + 月份 + 基地。不勾选行，详情抽屉不审单条。',
+                        alwaysHintHtml: '批量审核、反审核、删除要先选年度、月份、基地。不用勾选行；打开单条也不能审核。',
                         fieldsHtml: [
                             filterSelect('steelPriceYear', '年度'),
                             filterSelect('steelPriceMonth', '月份'),

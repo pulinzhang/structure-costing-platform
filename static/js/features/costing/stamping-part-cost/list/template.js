@@ -61,7 +61,7 @@ export function partCostListTemplate() {
                             })}
                             <button id="costExportBtn" type="button"
                                     class="${BTN_GHOST}"
-                                    title="须选定项目；按当前筛选导出冲压零件核价结果（含材料费、加工费、模具费、检具费）">
+                                    title="先选项目。按当前筛选导出冲压零件价（含材料费、加工费、模具费、检具费）。">
                                 ${window.svgIcon('download', 'w-3 h-3')}
                                 Excel
                             </button>
@@ -94,7 +94,7 @@ export function partCostListTemplate() {
                                 重置
                             </button>`,
                         ].join(''),
-                        hintHtml: '批量审核 / 反审核按整车签字（工厂筛不影响签字范围）。批量删除与导出可按工厂收窄。导出须选定项目。',
+                        hintHtml: '批量审核、反审核是给整车签字，选了冲压工厂也不缩小范围。批量删除和导出可以按工厂缩小。导出必须先选项目。',
                     })}
                 </div>
 

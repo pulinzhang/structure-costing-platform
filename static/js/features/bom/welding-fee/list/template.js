@@ -109,7 +109,7 @@ export function l0WeldingFeeListTemplate() {
                                 重置
                             </button>`,
                         ].join(''),
-                        hintHtml: '批量审核 / 反审核 / 删除须选定年度 + 基地 + 项目。版本可选，选了只处理该版本。',
+                        hintHtml: '批量审核、反审核、删除要先选年度、基地、项目。版本可不选；选了就只处理这个版本。',
                     })}
                 </div>
 

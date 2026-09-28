@@ -3,7 +3,7 @@ import { opsIconButtonHtml } from '../../../../ui/hud-table.js?v=2';
 import {
     dieFeeCalcTemplate,
     CALC_HISTORY_COLSPAN,
-} from './template.js?v=18';
+} from './template.js?v=19';
 import {
     DEFAULT_PAGE_SIZE,
     bindPagination,
@@ -23,7 +23,7 @@ const CALC_LOGS_API = `${API_BASE}/calc/logs`;
 const POLL_INTERVAL_MS = 1500;
 const SCOPE_REQUIRED_MESSAGE = '须选定年度、基地、项目。';
 const READY_FALLBACK =
-    '须选定年度、基地、项目。零件按布点有效期与该年有交集的才算，不是按项目档案期。并确保有生效模具单价。版本可选；计算覆盖该项目各供应商。';
+    '提示：先选年度、基地、项目（版本可不选）。一次算出本项目各供应商的模具费。只算这一年布点还有效的零件，不按项目档案的起止时间。模具单价必须已生效。';
 
 const STATUS_META = {
     processing: { label: '计算中', className: 'text-ink-muted' },

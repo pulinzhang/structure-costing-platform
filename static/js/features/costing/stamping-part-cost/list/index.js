@@ -8,7 +8,7 @@ import {
     renderCostRows,
     updatePartCostHud,
     syncOptionalColumnVisibility,
-} from './template.js?v=88';
+} from './template.js?v=89';
 import { shortPartNumber } from '../../../../domain/part-identity.js?v=5';
 import {
     DEFAULT_PAGE_SIZE,

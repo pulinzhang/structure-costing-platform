@@ -8,7 +8,7 @@ import {
     renderWpbDetailBody,
     updateWpbHud,
     refreshWpbLineDerived,
-} from './template.js?v=61';
+} from './template.js?v=62';
 import { bindMoreMenu } from '../../../../ui/more-menu.js?v=6';
 import { bindFilterBar } from '../../../../ui/filter-bar.js?v=4';
 import {

@@ -44,7 +44,7 @@ export function processFeeCalcTemplate() {
 
                 <div class="flex items-center gap-3">
                     <span id="reCalcNotice" class="text-[9px] text-ink-dim">
-                        再次计算将覆盖未审核数据；已审核记录跳过
+                        再算一次时，没审核的会重写，已经审核的不动。
                     </span>
                     <button id="startCalcBtn"
                             class="${BTN_ABORT}">
@@ -70,7 +70,7 @@ export function processFeeCalcTemplate() {
             </div>
 
             <div id="dataReadyErrorBanner" class="hidden text-[10px] text-warn bg-app-hud px-2.5 py-1.5 border-l-2 border-warn/40">
-                提示：级联为年度 → 基地 → 项目 → 版本。计算须选定年度、基地、项目，覆盖该车各冲压工厂。零件按冲压件有效期与该年有交集的才算，不是按项目档案期。并确保存在冲次单价。
+                提示：先选年度、基地、项目（版本可不选）。一次算出本项目各冲压工厂的加工费。只算这一年还在用的零件，不按项目档案的起止时间。冲次单价必须有。
             </div>
 
             <div class="pt-2">

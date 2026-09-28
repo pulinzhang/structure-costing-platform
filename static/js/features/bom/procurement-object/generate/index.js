@@ -6,7 +6,7 @@ import { DRAWER_CLOSE, DRAWER_SHELL, DRAWER_BACKDROP } from '../../../../ui/clas
 import { opsIconButtonHtml } from '../../../../ui/hud-table.js?v=2';
 import {
     procurementObjectGenerateTemplate,
-} from './template.js?v=14';
+} from './template.js?v=15';
 import {
     DEFAULT_PAGE_SIZE,
     bindPagination,

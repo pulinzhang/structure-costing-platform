@@ -3,7 +3,7 @@
  * 钢价计算 —过滤条件 + 异步后台计算 + 进度轮询 + 历史过程日志
  */
 
-import { steelPriceCalcTemplate } from './template.js?v=20';
+import { steelPriceCalcTemplate } from './template.js?v=21';
 import { DRAWER_CLOSE, DRAWER_SHELL, DRAWER_BACKDROP } from '../../../../ui/classes.js?v=13';
 import { opsIconButtonHtml } from '../../../../ui/hud-table.js?v=2';
 

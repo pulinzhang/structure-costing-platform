@@ -6,7 +6,7 @@ import { DRAWER_CLOSE, DRAWER_SHELL, DRAWER_BACKDROP } from '../../../../ui/clas
 import { opsIconButtonHtml } from '../../../../ui/hud-table.js?v=2';
 import {
     partCostCalcTemplate,
-} from './template.js?v=20';
+} from './template.js?v=22';
 import {
     DEFAULT_PAGE_SIZE,
     bindPagination,
@@ -27,7 +27,7 @@ const POLL_INTERVAL_MS = 1500;
 const DUPLICATE_SCOPE_CALC_MESSAGE = '当前年度/月份/基地/项目正在计算中，请勿重复提交。';
 const SCOPE_REQUIRED_MESSAGE = '须选定年度、月份、基地、项目。';
 const READY_FALLBACK =
-    '提示：须选定年度、月份、基地、项目。计算覆盖该车各冲压工厂。并确保钢材联动价、废料月度价、加工费与匹配零件均已就绪。模具费、检具费缺档按 0 计入。';
+    '提示：先选年度、月份、基地、项目，一次算出本项目各冲压工厂的零件价。匹配零件、钢材联动价、废料月度价、加工费必须有数；模具费、检具费没有就按 0。';
 
 const STATUS_META = {
     processing: { label: '计算中', className: 'text-ink-muted' },

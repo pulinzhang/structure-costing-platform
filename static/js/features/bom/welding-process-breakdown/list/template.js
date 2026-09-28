@@ -92,11 +92,11 @@ export function weldingProcessBreakdownListTemplate() {
                         </div>
                     </div>
                     <p class="text-[10px] text-ink-muted leading-relaxed">
-                        <span class="text-warn">计费口径：</span>焊接加工费<strong class="font-semibold text-ink">只认 L0 供货总成</strong>过程量。
-                        <span class="text-ink-faint">旁证（L1 / L2）仅供参考，不得作为计费依据。</span>
-                        <span class="text-ink">异常排查：</span>筛「层级 = L0」+「工艺数 = 0」；有异常时点 HUD「L0 · 工艺数=0」一键筛。
-                        「导出L0核对」= 按当前筛选导出 L0 主表+工艺明细（主表纵向合并、不含审核）。
-                        主表来自材料清单（只读）；待审时可改明细过程量与标准工艺。
+                        <span class="text-warn">怎么算钱：</span>焊接费<strong class="font-semibold text-ink">只按 L0 供货总成</strong>的过程量。
+                        <span class="text-ink-faint">L1、L2 只作参考，不算钱。</span>
+                        <span class="text-ink">查异常：</span>工艺数是 0 的 L0，点上面「L0 · 工艺数=0」。
+                        「导出L0核对」按当前筛选导出供货总成和工艺明细，不含审核。
+                        主表来自材料清单，不能改；还没审核时，可以改明细里的过程量和标准工艺。
                     </p>
                 </div>
 
@@ -125,7 +125,7 @@ export function weldingProcessBreakdownListTemplate() {
                                 重置
                             </button>`,
                         ].join(''),
-                        hintHtml: '批量审核 / 反审核 / 删除须选定基地 + 项目 + 版本。异常：层级 L0 + 工艺数 = 0。',
+                        hintHtml: '批量审核、反审核、删除要先选基地、项目、版本。异常是：L0 供货总成的工艺数是 0。',
                     })}
                 </div>
 
@@ -403,7 +403,7 @@ export function renderWpbDetailBody(node, {
 function renderSaveBar(canSave) {
     return `
         <div class="flex items-center justify-end gap-3 pt-3 pb-1 border-t border-app-elevated">
-            <p class="text-[9px] text-ink-faint mr-auto">有辅助量则核价用辅助量，否则用过程量；长度 mm↔cm，面积 平方≡m2/平方米</p>
+            <p class="text-[9px] text-ink-faint mr-auto">有辅助量就按辅助量算，没有就按过程量。长度的毫米和厘米要换算；面积里的「平方」就是平方米。</p>
             <button type="button" id="wpbSaveAllLines" data-action="save-all-lines"
                     ${canSave ? '' : 'disabled'}
                     title="${canSave ? '' : '无编辑权限'}"
@@ -565,7 +565,7 @@ function renderEvidencePanel(evidence) {
     if (!hasItems) {
         body = `
             <p class="text-[10px] text-ink-faint leading-relaxed">
-                当前节点无可展示的结构旁证。计费仍以本节点过程量 / 辅助量为准；需要全量核对时请使用「导出L0核对」。
+                这一行没有可对照的结构。算钱仍按这一行的过程量或辅助量。要整表核对，用「导出L0核对」。
             </p>
         `;
     } else {
@@ -584,14 +584,14 @@ function renderEvidencePanel(evidence) {
                         <span class="text-[11px] font-medium text-ink-muted">${esc(item.process_token)}</span>
                         ${srcQty}
                     </div>
-                    ${chains || '<p class="text-[9px] text-ink-faint">无可比链路</p>'}
+                    ${chains || '<p class="text-[9px] text-ink-faint">没有可对照的数据</p>'}
                 </div>
             `;
         }).join('');
         body = `
             <p class="text-[9px] text-ink-faint leading-relaxed mb-2">
-                旁证由 BOM 结构推算，用于抽检；<span class="text-ink-muted">不计费、不改正文</span>。
-                差额 = 原文过程量 − 旁证推算值。L1 口径常见不严谨，差额需人工判断。
+                对照数按材料清单结构推出来，用来抽查；<span class="text-ink-muted">不算钱、不改原来的数</span>。
+                差额 = 原文过程量 − 对照算出来的数。L1 常常不准，差额要人工看。
             </p>
             <div class="flex flex-col gap-2">${rows}</div>
         `;
@@ -604,8 +604,8 @@ function renderEvidencePanel(evidence) {
                             [&::-webkit-details-marker]:hidden">
                 <span class="flex items-center gap-2 min-w-0">
                     <span class="text-ink-faint group-open:rotate-90 transition-transform inline-block shrink-0">▸</span>
-                    <span class="text-ink-muted">结构旁证</span>
-                    <span class="text-ink-faint truncate">· 抽检用 · 不计费</span>
+                    <span class="text-ink-muted">结构对照</span>
+                    <span class="text-ink-faint truncate">· 抽查用 · 不算钱</span>
                 </span>
                 <span class="shrink-0 font-mono">${summaryRight}</span>
             </summary>

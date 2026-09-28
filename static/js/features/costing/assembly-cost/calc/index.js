@@ -4,7 +4,7 @@
 
 import {
     assemblyCostCalcTemplate,
-} from './template.js?v=16';
+} from './template.js?v=17';
 import {
     DEFAULT_PAGE_SIZE,
     bindPagination,

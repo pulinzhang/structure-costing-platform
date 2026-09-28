@@ -58,7 +58,7 @@ export function procurementObjectSupplierUploadTemplate() {
                                         </select>
                                     </div>
                                 </div>
-                                <p class="ml-6 mt-1.5 text-[11px] text-ink-dim">须已生成该范围采购对象列表。模板按零件号去重；内部号给人看，方便到 ERP 联查。第二页目录只对照，导入不读。检测未通过仍可上传待审行；已审跳过。</p>
+                                <p class="ml-6 mt-1.5 text-[11px] text-ink-dim">这个范围要先生成采购对象。相同零件号只出一行。内部号只给人看，导入不读，方便到 ERP 查。第二页目录只对照，导入不读。检查没过的仍可上传，状态是待审；已经审核的不动。</p>
                                 <div id="poSupplierUploadQaBanner"
                                      class="ml-6 mt-2 hidden text-[11px] text-brand-hud bg-brand-hud/10 border border-brand/30 px-3 py-2 leading-relaxed"></div>
                             </div>
@@ -111,9 +111,9 @@ export function procurementObjectSupplierUploadTemplate() {
                         <h5 class="text-[11px] font-bold text-ink-muted mb-0 tracking-widest uppercase">格式说明</h5>
                     </div>
                     <div class="p-4 space-y-3 text-xs text-ink-dim">
-                        <p>只改第一页「供应商」。「内部号」给人看，方便到 ERP 联查，导入不读。相同零件号只出一行。空=清空。缩写 / 别名 / ERP 可解析为工商名称。</p>
-                        <p>找不到的厂到 <span class="text-ink-muted">#/supplier-list</span> 补档，本页不建档。</p>
-                        <p>检测未通过仍可上传待审行。已审行跳过不改。自制禁止填非空供应商。</p>
+                        <p>只改第一页的「供应商」。内部号只给人看，导入不读。相同零件号只出一行。供应商空着就是清空。填缩写、别名或 ERP 编号，都会换成工商名称。</p>
+                        <p>找不到的厂到 <span class="text-ink-muted">#/supplier-list</span> 补档，本页不新建供应商。</p>
+                        <p>检查没过的仍可上传，状态是待审。已经审核的行不动。自制件不能填供应商。</p>
                     </div>
                 </div>
             </div>

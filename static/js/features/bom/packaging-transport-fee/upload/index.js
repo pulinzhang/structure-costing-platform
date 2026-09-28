@@ -3,7 +3,7 @@
  * 同步导入：基地 + 年度 + 项目必选；基地/项目取自材料清单（BOM）
  */
 
-import { pkgTransportFeeUploadTemplate } from './template.js?v=15';
+import { pkgTransportFeeUploadTemplate } from './template.js?v=16';
 import { bindSyncUploadProgress } from '../../../../ui/sync-upload-progress.js?v=3';
 
 const API_BASE = '/api/bom/packaging-transport-fee';
@@ -134,7 +134,7 @@ const PkgTransportFeeUploadPage = {
     vehicleEmptyLabel(location, year) {
         if (!location) return '请先选择采购基地';
         if (year == null) return '请先填写年度';
-        if (!this.vehicleModels.length) return '该年度与项目有效期无交集';
+        if (!this.vehicleModels.length) return '这一年和项目的有效期对不上';
         return '请选择项目';
     },
 

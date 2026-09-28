@@ -44,7 +44,7 @@ export function dieFeeCalcTemplate() {
                     </div>
                 </div>
                 <div class="flex items-center gap-3">
-                    <span class="text-[9px] text-ink-dim">只算该年有效期内布点；共模按这些件的顺序继承。已审核禁止计算</span>
+                    <span class="text-[9px] text-ink-dim">只算这一年还有效的布点。共用一套模具、这件没填重量时，沿用上一件。已经审核的不能再算。</span>
                     <button id="startCalcBtn"
                             class="${BTN_ABORT}">
                         开始计算
@@ -65,7 +65,7 @@ export function dieFeeCalcTemplate() {
                 <p id="calcProgressMsg" class="text-[11px] text-ink-muted leading-relaxed mb-0">已提交计算队列</p>
             </div>
             <div id="dataReadyErrorBanner" class="hidden text-[10px] text-warn bg-app-hud px-2.5 py-1.5 border-l-2 border-warn/40">
-                须选定年度、基地、项目。零件按布点有效期与该年有交集的才算，不是按项目档案期。并确保有生效模具单价。版本可选；计算覆盖该项目各供应商。
+                提示：先选年度、基地、项目（版本可不选）。一次算出本项目各供应商的模具费。只算这一年布点还有效的零件，不按项目档案的起止时间。模具单价必须已生效。
             </div>
             <div class="pt-2">
                 <div class="flex items-center justify-between mb-1.5">

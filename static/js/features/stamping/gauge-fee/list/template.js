@@ -89,7 +89,7 @@ export function gaugeFeeListTemplate() {
                                 重置
                             </button>`,
                         ].join(''),
-                        hintHtml: '筛选均可选。批量删除须同时选定基地和项目。',
+                        hintHtml: '筛选项都可以不选。批量删除要同时选基地和项目。',
                     })}
                 </div>
 

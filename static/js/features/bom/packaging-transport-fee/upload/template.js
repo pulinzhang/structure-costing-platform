@@ -58,7 +58,7 @@ export function pkgTransportFeeUploadTemplate() {
                                     </div>
                                 </div>
                                 <p id="pkgTransportFeeUploadScopeHint" class="ml-6 mt-1.5 text-[11px] text-ink-dim">
-                                    先选基地再填年度，项目只列出该年与有效期有交集的代号；须已有材料清单。唯一键 = 基地 + 年度 + 项目 + 零件号
+                                    先选基地，再填年度。项目只列出这一年还有效、并且已经有材料清单的代号。同一条按基地、年度、项目、零件号区分，不能重复。
                                 </p>
                                 <div id="pkgTransportFeeUploadNoBomBanner" class="hidden ml-6 mt-2 text-[10px] text-warn bg-app-hud px-2.5 py-1.5 border-l-2 border-warn/40">
                                     尚未上传材料清单，或当前账号无对应清单数据。请先在「上传材料清单」导入 BOM 后再上传包装运输费。
