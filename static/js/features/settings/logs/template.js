@@ -14,6 +14,8 @@ export function logsTemplate() {
                     <div class="flex items-center gap-2 flex-wrap flex-1 min-w-0">
                         <input type="text" id="filterUsername" placeholder="账号 / 操作人"
                                class="w-36 ${HUD_INPUT}">
+                        <input type="text" id="filterClientIp" placeholder="IP 地址"
+                               class="w-36 ${HUD_INPUT}">
 
                         <select id="filterMenu"
                                 class="max-w-[220px] ${HUD_FILTER}">

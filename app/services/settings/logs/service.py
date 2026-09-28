@@ -220,6 +220,7 @@ class OperationLogService:
         rows, total = self.repository.paginate(
             db,
             username=query.username,
+            client_ip=query.client_ip,
             permission_code=catalog["permission_code"],
             permission_codes=catalog["permission_codes"],
             menu_labels=catalog["menu_labels"],
@@ -241,6 +242,7 @@ class OperationLogService:
         db: Session,
         *,
         username: str | None = None,
+        client_ip: str | None = None,
         menu_code: str | None = None,
         permission_code: str | None = None,
         module: str | None = None,
@@ -255,6 +257,7 @@ class OperationLogService:
         rows = self.repository.list_for_export(
             db,
             username=username,
+            client_ip=client_ip,
             permission_code=catalog["permission_code"],
             permission_codes=catalog["permission_codes"],
             menu_labels=catalog["menu_labels"],
