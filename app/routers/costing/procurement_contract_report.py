@@ -71,6 +71,7 @@ def _query_from_params(
 @router.get(
     "",
     response_model=ApiResponse[PageResult[ProcurementContractReportRowVO]],
+    summary="分页查询采购价格协议",
 )
 def list_report(
     location: str = Query(..., min_length=1),
@@ -113,7 +114,11 @@ def list_report(
     )
 
 
-@router.get("/filters/defaults", response_model=ApiResponse[ProcurementContractOpenDefaultsVO])
+@router.get(
+    "/filters/defaults",
+    response_model=ApiResponse[ProcurementContractOpenDefaultsVO],
+    summary="获取采购价格协议默认筛选",
+)
 def list_open_defaults(
     db: Session = Depends(get_db),
     current_user: UserVO = Depends(require_perm(Perm.PROCUREMENT_CONTRACT_REPORT_VIEW)),
@@ -121,7 +126,9 @@ def list_open_defaults(
     return ApiResponse.ok(data=_service.get_open_defaults(db))
 
 
-@router.get("/prep", response_model=ApiResponse[ProcurementContractReportPrepVO])
+@router.get(
+    "/prep", response_model=ApiResponse[ProcurementContractReportPrepVO], summary="预检采购价格协议"
+)
 def prep_report(
     location: str = Query(..., min_length=1),
     vehicle_model: str = Query(..., min_length=1),
@@ -151,7 +158,7 @@ def prep_report(
     return ApiResponse.ok(data=_service.prep(db, query))
 
 
-@router.get("/export")
+@router.get("/export", summary="导出采购价格协议")
 def export_report(
     location: str = Query(..., min_length=1),
     vehicle_model: str = Query(..., min_length=1),

@@ -47,6 +47,7 @@ _import_service = BomAnnualPartPriceImportService()
 @router.get(
     "/paginate",
     response_model=ApiResponse[PageResult[BomAnnualPartPriceResponse]],
+    summary="分页查询年度零件价",
 )
 def paginate(
     query: BomAnnualPartPriceQuery = Depends(),
@@ -65,7 +66,7 @@ def paginate(
     )
 
 
-@router.get("/filters/locations", response_model=ApiResponse[list[str]])
+@router.get("/filters/locations", response_model=ApiResponse[list[str]], summary="获取所有基地列表")
 def get_locations(
     db: Session = Depends(get_db),
     current_user: UserVO = Depends(require_perm(Perm.BOM_ANNUAL_PART_PRICE_VIEW)),
@@ -75,7 +76,7 @@ def get_locations(
     return ApiResponse.ok(data=data)
 
 
-@router.get("/filters/years", response_model=ApiResponse[list[int]])
+@router.get("/filters/years", response_model=ApiResponse[list[int]], summary="获取所有年份列表")
 def get_years(
     db: Session = Depends(get_db),
     current_user: UserVO = Depends(require_perm(Perm.BOM_ANNUAL_PART_PRICE_VIEW)),
@@ -85,7 +86,7 @@ def get_years(
     return ApiResponse.ok(data=data)
 
 
-@router.get("/export")
+@router.get("/export", summary="按当前筛选条件导出年度零件价 Excel")
 def export_excel(
     location: str | None = Query(None, description="采购基地"),
     year: int | None = Query(None, ge=2000, le=2100, description="年份"),
@@ -106,7 +107,7 @@ def export_excel(
     )
 
 
-@router.get("/template")
+@router.get("/template", summary="下载年度零件价导入模板")
 def download_import_template(
     location: str = Query(..., description="采购基地"),
     vehicle_model: str = Query(..., description="项目"),
@@ -128,6 +129,7 @@ def download_import_template(
 @router.post(
     "/upload",
     response_model=ApiResponse[BomAnnualPartPriceImportResultVO],
+    summary="同步导入年度零件价 Excel",
 )
 async def upload_excel(
     location: str = Form(..., description="采购基地（必填）"),
@@ -152,6 +154,7 @@ async def upload_excel(
 @router.post(
     "/batch-delete",
     response_model=ApiResponse[BomAnnualPartPriceBatchDeleteResultVO],
+    summary="按基地 + 年度批量删除",
 )
 def batch_delete(
     body: BomAnnualPartPriceBatchDeleteDTO,
@@ -170,6 +173,7 @@ def batch_delete(
 @router.post(
     "/batch-approve",
     response_model=ApiResponse[BomAnnualPartPriceBatchAuditResultVO],
+    summary="按基地 + 年度批量审核通过",
 )
 def batch_approve(
     body: BomAnnualPartPriceBatchApproveDTO,
@@ -184,6 +188,7 @@ def batch_approve(
 @router.post(
     "/batch-reverse-audit",
     response_model=ApiResponse[BomAnnualPartPriceBatchAuditResultVO],
+    summary="按基地 + 年度批量反审核",
 )
 def batch_reverse_audit(
     body: BomAnnualPartPriceBatchReverseAuditDTO,
@@ -199,6 +204,7 @@ def batch_reverse_audit(
     "",
     response_model=ApiResponse[BomAnnualPartPriceResponse],
     status_code=status.HTTP_201_CREATED,
+    summary="创建年度零件价记录",
 )
 def create(
     body: BomAnnualPartPriceCreate,
@@ -210,7 +216,11 @@ def create(
     return ApiResponse.created(data=record, message="创建成功")
 
 
-@router.get("/{id:int}", response_model=ApiResponse[BomAnnualPartPriceResponse])
+@router.get(
+    "/{id:int}",
+    response_model=ApiResponse[BomAnnualPartPriceResponse],
+    summary="获取单个年度零件价记录",
+)
 def get_by_id(
     id: int,
     db: Session = Depends(get_db),
@@ -221,7 +231,11 @@ def get_by_id(
     return ApiResponse.ok(data=record, message="获取成功")
 
 
-@router.put("/{id:int}", response_model=ApiResponse[BomAnnualPartPriceResponse])
+@router.put(
+    "/{id:int}",
+    response_model=ApiResponse[BomAnnualPartPriceResponse],
+    summary="更新年度零件价记录",
+)
 def update(
     id: int,
     body: BomAnnualPartPriceUpdate,
@@ -233,7 +247,7 @@ def update(
     return ApiResponse.updated(data=record, message="更新成功")
 
 
-@router.delete("/{id:int}", response_model=ApiResponse[None])
+@router.delete("/{id:int}", response_model=ApiResponse[None], summary="删除年度零件价记录")
 def delete(
     id: int,
     db: Session = Depends(get_db),

@@ -27,7 +27,7 @@ _policy_service = SteelPricePolicyService()
 _async_task_service = AsyncTaskService()
 
 
-@router.get("/template")
+@router.get("/template", summary="下载加减价政策导入模板")
 def download_policy_import_template(
     current_user: UserVO = Depends(require_perm(Perm.STEEL_PRICE_POLICY_UPLOAD_VIEW)),
 ) -> StreamingResponse:
@@ -43,6 +43,7 @@ def download_policy_import_template(
 @router.post(
     "/upload",
     response_model=ApiResponse[AsyncTaskAcceptedVO],
+    summary="上传钢价政策 Excel",
 )
 async def upload_policy_excel(
     year: int = Form(..., ge=2000, le=2100, description="生效年度"),
@@ -74,6 +75,7 @@ async def upload_policy_excel(
 @router.get(
     "/tasks/{task_id}",
     response_model=ApiResponse[AsyncTaskProgressVO],
+    summary="查询政策上传/解析任务进度",
 )
 def get_upload_task_progress(
     task_id: str,

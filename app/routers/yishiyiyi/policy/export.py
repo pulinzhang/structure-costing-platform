@@ -24,7 +24,7 @@ router = APIRouter(prefix="/api/yishiyiyi/policy", tags=["钢价政策导出"])
 _policy_service = SteelPricePolicyService()
 
 
-@router.get("/export")
+@router.get("/export", summary="导出钢价政策主子表联合数据为 Excel")
 def export_policies_excel(
     query: PolicyExportQuery = Depends(),
     db: Session = Depends(get_db),
@@ -56,6 +56,7 @@ def export_policies_excel(
 @router.get(
     "/export-preview",
     response_model=ApiResponse[PageResult[ExportRow]],
+    summary="预览导出数据（主子表联合查询，分页）",
 )
 def export_policies_preview(
     query: PolicyExportPreviewQuery = Depends(),

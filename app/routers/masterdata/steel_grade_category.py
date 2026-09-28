@@ -48,6 +48,7 @@ _FILTER_READ_PERMS = require_any_perm(
 @router.get(
     "/categories",
     response_model=ApiResponse[list[SteelGradeCategoryOptionVO]],
+    summary="查询牌号大类",
 )
 def list_canonical_categories(
     current_user: UserVO = Depends(_FILTER_READ_PERMS),
@@ -58,6 +59,7 @@ def list_canonical_categories(
 @router.get(
     "/grades",
     response_model=ApiResponse[list[str]],
+    summary="按大类返回牌号列表，供政策导出等页级联筛选",
 )
 def list_grades_for_filter(
     category_name: str = Query(..., min_length=1, description="档案大类：冷轧/镀锌/酸洗"),
@@ -77,6 +79,7 @@ def list_grades_for_filter(
 @router.get(
     "",
     response_model=ApiResponse[PageResult[SteelGradeCategoryVO]],
+    summary="分页查询牌号分类",
 )
 def list_steel_grade_categories(
     query: SteelGradeCategoryQuery = Depends(),
@@ -95,6 +98,7 @@ def list_steel_grade_categories(
 @router.get(
     "/template",
     response_model=None,
+    summary="下载导入模板（列与导出核心列相同，可再导入）",
 )
 def download_import_template(
     current_user: UserVO = Depends(require_perm(Perm.STEEL_GRADE_CATEGORY_VIEW)),
@@ -111,6 +115,7 @@ def download_import_template(
 @router.get(
     "/export",
     response_model=None,
+    summary="按筛选导出牌号分类",
 )
 def export_steel_grade_categories(
     query: SteelGradeCategoryExportQuery = Depends(),
@@ -129,6 +134,7 @@ def export_steel_grade_categories(
 @router.post(
     "/upload",
     response_model=ApiResponse[SteelGradeCategoryUploadResultVO],
+    summary="同步导入牌号分类；已有跳过，大类冲突整单拒绝",
 )
 async def upload_steel_grade_categories(
     file: UploadFile = File(...),
@@ -147,6 +153,7 @@ async def upload_steel_grade_categories(
 @router.get(
     "/{record_id:int}",
     response_model=ApiResponse[SteelGradeCategoryVO],
+    summary="查看牌号分类",
 )
 def get_steel_grade_category(
     record_id: int,
@@ -160,6 +167,7 @@ def get_steel_grade_category(
     "",
     response_model=ApiResponse[SteelGradeCategoryVO],
     status_code=status.HTTP_201_CREATED,
+    summary="新建牌号分类",
 )
 def create_steel_grade_category(
     dto: SteelGradeCategoryCreate,
@@ -173,6 +181,7 @@ def create_steel_grade_category(
 @router.put(
     "/{record_id:int}",
     response_model=ApiResponse[SteelGradeCategoryVO],
+    summary="更新牌号分类",
 )
 def update_steel_grade_category(
     record_id: int,
@@ -187,6 +196,7 @@ def update_steel_grade_category(
 @router.delete(
     "/{record_id:int}",
     response_model=ApiResponse[None],
+    summary="删除牌号分类",
 )
 def delete_steel_grade_category(
     record_id: int,

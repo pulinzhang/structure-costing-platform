@@ -39,7 +39,7 @@ _query_service = MaterialChangeQueryService()
 _rollback_service = MaterialChangeRollbackService()
 
 
-@router.get("/template")
+@router.get("/template", summary="下载材料变更导入模板")
 def download_template(
     current_user: UserVO = Depends(require_perm(Perm.ENGINEERING_CHANGE_MATERIAL_UPLOAD_UPLOAD)),
 ) -> StreamingResponse:
@@ -52,7 +52,7 @@ def download_template(
     )
 
 
-@router.post("/upload", response_model=ApiResponse[AsyncTaskAcceptedVO])
+@router.post("/upload", response_model=ApiResponse[AsyncTaskAcceptedVO], summary="上传材料变更")
 async def upload_material_change(
     location: str = Form(...),
     vehicle_model: str = Form(...),
@@ -79,6 +79,7 @@ async def upload_material_change(
 @router.get(
     "/upload/tasks/{task_id}",
     response_model=ApiResponse[AsyncTaskProgressVO],
+    summary="查询材料变更上传进度",
 )
 def get_upload_task(
     task_id: str,
@@ -108,6 +109,7 @@ def get_upload_task(
 @router.get(
     "/uploads",
     response_model=ApiResponse[PageResult[MaterialChangeUploadListRowVO]],
+    summary="分页查询材料变更上传记录",
 )
 def list_uploads(
     query: MaterialChangeUploadQueryDTO = Depends(),
@@ -125,7 +127,7 @@ def list_uploads(
     )
 
 
-@router.get("/uploads/{upload_log_id:int}/file")
+@router.get("/uploads/{upload_log_id:int}/file", summary="下载材料变更原文件")
 def download_original(
     upload_log_id: int,
     db: Session = Depends(get_db),
@@ -148,6 +150,7 @@ def download_original(
 @router.delete(
     "/uploads/{upload_log_id:int}",
     response_model=ApiResponse[None],
+    summary="删除材料变更上传记录",
 )
 def delete_upload(
     upload_log_id: int,

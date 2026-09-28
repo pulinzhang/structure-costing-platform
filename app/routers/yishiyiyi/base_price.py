@@ -51,6 +51,7 @@ _async_task_service = AsyncTaskService()
 @router.get(
     "",
     response_model=ApiResponse[list[SteelBasePriceResponse]],
+    summary="分页查询基准价格列表",
 )
 def list_base_prices(
     query: SteelBasePriceQuery = Depends(),
@@ -75,6 +76,7 @@ def list_base_prices(
 @router.get(
     "/options",
     response_model=ApiResponse[SteelBasePriceFilterOptionsVO],
+    summary="获取筛选下拉选项",
 )
 def get_base_price_options(
     db: Session = Depends(get_db),
@@ -89,6 +91,7 @@ def get_base_price_options(
 @router.get(
     "/export-preview",
     response_model=ApiResponse[PageResult[SteelBasePriceExportRow] | list[SteelBasePriceExportRow]],
+    summary="导出预览",
 )
 def export_preview(
     query: SteelBasePriceExportPreviewQuery = Depends(),
@@ -122,6 +125,7 @@ def export_preview(
 @router.get(
     "/export-download",
     response_model=None,
+    summary="下载基准价格 Excel",
 )
 def export_download(
     query: SteelBasePriceExportQuery = Depends(),
@@ -146,7 +150,7 @@ def export_download(
     )
 
 
-@router.get("/template")
+@router.get("/template", summary="下载基准价格导入模板")
 def download_base_price_import_template(
     current_user: UserVO = Depends(require_perm(Perm.BASE_PRICE_UPLOAD_VIEW)),
 ) -> StreamingResponse:
@@ -162,6 +166,7 @@ def download_base_price_import_template(
 @router.post(
     "/import",
     response_model=ApiResponse[AsyncTaskAcceptedVO],
+    summary="导入基准价格",
 )
 async def import_base_price(
     file: UploadFile = File(...),
@@ -186,6 +191,7 @@ async def import_base_price(
 @router.get(
     "/tasks/{task_id}",
     response_model=ApiResponse[AsyncTaskProgressVO],
+    summary="查询基准价格导入任务进度",
 )
 def get_base_price_import_task_progress(
     task_id: str,
@@ -208,6 +214,7 @@ def get_base_price_import_task_progress(
 @router.get(
     "/{record_id:int}",
     response_model=ApiResponse[SteelBasePriceResponse],
+    summary="获取单条基准价格记录",
 )
 def get_base_price(
     record_id: int,
@@ -225,6 +232,7 @@ def get_base_price(
     "",
     response_model=ApiResponse[SteelBasePriceResponse],
     status_code=status.HTTP_201_CREATED,
+    summary="创建基准价格记录",
 )
 def create_base_price(
     body: SteelBasePriceCreate,
@@ -239,6 +247,7 @@ def create_base_price(
 @router.put(
     "/{record_id:int}",
     response_model=ApiResponse[SteelBasePriceResponse],
+    summary="更新基准价格记录",
 )
 def update_base_price(
     record_id: int,
@@ -254,6 +263,7 @@ def update_base_price(
 @router.delete(
     "/{record_id:int}",
     response_model=ApiResponse[None],
+    summary="删除基准价格记录",
 )
 def delete_base_price(
     record_id: int,
@@ -268,6 +278,7 @@ def delete_base_price(
 @router.post(
     "/batch-delete",
     response_model=ApiResponse[SteelBasePriceBatchDeleteResultVO],
+    summary="按条件批量删除基准价格记录",
 )
 def batch_delete_base_prices(
     body: SteelBasePriceQuery,

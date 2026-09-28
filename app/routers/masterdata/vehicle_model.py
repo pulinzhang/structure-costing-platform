@@ -28,7 +28,7 @@ router = APIRouter(prefix="/api/masterdata/vehicle-models", tags=["项目"])
 _service = VehicleModelService()
 
 
-@router.get("", response_model=ApiResponse[VehicleModelListVO])
+@router.get("", response_model=ApiResponse[VehicleModelListVO], summary="查询项目列表")
 def list_vehicle_models(
     db: Session = Depends(get_db),
     current_user: UserVO = Depends(require_perm(Perm.VEHICLE_MODEL_LIST_VIEW)),
@@ -41,6 +41,7 @@ def list_vehicle_models(
     "",
     response_model=ApiResponse[VehicleModelVO],
     status_code=status.HTTP_201_CREATED,
+    summary="新建项目",
 )
 def create_vehicle_model(
     dto: VehicleModelCreateDTO,
@@ -51,7 +52,7 @@ def create_vehicle_model(
     return ApiResponse.created(data=record, message="创建成功")
 
 
-@router.get("/template")
+@router.get("/template", summary="下载项目导入模板")
 def download_import_template(
     current_user: UserVO = Depends(require_perm(Perm.VEHICLE_MODEL_UPLOAD_VIEW)),
 ) -> StreamingResponse:
@@ -63,7 +64,7 @@ def download_import_template(
     )
 
 
-@router.get("/export")
+@router.get("/export", summary="导出项目")
 def export_vehicle_models(
     location: str | None = Query(None),
     db: Session = Depends(get_db),
@@ -81,7 +82,9 @@ def export_vehicle_models(
     )
 
 
-@router.post("/upload", response_model=ApiResponse[VehicleModelUploadResultVO])
+@router.post(
+    "/upload", response_model=ApiResponse[VehicleModelUploadResultVO], summary="同步导入项目"
+)
 async def upload_vehicle_models(
     file: UploadFile = File(...),
     db: Session = Depends(get_db),
@@ -93,7 +96,9 @@ async def upload_vehicle_models(
     return ApiResponse.ok(data=result, message=message)
 
 
-@router.patch("/{location}/{vehicle_model}", response_model=ApiResponse[VehicleModelVO])
+@router.patch(
+    "/{location}/{vehicle_model}", response_model=ApiResponse[VehicleModelVO], summary="更新项目"
+)
 def update_vehicle_model(
     location: str,
     vehicle_model: str,
@@ -111,7 +116,7 @@ def update_vehicle_model(
     return ApiResponse.updated(data=record, message="更新成功")
 
 
-@router.delete("/{location}/{vehicle_model}", response_model=ApiResponse[None])
+@router.delete("/{location}/{vehicle_model}", response_model=ApiResponse[None], summary="删除项目")
 def delete_vehicle_model(
     location: str,
     vehicle_model: str,

@@ -45,7 +45,11 @@ _export_service = StampingTonnagePriceExportService()
 _import_service = StampingTonnagePriceImportService()
 
 
-@router.get("/list", response_model=ApiResponse[list[StampingTonnagePriceResponse]])
+@router.get(
+    "/list",
+    response_model=ApiResponse[list[StampingTonnagePriceResponse]],
+    summary="获取所有冲次单价列表",
+)
 def list_all(
     db: Session = Depends(get_db),
     current_user: UserVO = Depends(require_perm(Perm.STAMPING_TONNAGE_VIEW)),
@@ -55,7 +59,11 @@ def list_all(
     return ApiResponse.ok(data=data, message=f"查询到 {len(data)} 条记录")
 
 
-@router.get("/by-year/{year:int}", response_model=ApiResponse[list[StampingTonnagePriceResponse]])
+@router.get(
+    "/by-year/{year:int}",
+    response_model=ApiResponse[list[StampingTonnagePriceResponse]],
+    summary="按年份查询冲次单价",
+)
 def list_by_year(
     year: int,
     location: str | None = None,
@@ -70,7 +78,11 @@ def list_by_year(
     return ApiResponse.ok(data=data, message=f"查询到 {len(data)} 条记录")
 
 
-@router.get("/paginate", response_model=ApiResponse[PageResult[StampingTonnagePriceResponse]])
+@router.get(
+    "/paginate",
+    response_model=ApiResponse[PageResult[StampingTonnagePriceResponse]],
+    summary="分页查询冲次单价",
+)
 def paginate(
     query: StampingTonnagePriceQuery = Depends(),
     db: Session = Depends(get_db),
@@ -88,7 +100,7 @@ def paginate(
     )
 
 
-@router.get("/filters/locations", response_model=ApiResponse[list[str]])
+@router.get("/filters/locations", response_model=ApiResponse[list[str]], summary="获取所有基地列表")
 def get_locations(
     db: Session = Depends(get_db),
     current_user: UserVO = Depends(
@@ -100,7 +112,7 @@ def get_locations(
     return ApiResponse.ok(data=data)
 
 
-@router.get("/filters/years", response_model=ApiResponse[list[int]])
+@router.get("/filters/years", response_model=ApiResponse[list[int]], summary="获取所有年份列表")
 def get_years(
     db: Session = Depends(get_db),
     current_user: UserVO = Depends(require_perm(Perm.STAMPING_TONNAGE_VIEW)),
@@ -110,7 +122,7 @@ def get_years(
     return ApiResponse.ok(data=data)
 
 
-@router.get("/filters/tonnages", response_model=ApiResponse[list[int]])
+@router.get("/filters/tonnages", response_model=ApiResponse[list[int]], summary="获取所有吨位列表")
 def get_tonnages(
     db: Session = Depends(get_db),
     current_user: UserVO = Depends(require_perm(Perm.STAMPING_TONNAGE_VIEW)),
@@ -120,7 +132,7 @@ def get_tonnages(
     return ApiResponse.ok(data=data)
 
 
-@router.get("/export")
+@router.get("/export", summary="按当前筛选条件导出冲次单价 Excel")
 def export_excel(
     location: str | None = Query(None, description="采购基地"),
     year: int | None = Query(None, ge=2000, le=2100, description="年份"),
@@ -141,7 +153,7 @@ def export_excel(
     )
 
 
-@router.get("/template")
+@router.get("/template", summary="下载冲次单价导入模板")
 def download_import_template(
     current_user: UserVO = Depends(require_perm(Perm.STAMPING_TONNAGE_UPLOAD_VIEW)),
 ) -> StreamingResponse:
@@ -157,6 +169,7 @@ def download_import_template(
 @router.post(
     "/upload",
     response_model=ApiResponse[StampingTonnagePriceImportResultVO],
+    summary="同步导入冲次单价",
 )
 async def upload_tonnage_price_excel(
     location: str = Form(..., description="采购基地（必填）"),
@@ -181,6 +194,7 @@ async def upload_tonnage_price_excel(
 @router.post(
     "/batch-delete",
     response_model=ApiResponse[StampingTonnagePriceBatchDeleteResultVO],
+    summary="按基地 + 年度批量删除冲次单价",
 )
 def batch_delete(
     body: StampingTonnagePriceBatchDeleteDTO,
@@ -199,6 +213,7 @@ def batch_delete(
 @router.post(
     "/batch-approve",
     response_model=ApiResponse[StampingTonnagePriceBatchAuditResultVO],
+    summary="按基地 + 年度批量审核通过",
 )
 def batch_approve(
     body: StampingTonnagePriceBatchApproveDTO,
@@ -213,6 +228,7 @@ def batch_approve(
 @router.post(
     "/batch-reverse-audit",
     response_model=ApiResponse[StampingTonnagePriceBatchAuditResultVO],
+    summary="按基地 + 年度批量反审核",
 )
 def batch_reverse_audit(
     body: StampingTonnagePriceBatchReverseAuditDTO,
@@ -224,7 +240,11 @@ def batch_reverse_audit(
     return ApiResponse.ok(data=result, message=result.message)
 
 
-@router.post("/bulk", response_model=ApiResponse[StampingTonnagePriceBulkUpsertResponse])
+@router.post(
+    "/bulk",
+    response_model=ApiResponse[StampingTonnagePriceBulkUpsertResponse],
+    summary="批量写入冲次单价",
+)
 def bulk_upsert(
     items: list[StampingTonnagePriceCreate],
     db: Session = Depends(get_db),
@@ -235,7 +255,9 @@ def bulk_upsert(
     return ApiResponse.ok(data=result, message=result.message)
 
 
-@router.post("", response_model=ApiResponse[StampingTonnagePriceResponse])
+@router.post(
+    "", response_model=ApiResponse[StampingTonnagePriceResponse], summary="创建冲次单价记录"
+)
 def create(
     body: StampingTonnagePriceCreate,
     db: Session = Depends(get_db),
@@ -246,7 +268,11 @@ def create(
     return ApiResponse.created(data=record, message="创建成功")
 
 
-@router.get("/{id:int}", response_model=ApiResponse[StampingTonnagePriceResponse])
+@router.get(
+    "/{id:int}",
+    response_model=ApiResponse[StampingTonnagePriceResponse],
+    summary="获取单个冲次单价记录",
+)
 def get_by_id(
     id: int,
     db: Session = Depends(get_db),
@@ -257,7 +283,11 @@ def get_by_id(
     return ApiResponse.ok(data=record, message="获取成功")
 
 
-@router.put("/{id:int}", response_model=ApiResponse[StampingTonnagePriceResponse])
+@router.put(
+    "/{id:int}",
+    response_model=ApiResponse[StampingTonnagePriceResponse],
+    summary="更新冲次单价记录",
+)
 def update(
     id: int,
     body: StampingTonnagePriceUpdate,
@@ -269,7 +299,7 @@ def update(
     return ApiResponse.updated(data=record, message="更新成功")
 
 
-@router.delete("/{id:int}", response_model=ApiResponse[None])
+@router.delete("/{id:int}", response_model=ApiResponse[None], summary="删除冲次单价记录")
 def delete(
     id: int,
     db: Session = Depends(get_db),

@@ -41,7 +41,7 @@ _die_service = StampingDieService()
 _export_service = StampingDieExportService()
 
 
-@router.get("/template")
+@router.get("/template", summary="下载模具布点导入模板")
 def download_die_import_template(
     current_user: UserVO = Depends(require_perm(Perm.STAMPING_DIE_UPLOAD_VIEW)),
 ) -> StreamingResponse:
@@ -53,7 +53,7 @@ def download_die_import_template(
     )
 
 
-@router.post("/upload", response_model=ApiResponse[AsyncTaskAcceptedVO])
+@router.post("/upload", response_model=ApiResponse[AsyncTaskAcceptedVO], summary="上传模具布点")
 async def upload_die_layout(
     location: str = Form(...),
     vehicle_model: str = Form(...),
@@ -73,7 +73,11 @@ async def upload_die_layout(
     return ApiResponse.ok(data=accepted, message="上传成功，后台开始解析")
 
 
-@router.get("/tasks/{task_id}", response_model=ApiResponse[AsyncTaskProgressVO])
+@router.get(
+    "/tasks/{task_id}",
+    response_model=ApiResponse[AsyncTaskProgressVO],
+    summary="查询模具布点上传进度",
+)
 def get_die_upload_task_progress(
     task_id: str,
     current_user: UserVO = Depends(require_perm(Perm.STAMPING_DIE_UPLOAD_VIEW)),
@@ -88,7 +92,9 @@ def get_die_upload_task_progress(
     )
 
 
-@router.get("/filters", response_model=ApiResponse[StampingDieScopeFilterVO])
+@router.get(
+    "/filters", response_model=ApiResponse[StampingDieScopeFilterVO], summary="获取模具列表筛选"
+)
 def list_die_scope_filters(
     location: str | None = Query(None),
     year: int | None = Query(None, ge=2000, le=2100),
@@ -103,7 +109,11 @@ def list_die_scope_filters(
     )
 
 
-@router.get("/parts", response_model=ApiResponse[PageResult[StampingDiePartListVO]])
+@router.get(
+    "/parts",
+    response_model=ApiResponse[PageResult[StampingDiePartListVO]],
+    summary="分页查询模具零件",
+)
 def list_die_parts(
     query: StampingDiePartQuery = Depends(),
     db: Session = Depends(get_db),
@@ -118,7 +128,11 @@ def list_die_parts(
     )
 
 
-@router.get("/parts/{part_id:int}", response_model=ApiResponse[StampingDiePartDetailVO])
+@router.get(
+    "/parts/{part_id:int}",
+    response_model=ApiResponse[StampingDiePartDetailVO],
+    summary="查看模具零件",
+)
 def get_die_part(
     part_id: int,
     db: Session = Depends(get_db),
@@ -127,7 +141,11 @@ def get_die_part(
     return ApiResponse.ok(data=_die_service.get_part(db, part_id))
 
 
-@router.patch("/processes/{process_id:int}", response_model=ApiResponse[StampingDieProcessVO])
+@router.patch(
+    "/processes/{process_id:int}",
+    response_model=ApiResponse[StampingDieProcessVO],
+    summary="修改模具工序分摊比例",
+)
 def patch_die_process_alloc_ratio(
     process_id: int,
     body: StampingDieAllocRatioUpdate,
@@ -140,7 +158,7 @@ def patch_die_process_alloc_ratio(
     )
 
 
-@router.get("/export")
+@router.get("/export", summary="导出模具列表")
 def export_die_parts(
     location: str = Query(""),
     vehicle_model: str = Query(""),
@@ -168,7 +186,11 @@ def export_die_parts(
     )
 
 
-@router.post("/batch-delete", response_model=ApiResponse[StampingDieBatchDeleteResultVO])
+@router.post(
+    "/batch-delete",
+    response_model=ApiResponse[StampingDieBatchDeleteResultVO],
+    summary="按范围批量删除模具",
+)
 def batch_delete_die_scope(
     dto: StampingDieScopeDTO,
     db: Session = Depends(get_db),

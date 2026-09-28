@@ -25,7 +25,7 @@ router = APIRouter(prefix="/api/masterdata/locations", tags=["基地"])
 _service = LocationService()
 
 
-@router.get("", response_model=ApiResponse[list[LocationVO]])
+@router.get("", response_model=ApiResponse[list[LocationVO]], summary="查询基地列表")
 def list_locations(
     db: Session = Depends(get_db),
     current_user: UserVO = Depends(require_perm(Perm.LOCATION_VIEW)),
@@ -38,6 +38,7 @@ def list_locations(
     "",
     response_model=ApiResponse[LocationVO],
     status_code=status.HTTP_201_CREATED,
+    summary="新建基地",
 )
 def create_location(
     dto: LocationCreateDTO,
@@ -48,7 +49,7 @@ def create_location(
     return ApiResponse.created(data=record, message="创建成功")
 
 
-@router.patch("/{location}", response_model=ApiResponse[LocationVO])
+@router.patch("/{location}", response_model=ApiResponse[LocationVO], summary="更新基地")
 def update_location(
     location: str,
     dto: LocationUpdateDTO,
@@ -59,7 +60,7 @@ def update_location(
     return ApiResponse.updated(data=record, message="更新成功")
 
 
-@router.delete("/{location}", response_model=ApiResponse[None])
+@router.delete("/{location}", response_model=ApiResponse[None], summary="删除基地")
 def delete_location(
     location: str,
     db: Session = Depends(get_db),
@@ -73,6 +74,7 @@ def delete_location(
     "/{location}/aliases",
     response_model=ApiResponse[LocationVO],
     status_code=status.HTTP_201_CREATED,
+    summary="新增基地别名",
 )
 def add_location_alias(
     location: str,
@@ -87,6 +89,7 @@ def add_location_alias(
 @router.delete(
     "/{location}/aliases/{alias}",
     response_model=ApiResponse[LocationVO],
+    summary="删除基地别名",
 )
 def delete_location_alias(
     location: str,

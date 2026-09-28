@@ -51,7 +51,9 @@ _export_service = StampingDieFeeExportService()
 _async_task_service = AsyncTaskService()
 
 
-@router.get("/filters", response_model=ApiResponse[StampingDieFeeFilterVO])
+@router.get(
+    "/filters", response_model=ApiResponse[StampingDieFeeFilterVO], summary="获取模具费筛选"
+)
 def list_filters(
     location: str | None = Query(None),
     year: int | None = Query(None, ge=2000, le=2100),
@@ -80,7 +82,11 @@ def list_filters(
     )
 
 
-@router.get("/calc/ready", response_model=ApiResponse[StampingDieFeeCalcReadyVO])
+@router.get(
+    "/calc/ready",
+    response_model=ApiResponse[StampingDieFeeCalcReadyVO],
+    summary="查询模具费计算就绪状态",
+)
 def get_calc_ready(
     year: int = Query(..., ge=2000, le=2100),
     location: str | None = Query(None),
@@ -104,6 +110,7 @@ def get_calc_ready(
 @router.get(
     "/calc/logs",
     response_model=ApiResponse[PageResult[StampingDieFeeCalcLogVO]],
+    summary="分页查询模具费计算日志",
 )
 def list_calc_logs(
     year: int | None = Query(None),
@@ -138,6 +145,7 @@ def list_calc_logs(
 @router.get(
     "/calc/logs/{log_id:int}",
     response_model=ApiResponse[StampingDieFeeCalcLogVO],
+    summary="查看模具费计算日志",
 )
 def get_calc_log(
     log_id: int,
@@ -150,6 +158,7 @@ def get_calc_log(
 @router.delete(
     "/calc/logs",
     response_model=ApiResponse[DeletedCountVO],
+    summary="删除全部模具费计算日志",
 )
 def delete_all_calc_logs(
     db: Session = Depends(get_db),
@@ -159,7 +168,9 @@ def delete_all_calc_logs(
     return ApiResponse.ok(data=result, message=f"已删除 {result.deleted_count} 条")
 
 
-@router.delete("/calc/logs/{log_id:int}", response_model=ApiResponse[None])
+@router.delete(
+    "/calc/logs/{log_id:int}", response_model=ApiResponse[None], summary="删除一条模具费计算日志"
+)
 def delete_calc_log(
     log_id: int,
     db: Session = Depends(get_db),
@@ -172,6 +183,7 @@ def delete_calc_log(
 @router.get(
     "/calc/progress/{task_id}",
     response_model=ApiResponse[AsyncTaskProgressVO],
+    summary="查询模具费计算进度",
 )
 def get_calc_task_progress(
     task_id: str,
@@ -189,7 +201,7 @@ def get_calc_task_progress(
     )
 
 
-@router.post("/calc", response_model=ApiResponse[AsyncTaskAcceptedVO])
+@router.post("/calc", response_model=ApiResponse[AsyncTaskAcceptedVO], summary="提交模具费异步计算")
 def calculate(
     dto: StampingDieFeeCalcDTO,
     db: Session = Depends(get_db),
@@ -199,7 +211,7 @@ def calculate(
     return ApiResponse.ok(data=accepted, message="已提交后台计算")
 
 
-@router.get("", response_model=ApiResponse[PageResult[StampingDieFeeVO]])
+@router.get("", response_model=ApiResponse[PageResult[StampingDieFeeVO]], summary="分页查询模具费")
 def list_fees(
     query: StampingDieFeeQuery = Depends(),
     db: Session = Depends(get_db),
@@ -216,7 +228,7 @@ def list_fees(
     )
 
 
-@router.get("/export")
+@router.get("/export", summary="按筛选导出模具费")
 def export_download(
     year: int | None = Query(None, ge=2000, le=2100),
     location: str | None = Query(None),
@@ -248,7 +260,11 @@ def export_download(
     )
 
 
-@router.delete("/scope", response_model=ApiResponse[StampingDieFeeBatchDeleteResultVO])
+@router.delete(
+    "/scope",
+    response_model=ApiResponse[StampingDieFeeBatchDeleteResultVO],
+    summary="按范围删除模具费",
+)
 def delete_scope(
     year: int = Query(..., ge=2000, le=2100),
     location: str = Query(..., min_length=1),
@@ -271,6 +287,7 @@ def delete_scope(
 @router.post(
     "/batch-approve",
     response_model=ApiResponse[StampingDieFeeBatchAuditResultVO],
+    summary="批量审核通过模具费",
 )
 def batch_approve(
     dto: StampingDieFeeBatchApproveDTO,
@@ -287,6 +304,7 @@ def batch_approve(
 @router.post(
     "/batch-reverse-audit",
     response_model=ApiResponse[StampingDieFeeBatchAuditResultVO],
+    summary="批量反审核模具费",
 )
 def batch_reverse_audit(
     dto: StampingDieFeeBatchReverseAuditDTO,
@@ -300,7 +318,7 @@ def batch_reverse_audit(
     return ApiResponse.ok(data=result, message=message)
 
 
-@router.get("/{fee_id:int}", response_model=ApiResponse[StampingDieFeeVO])
+@router.get("/{fee_id:int}", response_model=ApiResponse[StampingDieFeeVO], summary="查看模具费")
 def get_fee(
     fee_id: int,
     db: Session = Depends(get_db),
@@ -309,7 +327,9 @@ def get_fee(
     return ApiResponse.ok(data=_service.get_by_id(db, fee_id))
 
 
-@router.put("/{fee_id:int}", response_model=ApiResponse[StampingDieFeeVO])
+@router.put(
+    "/{fee_id:int}", response_model=ApiResponse[StampingDieFeeVO], summary="修改模具费调整金额"
+)
 def update_adjustment(
     fee_id: int,
     dto: StampingDieFeeUpdateDTO,
@@ -320,7 +340,7 @@ def update_adjustment(
     return ApiResponse.updated(data=row, message="调整金额已保存")
 
 
-@router.delete("/{fee_id:int}", response_model=ApiResponse[None])
+@router.delete("/{fee_id:int}", response_model=ApiResponse[None], summary="删除模具费")
 def delete_fee(
     fee_id: int,
     db: Session = Depends(get_db),

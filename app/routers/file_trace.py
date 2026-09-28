@@ -22,7 +22,9 @@ router = APIRouter(prefix="/api/file-trace", tags=["文件溯源"])
 _service = UploadFileService()
 
 
-@router.get("/list", response_model=ApiResponse[PageResult[UploadFileVO]])
+@router.get(
+    "/list", response_model=ApiResponse[PageResult[UploadFileVO]], summary="分页查询上传文件"
+)
 def list_upload_files(
     query: UploadFileListQuery = Depends(),
     db: Session = Depends(get_db),
@@ -38,7 +40,7 @@ def list_upload_files(
     )
 
 
-@router.get("/filters", response_model=ApiResponse[UploadFileFiltersVO])
+@router.get("/filters", response_model=ApiResponse[UploadFileFiltersVO], summary="获取上传文件筛选")
 def get_upload_file_filters(
     db: Session = Depends(get_db),
     current_user: UserVO = Depends(require_perm(Perm.FILE_TRACE_VIEW)),
@@ -47,7 +49,7 @@ def get_upload_file_filters(
     return ApiResponse.ok(data=filters)
 
 
-@router.get("/{file_id:int}", response_model=ApiResponse[UploadFileVO])
+@router.get("/{file_id:int}", response_model=ApiResponse[UploadFileVO], summary="查看上传文件")
 def get_upload_file(
     file_id: int,
     db: Session = Depends(get_db),
@@ -57,7 +59,7 @@ def get_upload_file(
     return ApiResponse.ok(data=vo)
 
 
-@router.get("/{file_id:int}/download")
+@router.get("/{file_id:int}/download", summary="下载上传文件")
 def download_upload_file(
     file_id: int,
     db: Session = Depends(get_db),

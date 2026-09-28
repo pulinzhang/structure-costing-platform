@@ -57,6 +57,7 @@ _generate_or_view = require_any_perm(
 @router.get(
     "/generate/prep-stats",
     response_model=ApiResponse[BomProcurementObjectPrepStatsVO],
+    summary="查询采购对象生成前统计",
 )
 def prep_stats(
     query: BomProcurementObjectPrepQuery = Depends(),
@@ -69,6 +70,7 @@ def prep_stats(
 @router.post(
     "/generate",
     response_model=ApiResponse[BomProcurementObjectGenerateResultVO],
+    summary="生成采购对象",
 )
 def generate(
     body: BomProcurementObjectGenerateDTO,
@@ -87,6 +89,7 @@ def generate(
 @router.get(
     "/generate/logs",
     response_model=ApiResponse[PageResult[BomProcurementObjectGenerateLogVO]],
+    summary="分页查询采购对象生成日志",
 )
 def list_generate_logs(
     query: BomProcurementObjectGenerateLogQuery = Depends(),
@@ -105,6 +108,7 @@ def list_generate_logs(
 @router.get(
     "/generate/logs/{log_id:int}",
     response_model=ApiResponse[BomProcurementObjectGenerateLogVO],
+    summary="查看采购对象生成日志",
 )
 def get_generate_log(
     log_id: int,
@@ -117,6 +121,7 @@ def get_generate_log(
 @router.get(
     "/summary",
     response_model=ApiResponse[BomProcurementObjectListVO],
+    summary="查询采购对象汇总",
 )
 def get_summary(
     location: str = Query(..., min_length=1),
@@ -138,6 +143,7 @@ def get_summary(
 @router.get(
     "/supplier-choices",
     response_model=ApiResponse[PageResult[SupplierChoiceVO]],
+    summary="搜索采购对象可选供应商",
 )
 def search_supplier_choices(
     query: BomProcurementObjectSupplierChoiceQuery = Depends(),
@@ -153,7 +159,7 @@ def search_supplier_choices(
     )
 
 
-@router.get("/supplier-template")
+@router.get("/supplier-template", summary="下载采购对象供应商导入模板")
 def download_supplier_template(
     location: str = Query(..., min_length=1),
     vehicle_model: str = Query(..., min_length=1),
@@ -178,6 +184,7 @@ def download_supplier_template(
 @router.post(
     "/supplier-upload",
     response_model=ApiResponse[BomProcurementObjectSupplierUploadResultVO],
+    summary="同步导入采购对象供应商",
 )
 async def upload_suppliers(
     location: str = Form(..., min_length=1),
@@ -213,6 +220,7 @@ async def upload_suppliers(
 @router.get(
     "",
     response_model=ApiResponse[PageResult[BomProcurementObjectVO]],
+    summary="分页查询采购对象",
 )
 def paginate(
     query: BomProcurementObjectQuery = Depends(),
@@ -230,7 +238,7 @@ def paginate(
     )
 
 
-@router.get("/export")
+@router.get("/export", summary="按筛选导出采购对象")
 def export_excel(
     query: BomProcurementObjectQuery = Depends(),
     db: Session = Depends(get_db),
@@ -248,6 +256,7 @@ def export_excel(
 @router.get(
     "/items/{object_id:int}",
     response_model=ApiResponse[BomProcurementObjectVO],
+    summary="查看采购对象",
 )
 def get_item(
     object_id: int,
@@ -260,6 +269,7 @@ def get_item(
 @router.patch(
     "/items/{object_id:int}/confirm",
     response_model=ApiResponse[BomProcurementObjectVO],
+    summary="确认采购对象",
 )
 def confirm_item(
     object_id: int,
@@ -276,6 +286,7 @@ def confirm_item(
 @router.patch(
     "/items/{object_id:int}/supplier",
     response_model=ApiResponse[BomProcurementObjectVO],
+    summary="修改采购对象供应商",
 )
 def update_item_supplier(
     object_id: int,
@@ -292,6 +303,7 @@ def update_item_supplier(
 @router.post(
     "/batch-approve",
     response_model=ApiResponse[BomProcurementObjectBatchAuditResultVO],
+    summary="批量审核通过采购对象",
 )
 def batch_approve(
     body: BomProcurementObjectBatchApproveDTO,
@@ -305,6 +317,7 @@ def batch_approve(
 @router.post(
     "/batch-reverse-audit",
     response_model=ApiResponse[BomProcurementObjectBatchAuditResultVO],
+    summary="批量反审核采购对象",
 )
 def batch_reverse_audit(
     body: BomProcurementObjectBatchReverseAuditDTO,
@@ -318,6 +331,7 @@ def batch_reverse_audit(
 @router.post(
     "/batch-delete",
     response_model=ApiResponse[BomProcurementObjectBatchDeleteResultVO],
+    summary="批量删除采购对象",
 )
 def batch_delete(
     body: BomProcurementObjectBatchDeleteDTO,

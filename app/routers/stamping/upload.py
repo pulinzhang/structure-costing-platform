@@ -27,7 +27,7 @@ router = APIRouter(prefix="/api/stamping/upload", tags=["冲压工艺上传 API"
 _async_task_service = AsyncTaskService()
 
 
-@router.get("/template")
+@router.get("/template", summary="下载冲压工艺导入模板")
 def download_stamping_import_template(
     current_user: UserVO = Depends(require_perm(Perm.STAMPING_UPLOAD_VIEW)),
 ) -> StreamingResponse:
@@ -40,7 +40,11 @@ def download_stamping_import_template(
     )
 
 
-@router.post("/", response_model=ApiResponse[AsyncTaskAcceptedVO])
+@router.post(
+    "/",
+    response_model=ApiResponse[AsyncTaskAcceptedVO],
+    summary="上传冲压工艺文件",
+)
 async def upload_stamping_file(
     file: UploadFile = File(...),
     current_user: UserVO = Depends(require_perm(Perm.STAMPING_UPLOAD_UPLOAD)),
@@ -66,6 +70,7 @@ async def upload_stamping_file(
 @router.get(
     "/tasks/{task_id}",
     response_model=ApiResponse[AsyncTaskProgressVO],
+    summary="查询冲压工艺上传任务进度",
 )
 def get_stamping_upload_task_progress(
     task_id: str,

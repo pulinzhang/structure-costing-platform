@@ -1,0 +1,151 @@
+/* 文档页与使用帮助同一套纸面。颜色只写在下面这一组变量里。 */
+
+html {
+    color-scheme: light;
+    background: #fff;
+}
+
+body {
+    margin: 0;
+    min-height: 100vh;
+    background: #fff;
+    color: #010101;
+    font-family: Inter, "Segoe UI", "PingFang SC", "Microsoft YaHei", sans-serif;
+    -webkit-font-smoothing: antialiased;
+}
+
+::selection {
+    background: rgb(183 8 38 / 0.08);
+    color: #010101;
+}
+
+html .light-mode {
+    --scalar-font: Inter, "Segoe UI", "PingFang SC", "Microsoft YaHei", sans-serif;
+    --scalar-font-code: "JetBrains Mono", Consolas, "Sarasa Mono SC", monospace;
+    --scalar-background-1: #fff;
+    --scalar-background-2: #f5f5f5;
+    --scalar-background-3: #e6e6e6;
+    --scalar-color-1: #010101;
+    --scalar-color-2: #666666;
+    --scalar-color-3: #666666;
+    --scalar-color-accent: #b70826;
+    --scalar-border-color: #ccc;
+    --scalar-button-1: #010101;
+    --scalar-button-1-hover: #b70826;
+    --scalar-button-1-color: #fff;
+    --scalar-background-accent: rgb(183 8 38 / 0.08);
+    --scalar-link-color: #b70826;
+    --scalar-link-color-hover: #8a061c;
+    --scalar-scrollbar-color: rgb(1 1 1 / 0.22);
+    --scalar-scrollbar-color-active: rgb(1 1 1 / 0.28);
+    --scalar-sidebar-background-1: #fff;
+    --scalar-sidebar-border-color: #ccc;
+    --scalar-sidebar-color-1: #666666;
+    --scalar-sidebar-color-2: #666666;
+    --scalar-sidebar-color-active: #fff;
+    --scalar-sidebar-item-hover-color: #fff;
+    --scalar-sidebar-item-hover-background: #b70826;
+    --scalar-sidebar-item-active-background: #010101;
+    --scalar-sidebar-font-weight: 400;
+    --scalar-sidebar-font-weight-active: 500;
+    --scalar-sidebar-search-background: #fff;
+    --scalar-sidebar-search-border-color: #ccc;
+    --scalar-sidebar-search-color: #666666;
+}
+
+/* 左右与帮助页 .nav 相同，高亮条不贴边。
+   底边只留一截：侧栏高度是视口减去顶栏，页脚钉在栏底，大底边距会占掉一截不滚动的空白。 */
+.scalar-app aside.bg-sidebar-b-1 {
+    box-sizing: border-box;
+    padding: 28px 32px 12px;
+    background: var(--scalar-sidebar-background-1);
+    border-right: 1px solid var(--scalar-sidebar-border-color);
+}
+
+/* 列表在固定高度里收缩并滚动，页脚留在栏底，不再把空白顶到视口外。 */
+.scalar-app aside.bg-sidebar-b-1 > ul.custom-scroll {
+    min-height: 0;
+}
+
+@media (max-height: 900px) {
+    .scalar-app aside.bg-sidebar-b-1 {
+        padding-top: 12px;
+        padding-bottom: 0;
+    }
+}
+
+.scalar-app aside.bg-sidebar-b-1 .rounded {
+    border-radius: 0;
+}
+
+.scalar-app aside.bg-sidebar-b-1 .custom-scroll::-webkit-scrollbar {
+    width: 3px;
+}
+
+.scalar-app aside.bg-sidebar-b-1 .custom-scroll::-webkit-scrollbar-thumb {
+    background: transparent;
+    border: 0;
+}
+
+.scalar-app aside.bg-sidebar-b-1 .custom-scroll:hover::-webkit-scrollbar-thumb {
+    background: var(--scalar-scrollbar-color);
+}
+
+/* 分组名对齐 .nav-label。组件不给分组名悬停类。 */
+.scalar-app div.font-sidebar {
+    margin: 24px 0 8px;
+    padding: 0;
+    border-radius: 0;
+    font-size: 11px;
+    line-height: 1.4;
+    font-weight: var(--scalar-sidebar-font-weight);
+    color: var(--scalar-sidebar-color-2);
+    background: transparent;
+    cursor: default;
+}
+
+.scalar-app :is(button, a, div).font-sidebar > .h-lh {
+    display: none;
+}
+
+.scalar-app :is(.group\/spacer-before, .group\/spacer-after) {
+    height: 0;
+}
+
+.scalar-app .scalar-sidebar-indent div,
+.scalar-app .group\/button:hover .scalar-sidebar-indent div {
+    background: transparent;
+}
+
+/* 与 .nav li a 相同。选中行没有悬停类，所以悬停和焦点要单独写。 */
+.scalar-app :is(button, a).font-sidebar {
+    border: 0;
+    padding: 8px 12px;
+    font-size: 14px;
+    line-height: 1.4;
+    font-weight: var(--scalar-sidebar-font-weight);
+    color: var(--scalar-sidebar-color-2);
+    background: transparent;
+    cursor: pointer;
+}
+
+.scalar-app :is(button, a).font-sidebar:is(.bg-sidebar-b-active, .text-sidebar-c-active) {
+    color: var(--scalar-sidebar-color-active);
+    background: var(--scalar-sidebar-item-active-background);
+    font-weight: var(--scalar-sidebar-font-weight-active);
+    cursor: pointer;
+}
+
+.scalar-app :is(button, a).font-sidebar:is(:hover, :focus-visible),
+.scalar-app :is(button, a).font-sidebar:is(.bg-sidebar-b-active, .text-sidebar-c-active):is(:hover, :focus-visible) {
+    color: var(--scalar-sidebar-item-hover-color);
+    background: var(--scalar-sidebar-item-hover-background);
+    font-weight: var(--scalar-sidebar-font-weight-active);
+    outline: none;
+}
+
+.scalar-app :is(button, a).font-sidebar:is(.bg-sidebar-b-active, .text-sidebar-c-active) *,
+.scalar-app :is(button, a).font-sidebar:is(:hover, :focus-visible) * {
+    color: var(--scalar-sidebar-color-active);
+    background: transparent;
+}

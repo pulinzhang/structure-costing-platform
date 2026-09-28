@@ -28,6 +28,7 @@ _service = StampingDieUnitPriceService()
 @router.get(
     "/filters",
     response_model=ApiResponse[StampingDieUnitPriceFilterVO],
+    summary="获取模具单价筛选",
 )
 def list_die_unit_price_filters(
     location: str | None = Query(None),
@@ -40,6 +41,7 @@ def list_die_unit_price_filters(
 @router.get(
     "",
     response_model=ApiResponse[PageResult[StampingDieUnitPriceVO]],
+    summary="分页查询模具单价",
 )
 def list_die_unit_prices(
     query: StampingDieUnitPriceQuery = Depends(),
@@ -59,6 +61,7 @@ def list_die_unit_prices(
     "",
     response_model=ApiResponse[StampingDieUnitPriceVO],
     status_code=status.HTTP_201_CREATED,
+    summary="新建模具单价",
 )
 def create_die_unit_price(
     dto: StampingDieUnitPriceCreate,
@@ -72,6 +75,7 @@ def create_die_unit_price(
 @router.put(
     "/{record_id:int}",
     response_model=ApiResponse[StampingDieUnitPriceVO],
+    summary="更新模具单价",
 )
 def update_die_unit_price(
     record_id: int,
@@ -86,6 +90,7 @@ def update_die_unit_price(
 @router.delete(
     "/{record_id:int}",
     response_model=ApiResponse[None],
+    summary="删除模具单价",
 )
 def delete_die_unit_price(
     record_id: int,

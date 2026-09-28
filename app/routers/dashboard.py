@@ -25,7 +25,11 @@ router = APIRouter(prefix="/api/dashboard", tags=["仪表盘 API"])
 _dashboard_service = DashboardService()
 
 
-@router.get("/stats", response_model=ApiResponse[DashboardStatsVO])
+@router.get(
+    "/stats",
+    response_model=ApiResponse[DashboardStatsVO],
+    summary="获取仪表盘汇总：作用域 KPI + 核价流水线就绪度",
+)
 def get_all_stats(
     year: int | None = Query(None, ge=2000, le=2100, description="核价年度"),
     month: int | None = Query(None, ge=1, le=12, description="核价月份"),
@@ -50,6 +54,7 @@ def get_all_stats(
 @router.get(
     "/stats/steel-price-calc",
     response_model=ApiResponse[SteelPriceCalcStatsVO],
+    summary="钢价联动计算页数据依据统计",
 )
 def get_steel_price_calc_stats(
     year: int = Query(..., ge=2000, le=2100, description="核价年度"),

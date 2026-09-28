@@ -40,6 +40,7 @@ _scrap_price_export_service = StampingScrapPriceExportService()
 @router.get(
     "/month",
     response_model=ApiResponse[StampingScrapPriceMonthSheetVO],
+    summary="取某月录入矩阵：已启用基地行",
 )
 def get_month_sheet(
     year: int = Query(..., ge=2000, le=2100, description="年份"),
@@ -64,6 +65,7 @@ def get_month_sheet(
 @router.put(
     "/month",
     response_model=ApiResponse[StampingScrapPriceMonthSheetVO],
+    summary="覆盖写入当前类别下全部已启用基地",
 )
 def save_month(
     body: StampingScrapPriceMonthSaveDTO,
@@ -83,6 +85,7 @@ def save_month(
 @router.delete(
     "/month",
     response_model=ApiResponse[None],
+    summary="删除该月当前类别",
 )
 def delete_month(
     year: int = Query(..., ge=2000, le=2100, description="年份"),
@@ -100,6 +103,7 @@ def delete_month(
 @router.get(
     "/months",
     response_model=ApiResponse[list[StampingScrapPriceMonthSummaryVO]],
+    summary="已维护月份列表（维护页导航，按类别）",
 )
 def list_months(
     year: int | None = Query(None, ge=2000, le=2100, description="按年筛选"),
@@ -115,6 +119,7 @@ def list_months(
 @router.get(
     "/filters/options",
     response_model=ApiResponse[StampingScrapPriceFilterOptionsVO],
+    summary="筛选选项：已有年份 + 已登记基地",
 )
 def get_filter_options(
     db: Session = Depends(get_db),
@@ -128,6 +133,7 @@ def get_filter_options(
 @router.get(
     "/export",
     response_model=None,
+    summary="导出废料销售价宽表 Excel",
 )
 def export_excel(
     year: int | None = Query(None, ge=2000, le=2100, description="仅导出指定年；空则导出全部年份"),
@@ -146,6 +152,7 @@ def export_excel(
 @router.post(
     "/copy-month",
     response_model=ApiResponse[StampingScrapPriceCopyMonthResponse],
+    summary="从源月复制当前类别到目标月",
 )
 def copy_month(
     body: StampingScrapPriceCopyMonth,

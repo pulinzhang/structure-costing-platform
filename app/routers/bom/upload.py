@@ -24,7 +24,7 @@ _async_task_service = AsyncTaskService()
 _upload_service = BomUploadService()
 
 
-@router.get("/template")
+@router.get("/template", summary="下载材料清单导入模板")
 def download_bom_import_template(
     current_user: UserVO = Depends(require_perm(Perm.BOM_UPLOAD_VIEW)),
 ) -> StreamingResponse:
@@ -37,7 +37,11 @@ def download_bom_import_template(
     )
 
 
-@router.post("/upload", response_model=ApiResponse[AsyncTaskAcceptedVO])
+@router.post(
+    "/upload",
+    response_model=ApiResponse[AsyncTaskAcceptedVO],
+    summary="导入材料清单",
+)
 async def upload_bom_excel(
     location: str = Form(..., description="采购基地（必填）"),
     vehicle_model: str = Form(..., description="项目（必填）"),
@@ -59,6 +63,7 @@ async def upload_bom_excel(
 @router.get(
     "/upload/tasks/{task_id}",
     response_model=ApiResponse[AsyncTaskProgressVO],
+    summary="查询材料清单上传任务进度",
 )
 def get_bom_upload_task_progress(
     task_id: str,

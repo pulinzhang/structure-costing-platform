@@ -33,6 +33,7 @@ _export_service = StampingGaugeFeeExportService()
 @router.get(
     "/filters",
     response_model=ApiResponse[StampingGaugeFeeFilterVO],
+    summary="获取检具费筛选",
 )
 def list_gauge_fee_filters(
     location: str | None = Query(None),
@@ -44,7 +45,7 @@ def list_gauge_fee_filters(
     return ApiResponse.ok(data=_service.list_scope_filters(db, location))
 
 
-@router.get("/template")
+@router.get("/template", summary="下载检具费导入模板")
 def download_gauge_fee_template(
     location: str = Query(...),
     vehicle_model: str = Query(...),
@@ -64,6 +65,7 @@ def download_gauge_fee_template(
 @router.post(
     "/upload",
     response_model=ApiResponse[StampingGaugeFeeImportResultVO],
+    summary="同步导入检具费",
 )
 async def upload_gauge_fees(
     location: str = Form(...),
@@ -87,6 +89,7 @@ async def upload_gauge_fees(
 @router.get(
     "",
     response_model=ApiResponse[PageResult[StampingGaugeFeeVO]],
+    summary="分页查询检具费",
 )
 def list_gauge_fees(
     query: StampingGaugeFeeQuery = Depends(),
@@ -103,7 +106,7 @@ def list_gauge_fees(
     )
 
 
-@router.get("/export")
+@router.get("/export", summary="导出检具费")
 def export_gauge_fees(
     query: StampingGaugeFeeQuery = Depends(),
     db: Session = Depends(get_db),
@@ -127,6 +130,7 @@ def export_gauge_fees(
 @router.delete(
     "/scope",
     response_model=ApiResponse[StampingGaugeFeeScopeDeleteResultVO],
+    summary="按范围删除检具费",
 )
 def delete_gauge_fee_scope(
     location: str = Query(...),
@@ -141,6 +145,7 @@ def delete_gauge_fee_scope(
 @router.put(
     "/{record_id:int}",
     response_model=ApiResponse[StampingGaugeFeeVO],
+    summary="更新检具费",
 )
 def update_gauge_fee(
     record_id: int,
@@ -155,6 +160,7 @@ def update_gauge_fee(
 @router.delete(
     "/{record_id:int}",
     response_model=ApiResponse[None],
+    summary="删除检具费",
 )
 def delete_gauge_fee(
     record_id: int,

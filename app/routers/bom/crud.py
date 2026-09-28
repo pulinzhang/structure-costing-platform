@@ -63,6 +63,7 @@ _bom_cascade_read = require_any_perm(
 @router.get(
     "/filters/cascade",
     response_model=ApiResponse[BomCascadeFilterOptionsVO],
+    summary="材料清单级联筛选：基地 → 项目 → 版本",
 )
 def get_bom_cascade_filters(
     query: BomCascadeFilterQuery = Depends(),
@@ -81,6 +82,7 @@ def get_bom_cascade_filters(
 @router.get(
     "/snapshots",
     response_model=ApiResponse[PageResult[BomSnapshotVO]],
+    summary="分页查询材料清单版本",
 )
 def list_snapshots(
     query: BomSnapshotQuery = Depends(),
@@ -101,6 +103,7 @@ def list_snapshots(
 @router.get(
     "/snapshots/{snapshot_id:int}",
     response_model=ApiResponse[BomSnapshotVO],
+    summary="查看材料清单版本",
 )
 def get_snapshot(
     snapshot_id: int,
@@ -115,6 +118,7 @@ def get_snapshot(
     "/snapshots",
     response_model=ApiResponse[BomSnapshotVO],
     status_code=201,
+    summary="新建材料清单版本",
 )
 def create_snapshot(
     body: BomSnapshotCreate,
@@ -128,6 +132,7 @@ def create_snapshot(
 @router.delete(
     "/snapshots/{snapshot_id:int}",
     response_model=ApiResponse[None],
+    summary="删除材料清单版本",
 )
 def delete_snapshot(
     snapshot_id: int,
@@ -141,6 +146,7 @@ def delete_snapshot(
 @router.get(
     "/snapshots/{snapshot_id:int}/nodes",
     response_model=ApiResponse[list[BomNodeVO]],
+    summary="查询材料清单节点",
 )
 def list_nodes(
     snapshot_id: int,
@@ -161,6 +167,7 @@ def list_nodes(
 @router.get(
     "/snapshots/{snapshot_id:int}/tree",
     response_model=ApiResponse[list[BomNodeTreeVO]],
+    summary="查看材料清单树",
 )
 def get_tree(
     snapshot_id: int,
@@ -182,6 +189,7 @@ def get_tree(
     "/snapshots/{snapshot_id:int}/nodes",
     response_model=ApiResponse[BomNodeVO],
     status_code=201,
+    summary="新建材料清单节点",
 )
 def create_node(
     snapshot_id: int,
@@ -196,6 +204,7 @@ def create_node(
 @router.delete(
     "/nodes/{node_id:int}",
     response_model=ApiResponse[None],
+    summary="删除材料清单节点",
 )
 def delete_node(
     node_id: int,

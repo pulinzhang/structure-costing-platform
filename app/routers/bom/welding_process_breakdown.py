@@ -57,6 +57,7 @@ _async_task_service = AsyncTaskService()
 @router.get(
     "/paginate",
     response_model=ApiResponse[PageResult[BomWeldingProcessBreakdownNodeVO]],
+    summary="分页查询焊接工艺拆解主表",
 )
 def paginate(
     query: BomWeldingProcessBreakdownQuery = Depends(),
@@ -75,7 +76,7 @@ def paginate(
     )
 
 
-@router.get("/export")
+@router.get("/export", summary="导出 L0 供货总成工艺核对表")
 def export_l0_excel(
     location: str | None = Query(None, description="采购基地"),
     customer_name: str | None = Query(None, description="顾客名称"),
@@ -111,6 +112,7 @@ def export_l0_excel(
 @router.get(
     "/nodes/{node_id:int}",
     response_model=ApiResponse[BomWeldingProcessBreakdownNodeVO],
+    summary="查看焊接工艺拆解节点",
 )
 def get_node(
     node_id: int,
@@ -124,6 +126,7 @@ def get_node(
 @router.get(
     "/generate/prep-stats",
     response_model=ApiResponse[BomWeldingProcessBreakdownGeneratePrepStatsVO],
+    summary="拆解前数据就绪统计",
 )
 def get_generate_prep_stats(
     location: str = Query(..., min_length=1),
@@ -152,6 +155,7 @@ _generate_read = require_any_perm(
 @router.get(
     "/generate/logs",
     response_model=ApiResponse[PageResult[BomWeldingProcessBreakdownGenerateLogVO]],
+    summary="分页查询焊接工艺拆解生成日志",
 )
 def list_generate_logs(
     location: str | None = Query(None),
@@ -181,6 +185,7 @@ def list_generate_logs(
 @router.get(
     "/generate/logs/{log_id:int}",
     response_model=ApiResponse[BomWeldingProcessBreakdownGenerateLogVO],
+    summary="查看焊接工艺拆解生成日志",
 )
 def get_generate_log(
     log_id: int,
@@ -194,6 +199,7 @@ def get_generate_log(
 @router.delete(
     "/generate/logs",
     response_model=ApiResponse[DeletedCountVO],
+    summary="删除全部焊接工艺拆解生成日志",
 )
 def delete_all_generate_logs(
     db: Session = Depends(get_db),
@@ -206,6 +212,7 @@ def delete_all_generate_logs(
 @router.delete(
     "/generate/logs/{log_id:int}",
     response_model=ApiResponse[None],
+    summary="删除一条焊接工艺拆解生成日志",
 )
 def delete_generate_log(
     log_id: int,
@@ -219,6 +226,7 @@ def delete_generate_log(
 @router.get(
     "/generate/tasks/{task_id}",
     response_model=ApiResponse[AsyncTaskProgressVO],
+    summary="查询焊接工艺拆解生成进度",
 )
 def get_generate_task_progress(
     task_id: str,
@@ -246,6 +254,7 @@ def get_generate_task_progress(
 @router.post(
     "/generate",
     response_model=ApiResponse[AsyncTaskAcceptedVO],
+    summary="从 BOM 异步生成焊接工艺拆解",
 )
 def generate_from_bom(
     dto: BomWeldingProcessBreakdownGenerateDTO,
@@ -264,6 +273,7 @@ def generate_from_bom(
 @router.patch(
     "/lines/{line_id:int}",
     response_model=ApiResponse[BomWeldingProcessBreakdownLineVO],
+    summary="修改焊接工艺明细",
 )
 def update_line(
     line_id: int,
@@ -279,6 +289,7 @@ def update_line(
 @router.patch(
     "/nodes/{node_id:int}/lines",
     response_model=ApiResponse[BomWeldingProcessBreakdownNodeVO],
+    summary="一次保存节点下全部工艺明细",
 )
 def update_node_lines(
     node_id: int,
@@ -294,6 +305,7 @@ def update_node_lines(
 @router.post(
     "/batch-delete",
     response_model=ApiResponse[BomWeldingProcessBreakdownBatchDeleteResultVO],
+    summary="按基地+项目+版本批量删除",
 )
 def batch_delete(
     dto: BomWeldingProcessBreakdownBatchDeleteDTO,
@@ -313,6 +325,7 @@ def batch_delete(
 @router.post(
     "/batch-approve",
     response_model=ApiResponse[BomWeldingProcessBreakdownBatchAuditResultVO],
+    summary="按基地+项目+版本批量审核",
 )
 def batch_approve(
     dto: BomWeldingProcessBreakdownBatchApproveDTO,
@@ -330,6 +343,7 @@ def batch_approve(
 @router.post(
     "/batch-reverse-audit",
     response_model=ApiResponse[BomWeldingProcessBreakdownBatchAuditResultVO],
+    summary="按基地+项目+版本批量反审核",
 )
 def batch_reverse_audit(
     dto: BomWeldingProcessBreakdownBatchReverseAuditDTO,

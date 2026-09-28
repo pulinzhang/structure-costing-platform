@@ -46,6 +46,7 @@ _export_service = StampingPartCostExportService()
 @router.get(
     "",
     response_model=ApiResponse[PageResult[StampingPartCostVO]],
+    summary="分页查询冲压零件价格",
 )
 def list_costs(
     query: StampingPartCostQuery = Depends(),
@@ -63,7 +64,7 @@ def list_costs(
     )
 
 
-@router.get("/export-download")
+@router.get("/export-download", summary="按当前筛选条件导出冲压零件核价结果 Excel")
 def export_download(
     year: int | None = Query(None, ge=2000, le=2100, description="年度"),
     month: int | None = Query(None, ge=1, le=12, description="月份"),
@@ -99,6 +100,7 @@ def export_download(
 @router.get(
     "/{cost_id:int}",
     response_model=ApiResponse[StampingPartCostVO],
+    summary="查看冲压零件价格",
 )
 def get_cost(
     cost_id: int,
@@ -112,6 +114,7 @@ def get_cost(
 @router.patch(
     "/{cost_id:int}",
     response_model=ApiResponse[StampingPartCostVO],
+    summary="修改冲压零件价格手工单价",
 )
 def update_manual_unit_cost(
     cost_id: int,
@@ -126,6 +129,7 @@ def update_manual_unit_cost(
 @router.post(
     "/batch-delete",
     response_model=ApiResponse[StampingPartCostBatchDeleteResultVO],
+    summary="批量删除冲压零件价格",
 )
 def batch_delete_costs(
     dto: StampingPartCostDeleteDTO,
@@ -139,6 +143,7 @@ def batch_delete_costs(
 @router.post(
     "/batch-approve",
     response_model=ApiResponse[StampingPartCostBatchAuditResultVO],
+    summary="批量审核通过冲压零件价格",
 )
 def batch_approve_costs(
     dto: StampingPartCostBatchApproveDTO,
@@ -152,6 +157,7 @@ def batch_approve_costs(
 @router.post(
     "/batch-reverse-audit",
     response_model=ApiResponse[StampingPartCostBatchAuditResultVO],
+    summary="批量反审核冲压零件价格",
 )
 def batch_reverse_audit_costs(
     dto: StampingPartCostBatchReverseAuditDTO,

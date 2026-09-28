@@ -25,6 +25,7 @@ _export_service = BomWhereUsedExportService()
 @router.get(
     "/where-used",
     response_model=ApiResponse[BomWhereUsedVO],
+    summary="查询零件用在哪",
 )
 def search_where_used(
     query: BomWhereUsedQuery = Depends(),
@@ -35,7 +36,7 @@ def search_where_used(
     return ApiResponse.ok(data=result, message="查询成功")
 
 
-@router.get("/where-used/export")
+@router.get("/where-used/export", summary="导出零件用在哪")
 def export_where_used(
     query: BomWhereUsedQuery = Depends(),
     db: Session = Depends(get_db),

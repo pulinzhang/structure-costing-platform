@@ -46,7 +46,11 @@ _export_service = BomWeldingUnitPriceExportService()
 _import_service = BomWeldingUnitPriceImportService()
 
 
-@router.get("/list", response_model=ApiResponse[list[BomWeldingUnitPriceResponse]])
+@router.get(
+    "/list",
+    response_model=ApiResponse[list[BomWeldingUnitPriceResponse]],
+    summary="获取所有焊接单价列表",
+)
 def list_all(
     db: Session = Depends(get_db),
     current_user: UserVO = Depends(require_perm(Perm.BOM_WELDING_UNIT_PRICE_VIEW)),
@@ -59,6 +63,7 @@ def list_all(
 @router.get(
     "/by-year/{year:int}",
     response_model=ApiResponse[list[BomWeldingUnitPriceResponse]],
+    summary="按年份查询焊接单价",
 )
 def list_by_year(
     year: int,
@@ -77,6 +82,7 @@ def list_by_year(
 @router.get(
     "/paginate",
     response_model=ApiResponse[PageResult[BomWeldingUnitPriceResponse]],
+    summary="分页查询焊接单价",
 )
 def paginate(
     query: BomWeldingUnitPriceQuery = Depends(),
@@ -95,7 +101,7 @@ def paginate(
     )
 
 
-@router.get("/filters/locations", response_model=ApiResponse[list[str]])
+@router.get("/filters/locations", response_model=ApiResponse[list[str]], summary="获取所有基地列表")
 def get_locations(
     db: Session = Depends(get_db),
     current_user: UserVO = Depends(
@@ -110,7 +116,7 @@ def get_locations(
     return ApiResponse.ok(data=data)
 
 
-@router.get("/filters/years", response_model=ApiResponse[list[int]])
+@router.get("/filters/years", response_model=ApiResponse[list[int]], summary="获取所有年份列表")
 def get_years(
     db: Session = Depends(get_db),
     current_user: UserVO = Depends(require_perm(Perm.BOM_WELDING_UNIT_PRICE_VIEW)),
@@ -120,7 +126,7 @@ def get_years(
     return ApiResponse.ok(data=data)
 
 
-@router.get("/export")
+@router.get("/export", summary="按当前筛选条件导出焊接单价 Excel")
 def export_excel(
     location: str | None = Query(None, description="采购基地"),
     year: int | None = Query(None, ge=2000, le=2100, description="年份"),
@@ -144,6 +150,7 @@ def export_excel(
 @router.get(
     "/standard-catalog",
     response_model=ApiResponse[list[WeldingStandardProcessCatalogItemVO]],
+    summary="焊接标准工艺目录",
 )
 def list_standard_catalog(
     current_user: UserVO = Depends(require_perm(Perm.BOM_WELDING_UNIT_PRICE_UPLOAD_VIEW)),
@@ -153,7 +160,7 @@ def list_standard_catalog(
     return ApiResponse.ok(data=data, message=f"标准工艺 {len(data)} 项")
 
 
-@router.get("/template")
+@router.get("/template", summary="下载焊接单价导入模板")
 def download_import_template(
     current_user: UserVO = Depends(require_perm(Perm.BOM_WELDING_UNIT_PRICE_UPLOAD_VIEW)),
 ) -> StreamingResponse:
@@ -169,6 +176,7 @@ def download_import_template(
 @router.post(
     "/upload",
     response_model=ApiResponse[BomWeldingUnitPriceImportResultVO],
+    summary="同步导入焊接单价",
 )
 async def upload_welding_unit_price_excel(
     location: str = Form(..., description="采购基地（必填）"),
@@ -193,6 +201,7 @@ async def upload_welding_unit_price_excel(
 @router.post(
     "/batch-delete",
     response_model=ApiResponse[BomWeldingUnitPriceBatchDeleteResultVO],
+    summary="按基地 + 年度批量删除焊接单价",
 )
 def batch_delete(
     body: BomWeldingUnitPriceBatchDeleteDTO,
@@ -211,6 +220,7 @@ def batch_delete(
 @router.post(
     "/batch-approve",
     response_model=ApiResponse[BomWeldingUnitPriceBatchAuditResultVO],
+    summary="按基地 + 年度批量审核通过",
 )
 def batch_approve(
     body: BomWeldingUnitPriceBatchApproveDTO,
@@ -225,6 +235,7 @@ def batch_approve(
 @router.post(
     "/batch-reverse-audit",
     response_model=ApiResponse[BomWeldingUnitPriceBatchAuditResultVO],
+    summary="按基地 + 年度批量反审核",
 )
 def batch_reverse_audit(
     body: BomWeldingUnitPriceBatchReverseAuditDTO,
@@ -239,6 +250,7 @@ def batch_reverse_audit(
 @router.post(
     "/bulk",
     response_model=ApiResponse[BomWeldingUnitPriceBulkUpsertResponse],
+    summary="批量写入焊接单价",
 )
 def bulk_upsert(
     items: list[BomWeldingUnitPriceCreate],
@@ -254,6 +266,7 @@ def bulk_upsert(
     "",
     response_model=ApiResponse[BomWeldingUnitPriceResponse],
     status_code=status.HTTP_201_CREATED,
+    summary="创建焊接单价记录",
 )
 def create(
     body: BomWeldingUnitPriceCreate,
@@ -265,7 +278,11 @@ def create(
     return ApiResponse.created(data=record, message="创建成功")
 
 
-@router.get("/{id:int}", response_model=ApiResponse[BomWeldingUnitPriceResponse])
+@router.get(
+    "/{id:int}",
+    response_model=ApiResponse[BomWeldingUnitPriceResponse],
+    summary="获取单个焊接单价记录",
+)
 def get_by_id(
     id: int,
     db: Session = Depends(get_db),
@@ -276,7 +293,9 @@ def get_by_id(
     return ApiResponse.ok(data=record, message="获取成功")
 
 
-@router.put("/{id:int}", response_model=ApiResponse[BomWeldingUnitPriceResponse])
+@router.put(
+    "/{id:int}", response_model=ApiResponse[BomWeldingUnitPriceResponse], summary="更新焊接单价记录"
+)
 def update(
     id: int,
     body: BomWeldingUnitPriceUpdate,
@@ -288,7 +307,7 @@ def update(
     return ApiResponse.updated(data=record, message="更新成功")
 
 
-@router.delete("/{id:int}", response_model=ApiResponse[None])
+@router.delete("/{id:int}", response_model=ApiResponse[None], summary="删除焊接单价记录")
 def delete(
     id: int,
     db: Session = Depends(get_db),

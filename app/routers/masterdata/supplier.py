@@ -30,7 +30,7 @@ router = APIRouter(prefix="/api/masterdata/suppliers", tags=["供应商"])
 _service = SupplierService()
 
 
-@router.get("", response_model=ApiResponse[PageResult[SupplierVO]])
+@router.get("", response_model=ApiResponse[PageResult[SupplierVO]], summary="分页查询供应商")
 def list_suppliers(
     query: SupplierQuery = Depends(),
     db: Session = Depends(get_db),
@@ -49,6 +49,7 @@ def list_suppliers(
     "",
     response_model=ApiResponse[SupplierVO],
     status_code=status.HTTP_201_CREATED,
+    summary="新建供应商",
 )
 def create_supplier(
     dto: SupplierCreateDTO,
@@ -59,7 +60,7 @@ def create_supplier(
     return ApiResponse.created(data=record, message="创建成功")
 
 
-@router.get("/template")
+@router.get("/template", summary="下载供应商导入模板")
 def download_import_template(
     current_user: UserVO = Depends(require_perm(Perm.SUPPLIER_UPLOAD_VIEW)),
 ) -> StreamingResponse:
@@ -71,7 +72,7 @@ def download_import_template(
     )
 
 
-@router.get("/export")
+@router.get("/export", summary="导出供应商")
 def export_suppliers(
     q: str | None = Query(None),
     is_enabled: bool | None = Query(None),
@@ -92,7 +93,9 @@ def export_suppliers(
     )
 
 
-@router.post("/upload", response_model=ApiResponse[SupplierUploadResultVO])
+@router.post(
+    "/upload", response_model=ApiResponse[SupplierUploadResultVO], summary="同步导入供应商"
+)
 async def upload_suppliers(
     file: UploadFile = File(...),
     db: Session = Depends(get_db),
@@ -104,7 +107,7 @@ async def upload_suppliers(
     return ApiResponse.ok(data=result, message=message)
 
 
-@router.patch("/{full_name}", response_model=ApiResponse[SupplierVO])
+@router.patch("/{full_name}", response_model=ApiResponse[SupplierVO], summary="更新供应商")
 def update_supplier(
     full_name: str,
     dto: SupplierUpdateDTO,
@@ -115,7 +118,7 @@ def update_supplier(
     return ApiResponse.updated(data=record, message="更新成功")
 
 
-@router.delete("/{full_name}", response_model=ApiResponse[None])
+@router.delete("/{full_name}", response_model=ApiResponse[None], summary="删除供应商")
 def delete_supplier(
     full_name: str,
     db: Session = Depends(get_db),
@@ -129,6 +132,7 @@ def delete_supplier(
     "/{full_name}/aliases",
     response_model=ApiResponse[SupplierVO],
     status_code=status.HTTP_201_CREATED,
+    summary="新增供应商别名",
 )
 def add_supplier_alias(
     full_name: str,
@@ -143,6 +147,7 @@ def add_supplier_alias(
 @router.delete(
     "/{full_name}/aliases/{alias}",
     response_model=ApiResponse[SupplierVO],
+    summary="删除供应商别名",
 )
 def delete_supplier_alias(
     full_name: str,

@@ -64,6 +64,7 @@ def _bind_restore_audit_scope(request: Request, row: AssemblyCostRestoreVO) -> N
 @router.get(
     "",
     response_model=ApiResponse[PageResult[AssemblyCostVO]],
+    summary="分页查询总成核价",
 )
 def list_costs(
     query: AssemblyCostQuery = Depends(),
@@ -81,7 +82,7 @@ def list_costs(
     )
 
 
-@router.get("/export-download")
+@router.get("/export-download", summary="按当前筛选导出成品核价 Excel")
 def export_download(
     year: int | None = Query(None, ge=2000, le=2100, description="年度"),
     month: int | None = Query(None, ge=1, le=12, description="月份"),
@@ -119,6 +120,7 @@ def export_download(
 @router.get(
     "/restore",
     response_model=ApiResponse[AssemblyCostRestoreVO],
+    summary="按零件查看总成核价计算过程",
 )
 def get_restore_by_part(
     request: Request,
@@ -149,6 +151,7 @@ def get_restore_by_part(
 @router.get(
     "/{cost_id:int}/restore",
     response_model=ApiResponse[AssemblyCostRestoreVO],
+    summary="查看总成核价计算过程",
 )
 def get_restore(
     request: Request,
@@ -165,6 +168,7 @@ def get_restore(
 @router.get(
     "/{cost_id:int}",
     response_model=ApiResponse[AssemblyCostVO],
+    summary="查看总成核价",
 )
 def get_cost(
     cost_id: int,
@@ -178,6 +182,7 @@ def get_cost(
 @router.post(
     "/batch-delete",
     response_model=ApiResponse[AssemblyCostBatchResultVO],
+    summary="批量删除总成核价",
 )
 def batch_delete(
     dto: AssemblyCostBatchDeleteDTO,
@@ -191,6 +196,7 @@ def batch_delete(
 @router.post(
     "/batch-approve",
     response_model=ApiResponse[AssemblyCostBatchResultVO],
+    summary="批量审核通过总成核价",
 )
 def batch_approve(
     dto: AssemblyCostBatchApproveDTO,
@@ -204,6 +210,7 @@ def batch_approve(
 @router.post(
     "/batch-reverse",
     response_model=ApiResponse[AssemblyCostBatchResultVO],
+    summary="批量反审核总成核价",
 )
 def batch_reverse(
     dto: AssemblyCostBatchReverseDTO,

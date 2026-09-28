@@ -24,7 +24,10 @@ router = APIRouter(
 _export_service = MonthlyBundleExportService()
 
 
-@router.get("/export-download")
+@router.get(
+    "/export-download",
+    summary="导出月度核对",
+)
 def export_download(
     year: int = Query(..., ge=2000, le=2100, description="年度"),
     month: int = Query(..., ge=1, le=12, description="月份"),

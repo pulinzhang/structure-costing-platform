@@ -37,7 +37,7 @@ alwaysApply: false
 | 禁止堆在 main.py | 应放 |
 |---|---|
 | 逐行 `include_router` | `app/bootstrap/routers.py` 扫描 `app.routers` |
-| Swagger CSS / `openapi_tags` | `app/bootstrap/openapi.py`（CSS 旁路文件） |
+| 文档页 CSS / `openapi_tags` | `app/bootstrap/openapi.py`（CSS 旁路文件 `scalar_docs.css`） |
 | 静态挂载、SPA/登录页 | `app/bootstrap/frontend.py`（**不要**放 `app/routers/`，避免当业务 API 扫描） |
 | 中间件类 | `app/middleware/`；main 只调 `register_middleware` |
 | 异常 handler 实现 | `app/exceptions/handlers.py`；main 只调注册函数 |
