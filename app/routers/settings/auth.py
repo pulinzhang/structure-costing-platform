@@ -13,7 +13,7 @@ from app.schemas.dto.user_dto import (
     UserSelfPasswordUpdateDTO,
     UserSelfUpdateDTO,
 )
-from app.schemas.vo.user_vo import AvatarUploadVO, LoginVO, UserVO
+from app.schemas.vo.user_vo import AvatarUploadVO, LoginKeyVO, LoginVO, UserVO
 from app.services.settings.users.auth import AuthService
 from app.services.settings.users.service import UserService
 from app.utils.response import ApiResponse
@@ -21,6 +21,20 @@ from app.utils.response import ApiResponse
 router = APIRouter(prefix="/api/auth", tags=["登录认证"])
 _auth_service = AuthService()
 _user_service = UserService()
+
+
+@router.get(
+    "/login-key",
+    response_model=ApiResponse[LoginKeyVO],
+)
+def login_key(
+    request: Request,
+    token_db: Session = Depends(get_auxiliary_db),
+) -> ApiResponse[LoginKeyVO]:
+    """签发一次性登录公钥。限流按连接地址，不读 X-Forwarded-For。"""
+    peer = request.client.host if request.client else ""
+    result = _auth_service.issue_login_key(token_db, peer)
+    return ApiResponse.ok(data=result)
 
 
 @router.post(

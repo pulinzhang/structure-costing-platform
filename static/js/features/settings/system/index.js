@@ -5,7 +5,7 @@
  * 密度按 4 位小数；各类「率」界面按 2 位小数（‰ / %），提交时再换算为小数串。
  */
 
-import { settingsTemplate } from './template.js?v=27';
+import { settingsTemplate } from './template.js?v=28';
 
 const API = '/api/settings/system/config';
 const DEFAULT_APP_NAME = '结构件自动核价平台';
@@ -18,6 +18,7 @@ const DEFAULT_FINISHED_WAREHOUSE_PACKAGING_PERCENT = '1.00';
 const DEFAULT_FINISHED_SCRAP_PERMILLE = '3.00';
 const DEFAULT_FINISHED_PRETAX_PROFIT_PERCENT = '2.00';
 const DEFAULT_SWING_SHEAR_PROCESS_FEE_PER_TON = '150.00';
+const DEFAULT_LOGIN_LOCK_MINUTES = '15';
 
 const RATE_INPUT_IDS = [
     'settingsCompanyName',
@@ -31,6 +32,7 @@ const RATE_INPUT_IDS = [
     'settingsFinishedScrapPermille',
     'settingsFinishedPretaxProfitPercent',
     'settingsSwingShearProcessFeePerTon',
+    'settingsLoginLockMinutes',
 ];
 
 /** 小数率 → 界面 %（2 位小数） */
@@ -51,6 +53,14 @@ function isPercentInRange(value) {
         && compareDecimalStrings(value, '0') >= 0
         && compareDecimalStrings(value, '100') <= 0
     );
+}
+
+function normalizeLoginLockMinutes(raw) {
+    const minutes = Number.parseInt(String(raw ?? ''), 10);
+    if (!Number.isInteger(minutes) || minutes < 1 || minutes > 1440) {
+        return DEFAULT_LOGIN_LOCK_MINUTES;
+    }
+    return String(minutes);
 }
 
 function isPermilleInRange(value) {
@@ -85,6 +95,7 @@ function applyFormValues({
     scrapPermille,
     pretaxProfitPercent,
     swingShearFeePerTon,
+    loginLockMinutes,
 }) {
     const companyEl = document.getElementById('settingsCompanyName');
     if (companyEl && companyName != null) companyEl.value = companyName;
@@ -110,6 +121,8 @@ function applyFormValues({
     if (pretaxEl) pretaxEl.value = pretaxProfitPercent;
     const swingShearEl = document.getElementById('settingsSwingShearProcessFeePerTon');
     if (swingShearEl) swingShearEl.value = swingShearFeePerTon;
+    const loginLockEl = document.getElementById('settingsLoginLockMinutes');
+    if (loginLockEl && loginLockMinutes != null) loginLockEl.value = loginLockMinutes;
 }
 
 export const SettingsPage = {
@@ -148,6 +161,7 @@ export const SettingsPage = {
             scrapPermille: DEFAULT_FINISHED_SCRAP_PERMILLE,
             pretaxProfitPercent: DEFAULT_FINISHED_PRETAX_PROFIT_PERCENT,
             swingShearFeePerTon: DEFAULT_SWING_SHEAR_PROCESS_FEE_PER_TON,
+            loginLockMinutes: DEFAULT_LOGIN_LOCK_MINUTES,
         });
         showToast('已填入默认值，点击保存后生效', 'success');
     },
@@ -200,6 +214,7 @@ export const SettingsPage = {
                         ? fee
                         : DEFAULT_SWING_SHEAR_PROCESS_FEE_PER_TON;
                 })(),
+                loginLockMinutes: normalizeLoginLockMinutes(data.login_lock_minutes),
             });
         } catch (error) {
             showToast(error.message || '加载系统设置失败', 'error');
@@ -242,6 +257,10 @@ export const SettingsPage = {
         );
         const swingShearFeePerTon = parseDecimalInput(
             document.getElementById('settingsSwingShearProcessFeePerTon')?.value, 2,
+        );
+        const loginLockMinutes = Number.parseInt(
+            document.getElementById('settingsLoginLockMinutes')?.value || '',
+            10,
         );
         if (!appName) {
             showToast('应用名称缺失，请刷新后重试', 'warning');
@@ -303,6 +322,10 @@ export const SettingsPage = {
             showToast('摆剪工序加工费须为 0~100000 元/吨', 'warning');
             return;
         }
+        if (!Number.isInteger(loginLockMinutes) || loginLockMinutes < 1 || loginLockMinutes > 1440) {
+            showToast('登录锁定分钟须为 1~1440', 'warning');
+            return;
+        }
 
         const materialLossRate = scaleDecimalByPow10(lossPermille, -3, 6);
         const scrapRecoveryRate = scaleDecimalByPow10(recoveryPercent, -2, 6);
@@ -346,6 +369,7 @@ export const SettingsPage = {
                 finished_scrap_rate: finishedScrapRate,
                 finished_pretax_profit_rate: finishedPretaxProfitRate,
                 swing_shear_process_fee_per_ton: swingShearFeePerTon,
+                login_lock_minutes: loginLockMinutes,
             });
             const data = res.data || {};
             if (data.app_name) {
@@ -391,6 +415,9 @@ export const SettingsPage = {
                     ? (formatDecimalFixed(data.swing_shear_process_fee_per_ton, 2)
                         || swingShearFeePerTon)
                     : swingShearFeePerTon,
+                loginLockMinutes: normalizeLoginLockMinutes(
+                    data.login_lock_minutes != null ? data.login_lock_minutes : loginLockMinutes,
+                ),
             });
             showToast(res.message || '保存成功', 'success');
         } catch (error) {

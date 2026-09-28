@@ -86,7 +86,7 @@ import { pageConfig as vehicleModelUploadPage } from './features/masterdata/vehi
 import { pageConfig as vehicleModelListPage } from './features/masterdata/vehicle-model/list/index.js?v=26';
 import { pageConfig as supplierUploadPage } from './features/masterdata/supplier/upload/index.js?v=15';
 import { pageConfig as supplierListPage } from './features/masterdata/supplier/list/index.js?v=29';
-import { pageConfig as settingsPage }       from './features/settings/system/index.js?v=29';
+import { pageConfig as settingsPage }       from './features/settings/system/index.js?v=30';
 import { pageConfig as settingsUsersPage }  from './features/settings/users/index.js?v=30';
 import { pageConfig as settingsLogsPage }   from './features/settings/logs/index.js?v=26';
 import { pageConfig as settingsProfilePage } from './features/settings/profile/index.js?v=16';

@@ -58,6 +58,9 @@ from app.models.masterdata import (
     VehicleModel,
 )
 from app.models.settings import (
+    LoginChallenge,
+    LoginLock,
+    LoginPolicy,
     OperationLog,
     RefHint,
     SchemaComment,
@@ -153,6 +156,9 @@ __all__ = [
     "SteelPriceLadderItem",
     "SteelPricePolicy",
     "SystemConfig",
+    "LoginChallenge",
+    "LoginLock",
+    "LoginPolicy",
     "UploadFile",
     "User",
     "UserPermission",

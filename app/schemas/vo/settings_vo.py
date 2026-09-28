@@ -34,6 +34,7 @@ class ConfigVO(BaseModel):
     swing_shear_process_fee_per_ton: Decimal = Field(
         ..., description="摆剪件加到钢价上的金额（元/吨）"
     )
+    login_lock_minutes: int = Field(..., description="连续登录失败 3 次后的锁定分钟数")
 
     @field_serializer("steel_density")
     def serialize_density(self, value: Decimal) -> str:
