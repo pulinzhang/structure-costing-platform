@@ -23,12 +23,14 @@ from app.schemas.dto.steel_price_dto import (
 )
 from app.schemas.vo.steel_price_vo import SteelPriceBatchDeleteResultVO, SteelPriceResponse
 from app.schemas.vo.user_vo import UserVO
+from app.services.costing.steel_price.paginate import attach_mill_abbreviation
 from app.services.costing.steel_price.pricing import (
     FORMULA_VERSION,
     build_spec_or_none,
     compute_final_price,
     ensure_not_approved,
 )
+from app.services.masterdata.steel_mill.service import SteelMillService
 
 logger = logging.getLogger("service.steel_price")
 
@@ -39,7 +41,7 @@ def get_steel_price(
     record = repository.get_by_id(db, record_id)
     if record is None:
         raise NotFoundException("记录不存在")
-    return SteelPriceResponse.model_validate(record)
+    return attach_mill_abbreviation(db, [record])[0]
 
 
 def create_steel_price(
@@ -50,11 +52,13 @@ def create_steel_price(
 ) -> SteelPriceResponse:
     current_time = now()
     audit = audit_create(current_user)
+    mill = SteelMillService().require_enabled(db, data.steel_mill)
     write = SteelPriceWrite(
         year=data.year,
         month=data.month,
         location=data.location,
-        steel_mill=data.steel_mill,
+        steel_mill=mill.abbreviation,
+        steel_mill_id=mill.id,
         category_name=data.category_name,
         grade=data.grade,
         thickness=data.thickness,
@@ -90,7 +94,7 @@ def create_steel_price(
         record = repository.create(db, write)
         db.commit()
         db.refresh(record)
-        return SteelPriceResponse.model_validate(record)
+        return attach_mill_abbreviation(db, [record])[0]
     except IntegrityError as error:
         db.rollback()
         message = (
@@ -160,7 +164,7 @@ def update_steel_price(
             raise NotFoundException("记录不存在")
         db.commit()
         db.refresh(updated)
-        return SteelPriceResponse.model_validate(updated)
+        return attach_mill_abbreviation(db, [updated])[0]
     except IntegrityError as error:
         db.rollback()
         logger.warning("更新钢材价格冲突: id=%s, error=%s", record_id, error)
@@ -208,7 +212,7 @@ def batch_delete_steel_prices(
 
     category_name = data.category_name.strip() if data.category_name else None
     grade = data.grade.strip() if data.grade else None
-    steel_mill = data.steel_mill.strip() if data.steel_mill else None
+    steel_mill_id = SteelMillService().filter_id(db, data.steel_mill)
 
     try:
         skipped_approved_count = repository.count_approved_by_conditions(
@@ -218,7 +222,7 @@ def batch_delete_steel_prices(
             location=location,
             category_name=category_name,
             grade=grade,
-            steel_mill=steel_mill,
+            steel_mill_id=steel_mill_id,
         )
         deleted_count = repository.delete_unaudited_by_conditions(
             db,
@@ -227,7 +231,7 @@ def batch_delete_steel_prices(
             location=location,
             category_name=category_name,
             grade=grade,
-            steel_mill=steel_mill,
+            steel_mill_id=steel_mill_id,
         )
         db.commit()
         message = f"已删除 {deleted_count} 条未审核记录"

@@ -26,6 +26,9 @@ class SteelBasePriceResponse(BaseModel):
     month: int
     location: str
     steel_mill: str
+    canonical_steel_mill: str = ""
+    steel_mill_id: int = 0
+    steel_mill_abbreviation: str = ""
     category_name: str
     grade: str
     thick: Decimal | None = None

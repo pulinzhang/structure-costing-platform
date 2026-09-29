@@ -40,6 +40,7 @@ class CalcRow:
 
     # Step2 基价补齐
     steel_mill: str | None = None
+    steel_mill_id: int | None = None
     category_name: str | None = None
     width: Decimal | None = None
     base_thickness: Decimal | None = None
@@ -116,6 +117,7 @@ class CalcRow:
         """是否具备落库必填字段（钢厂 / 大类 / 宽度 / 基价）。"""
         return (
             self.steel_mill is not None
+            and self.steel_mill_id is not None
             and self.category_name is not None
             and self.width is not None
             and self.base_price is not None
@@ -127,7 +129,14 @@ class CalcRow:
         category_name = self.category_name
         width = self.width
         base_price = self.base_price
-        if steel_mill is None or category_name is None or width is None or base_price is None:
+        steel_mill_id = self.steel_mill_id
+        if (
+            steel_mill is None
+            or steel_mill_id is None
+            or category_name is None
+            or width is None
+            or base_price is None
+        ):
             raise ValueError(
                 "不可落库行缺少必填字段: "
                 f"location={self.location} grade={self.grade} thickness={self.thickness}"
@@ -146,6 +155,7 @@ class CalcRow:
             month=self.month,
             location=self.location,
             steel_mill=steel_mill,
+            steel_mill_id=steel_mill_id,
             category_name=category_name,
             grade=self.grade,
             thickness=self.thickness,

@@ -313,7 +313,7 @@ _HELP_TOPIC_RULES: tuple[tuple[str, tuple[str, ...]], ...] = (
     ),
     ("file_trace", ("文件溯源", "溯源")),
     ("assembly_cost", ("总成核价", "成品核价计算", "总成核价计算")),
-    ("masterdata", ("牌号分类",)),
+    ("masterdata", ("牌号分类", "钢厂")),
     ("yishiyiyi_extra", ("中标钢厂", "厚度价格一览", "厚度价格列表")),
     ("part_lookup_how", ("简码", "短码", "后四位", "怎么查价", "怎么问价")),
     ("menu", ("菜单", "侧栏", "导航", "冲压工程", "焊接工程", "一事一议")),

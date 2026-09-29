@@ -75,7 +75,6 @@ class SteelBasePriceFilterOptions(TypedDict):
     years: list[int]
     months: list[int]
     locations: list[str]
-    steel_mills: list[str]
     category_names: list[str]
     grades: list[str]
     specs: list[str]

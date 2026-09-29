@@ -82,6 +82,8 @@ class PolicyListResponse(BaseModel):
     year: int
     month: int
     steel_mill: str
+    steel_mill_id: int = 0
+    steel_mill_abbreviation: str = ""
     category_name: str
     policy_type: str
     grade_type: str | None = None

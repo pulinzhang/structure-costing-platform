@@ -20,6 +20,9 @@ def on_startup() -> None:
     ensure_system_config_schema(DatabaseConfig.get_engine())
     _ensure_bom_node_part_number_index()
     _seed_if_empty()
+    from app.bootstrap.steel_mill_schema import ensure_steel_mill_fact_schema
+
+    ensure_steel_mill_fact_schema(DatabaseConfig.get_engine())
     _log_startup()
 
 
@@ -51,6 +54,7 @@ def _seed_if_empty() -> None:
     from app.services.masterdata.steel_grade_category.service import (
         SteelGradeCategoryService,
     )
+    from app.services.masterdata.steel_mill.service import SteelMillService
     from app.services.settings.schema_comment.seed import ensure_schema_reference_seed
     from app.services.settings.users.service import UserService
 
@@ -59,6 +63,7 @@ def _seed_if_empty() -> None:
     try:
         UserService().ensure_default_admin(db)
         SteelGradeCategoryService().ensure_seed_if_empty(db)
+        SteelMillService().ensure_seed_if_empty(db)
         ensure_schema_reference_seed(db)
     finally:
         db.close()

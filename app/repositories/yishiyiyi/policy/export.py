@@ -17,6 +17,7 @@ class SteelPricePolicyExport:
         year: int | None = None,
         month: int | None = None,
         steel_mill: str | None = None,
+        steel_mill_id: int | None = None,
         category_names_in: frozenset[str] | None = None,
         category_filter_no_match: bool = False,
         skip: int = 0,
@@ -33,6 +34,7 @@ class SteelPricePolicyExport:
             year=year,
             month=month,
             steel_mill=steel_mill,
+            steel_mill_id=steel_mill_id,
             category_names_in=category_names_in,
             category_filter_no_match=category_filter_no_match,
         )
@@ -58,6 +60,7 @@ class SteelPricePolicyExport:
         year: int | None = None,
         month: int | None = None,
         steel_mill: str | None = None,
+        steel_mill_id: int | None = None,
         category_names_in: frozenset[str] | None = None,
         category_filter_no_match: bool = False,
         skip: int = 0,
@@ -82,6 +85,7 @@ class SteelPricePolicyExport:
             year=year,
             month=month,
             steel_mill=steel_mill,
+            steel_mill_id=steel_mill_id,
             category_names_in=category_names_in,
             category_filter_no_match=category_filter_no_match,
         )
@@ -131,6 +135,7 @@ class SteelPricePolicyExport:
         year: int | None = None,
         month: int | None = None,
         steel_mill: str | None = None,
+        steel_mill_id: int | None = None,
         category_names_in: frozenset[str] | None = None,
         category_filter_no_match: bool = False,
     ) -> int:
@@ -140,6 +145,7 @@ class SteelPricePolicyExport:
             year=year,
             month=month,
             steel_mill=steel_mill,
+            steel_mill_id=steel_mill_id,
             category_names_in=category_names_in,
             category_filter_no_match=category_filter_no_match,
         )
@@ -152,6 +158,7 @@ class SteelPricePolicyExport:
         year: int | None = None,
         month: int | None = None,
         steel_mill: str | None = None,
+        steel_mill_id: int | None = None,
         category_names_in: frozenset[str] | None = None,
         category_filter_no_match: bool = False,
     ) -> int:
@@ -172,6 +179,7 @@ class SteelPricePolicyExport:
             year=year,
             month=month,
             steel_mill=steel_mill,
+            steel_mill_id=steel_mill_id,
             category_names_in=category_names_in,
             category_filter_no_match=category_filter_no_match,
         )
@@ -184,6 +192,7 @@ class SteelPricePolicyExport:
         year: int | None = None,
         month: int | None = None,
         steel_mill: str | None = None,
+        steel_mill_id: int | None = None,
         category_names_in: frozenset[str] | None = None,
         category_filter_no_match: bool = False,
         policy_type: str | None = None,
@@ -201,6 +210,7 @@ class SteelPricePolicyExport:
             year=year,
             month=month,
             steel_mill=steel_mill,
+            steel_mill_id=steel_mill_id,
             category_names_in=category_names_in,
             category_filter_no_match=category_filter_no_match,
             policy_type=policy_type,

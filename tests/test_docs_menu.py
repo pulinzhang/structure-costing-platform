@@ -122,3 +122,7 @@ def test_openapi_sidebar_uses_menu_names() -> None:
     assert login["tags"] == ["登录认证"]
     bom = paths["/api/bom/upload"]["post"]
     assert bom["tags"] == ["材料清单"]
+    steel_mill = paths["/api/masterdata/steel-mills"]["get"]
+    assert steel_mill["tags"] == ["钢厂"]
+    masterdata = next(tags for name, tags in groups if name == "主数据")
+    assert masterdata[-1] == "钢厂"

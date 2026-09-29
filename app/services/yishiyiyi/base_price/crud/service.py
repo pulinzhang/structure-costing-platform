@@ -28,6 +28,7 @@ from app.services.masterdata.location.service import LocationService
 from app.services.masterdata.steel_grade_category.service import (
     SteelGradeCategoryService,
 )
+from app.services.masterdata.steel_mill.service import SteelMillService
 from app.services.settings.system.service import SettingsService
 from app.services.yishiyiyi.base_price.gate import (
     AwardLine,
@@ -38,6 +39,25 @@ from app.services.yishiyiyi.base_price.gate import (
 )
 
 logger = logging.getLogger("service.steel_base_price.crud")
+
+
+def _mill_id(db: Session, raw: str | None) -> int | None:
+    return SteelMillService().filter_id(db, raw)
+
+
+def _with_abbreviation(
+    db: Session,
+    records: list[SteelBasePrice],
+) -> list[SteelBasePriceResponse]:
+    hits = SteelMillService().hits_by_id(db)
+    rows: list[SteelBasePriceResponse] = []
+    for record in records:
+        vo = SteelBasePriceResponse.model_validate(record)
+        hit = hits.get(record.steel_mill_id)
+        if hit is not None:
+            vo.steel_mill_abbreviation = hit.abbreviation
+        rows.append(vo)
+    return rows
 
 
 def _reject_line_against_previous_month(
@@ -75,7 +95,11 @@ class SteelBasePriceCrudService:
     def get_filter_options(self, db: Session) -> SteelBasePriceFilterOptionsVO:
         options = self.repository.get_filter_options(db)
         return SteelBasePriceFilterOptionsVO.model_validate(
-            {**options, "locations": LocationService().list_registered(db)}
+            {
+                **options,
+                "locations": LocationService().list_registered(db),
+                "steel_mills": [item.abbreviation for item in SteelMillService().list_enabled(db)],
+            }
         )
 
     def paginate(
@@ -94,7 +118,7 @@ class SteelBasePriceCrudService:
             year=query.year,
             month=query.month,
             locations=locations,
-            steel_mill=query.steel_mill.strip() if query.steel_mill else None,
+            steel_mill_id=_mill_id(db, query.steel_mill),
             category_name=query.category_name.strip() if query.category_name else None,
             grade=query.grade.strip() if query.grade else None,
             spec=query.spec.strip() if query.spec else None,
@@ -102,13 +126,14 @@ class SteelBasePriceCrudService:
             limit=query.size,
         )
         records, total = self.repository.paginate(db, base_filter)
-        return [SteelBasePriceResponse.model_validate(r) for r in records], total
+        return _with_abbreviation(db, records), total
 
     def get_by_id(self, db: Session, record_id: int) -> SteelBasePriceResponse:
         record = self.repository.get_by_id(db, record_id)
         if record is None:
             raise NotFoundException("记录不存在")
-        return SteelBasePriceResponse.model_validate(record)
+        rows = _with_abbreviation(db, [record])
+        return rows[0]
 
     def create(
         self,
@@ -118,6 +143,7 @@ class SteelBasePriceCrudService:
     ) -> SteelBasePriceResponse:
         try:
             canonical = LocationService().require_enabled(db, body.location)
+            mill = SteelMillService().require_enabled(db, body.steel_mill)
             archive = SteelGradeCategoryService().require_matched_grade(db, body.grade)
             if archive is None:
                 raise BusinessException("牌号不能为空")
@@ -173,8 +199,10 @@ class SteelBasePriceCrudService:
                 created_by=audit["created_by"],
                 updated_by=audit["updated_by"],
             )
+            record.steel_mill_id = mill.id
+            record.canonical_steel_mill = mill.full_name
             db.commit()
-            return SteelBasePriceResponse.model_validate(record)
+            return _with_abbreviation(db, [record])[0]
         except IntegrityError:
             db.rollback()
             raise BusinessException("基准价格已存在，或牌号不在「主数据 → 牌号分类」") from None
@@ -235,7 +263,8 @@ class SteelBasePriceCrudService:
             if record is None:
                 raise NotFoundException("记录不存在")
             db.commit()
-            return SteelBasePriceResponse.model_validate(record)
+            rows = _with_abbreviation(db, [record])
+            return rows[0]
         except (BusinessException, NotFoundException):
             db.rollback()
             raise
@@ -273,7 +302,7 @@ class SteelBasePriceCrudService:
                 year=year,
                 month=month,
                 location=location,
-                steel_mill=steel_mill,
+                steel_mill_id=_mill_id(db, steel_mill),
             )
             db.commit()
             logger.info(
@@ -321,7 +350,7 @@ class SteelBasePriceCrudService:
             year=year,
             month=month,
             location=location.strip() if location else None,
-            steel_mill=steel_mill.strip() if steel_mill else None,
+            steel_mill_id=_mill_id(db, steel_mill),
             spec=spec.strip() if spec else None,
             grades_in=grades_in,
         )

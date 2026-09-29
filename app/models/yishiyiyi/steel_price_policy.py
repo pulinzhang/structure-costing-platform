@@ -29,8 +29,12 @@ class SteelPricePolicy(AuditUserMixin, Base):
     )
 
     # 钢厂与钢种
-    steel_mill: Mapped[str] = mapped_column(
-        String(100), nullable=False, comment="钢厂名称（如：'马钢'、'宝钢'）"
+    steel_mill: Mapped[str] = mapped_column(String(100), nullable=False, comment="钢厂全称，对表头")
+    steel_mill_id: Mapped[int] = mapped_column(
+        Integer,
+        ForeignKey("steel_mills.id", ondelete="RESTRICT", onupdate="RESTRICT"),
+        nullable=False,
+        comment="钢厂档案 id",
     )
     category_name: Mapped[str] = mapped_column(
         String(100), nullable=False, comment="钢种大类（如：'冷轧钢'、'镀锌钢'）"
@@ -70,6 +74,7 @@ class SteelPricePolicy(AuditUserMixin, Base):
         Index("ix_policy_year", "year"),
         Index("ix_policy_month", "month"),
         Index("ix_policy_steel_mill", "steel_mill"),
+        Index("ix_policy_steel_mill_id", "steel_mill_id"),
         Index("ix_policy_category_name", "category_name"),
         Index("ix_policy_policy_type", "policy_type"),
         Index("ix_policy_grade_type", "grade_type"),
@@ -79,7 +84,7 @@ class SteelPricePolicy(AuditUserMixin, Base):
         UniqueConstraint(
             "year",
             "month",
-            "steel_mill",
+            "steel_mill_id",
             "category_name",
             "policy_type",
             "grade_value",

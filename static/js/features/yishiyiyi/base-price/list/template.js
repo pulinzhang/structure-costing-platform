@@ -90,6 +90,7 @@ export function basePriceDownloadTemplate() {
                                         <th class="px-3 py-2 text-right text-[9px] font-semibold font-medium tracking-[0.08em] text-ink-faint whitespace-nowrap">月份</th>
                                         <th class="px-3 py-2 text-left text-[9px] font-semibold font-medium tracking-[0.08em] text-ink-faint whitespace-nowrap">基地</th>
                                         <th class="px-3 py-2 text-left text-[9px] font-semibold font-medium tracking-[0.08em] text-ink-faint whitespace-nowrap">钢厂</th>
+                                        <th class="px-3 py-2 text-left text-[9px] font-semibold font-medium tracking-[0.08em] text-ink-faint whitespace-nowrap">溯源钢厂</th>
                                         <th class="px-3 py-2 text-left text-[9px] font-semibold font-medium tracking-[0.08em] text-ink-faint whitespace-nowrap">钢种大类</th>
                                         <th class="px-3 py-2 text-left text-[9px] font-semibold font-medium tracking-[0.08em] text-ink-faint whitespace-nowrap">牌号</th>
                                         <th class="px-3 py-2 text-left text-[9px] font-semibold font-medium tracking-[0.08em] text-ink-faint whitespace-nowrap">规格</th>
@@ -105,7 +106,7 @@ export function basePriceDownloadTemplate() {
                                 </thead>
                                 <tbody id="basePricePreviewBody" class="divide-y divide-line-subtle">
                                     <tr>
-                                        <td colspan="16" class="px-4 py-8 text-center text-ink-dim text-xs">
+                                        <td colspan="17" class="px-4 py-8 text-center text-ink-dim text-xs">
                                             当前筛选下暂无数据；打开默认当年，筛选项用来缩小范围
                                         </td>
                                     </tr>

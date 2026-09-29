@@ -230,6 +230,11 @@ export const pageMeta = {
         en: 'STEEL_GRADE_CATEGORY',
         breadcrumb: ['主数据', '牌号分类'],
     },
+    'steel-mill': {
+        title: '钢厂',
+        en: 'STEEL_MILL',
+        breadcrumb: ['主数据', '钢厂'],
+    },
     'winning-thickness-download': {
         title: '中标钢厂厚度价格列表',
         en: 'WINNING_MILL_THICKNESS_PRICE_LIST',

@@ -43,7 +43,7 @@ def build_policy_summary(rows: list[PolicyLadderRow]) -> SummaryPayload:
 
     for row in rows:
         policy_ids.add(row.policy_id)
-        mills.add(row.steel_mill)
+        mills.add(str(row.steel_mill_id))
         categories.add(row.category_name)
         if row.policy_type == "THICKNESS":
             thickness_policies.add(row.policy_id)
@@ -69,20 +69,20 @@ def build_policy_summary(rows: list[PolicyLadderRow]) -> SummaryPayload:
 
 
 def build_policy_drivers(rows: list[PolicyLadderRow], *, top_n: int = 15) -> DriversPayload:
-    """按钢厂汇总非零加减价条数，辅助看「哪家政策多」。"""
-    by_mill: dict[str, list[PolicyLadderRow]] = defaultdict(list)
+    """按 steel_mill_id 汇总非零加减价条数。钢厂字用结果行上的字。"""
+    by_mill: dict[int, list[PolicyLadderRow]] = defaultdict(list)
     for row in rows:
         if row.price_adjustment == 0:
             continue
-        by_mill[row.steel_mill].append(row)
+        by_mill[row.steel_mill_id].append(row)
 
     items: list[DriverItem] = []
-    for mill, mill_rows in by_mill.items():
+    for _mill_id, mill_rows in by_mill.items():
         adjustments = [row.price_adjustment for row in mill_rows]
         items.append(
             {
                 "object_type": "steel_price_policy",
-                "steel_mill": mill,
+                "steel_mill": mill_rows[0].steel_mill,
                 "adjustment_row_count": len(mill_rows),
                 "max_adjustment": max(adjustments),
                 "min_adjustment": min(adjustments),
@@ -117,7 +117,7 @@ def build_policy_trend(
 def _policy_ladder_key(row: PolicyLadderRow) -> str:
     return "|".join(
         [
-            row.steel_mill,
+            str(row.steel_mill_id),
             row.category_name,
             row.policy_type,
             row.grade_value or "",
@@ -144,7 +144,7 @@ def build_policy_mom_anomalies(
     top_n: int = 15,
     min_abs_change: int = 30,
 ) -> DomainAnomaliesPayload:
-    """同阶梯在各月间的加减价跳变（疑似传错政策/月份）。"""
+    """同阶梯按 steel_mill_id 环比。清单按月份从早到晚。钢厂字用结果行上的字。"""
     by_key: dict[str, dict[str, PolicyLadderRow]] = defaultdict(dict)
     for row in rows:
         month = month_key(row.year, row.month)
@@ -184,7 +184,7 @@ def build_policy_mom_anomalies(
                 }
             )
 
-    ranked = sorted(
+    picked = sorted(
         spikes,
         key=lambda item: (
             abs(int(item.get("change") or 0)),
@@ -192,11 +192,12 @@ def build_policy_mom_anomalies(
         ),
         reverse=True,
     )[:top_n]
-    for index, item in enumerate(ranked, start=1):
+    picked.sort(key=lambda item: str(item.get("month") or ""))
+    for index, item in enumerate(picked, start=1):
         item["rank"] = index
     return {
         "kind": "policy_anomalies",
-        "items": ranked,
+        "items": picked,
         "top_n": top_n,
         "subject": "steel_price_policy",
     }

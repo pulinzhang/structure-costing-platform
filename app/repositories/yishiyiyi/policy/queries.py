@@ -57,7 +57,9 @@ class SteelPricePolicyQueries:
             query = query.filter(SteelPricePolicy.year == policy_filter.year)
         if policy_filter.month is not None:
             query = query.filter(SteelPricePolicy.month == policy_filter.month)
-        if policy_filter.steel_mill:
+        if policy_filter.steel_mill_id is not None:
+            query = query.filter(SteelPricePolicy.steel_mill_id == policy_filter.steel_mill_id)
+        elif policy_filter.steel_mill:
             query = query.filter(SteelPricePolicy.steel_mill == policy_filter.steel_mill)
         query = apply_category_scope(
             query,
@@ -103,7 +105,6 @@ class SteelPricePolicyQueries:
             reverse=True,
         )
         months = distinct_values(db, SteelPricePolicy.month)
-        steel_mills = distinct_values(db, SteelPricePolicy.steel_mill)
         category_names = list(CANONICAL_CATEGORY_NAMES)
         policy_types = distinct_values(db, SteelPricePolicy.policy_type)
         grade_types = [
@@ -119,7 +120,6 @@ class SteelPricePolicyQueries:
         return PolicyFilterOptions(
             years=years,
             months=months,
-            steel_mills=steel_mills,
             category_names=category_names,
             policy_types=policy_types,
             grade_types=grade_types,
@@ -152,7 +152,9 @@ class SteelPricePolicyQueries:
             db.query(SteelPricePolicy.id).filter(
                 SteelPricePolicy.year == match_filter.year,
                 SteelPricePolicy.month == match_filter.month,
-                SteelPricePolicy.steel_mill == match_filter.steel_mill,
+                SteelPricePolicy.steel_mill_id == match_filter.steel_mill_id
+                if match_filter.steel_mill_id is not None
+                else SteelPricePolicy.steel_mill == match_filter.steel_mill,
                 SteelPricePolicy.category_name == match_filter.category_name,
                 SteelPricePolicy.policy_type == match_filter.policy_type,
             ),
@@ -198,7 +200,9 @@ class SteelPricePolicyQueries:
             .filter(
                 SteelPricePolicy.year == match_filter.year,
                 SteelPricePolicy.month == match_filter.month,
-                SteelPricePolicy.steel_mill == match_filter.steel_mill,
+                SteelPricePolicy.steel_mill_id == match_filter.steel_mill_id
+                if match_filter.steel_mill_id is not None
+                else SteelPricePolicy.steel_mill == match_filter.steel_mill,
                 SteelPricePolicy.category_name == match_filter.category_name,
                 SteelPricePolicy.policy_type == match_filter.policy_type,
             )

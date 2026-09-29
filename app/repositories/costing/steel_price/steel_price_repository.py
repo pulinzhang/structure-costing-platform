@@ -49,7 +49,7 @@ class SteelPriceRepository:
         year: int,
         month: int,
         location: str,
-        steel_mill: str,
+        steel_mill_id: int,
         category_name: str,
         grade: str,
         thickness: Decimal,
@@ -60,7 +60,7 @@ class SteelPriceRepository:
             year=year,
             month=month,
             location=location,
-            steel_mill=steel_mill,
+            steel_mill_id=steel_mill_id,
             category_name=category_name,
             grade=grade,
             thickness=thickness,
@@ -77,7 +77,7 @@ class SteelPriceRepository:
         locations: list[str] | None = None,
         category_name: str | None = None,
         grade: str | None = None,
-        steel_mill: str | None = None,
+        steel_mill_id: int | None = None,
         audit_status: str | None = None,
         skip: int = 0,
         limit: int = 20,
@@ -90,7 +90,7 @@ class SteelPriceRepository:
             locations=locations,
             category_name=category_name,
             grade=grade,
-            steel_mill=steel_mill,
+            steel_mill_id=steel_mill_id,
             audit_status=audit_status,
             skip=skip,
             limit=limit,
@@ -106,7 +106,7 @@ class SteelPriceRepository:
         locations: list[str] | None = None,
         category_name: str | None = None,
         grade: str | None = None,
-        steel_mill: str | None = None,
+        steel_mill_id: int | None = None,
         audit_status: str | None = None,
     ) -> SteelPriceFilterSummary:
         return self._queries.summarize_by_filters(
@@ -117,7 +117,7 @@ class SteelPriceRepository:
             locations=locations,
             category_name=category_name,
             grade=grade,
-            steel_mill=steel_mill,
+            steel_mill_id=steel_mill_id,
             audit_status=audit_status,
         )
 
@@ -131,7 +131,7 @@ class SteelPriceRepository:
         locations: list[str] | None = None,
         category_name: str | None = None,
         grade: str | None = None,
-        steel_mill: str | None = None,
+        steel_mill_id: int | None = None,
         audit_status: str | None = None,
     ) -> list[SteelPrice]:
         return self._queries.list_for_export(
@@ -142,7 +142,7 @@ class SteelPriceRepository:
             locations=locations,
             category_name=category_name,
             grade=grade,
-            steel_mill=steel_mill,
+            steel_mill_id=steel_mill_id,
             audit_status=audit_status,
         )
 
@@ -161,7 +161,7 @@ class SteelPriceRepository:
         location: str,
         category_name: str | None = None,
         grade: str | None = None,
-        steel_mill: str | None = None,
+        steel_mill_id: int | None = None,
     ) -> int:
         return self._queries.count_approved_by_conditions(
             db,
@@ -170,7 +170,7 @@ class SteelPriceRepository:
             location=location,
             category_name=category_name,
             grade=grade,
-            steel_mill=steel_mill,
+            steel_mill_id=steel_mill_id,
         )
 
     def count_by_conditions_and_statuses(
@@ -235,7 +235,7 @@ class SteelPriceRepository:
         location: str,
         category_name: str | None = None,
         grade: str | None = None,
-        steel_mill: str | None = None,
+        steel_mill_id: int | None = None,
     ) -> int:
         return self._writes.delete_unaudited_by_conditions(
             db,
@@ -244,7 +244,7 @@ class SteelPriceRepository:
             location=location,
             category_name=category_name,
             grade=grade,
-            steel_mill=steel_mill,
+            steel_mill_id=steel_mill_id,
         )
 
     def approve_by_period(

@@ -139,6 +139,7 @@ class SteelPriceWrite:
     month: int
     location: str
     steel_mill: str
+    steel_mill_id: int
     category_name: str
     grade: str
     thickness: Decimal

@@ -362,12 +362,16 @@ export function steelPriceListTemplate() {
     `;
 }
 
+export function millLabel(record) {
+    return (record && record.steel_mill_abbreviation) || '';
+}
+
 export function renderSteelPriceRows(records) {
     if (!records || !Array.isArray(records) || records.length === 0) return '';
     return records.map((record) => {
         const approved = record.audit_status === 'approved';
         const period = esc(fmtPeriod(record.year, record.month));
-        const mill = esc(record.steel_mill) || '—';
+        const mill = esc(millLabel(record)) || '—';
         const location = esc(record.location) || '—';
         const cell = 'p-3 border-b border-line-subtle font-mono text-[11px]';
         const muted = 'text-ink-muted';

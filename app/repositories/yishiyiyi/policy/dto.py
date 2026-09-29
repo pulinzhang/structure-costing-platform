@@ -11,7 +11,6 @@ class PolicyFilterOptions(BaseModel):
 
     years: list[int] = Field(default_factory=list)
     months: list[int] = Field(default_factory=list)
-    steel_mills: list[str] = Field(default_factory=list)
     category_names: list[str] = Field(default_factory=list)
     policy_types: list[str] = Field(default_factory=list)
     grade_types: list[str] = Field(default_factory=list)

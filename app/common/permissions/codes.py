@@ -397,6 +397,12 @@ class Perm:
     STEEL_GRADE_CATEGORY_DELETE = "op:steel-grade-category:delete"  # 删除
     STEEL_GRADE_CATEGORY_EXPORT = "op:steel-grade-category:export"  # 导出
 
+    MENU_STEEL_MILL = "menu:steel-mill"  # 钢厂
+    STEEL_MILL_VIEW = "op:steel-mill:view"  # 查看
+    STEEL_MILL_CREATE = "op:steel-mill:create"  # 新增
+    STEEL_MILL_UPDATE = "op:steel-mill:update"  # 编辑
+    STEEL_MILL_DELETE = "op:steel-mill:delete"  # 删除
+
     MENU_SETTINGS = "menu:settings"  # 设置
 
     MENU_SETTINGS_PROFILE = "menu:settings-profile"  # 个人资料

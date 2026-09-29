@@ -157,6 +157,7 @@ class BasePriceEnricher:
                         grade=material_grade,
                         thickness=material.thickness,
                         steel_mill=base.steel_mill,
+                        steel_mill_id=base.steel_mill_id,
                         category_name=category_name,
                         width=Decimal(str(base.width)),
                         base_thickness=Decimal(str(base.thick)),

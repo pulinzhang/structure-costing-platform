@@ -42,7 +42,16 @@ class SteelBasePrice(AuditUserMixin, Base):
 
     # 【钢厂与牌号维度】
     steel_mill: Mapped[str] = mapped_column(
-        String(50), nullable=False, comment="中标钢厂，例：VAMA、本钢、马钢、首钢、唐钢、山钢"
+        String(50), nullable=False, comment="Excel 原文钢厂，溯源用，不改写成全称"
+    )
+    canonical_steel_mill: Mapped[str] = mapped_column(
+        String(50), nullable=False, comment="钢厂全称，对表头"
+    )
+    steel_mill_id: Mapped[int] = mapped_column(
+        Integer,
+        ForeignKey("steel_mills.id", ondelete="RESTRICT", onupdate="RESTRICT"),
+        nullable=False,
+        comment="钢厂档案 id",
     )
     category_name: Mapped[str] = mapped_column(
         String(50), nullable=False, comment="钢种大类，例：镀锌、冷轧、酸洗"
@@ -101,7 +110,7 @@ class SteelBasePrice(AuditUserMixin, Base):
             "year",
             "month",
             "location",
-            "steel_mill",
+            "steel_mill_id",
             "category_name",
             "grade",
             "thick",
@@ -112,6 +121,7 @@ class SteelBasePrice(AuditUserMixin, Base):
         Index("ix_base_price_year", "year"),
         Index("ix_base_price_month", "month"),
         Index("ix_base_price_steel_mill", "steel_mill"),
+        Index("ix_base_price_steel_mill_id", "steel_mill_id"),
         Index("ix_base_price_category_name", "category_name"),
         Index("ix_base_price_grade", "grade"),
         Index("ix_base_price_lookup", "year", "month", "location", "category_name", "grade"),

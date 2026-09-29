@@ -177,7 +177,11 @@ class SteelAnalysis:
         )
         if not in_window:
             return out
-        payload = build_base_price_month_move_over(rows, limit=limit, window_start=window_start)
+        payload = build_base_price_month_move_over(
+            rows,
+            limit=limit,
+            window_start=window_start,
+        )
         out.data_message = str(payload.get("note") or "")
         out.result = payload
         return out

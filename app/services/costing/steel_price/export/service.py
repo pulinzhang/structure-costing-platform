@@ -15,6 +15,7 @@ from app.schemas.vo.user_vo import UserVO
 from app.services.costing.steel_price.export.styles import build_sheet_style
 from app.services.costing.steel_price.export.values import build_filename, filter_text
 from app.services.costing.steel_price.export.workbook import fill_sheet
+from app.services.masterdata.steel_mill.service import SteelMillService
 
 logger = logging.getLogger("service.steel_price_export")
 
@@ -101,7 +102,7 @@ class SteelPriceExportService:
             location=location,
             category_name=category_name,
             grade=grade,
-            steel_mill=steel_mill,
+            steel_mill_id=SteelMillService().filter_id(db, steel_mill),
             audit_status=audit_status,
         )
         summary = filter_text(
@@ -113,6 +114,15 @@ class SteelPriceExportService:
             steel_mill=steel_mill,
             audit_status=audit_status,
         )
+        mill_labels = {
+            mill_id: hit.abbreviation for mill_id, hit in SteelMillService().hits_by_id(db).items()
+        }
         ws = resolve_worksheet(wb, sheet_title)
-        fill_sheet(ws, records, style=self._style, filter_text=summary)
+        fill_sheet(
+            ws,
+            records,
+            style=self._style,
+            filter_text=summary,
+            mill_labels=mill_labels,
+        )
         return ws.title, len(records)

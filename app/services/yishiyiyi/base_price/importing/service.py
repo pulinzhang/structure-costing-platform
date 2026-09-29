@@ -32,6 +32,8 @@ from app.services.masterdata.location.service import LocationService
 from app.services.masterdata.steel_grade_category.service import (
     SteelGradeCategoryService,
 )
+from app.services.masterdata.steel_mill.normalize import normalize_mill_text
+from app.services.masterdata.steel_mill.service import SteelMillService
 from app.services.settings.system.service import SettingsService
 from app.services.yishiyiyi.base_price.gate import (
     AwardLine,
@@ -168,6 +170,11 @@ def _assert_steel_mills_not_numeric(records: list[dict[str, object]]) -> None:
     )
 
 
+def _base_price_mill_place(record: dict[str, object]) -> str:
+    """拒绝句里的位置：基准价 Excel 行。解析行始终带行号。"""
+    return f"基准价，Excel 第{record['excel_row']}行"
+
+
 def _base_price_write_from_record(
     record: dict[str, object],
     *,
@@ -176,6 +183,8 @@ def _base_price_write_from_record(
     filename: str,
     created_by: str,
     updated_by: str,
+    steel_mill_id: int,
+    canonical_steel_mill: str,
 ) -> SteelBasePriceWrite:
     thick = record.get("thick")
     width = record.get("width")
@@ -209,6 +218,8 @@ def _base_price_write_from_record(
         excel_filename=filename,
         sheet_name=str(record["sheet_name"]),
         excel_row=excel_row,
+        steel_mill_id=steel_mill_id,
+        canonical_steel_mill=canonical_steel_mill,
         spec=str(record["spec"]) if record.get("spec") is not None else None,
         excel_col=excel_col,
         remark=str(record["remark"]) if record.get("remark") is not None else None,
@@ -241,6 +252,29 @@ def _canonicalize_grade_and_category(db: Session, writes: list[SteelBasePriceWri
             f"牌号「{raw_grade}」表头钢种「{excel_category}」已按档案改为「{archive_category}」"
         )
     return warnings
+
+
+def _reject_collapsed_mill_keys(writes: list[SteelBasePriceWrite]) -> None:
+    """牌号收口之后，两种原文收到同一钢厂且业务键相同则整本退回。"""
+    seen: dict[tuple[object, ...], str] = {}
+    for write in writes:
+        text = normalize_mill_text(write.steel_mill)
+        key = (
+            write.year,
+            write.month,
+            write.location,
+            write.steel_mill_id,
+            write.category_name,
+            write.grade,
+            write.thick,
+            write.width,
+        )
+        previous = seen.get(key)
+        if previous is not None and previous != text:
+            raise BusinessException(
+                f"「{previous}」与「{text}」收到同一钢厂，业务键相撞。本文件未写入。"
+            )
+        seen[key] = text
 
 
 class SteelBasePriceImportService:
@@ -308,17 +342,26 @@ class SteelBasePriceImportService:
         for name in unique_locations:
             location_service.require_enabled(db, name)
 
-        writes = [
-            _base_price_write_from_record(
-                record,
-                year=year,
-                month=month,
-                filename=filename,
-                created_by=create_audit["created_by"],
-                updated_by=create_audit["updated_by"],
+        mill_hits = SteelMillService().require_enabled_many(
+            db,
+            [str(record.get("steel_mill") or "") for record in parse_result.records],
+            places=[_base_price_mill_place(record) for record in parse_result.records],
+        )
+        writes: list[SteelBasePriceWrite] = []
+        for record in parse_result.records:
+            hit = mill_hits[normalize_mill_text(str(record.get("steel_mill") or ""))]
+            writes.append(
+                _base_price_write_from_record(
+                    record,
+                    year=year,
+                    month=month,
+                    filename=filename,
+                    created_by=create_audit["created_by"],
+                    updated_by=create_audit["updated_by"],
+                    steel_mill_id=hit.id,
+                    canonical_steel_mill=hit.full_name,
+                )
             )
-            for record in parse_result.records
-        ]
         if not writes:
             _report(100, "解析完成，无有效数据行")
             try:
@@ -357,6 +400,7 @@ class SteelBasePriceImportService:
         _reject_excessive_month_moves(db, self.repository, writes, incoming)
         _report(50, f"解析完成，共 {len(writes)} 条，正在写入数据库...")
         try:
+            _reject_collapsed_mill_keys(writes)
             counts = self.repository.upsert(db, writes)
             register_existing(
                 db,

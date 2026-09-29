@@ -30,6 +30,9 @@ from app.schemas.vo.steel_price_policy_vo import ImportResultResponse
 from app.schemas.vo.user_vo import UserVO
 from app.services.file_trace.path_utils import to_upload_relpath
 from app.services.file_trace.register import register_existing
+from app.services.masterdata.steel_mill.hit import SteelMillHit
+from app.services.masterdata.steel_mill.normalize import normalize_mill_text
+from app.services.masterdata.steel_mill.service import SteelMillService
 from app.services.yishiyiyi.policy.importing.template_builder import (
     build_steel_price_policy_template,
 )
@@ -41,17 +44,25 @@ ProgressCallback = Callable[[int, str], None]
 logger = logging.getLogger("service.steel_price_policy.import")
 
 
+def _policy_mill_place(policy: ParsedPolicy) -> str:
+    """拒绝句里的位置：加减价 sheet。sheet 名就是解析出的钢厂原文。"""
+    return f"加减价，sheet「{policy.steel_mill}」"
+
+
 def _policy_write_from_parsed(
     policy: ParsedPolicy,
     *,
     year: int,
     month: int,
     audit: AuditCreateFields,
+    steel_mill: str,
+    steel_mill_id: int,
 ) -> SteelPricePolicyWrite:
     return SteelPricePolicyWrite(
         year=year,
         month=month,
-        steel_mill=policy.steel_mill,
+        steel_mill=steel_mill,
+        steel_mill_id=steel_mill_id,
         category_name=policy.category_name,
         policy_type=policy.policy_type,
         grade_type=policy.grade_type,
@@ -172,9 +183,35 @@ class SteelPricePolicyImportService:
         updated = 0
         policies = result.policies
         total_policies = len(policies) or 1
+        mill_hits = SteelMillService().require_enabled_many(
+            db,
+            [policy.steel_mill for policy in policies],
+            places=[_policy_mill_place(policy) for policy in policies],
+        )
+        seen_keys: dict[tuple[object, ...], str] = {}
+        checked: list[tuple[ParsedPolicy, SteelMillHit]] = []
+        for policy in policies:
+            text = normalize_mill_text(policy.steel_mill)
+            hit = mill_hits[text]
+            key = (
+                year,
+                month,
+                hit.id,
+                policy.category_name,
+                policy.policy_type,
+                policy.grade_value,
+                policy.base_thickness,
+            )
+            previous = seen_keys.get(key)
+            if previous is not None and previous != text:
+                raise BusinessException(
+                    f"「{previous}」与「{text}」收到同一钢厂，业务键相撞。本文件未写入。"
+                )
+            seen_keys[key] = text
+            checked.append((policy, hit))
 
         try:
-            for index, policy_data in enumerate(policies):
+            for index, (policy_data, mill_hit) in enumerate(checked):
                 # 写入阶段占用 70% ~ 98%
                 write_progress = 70 + int((index / total_policies) * 28)
                 _report(
@@ -187,6 +224,8 @@ class SteelPricePolicyImportService:
                     year=year,
                     month=month,
                     audit=create_audit,
+                    steel_mill=mill_hit.full_name,
+                    steel_mill_id=mill_hit.id,
                 )
                 norm_items = [
                     _ladder_write_from_parsed(item, create_audit) for item in policy_data.items
@@ -196,6 +235,7 @@ class SteelPricePolicyImportService:
                     year=policy_write.year,
                     month=policy_write.month,
                     steel_mill=policy_write.steel_mill,
+                    steel_mill_id=policy_write.steel_mill_id,
                     category_name=policy_write.category_name,
                     policy_type=policy_write.policy_type,
                     grade_type=policy_write.grade_type,

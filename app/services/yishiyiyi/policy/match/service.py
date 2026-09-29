@@ -21,6 +21,7 @@ from app.schemas.vo.steel_price_policy_vo import (
 from app.schemas.vo.steel_price_policy_vo import (
     PolicyMatchResponse,
 )
+from app.services.masterdata.steel_mill.service import SteelMillService
 from app.services.yishiyiyi.policy.match.ladder_matcher import LadderMatcher
 
 logger = logging.getLogger("service.steel_price_policy.match")
@@ -43,10 +44,14 @@ class SteelPricePolicyMatchService:
         - 未命中时 fallback 到 grade_value 为 NULL 的通用政策
         - 这解决了马钢 Excel 中多个钢种共用同一行价格的问题
         """
+        mill = SteelMillService().resolve(db, data.steel_mill)
+        if mill is None:
+            return PolicyMatchResponse(matched=False)
         match_filter = MatchFilter(
             year=data.year,
             month=data.month,
-            steel_mill=data.steel_mill.strip(),
+            steel_mill=mill.full_name,
+            steel_mill_id=mill.id,
             category_name=data.category_name.strip(),
             policy_type=data.policy_type.value,
             grade_type=data.grade_type.value if data.grade_type else None,
@@ -65,7 +70,8 @@ class SteelPricePolicyMatchService:
             fallback_filter = MatchFilter(
                 year=data.year,
                 month=data.month,
-                steel_mill=data.steel_mill.strip(),
+                steel_mill=mill.full_name,
+                steel_mill_id=mill.id,
                 category_name=data.category_name.strip(),
                 policy_type=data.policy_type.value,
                 grade_type=None,  # 通用政策

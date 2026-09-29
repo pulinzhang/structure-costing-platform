@@ -14,10 +14,13 @@ from app.services.llm._money import ym_int
 
 @dataclass(frozen=True, slots=True)
 class BasePricePeriodRow:
+    """steel_mill 是结果行上的字。是不是同一家只看 steel_mill_id。不读钢厂档案。"""
+
     year: int
     month: int
     location: str
     steel_mill: str
+    steel_mill_id: int
     category_name: str
     grade: str
     spec: str
@@ -50,8 +53,15 @@ class BasePriceAnalysisRepository:
         loc_filter = location_in_clause(db, SteelBasePrice.location, location)
         if loc_filter is not None:
             q = q.filter(loc_filter)
-        if steel_mill:
-            q = q.filter(SteelBasePrice.steel_mill == steel_mill)
+        asked_mill = (steel_mill or "").strip()
+        if asked_mill:
+            # 问句里的字只用来在本表找到 id，随后按 id 取行。不读钢厂档案。
+            matched_ids = (
+                db.query(SteelBasePrice.steel_mill_id)
+                .filter(SteelBasePrice.steel_mill == asked_mill)
+                .distinct()
+            )
+            q = q.filter(SteelBasePrice.steel_mill_id.in_(matched_ids))
         if category_name:
             q = q.filter(SteelBasePrice.category_name == category_name)
         if grade:
@@ -61,7 +71,7 @@ class BasePriceAnalysisRepository:
             SteelBasePrice.year.asc(),
             SteelBasePrice.month.asc(),
             SteelBasePrice.location.asc(),
-            SteelBasePrice.steel_mill.asc(),
+            SteelBasePrice.steel_mill_id.asc(),
         ).limit(limit)
 
         rows: list[BasePricePeriodRow] = []
@@ -72,6 +82,7 @@ class BasePriceAnalysisRepository:
                     month=int(row.month),
                     location=str(row.location),
                     steel_mill=str(row.steel_mill),
+                    steel_mill_id=int(row.steel_mill_id),
                     category_name=str(row.category_name),
                     grade=str(row.grade),
                     spec=str(row.spec),

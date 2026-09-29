@@ -331,7 +331,7 @@ ApiResponse[AsyncTaskAcceptedVO]
 
 | 切片 | 文档 |
 |------|------|
-| **masterdata** | [基地](masterdata/location-design.md)（已落地）· [项目](masterdata/vehicle-model-design.md)（本切片已落地；下游改读另做）· [供应商](masterdata/supplier-design.md)（第一期 + 第二期已落地：采购对象可空指定、工艺/采购对象 `RESTRICT`、一览改主键/删除）· [牌号分类](masterdata/steel-grade-category-design.md)（已落地：手工档案，下游只读） |
+| **masterdata** | [基地](masterdata/location-design.md)（已落地）· [项目](masterdata/vehicle-model-design.md)（本切片已落地；下游改读另做）· [供应商](masterdata/supplier-design.md)（第一期 + 第二期已落地：采购对象可空指定、工艺/采购对象 `RESTRICT`、一览改主键/删除）· [牌号分类](masterdata/steel-grade-category-design.md)（已落地：手工档案，下游只读）· [钢厂](masterdata/steel-mill-design.md)（已落地：导入写 `steel_mill_id`，对不上整本退回） |
 | **stamping** | [产品质量先期策划（APQP）先布点后工艺](stamping/stamping-apqp-die-before-process-design.md) · [工艺确认表](stamping/stamping-process-confirmation-design.md) · [模具布点](stamping/stamping-die-management-design.md) · [模具单价](stamping/stamping-die-unit-price-design.md) · [检具费档案](stamping/stamping-gauge-fee-design.md) · [年度模具费（不含检具）](stamping/stamping-die-fee-design.md) |
 | **bom** | [年度零件价](bom/bom-annual-part-prices-design.md) · [焊接工艺拆解](bom/welding-process-breakdown-design.md) · [焊接费](bom/welding-fee-design.md) · [采购对象清单](bom/bom-procurement-objects-design.md) · [指定供应商](bom/bom-procurement-object-supplier-design.md) · [批量上传供应商](bom/bom-procurement-object-supplier-upload-design.md) |
 | **engineering-change** | [目录](engineering-change/README.md) · [有效期（已落地）](engineering-change/bom-process-die-effective-period-design.md) · [工程变更切片+权限+契约（设计）](engineering-change/part-number-revision-design.md) · [T28 对照/拆测](engineering-change/t28-2025-07-import-bundle-test-design.md) |

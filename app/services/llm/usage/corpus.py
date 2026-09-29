@@ -530,7 +530,7 @@ def load_corpus_chunks() -> tuple[CorpusChunk, ...]:
             text=_extract_section(help_html, "masterdata"),
             source_page="help.html",
             anchor="masterdata",
-            keywords=("主数据", "牌号分类", "冷轧", "镀锌", "酸洗"),
+            keywords=("主数据", "牌号分类", "钢厂", "冷轧", "镀锌", "酸洗"),
         ),
         CorpusChunk(
             chunk_id="engine",

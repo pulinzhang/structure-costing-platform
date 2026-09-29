@@ -49,7 +49,7 @@ def save_calc_batch(
                     year=write.year,
                     month=write.month,
                     location=write.location,
-                    steel_mill=write.steel_mill,
+                    steel_mill_id=write.steel_mill_id,
                     category_name=write.category_name,
                     grade=write.grade,
                     thickness=write.thickness,

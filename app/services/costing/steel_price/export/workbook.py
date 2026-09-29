@@ -163,13 +163,20 @@ def fill_sheet(
     *,
     style: SheetStyle,
     filter_text: str,
+    mill_labels: dict[int, str],
 ) -> None:
     write_banner(ws, style=style, filter_text=filter_text, record_count=len(records))
     header_row = write_headers(ws, style=style)
 
     for seq, record in enumerate(records, start=1):
         row_idx = header_row + seq
-        write_data_row(ws, row_idx, row_values(record), style=style, seq=seq)
+        write_data_row(
+            ws,
+            row_idx,
+            row_values(record, mill_labels[record.steel_mill_id]),
+            style=style,
+            seq=seq,
+        )
 
     for col, width in enumerate(WIDTHS, start=1):
         dim = ws.column_dimensions[get_column_letter(col)]

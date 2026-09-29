@@ -19,5 +19,4 @@ class SteelPriceFilterOptionValues(TypedDict):
     months: list[int]
     locations: list[str]
     category_names: list[str]
-    steel_mills: list[str]
     audit_statuses: list[str]

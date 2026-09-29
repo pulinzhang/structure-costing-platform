@@ -27,6 +27,9 @@ def _item(*, item_id: int, sort_order: int, thick_min: str, thick_max: str, adj:
     )
 
 
+_MILL_IDS = {"唐钢": 1, "鞍本": 2, "鞍神": 3}
+
+
 def _policy(
     *,
     policy_id: int,
@@ -42,6 +45,7 @@ def _policy(
         grade_value=category_name,
         category_name=category_name,
         steel_mill=mill,
+        steel_mill_id=_MILL_IDS[mill],
         base_thickness=Decimal(base_thickness),
         excel_filename="policy.xlsx",
         items=items,
@@ -63,6 +67,7 @@ def _row(
         grade=grade,
         thickness=Decimal(thickness),
         steel_mill=mill,
+        steel_mill_id=_MILL_IDS[mill],
         category_name=category_name,
         base_thickness=Decimal(base_thickness),
         width=Decimal("1250"),

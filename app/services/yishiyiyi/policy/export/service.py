@@ -15,6 +15,7 @@ from app.repositories.yishiyiyi.policy.steel_price_policy_repository import (
     SteelPricePolicyRepository,
 )
 from app.schemas.vo.user_vo import UserVO
+from app.services.masterdata.steel_mill.service import SteelMillService
 from app.services.yishiyiyi.policy.export.excel_exporter import SteelPricePolicyExporter
 from app.services.yishiyiyi.policy.filter_resolver import resolve_policy_category_filter
 
@@ -79,7 +80,7 @@ class SteelPricePolicyExportService:
             db,
             year=year,
             month=month,
-            steel_mill=steel_mill,
+            steel_mill_id=SteelMillService().filter_id(db, steel_mill),
             category_names_in=category_names_in,
             category_filter_no_match=category_filter_no_match,
             skip=skip,
@@ -176,7 +177,7 @@ class SteelPricePolicyExportService:
             db,
             year=year,
             month=month,
-            steel_mill=steel_mill,
+            steel_mill_id=SteelMillService().filter_id(db, steel_mill),
             category_names_in=category_names_in,
             category_filter_no_match=category_filter_no_match,
         )

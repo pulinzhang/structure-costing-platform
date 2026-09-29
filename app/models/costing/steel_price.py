@@ -56,7 +56,13 @@ class SteelPrice(AuditUserMixin, Base):
     steel_mill: Mapped[str] = mapped_column(
         String(100),
         nullable=False,
-        comment="中标钢厂，例：马钢、首钢、唐钢、VAMA",
+        comment="中标钢厂展示字，例：马钢、首钢、唐钢、VAMA",
+    )
+    steel_mill_id: Mapped[int] = mapped_column(
+        Integer,
+        ForeignKey("steel_mills.id", ondelete="RESTRICT", onupdate="RESTRICT"),
+        nullable=False,
+        comment="钢厂档案 id",
     )
     category_name: Mapped[str] = mapped_column(
         String(50),
@@ -284,7 +290,7 @@ class SteelPrice(AuditUserMixin, Base):
             "year",
             "month",
             "location",
-            "steel_mill",
+            "steel_mill_id",
             "category_name",
             "grade",
             "thickness",
@@ -294,6 +300,7 @@ class SteelPrice(AuditUserMixin, Base):
         Index("ix_steel_price_year_month", "year", "month"),
         Index("ix_steel_price_location", "location"),
         Index("ix_steel_price_steel_mill", "steel_mill"),
+        Index("ix_steel_price_steel_mill_id", "steel_mill_id"),
         Index("ix_steel_price_category_name", "category_name"),
         Index("ix_steel_price_grade", "grade"),
         Index("ix_steel_price_calc_batch_id", "calc_batch_id"),

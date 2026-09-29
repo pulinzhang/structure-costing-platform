@@ -10,8 +10,6 @@ from app.services.yishiyiyi.policy.match.adjustment_common import (
     find_best_thickness_policy,
     grade_category,
     match_items,
-    normalize_steel_mill,
-    steel_mill_matches,
 )
 
 
@@ -32,13 +30,17 @@ def _diagnose_missing_thickness_policy(
     row: CalcRow, policies: list[SteelPricePolicy]
 ) -> str | None:
     """该厂有厚度块但未命中时给出原因。该厂本期无厚度块则返回 None（按基价计，不报错）。"""
-    mill = normalize_steel_mill(row.steel_mill)
+    mill = (row.steel_mill or "").strip() or "未知钢厂"
     category = (row.category_name or "").strip()
     typed = _thickness_category_policies(policies)
     if not typed:
         return "本期没有厚度大类政策，无法匹配厚度加减价"
 
-    mill_hits = [policy for policy in typed if steel_mill_matches(mill, policy.steel_mill)]
+    mill_hits = [
+        policy
+        for policy in typed
+        if row.steel_mill_id is not None and policy.steel_mill_id == row.steel_mill_id
+    ]
     if not mill_hits:
         return None
 
@@ -54,7 +56,7 @@ def _diagnose_missing_thickness_policy(
 
 
 def _ladder_miss_message(row: CalcRow, policy: SteelPricePolicy) -> str:
-    mill = normalize_steel_mill(policy.steel_mill) or "未知钢厂"
+    mill = (policy.steel_mill or "").strip() or "未知钢厂"
     category = (policy.category_name or "").strip() or "未知大类"
     base_text = (
         format_thickness(policy.base_thickness) if policy.base_thickness is not None else "空"
@@ -71,7 +73,7 @@ class ThicknessAdjustmentMatcher:
     牌号已由调用方解析为档案大类后：锁定一条 CATEGORY 政策，再按料厚落档。
 
     - 只认 policy_type = THICKNESS 且 grade_type = CATEGORY
-    - 选政策与中标厚度一览相同（钢厂别名 + 大类 + base_thickness 优先，不跨政策回退）
+    - 选政策与中标厚度一览相同（钢厂 id + 大类 + base_thickness 优先，不跨政策回退）
     - 阶梯只按零件实际料厚命中一档
     """
 

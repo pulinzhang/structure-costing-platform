@@ -1,7 +1,7 @@
 # Prompt 清单（llm 切片）
 # PromptRegistry 加载本文件；改文案须 bump version
 
-version: "v1.1.23"
+version: "v1.1.25"
 
 shared:
   - _shared/chinese_style_rules.md

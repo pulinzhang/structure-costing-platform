@@ -16,12 +16,14 @@ class PolicyFilter:
         category_filter_no_match: bool = False,
         policy_type: str | None = None,
         grade_type: str | None = None,
+        steel_mill_id: int | None = None,
         skip: int = 0,
         limit: int = 20,
     ):
         self.year = year
         self.month = month
         self.steel_mill = steel_mill
+        self.steel_mill_id = steel_mill_id
         self.category_names_in = category_names_in
         self.category_filter_no_match = category_filter_no_match
         self.policy_type = policy_type
@@ -44,10 +46,12 @@ class MatchFilter:
         grade_type: str | None = None,
         grade_value: str | None = None,
         base_thickness: Decimal | None = None,
+        steel_mill_id: int | None = None,
     ):
         self.year = year
         self.month = month
         self.steel_mill = steel_mill
+        self.steel_mill_id = steel_mill_id
         self.category_name = category_name
         self.policy_type = policy_type
         self.grade_type = grade_type

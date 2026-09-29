@@ -247,7 +247,7 @@ async function previewData(page = 1) {
     if (tableBody) {
         tableBody.innerHTML = `
             <tr>
-<td colspan="16" class="px-4 py-8 text-center">
+<td colspan="17" class="px-4 py-8 text-center">
                             <div class="flex items-center justify-center">
                                 <div class="w-4 h-4 border border-line border-brand rounded-full animate-spin mr-2"></div>
                                 <span class="text-[11px] text-ink-dim">加载中...</span>
@@ -286,7 +286,7 @@ async function previewData(page = 1) {
                 ? renderBasePriceRows(records)
                 : `
                 <tr>
-                    <td colspan="16" class="px-4 py-8 text-center text-ink-dim text-xs">
+                    <td colspan="17" class="px-4 py-8 text-center text-ink-dim text-xs">
                         当前筛选下暂无数据
                     </td>
                 </tr>
@@ -302,7 +302,7 @@ async function previewData(page = 1) {
         if (tableBody) {
             tableBody.innerHTML = `
                 <tr>
-                    <td colspan="16" class="px-4 py-8 text-center text-brand text-xs">
+                    <td colspan="17" class="px-4 py-8 text-center text-brand text-xs">
                         加载失败: ${esc(error.message || '未知错误')}
                     </td>
                 </tr>
@@ -424,7 +424,7 @@ async function batchDeleteBasePrices() {
         if (tableBody) {
             tableBody.innerHTML = `
                 <tr>
-                    <td colspan="16" class="px-4 py-8 text-center">
+                    <td colspan="17" class="px-4 py-8 text-center">
                         <div class="flex items-center justify-center">
                             <div class="w-4 h-4 border border-line border-brand rounded-full animate-spin mr-2"></div>
                             <span class="text-[11px] text-ink-dim">正在刷新...</span>
@@ -472,7 +472,7 @@ function renderBasePriceRows(records) {
     if (!records || !Array.isArray(records) || records.length === 0) {
         return `
             <tr>
-                <td colspan="16" class="px-4 py-8 text-center text-ink-dim text-xs">
+                <td colspan="17" class="px-4 py-8 text-center text-ink-dim text-xs">
                     无数据
                 </td>
             </tr>
@@ -484,7 +484,8 @@ function renderBasePriceRows(records) {
             <td class="px-3 py-2 text-[11px] text-ink-dim whitespace-nowrap font-mono text-right tabular-nums">${esc(fmtYear(record.year))}</td>
             <td class="px-3 py-2 text-[11px] text-ink-dim whitespace-nowrap font-mono text-right tabular-nums">${esc(fmtMonth(record.month))}</td>
             <td class="px-3 py-2 text-[11px] text-ink-muted whitespace-nowrap">${esc(record.location || '')}</td>
-            <td class="px-3 py-2 text-[11px] text-ink-muted whitespace-nowrap">${esc(record.steel_mill || '')}</td>
+            <td class="px-3 py-2 text-[11px] font-medium text-ink whitespace-nowrap">${esc(record.steel_mill_abbreviation || record.steel_mill || '')}</td>
+            <td class="px-3 py-2 text-[11px] text-ink-faint whitespace-nowrap">${esc(record.steel_mill || '')}</td>
             <td class="px-3 py-2 text-[11px] text-ink-muted whitespace-nowrap">${esc(record.category_name || '')}</td>
             <td class="px-3 py-2 text-[11px] font-medium text-ink-muted whitespace-nowrap">${esc(record.grade || '')}</td>
             <td class="px-3 py-2 text-[11px] text-ink-muted whitespace-nowrap">${esc(record.spec || '')}</td>
