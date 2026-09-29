@@ -187,6 +187,7 @@ def parse_steel_price_policy_sheet(
         policies = handler.parse(sheet, sheet_name, warnings)
         for policy in policies:
             policy.excel_filename = excel_filename
+            policy.sheet_name = sheet_name
         logger.info(f"钢厂 [{sheet_name}] 解析完成，共 {len(policies)} 条政策")
         return policies
     except Exception as e:

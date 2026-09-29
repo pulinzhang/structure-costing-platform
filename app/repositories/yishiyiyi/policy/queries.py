@@ -126,6 +126,28 @@ class SteelPricePolicyQueries:
             grade_values=grade_values,
         )
 
+    def list_distinct_sheet_names(
+        self,
+        db: Session,
+        *,
+        year: int | None = None,
+        month: int | None = None,
+        steel_mill_id: int | None = None,
+    ) -> list[str]:
+        """按年度、月份、钢厂去重来源 Excel 表页名。"""
+        query = db.query(SteelPricePolicy.sheet_name).filter(
+            SteelPricePolicy.sheet_name.isnot(None),
+            SteelPricePolicy.sheet_name != "",
+        )
+        if year is not None:
+            query = query.filter(SteelPricePolicy.year == year)
+        if month is not None:
+            query = query.filter(SteelPricePolicy.month == month)
+        if steel_mill_id is not None:
+            query = query.filter(SteelPricePolicy.steel_mill_id == steel_mill_id)
+        rows = query.distinct().order_by(SteelPricePolicy.sheet_name.asc()).all()
+        return [name for (name,) in rows if isinstance(name, str) and name]
+
     def get_distinct_months_for_year(self, db: Session, year: int) -> list[int]:
         results = (
             db.query(SteelPricePolicy.month)

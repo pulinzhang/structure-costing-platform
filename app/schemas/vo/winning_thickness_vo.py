@@ -45,6 +45,8 @@ class WinningThicknessRowVO(BaseModel):
     thickness_policy_id: int | None = None
     thickness_ladder_item_id: int | None = None
     thickness_excel_filename: str | None = None
+    thickness_steel_mill: str | None = None
+    thickness_sheet_name: str | None = None
     thickness_excel_row: int | None = None
     thickness_excel_col: int | None = None
 

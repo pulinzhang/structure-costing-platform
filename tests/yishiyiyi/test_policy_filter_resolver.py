@@ -80,14 +80,17 @@ def test_policy_export_query_filters():
     from app.schemas.dto.steel_price_policy_dto import (
         PolicyExportPreviewQuery,
         PolicyExportQuery,
+        PolicySheetNameQuery,
     )
 
     assert set(PolicyExportQuery.model_fields) == {
         "year",
         "month",
         "steel_mill",
+        "sheet_name",
         "category_name",
         "grade_value",
     }
+    assert set(PolicySheetNameQuery.model_fields) == {"year", "month", "steel_mill"}
     assert "page" in PolicyExportPreviewQuery.model_fields
     assert "size" in PolicyExportPreviewQuery.model_fields

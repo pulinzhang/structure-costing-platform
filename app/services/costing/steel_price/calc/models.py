@@ -60,6 +60,7 @@ class CalcRow:
 
     thickness_policy_id: int | None = None
     thickness_ladder_item_id: int | None = None
+    thickness_steel_mill: str | None = None
     thickness_excel_filename: str | None = None
     thickness_sheet_name: str | None = None
     thickness_excel_row: int | None = None
@@ -67,6 +68,7 @@ class CalcRow:
 
     width_policy_id: int | None = None
     width_ladder_item_id: int | None = None
+    width_steel_mill: str | None = None
     width_excel_filename: str | None = None
     width_sheet_name: str | None = None
     width_excel_row: int | None = None
@@ -74,6 +76,7 @@ class CalcRow:
 
     zinc_policy_id: int | None = None
     zinc_ladder_item_id: int | None = None
+    zinc_steel_mill: str | None = None
     zinc_excel_filename: str | None = None
     zinc_sheet_name: str | None = None
     zinc_excel_row: int | None = None
@@ -175,18 +178,21 @@ class CalcRow:
             base_excel_col=self.base_excel_col,
             thickness_policy_id=self.thickness_policy_id,
             thickness_ladder_item_id=self.thickness_ladder_item_id,
+            thickness_steel_mill=self.thickness_steel_mill,
             thickness_excel_filename=self.thickness_excel_filename,
             thickness_sheet_name=self.thickness_sheet_name,
             thickness_excel_row=self.thickness_excel_row,
             thickness_excel_col=self.thickness_excel_col,
             width_policy_id=self.width_policy_id,
             width_ladder_item_id=self.width_ladder_item_id,
+            width_steel_mill=self.width_steel_mill,
             width_excel_filename=self.width_excel_filename,
             width_sheet_name=self.width_sheet_name,
             width_excel_row=self.width_excel_row,
             width_excel_col=self.width_excel_col,
             zinc_policy_id=self.zinc_policy_id,
             zinc_ladder_item_id=self.zinc_ladder_item_id,
+            zinc_steel_mill=self.zinc_steel_mill,
             zinc_excel_filename=self.zinc_excel_filename,
             zinc_sheet_name=self.zinc_sheet_name,
             zinc_excel_row=self.zinc_excel_row,

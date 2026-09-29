@@ -155,6 +155,7 @@ class SteelPricePolicyService:
         year: int | None = None,
         month: int | None = None,
         steel_mill: str | None = None,
+        sheet_name: str | None = None,
         category_name: str | None = None,
         grade_value: str | None = None,
         page: int = 1,
@@ -167,6 +168,7 @@ class SteelPricePolicyService:
             year=year,
             month=month,
             steel_mill=steel_mill,
+            sheet_name=sheet_name,
             category_name=category_name,
             grade_value=grade_value,
             skip=skip,
@@ -179,6 +181,7 @@ class SteelPricePolicyService:
         year: int | None = None,
         month: int | None = None,
         steel_mill: str | None = None,
+        sheet_name: str | None = None,
         category_name: str | None = None,
         grade_value: str | None = None,
     ) -> int:
@@ -187,6 +190,7 @@ class SteelPricePolicyService:
             year=year,
             month=month,
             steel_mill=steel_mill,
+            sheet_name=sheet_name,
             category_name=category_name,
             grade_value=grade_value,
         )
@@ -236,6 +240,7 @@ class SteelPricePolicyService:
         year: int | None = None,
         month: int | None = None,
         steel_mill: str | None = None,
+        sheet_name: str | None = None,
         category_name: str | None = None,
         grade_value: str | None = None,
     ) -> tuple[bytes, str]:
@@ -244,9 +249,25 @@ class SteelPricePolicyService:
             year=year,
             month=month,
             steel_mill=steel_mill,
+            sheet_name=sheet_name,
             category_name=category_name,
             grade_value=grade_value,
             current_user=current_user,
+        )
+
+    def list_sheet_names(
+        self,
+        db: Session,
+        *,
+        year: int | None = None,
+        month: int | None = None,
+        steel_mill: str | None = None,
+    ) -> list[str]:
+        return self._export_service.list_sheet_names(
+            db,
+            year=year,
+            month=month,
+            steel_mill=steel_mill,
         )
 
     def delete_by_conditions(
@@ -256,8 +277,15 @@ class SteelPricePolicyService:
         year: int | None = None,
         month: int | None = None,
         steel_mill: str | None = None,
+        sheet_name: str | None = None,
     ) -> int:
-        return self._crud.delete_by_conditions(db, year=year, month=month, steel_mill=steel_mill)
+        return self._crud.delete_by_conditions(
+            db,
+            year=year,
+            month=month,
+            steel_mill=steel_mill,
+            sheet_name=sheet_name,
+        )
 
     def start_upload(
         self,

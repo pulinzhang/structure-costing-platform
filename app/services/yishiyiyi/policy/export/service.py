@@ -50,6 +50,7 @@ class SteelPricePolicyExportService:
         year: int | None = None,
         month: int | None = None,
         steel_mill: str | None = None,
+        sheet_name: str | None = None,
         category_name: str | None = None,
         grade_value: str | None = None,
         skip: int = 0,
@@ -63,6 +64,7 @@ class SteelPricePolicyExportService:
             year: 筛选 - 年份
             month: 筛选 - 月份
             steel_mill: 筛选 - 钢厂
+            sheet_name: 筛选 - 来源 Excel 表页
             category_name: 筛选 - 档案大类（冷轧/镀锌/酸洗）
             grade_value: 筛选 - 牌号（先解析档案大类再匹配政策）
             skip: 扁平化导出行偏移（一条阶梯明细一行）
@@ -81,6 +83,7 @@ class SteelPricePolicyExportService:
             year=year,
             month=month,
             steel_mill_id=SteelMillService().filter_id(db, steel_mill),
+            sheet_name=sheet_name,
             category_names_in=category_names_in,
             category_filter_no_match=category_filter_no_match,
             skip=skip,
@@ -107,6 +110,7 @@ class SteelPricePolicyExportService:
             if policy.base_thickness is not None
             else None,
             excel_filename=policy.excel_filename,
+            sheet_name=policy.sheet_name,
             item_id=item.id if item is not None else None,
             target_sub_group=item.target_sub_group if item is not None else None,
             thick_min=str(item.thick_min)
@@ -151,6 +155,7 @@ class SteelPricePolicyExportService:
         year: int | None = None,
         month: int | None = None,
         steel_mill: str | None = None,
+        sheet_name: str | None = None,
         category_name: str | None = None,
         grade_value: str | None = None,
     ) -> int:
@@ -162,6 +167,7 @@ class SteelPricePolicyExportService:
             year: 筛选 - 年份
             month: 筛选 - 月份
             steel_mill: 筛选 - 钢厂
+            sheet_name: 筛选 - 来源 Excel 表页
             category_name: 筛选 - 档案大类（冷轧/镀锌/酸洗）
             grade_value: 筛选 - 牌号（先解析档案大类再匹配政策）
 
@@ -178,8 +184,25 @@ class SteelPricePolicyExportService:
             year=year,
             month=month,
             steel_mill_id=SteelMillService().filter_id(db, steel_mill),
+            sheet_name=sheet_name,
             category_names_in=category_names_in,
             category_filter_no_match=category_filter_no_match,
+        )
+
+    def list_sheet_names(
+        self,
+        db: Session,
+        *,
+        year: int | None = None,
+        month: int | None = None,
+        steel_mill: str | None = None,
+    ) -> list[str]:
+        """表页下拉：按年度、月份、钢厂去重。"""
+        return self.repository.list_distinct_sheet_names(
+            db,
+            year=year,
+            month=month,
+            steel_mill_id=SteelMillService().filter_id(db, steel_mill),
         )
 
     def export_to_excel(
@@ -189,6 +212,7 @@ class SteelPricePolicyExportService:
         year: int | None = None,
         month: int | None = None,
         steel_mill: str | None = None,
+        sheet_name: str | None = None,
         category_name: str | None = None,
         grade_value: str | None = None,
         current_user: UserVO,
@@ -201,6 +225,7 @@ class SteelPricePolicyExportService:
             year: 筛选 - 年份
             month: 筛选 - 月份
             steel_mill: 筛选 - 钢厂
+            sheet_name: 筛选 - 来源 Excel 表页
             category_name: 筛选 - 档案大类（冷轧/镀锌/酸洗）
             grade_value: 筛选 - 牌号（先解析档案大类再匹配政策）
 
@@ -213,6 +238,7 @@ class SteelPricePolicyExportService:
             year=year,
             month=month,
             steel_mill=steel_mill,
+            sheet_name=sheet_name,
             category_name=category_name,
             grade_value=grade_value,
         )

@@ -40,6 +40,7 @@ class ParsedPolicy:
     policy_type: str
     base_thickness: Decimal | None = None
     excel_filename: str | None = None
+    sheet_name: str | None = None
     items: list[ParsedLadderItem] = field(default_factory=list)
 
     def model_dump(self) -> dict[str, Any]:
@@ -54,6 +55,7 @@ class ParsedPolicy:
             if self.base_thickness is not None
             else None,
             "excel_filename": self.excel_filename,
+            "sheet_name": self.sheet_name,
             "items": [item.to_dict() for item in self.items],
         }
 

@@ -13,7 +13,11 @@ from app.common.permissions.codes import Perm
 from app.database import get_db
 from app.deps.permissions import require_perm
 from app.schemas.common.page_result import PageResult
-from app.schemas.dto.steel_price_policy_dto import PolicyExportPreviewQuery, PolicyExportQuery
+from app.schemas.dto.steel_price_policy_dto import (
+    PolicyExportPreviewQuery,
+    PolicyExportQuery,
+    PolicySheetNameQuery,
+)
 from app.schemas.vo.steel_price_policy_vo import ExportRow
 from app.schemas.vo.user_vo import UserVO
 from app.services.yishiyiyi.policy.service import SteelPricePolicyService
@@ -32,13 +36,14 @@ def export_policies_excel(
 ) -> StreamingResponse:
     """
     导出钢价政策主子表联合数据为 Excel。
-    筛选：年度、月份、钢厂、分类、牌号。
+    筛选：年度、月份、钢厂、表页、分类、牌号。
     """
     excel_bytes, filename = _policy_service.generate_export_excel_bytes(
         db,
         year=query.year,
         month=query.month,
         steel_mill=query.steel_mill,
+        sheet_name=query.sheet_name,
         category_name=query.category_name,
         grade_value=query.grade_value,
         current_user=current_user,
@@ -65,13 +70,14 @@ def export_policies_preview(
 ) -> ApiResponse[PageResult[ExportRow]]:
     """
     预览导出数据（主子表联合查询，分页）。
-    筛选：年度、月份、钢厂、分类、牌号。
+    筛选：年度、月份、钢厂、表页、分类、牌号。
     """
     records = _policy_service.get_export_data(
         db,
         year=query.year,
         month=query.month,
         steel_mill=query.steel_mill,
+        sheet_name=query.sheet_name,
         category_name=query.category_name,
         grade_value=query.grade_value,
         page=query.page,
@@ -82,7 +88,28 @@ def export_policies_preview(
         year=query.year,
         month=query.month,
         steel_mill=query.steel_mill,
+        sheet_name=query.sheet_name,
         category_name=query.category_name,
         grade_value=query.grade_value,
     )
     return ApiResponse.list_(items=records, total=total, page=query.page, page_size=query.size)
+
+
+@router.get(
+    "/sheet-names",
+    response_model=ApiResponse[list[str]],
+    summary="按年度、月份、钢厂去重 Excel 表页",
+)
+def list_policy_sheet_names(
+    query: PolicySheetNameQuery = Depends(),
+    db: Session = Depends(get_db),
+    current_user: UserVO = Depends(require_perm(Perm.STEEL_PRICE_POLICY_DOWNLOAD_VIEW)),
+) -> ApiResponse[list[str]]:
+    """表页下拉只看它前面的年度、月份、钢厂。"""
+    names = _policy_service.list_sheet_names(
+        db,
+        year=query.year,
+        month=query.month,
+        steel_mill=query.steel_mill,
+    )
+    return ApiResponse.ok(data=names)

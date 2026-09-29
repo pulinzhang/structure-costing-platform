@@ -14,7 +14,7 @@ import { setSearchBusy } from '../../../../ui/search-busy.js?v=4';
 import {
     winningThicknessDownloadTemplate,
     renderWinningThicknessRows,
-} from './template.js?v=25';
+} from './template.js?v=27';
 import {
     requireExportYearMonth,
     selectDefaultYear,

@@ -1016,6 +1016,7 @@ def test_build_policy_mom_anomalies() -> None:
             thick_min=Decimal("0.8"),
             thick_max=Decimal("1.2"),
             is_base=0,
+            sheet_name="宝钢",
         ),
         PolicyLadderRow(
             policy_id=2,
@@ -1031,6 +1032,7 @@ def test_build_policy_mom_anomalies() -> None:
             thick_min=Decimal("0.8"),
             thick_max=Decimal("1.2"),
             is_base=0,
+            sheet_name="宝钢",
         ),
         PolicyLadderRow(
             policy_id=3,
@@ -1046,6 +1048,7 @@ def test_build_policy_mom_anomalies() -> None:
             thick_min=Decimal("0.8"),
             thick_max=Decimal("1.2"),
             is_base=0,
+            sheet_name="宝钢",
         ),
     ]
     result = build_policy_mom_anomalies(rows, top_n=5)
@@ -1053,6 +1056,46 @@ def test_build_policy_mom_anomalies() -> None:
     assert [item["month"] for item in result["items"]] == ["2025-02", "2025-03"]
     assert [item["change"] for item in result["items"]] == [40, 310]
     assert result["items"][0]["steel_mill"] == "宝钢"
+    assert result["items"][0]["prev_sheet_name"] == "宝钢"
+    assert result["items"][0]["sheet_name"] == "宝钢"
+    assert "传错月或错档" in str(result["items"][0]["hint"])
+
+
+def test_policy_jump_hint_names_changed_sheet() -> None:
+    from decimal import Decimal
+
+    from app.repositories.llm.policy_analysis_repository import PolicyLadderRow
+    from app.services.llm.analysis.steel.policy import build_policy_mom_anomalies
+
+    def row(policy_id: int, month: int, adjustment: int, sheet_name: str) -> PolicyLadderRow:
+        return PolicyLadderRow(
+            policy_id=policy_id,
+            year=2025,
+            month=month,
+            steel_mill="鞍本",
+            steel_mill_id=12,
+            category_name="镀锌钢",
+            policy_type="THICKNESS",
+            grade_value="镀锌钢",
+            base_thickness=Decimal("1.0"),
+            price_adjustment=adjustment,
+            thick_min=Decimal("0.40"),
+            thick_max=Decimal("0.45"),
+            is_base=0,
+            sheet_name=sheet_name,
+        )
+
+    result = build_policy_mom_anomalies(
+        [row(1, 1, 430, "TAGAL"), row(2, 2, 650, "鞍钢集团")],
+        top_n=5,
+    )
+    hint = str(result["items"][0]["hint"])
+    assert result["items"][0]["prev_sheet_name"] == "TAGAL"
+    assert result["items"][0]["sheet_name"] == "鞍钢集团"
+    assert "TAGAL" in hint
+    assert "鞍钢集团" in hint
+    assert "不要当成传错月或错档" in hint
+    assert "建议核对是否上传错月" not in hint
 
 
 def test_query_parser_policy_colloquial_anomaly() -> None:

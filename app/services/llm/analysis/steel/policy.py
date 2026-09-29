@@ -138,6 +138,19 @@ def _format_thickness_band(row: PolicyLadderRow) -> str:
     return f"<={row.thick_max}"
 
 
+def _policy_jump_hint(prev_row: PolicyLadderRow, curr_row: PolicyLadderRow) -> str:
+    """表页没变才提示传错；表页换了就点名两张表。"""
+    prev_sheet = prev_row.sheet_name
+    curr_sheet = curr_row.sheet_name
+    if prev_sheet == curr_sheet:
+        return f"表页仍是「{curr_sheet}」。请在加减价政策列表按这张表页核对，看是不是传错月或错档。"
+    return (
+        f"上月表页「{prev_sheet}」，本月表页「{curr_sheet}」，钢厂都是「{curr_row.steel_mill}」。"
+        "表页换了，这两档不是同一张表上的同一格，不要当成传错月或错档。"
+        "请分别打开这两个月的表页核对。"
+    )
+
+
 def build_policy_mom_anomalies(
     rows: list[PolicyLadderRow],
     *,
@@ -180,7 +193,9 @@ def build_policy_mom_anomalies(
                     "curr_adjustment": curr_row.price_adjustment,
                     "change": change,
                     "change_rate": str(rate) if rate is not None else None,
-                    "hint": "加减价环比跳变较大，建议核对是否上传错月或错档",
+                    "prev_sheet_name": prev_row.sheet_name,
+                    "sheet_name": curr_row.sheet_name,
+                    "hint": _policy_jump_hint(prev_row, curr_row),
                 }
             )
 

@@ -28,6 +28,7 @@ class PolicyLadderRow:
     thick_min: Decimal | None
     thick_max: Decimal | None
     is_base: int
+    sheet_name: str
 
 
 class PolicyAnalysisRepository:
@@ -99,6 +100,7 @@ class PolicyAnalysisRepository:
                         Decimal(str(item.thick_max)) if item.thick_max is not None else None
                     ),
                     is_base=int(item.is_base or 0),
+                    sheet_name=str(policy.sheet_name or ""),
                 )
             )
         return rows

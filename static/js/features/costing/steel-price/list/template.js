@@ -457,9 +457,10 @@ export function updateSteelPriceHud(total, summary) {
 
 /**
  * 列表溯源摘要，字段对齐SteelPriceResponse VO。 * base: base_price_id / base_excel_filename / base_sheet_name / base_excel_row / base_excel_col
- * thickness|width|zinc: *_policy_id / *_ladder_item_id / *_excel_filename / *_sheet_name / *_excel_row / *_excel_col
+ * thickness|width|zinc: *_policy_id / *_ladder_item_id / *_steel_mill / *_excel_filename / *_sheet_name / *_excel_row / *_excel_col
  */
 function formatTraceCell(prefix, record) {
+    const mill = prefix === 'base' ? record.steel_mill : record[`${prefix}_steel_mill`];
     const filename = record[`${prefix}_excel_filename`];
     const sheet = record[`${prefix}_sheet_name`];
     const row = record[`${prefix}_excel_row`];
@@ -481,6 +482,7 @@ function formatTraceCell(prefix, record) {
         ].filter(Boolean).join(' ');
 
     const excelPart = [
+        mill || '',
         filename || '',
         sheet || '',
         row != null || col != null ? `R${row ?? '-'}C${col ?? '-'}` : '',

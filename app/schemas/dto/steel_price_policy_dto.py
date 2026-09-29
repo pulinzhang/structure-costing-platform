@@ -206,16 +206,30 @@ class PolicyQuery(BaseModel):
         return _strip(v)
 
 
-class PolicyExportQuery(BaseModel):
-    """加减价政策列表筛选：年度、月份、钢厂、钢种大类、牌号。"""
+class PolicySheetNameQuery(BaseModel):
+    """表页下拉：只按它前面的年度、月份、钢厂去重。"""
 
     year: int | None = Field(None, ge=COSTING_YEAR_MIN, le=COSTING_YEAR_MAX, description="生效年度")
     month: int | None = Field(None, ge=MONTH_MIN, le=MONTH_MAX, description="生效月份（1-12）")
     steel_mill: str | None = Field(None, description="钢厂名称")
+
+    @field_validator("steel_mill", mode="before")
+    @classmethod
+    def strip_sheet_query_strings(cls, v: Any) -> Any:
+        return _strip(v)
+
+
+class PolicyExportQuery(BaseModel):
+    """加减价政策列表筛选：年度、月份、钢厂、表页、钢种大类、牌号。"""
+
+    year: int | None = Field(None, ge=COSTING_YEAR_MIN, le=COSTING_YEAR_MAX, description="生效年度")
+    month: int | None = Field(None, ge=MONTH_MIN, le=MONTH_MAX, description="生效月份（1-12）")
+    steel_mill: str | None = Field(None, description="钢厂名称")
+    sheet_name: str | None = Field(None, max_length=100, description="来源 Excel 工作表名")
     category_name: str | None = Field(None, description="钢种大类：冷轧/镀锌/酸洗")
     grade_value: str | None = Field(None, description="牌号（经档案解析为大类后筛选政策）")
 
-    @field_validator("steel_mill", "category_name", "grade_value", mode="before")
+    @field_validator("steel_mill", "sheet_name", "category_name", "grade_value", mode="before")
     @classmethod
     def strip_export_strings(cls, v: Any) -> Any:
         return _strip(v)
@@ -313,6 +327,7 @@ class SteelPricePolicyWrite:
     grade_value: str | None = None
     base_thickness: Decimal | None = None
     excel_filename: str | None = None
+    sheet_name: str | None = None
     created_by: str | None = None
     updated_by: str | None = None
 

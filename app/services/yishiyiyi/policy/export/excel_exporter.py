@@ -56,11 +56,12 @@ HEADERS = [
     "基准",
     "排序",
     "文件名",
+    "表页",
     "行号",
     "列号",
 ]
 
-COLUMN_WIDTHS = [10, 8, 8, 12, 12, 12, 10, 15, 10, 10, 15, 18, 18, 14, 8, 8, 30, 8, 8]
+COLUMN_WIDTHS = [10, 8, 8, 12, 12, 12, 10, 15, 10, 10, 15, 18, 18, 14, 8, 8, 30, 8, 16, 8]
 
 
 # =============================================================================
@@ -238,6 +239,7 @@ class SteelPricePolicyExporter:
                 "是" if row.is_base == 1 else "",
                 row.sort_order or 0,
                 row.excel_filename or "",
+                row.sheet_name or "",
                 row.excel_row or "",
                 row.excel_col or "",
             ]
@@ -249,7 +251,7 @@ class SteelPricePolicyExporter:
                 cell.font = DATA_FONT
                 cell.border = THIN_BORDER
                 cell.fill = fill
-                if col_idx in (1, 2, 3, 10, 17, 18, 19):
+                if col_idx in (1, 2, 3, 10, 17, 18, 20):
                     cell.alignment = DATA_ALIGNMENT_RIGHT
                 elif col_idx in (14,):
                     cell.alignment = DATA_ALIGNMENT_CENTER

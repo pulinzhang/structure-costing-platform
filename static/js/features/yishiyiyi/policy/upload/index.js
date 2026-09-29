@@ -262,14 +262,19 @@ const PolicyUploadPage = {
 
         if (bar) bar.style.width = `${pct}%`;
         if (percentEl) percentEl.textContent = `${pct}%`;
-        if (msgEl) msgEl.textContent = msg || '';
+        if (msgEl) {
+            msgEl.textContent = msg || '';
+            msgEl.className = status === 'failed'
+                ? 'text-xs text-ink leading-relaxed mb-0 whitespace-pre-wrap break-words max-h-48 overflow-y-auto'
+                : 'text-[11px] text-ink-muted leading-relaxed mb-0 whitespace-pre-wrap break-words max-h-48 overflow-y-auto';
+        }
 
         if (titleEl) {
             if (status === 'completed') {
                 titleEl.textContent = '解析成功';
                 titleEl.className = 'text-xs font-medium text-ok truncate mb-0';
             } else if (status === 'failed') {
-                titleEl.textContent = '解析失败';
+                titleEl.textContent = '未写入';
                 titleEl.className = 'text-xs font-medium text-danger truncate mb-0';
             } else {
                 titleEl.textContent = '正在解析政策文件...';

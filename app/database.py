@@ -7,7 +7,7 @@
 SQLite 使用独立文件，写入不受主业务长事务锁影响。
 
 表结构以 Model 为准。create_all 只建缺表，不重建外键、不回填。
-已有库缺列由 bootstrap 在启动时补（当前：system_configs 三列；钢厂事实表 id 与唯一键）。不在本文件里改。
+已有库缺列由 bootstrap 在启动时补（当前：政策主表 sheet_name）。不在本文件里改。
 """
 
 from collections.abc import Generator

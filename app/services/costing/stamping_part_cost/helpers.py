@@ -89,9 +89,12 @@ def format_excel_cell_trace(
     sheet_name: str | None,
     excel_row: int | None,
     excel_col: int | None,
+    steel_mill: str | None = None,
 ) -> str:
-    """单组 Excel 四件套：文件 · 表页 · Rn · Cn。"""
+    """单组定位：钢厂 · 文件 · 表页 · Rn · Cn。"""
     parts: list[str] = []
+    if steel_mill:
+        parts.append(str(steel_mill).strip())
     if filename:
         parts.append(str(filename).strip())
     if sheet_name:
@@ -118,6 +121,11 @@ def format_steel_price_excel_trace(steel: Any) -> str:
         ("锌层", "zinc"),
     ):
         text = format_excel_cell_trace(
+            steel_mill=(
+                getattr(steel, "steel_mill", None)
+                if prefix == "base"
+                else getattr(steel, f"{prefix}_steel_mill", None)
+            ),
             filename=getattr(steel, f"{prefix}_excel_filename", None),
             sheet_name=getattr(steel, f"{prefix}_sheet_name", None),
             excel_row=getattr(steel, f"{prefix}_excel_row", None),

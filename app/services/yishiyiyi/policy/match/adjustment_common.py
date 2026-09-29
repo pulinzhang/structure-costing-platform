@@ -352,6 +352,8 @@ def apply_hit(
     setattr(row, f"{prefix}_adjustment", Decimal(str(item.price_adjustment or 0)))
     setattr(row, f"{prefix}_policy_id", policy.id)
     setattr(row, f"{prefix}_ladder_item_id", item.id)
+    setattr(row, f"{prefix}_steel_mill", policy.steel_mill)
     setattr(row, f"{prefix}_excel_filename", policy.excel_filename)
+    setattr(row, f"{prefix}_sheet_name", policy.sheet_name)
     setattr(row, f"{prefix}_excel_row", item.excel_row)
     setattr(row, f"{prefix}_excel_col", item.excel_col)

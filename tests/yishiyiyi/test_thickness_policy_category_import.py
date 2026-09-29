@@ -89,6 +89,8 @@ def test_parse_sample_thickness_policies_are_category_level() -> None:
         excel_filename=sample.name,
     )
     assert result.policies, "样例应解析出至少一条政策"
+    assert all(policy.sheet_name for policy in result.policies)
+    assert {policy.sheet_name for policy in result.policies} <= set(result.sheet_names)
     assert all(policy.policy_type == "THICKNESS" for policy in result.policies)
     assert all(policy.policy_type != "WIDTH" for policy in result.policies)
     assert all(policy.grade_type == GRADE_TYPE_CATEGORY for policy in result.policies)

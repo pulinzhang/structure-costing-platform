@@ -4,8 +4,8 @@
 
 import { humanizeUserFacingError } from '../errors.js';
 import { EXPORT_ICON_BTN_CLASS, llmIconCopy, llmIconPrint, llmIconWord } from '../icons.js?v=2';
-import { renderMarkdown } from '../markdown/render.js?v=4';
-import { canExportAssistantMessage } from '../export/document.js';
+import { renderMarkdown } from '../markdown/render.js?v=6';
+import { canExportAssistantMessage } from '../export/document.js?v=11';
 
 /**
  * @param {HTMLElement} root

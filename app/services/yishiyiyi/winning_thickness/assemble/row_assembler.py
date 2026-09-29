@@ -325,6 +325,8 @@ class WinningThicknessRowAssembler:
             thickness_policy_id=policy.id if policy else None,
             thickness_ladder_item_id=item.id if item else None,
             thickness_excel_filename=policy.excel_filename if policy else None,
+            thickness_steel_mill=policy.steel_mill if policy else None,
+            thickness_sheet_name=policy.sheet_name if policy else None,
             thickness_excel_row=item.excel_row if item else None,
             thickness_excel_col=item.excel_col if item else None,
         )

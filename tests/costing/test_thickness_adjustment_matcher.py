@@ -48,6 +48,7 @@ def _policy(
         steel_mill_id=_MILL_IDS[mill],
         base_thickness=Decimal(base_thickness),
         excel_filename="policy.xlsx",
+        sheet_name="唐钢厚度",
         items=items,
     )
 
@@ -91,6 +92,11 @@ def test_matcher_hits_ladder_on_locked_category_policy() -> None:
     assert row.thickness_adjustment == Decimal("160")
     assert row.thickness_policy_id == 1
     assert row.thickness_ladder_item_id == 101
+    assert row.thickness_excel_filename == "policy.xlsx"
+    assert row.thickness_steel_mill == "唐钢"
+    assert row.thickness_sheet_name == "唐钢厚度"
+    assert row.thickness_excel_row == 111
+    assert row.thickness_excel_col == 3
 
 
 def test_matcher_does_not_fall_through_to_other_base_thickness_policy() -> None:
