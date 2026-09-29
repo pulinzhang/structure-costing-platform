@@ -6,8 +6,8 @@
 无 Redis 时，辅助库承载会话 Token、异步任务进度等短生命周期数据，
 SQLite 使用独立文件，写入不受主业务长事务锁影响。
 
-表结构以 Model 为准。create_all 只建缺表，启动时不补列、不重建外键、不回填。
-开发 / 测试 / UAT 库已对齐；结构变更走发布流程，不在本文件里改。
+表结构以 Model 为准。create_all 只建缺表，不重建外键、不回填。
+已有库缺列由 bootstrap 在启动时补（当前：system_configs 三列）。不在本文件里改。
 """
 
 from collections.abc import Generator
