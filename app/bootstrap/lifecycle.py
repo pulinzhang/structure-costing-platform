@@ -15,6 +15,9 @@ def on_startup() -> None:
 
     DatabaseConfig.create_tables()
     AuxiliaryDatabaseConfig.create_tables()
+    from app.bootstrap.system_config_schema import ensure_system_config_schema
+
+    ensure_system_config_schema(DatabaseConfig.get_engine())
     _ensure_bom_node_part_number_index()
     _seed_if_empty()
     _log_startup()
