@@ -36,6 +36,7 @@ def ensure_steel_mill_fact_schema(engine: Engine) -> None:
             with connection.begin():
                 if not _table_exists(connection, "steel_mills"):
                     return
+                _ensure_seed_aliases(connection)
                 _align_base_prices(connection)
                 _align_policies(connection)
                 _align_results(connection)
@@ -98,6 +99,16 @@ def _fold_into_anben(connection: Connection, source_name: str) -> None:
         )
         logger.info("已把 %s 收成鞍本", source_name)
     _ensure_alias(connection, anben_id, source_name)
+
+
+def _ensure_seed_aliases(connection: Connection) -> None:
+    """档案已经在库里时，把种子里后加的别名补上。已挂在别家的别名不改。"""
+    for seed in STEEL_MILL_SEEDS:
+        mill_id = _mill_id_by_abbreviation(connection, seed.abbreviation)
+        if mill_id is None:
+            continue
+        for alias in seed.aliases:
+            _ensure_alias(connection, mill_id, alias)
 
 
 def _mill_id_by_abbreviation(connection: Connection, abbreviation: str) -> int | None:
