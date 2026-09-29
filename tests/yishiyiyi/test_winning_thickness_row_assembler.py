@@ -36,6 +36,7 @@ def _category_policy(*, policy_id: int = 1):
         steel_mill_id=7,
         base_thickness=Decimal("1.00"),
         excel_filename="policy.xlsx",
+        sheet_name="唐钢厚度",
         items=[
             _ladder_item(item_id=101, sort_order=1, thick_min="0.60", thick_max="0.80", adj=160),
             _ladder_item(item_id=102, sort_order=2, thick_min="0.80", thick_max="1.00", adj=120),
@@ -77,6 +78,9 @@ def test_rows_from_ladder_expands_all_intervals_per_grade():
         Decimal("80"),
     ]
     assert all(row.thickness_range != "-" for row in rows)
+    assert all(row.thickness_steel_mill == "唐钢" for row in rows)
+    assert all(row.thickness_sheet_name == "唐钢厚度" for row in rows)
+    assert all(row.thickness_excel_filename == "policy.xlsx" for row in rows)
 
 
 def test_two_grades_same_category_each_get_full_ladder():

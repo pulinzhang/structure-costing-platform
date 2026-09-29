@@ -49,6 +49,54 @@ def _policy_mill_place(policy: ParsedPolicy) -> str:
     return f"加减价，sheet「{policy.steel_mill}」"
 
 
+def reject_sheets_sharing_mill(
+    policies: list[ParsedPolicy],
+    mill_hits: dict[str, SteelMillHit],
+) -> None:
+    """同一本 Excel 里，不同表页收到同一钢厂则整本退回。"""
+    sheets_by_mill: dict[int, tuple[str, list[str]]] = {}
+    for policy in policies:
+        sheet_name = policy.sheet_name
+        assert sheet_name
+        text = normalize_mill_text(policy.steel_mill)
+        hit = mill_hits[text]
+        _full_name, sheets = sheets_by_mill.setdefault(hit.id, (hit.full_name, []))
+        if sheet_name not in sheets:
+            sheets.append(sheet_name)
+    clashes = [
+        (full_name, sheets) for full_name, sheets in sheets_by_mill.values() if len(sheets) > 1
+    ]
+    if clashes:
+        raise BusinessException(_sheet_mill_clash_message(clashes))
+
+
+def _sheet_mill_clash_message(clashes: list[tuple[str, list[str]]]) -> str:
+    """操作员能照着做的退回说明。多家各写一段事实，两条办法只出现一次。"""
+    facts = [
+        (
+            f"表页「{'」与「'.join(sheets)}」都对应钢厂「{full_name}」。"
+            "同一本 Excel 里，每张表页必须对应不同的钢厂。"
+        )
+        for full_name, sheets in clashes
+    ]
+    if len(clashes) == 1:
+        full_name, sheets = clashes[0]
+        pointed = "这两个表页名" if len(sheets) == 2 else "这些表页名"
+        archive_step = (
+            f"2. 改钢厂档案：打开钢厂页（#/steel-mill），不要让{pointed}都指向「{full_name}」。"
+            "把其中一种写法拆成另一家钢厂。"
+        )
+    else:
+        archive_step = (
+            "2. 改钢厂档案：打开钢厂页（#/steel-mill），不要让上面每组表页名都指向同一家钢厂。"
+            "把其中一种写法拆成另一家钢厂。"
+        )
+    return (
+        "本文件未写入。\n\n" + "\n\n".join(facts) + "\n\n请任选一种方式处理，然后重新导入：\n"
+        "1. 改 Excel：删掉多余的表页，只保留这一家钢厂实际要使用的那一张。\n" + archive_step
+    )
+
+
 def _policy_write_from_parsed(
     policy: ParsedPolicy,
     *,
@@ -69,6 +117,7 @@ def _policy_write_from_parsed(
         grade_value=policy.grade_value,
         base_thickness=policy.base_thickness,
         excel_filename=policy.excel_filename,
+        sheet_name=policy.sheet_name,
         created_by=audit["created_by"],
         updated_by=audit["updated_by"],
     )
@@ -188,27 +237,10 @@ class SteelPricePolicyImportService:
             [policy.steel_mill for policy in policies],
             places=[_policy_mill_place(policy) for policy in policies],
         )
-        seen_keys: dict[tuple[object, ...], str] = {}
-        checked: list[tuple[ParsedPolicy, SteelMillHit]] = []
-        for policy in policies:
-            text = normalize_mill_text(policy.steel_mill)
-            hit = mill_hits[text]
-            key = (
-                year,
-                month,
-                hit.id,
-                policy.category_name,
-                policy.policy_type,
-                policy.grade_value,
-                policy.base_thickness,
-            )
-            previous = seen_keys.get(key)
-            if previous is not None and previous != text:
-                raise BusinessException(
-                    f"「{previous}」与「{text}」收到同一钢厂，业务键相撞。本文件未写入。"
-                )
-            seen_keys[key] = text
-            checked.append((policy, hit))
+        reject_sheets_sharing_mill(policies, mill_hits)
+        checked = [
+            (policy, mill_hits[normalize_mill_text(policy.steel_mill)]) for policy in policies
+        ]
 
         try:
             for index, (policy_data, mill_hit) in enumerate(checked):

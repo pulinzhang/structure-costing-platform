@@ -48,6 +48,7 @@ export function policyDownloadTemplate() {
                         ${filterInputWithDatalist('policyDownloadMill', '钢厂', 'policyMillOptions', {
                             placeholder: '输入搜索或选择钢厂',
                         })}
+                        ${filterSelect('policyDownloadSheet', '表页', { widthClass: 'w-40' })}
                         ${filterSelect('policyDownloadCategory', '钢种大类')}
                         ${filterInputWithDatalist('policyDownloadGrade', '牌号', 'policyGradeOptions', {
                             placeholder: '请先选择钢种大类',
@@ -68,7 +69,7 @@ export function policyDownloadTemplate() {
                     <div class="bg-app-deep border border-line-subtle rounded p-3">
                         <p class="text-[11px] text-ink-muted leading-5">
                             <span class="text-ink-muted font-medium">说明：</span>
-                            打开默认当年。年度、月份、钢厂、钢种大类、牌号都可以不选。导出必须先选年度和月份。删除必须先选年度和月份；钢厂可不选，不选就删掉该年该月全部钢厂。
+                            打开默认当年。年度、月份、钢厂、表页、钢种大类、牌号都可以不选。表页按前面的年度、月份、钢厂去重。导出必须先选年度和月份。删除必须先选年度和月份；钢厂和表页可不选，不选就删掉该年该月对应范围。
                         </p>
                     </div>
                 </div>
@@ -114,13 +115,14 @@ export function policyDownloadTemplate() {
                                         <th class="px-3 py-2 text-right text-[9px] font-semibold font-medium tracking-[0.08em] text-ink-faint whitespace-nowrap">排序</th>
                                         <!-- 追溯字段 -->
                                         <th class="px-3 py-2 text-left text-[9px] font-semibold font-medium tracking-[0.08em] text-ink-faint whitespace-nowrap">文件名</th>
+                                        <th class="px-3 py-2 text-left text-[9px] font-semibold font-medium tracking-[0.08em] text-ink-faint whitespace-nowrap">表页</th>
                                         <th class="px-3 py-2 text-right text-[9px] font-semibold font-medium tracking-[0.08em] text-ink-faint whitespace-nowrap">行号</th>
                                         <th class="px-3 py-2 text-right text-[9px] font-semibold font-medium tracking-[0.08em] text-ink-faint whitespace-nowrap">列号</th>
                                     </tr>
                                 </thead>
                                 <tbody id="policyPreviewBody" class="divide-y divide-line-subtle">
                                     <tr>
-                                        <td colspan="20" class="px-4 py-8 text-center text-ink-dim text-xs">
+                                        <td colspan="21" class="px-4 py-8 text-center text-ink-dim text-xs">
                                             当前筛选下暂无数据；打开默认当年，筛选项用来缩小范围
                                         </td>
                                     </tr>
@@ -155,7 +157,7 @@ export function renderPolicyRows(records) {
     if (!records || !Array.isArray(records) || records.length === 0) {
         return `
             <tr>
-                                        <td colspan="20" class="px-4 py-8 text-center text-ink-dim text-xs">
+                                        <td colspan="21" class="px-4 py-8 text-center text-ink-dim text-xs">
                                             无数据
                                         </td>
                                     </tr>
@@ -194,6 +196,7 @@ export function renderPolicyRows(records) {
             <td class="px-3 py-2 text-[11px] text-ink-dim whitespace-nowrap font-mono text-right tabular-nums">${esc(record.sort_order || '0')}</td>
             <!-- 追溯字段 -->
             <td class="px-3 py-2 text-[11px] text-ink-muted whitespace-nowrap">${esc(record.excel_filename || '')}</td>
+            <td class="px-3 py-2 text-[11px] text-ink-muted whitespace-nowrap">${esc(record.sheet_name || '')}</td>
             <td class="px-3 py-2 text-[11px] text-ink-dim whitespace-nowrap font-mono text-right tabular-nums">${esc(record.excel_row ?? '')}</td>
             <td class="px-3 py-2 text-[11px] text-ink-dim whitespace-nowrap font-mono text-right tabular-nums">${esc(record.excel_col ?? '')}</td>
         </tr>`;

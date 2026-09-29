@@ -86,6 +86,7 @@ class SteelPriceResponse(BaseModel):
 
     thickness_policy_id: int | None = None
     thickness_ladder_item_id: int | None = None
+    thickness_steel_mill: str | None = None
     thickness_excel_filename: str | None = None
     thickness_sheet_name: str | None = None
     thickness_excel_row: int | None = None
@@ -93,6 +94,7 @@ class SteelPriceResponse(BaseModel):
 
     width_policy_id: int | None = None
     width_ladder_item_id: int | None = None
+    width_steel_mill: str | None = None
     width_excel_filename: str | None = None
     width_sheet_name: str | None = None
     width_excel_row: int | None = None
@@ -100,6 +102,7 @@ class SteelPriceResponse(BaseModel):
 
     zinc_policy_id: int | None = None
     zinc_ladder_item_id: int | None = None
+    zinc_steel_mill: str | None = None
     zinc_excel_filename: str | None = None
     zinc_sheet_name: str | None = None
     zinc_excel_row: int | None = None

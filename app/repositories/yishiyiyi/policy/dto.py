@@ -57,5 +57,6 @@ class ExportRow(BaseModel):
 
     # 追溯字段（放在最后）
     excel_filename: str | None = None  # 来源 Excel 文件名
+    sheet_name: str | None = None  # 来源 Excel 工作表名
     excel_row: int | None = None  # Excel 行号（1-based）
     excel_col: int | None = None  # Excel 列号（1-based）

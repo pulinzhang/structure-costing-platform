@@ -4,7 +4,7 @@
  * 用于测试部门核对数据，主子表联合查询导出 Excel
  */
 
-import { policyDownloadTemplate, renderPolicyRows } from './template.js?v=51';
+import { policyDownloadTemplate, renderPolicyRows } from './template.js?v=53';
 import { bindMoreMenu } from '../../../../ui/more-menu.js?v=6';
 import {
     DEFAULT_PREVIEW_PAGE_SIZE,
@@ -30,6 +30,8 @@ const policyDownloadState = {
     totalPages: 1,
     filtersLoaded: false,
     pendingFilters: null,
+    pendingSheetApplied: false,
+    sheetRequestId: 0,
     isLoading: false,
 };
 
@@ -54,12 +56,13 @@ function init() {
         defaultSize: DEFAULT_PREVIEW_PAGE_SIZE,
     });
     policyDownloadState.pendingFilters = readHashFilters();
-    loadFilterOptions().then(() => {
+    loadFilterOptions().then(async () => {
         applyPendingFiltersToSelects();
         const pendingCategory = policyDownloadState.pendingFilters?.category_name;
         if (pendingCategory) {
-            loadGradesForCategory(pendingCategory);
+            await loadGradesForCategory(pendingCategory);
         }
+        await loadSheetNames();
         updateConditionsDisplay();
         previewData(1);
     });
@@ -75,9 +78,10 @@ function readHashFilters() {
     const month = params.get('month') || '';
     const category_name = params.get('category_name') || '';
     const steel_mill = params.get('steel_mill') || '';
+    const sheet_name = params.get('sheet_name') || '';
     const grade_value = params.get('grade_value') || '';
-    if (!year && !month && !category_name && !steel_mill && !grade_value) return null;
-    return { year, month, category_name, steel_mill, grade_value };
+    if (!year && !month && !category_name && !steel_mill && !sheet_name && !grade_value) return null;
+    return { year, month, category_name, steel_mill, sheet_name, grade_value };
 }
 
 function setSelectValue(id, value) {
@@ -275,8 +279,13 @@ function bindEvents() {
 
     ['policyDownloadYear', 'policyDownloadMonth'].forEach(id => {
         const el = document.getElementById(id);
-        if (el) el.addEventListener('change', () => queryAfterFilterSelect());
+        if (el) el.addEventListener('change', () => reloadSheetsThenQuery());
     });
+
+    const sheetSelect = document.getElementById('policyDownloadSheet');
+    if (sheetSelect) {
+        sheetSelect.addEventListener('change', () => queryAfterFilterSelect());
+    }
 
     const categorySelect = document.getElementById('policyDownloadCategory');
     if (categorySelect) {
@@ -289,7 +298,8 @@ function bindEvents() {
     }
 
     bindDatalistFilterInput('policyDownloadMill', {
-        onChange: () => queryAfterFilterSelect(),
+        onChange: () => reloadSheetsThenQuery(),
+        onEnter: () => reloadSheetsThenQuery(),
     });
     bindDatalistFilterInput('policyDownloadGrade');
 }
@@ -297,7 +307,7 @@ function bindEvents() {
 /**
  * datalist 输入框：输入时刷新已选条件；回车查询；选中建议项后按 onChange 触发。
  */
-function bindDatalistFilterInput(id, { onChange } = {}) {
+function bindDatalistFilterInput(id, { onChange, onEnter } = {}) {
     const input = document.getElementById(id);
     if (!input) return;
     input.addEventListener('input', () => updateConditionsDisplay());
@@ -308,7 +318,8 @@ function bindDatalistFilterInput(id, { onChange } = {}) {
     input.addEventListener('keydown', (event) => {
         if (event.key === 'Enter') {
             event.preventDefault();
-            previewData(1);
+            if (typeof onEnter === 'function') onEnter();
+            else previewData(1);
         }
     });
 }
@@ -316,6 +327,49 @@ function bindDatalistFilterInput(id, { onChange } = {}) {
 function queryAfterFilterSelect() {
     updateConditionsDisplay();
     previewData(1);
+}
+
+async function reloadSheetsThenQuery() {
+    await loadSheetNames();
+    queryAfterFilterSelect();
+}
+
+/**
+ * 表页选项只看它前面的年度、月份、钢厂，按表页名去重。
+ */
+async function loadSheetNames() {
+    const requestId = ++policyDownloadState.sheetRequestId;
+    const year = getFilterValue('policyDownloadYear');
+    const month = getFilterValue('policyDownloadMonth');
+    const steelMill = getTrimmedFilterValue('policyDownloadMill');
+    const current = getFilterValue('policyDownloadSheet');
+    const params = {};
+    if (year) params.year = year;
+    if (month) params.month = month;
+    if (steelMill) params.steel_mill = steelMill;
+
+    try {
+        const response = await HttpClient.get(`${API_BASE}/sheet-names`, { params });
+        if (requestId !== policyDownloadState.sheetRequestId) return;
+        const names = Array.isArray(response.data) ? response.data : [];
+        fillSelect(
+            'policyDownloadSheet',
+            names.map((name) => ({ value: name, label: name })),
+        );
+        const preferred = current || pendingSheetName();
+        if (preferred && names.includes(preferred)) {
+            const select = document.getElementById('policyDownloadSheet');
+            if (select) select.value = preferred;
+        }
+    } catch (error) {
+        console.error('加载表页失败:', error);
+    }
+}
+
+function pendingSheetName() {
+    if (policyDownloadState.pendingSheetApplied) return '';
+    policyDownloadState.pendingSheetApplied = true;
+    return policyDownloadState.pendingFilters?.sheet_name || '';
 }
 
 /**
@@ -327,6 +381,7 @@ function updateConditionsDisplay() {
     const period = fmtPeriod(filters.year, filters.month);
     if (period) conditions.push(period);
     if (filters.steel_mill) conditions.push(`钢厂: ${filters.steel_mill}`);
+    if (filters.sheet_name) conditions.push(`表页: ${filters.sheet_name}`);
     if (filters.category_name) conditions.push(`钢种大类: ${filters.category_name}`);
     if (filters.grade_value) conditions.push(`牌号: ${filters.grade_value}`);
 
@@ -350,19 +405,23 @@ function collectFilters() {
         year: getFilterValue('policyDownloadYear') || pending?.year || '',
         month: getFilterValue('policyDownloadMonth') || pending?.month || '',
         steel_mill: getTrimmedFilterValue('policyDownloadMill') || pending?.steel_mill || '',
+        sheet_name: document.getElementById('policyDownloadSheet')
+            ? getFilterValue('policyDownloadSheet')
+            : (pending?.sheet_name || ''),
         category_name: getFilterValue('policyDownloadCategory') || pending?.category_name || '',
         grade_value: getTrimmedFilterValue('policyDownloadGrade') || pending?.grade_value || '',
     };
 }
 
 /**
- * 组装政策查询/导出请求参数：年度、月份、钢厂、分类、牌号。
+ * 组装政策查询/导出请求参数：年度、月份、钢厂、表页、分类、牌号。
  * 牌号经后端牌号分类档案解析为大类后再匹配 CATEGORY 厚度政策。
  */
 function applyFiltersToParams(params, filters) {
     if (filters.year) params.year = filters.year;
     if (filters.month) params.month = filters.month;
     if (filters.steel_mill) params.steel_mill = filters.steel_mill;
+    if (filters.sheet_name) params.sheet_name = filters.sheet_name;
     if (filters.category_name) params.category_name = filters.category_name;
     if (filters.grade_value) params.grade_value = filters.grade_value;
 }
@@ -511,16 +570,18 @@ async function batchDeletePolicies() {
     const year = getFilterValue('policyDownloadYear');
     const month = getFilterValue('policyDownloadMonth');
     const steelMill = getTrimmedFilterValue('policyDownloadMill');
+    const sheetName = getFilterValue('policyDownloadSheet');
 
-    // 年度、月份必填；钢厂可选
+    // 年度、月份必填；钢厂、表页可选
     if (!year || !month) {
         showToast('删除必须选择年度和月份（钢厂可选）', 'warning');
         return;
     }
 
     const millLabel = steelMill || '全部钢厂';
+    const sheetLabel = sheetName || '全部表页';
     const confirmed = await window.confirmAction(
-        `确定要删除以下条件的政策数据吗？\n\n${fmtPeriod(year, month)} · 钢厂: ${millLabel}\n\n此操作不可恢复！`
+        `确定要删除以下条件的政策数据吗？\n\n${fmtPeriod(year, month)} · 钢厂: ${millLabel} · 表页: ${sheetLabel}\n\n此操作不可恢复！`
     );
 
     if (!confirmed) {
@@ -542,6 +603,9 @@ async function batchDeletePolicies() {
         const params = { year, month };
         if (steelMill) {
             params.steel_mill = steelMill;
+        }
+        if (sheetName) {
+            params.sheet_name = sheetName;
         }
         const response = await HttpClient.delete(`${API_BASE}/batch`, { params });
 

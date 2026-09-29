@@ -242,6 +242,8 @@ function formatThicknessTrace(record) {
         record.thickness_policy_id != null ? `P:${record.thickness_policy_id}` : '',
         record.thickness_ladder_item_id != null ? `L:${record.thickness_ladder_item_id}` : '',
         record.thickness_excel_filename || '',
+        record.thickness_steel_mill || '',
+        record.thickness_sheet_name || '',
         record.thickness_excel_row != null ? `R${record.thickness_excel_row}` : '',
         record.thickness_excel_col != null ? `C${record.thickness_excel_col}` : '',
     ].filter(Boolean).join(' · ');

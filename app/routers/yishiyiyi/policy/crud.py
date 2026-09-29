@@ -90,18 +90,20 @@ def batch_delete_policies(
     year: int | None = None,
     month: int | None = None,
     steel_mill: str | None = None,
+    sheet_name: str | None = None,
     db: Session = Depends(get_db),
     current_user: UserVO = Depends(require_perm(Perm.STEEL_PRICE_POLICY_DOWNLOAD_DELETE)),
 ) -> ApiResponse[None]:
     """
     根据条件批量删除政策。
-    年度、月份必填；钢厂可选（不填则删除该年月下全部钢厂）。
+    年度、月份必填；钢厂、表页可选（不填则删除该年月下对应范围）。
     """
     count = _policy_service.delete_by_conditions(
         db,
         year=year,
         month=month,
         steel_mill=steel_mill,
+        sheet_name=sheet_name,
     )
     return ApiResponse.deleted(message=f"成功删除 {count} 条政策")
 

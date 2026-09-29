@@ -97,6 +97,10 @@ def format_thickness_trace(row: WinningThicknessRowVO) -> str:
         parts.append(f"L:{row.thickness_ladder_item_id}")
     if row.thickness_excel_filename:
         parts.append(row.thickness_excel_filename)
+    if row.thickness_steel_mill:
+        parts.append(row.thickness_steel_mill)
+    if row.thickness_sheet_name:
+        parts.append(row.thickness_sheet_name)
     if row.thickness_excel_row is not None:
         parts.append(f"R{row.thickness_excel_row}")
     if row.thickness_excel_col is not None:

@@ -61,6 +61,9 @@ class SteelPricePolicy(AuditUserMixin, Base):
     excel_filename: Mapped[str | None] = mapped_column(
         String(255), nullable=True, comment="来源 Excel 文件名"
     )
+    sheet_name: Mapped[str | None] = mapped_column(
+        String(100), nullable=True, comment="来源 Excel 工作表名"
+    )
 
     # 关联子表（cascade 确保删除主表时自动删除所有明细）
     items: Mapped[list["SteelPriceLadderItem"]] = relationship(

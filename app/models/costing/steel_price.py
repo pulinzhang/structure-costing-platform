@@ -160,6 +160,9 @@ class SteelPrice(AuditUserMixin, Base):
         nullable=True,
         comment="命中的厚度阶梯明细 ID",
     )
+    thickness_steel_mill: Mapped[str | None] = mapped_column(
+        String(100), nullable=True, comment="命中厚度政策上的钢厂全称"
+    )
     thickness_excel_filename: Mapped[str | None] = mapped_column(
         String(255), nullable=True, comment="厚度政策来源 Excel 文件名"
     )
@@ -185,6 +188,9 @@ class SteelPrice(AuditUserMixin, Base):
         nullable=True,
         comment="命中的宽度阶梯明细 ID",
     )
+    width_steel_mill: Mapped[str | None] = mapped_column(
+        String(100), nullable=True, comment="命中宽度政策上的钢厂全称"
+    )
     width_excel_filename: Mapped[str | None] = mapped_column(
         String(255), nullable=True, comment="宽度政策来源 Excel 文件名"
     )
@@ -209,6 +215,9 @@ class SteelPrice(AuditUserMixin, Base):
         ForeignKey("steel_price_ladder_items.id", ondelete="SET NULL"),
         nullable=True,
         comment="命中的锌层阶梯明细 ID",
+    )
+    zinc_steel_mill: Mapped[str | None] = mapped_column(
+        String(100), nullable=True, comment="命中锌层政策上的钢厂全称"
     )
     zinc_excel_filename: Mapped[str | None] = mapped_column(
         String(255), nullable=True, comment="锌层政策来源 Excel 文件名"

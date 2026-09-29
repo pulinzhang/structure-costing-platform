@@ -239,5 +239,6 @@ class ExportRow(BaseModel):
 
     # 追溯字段
     excel_filename: str | None = None
+    sheet_name: str | None = None
     excel_row: int | None = None
     excel_col: int | None = None

@@ -9,7 +9,7 @@ import {
     renderSteelPriceRows,
     updateSteelPriceHud,
     millLabel,
-} from './template.js?v=73';
+} from './template.js?v=74';
 import {
     DEFAULT_PAGE_SIZE,
     bindPagination,
@@ -691,6 +691,7 @@ function openEditDrawer(record) {
 }
 
 function formatTrace(prefix, record) {
+    const mill = prefix === 'base' ? record.steel_mill : record[`${prefix}_steel_mill`];
     const filename = record[`${prefix}_excel_filename`];
     const sheet = record[`${prefix}_sheet_name`];
     const row = record[`${prefix}_excel_row`];
@@ -709,6 +710,7 @@ function formatTrace(prefix, record) {
             `${prefix}_ladder_item_id=${esc(ladderId ?? '—')}`,
         ];
     const excelLine = [
+        `${prefix === 'base' ? 'steel_mill' : `${prefix}_steel_mill`}=${esc(mill || '—')}`,
         `${prefix}_excel_filename=${esc(filename || '—')}`,
         `${prefix}_sheet_name=${esc(sheet || '—')}`,
         `${prefix}_excel_row=${esc(row ?? '—')}`,

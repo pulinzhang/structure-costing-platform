@@ -141,6 +141,7 @@ class SteelPricePolicyWrites:
         month: int | None = None,
         steel_mill: str | None = None,
         steel_mill_id: int | None = None,
+        sheet_name: str | None = None,
     ) -> int:
         """
         根据条件统计政策数量（删除前查询）。
@@ -158,6 +159,8 @@ class SteelPricePolicyWrites:
             query = query.filter(SteelPricePolicy.steel_mill_id == steel_mill_id)
         elif steel_mill:
             query = query.filter(SteelPricePolicy.steel_mill == steel_mill)
+        if sheet_name:
+            query = query.filter(SteelPricePolicy.sheet_name == sheet_name)
 
         return query.scalar() or 0
 
@@ -169,6 +172,7 @@ class SteelPricePolicyWrites:
         month: int | None = None,
         steel_mill: str | None = None,
         steel_mill_id: int | None = None,
+        sheet_name: str | None = None,
     ) -> int:
         """
         根据条件批量删除政策。
@@ -182,6 +186,7 @@ class SteelPricePolicyWrites:
             month=month,
             steel_mill=steel_mill,
             steel_mill_id=steel_mill_id,
+            sheet_name=sheet_name,
         )
         query = db.query(SteelPricePolicy)
 
@@ -193,6 +198,8 @@ class SteelPricePolicyWrites:
             query = query.filter(SteelPricePolicy.steel_mill_id == steel_mill_id)
         elif steel_mill:
             query = query.filter(SteelPricePolicy.steel_mill == steel_mill)
+        if sheet_name:
+            query = query.filter(SteelPricePolicy.sheet_name == sheet_name)
 
         query.delete(synchronize_session=False)
         return count

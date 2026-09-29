@@ -446,15 +446,17 @@ class SteelPricePolicyCrudService:
         year: int | None = None,
         month: int | None = None,
         steel_mill: str | None = None,
+        sheet_name: str | None = None,
     ) -> int:
         """
         根据条件批量删除政策。
-        年度、月份必填；钢厂可选（不填则删除该年月下全部钢厂）。
+        年度、月份必填；钢厂、表页可选（不填则删除该年月下对应范围）。
         """
         if year is None or month is None:
             raise BusinessException("年度、月份必须选择")
 
         mill = steel_mill.strip() if steel_mill else None
+        sheet = sheet_name.strip() if sheet_name else None
 
         try:
             count = self.repository.delete_by_conditions(
@@ -462,14 +464,16 @@ class SteelPricePolicyCrudService:
                 year=year,
                 month=month,
                 steel_mill_id=SteelMillService().filter_id(db, mill),
+                sheet_name=sheet,
             )
             db.commit()
 
             logger.info(
-                "批量删除钢价政策: year=%s month=%s steel_mill=%s count=%s",
+                "批量删除钢价政策: year=%s month=%s steel_mill=%s sheet_name=%s count=%s",
                 year,
                 month,
                 mill or "(全部)",
+                sheet or "(全部)",
                 count,
             )
 
@@ -477,9 +481,10 @@ class SteelPricePolicyCrudService:
         except Exception:
             db.rollback()
             logger.exception(
-                "批量删除钢价政策失败: year=%s month=%s steel_mill=%s",
+                "批量删除钢价政策失败: year=%s month=%s steel_mill=%s sheet_name=%s",
                 year,
                 month,
                 mill,
+                sheet,
             )
             raise

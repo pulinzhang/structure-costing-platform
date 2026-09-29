@@ -316,6 +316,8 @@ class MomAnomalyItem(TypedDict, total=False):
     thickness_band: str
     prev_adjustment: str | int
     curr_adjustment: str | int
+    prev_sheet_name: str
+    sheet_name: str
     prev_base_price: str
     curr_base_price: str
     hint: str

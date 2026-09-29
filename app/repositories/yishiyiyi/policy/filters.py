@@ -58,6 +58,7 @@ def apply_export_filters(
     month: int | None = None,
     steel_mill: str | None = None,
     steel_mill_id: int | None = None,
+    sheet_name: str | None = None,
     category_names_in: frozenset[str] | None = None,
     category_filter_no_match: bool = False,
     policy_type: str | None = None,
@@ -71,6 +72,8 @@ def apply_export_filters(
         query = query.filter(SteelPricePolicy.steel_mill_id == steel_mill_id)
     elif steel_mill:
         query = query.filter(SteelPricePolicy.steel_mill == steel_mill)
+    if sheet_name:
+        query = query.filter(SteelPricePolicy.sheet_name == sheet_name)
     query = apply_category_scope(
         query,
         category_names_in=category_names_in,
