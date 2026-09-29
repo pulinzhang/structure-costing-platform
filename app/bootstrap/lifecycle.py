@@ -15,9 +15,6 @@ def on_startup() -> None:
 
     DatabaseConfig.create_tables()
     AuxiliaryDatabaseConfig.create_tables()
-    _ensure_bom_node_part_number_index()
-    _ensure_policy_sheet_name_column()
-    _ensure_steel_price_policy_mill_columns()
     _seed_if_empty()
     _log_startup()
 
@@ -26,85 +23,6 @@ def on_shutdown() -> None:
     DatabaseConfig.dispose()
     AuxiliaryDatabaseConfig.dispose()
     logger.info("应用正在关闭...")
-
-
-def _ensure_bom_node_part_number_index() -> None:
-    """现网 create_all 不补已有表索引。"""
-    from sqlalchemy import text
-    from sqlalchemy.exc import OperationalError
-
-    engine = DatabaseConfig.get_engine()
-    try:
-        with engine.begin() as connection:
-            connection.execute(
-                text(
-                    "CREATE INDEX IF NOT EXISTS ix_bom_node_part_number ON bom_nodes (part_number)"
-                )
-            )
-        logger.info("已确保索引 ix_bom_node_part_number")
-    except OperationalError:
-        logger.exception("无法创建索引 ix_bom_node_part_number")
-
-
-def _ensure_policy_sheet_name_column() -> None:
-    """create_all 不给已有表补列。工作表名在政策主表，下次导入时写入。"""
-    from sqlalchemy import inspect, text
-    from sqlalchemy.exc import OperationalError
-
-    engine = DatabaseConfig.get_engine()
-    try:
-        inspector = inspect(engine)
-        tables = set(inspector.get_table_names())
-        with engine.begin() as connection:
-            if "steel_price_policies" in tables:
-                policy_columns = {
-                    column["name"] for column in inspector.get_columns("steel_price_policies")
-                }
-                if "sheet_name" not in policy_columns:
-                    connection.execute(
-                        text("ALTER TABLE steel_price_policies ADD COLUMN sheet_name VARCHAR(100)")
-                    )
-                    logger.info("已为 steel_price_policies 补列 sheet_name")
-            if "steel_price_ladder_items" in tables:
-                item_columns = {
-                    column["name"] for column in inspector.get_columns("steel_price_ladder_items")
-                }
-                if "sheet_name" in item_columns:
-                    connection.execute(
-                        text("ALTER TABLE steel_price_ladder_items DROP COLUMN sheet_name")
-                    )
-                    logger.info("已从 steel_price_ladder_items 去掉 sheet_name")
-    except OperationalError:
-        logger.exception("无法调整钢价政策 sheet_name 列")
-
-
-def _ensure_steel_price_policy_mill_columns() -> None:
-    """create_all 不给已有表补列。加减价溯源记下政策上的钢厂全称。"""
-    from sqlalchemy import inspect, text
-    from sqlalchemy.exc import OperationalError
-
-    statements = {
-        "thickness_steel_mill": (
-            "ALTER TABLE steel_prices ADD COLUMN thickness_steel_mill VARCHAR(100)"
-        ),
-        "width_steel_mill": "ALTER TABLE steel_prices ADD COLUMN width_steel_mill VARCHAR(100)",
-        "zinc_steel_mill": "ALTER TABLE steel_prices ADD COLUMN zinc_steel_mill VARCHAR(100)",
-    }
-    engine = DatabaseConfig.get_engine()
-    try:
-        inspector = inspect(engine)
-        if "steel_prices" not in set(inspector.get_table_names()):
-            return
-        existing = {column["name"] for column in inspector.get_columns("steel_prices")}
-        missing = [name for name in statements if name not in existing]
-        if not missing:
-            return
-        with engine.begin() as connection:
-            for name in missing:
-                connection.execute(text(statements[name]))
-        logger.info("已为 steel_prices 补列 %s", ", ".join(missing))
-    except OperationalError:
-        logger.exception("无法为 steel_prices 补钢厂溯源列")
 
 
 def _seed_if_empty() -> None:
