@@ -5,6 +5,13 @@ from typing import TypedDict
 
 from pydantic import BaseModel, Field, field_validator, model_validator
 
+from app.common.period import (
+    EFFECTIVE_YEAR_MAX,
+    EFFECTIVE_YEAR_MIN,
+    MONTH_MAX,
+    MONTH_MIN,
+)
+
 
 def _strip(value: object) -> str | None:
     if value is None:
@@ -46,10 +53,14 @@ class VehicleModelCreateDTO(BaseModel):
 
     location: str = Field(..., min_length=1, max_length=50, description="基地")
     vehicle_model: str = Field(..., min_length=1, max_length=50, description="项目代号")
-    effective_year: int = Field(..., ge=1990, le=2100, description="生效年")
-    effective_month: int = Field(..., ge=1, le=12, description="生效月")
-    expiry_year: int | None = Field(None, ge=1990, le=2100, description="失效年")
-    expiry_month: int | None = Field(None, ge=1, le=12, description="失效月")
+    effective_year: int = Field(
+        ..., ge=EFFECTIVE_YEAR_MIN, le=EFFECTIVE_YEAR_MAX, description="生效年"
+    )
+    effective_month: int = Field(..., ge=MONTH_MIN, le=MONTH_MAX, description="生效月")
+    expiry_year: int | None = Field(
+        None, ge=EFFECTIVE_YEAR_MIN, le=EFFECTIVE_YEAR_MAX, description="失效年"
+    )
+    expiry_month: int | None = Field(None, ge=MONTH_MIN, le=MONTH_MAX, description="失效月")
     current_supplied_units: int = Field(0, ge=0, description="当前供货台数，单位台")
 
     @field_validator("location", "vehicle_model", mode="before")
@@ -88,10 +99,14 @@ class VehicleModelCreateDTO(BaseModel):
 class VehicleModelUpdateDTO(BaseModel):
     """改生效 / 失效 / 当前供货台数。"""
 
-    effective_year: int = Field(..., ge=1990, le=2100, description="生效年")
-    effective_month: int = Field(..., ge=1, le=12, description="生效月")
-    expiry_year: int | None = Field(None, ge=1990, le=2100, description="失效年")
-    expiry_month: int | None = Field(None, ge=1, le=12, description="失效月")
+    effective_year: int = Field(
+        ..., ge=EFFECTIVE_YEAR_MIN, le=EFFECTIVE_YEAR_MAX, description="生效年"
+    )
+    effective_month: int = Field(..., ge=MONTH_MIN, le=MONTH_MAX, description="生效月")
+    expiry_year: int | None = Field(
+        None, ge=EFFECTIVE_YEAR_MIN, le=EFFECTIVE_YEAR_MAX, description="失效年"
+    )
+    expiry_month: int | None = Field(None, ge=MONTH_MIN, le=MONTH_MAX, description="失效月")
     current_supplied_units: int = Field(..., ge=0, description="当前供货台数，单位台")
 
     @field_validator("expiry_year", "expiry_month", mode="before")

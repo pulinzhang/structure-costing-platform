@@ -8,6 +8,12 @@ from fastapi import APIRouter, Depends, File, Query, UploadFile, status
 from fastapi.responses import StreamingResponse
 from sqlalchemy.orm import Session
 
+from app.common.period import (
+    COSTING_YEAR_MAX,
+    COSTING_YEAR_MIN,
+    MONTH_MAX,
+    MONTH_MIN,
+)
 from app.common.permissions.codes import Perm
 from app.database import get_db
 from app.deps.permissions import require_any_perm, require_perm
@@ -170,8 +176,8 @@ def download_base_price_import_template(
 )
 async def import_base_price(
     file: UploadFile = File(...),
-    year: int = Query(..., ge=2000, le=2100, description="生效年度"),
-    month: int = Query(..., ge=1, le=12, description="生效月份"),
+    year: int = Query(..., ge=COSTING_YEAR_MIN, le=COSTING_YEAR_MAX, description="生效年度"),
+    month: int = Query(..., ge=MONTH_MIN, le=MONTH_MAX, description="生效月份"),
     current_user: UserVO = Depends(require_perm(Perm.BASE_PRICE_UPLOAD_UPLOAD)),
 ) -> ApiResponse[AsyncTaskAcceptedVO]:
     """导入 Excel，立即返回 task_id，后台线程解析入库。"""

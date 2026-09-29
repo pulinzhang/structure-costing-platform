@@ -8,6 +8,12 @@ from urllib.parse import quote
 from fastapi import APIRouter, Depends, File, Form, UploadFile
 from fastapi.responses import StreamingResponse
 
+from app.common.period import (
+    COSTING_YEAR_MAX,
+    COSTING_YEAR_MIN,
+    MONTH_MAX,
+    MONTH_MIN,
+)
 from app.common.permissions.codes import Perm
 from app.deps.permissions import require_perm
 from app.schemas.vo.async_task_vo import AsyncTaskAcceptedVO, AsyncTaskProgressVO
@@ -46,8 +52,8 @@ def download_policy_import_template(
     summary="上传钢价政策 Excel",
 )
 async def upload_policy_excel(
-    year: int = Form(..., ge=2000, le=2100, description="生效年度"),
-    month: int = Form(..., ge=1, le=12, description="生效月份（1-12）"),
+    year: int = Form(..., ge=COSTING_YEAR_MIN, le=COSTING_YEAR_MAX, description="生效年度"),
+    month: int = Form(..., ge=MONTH_MIN, le=MONTH_MAX, description="生效月份（1-12）"),
     file: UploadFile = File(..., description="一事一议价格 Excel 文件"),
     current_user: UserVO = Depends(require_perm(Perm.STEEL_PRICE_POLICY_UPLOAD_UPLOAD)),
 ) -> ApiResponse[AsyncTaskAcceptedVO]:

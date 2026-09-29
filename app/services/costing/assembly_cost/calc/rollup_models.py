@@ -68,10 +68,10 @@ class RollupPackagingFee:
 
 @dataclass(frozen=True)
 class RollupFinishedRates:
-    finance_rate: Decimal = Decimal("0.02")
-    management_rate: Decimal = Decimal("0.02")
-    scrap_rate: Decimal = Decimal("0.003")
-    pretax_profit_rate: Decimal = Decimal("0.02")
+    finance_rate: Decimal
+    management_rate: Decimal
+    scrap_rate: Decimal
+    pretax_profit_rate: Decimal
 
 
 @dataclass(frozen=True)

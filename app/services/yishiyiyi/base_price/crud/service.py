@@ -8,6 +8,7 @@ from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
 
 from app.common.audit import audit_create, display_name
+from app.common.period import previous_month
 from app.exceptions.base import BusinessException, NotFoundException
 from app.models.yishiyiyi import SteelBasePrice
 from app.repositories.yishiyiyi.base_price.steel_base_price_repository import (
@@ -32,7 +33,6 @@ from app.services.masterdata.steel_mill.service import SteelMillService
 from app.services.settings.system.service import SettingsService
 from app.services.yishiyiyi.base_price.gate import (
     AwardLine,
-    previous_period,
     reject_excessive_month_moves,
     reject_invalid_base_price_award,
     reject_processing_fee_over_limit,
@@ -68,7 +68,7 @@ def _reject_line_against_previous_month(
     year: int,
     month: int,
 ) -> None:
-    prev_year, prev_month = previous_period(year, month)
+    prev_year, prev_month = previous_month(year, month)
     previous_rows = repository.list_by_year_month(db, year=prev_year, month=prev_month)
     previous = [
         AwardLine(

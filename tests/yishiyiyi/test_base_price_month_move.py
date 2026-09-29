@@ -4,10 +4,10 @@ from decimal import Decimal
 
 import pytest
 
+from app.common.period import previous_month
 from app.exceptions import BusinessException
 from app.services.yishiyiyi.base_price.gate import (
     AwardLine,
-    previous_period,
     reject_excessive_month_moves,
 )
 
@@ -32,9 +32,9 @@ def _line(
     )
 
 
-def test_previous_period_wraps_january() -> None:
-    assert previous_period(2026, 7) == (2026, 6)
-    assert previous_period(2026, 1) == (2025, 12)
+def test_previous_month_wraps_january() -> None:
+    assert previous_month(2026, 7) == (2026, 6)
+    assert previous_month(2026, 1) == (2025, 12)
 
 
 _LIMIT = Decimal("300")

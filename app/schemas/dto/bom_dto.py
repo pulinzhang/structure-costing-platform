@@ -8,6 +8,13 @@ from typing import Any
 from pydantic import BaseModel, Field, field_validator
 
 from app.common.money import Q4, optional_quantize_money
+from app.common.period import (
+    COSTING_YEAR_MAX,
+    COSTING_YEAR_MIN,
+    DEFAULT_EFFECTIVE_YEAR,
+    MONTH_MAX,
+    MONTH_MIN,
+)
 
 
 class BomSnapshotCreate(BaseModel):
@@ -47,7 +54,10 @@ class BomCascadeFilterQuery(BaseModel):
     location: str | None = Field(None, description="采购基地")
     vehicle_model: str | None = Field(None, description="项目")
     year: int | None = Field(
-        None, ge=2000, le=2100, description="年度；传入后项目下拉改问项目主数据"
+        None,
+        ge=COSTING_YEAR_MIN,
+        le=COSTING_YEAR_MAX,
+        description="年度；传入后项目下拉改问项目主数据",
     )
     month: int | None = Field(
         None,
@@ -68,8 +78,12 @@ class BomCascadeFilterQuery(BaseModel):
 class BomNodeTreeQuery(BaseModel):
     """产品结构树 / 扁平节点：按月命中。"""
 
-    year: int | None = Field(None, ge=2000, le=2100, description="查看年；空则墙钟")
-    month: int | None = Field(None, ge=1, le=12, description="查看月；与年同空或同有")
+    year: int | None = Field(
+        None, ge=COSTING_YEAR_MIN, le=COSTING_YEAR_MAX, description="查看年；空则墙钟"
+    )
+    month: int | None = Field(
+        None, ge=MONTH_MIN, le=MONTH_MAX, description="查看月；与年同空或同有"
+    )
     include_expired: bool = Field(False, description="含已失效")
 
 
@@ -167,7 +181,7 @@ class BomNodeWrite:
     location: str = ""
     vehicle_model: str = ""
     bom_version: str = ""
-    effective_year: int = 2020
-    effective_month: int = 1
+    effective_year: int = DEFAULT_EFFECTIVE_YEAR
+    effective_month: int = MONTH_MIN
     expiry_year: int | None = None
     expiry_month: int | None = None

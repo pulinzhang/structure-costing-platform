@@ -21,6 +21,7 @@ from sqlalchemy import (
 )
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
+from app.common.period import DEFAULT_EFFECTIVE_YEAR
 from app.database import Base
 from app.models.common.audit_mixin import AuditUserMixin
 
@@ -58,7 +59,7 @@ class StampingPart(AuditUserMixin, Base):
     version: Mapped[str] = mapped_column(String(20), nullable=False, comment="版本")
 
     effective_year: Mapped[int] = mapped_column(
-        Integer, nullable=False, default=2020, comment="生效年"
+        Integer, nullable=False, default=DEFAULT_EFFECTIVE_YEAR, comment="生效年"
     )
     effective_month: Mapped[int] = mapped_column(
         Integer, nullable=False, default=1, comment="生效月"

@@ -7,12 +7,12 @@ from decimal import Decimal
 from openpyxl.utils import get_column_letter
 
 from app.common.audit import audit_status_label
+from app.common.measures import MM3_G_PER_CM3_TO_TON
 from app.common.money import Q0, Q2, Q4, excel_money_cell
 from app.common.timezone import now
 from app.models.stamping.die import StampingDieProcess
 from app.models.stamping.die_fee import StampingDieFee
 from app.models.stamping.die_fee_item import StampingDieFeeItem
-from app.services.stamping.die.rules.weight_check import DIE_STEEL_DENSITY
 from app.services.stamping.die_fee.export.columns import (
     COL_HEIGHT,
     COL_HOLLOW,
@@ -34,15 +34,15 @@ def money_cell_whole(value: object) -> Decimal | str:
     return excel_money_cell(value, Q0, allow_negative=False)
 
 
-def _check_weight_formula(row_idx: int) -> str:
+def _check_weight_formula(row_idx: int, density: Decimal) -> str:
     length_ref = f"{get_column_letter(COL_LENGTH)}{row_idx}"
     width_ref = f"{get_column_letter(COL_WIDTH)}{row_idx}"
     height_ref = f"{get_column_letter(COL_HEIGHT)}{row_idx}"
     hollow_ref = f"{get_column_letter(COL_HOLLOW)}{row_idx}"
-    density = str(DIE_STEEL_DENSITY)
     return (
         f"=IF(COUNT({length_ref},{width_ref},{height_ref},{hollow_ref})=4,"
-        f'{length_ref}*{width_ref}*{height_ref}*{hollow_ref}*{density}/1000000000,"")'
+        f"{length_ref}*{width_ref}*{height_ref}*{hollow_ref}*{density}/{MM3_G_PER_CM3_TO_TON},"
+        f'"")'
     )
 
 

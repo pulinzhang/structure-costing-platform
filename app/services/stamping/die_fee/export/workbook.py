@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+from decimal import Decimal
 from typing import Any
 
 from openpyxl.styles import Alignment, Border, PatternFill
@@ -189,6 +190,7 @@ def write_data_row(
     write_main: bool,
     line_index: int,
     main_fill: PatternFill,
+    density: Decimal,
 ) -> None:
     detail_fill = fill("FFFFFF") if line_index % 2 == 0 else fill("FFEBEE")
     check_fill = fill("FAFAFA") if line_index % 2 == 0 else fill("ECEFF1")
@@ -214,7 +216,7 @@ def write_data_row(
     weight_cell.font = font(size=9, color="78909C")
     weight_cell.alignment = style.right
     weight_cell.number_format = CHECK_WEIGHT_FORMAT
-    weight_cell.value = _check_weight_formula(row_idx) if item is not None else ""
+    weight_cell.value = _check_weight_formula(row_idx, density) if item is not None else ""
 
 
 def _style_main_cell(cell: Any, col: int, *, style: SheetStyle) -> None:
@@ -291,6 +293,7 @@ def fill_sheet(
     style: SheetStyle,
     process_by_id: dict[int, StampingDieProcess],
     filter_text: str,
+    density: Decimal,
 ) -> int:
     write_banner(sheet, filter_text=filter_text, fee_count=len(records))
     header_row = write_headers(sheet, style=style)
@@ -318,6 +321,7 @@ def fill_sheet(
                 write_main=True,
                 line_index=0,
                 main_fill=main_fill,
+                density=density,
             )
             sheet.row_dimensions[row_idx].height = DATA_H
             row_idx += 1
@@ -342,6 +346,7 @@ def fill_sheet(
                 write_main=(index == 0),
                 line_index=index,
                 main_fill=main_fill,
+                density=density,
             )
             sheet.row_dimensions[row_idx].height = row_height(item)
             row_idx += 1

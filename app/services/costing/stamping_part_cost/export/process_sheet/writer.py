@@ -6,7 +6,6 @@
 from __future__ import annotations
 
 import logging
-from decimal import Decimal
 from typing import Any
 
 from openpyxl import Workbook
@@ -15,6 +14,7 @@ from sqlalchemy.orm import Session
 
 from app.common.excel_workbook import resolve_worksheet
 from app.common.export_watermark import workbook_to_xlsx_bytes
+from app.common.measures import PERCENT, PERMILLE
 from app.repositories.bom.bom.node import BomNodeRepository
 from app.repositories.bom.bom.snapshot import BomSnapshotRepository
 from app.repositories.costing.steel_price.steel_price_repository import SteelPriceRepository
@@ -146,10 +146,10 @@ def write_process_sheet_to_workbook(
             density_text = formula_number(density)
         if loss_rate is not None:
             loss_rate_text = formula_number(loss_rate)
-            loss_permille_text = formula_number(loss_rate * Decimal("1000"))
+            loss_permille_text = formula_number(loss_rate * PERMILLE)
         if recovery is not None:
             recovery_text = formula_number(recovery)
-            recovery_percent_text = formula_number(recovery * Decimal("100"))
+            recovery_percent_text = formula_number(recovery * PERCENT)
     meta_text = " · ".join(meta_parts) if meta_parts else "按筛选条件导出"
     formula_hint = (
         f"核价口径："

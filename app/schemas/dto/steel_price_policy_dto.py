@@ -11,6 +11,13 @@ from typing import Any
 
 from pydantic import BaseModel, Field, field_validator, model_validator
 
+from app.common.period import (
+    COSTING_YEAR_MAX,
+    COSTING_YEAR_MIN,
+    MONTH_MAX,
+    MONTH_MIN,
+)
+
 # ============================
 # 枚举定义
 # ============================
@@ -130,8 +137,8 @@ class LadderItemUpdate(BaseModel):
 class PolicyCreate(BaseModel):
     """政策创建请求"""
 
-    year: int = Field(..., ge=2000, le=2100, description="生效年度")
-    month: int = Field(..., ge=1, le=12, description="生效月份（1-12）")
+    year: int = Field(..., ge=COSTING_YEAR_MIN, le=COSTING_YEAR_MAX, description="生效年度")
+    month: int = Field(..., ge=MONTH_MIN, le=MONTH_MAX, description="生效月份（1-12）")
     steel_mill: str = Field(..., min_length=1, max_length=100, description="钢厂名称")
     category_name: str = Field(..., min_length=1, max_length=100, description="钢种大类")
     policy_type: PolicyType = Field(..., description="政策类型")
@@ -183,8 +190,8 @@ class PolicyUpdate(BaseModel):
 class PolicyQuery(BaseModel):
     """政策分页筛选参数"""
 
-    year: int | None = Field(None, ge=2000, le=2100, description="生效年度")
-    month: int | None = Field(None, ge=1, le=12, description="生效月份（1-12）")
+    year: int | None = Field(None, ge=COSTING_YEAR_MIN, le=COSTING_YEAR_MAX, description="生效年度")
+    month: int | None = Field(None, ge=MONTH_MIN, le=MONTH_MAX, description="生效月份（1-12）")
     steel_mill: str | None = Field(None, description="钢厂名称")
     category_name: str | None = Field(None, description="钢种大类")
     policy_type: PolicyType | None = Field(None, description="政策类型")
@@ -202,8 +209,8 @@ class PolicyQuery(BaseModel):
 class PolicyExportQuery(BaseModel):
     """加减价政策列表筛选：年度、月份、钢厂、钢种大类、牌号。"""
 
-    year: int | None = Field(None, ge=2000, le=2100, description="生效年度")
-    month: int | None = Field(None, ge=1, le=12, description="生效月份（1-12）")
+    year: int | None = Field(None, ge=COSTING_YEAR_MIN, le=COSTING_YEAR_MAX, description="生效年度")
+    month: int | None = Field(None, ge=MONTH_MIN, le=MONTH_MAX, description="生效月份（1-12）")
     steel_mill: str | None = Field(None, description="钢厂名称")
     category_name: str | None = Field(None, description="钢种大类：冷轧/镀锌/酸洗")
     grade_value: str | None = Field(None, description="牌号（经档案解析为大类后筛选政策）")
@@ -229,8 +236,8 @@ class PolicyExportPreviewQuery(PolicyExportQuery):
 class PolicyMatchRequest(BaseModel):
     """阶梯匹配请求"""
 
-    year: int = Field(..., ge=2000, le=2100, description="生效年度")
-    month: int = Field(..., ge=1, le=12, description="生效月份（1-12）")
+    year: int = Field(..., ge=COSTING_YEAR_MIN, le=COSTING_YEAR_MAX, description="生效年度")
+    month: int = Field(..., ge=MONTH_MIN, le=MONTH_MAX, description="生效月份（1-12）")
     steel_mill: str = Field(..., min_length=1, max_length=100, description="钢厂名称")
     category_name: str = Field(..., min_length=1, max_length=100, description="钢种大类")
     policy_type: PolicyType = Field(..., description="政策类型")

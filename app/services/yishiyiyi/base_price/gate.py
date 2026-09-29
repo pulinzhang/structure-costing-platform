@@ -183,12 +183,6 @@ def _mm(value: Decimal) -> str:
     return text.rstrip("0").rstrip(".")
 
 
-def previous_period(year: int, month: int) -> tuple[int, int]:
-    if month <= 1:
-        return year - 1, 12
-    return year, month - 1
-
-
 def landed_price(base_price: Decimal, processing_fee: Decimal) -> Decimal:
     """到厂单价 + 原卷加工费，元/吨。"""
     return (base_price + processing_fee).quantize(Q2, rounding=ROUND_HALF_UP)

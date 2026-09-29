@@ -9,6 +9,10 @@ from fastapi import APIRouter, Depends, Query
 from fastapi.responses import StreamingResponse
 from sqlalchemy.orm import Session
 
+from app.common.period import (
+    COSTING_YEAR_MAX,
+    COSTING_YEAR_MIN,
+)
 from app.common.permissions.codes import Perm
 from app.database import get_db
 from app.deps.permissions import require_any_perm, require_perm
@@ -181,7 +185,7 @@ def list_versions(
     summary="查询冲压加工费计算就绪状态",
 )
 def get_calc_ready(
-    year: int = Query(..., ge=2000, le=2100),
+    year: int = Query(..., ge=COSTING_YEAR_MIN, le=COSTING_YEAR_MAX),
     location: str | None = Query(None),
     vehicle_model: str | None = Query(None),
     version: str | None = Query(None),
@@ -333,7 +337,7 @@ def list_fees(
 
 @router.get("/export-download", summary="按当前筛选条件导出冲压加工费 Excel")
 def export_download(
-    year: int | None = Query(None, ge=2000, le=2100, description="年度"),
+    year: int | None = Query(None, ge=COSTING_YEAR_MIN, le=COSTING_YEAR_MAX, description="年度"),
     location: str | None = Query(None, description="基地"),
     stamping_supplier: str | None = Query(None, description="冲压工厂"),
     vehicle_model: str | None = Query(None, description="项目"),

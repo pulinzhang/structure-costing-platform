@@ -8,6 +8,7 @@ from decimal import Decimal
 from sqlalchemy import ForeignKey, Index, Integer, Numeric, String, Text, UniqueConstraint
 from sqlalchemy.orm import Mapped, mapped_column
 
+from app.common.system_defaults import DEFAULT_BASE_PRICE_PROCESSING_FEE_LIMIT
 from app.database import Base
 from app.models.common.audit_mixin import AuditUserMixin
 
@@ -81,7 +82,10 @@ class SteelBasePrice(AuditUserMixin, Base):
         Numeric(10, 2), nullable=False, comment="到厂原卷承兑价格(元/吨)"
     )
     processing_fee: Mapped[Decimal] = mapped_column(
-        Numeric(10, 2), nullable=False, default=Decimal("120.00"), comment="原卷加工费(元/吨)"
+        Numeric(10, 2),
+        nullable=False,
+        default=DEFAULT_BASE_PRICE_PROCESSING_FEE_LIMIT,
+        comment="原卷加工费(元/吨)",
     )
 
     # 【防扯皮与溯源铁证字段（核心亮点）】

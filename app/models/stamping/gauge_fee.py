@@ -5,13 +5,13 @@ from decimal import Decimal
 from sqlalchemy import ForeignKeyConstraint, Index, Integer, Numeric, String, UniqueConstraint
 from sqlalchemy.orm import Mapped, mapped_column
 
+from app.common.system_defaults import DEFAULT_ALLOCATION_QTY
 from app.database import Base
 from app.models.common.audit_mixin import AuditUserMixin
 
 STATUS_EFFECTIVE = "effective"
 STATUS_INVALID = "invalid"
 DEFAULT_GAUGE_FEE = Decimal("0.8")
-DEFAULT_ALLOCATION_QTY = Decimal("10")
 
 
 class StampingGaugeFee(AuditUserMixin, Base):

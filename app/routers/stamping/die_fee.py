@@ -6,6 +6,10 @@ from fastapi import APIRouter, Depends, Query
 from fastapi.responses import StreamingResponse
 from sqlalchemy.orm import Session
 
+from app.common.period import (
+    COSTING_YEAR_MAX,
+    COSTING_YEAR_MIN,
+)
 from app.common.permissions.codes import Perm
 from app.common.vehicle_model import normalize_vehicle_model
 from app.database import get_db
@@ -56,7 +60,7 @@ _async_task_service = AsyncTaskService()
 )
 def list_filters(
     location: str | None = Query(None),
-    year: int | None = Query(None, ge=2000, le=2100),
+    year: int | None = Query(None, ge=COSTING_YEAR_MIN, le=COSTING_YEAR_MAX),
     vehicle_model: str | None = Query(None),
     stamping_supplier: str | None = Query(None),
     for_calc: bool = Query(False),
@@ -88,7 +92,7 @@ def list_filters(
     summary="查询模具费计算就绪状态",
 )
 def get_calc_ready(
-    year: int = Query(..., ge=2000, le=2100),
+    year: int = Query(..., ge=COSTING_YEAR_MIN, le=COSTING_YEAR_MAX),
     location: str | None = Query(None),
     vehicle_model: str | None = Query(None),
     version: str | None = Query(None),
@@ -230,7 +234,7 @@ def list_fees(
 
 @router.get("/export", summary="按筛选导出模具费")
 def export_download(
-    year: int | None = Query(None, ge=2000, le=2100),
+    year: int | None = Query(None, ge=COSTING_YEAR_MIN, le=COSTING_YEAR_MAX),
     location: str | None = Query(None),
     vehicle_model: str | None = Query(None),
     stamping_supplier: str | None = Query(None),
@@ -266,7 +270,7 @@ def export_download(
     summary="按范围删除模具费",
 )
 def delete_scope(
-    year: int = Query(..., ge=2000, le=2100),
+    year: int = Query(..., ge=COSTING_YEAR_MIN, le=COSTING_YEAR_MAX),
     location: str = Query(..., min_length=1),
     vehicle_model: str = Query(..., min_length=1),
     db: Session = Depends(get_db),

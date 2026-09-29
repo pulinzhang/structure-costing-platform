@@ -6,11 +6,7 @@ from sqlalchemy.orm import Session
 
 from app.common.period import (
     is_in_period as columns_in_period,
-)
-from app.common.period import (
     overlaps_year as period_overlaps_year,
-)
-from app.common.period import (
     period,
     validate_period,
 )

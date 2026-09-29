@@ -4,8 +4,18 @@ from __future__ import annotations
 
 from decimal import Decimal
 
+from app.common.system_defaults import (
+    DEFAULT_FINISHED_FINANCE_RATE,
+    DEFAULT_FINISHED_MANAGEMENT_RATE,
+    DEFAULT_FINISHED_PRETAX_PROFIT_RATE,
+    DEFAULT_FINISHED_SCRAP_RATE,
+)
 from app.services.costing.assembly_cost.calc.rollup import rollup_assembly
-from app.services.costing.assembly_cost.calc.rollup_models import RollupBomNode, RollupWeldingFee
+from app.services.costing.assembly_cost.calc.rollup_models import (
+    RollupBomNode,
+    RollupFinishedRates,
+    RollupWeldingFee,
+)
 
 
 def _node(
@@ -32,6 +42,15 @@ def _node(
         sort_no=sort_no,
         seq_no=seq_no,
         excel_row=excel_row,
+    )
+
+
+def _default_rates() -> RollupFinishedRates:
+    return RollupFinishedRates(
+        finance_rate=DEFAULT_FINISHED_FINANCE_RATE,
+        management_rate=DEFAULT_FINISHED_MANAGEMENT_RATE,
+        scrap_rate=DEFAULT_FINISHED_SCRAP_RATE,
+        pretax_profit_rate=DEFAULT_FINISHED_PRETAX_PROFIT_RATE,
     )
 
 
@@ -83,6 +102,7 @@ def test_purchased_assembly_root_uses_annual_and_skips_children() -> None:
             calc_status="partial",
         ),
         nodes_by_id=by_id,
+        rates=_default_rates(),
     )
     by_part = {line.part_number: line for line in result.lines}
     assert result.status == "ok"
@@ -111,6 +131,7 @@ def test_assembly_root_without_annual_still_reports_missing_child() -> None:
         annual_prices={},
         welding=None,
         nodes_by_id=by_id,
+        rates=_default_rates(),
     )
     assert result.status == "partial"
     assert result.missing_leaf_count == 1
@@ -136,6 +157,7 @@ def test_in_house_assembly_still_copies_own_welding() -> None:
         annual_prices={},
         welding=RollupWeldingFee(final_amount=Decimal("0.1170"), welding_fee_id=7),
         nodes_by_id=by_id,
+        rates=_default_rates(),
     )
     assert result.status == "ok"
     assert result.stamping_amount == Decimal("1.0000")
@@ -163,6 +185,7 @@ def test_parent_still_prunes_child_bundle() -> None:
         annual_prices={"502003968AA": Decimal("6.8800")},
         welding=None,
         nodes_by_id=by_id,
+        rates=_default_rates(),
     )
     by_part = {line.part_number: line for line in result.lines}
     assert result.status == "ok"
@@ -188,6 +211,7 @@ def test_leaf_root_with_annual_is_purchased_not_bundle() -> None:
         annual_prices={"QR37108": Decimal("0.2100")},
         welding=None,
         nodes_by_id=by_id,
+        rates=_default_rates(),
     )
     assert result.status == "ok"
     assert result.purchased_amount == Decimal("0.2100")

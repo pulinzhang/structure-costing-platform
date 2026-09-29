@@ -8,6 +8,10 @@ from typing import Any
 from pydantic import BaseModel, Field, field_validator
 
 from app.common.money import Q4, optional_quantize_money, quantize_money
+from app.common.period import (
+    COSTING_YEAR_MAX,
+    COSTING_YEAR_MIN,
+)
 from app.parsers.bom.annual_part_price_parser import parse_conversion_factor
 
 
@@ -32,7 +36,7 @@ class BomAnnualPartPriceCreate(BaseModel):
     """年度零件价创建请求"""
 
     location: str = Field(..., min_length=1, max_length=50, description="采购基地")
-    year: int = Field(..., ge=2000, le=2100, description="定价年度")
+    year: int = Field(..., ge=COSTING_YEAR_MIN, le=COSTING_YEAR_MAX, description="定价年度")
     part_number: str = Field(..., min_length=1, max_length=50, description="零件号")
     part_name: str | None = Field(None, max_length=200, description="零件名称")
     specification: str | None = Field(None, max_length=100, description="规格（展示，不取价）")
@@ -134,7 +138,7 @@ class BomAnnualPartPriceScopeDTO(BaseModel):
     """范围必填：基地 + 年度（上传 / 删除 / 审核 / 反审核共用）"""
 
     location: str = Field(..., min_length=1, max_length=50, description="采购基地（必填）")
-    year: int = Field(..., ge=2000, le=2100, description="年度（必填）")
+    year: int = Field(..., ge=COSTING_YEAR_MIN, le=COSTING_YEAR_MAX, description="年度（必填）")
 
 
 class BomAnnualPartPriceBatchDeleteDTO(BomAnnualPartPriceScopeDTO):

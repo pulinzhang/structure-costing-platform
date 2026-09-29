@@ -8,6 +8,7 @@ from pathlib import Path
 from sqlalchemy.orm import Session
 
 from app.common.audit import AUDIT_APPROVED, audit_create, audit_update
+from app.common.period import is_costing_year
 from app.config import settings
 from app.exceptions.base import BusinessException
 from app.parsers.bom.annual_part_price_parser import (
@@ -50,7 +51,7 @@ def _require_location_year(db: Session, location: str | None, year: int) -> str:
     location_text = (location or "").strip()
     if not location_text:
         raise BusinessException("请选择采购基地")
-    if year < 2000 or year > 2100:
+    if not is_costing_year(year):
         raise BusinessException("年度不正确")
     return LocationService().require_enabled(db, location_text)
 

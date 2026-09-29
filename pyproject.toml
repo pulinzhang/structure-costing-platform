@@ -58,6 +58,7 @@ target-version = ['py312']
 [tool.isort]
 profile = "black"
 line_length = 100
+combine_as_imports = true
 
 [tool.ruff]
 line-length = 100
@@ -85,6 +86,9 @@ ignore = [
   "RUF002", # 同上：docstring 内
   "RUF003", # 同上：注释内
 ]
+
+[tool.ruff.lint.isort]
+combine-as-imports = true
 
 [tool.mypy]
 python_version = "3.12"

@@ -17,14 +17,8 @@ from app.services.costing.stamping_part_cost.calc.scope import (
 )
 from app.services.stamping.process_fee.rules.scope import (
     SCOPE_REQUIRED_MESSAGE as PROCESS_FEE_SCOPE_REQUIRED,
-)
-from app.services.stamping.process_fee.rules.scope import (
     require_audit_scope as require_process_fee_audit_scope,
-)
-from app.services.stamping.process_fee.rules.scope import (
     require_calc_scope as require_process_fee_calc_scope,
-)
-from app.services.stamping.process_fee.rules.scope import (
     require_scope as require_process_fee_scope,
 )
 

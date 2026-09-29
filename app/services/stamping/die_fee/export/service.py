@@ -17,6 +17,7 @@ from app.repositories.stamping.die.repository import StampingDieProcessRepositor
 from app.repositories.stamping.die_fee.repository import StampingDieFeeRepository
 from app.schemas.vo.user_vo import UserVO
 from app.services.masterdata.location.service import LocationService
+from app.services.settings.system.service import SettingsService
 from app.services.stamping.die_fee.export.styles import build_sheet_style
 from app.services.stamping.die_fee.export.values import build_filename, filter_text
 from app.services.stamping.die_fee.export.workbook import fill_sheet
@@ -143,6 +144,7 @@ class StampingDieFeeExportService:
             style=self._style,
             process_by_id=process_by_id,
             filter_text=summary,
+            density=SettingsService().get_steel_density(db),
         )
         logger.info(
             "写入冲压模具费 sheet=%s 主表=%s 明细行=%s",

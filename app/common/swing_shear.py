@@ -4,7 +4,8 @@ from __future__ import annotations
 
 from decimal import Decimal
 
-_KG_PER_TON = Decimal("1000")
+from app.common.measures import KG_PER_TON
+
 SWING_SHEAR_MARK = "摆剪"
 
 
@@ -33,4 +34,4 @@ def applied_swing_shear_fee_per_ton(*, has_swing_shear: bool, fee_per_ton: Decim
 
 def steel_kg_price_with_swing_shear(mill_ton_price: Decimal, fee_per_ton: Decimal) -> Decimal:
     """材料核算用钢板单价(元/kg) = (联动吨价 + 摆剪加价) / 1000。"""
-    return (mill_ton_price + fee_per_ton) / _KG_PER_TON
+    return (mill_ton_price + fee_per_ton) / KG_PER_TON

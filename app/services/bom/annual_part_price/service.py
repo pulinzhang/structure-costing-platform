@@ -15,6 +15,7 @@ from app.common.audit import (
     audit_create,
     display_name,
 )
+from app.common.period import is_costing_year
 from app.common.timezone import now
 from app.exceptions.base import BusinessException, NotFoundException
 from app.models.bom.annual_part_price import BomAnnualPartPrice
@@ -43,11 +44,7 @@ from app.schemas.vo.supplier_vo import SupplierChoiceVO
 from app.schemas.vo.user_vo import UserVO
 from app.services.bom.annual_part_price.engineering_change import (
     EngineeringChangeAnnualPartPriceCloneResult,
-)
-from app.services.bom.annual_part_price.engineering_change import (
     clone_revise_for_engineering_change as clone_revise_annual_part_price,
-)
-from app.services.bom.annual_part_price.engineering_change import (
     delete_for_engineering_change_rollback as delete_annual_part_price_for_rollback,
 )
 from app.services.masterdata.location.service import LocationService
@@ -280,7 +277,7 @@ class BomAnnualPartPriceService:
         location = (location or "").strip()
         if not location:
             raise BusinessException("请选择采购基地")
-        if year < 2000 or year > 2100:
+        if not is_costing_year(year):
             raise BusinessException("请选择正确的年度")
 
         existing = self.repository.list_by_location_year(db, location, year)

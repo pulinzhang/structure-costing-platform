@@ -15,6 +15,7 @@ from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
 
 from app.common.audit import audit_create
+from app.common.period import previous_month
 from app.common.steel_grade_category import as_canonical_category
 from app.exceptions import BusinessException
 from app.parsers.yishiyiyi.base_price.steel_base_price_parser import (
@@ -37,7 +38,6 @@ from app.services.masterdata.steel_mill.service import SteelMillService
 from app.services.settings.system.service import SettingsService
 from app.services.yishiyiyi.base_price.gate import (
     AwardLine,
-    previous_period,
     reject_excessive_month_moves,
     reject_invalid_base_price_award,
     reject_processing_fee_over_limit,
@@ -126,7 +126,7 @@ def _reject_excessive_month_moves(
     """上月同一参考规格的单价加加工费超出设置范围则整批拒绝，不写库。"""
     if not writes:
         return
-    prev_year, prev_month = previous_period(writes[0].year, writes[0].month)
+    prev_year, prev_month = previous_month(writes[0].year, writes[0].month)
     previous_rows = repository.list_by_year_month(db, year=prev_year, month=prev_month)
     previous = [
         AwardLine(

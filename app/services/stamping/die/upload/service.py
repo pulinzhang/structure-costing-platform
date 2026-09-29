@@ -41,6 +41,7 @@ from app.services.async_task.worker_runner import WorkerTaskOutcome
 from app.services.file_trace.path_utils import to_upload_relpath
 from app.services.file_trace.register import register_existing
 from app.services.masterdata.vehicle_model.service import VehicleModelService
+from app.services.settings.system.service import SettingsService
 from app.services.stamping.die.rules.weight_check import (
     DieWeightCheckRow,
     find_die_weight_mismatches,
@@ -145,6 +146,7 @@ class StampingDieUploadService:
                 format_duplicate_process_seq_issues(duplicate_seqs, source_name="模具布点清单")
             )
 
+        density = SettingsService().get_steel_density(self.db)
         weight_issues = find_die_weight_mismatches(
             [
                 DieWeightCheckRow(
@@ -159,7 +161,8 @@ class StampingDieUploadService:
                 )
                 for part in parsed.parts
                 for process in part.processes
-            ]
+            ],
+            density=density,
         )
         if weight_issues:
             raise BusinessException(format_die_weight_mismatch_issues(weight_issues))

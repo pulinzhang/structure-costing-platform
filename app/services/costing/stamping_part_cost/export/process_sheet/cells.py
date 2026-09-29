@@ -9,8 +9,6 @@ from app.common.swing_shear import steel_kg_price_with_swing_shear
 from app.services.costing.stamping_part_cost.export.formatters import formula_number
 from app.services.costing.stamping_part_cost.helpers import (
     format_number as _num,
-)
-from app.services.costing.stamping_part_cost.helpers import (
     to_decimal,
 )
 

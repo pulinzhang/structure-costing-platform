@@ -9,6 +9,10 @@ from fastapi import APIRouter, Depends, File, Form, Query, UploadFile, status
 from fastapi.responses import StreamingResponse
 from sqlalchemy.orm import Session
 
+from app.common.period import (
+    COSTING_YEAR_MAX,
+    COSTING_YEAR_MIN,
+)
 from app.common.permissions.codes import Perm
 from app.database import get_db
 from app.deps.permissions import require_any_perm, require_perm
@@ -129,7 +133,7 @@ def get_years(
 @router.get("/export", summary="按当前筛选条件导出焊接单价 Excel")
 def export_excel(
     location: str | None = Query(None, description="采购基地"),
-    year: int | None = Query(None, ge=2000, le=2100, description="年份"),
+    year: int | None = Query(None, ge=COSTING_YEAR_MIN, le=COSTING_YEAR_MAX, description="年份"),
     db: Session = Depends(get_db),
     current_user: UserVO = Depends(require_perm(Perm.BOM_WELDING_UNIT_PRICE_EXPORT)),
 ) -> StreamingResponse:

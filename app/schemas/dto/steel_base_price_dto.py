@@ -8,6 +8,13 @@ from typing import Any, TypedDict
 
 from pydantic import BaseModel, Field, field_validator
 
+from app.common.period import (
+    COSTING_YEAR_MAX,
+    COSTING_YEAR_MIN,
+    MONTH_MAX,
+    MONTH_MIN,
+)
+
 
 def _strip(v: str | None) -> str | None:
     """去除首尾空白，无意义时返回 None"""
@@ -34,8 +41,8 @@ def _decimal_str(v: Decimal | float | int | str | None) -> Decimal | None:
 class SteelBasePriceCreate(BaseModel):
     """基准价格创建请求"""
 
-    year: int = Field(..., ge=2000, le=2100, description="订单发布年份")
-    month: int = Field(..., ge=1, le=12, description="订单发布月份")
+    year: int = Field(..., ge=COSTING_YEAR_MIN, le=COSTING_YEAR_MAX, description="订单发布年份")
+    month: int = Field(..., ge=MONTH_MIN, le=MONTH_MAX, description="订单发布月份")
     location: str = Field(..., min_length=1, max_length=50, description="采购基地")
     steel_mill: str = Field(..., min_length=1, max_length=50, description="中标钢厂")
     category_name: str = Field(..., min_length=1, max_length=50, description="钢种大类")
@@ -99,8 +106,10 @@ class SteelBasePriceUpdate(BaseModel):
 class SteelBasePriceQuery(BaseModel):
     """基准价格分页筛选参数"""
 
-    year: int | None = Field(None, ge=2000, le=2100, description="订单发布年份")
-    month: int | None = Field(None, ge=1, le=12, description="订单发布月份")
+    year: int | None = Field(
+        None, ge=COSTING_YEAR_MIN, le=COSTING_YEAR_MAX, description="订单发布年份"
+    )
+    month: int | None = Field(None, ge=MONTH_MIN, le=MONTH_MAX, description="订单发布月份")
     location: str | None = Field(None, description="采购基地")
     steel_mill: str | None = Field(None, description="中标钢厂")
     category_name: str | None = Field(None, description="钢种大类")
@@ -118,8 +127,10 @@ class SteelBasePriceQuery(BaseModel):
 class SteelBasePriceExportQuery(BaseModel):
     """基准价格列表筛选：年度、月份、基地、钢厂、钢种大类、牌号。"""
 
-    year: int | None = Field(None, ge=2000, le=2100, description="订单发布年份")
-    month: int | None = Field(None, ge=1, le=12, description="订单发布月份")
+    year: int | None = Field(
+        None, ge=COSTING_YEAR_MIN, le=COSTING_YEAR_MAX, description="订单发布年份"
+    )
+    month: int | None = Field(None, ge=MONTH_MIN, le=MONTH_MAX, description="订单发布月份")
     location: str | None = Field(None, description="采购基地")
     steel_mill: str | None = Field(None, description="中标钢厂")
     category_name: str | None = Field(None, description="钢种大类")

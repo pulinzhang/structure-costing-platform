@@ -9,11 +9,24 @@ from sqlalchemy.orm import Session
 
 from app.common.audit import audit_create, audit_update
 from app.common.money import Q2, Q4, Q6, quantize_money
+from app.common.system_defaults import (
+    DEFAULT_BASE_PRICE_MONTH_MOVE_LIMIT,
+    DEFAULT_BASE_PRICE_PROCESSING_FEE_LIMIT,
+    DEFAULT_BODY_PANEL_MAX_THICKNESS,
+    DEFAULT_FINISHED_FINANCE_RATE,
+    DEFAULT_FINISHED_MANAGEMENT_RATE,
+    DEFAULT_FINISHED_PRETAX_PROFIT_RATE,
+    DEFAULT_FINISHED_SCRAP_RATE,
+    DEFAULT_FINISHED_WAREHOUSE_PACKAGING_RATE,
+    DEFAULT_MATERIAL_LOSS_RATE,
+    DEFAULT_SCRAP_RECOVERY_RATE,
+    DEFAULT_STEEL_DENSITY,
+    DEFAULT_SWING_SHEAR_PROCESS_FEE_PER_TON,
+)
 from app.config import settings as app_settings
 from app.repositories.settings.login_security_repository import LoginSecurityRepository
 from app.repositories.settings.system.system_config_repository import SystemConfigRepository
 from app.schemas.dto.settings_dto import (
-    DEFAULT_BASE_PRICE_PROCESSING_FEE_LIMIT,
     SystemConfigPatch,
     SystemConfigUpdateDTO,
     SystemConfigWrite,
@@ -28,17 +41,6 @@ LEGACY_APP_NAMES = frozenset(
         "冲压件自动核价平台",
     }
 )
-DEFAULT_STEEL_DENSITY = Decimal("7.85")
-DEFAULT_MATERIAL_LOSS_RATE = Decimal("0.003")  # 千分之 3
-DEFAULT_SCRAP_RECOVERY_RATE = Decimal("0.97")  # 97%
-DEFAULT_FINISHED_FINANCE_RATE = Decimal("0.02")  # 2%
-DEFAULT_FINISHED_MANAGEMENT_RATE = Decimal("0.02")  # 2%
-DEFAULT_FINISHED_WAREHOUSE_PACKAGING_RATE = Decimal("0.01")  # 1%
-DEFAULT_FINISHED_SCRAP_RATE = Decimal("0.003")  # 千分之 3
-DEFAULT_FINISHED_PRETAX_PROFIT_RATE = Decimal("0.02")  # 2%
-DEFAULT_SWING_SHEAR_PROCESS_FEE_PER_TON = Decimal("150")  # 元/吨
-DEFAULT_BASE_PRICE_MONTH_MOVE_LIMIT = Decimal("300")  # 元/吨；极端月份再在设置里调高
-DEFAULT_BODY_PANEL_MAX_THICKNESS = Decimal("3.00")  # mm；大于此值的乘用车车身件料厚整批拒绝
 SAMPLE_PROCUREMENT_AGREEMENT_REMARKS = (
     "1、本附件为双方签署的《{company_name}采购主合同》（编号：__________________）\n"
     "不可分割的部分，经双方签字、盖章后生效。\n"

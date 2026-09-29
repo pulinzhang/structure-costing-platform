@@ -8,6 +8,12 @@ from fastapi import APIRouter, Depends, Query
 from fastapi.responses import StreamingResponse
 from sqlalchemy.orm import Session
 
+from app.common.period import (
+    COSTING_YEAR_MAX,
+    COSTING_YEAR_MIN,
+    MONTH_MAX,
+    MONTH_MIN,
+)
 from app.common.permissions.codes import Perm
 from app.database import get_db
 from app.deps.permissions import require_perm
@@ -115,8 +121,8 @@ def batch_reverse_audit_steel_prices(
 
 @router.get("/export-download", summary="按当前筛选条件导出钢材联动价格 Excel")
 def export_download(
-    year: int | None = Query(None, ge=2000, le=2100, description="年度"),
-    month: int | None = Query(None, ge=1, le=12, description="月份"),
+    year: int | None = Query(None, ge=COSTING_YEAR_MIN, le=COSTING_YEAR_MAX, description="年度"),
+    month: int | None = Query(None, ge=MONTH_MIN, le=MONTH_MAX, description="月份"),
     location: str | None = Query(None, description="采购基地"),
     category_name: str | None = Query(None, description="钢种大类"),
     grade: str | None = Query(None, description="牌号（模糊）"),

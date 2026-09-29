@@ -12,6 +12,8 @@ from typing import Any
 
 from openpyxl import load_workbook
 
+from app.common.period import is_calendar_month
+
 HEADER_LOCATION = "基地"
 HEADER_VEHICLE_MODEL = "项目代号"
 HEADER_EFFECTIVE_YEAR = "生效年"
@@ -155,7 +157,7 @@ def parse_vehicle_model_excel(file_content: bytes) -> VehicleModelParseResult:
         effective_month = _parse_int(effective_month_raw)
         if effective_year is None:
             row_errors.append("生效年必须为整数")
-        if effective_month is None or not (1 <= effective_month <= 12):
+        if effective_month is None or not is_calendar_month(effective_month):
             row_errors.append("生效月必须为 1–12")
 
         has_expiry_year = bool(expiry_year_text)
@@ -170,7 +172,7 @@ def parse_vehicle_model_excel(file_content: bytes) -> VehicleModelParseResult:
                 expiry_month = _parse_int(expiry_month_raw)
                 if expiry_year is None:
                     row_errors.append("失效年必须为整数")
-                if expiry_month is None or not (1 <= expiry_month <= 12):
+                if expiry_month is None or not is_calendar_month(expiry_month):
                     row_errors.append("失效月必须为 1–12")
 
         current_supplied_units = 0

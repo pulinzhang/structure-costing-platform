@@ -15,6 +15,7 @@ import logging
 import re
 from pathlib import Path
 
+from app.common.period import is_costing_year
 from app.common.timezone import now
 from app.config import settings
 
@@ -41,7 +42,7 @@ def save_tonnage_price_upload(
     """
     if not file_content:
         raise ValueError("归档文件内容为空")
-    if year < 2000 or year > 2100:
+    if not is_costing_year(year):
         raise ValueError(f"无效年度: {year}")
 
     safe_location = _sanitize_segment(location)

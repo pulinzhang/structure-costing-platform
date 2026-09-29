@@ -15,11 +15,6 @@ from app.common.money import (
     optional_format_money,
 )
 
-# 与 SettingsService / 系统配置缺省一致
-DEFAULT_STEEL_DENSITY = Decimal("7.85")
-DEFAULT_MATERIAL_LOSS_RATE = Decimal("0.003")
-DEFAULT_SCRAP_RECOVERY_RATE = Decimal("0.97")
-
 _DIGITS_TO_QUANT = {
     2: Q2,
     3: Q3,

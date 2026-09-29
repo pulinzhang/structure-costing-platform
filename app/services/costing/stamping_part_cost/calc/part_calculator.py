@@ -6,6 +6,7 @@ from decimal import Decimal
 
 from sqlalchemy.orm import Session
 
+from app.common.measures import KG_PER_TON, MM3_G_PER_CM3_TO_KG, PERCENT
 from app.common.swing_shear import applied_swing_shear_fee_per_ton, steel_kg_price_with_swing_shear
 from app.models.stamping import StampingPart
 from app.models.yishiyiyi import StampingScrapPrice
@@ -109,8 +110,7 @@ class PartCostCalculator:
         thickness = to_decimal(part.thickness)
         part_weight = to_decimal(part.part_weight)
         parts_per_sheet = part.parts_per_sheet
-        kg_scale = Decimal("1000")
-        scrap_kg_price = scrap_ton_price / kg_scale
+        scrap_kg_price = scrap_ton_price / KG_PER_TON
         applied_swing_fee = applied_swing_shear_fee_per_ton(
             has_swing_shear=bool(part.has_swing_shear),
             fee_per_ton=swing_shear_fee_per_ton,
@@ -126,7 +126,7 @@ class PartCostCalculator:
             finished_total_kg = part_weight
             blank_kg = part_weight
             scrap_kg = Decimal("0")
-            utilization = quantize(Decimal("100"), UTIL_QUANTIZE)
+            utilization = quantize(PERCENT, UTIL_QUANTIZE)
             steel_ton_price = scrap_ton_price
             steel_price_id = None
             steel_mill = None
@@ -157,7 +157,7 @@ class PartCostCalculator:
 
             blank_kg = (
                 (sheet_length * sheet_width * thickness * density)
-                / Decimal("1000000")
+                / MM3_G_PER_CM3_TO_KG
                 / Decimal(parts_per_sheet)
             )
             if blank_kg <= 0:
@@ -169,7 +169,7 @@ class PartCostCalculator:
 
             finished_total_kg = part_weight
             scrap_kg = blank_kg - finished_total_kg
-            utilization = quantize((finished_total_kg / blank_kg) * Decimal("100"), UTIL_QUANTIZE)
+            utilization = quantize((finished_total_kg / blank_kg) * PERCENT, UTIL_QUANTIZE)
 
             steel_rows = self.price_resolver.find_steel_prices(
                 db,

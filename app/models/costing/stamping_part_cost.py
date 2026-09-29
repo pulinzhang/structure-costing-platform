@@ -27,6 +27,11 @@ from sqlalchemy import (
 )
 from sqlalchemy.orm import Mapped, mapped_column
 
+from app.common.system_defaults import (
+    DEFAULT_MATERIAL_LOSS_RATE,
+    DEFAULT_SCRAP_RECOVERY_RATE,
+    DEFAULT_STEEL_DENSITY,
+)
 from app.database import Base
 from app.models.common.audit_mixin import AuditUserMixin
 
@@ -120,19 +125,19 @@ class StampingPartCost(AuditUserMixin, Base):
     density: Mapped[Decimal] = mapped_column(
         Numeric(6, 4),
         nullable=False,
-        default=Decimal("7.85"),
+        default=DEFAULT_STEEL_DENSITY,
         comment="密度(g/cm3)，来自系统配置快照",
     )
     material_loss_rate: Mapped[Decimal] = mapped_column(
         Numeric(8, 6),
         nullable=False,
-        default=Decimal("0.003"),
+        default=DEFAULT_MATERIAL_LOSS_RATE,
         comment="材料损耗率（小数），来自系统配置快照",
     )
     scrap_recovery_rate: Mapped[Decimal] = mapped_column(
         Numeric(8, 6),
         nullable=False,
-        default=Decimal("0.97"),
+        default=DEFAULT_SCRAP_RECOVERY_RATE,
         comment="废料回收率（小数），来自系统配置快照",
     )
     blank_weight_kg: Mapped[Decimal | None] = mapped_column(

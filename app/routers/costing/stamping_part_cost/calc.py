@@ -6,6 +6,12 @@
 from fastapi import APIRouter, Depends, Query
 from sqlalchemy.orm import Session
 
+from app.common.period import (
+    COSTING_YEAR_MAX,
+    COSTING_YEAR_MIN,
+    MONTH_MAX,
+    MONTH_MIN,
+)
 from app.common.permissions.codes import Perm
 from app.database import get_db
 from app.deps.permissions import require_any_perm, require_perm
@@ -62,8 +68,8 @@ def list_years(
     summary="查询冲压零件价格计算就绪状态",
 )
 def get_calc_ready(
-    year: int = Query(..., ge=2000, le=2100),
-    month: int | None = Query(None, ge=1, le=12),
+    year: int = Query(..., ge=COSTING_YEAR_MIN, le=COSTING_YEAR_MAX),
+    month: int | None = Query(None, ge=MONTH_MIN, le=MONTH_MAX),
     location: str | None = Query(None),
     vehicle_model: str | None = Query(None),
     db: Session = Depends(get_db),

@@ -10,13 +10,19 @@ from typing import Any, TypedDict
 from pydantic import BaseModel, Field, field_validator
 
 from app.common.money import Q4, optional_quantize_money, quantize_money
+from app.common.period import (
+    COSTING_YEAR_MAX,
+    COSTING_YEAR_MIN,
+    MONTH_MAX,
+    MONTH_MIN,
+)
 
 
 class SteelPriceQuery(BaseModel):
     """钢材价格查询参数 DTO"""
 
-    year: int | None = Field(None, ge=2000, le=2100, description="年度")
-    month: int | None = Field(None, ge=1, le=12, description="月份")
+    year: int | None = Field(None, ge=COSTING_YEAR_MIN, le=COSTING_YEAR_MAX, description="年度")
+    month: int | None = Field(None, ge=MONTH_MIN, le=MONTH_MAX, description="月份")
     location: str | None = Field(None, description="采购基地")
     category_name: str | None = Field(None, description="钢种大类")
     grade: str | None = Field(None, description="牌号（模糊匹配）")
@@ -29,8 +35,8 @@ class SteelPriceQuery(BaseModel):
 class SteelPriceCreate(BaseModel):
     """钢材价格创建请求 DTO（手工录入，落库为 manual 匹配）"""
 
-    year: int = Field(..., ge=2000, le=2100, description="年度")
-    month: int = Field(..., ge=1, le=12, description="月份")
+    year: int = Field(..., ge=COSTING_YEAR_MIN, le=COSTING_YEAR_MAX, description="年度")
+    month: int = Field(..., ge=MONTH_MIN, le=MONTH_MAX, description="月份")
     location: str = Field(..., min_length=1, max_length=50, description="采购基地")
     steel_mill: str = Field(..., min_length=1, max_length=100, description="钢厂")
     category_name: str = Field(..., min_length=1, max_length=50, description="钢种大类")
@@ -97,16 +103,16 @@ class SteelPriceUpdate(BaseModel):
 class SteelPriceCalcDTO(BaseModel):
     """钢价批量计算请求 DTO"""
 
-    year: int = Field(..., ge=2000, le=2100, description="核价年度")
-    month: int = Field(..., ge=1, le=12, description="核价月份")
+    year: int = Field(..., ge=COSTING_YEAR_MIN, le=COSTING_YEAR_MAX, description="核价年度")
+    month: int = Field(..., ge=MONTH_MIN, le=MONTH_MAX, description="核价月份")
     location: str = Field(..., min_length=1, max_length=50, description="生产基地")
 
 
 class SteelPriceBatchDeleteDTO(BaseModel):
     """按筛选条件批量删除钢材价格（年度/月份/基地必填；仅删未审核）"""
 
-    year: int = Field(..., ge=2000, le=2100, description="年度")
-    month: int = Field(..., ge=1, le=12, description="月份")
+    year: int = Field(..., ge=COSTING_YEAR_MIN, le=COSTING_YEAR_MAX, description="年度")
+    month: int = Field(..., ge=MONTH_MIN, le=MONTH_MAX, description="月份")
     location: str = Field(..., min_length=1, max_length=50, description="采购基地")
     category_name: str | None = Field(None, description="钢种大类")
     grade: str | None = Field(None, description="牌号（模糊匹配）")
@@ -116,8 +122,8 @@ class SteelPriceBatchDeleteDTO(BaseModel):
 class SteelPriceBatchApproveDTO(BaseModel):
     """按条件批量审核通过（仅年度/月份/基地，三者必填；审核人取自 current_user）"""
 
-    year: int = Field(..., ge=2000, le=2100, description="年度")
-    month: int = Field(..., ge=1, le=12, description="月份")
+    year: int = Field(..., ge=COSTING_YEAR_MIN, le=COSTING_YEAR_MAX, description="年度")
+    month: int = Field(..., ge=MONTH_MIN, le=MONTH_MAX, description="月份")
     location: str = Field(..., min_length=1, max_length=50, description="采购基地")
     audit_remark: str = Field(..., min_length=1, description="审核意见（必填）")
 
@@ -125,8 +131,8 @@ class SteelPriceBatchApproveDTO(BaseModel):
 class SteelPriceBatchReverseAuditDTO(BaseModel):
     """按条件批量反审核（仅年度/月份/基地，三者必填；反审核人取自 current_user）"""
 
-    year: int = Field(..., ge=2000, le=2100, description="年度")
-    month: int = Field(..., ge=1, le=12, description="月份")
+    year: int = Field(..., ge=COSTING_YEAR_MIN, le=COSTING_YEAR_MAX, description="年度")
+    month: int = Field(..., ge=MONTH_MIN, le=MONTH_MAX, description="月份")
     location: str = Field(..., min_length=1, max_length=50, description="采购基地")
     reverse_audit_remark: str = Field(..., min_length=1, description="反审核原因（必填）")
 

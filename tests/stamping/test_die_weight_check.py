@@ -1,5 +1,6 @@
 from decimal import Decimal
 
+from app.common.system_defaults import DEFAULT_STEEL_DENSITY
 from app.services.stamping.die.rules.weight_check import (
     DieWeightCheckRow,
     calc_die_weight_t,
@@ -32,6 +33,7 @@ def test_outline_weight_example() -> None:
             die_width=Decimal("1200"),
             die_height=Decimal("800"),
             hollow_factor=Decimal("0.3"),
+            density=DEFAULT_STEEL_DENSITY,
         )
         == _CHECK
     )
@@ -44,18 +46,19 @@ def test_outline_weight_missing_size() -> None:
             die_width=None,
             die_height=Decimal("800"),
             hollow_factor=Decimal("0.3"),
+            density=DEFAULT_STEEL_DENSITY,
         )
         is None
     )
 
 
 def test_same_weight_passes() -> None:
-    assert find_die_weight_mismatches([_row(estimated=_CHECK)]) == []
+    assert find_die_weight_mismatches([_row(estimated=_CHECK)], density=DEFAULT_STEEL_DENSITY) == []
 
 
 def test_nine_percent_passes() -> None:
     stored = Decimal("1.8252")
-    issues = find_die_weight_mismatches([_row(estimated=stored)])
+    issues = find_die_weight_mismatches([_row(estimated=stored)], density=DEFAULT_STEEL_DENSITY)
     assert issues == []
     gap = abs(stored - _CHECK) / stored
     assert gap < Decimal("0.10")
@@ -63,7 +66,7 @@ def test_nine_percent_passes() -> None:
 
 def test_eleven_percent_rejected() -> None:
     stored = Decimal("1.7923")
-    issues = find_die_weight_mismatches([_row(estimated=stored)])
+    issues = find_die_weight_mismatches([_row(estimated=stored)], density=DEFAULT_STEEL_DENSITY)
     assert len(issues) == 1
     assert issues[0].relative_gap is not None
     assert issues[0].relative_gap > Decimal("0.10")
@@ -75,15 +78,22 @@ def test_eleven_percent_rejected() -> None:
 
 
 def test_missing_size_skipped() -> None:
-    assert find_die_weight_mismatches([_row(estimated=Decimal("9"), width=None)]) == []
+    assert (
+        find_die_weight_mismatches(
+            [_row(estimated=Decimal("9"), width=None)], density=DEFAULT_STEEL_DENSITY
+        )
+        == []
+    )
 
 
 def test_missing_estimated_weight_skipped() -> None:
-    assert find_die_weight_mismatches([_row(estimated=None)]) == []
+    assert find_die_weight_mismatches([_row(estimated=None)], density=DEFAULT_STEEL_DENSITY) == []
 
 
 def test_zero_stored_with_positive_check_fails() -> None:
-    issues = find_die_weight_mismatches([_row(estimated=Decimal("0"))])
+    issues = find_die_weight_mismatches(
+        [_row(estimated=Decimal("0"))], density=DEFAULT_STEEL_DENSITY
+    )
     assert len(issues) == 1
     assert issues[0].relative_gap is None
     assert "模具重量为 0" in format_die_weight_mismatch_issues(issues)

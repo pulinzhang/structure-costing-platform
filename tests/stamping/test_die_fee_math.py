@@ -1,5 +1,6 @@
 from decimal import Decimal
 
+from app.common.system_defaults import DEFAULT_STEEL_DENSITY
 from app.services.stamping.die_fee.export.columns import COL_COUNT, HEADERS, WIDTHS
 from app.services.stamping.die_fee.export.values import _check_weight_formula
 from app.services.stamping.die_fee.rules.fee_math import (
@@ -45,7 +46,7 @@ def test_final_fee_allows_zero_not_used_for_negative_check() -> None:
 
 
 def test_check_weight_excel_formula() -> None:
-    formula = _check_weight_formula(6)
+    formula = _check_weight_formula(6, DEFAULT_STEEL_DENSITY)
     assert formula.startswith("=IF(COUNT(Z6,AA6,AB6,AC6)=4,")
     assert "Z6*AA6*AB6*AC6*7.85/1000000000" in formula
     assert "^" not in formula

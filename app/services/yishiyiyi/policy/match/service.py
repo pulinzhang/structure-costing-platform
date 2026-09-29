@@ -17,8 +17,6 @@ from app.repositories.yishiyiyi.policy.steel_price_policy_repository import (
 from app.schemas.dto.steel_price_policy_dto import PolicyMatchRequest
 from app.schemas.vo.steel_price_policy_vo import (
     MatchedLadderItem as MatchedLadderItemVO,
-)
-from app.schemas.vo.steel_price_policy_vo import (
     PolicyMatchResponse,
 )
 from app.services.masterdata.steel_mill.service import SteelMillService

@@ -10,6 +10,10 @@ from typing import Any, TypedDict
 from pydantic import BaseModel, Field, field_validator
 
 from app.common.money import Q4, optional_quantize_money
+from app.common.period import (
+    COSTING_YEAR_MAX,
+    COSTING_YEAR_MIN,
+)
 
 
 def coerce_level_list(value: object) -> list[int] | None:
@@ -55,7 +59,7 @@ def resolve_welding_fee_levels(
 class BomWeldingFeeScopeDTO(BaseModel):
     """范围必填：年度 + 基地 + 项目。版本可选，有则只处理该版本。"""
 
-    year: int = Field(..., ge=2000, le=2100, description="年度")
+    year: int = Field(..., ge=COSTING_YEAR_MIN, le=COSTING_YEAR_MAX, description="年度")
     location: str = Field(..., min_length=1, description="基地")
     vehicle_model: str = Field(..., min_length=1, description="项目")
     bom_version: str | None = Field(None, description="材料清单版本（可选）")
@@ -72,7 +76,7 @@ class BomWeldingFeeScopeDTO(BaseModel):
 class BomWeldingFeeCalcDTO(BaseModel):
     """焊接费计算请求：年 + 基地 + 项目。计算页不传 levels，始终算全部层级。"""
 
-    year: int = Field(..., ge=2000, le=2100, description="年度")
+    year: int = Field(..., ge=COSTING_YEAR_MIN, le=COSTING_YEAR_MAX, description="年度")
     location: str = Field(..., min_length=1, description="基地")
     vehicle_model: str = Field(..., min_length=1, description="项目")
     levels: list[int] | None = Field(

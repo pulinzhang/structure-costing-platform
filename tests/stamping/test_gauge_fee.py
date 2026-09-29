@@ -14,6 +14,7 @@ from sqlalchemy.orm import Session, sessionmaker
 from sqlalchemy.pool import StaticPool
 
 from app.common.audit import SYSTEM_USER
+from app.common.system_defaults import DEFAULT_ALLOCATION_QTY
 from app.config import settings
 from app.database import Base
 from app.exceptions.base import BusinessException, NotFoundException
@@ -22,7 +23,6 @@ from app.models.masterdata.location import Location, LocationAlias
 from app.models.masterdata.vehicle_model import VehicleModel
 from app.models.stamping.die import StampingDiePart
 from app.models.stamping.gauge_fee import (
-    DEFAULT_ALLOCATION_QTY,
     DEFAULT_GAUGE_FEE,
     STATUS_EFFECTIVE,
     StampingGaugeFee,

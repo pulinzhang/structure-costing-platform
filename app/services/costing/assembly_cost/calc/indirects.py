@@ -4,6 +4,7 @@ from __future__ import annotations
 
 from decimal import Decimal
 
+from app.common.measures import PERCENT, PERMILLE
 from app.services.costing.assembly_cost.calc.identities import quantize_money
 from app.services.costing.assembly_cost.calc.rollup_models import (
     INDIRECT_FINANCE,
@@ -25,10 +26,10 @@ from app.services.costing.assembly_cost.calc.rollup_models import (
 def format_rate_label(base_label: str, rate: Decimal) -> str:
     if rate == 0:
         return base_label
-    permille = rate * Decimal("1000")
+    permille = rate * PERMILLE
     if permille == permille.to_integral_value() and rate < Decimal("0.01"):
         return f"{base_label}（{permille.to_integral_value()}‰）"
-    percent = rate * Decimal("100")
+    percent = rate * PERCENT
     if percent == percent.to_integral_value():
         return f"{base_label}（{percent.to_integral_value()}%）"
     return f"{base_label}（{percent.normalize()}%）"

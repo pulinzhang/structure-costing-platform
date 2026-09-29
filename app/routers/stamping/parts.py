@@ -9,6 +9,12 @@ from fastapi import APIRouter, Depends, Query
 from fastapi.responses import StreamingResponse
 from sqlalchemy.orm import Session
 
+from app.common.period import (
+    COSTING_YEAR_MAX,
+    COSTING_YEAR_MIN,
+    MONTH_MAX,
+    MONTH_MIN,
+)
 from app.common.permissions.codes import Perm
 from app.database import get_db
 from app.deps.permissions import require_any_perm, require_perm
@@ -76,8 +82,10 @@ def _xlsx_response(content: bytes, filename: str) -> StreamingResponse:
 @router.get("/parts/export-download", summary="按基地 + 年 + 月导出工艺确认表")
 def export_download(
     location: str = Query(..., min_length=1, description="采购基地"),
-    year: int | None = Query(None, ge=2000, le=2100, description="导出命中年"),
-    month: int | None = Query(None, ge=1, le=12, description="导出命中月"),
+    year: int | None = Query(
+        None, ge=COSTING_YEAR_MIN, le=COSTING_YEAR_MAX, description="导出命中年"
+    ),
+    month: int | None = Query(None, ge=MONTH_MIN, le=MONTH_MAX, description="导出命中月"),
     stamping_supplier: str | None = Query(None, description="冲压工厂"),
     vehicle_model: str | None = Query(None, description="项目"),
     version: str | None = Query(None, description="版本"),

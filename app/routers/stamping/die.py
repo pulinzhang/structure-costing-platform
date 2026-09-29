@@ -6,6 +6,12 @@ from fastapi import APIRouter, Depends, File, Form, Query, UploadFile
 from fastapi.responses import StreamingResponse
 from sqlalchemy.orm import Session
 
+from app.common.period import (
+    COSTING_YEAR_MAX,
+    COSTING_YEAR_MIN,
+    MONTH_MAX,
+    MONTH_MIN,
+)
 from app.common.permissions.codes import Perm
 from app.database import get_db
 from app.deps.permissions import require_any_perm, require_perm
@@ -97,8 +103,8 @@ def get_die_upload_task_progress(
 )
 def list_die_scope_filters(
     location: str | None = Query(None),
-    year: int | None = Query(None, ge=2000, le=2100),
-    month: int | None = Query(None, ge=1, le=12),
+    year: int | None = Query(None, ge=COSTING_YEAR_MIN, le=COSTING_YEAR_MAX),
+    month: int | None = Query(None, ge=MONTH_MIN, le=MONTH_MAX),
     db: Session = Depends(get_db),
     current_user: UserVO = Depends(
         require_any_perm(Perm.STAMPING_DIE_UPLOAD_VIEW, Perm.STAMPING_DIE_LIST_VIEW)
@@ -162,8 +168,10 @@ def patch_die_process_alloc_ratio(
 def export_die_parts(
     location: str = Query(""),
     vehicle_model: str = Query(""),
-    year: int | None = Query(None, ge=2000, le=2100, description="导出命中年"),
-    month: int | None = Query(None, ge=1, le=12, description="导出命中月"),
+    year: int | None = Query(
+        None, ge=COSTING_YEAR_MIN, le=COSTING_YEAR_MAX, description="导出命中年"
+    ),
+    month: int | None = Query(None, ge=MONTH_MIN, le=MONTH_MAX, description="导出命中月"),
     part_number: str | None = Query(None),
     include_expired: bool = Query(False, description="含已失效"),
     db: Session = Depends(get_db),

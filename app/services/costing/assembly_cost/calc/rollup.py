@@ -78,8 +78,8 @@ def rollup_assembly(
     stamping_prices: dict[str, Decimal],
     annual_prices: dict[str, Decimal],
     welding: RollupWeldingFee | None,
+    rates: RollupFinishedRates,
     packaging: RollupPackagingFee | None = None,
-    rates: RollupFinishedRates | None = None,
     allocation: RollupAllocationFees | None = None,
     annual_suppliers: dict[str, str] | None = None,
     conflicted_part_numbers: frozenset[str] | None = None,
@@ -96,7 +96,6 @@ def rollup_assembly(
     lines: list[RollupLine] = []
     missing_count = 0
     sort_counter = 0
-    finished_rates = rates or RollupFinishedRates()
     conflicted = conflicted_part_numbers or frozenset()
     by_id = index_nodes(root, children_by_parent, nodes_by_id)
 
@@ -244,7 +243,7 @@ def rollup_assembly(
     indirect_lines = build_indirect_lines(
         monthly_total=total,
         packaging=packaging,
-        rates=finished_rates,
+        rates=rates,
         allocation=allocation,
     )
     by_code = {item.code: item.amount for item in indirect_lines}
@@ -302,10 +301,10 @@ def rollup_assembly(
         allocation_fee_total=alloc_total,
         indirect_amount=indirect,
         grand_total=grand,
-        finance_rate=finished_rates.finance_rate,
-        management_rate=finished_rates.management_rate,
-        scrap_rate=finished_rates.scrap_rate,
-        pretax_profit_rate=finished_rates.pretax_profit_rate,
+        finance_rate=rates.finance_rate,
+        management_rate=rates.management_rate,
+        scrap_rate=rates.scrap_rate,
+        pretax_profit_rate=rates.pretax_profit_rate,
         welding_fee_id=welding_fee_id,
         welding_summary=welding_summary,
         missing_leaf_count=missing_count,
