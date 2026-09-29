@@ -20,9 +20,6 @@ def on_startup() -> None:
     ensure_system_config_schema(DatabaseConfig.get_engine())
     _ensure_bom_node_part_number_index()
     _seed_if_empty()
-    from app.bootstrap.steel_mill_schema import ensure_steel_mill_fact_schema
-
-    ensure_steel_mill_fact_schema(DatabaseConfig.get_engine())
     _log_startup()
 
 
