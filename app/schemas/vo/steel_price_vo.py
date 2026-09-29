@@ -63,6 +63,7 @@ class SteelPriceResponse(BaseModel):
     month: int
     location: str
     steel_mill: str
+    steel_mill_abbreviation: str = ""
     category_name: str
     grade: str
     thickness: Decimal

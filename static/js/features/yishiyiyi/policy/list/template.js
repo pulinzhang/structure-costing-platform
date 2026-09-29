@@ -176,7 +176,7 @@ export function renderPolicyRows(records) {
             <td class="px-3 py-2 text-[11px] text-ink-faint whitespace-nowrap font-mono text-right tabular-nums">${esc(record.policy_id || '')}</td>
             <td class="px-3 py-2 text-[11px] text-ink-dim whitespace-nowrap font-mono text-right tabular-nums">${esc(fmtYear(record.year))}</td>
             <td class="px-3 py-2 text-[11px] text-ink-dim whitespace-nowrap font-mono text-right tabular-nums">${esc(fmtMonth(record.month))}</td>
-            <td class="px-3 py-2 text-[11px] text-ink-muted whitespace-nowrap">${esc(record.steel_mill || '')}</td>
+            <td class="px-3 py-2 text-[11px] font-medium text-ink whitespace-nowrap" title="${esc(record.steel_mill || '')}">${esc(record.steel_mill_abbreviation || record.steel_mill || '')}</td>
             <td class="px-3 py-2 text-[11px] text-ink-muted whitespace-nowrap">${esc(record.category_name || '')}</td>
             <td class="px-3 py-2 text-[11px] text-ink-muted whitespace-nowrap">${esc(formatPolicyType(record.policy_type))}</td>
             <td class="px-3 py-2 text-[11px] text-ink-muted whitespace-nowrap">${esc(record.grade_type || '')}</td>

@@ -8,7 +8,8 @@ import {
     steelPriceListTemplate,
     renderSteelPriceRows,
     updateSteelPriceHud,
-} from './template.js?v=71';
+    millLabel,
+} from './template.js?v=73';
 import {
     DEFAULT_PAGE_SIZE,
     bindPagination,
@@ -672,7 +673,7 @@ function openEditDrawer(record) {
     document.getElementById('editYear').value = record.year;
     document.getElementById('editMonth').value = record.month;
     document.getElementById('editLocation').value = record.location || '';
-    document.getElementById('editSteelMill').value = record.steel_mill || '';
+    document.getElementById('editSteelMill').value = millLabel(record);
     document.getElementById('editCategoryName').value = record.category_name || '';
     document.getElementById('editGrade').value = record.grade || '';
     document.getElementById('editThickness').value = record.thickness ?? '';
@@ -739,7 +740,7 @@ function openViewDrawer(record) {
     fillViewField('view-year', fmtYear(record.year));
     fillViewField('view-month', fmtMonth(record.month));
     fillViewField('view-location', record.location);
-    fillViewField('view-steel-mill', record.steel_mill);
+    fillViewField('view-steel-mill', millLabel(record));
     fillViewField('view-category-name', record.category_name);
     fillViewField('view-grade', record.grade);
     fillViewField('view-thickness', formatDecimal(record.thickness, 2));
@@ -791,7 +792,7 @@ function openDeleteDrawer(record) {
     if (summary) {
         summary.innerHTML = `
             <span class="text-brand font-mono">${esc(fmtPeriod(record.year, record.month))}</span>
-            <span class="text-ink-muted"> / ${esc(record.location)} / ${esc(record.steel_mill)} / ${esc(record.grade)}</span>
+            <span class="text-ink-muted"> / ${esc(record.location)} / ${esc(millLabel(record))} / ${esc(record.grade)}</span>
             <span class="text-ink-muted"> / ${esc(formatDecimal(record.thickness, 2))}*${esc(formatWidthPlain(record.width))}</span>
         `;
     }

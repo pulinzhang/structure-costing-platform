@@ -255,7 +255,7 @@
 3. 档案没有该牌号 → 硬停：「牌号未在分类档案中」
 4. 候选：policy_type=THICKNESS 且 grade_type=CATEGORY
 5. grade_category(policy, row)：档案大类与 policy.grade_value 经 category_aliases 对齐
-6. 钢厂别名 + base_thickness 优先（order_by_base_thickness）
+6. 钢厂 id 相等，再按 base_thickness 优先（order_by_base_thickness）
 7. item_matches_dims（不变）
 ```
 

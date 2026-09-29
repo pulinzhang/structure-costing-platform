@@ -10,6 +10,7 @@ from app.repositories.yishiyiyi.base_price.steel_base_price_repository import (
 )
 from app.schemas.vo.steel_base_price_vo import SteelBasePriceExportRow
 from app.schemas.vo.user_vo import UserVO
+from app.services.masterdata.steel_mill.service import SteelMillService
 from app.services.yishiyiyi.base_price.export.excel_exporter import (
     SteelBasePriceExporter,
 )
@@ -46,12 +47,13 @@ class SteelBasePriceExportService:
         category = category_name.strip() if category_name else None
         grade_value = grade.strip() if grade else None
 
+        mill_id = SteelMillService().filter_id(db, steel_mill)
         records = self.repository.list_for_export(
             db,
             year=year,
             month=month,
             location=location,
-            steel_mill=steel_mill,
+            steel_mill_id=mill_id,
             category_name=category,
             grade=grade_value,
             spec=spec,
@@ -63,7 +65,7 @@ class SteelBasePriceExportService:
             year=year,
             month=month,
             location=location,
-            steel_mill=steel_mill,
+            steel_mill_id=mill_id,
             category_name=category,
             grade=grade_value,
             spec=spec,
@@ -97,7 +99,7 @@ class SteelBasePriceExportService:
             year=year,
             month=month,
             location=location,
-            steel_mill=steel_mill,
+            steel_mill_id=SteelMillService().filter_id(db, steel_mill),
             category_name=category,
             grade=grade_value,
             spec=spec,

@@ -1584,6 +1584,33 @@
               "type": "op"
             }
           ]
+        },
+        {
+          "code": "menu:steel-mill",
+          "label": "钢厂",
+          "type": "menu",
+          "children": [
+            {
+              "code": "op:steel-mill:view",
+              "label": "查看",
+              "type": "op"
+            },
+            {
+              "code": "op:steel-mill:create",
+              "label": "新增",
+              "type": "op"
+            },
+            {
+              "code": "op:steel-mill:update",
+              "label": "编辑",
+              "type": "op"
+            },
+            {
+              "code": "op:steel-mill:delete",
+              "label": "删除",
+              "type": "op"
+            }
+          ]
         }
       ]
     },

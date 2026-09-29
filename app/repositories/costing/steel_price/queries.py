@@ -39,7 +39,7 @@ class SteelPriceQueries:
         year: int,
         month: int,
         location: str,
-        steel_mill: str,
+        steel_mill_id: int,
         category_name: str,
         grade: str,
         thickness: Decimal,
@@ -52,7 +52,7 @@ class SteelPriceQueries:
                 SteelPrice.year == year,
                 SteelPrice.month == month,
                 SteelPrice.location == location,
-                SteelPrice.steel_mill == steel_mill,
+                SteelPrice.steel_mill_id == steel_mill_id,
                 SteelPrice.category_name == category_name,
                 SteelPrice.grade == grade,
                 SteelPrice.thickness == thickness,
@@ -71,7 +71,7 @@ class SteelPriceQueries:
         locations: list[str] | None = None,
         category_name: str | None = None,
         grade: str | None = None,
-        steel_mill: str | None = None,
+        steel_mill_id: int | None = None,
         audit_status: str | None = None,
     ) -> Query[SteelPrice]:
         query = db.query(SteelPrice)
@@ -87,8 +87,8 @@ class SteelPriceQueries:
             query = query.filter(SteelPrice.category_name == category_name)
         if grade:
             query = query.filter(SteelPrice.grade.contains(grade))
-        if steel_mill:
-            query = query.filter(SteelPrice.steel_mill == steel_mill)
+        if steel_mill_id is not None:
+            query = query.filter(SteelPrice.steel_mill_id == steel_mill_id)
         if audit_status:
             query = query.filter(SteelPrice.audit_status == audit_status)
         return query
@@ -103,7 +103,7 @@ class SteelPriceQueries:
         locations: list[str] | None = None,
         category_name: str | None = None,
         grade: str | None = None,
-        steel_mill: str | None = None,
+        steel_mill_id: int | None = None,
         audit_status: str | None = None,
         skip: int = 0,
         limit: int = 20,
@@ -116,7 +116,7 @@ class SteelPriceQueries:
             locations=locations,
             category_name=category_name,
             grade=grade,
-            steel_mill=steel_mill,
+            steel_mill_id=steel_mill_id,
             audit_status=audit_status,
         )
         total = query.count()
@@ -147,7 +147,7 @@ class SteelPriceQueries:
         locations: list[str] | None = None,
         category_name: str | None = None,
         grade: str | None = None,
-        steel_mill: str | None = None,
+        steel_mill_id: int | None = None,
         audit_status: str | None = None,
     ) -> SteelPriceFilterSummary:
         """按与列表相同的筛选条件汇总：均价 / 待审 / 已审。"""
@@ -159,7 +159,7 @@ class SteelPriceQueries:
             locations=locations,
             category_name=category_name,
             grade=grade,
-            steel_mill=steel_mill,
+            steel_mill_id=steel_mill_id,
             audit_status=audit_status,
         )
         row = query.with_entities(
@@ -188,7 +188,7 @@ class SteelPriceQueries:
         locations: list[str] | None = None,
         category_name: str | None = None,
         grade: str | None = None,
-        steel_mill: str | None = None,
+        steel_mill_id: int | None = None,
         audit_status: str | None = None,
     ) -> list[SteelPrice]:
         """导出用：按筛选条件取全量记录（含溯源字段）。"""
@@ -200,7 +200,7 @@ class SteelPriceQueries:
             locations=locations,
             category_name=category_name,
             grade=grade,
-            steel_mill=steel_mill,
+            steel_mill_id=steel_mill_id,
             audit_status=audit_status,
         )
         return query.order_by(
@@ -234,13 +234,6 @@ class SteelPriceQueries:
             .all()
             if row[0]
         ]
-        steel_mills = [
-            row[0]
-            for row in db.query(distinct(SteelPrice.steel_mill))
-            .order_by(SteelPrice.steel_mill)
-            .all()
-            if row[0]
-        ]
         audit_statuses = [
             row[0]
             for row in db.query(distinct(SteelPrice.audit_status))
@@ -253,7 +246,6 @@ class SteelPriceQueries:
             "months": months,
             "locations": locations,
             "category_names": category_names,
-            "steel_mills": steel_mills,
             "audit_statuses": audit_statuses,
         }
 
@@ -275,7 +267,7 @@ class SteelPriceQueries:
         location: str,
         category_name: str | None = None,
         grade: str | None = None,
-        steel_mill: str | None = None,
+        steel_mill_id: int | None = None,
     ) -> Query[SteelPrice]:
         query = db.query(SteelPrice).filter(
             SteelPrice.year == year,
@@ -286,8 +278,8 @@ class SteelPriceQueries:
             query = query.filter(SteelPrice.category_name == category_name)
         if grade:
             query = query.filter(SteelPrice.grade.contains(grade))
-        if steel_mill:
-            query = query.filter(SteelPrice.steel_mill == steel_mill)
+        if steel_mill_id is not None:
+            query = query.filter(SteelPrice.steel_mill_id == steel_mill_id)
         return query
 
     def count_approved_by_conditions(
@@ -299,7 +291,7 @@ class SteelPriceQueries:
         location: str,
         category_name: str | None = None,
         grade: str | None = None,
-        steel_mill: str | None = None,
+        steel_mill_id: int | None = None,
     ) -> int:
         """统计符合条件且已审核通过的条数。"""
         return (
@@ -310,7 +302,7 @@ class SteelPriceQueries:
                 location=location,
                 category_name=category_name,
                 grade=grade,
-                steel_mill=steel_mill,
+                steel_mill_id=steel_mill_id,
             )
             .filter(SteelPrice.audit_status == AUDIT_APPROVED)
             .count()

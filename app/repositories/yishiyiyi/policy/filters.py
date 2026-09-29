@@ -57,6 +57,7 @@ def apply_export_filters(
     year: int | None = None,
     month: int | None = None,
     steel_mill: str | None = None,
+    steel_mill_id: int | None = None,
     category_names_in: frozenset[str] | None = None,
     category_filter_no_match: bool = False,
     policy_type: str | None = None,
@@ -66,7 +67,9 @@ def apply_export_filters(
         query = query.filter(SteelPricePolicy.year == year)
     if month is not None:
         query = query.filter(SteelPricePolicy.month == month)
-    if steel_mill:
+    if steel_mill_id is not None:
+        query = query.filter(SteelPricePolicy.steel_mill_id == steel_mill_id)
+    elif steel_mill:
         query = query.filter(SteelPricePolicy.steel_mill == steel_mill)
     query = apply_category_scope(
         query,

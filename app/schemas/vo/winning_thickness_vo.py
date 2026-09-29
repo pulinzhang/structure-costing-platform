@@ -21,6 +21,7 @@ class WinningThicknessRowVO(BaseModel):
     # 业务维度
     category_name: str
     steel_mill: str
+    steel_mill_id: int = 0
     thickness_range: str
     thick_min: Decimal | None = None
     thick_min_operator: str | None = None

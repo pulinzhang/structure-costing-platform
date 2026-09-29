@@ -7,6 +7,7 @@ from decimal import Decimal
 
 from sqlalchemy.orm import Session, joinedload
 
+from app.models.masterdata.steel_mill import SteelMill
 from app.models.yishiyiyi.steel_price_policy import SteelPriceLadderItem, SteelPricePolicy
 from app.services.llm._money import ym_int
 
@@ -17,6 +18,7 @@ class PolicyLadderRow:
     year: int
     month: int
     steel_mill: str
+    steel_mill_id: int
     category_name: str
     policy_type: str
     grade_value: str | None
@@ -36,7 +38,7 @@ class PolicyAnalysisRepository:
         start_month: int,
         end_year: int,
         end_month: int,
-        steel_mill: str | None = None,
+        steel_mill_id: int | None = None,
         category_name: str | None = None,
         policy_type: str | None = None,
         limit: int = 8000,
@@ -46,12 +48,13 @@ class PolicyAnalysisRepository:
         ym_expr = SteelPricePolicy.year * 100 + SteelPricePolicy.month
 
         q = (
-            db.query(SteelPricePolicy, SteelPriceLadderItem)
+            db.query(SteelPricePolicy, SteelPriceLadderItem, SteelMill.abbreviation)
             .join(SteelPriceLadderItem, SteelPriceLadderItem.policy_id == SteelPricePolicy.id)
+            .outerjoin(SteelMill, SteelMill.id == SteelPricePolicy.steel_mill_id)
             .filter(ym_expr >= start, ym_expr <= end)
         )
-        if steel_mill:
-            q = q.filter(SteelPricePolicy.steel_mill == steel_mill)
+        if steel_mill_id is not None:
+            q = q.filter(SteelPricePolicy.steel_mill_id == steel_mill_id)
         if category_name:
             q = q.filter(SteelPricePolicy.category_name == category_name)
         if policy_type:
@@ -65,13 +68,14 @@ class PolicyAnalysisRepository:
         ).limit(limit)
 
         rows: list[PolicyLadderRow] = []
-        for policy, item in q.all():
+        for policy, item, abbreviation in q.all():
             rows.append(
                 PolicyLadderRow(
                     policy_id=int(policy.id),
                     year=int(policy.year),
                     month=int(policy.month),
-                    steel_mill=str(policy.steel_mill),
+                    steel_mill=str(abbreviation or policy.steel_mill),
+                    steel_mill_id=int(policy.steel_mill_id),
                     category_name=str(policy.category_name),
                     policy_type=str(policy.policy_type),
                     grade_value=policy.grade_value,

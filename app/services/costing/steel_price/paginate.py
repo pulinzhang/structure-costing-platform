@@ -4,6 +4,7 @@ from __future__ import annotations
 
 from sqlalchemy.orm import Session
 
+from app.models.costing import SteelPrice
 from app.repositories.costing.steel_price.steel_price_repository import (
     SteelPriceRepository,
 )
@@ -14,6 +15,28 @@ from app.schemas.vo.steel_price_vo import (
     SteelPriceResponse,
 )
 from app.services.masterdata.location.service import LocationService
+from app.services.masterdata.steel_mill.service import SteelMillService
+
+
+def attach_mill_abbreviation(
+    db: Session,
+    records: list[SteelPrice],
+) -> list[SteelPriceResponse]:
+    """列表主字用档案缩写。结果行上的 steel_mill 仍是计算当时的字。"""
+    hits = SteelMillService().hits_by_id(db)
+    rows: list[SteelPriceResponse] = []
+    for record in records:
+        vo = SteelPriceResponse.model_validate(record)
+        if record.steel_mill_id is not None:
+            hit = hits.get(record.steel_mill_id)
+            if hit is not None:
+                vo.steel_mill_abbreviation = hit.abbreviation
+        rows.append(vo)
+    return rows
+
+
+def _enabled_mill_abbreviations(db: Session) -> list[str]:
+    return [item.abbreviation for item in SteelMillService().list_enabled(db)]
 
 
 def paginate_steel_prices(
@@ -27,9 +50,10 @@ def paginate_steel_prices(
     location_raw = query.location.strip() if query.location else None
     category_name = query.category_name.strip() if query.category_name else None
     grade = query.grade.strip() if query.grade else None
-    steel_mill = query.steel_mill.strip() if query.steel_mill else None
+    steel_mill_id = SteelMillService().filter_id(db, query.steel_mill)
     audit_status = query.audit_status.strip() if query.audit_status else None
     location_service = LocationService()
+    mill_abbreviations = _enabled_mill_abbreviations(db)
     locations: list[str] | None = None
     if location_raw:
         locations = location_service.expand_for_query(db, location_raw)
@@ -43,7 +67,7 @@ def paginate_steel_prices(
                     months=list(options["months"]),
                     locations=location_service.list_registered(db),
                     category_names=list(options["category_names"]),
-                    steel_mills=list(options["steel_mills"]),
+                    steel_mills=mill_abbreviations,
                     audit_statuses=list(options["audit_statuses"]),
                     summary=SteelPriceListSummaryVO(),
                 ),
@@ -55,19 +79,19 @@ def paginate_steel_prices(
         locations=locations,
         category_name=category_name,
         grade=grade,
-        steel_mill=steel_mill,
+        steel_mill_id=steel_mill_id,
         audit_status=audit_status,
         skip=skip,
         limit=query.size,
     )
-    rows = [SteelPriceResponse.model_validate(record) for record in records]
+    rows = attach_mill_abbreviation(db, records)
     options = repository.get_filter_options(db)
     filters = SteelPriceFilterOptionsVO(
         years=list(options["years"]),
         months=list(options["months"]),
         locations=location_service.list_registered(db),
         category_names=list(options["category_names"]),
-        steel_mills=list(options["steel_mills"]),
+        steel_mills=mill_abbreviations,
         audit_statuses=list(options["audit_statuses"]),
         summary=SteelPriceListSummaryVO.model_validate(
             repository.summarize_by_filters(
@@ -77,7 +101,7 @@ def paginate_steel_prices(
                 locations=locations,
                 category_name=category_name,
                 grade=grade,
-                steel_mill=steel_mill,
+                steel_mill_id=steel_mill_id,
                 audit_status=audit_status,
             )
         ),

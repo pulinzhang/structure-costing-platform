@@ -148,8 +148,11 @@ class SteelPricePolicyRepository:
         year: int | None = None,
         month: int | None = None,
         steel_mill: str | None = None,
+        steel_mill_id: int | None = None,
     ) -> int:
-        return self._writes.count_by_conditions(db, year=year, month=month, steel_mill=steel_mill)
+        return self._writes.count_by_conditions(
+            db, year=year, month=month, steel_mill=steel_mill, steel_mill_id=steel_mill_id
+        )
 
     def delete_by_conditions(
         self,
@@ -158,8 +161,11 @@ class SteelPricePolicyRepository:
         year: int | None = None,
         month: int | None = None,
         steel_mill: str | None = None,
+        steel_mill_id: int | None = None,
     ) -> int:
-        return self._writes.delete_by_conditions(db, year=year, month=month, steel_mill=steel_mill)
+        return self._writes.delete_by_conditions(
+            db, year=year, month=month, steel_mill=steel_mill, steel_mill_id=steel_mill_id
+        )
 
     def get_policy_ids_by_conditions(
         self,
@@ -168,9 +174,10 @@ class SteelPricePolicyRepository:
         year: int | None = None,
         month: int | None = None,
         steel_mill: str | None = None,
+        steel_mill_id: int | None = None,
     ) -> list[int]:
         return self._writes.get_policy_ids_by_conditions(
-            db, year=year, month=month, steel_mill=steel_mill
+            db, year=year, month=month, steel_mill=steel_mill, steel_mill_id=steel_mill_id
         )
 
     def list_policies_for_export(
@@ -180,6 +187,7 @@ class SteelPricePolicyRepository:
         year: int | None = None,
         month: int | None = None,
         steel_mill: str | None = None,
+        steel_mill_id: int | None = None,
         category_names_in: frozenset[str] | None = None,
         category_filter_no_match: bool = False,
         skip: int = 0,
@@ -190,6 +198,7 @@ class SteelPricePolicyRepository:
             year=year,
             month=month,
             steel_mill=steel_mill,
+            steel_mill_id=steel_mill_id,
             category_names_in=category_names_in,
             category_filter_no_match=category_filter_no_match,
             skip=skip,
@@ -203,6 +212,7 @@ class SteelPricePolicyRepository:
         year: int | None = None,
         month: int | None = None,
         steel_mill: str | None = None,
+        steel_mill_id: int | None = None,
         category_names_in: frozenset[str] | None = None,
         category_filter_no_match: bool = False,
         skip: int = 0,
@@ -213,6 +223,7 @@ class SteelPricePolicyRepository:
             year=year,
             month=month,
             steel_mill=steel_mill,
+            steel_mill_id=steel_mill_id,
             category_names_in=category_names_in,
             category_filter_no_match=category_filter_no_match,
             skip=skip,
@@ -233,6 +244,7 @@ class SteelPricePolicyRepository:
         year: int | None = None,
         month: int | None = None,
         steel_mill: str | None = None,
+        steel_mill_id: int | None = None,
         category_names_in: frozenset[str] | None = None,
         category_filter_no_match: bool = False,
     ) -> int:
@@ -241,6 +253,7 @@ class SteelPricePolicyRepository:
             year=year,
             month=month,
             steel_mill=steel_mill,
+            steel_mill_id=steel_mill_id,
             category_names_in=category_names_in,
             category_filter_no_match=category_filter_no_match,
         )
@@ -252,6 +265,7 @@ class SteelPricePolicyRepository:
         year: int | None = None,
         month: int | None = None,
         steel_mill: str | None = None,
+        steel_mill_id: int | None = None,
         category_names_in: frozenset[str] | None = None,
         category_filter_no_match: bool = False,
     ) -> int:
@@ -260,6 +274,7 @@ class SteelPricePolicyRepository:
             year=year,
             month=month,
             steel_mill=steel_mill,
+            steel_mill_id=steel_mill_id,
             category_names_in=category_names_in,
             category_filter_no_match=category_filter_no_match,
         )
@@ -271,6 +286,7 @@ class SteelPricePolicyRepository:
         year: int | None = None,
         month: int | None = None,
         steel_mill: str | None = None,
+        steel_mill_id: int | None = None,
         category_names_in: frozenset[str] | None = None,
         category_filter_no_match: bool = False,
         policy_type: str | None = None,
@@ -280,6 +296,7 @@ class SteelPricePolicyRepository:
             year=year,
             month=month,
             steel_mill=steel_mill,
+            steel_mill_id=steel_mill_id,
             category_names_in=category_names_in,
             category_filter_no_match=category_filter_no_match,
             policy_type=policy_type,

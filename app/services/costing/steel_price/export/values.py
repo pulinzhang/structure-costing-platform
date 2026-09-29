@@ -95,13 +95,13 @@ def build_filename(
     return f"钢材联动价格_{scope}_{stamp}.xlsx"
 
 
-def row_values(record: SteelPrice) -> list[object]:
+def row_values(record: SteelPrice, mill_label: str) -> list[object]:
     return [
         record.id,
         record.year,
         record.month,
         record.location or "",
-        record.steel_mill or "",
+        mill_label,
         record.category_name or "",
         record.grade or "",
         format_thickness(record.thickness),

@@ -27,7 +27,6 @@ _UPSERT_UPDATE_SKIP = frozenset(
         "year",
         "month",
         "location",
-        "steel_mill",
         "category_name",
         "grade",
         "thick",
@@ -51,6 +50,7 @@ class BasePriceFilter:
         location: str | None = None,
         locations: list[str] | None = None,
         steel_mill: str | None = None,
+        steel_mill_id: int | None = None,
         category_name: str | None = None,
         grade: str | None = None,
         spec: str | None = None,
@@ -62,6 +62,7 @@ class BasePriceFilter:
         self.location = location
         self.locations = locations
         self.steel_mill = steel_mill
+        self.steel_mill_id = steel_mill_id
         self.category_name = category_name
         self.grade = grade
         self.spec = spec
@@ -99,7 +100,9 @@ class SteelBasePriceRepository:
             query = query.filter(SteelBasePrice.location.in_(base_price_filter.locations))
         elif base_price_filter.location:
             query = query.filter(SteelBasePrice.location == base_price_filter.location)
-        if base_price_filter.steel_mill:
+        if base_price_filter.steel_mill_id is not None:
+            query = query.filter(SteelBasePrice.steel_mill_id == base_price_filter.steel_mill_id)
+        elif base_price_filter.steel_mill:
             query = query.filter(SteelBasePrice.steel_mill == base_price_filter.steel_mill)
         if base_price_filter.category_name:
             query = query.filter(SteelBasePrice.category_name == base_price_filter.category_name)
@@ -146,7 +149,6 @@ class SteelBasePriceRepository:
         years = self._distinct_values(db, SteelBasePrice.year, descending=True)
         months = self._distinct_values(db, SteelBasePrice.month)
         locations = self._distinct_values(db, SteelBasePrice.location)
-        steel_mills = self._distinct_values(db, SteelBasePrice.steel_mill)
         category_names = self._distinct_values(db, SteelBasePrice.category_name)
         grades = self._distinct_values(db, SteelBasePrice.grade)
         specs = self._distinct_values(db, SteelBasePrice.spec)
@@ -154,7 +156,6 @@ class SteelBasePriceRepository:
             "years": years,
             "months": months,
             "locations": locations,
-            "steel_mills": steel_mills,
             "category_names": category_names,
             "grades": grades,
             "specs": specs,
@@ -227,7 +228,7 @@ class SteelBasePriceRepository:
         records: list[SteelBasePriceWrite],
     ) -> BasePriceUpsertCounts:
         """
-        按复合唯一键 (year, month, location, steel_mill, category_name, grade, thick, width)
+        按复合唯一键 (year, month, location, steel_mill_id, category_name, grade, thick, width)
         执行插入或更新。
 
         返回 ``{"created": 新增条数, "updated": 更新条数}``。
@@ -245,7 +246,7 @@ class SteelBasePriceRepository:
                     SteelBasePrice.year == record_data.year,
                     SteelBasePrice.month == record_data.month,
                     SteelBasePrice.location == record_data.location,
-                    SteelBasePrice.steel_mill == record_data.steel_mill,
+                    SteelBasePrice.steel_mill_id == record_data.steel_mill_id,
                     SteelBasePrice.category_name == record_data.category_name,
                     SteelBasePrice.grade == record_data.grade,
                     SteelBasePrice.thick == record_data.thick,
@@ -273,6 +274,7 @@ class SteelBasePriceRepository:
         month: int | None = None,
         location: str | None = None,
         steel_mill: str | None = None,
+        steel_mill_id: int | None = None,
     ) -> int:
         """
         根据条件批量删除记录。
@@ -287,7 +289,9 @@ class SteelBasePriceRepository:
             query = query.filter(SteelBasePrice.month == month)
         if location:
             query = query.filter(SteelBasePrice.location == location)
-        if steel_mill:
+        if steel_mill_id is not None:
+            query = query.filter(SteelBasePrice.steel_mill_id == steel_mill_id)
+        elif steel_mill:
             query = query.filter(SteelBasePrice.steel_mill == steel_mill)
 
         count = query.count()
@@ -305,6 +309,7 @@ class SteelBasePriceRepository:
         location: str | None = None,
         locations: list[str] | None = None,
         steel_mill: str | None = None,
+        steel_mill_id: int | None = None,
         category_name: str | None = None,
         grade: str | None = None,
         spec: str | None = None,
@@ -324,7 +329,9 @@ class SteelBasePriceRepository:
             query = query.filter(SteelBasePrice.location.in_(locations))
         elif location:
             query = query.filter(SteelBasePrice.location == location)
-        if steel_mill:
+        if steel_mill_id is not None:
+            query = query.filter(SteelBasePrice.steel_mill_id == steel_mill_id)
+        elif steel_mill:
             query = query.filter(SteelBasePrice.steel_mill == steel_mill)
         if category_name:
             query = query.filter(SteelBasePrice.category_name == category_name)
@@ -357,6 +364,7 @@ class SteelBasePriceRepository:
         month: int | None = None,
         location: str | None = None,
         steel_mill: str | None = None,
+        steel_mill_id: int | None = None,
         category_name: str | None = None,
         grade: str | None = None,
         spec: str | None = None,
@@ -376,7 +384,9 @@ class SteelBasePriceRepository:
             query = query.filter(SteelBasePrice.month == month)
         if location:
             query = query.filter(SteelBasePrice.location == location)
-        if steel_mill:
+        if steel_mill_id is not None:
+            query = query.filter(SteelBasePrice.steel_mill_id == steel_mill_id)
+        elif steel_mill:
             query = query.filter(SteelBasePrice.steel_mill == steel_mill)
         if category_name:
             query = query.filter(SteelBasePrice.category_name == category_name)

@@ -301,6 +301,7 @@ class SteelPricePolicyWrite:
     steel_mill: str
     category_name: str
     policy_type: str
+    steel_mill_id: int
     grade_type: str | None = None
     grade_value: str | None = None
     base_thickness: Decimal | None = None

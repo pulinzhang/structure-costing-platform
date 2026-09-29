@@ -71,7 +71,7 @@ class SteelPriceWrites:
         location: str,
         category_name: str | None = None,
         grade: str | None = None,
-        steel_mill: str | None = None,
+        steel_mill_id: int | None = None,
     ) -> int:
         """按条件批量删除未审核记录（pending / rejected），返回删除条数。"""
         query = self._queries._build_condition_query(
@@ -81,7 +81,7 @@ class SteelPriceWrites:
             location=location,
             category_name=category_name,
             grade=grade,
-            steel_mill=steel_mill,
+            steel_mill_id=steel_mill_id,
         ).filter(SteelPrice.audit_status != AUDIT_APPROVED)
         deleted_count = query.delete(synchronize_session=False)
         db.flush()

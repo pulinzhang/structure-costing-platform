@@ -43,7 +43,7 @@ import { pageConfig as stampingTonnagePage } from './features/stamping/tonnage/l
 import { pageConfig as stampingTonnageUploadPage } from './features/stamping/tonnage/upload/index.js?v=21';
 import { pageConfig as stampingProcessFeeCalcPage } from './features/stamping/process-fee/calc/index.js?v=57';
 import { pageConfig as stampingProcessFeePage } from './features/stamping/process-fee/list/index.js?v=81';
-import { pageConfig as steelPriceListPage }   from './features/costing/steel-price/list/index.js?v=86';
+import { pageConfig as steelPriceListPage }   from './features/costing/steel-price/list/index.js?v=88';
 import { pageConfig as steelPriceCalcPage }    from './features/costing/steel-price/calc/index.js?v=38';
 import { pageConfig as stampingPartCostCalcPage } from './features/costing/stamping-part-cost/calc/index.js?v=41';
 import { pageConfig as stampingPartCostPage } from './features/costing/stamping-part-cost/list/index.js?v=105';
@@ -56,6 +56,7 @@ import { pageConfig as basePriceUploadPage } from './features/yishiyiyi/base-pri
 import { pageConfig as basePriceDownloadPage } from './features/yishiyiyi/base-price/list/index.js?v=54';
 import { pageConfig as winningThicknessDownloadPage } from './features/yishiyiyi/winning-thickness/list/index.js?v=29';
 import { pageConfig as steelGradeCategoryPage } from './features/masterdata/steel-grade-category/index.js?v=29';
+import { pageConfig as steelMillPage } from './features/masterdata/steel-mill/index.js?v=1';
 import { pageConfig as scrapPricePage } from './features/yishiyiyi/scrap-price/index.js?v=32';
 import { pageConfig as bomStructurePage }  from './features/bom/material/structure/index.js?v=19';
 import { pageConfig as bomWhereUsedPage } from './features/bom/material/where-used/index.js?v=23';
@@ -128,6 +129,7 @@ const pages = {
     'base-price-upload': basePriceUploadPage,
     'base-price-download': basePriceDownloadPage,
     'steel-grade-category': steelGradeCategoryPage,
+    'steel-mill': steelMillPage,
     'winning-thickness-download': winningThicknessDownloadPage,
     'scrap-price': scrapPricePage,
     'bom-structure':  bomStructurePage,

@@ -34,6 +34,7 @@ from app.schemas.vo.steel_price_policy_vo import (
     PolicyOptionsResponse,
 )
 from app.schemas.vo.user_vo import UserVO
+from app.services.masterdata.steel_mill.service import SteelMillService
 from app.services.yishiyiyi.policy.filter_resolver import resolve_policy_category_filter
 
 logger = logging.getLogger("service.steel_price_policy.crud")
@@ -82,7 +83,7 @@ class SteelPricePolicyCrudService:
         policy_filter = PolicyFilter(
             year=query.year,
             month=query.month,
-            steel_mill=query.steel_mill.strip() if query.steel_mill else None,
+            steel_mill_id=SteelMillService().filter_id(db, query.steel_mill),
             category_names_in=resolved.policy_category_names,
             category_filter_no_match=resolved.no_match,
             policy_type=query.policy_type.value if query.policy_type else None,
@@ -91,6 +92,7 @@ class SteelPricePolicyCrudService:
             limit=query.size,
         )
         records, total = self.repository.paginate(db, policy_filter)
+        hits = SteelMillService().hits_by_id(db)
 
         rows = []
         for record in records:
@@ -101,6 +103,12 @@ class SteelPricePolicyCrudService:
                     year=record.year,
                     month=record.month,
                     steel_mill=record.steel_mill,
+                    steel_mill_id=record.steel_mill_id,
+                    steel_mill_abbreviation=(
+                        hits[record.steel_mill_id].abbreviation
+                        if record.steel_mill_id in hits
+                        else record.steel_mill
+                    ),
                     category_name=record.category_name,
                     policy_type=record.policy_type,
                     grade_type=record.grade_type,
@@ -117,7 +125,7 @@ class SteelPricePolicyCrudService:
         options_resp = PolicyOptionsResponse(
             years=filter_options.years,
             months=filter_options.months,
-            steel_mills=filter_options.steel_mills,
+            steel_mills=[item.abbreviation for item in SteelMillService().list_enabled(db)],
             category_names=filter_options.category_names,
             policy_types=filter_options.policy_types,
             grade_types=filter_options.grade_types,
@@ -157,10 +165,12 @@ class SteelPricePolicyCrudService:
         policy_type = data.policy_type.value
         grade_type = data.grade_type.value if data.grade_type else None
 
+        mill = SteelMillService().require_enabled(db, data.steel_mill)
         match_filter = MatchFilter(
             year=data.year,
             month=data.month,
-            steel_mill=data.steel_mill,
+            steel_mill=mill.full_name,
+            steel_mill_id=mill.id,
             category_name=data.category_name,
             policy_type=policy_type,
             grade_type=grade_type,
@@ -179,7 +189,8 @@ class SteelPricePolicyCrudService:
                 SteelPricePolicyWrite(
                     year=data.year,
                     month=data.month,
-                    steel_mill=data.steel_mill,
+                    steel_mill=mill.full_name,
+                    steel_mill_id=mill.id,
                     category_name=data.category_name,
                     policy_type=policy_type,
                     grade_type=grade_type,
@@ -389,14 +400,14 @@ class SteelPricePolicyCrudService:
                 db,
                 year=year,
                 month=month,
-                steel_mill=mill,
+                steel_mill_id=SteelMillService().filter_id(db, mill),
                 category_names_in=names,
             )
         return self.repository.count_by_conditions(
             db,
             year=year,
             month=month,
-            steel_mill=mill,
+            steel_mill_id=SteelMillService().filter_id(db, mill),
         )
 
     def get_filter_options(self, db: Session) -> PolicyOptionsResponse:
@@ -404,7 +415,7 @@ class SteelPricePolicyCrudService:
         return PolicyOptionsResponse(
             years=filter_options.years,
             months=filter_options.months,
-            steel_mills=filter_options.steel_mills,
+            steel_mills=[item.abbreviation for item in SteelMillService().list_enabled(db)],
             category_names=filter_options.category_names,
             policy_types=filter_options.policy_types,
             grade_types=filter_options.grade_types,
@@ -424,7 +435,7 @@ class SteelPricePolicyCrudService:
             db,
             year=year,
             month=month,
-            steel_mill=steel_mill.strip() if steel_mill else None,
+            steel_mill_id=SteelMillService().filter_id(db, steel_mill),
             policy_type=policy_type,
         )
 
@@ -450,7 +461,7 @@ class SteelPricePolicyCrudService:
                 db,
                 year=year,
                 month=month,
-                steel_mill=mill,
+                steel_mill_id=SteelMillService().filter_id(db, mill),
             )
             db.commit()
 

@@ -43,7 +43,7 @@ def build_policy_summary(rows: list[PolicyLadderRow]) -> SummaryPayload:
 
     for row in rows:
         policy_ids.add(row.policy_id)
-        mills.add(row.steel_mill)
+        mills.add(str(row.steel_mill_id))
         categories.add(row.category_name)
         if row.policy_type == "THICKNESS":
             thickness_policies.add(row.policy_id)
@@ -117,7 +117,7 @@ def build_policy_trend(
 def _policy_ladder_key(row: PolicyLadderRow) -> str:
     return "|".join(
         [
-            row.steel_mill,
+            str(row.steel_mill_id),
             row.category_name,
             row.policy_type,
             row.grade_value or "",

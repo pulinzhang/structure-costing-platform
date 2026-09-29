@@ -137,7 +137,7 @@ parsers.yishiyiyi.policy         （仅 importing 调用）
 | `crud/service.py` | 列表字段 / 写操作审计 |
 | `importing/service.py` | 导入替换策略、进度分段 |
 | `match/ladder_matcher.py` | 区间运算符、命中维度 |
-| `match/adjustment_common.py` | 钢厂别名 / 加减价候选排序 |
+| `match/adjustment_common.py` | 按钢厂 id 筛候选，再按大类与基准厚度排序 |
 | `match/service.py` | fallback 策略 |
 | `export/excel_exporter.py` / `export/service.py` | 导出列、Excel 样式 |
 

@@ -3,6 +3,7 @@
 from decimal import Decimal
 from types import SimpleNamespace
 
+from app.services.masterdata.steel_mill.hit import SteelMillHit
 from app.services.yishiyiyi.winning_thickness.assemble.row_assembler import (
     WinningThicknessRowAssembler,
     _BaseContext,
@@ -32,6 +33,7 @@ def _category_policy(*, policy_id: int = 1):
         grade_value="冷轧钢",
         category_name="冷轧钢",
         steel_mill="唐钢",
+        steel_mill_id=7,
         base_thickness=Decimal("1.00"),
         excel_filename="policy.xlsx",
         items=[
@@ -47,6 +49,7 @@ def test_rows_from_ladder_expands_all_intervals_per_grade():
     context = _BaseContext(
         grade="DC01",
         steel_mill="唐钢",
+        steel_mill_id=7,
         location="芜湖",
         year=2026,
         month=1,
@@ -63,6 +66,7 @@ def test_rows_from_ladder_expands_all_intervals_per_grade():
         category_name="冷轧",
         policy=policy,
         items=list(policy.items),
+        mill_label="唐钢",
     )
 
     assert len(rows) == 3
@@ -84,6 +88,7 @@ def test_two_grades_same_category_each_get_full_ladder():
     ctx_dc01 = _BaseContext(
         grade="DC01",
         steel_mill="唐钢",
+        steel_mill_id=7,
         location="芜湖",
         year=2026,
         month=1,
@@ -96,6 +101,7 @@ def test_two_grades_same_category_each_get_full_ladder():
     ctx_dc04 = _BaseContext(
         grade="DC04",
         steel_mill="唐钢",
+        steel_mill_id=7,
         location="芜湖",
         year=2026,
         month=1,
@@ -106,17 +112,31 @@ def test_two_grades_same_category_each_get_full_ladder():
         base_price_id=2,
     )
 
-    rows_dc01 = assembler._expand_grade_ladder(
+    policy_dc01, items_dc01 = assembler._resolve_thickness_ladder(
         ctx_dc01,
         policies,
         category_name="冷轧",
         ladder_cache=cache,
     )
-    rows_dc04 = assembler._expand_grade_ladder(
+    policy_dc04, items_dc04 = assembler._resolve_thickness_ladder(
         ctx_dc04,
         policies,
         category_name="冷轧",
         ladder_cache=cache,
+    )
+    rows_dc01 = assembler._rows_from_ladder(
+        ctx_dc01,
+        category_name="冷轧",
+        policy=policy_dc01,
+        items=items_dc01,
+        mill_label="唐钢",
+    )
+    rows_dc04 = assembler._rows_from_ladder(
+        ctx_dc04,
+        category_name="冷轧",
+        policy=policy_dc04,
+        items=items_dc04,
+        mill_label="唐钢",
     )
 
     assert len(rows_dc01) == 3
@@ -134,6 +154,7 @@ def test_resolve_ladder_uses_category_not_grade():
     context = _BaseContext(
         grade="DC01",
         steel_mill="唐钢",
+        steel_mill_id=7,
         location="芜湖",
         year=2026,
         month=1,
@@ -160,6 +181,7 @@ def test_rows_from_ladder_skips_when_no_policy():
     context = _BaseContext(
         grade="DC01",
         steel_mill="唐钢",
+        steel_mill_id=7,
         location="芜湖",
         year=2026,
         month=1,
@@ -175,14 +197,57 @@ def test_rows_from_ladder_skips_when_no_policy():
         category_name="冷轧",
         policy=None,
         items=[],
+        mill_label="唐钢",
     )
 
     assert rows == []
 
 
+def test_build_rows_shows_archive_abbreviation(monkeypatch) -> None:
+    base = SimpleNamespace(
+        grade="DC01",
+        steel_mill="唐钢(新)",
+        steel_mill_id=7,
+        location="芜湖",
+        year=2026,
+        month=1,
+        base_price=Decimal("3700"),
+        processing_fee=Decimal("120"),
+        thick=Decimal("1.00"),
+        spec="1.00*1250",
+        id=11,
+        excel_filename=None,
+        sheet_name=None,
+        excel_row=None,
+        excel_col=None,
+    )
+    assembler = WinningThicknessRowAssembler()
+    assembler.grade_category_repository.list_for_export = lambda *_args, **_kwargs: [
+        SimpleNamespace(grade="DC01", category_name="冷轧")
+    ]
+    assembler.base_repository.list_for_export = lambda *_args, **_kwargs: [base]
+    assembler.policy_repository.list_for_period = lambda *_args, **_kwargs: [_category_policy()]
+    monkeypatch.setattr(
+        "app.services.yishiyiyi.winning_thickness.assemble.row_assembler.SteelMillService.hits_by_id",
+        lambda self, db: {
+            7: SteelMillHit(id=7, abbreviation="唐钢", full_name="唐钢", is_enabled=True)
+        },
+    )
+    monkeypatch.setattr(
+        "app.services.yishiyiyi.winning_thickness.assemble.row_assembler.SteelMillService.filter_id",
+        lambda self, db, raw: 7,
+    )
+
+    rows = assembler.build_rows(None, steel_mill="唐钢(新)")
+
+    assert rows
+    assert {row.steel_mill for row in rows} == {"唐钢"}
+    assert {row.steel_mill_id for row in rows} == {7}
+
+
 def test_dedupe_bases_by_mill_grade_keeps_first_spec():
-    first = SimpleNamespace(grade="HC180YD+Z", steel_mill="山钢", id=1)
-    second = SimpleNamespace(grade="HC180YD+Z", steel_mill="山钢", id=2)
-    other = SimpleNamespace(grade="DC51D+Z", steel_mill="山钢", id=3)
+    first = SimpleNamespace(grade="HC180YD+Z", steel_mill="山钢", steel_mill_id=9, id=1)
+    second = SimpleNamespace(grade="HC180YD+Z", steel_mill="山钢", steel_mill_id=9, id=2)
+    other = SimpleNamespace(grade="DC51D+Z", steel_mill="山钢", steel_mill_id=9, id=3)
     picked = dedupe_bases_by_mill_grade([first, second, other])
     assert [row.id for row in picked] == [1, 3]

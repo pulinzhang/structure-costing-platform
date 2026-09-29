@@ -19,6 +19,7 @@ from app.common.steel_grade_category import (
 from app.database import Base
 from app.exceptions.base import BusinessException, NotFoundException
 from app.models.masterdata.steel_grade_category import SteelGradeCategory
+from app.models.masterdata.steel_mill import SteelMill
 from app.models.yishiyiyi.steel_base_price import SteelBasePrice
 from app.schemas.dto.steel_grade_category_dto import (
     SteelGradeCategoryCreate,
@@ -47,7 +48,11 @@ def memory_db() -> Generator[Session, None, None]:
 
     Base.metadata.create_all(
         bind=engine,
-        tables=[SteelGradeCategory.__table__, SteelBasePrice.__table__],
+        tables=[
+            SteelGradeCategory.__table__,
+            SteelMill.__table__,
+            SteelBasePrice.__table__,
+        ],
     )
     session_factory = sessionmaker(bind=engine)
     session = session_factory()
@@ -276,12 +281,24 @@ def test_update_grade_cascades_base_price(memory_db: Session) -> None:
         SteelGradeCategoryCreate(grade="DC01", category_name="冷轧"),
         current_user=SYSTEM_USER,
     )
+    mill = SteelMill(
+        abbreviation="马钢",
+        full_name="马钢",
+        is_enabled=True,
+        sort_order=1,
+        created_by="system",
+        updated_by="system",
+    )
+    memory_db.add(mill)
+    memory_db.flush()
     memory_db.add(
         SteelBasePrice(
             year=2026,
             month=1,
             location="芜湖",
             steel_mill="马钢",
+            canonical_steel_mill="马钢",
+            steel_mill_id=mill.id,
             category_name="冷轧",
             grade="DC01",
             spec="1.00*1250.00",
@@ -326,6 +343,8 @@ def test_base_price_write_uses_archive_grade_and_category(memory_db: Session) ->
         month=1,
         location="青岛",
         steel_mill="本钢",
+        steel_mill_id=1,
+        canonical_steel_mill="本钢",
         category_name="镀锌钢",
         grade="DCO1",
         thick=Decimal("1.00"),
@@ -353,12 +372,24 @@ def test_delete_blocked_when_base_price_references_grade(memory_db: Session) -> 
         SteelGradeCategoryCreate(grade="DC01", category_name="冷轧"),
         current_user=SYSTEM_USER,
     )
+    mill = SteelMill(
+        abbreviation="马钢",
+        full_name="马钢",
+        is_enabled=True,
+        sort_order=1,
+        created_by="system",
+        updated_by="system",
+    )
+    memory_db.add(mill)
+    memory_db.flush()
     memory_db.add(
         SteelBasePrice(
             year=2026,
             month=1,
             location="芜湖",
             steel_mill="马钢",
+            canonical_steel_mill="马钢",
+            steel_mill_id=mill.id,
             category_name="冷轧",
             grade="DC01",
             spec="1.00*1250.00",

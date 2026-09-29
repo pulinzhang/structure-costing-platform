@@ -160,6 +160,8 @@ class SteelBasePriceWrite:
     excel_filename: str
     sheet_name: str
     excel_row: int
+    steel_mill_id: int
+    canonical_steel_mill: str
     spec: str | None = None
     excel_col: int | None = None
     remark: str | None = None
