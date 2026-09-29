@@ -904,6 +904,7 @@ def test_build_base_price_mom_anomalies() -> None:
             month=1,
             location="青岛基地",
             steel_mill="宝钢",
+            steel_mill_id=3,
             category_name="冷轧",
             grade="DC04",
             spec="1.0",
@@ -915,6 +916,7 @@ def test_build_base_price_mom_anomalies() -> None:
             month=2,
             location="青岛基地",
             steel_mill="宝钢",
+            steel_mill_id=3,
             category_name="冷轧",
             grade="DC04",
             spec="1.0",
@@ -1025,7 +1027,22 @@ def test_build_policy_mom_anomalies() -> None:
             policy_type="THICKNESS",
             grade_value="DC04",
             base_thickness=Decimal("1.0"),
-            price_adjustment=200,
+            price_adjustment=90,
+            thick_min=Decimal("0.8"),
+            thick_max=Decimal("1.2"),
+            is_base=0,
+        ),
+        PolicyLadderRow(
+            policy_id=3,
+            year=2025,
+            month=3,
+            steel_mill="宝钢",
+            steel_mill_id=3,
+            category_name="冷轧",
+            policy_type="THICKNESS",
+            grade_value="DC04",
+            base_thickness=Decimal("1.0"),
+            price_adjustment=400,
             thick_min=Decimal("0.8"),
             thick_max=Decimal("1.2"),
             is_base=0,
@@ -1033,10 +1050,9 @@ def test_build_policy_mom_anomalies() -> None:
     ]
     result = build_policy_mom_anomalies(rows, top_n=5)
     assert result["kind"] == "policy_anomalies"
-    assert len(result["items"]) == 1
-    item = result["items"][0]
-    assert item["month"] == "2025-02"
-    assert item["change"] == 150
+    assert [item["month"] for item in result["items"]] == ["2025-02", "2025-03"]
+    assert [item["change"] for item in result["items"]] == [40, 310]
+    assert result["items"][0]["steel_mill"] == "宝钢"
 
 
 def test_query_parser_policy_colloquial_anomaly() -> None:
@@ -1114,6 +1130,17 @@ def test_build_base_price_month_move_over_uses_landed_price() -> None:
     from app.repositories.llm.base_price_analysis_repository import BasePricePeriodRow
     from app.services.llm.analysis.steel.base_price import build_base_price_month_move_over
 
+    mill_ids = {
+        "邯钢": 1,
+        "宝钢": 2,
+        "首钢": 3,
+        "唐钢": 4,
+        "马钢": 5,
+        "包钢": 6,
+        "鞍钢": 7,
+        "本钢": 8,
+    }
+
     def row(
         year: int,
         month: int,
@@ -1128,6 +1155,7 @@ def test_build_base_price_month_move_over_uses_landed_price() -> None:
             month=month,
             location=location,
             steel_mill=mill,
+            steel_mill_id=mill_ids[mill],
             category_name="镀锌",
             grade=grade,
             spec="1.00*1250.00",
@@ -1166,63 +1194,3 @@ def test_build_base_price_month_move_over_uses_landed_price() -> None:
     assert all("HC440" not in line for line in lines)
     assert all("SPHC" not in line for line in lines)
     assert all("HC180B" not in line for line in lines)
-
-
-def test_apply_base_price_month_move_order_replaces_magnitude_table() -> None:
-    from app.services.llm.analysis.steel.base_price import apply_base_price_month_move_order
-
-    result = {
-        "kind": "base_price_month_move_over",
-        "count": 2,
-        "note": "大于 500 元/吨的有 2 条。",
-        "items": [
-            {
-                "period": "2025年02月",
-                "location": "青岛",
-                "grade": "HC500LAD+Z",
-                "spec": "1.0*1250",
-                "steel_mill": "鞍本",
-                "previous_steel_mill": "首钢",
-                "base_price": "5000.00",
-                "previous_base_price": "5922.00",
-                "change": "-922.00",
-            },
-            {
-                "period": "2026年01月",
-                "location": "青岛",
-                "grade": "HC440/780DHD+Z",
-                "spec": "1.0*1250",
-                "steel_mill": "邯钢",
-                "previous_steel_mill": "邯钢",
-                "base_price": "5363.00",
-                "previous_base_price": "6611.00",
-                "change": "-1248.00",
-            },
-        ],
-    }
-    model_answer = """大于 500 的有 2 条，按跌幅从大到小：
-
-| 年 | 月 | 基地 | 牌号 | 变动 |
-| --- | --- | --- | --- | --- |
-| 2026 | 01 | 青岛 | HC440/780DHD+Z | -1248.00 |
-| 2025 | 02 | 青岛 | HC500LAD+Z | -922.00 |
-
-1. 2026年01月 青岛 HC440/780DHD+Z，变动 -1248.00
-"""
-    pinned = apply_base_price_month_move_order(model_answer, result)
-    assert "从大到小" not in pinned
-    assert pinned.index("2025年02月") < pinned.index("2026年01月")
-    first = pinned.index("HC500LAD+Z")
-    second = pinned.index("HC440/780DHD+Z")
-    assert first < second
-    assert "这次基准价" not in pinned
-    assert "这次钢厂" not in pinned
-    assert "本月钢厂" in pinned
-    assert pinned.index("| 年月 | 基地 | 牌号 |") < first
-    assert "本月基准价（元/吨）" in pinned
-    with_advice = apply_base_price_month_move_order(
-        "大于 500 的有 2 条。\n\n风险提示\n跨月不一定每月都有数。\n\n建议\n到基准价格列表核对。",
-        result,
-    )
-    assert with_advice.index("| 年月 |") < with_advice.index("风险提示")
-    assert with_advice.index("风险提示") < with_advice.index("建议")

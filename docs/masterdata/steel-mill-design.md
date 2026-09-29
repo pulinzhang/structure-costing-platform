@@ -1,6 +1,6 @@
 # 钢厂 — 主数据设计
 
-> 状态：**已落地**。档案、导入收口、按 `steel_mill_id` 关联已经在现网。§11 已按代码勾完。还没对齐的只有 §12 交给模型的钢厂字。
+> 状态：**已落地**。档案、导入收口、按 `steel_mill_id` 关联已经在现网。§11、§12 已按代码勾完。
 > 关联：`app/models/yishiyiyi/steel_base_price.py`、`app/models/yishiyiyi/steel_price_policy.py`、`app/services/yishiyiyi/policy/match/adjustment_common.py`、`docs/masterdata/steel-grade-category-design.md`、`docs/masterdata/location-design.md`  
 > 原则：钢厂是档案，不是 Excel 里的一串字。页面上显示缩写，全称用来对表头，停用之后不能再选用，与供应商一致。基准价、加减价新写入必须带 `steel_mill_id`。对不上档案，整本不入库。基准价行上的 `steel_mill` 保留 Excel 原文，供溯源；全称和 id 另加两列。之后基价与政策按这个 id 关联。
 
@@ -186,7 +186,7 @@ HUD 密表。列：缩写（主字，14px 粗体）、全称、别名、状态�
 
 `resolve` 对已停用仍返回这一家，并带 `is_enabled=false`。读历史、筛已有行可以用。`require_enabled` 才拒绝停用。禁止在调用方里用名称相等代替这次解析。
 
-基准价导入、加减价导入只调 `require_enabled_many`。LLM 问句里的钢厂、联动命中政策，调 `resolve` / `resolve_many`，用返回的 `id` 比较。Parser 不调这些方法。
+基准价导入、加减价导入只调 `require_enabled_many`。联动命中政策调 `resolve` / `resolve_many`，用返回的 `id` 比较。LLM 不调用这些方法，只读结果行上已经落下的 `steel_mill_id`。Parser 不调这些方法。
 
 本期不做档案 Excel 导入、不做导出。避免把表里的乱名再灌进档案。
 
@@ -303,11 +303,11 @@ Parser 仍只解析出钢厂原文。收口在一事一议导入 Service，写�
 落地后这条比较只认 `steel_mill_id`：
 
 - 配对键用 `steel_mill_id`，再加大类、政策类型、牌号、厚度档、是否基准。不用 `steel_mill`，也不调用别名猜测。
-- 分析读的是加减价行上已经落下的 id。问句里的钢厂名先走 §5.2 `resolve` 收成 id，不在 LLM 里按名称再对一次。
-- 交给模型的条目仍带钢厂字，用档案缩写，方便写成「山钢」。这个字不参与是否同一家的判断。
-- 用户问句里的钢厂筛选，先收成 id 再查。筛「山钢(新)」时命中山钢这一家的全部阶梯，不按原文过滤。
+- 分析只读加减价、基准价结果行上已经落下的 `steel_mill_id`。不调用钢厂 Service，不读钢厂档案表。
+- 交给模型的钢厂字用结果行上的 `steel_mill`。这个字不参与是否同一家的判断。
+- 问句里的钢厂筛选：先在本结果表上找到这个字对应的 `steel_mill_id`，再按 id 取出这家的全部行。
 
-基准价异常、基准价环比相差本期仍按各自现有键。基准价溯源展示继续用原文 `steel_mill`。
+LLM 切片里凡是判断是不是同一家钢厂，都用结果行上的 `steel_mill_id`：加减价汇总、基准价异常、基准价环比相差、中标厚度汇总，以及问句筛选。不跨到钢厂切片。
 
 ---
 
@@ -336,7 +336,6 @@ Parser 仍只解析出钢厂原文。收口在一事一议导入 Service，写�
 | 改版式处理器的关键字路由 | 版式不是身份 |
 | 工艺 `material_mill`、供应商主数据 | 那是材料厂家 / 合同对方，见供应商设计 |
 | 零件核价结果加钢厂外键 | 快照列，本期只保证联动结果带 id |
-| 基准价异常改按 id 配对 | 本期只改加减价异常比较，见 §7.1 |
 
 ---
 
@@ -375,7 +374,7 @@ static/js/features/masterdata/steel-mill/{template,index}.js
 - [x] 同一文件两种写法收成同一家且业务键相撞：整本退回，不合并
 - [x] 对外解析一次装对照表，返回 `id`；基准价、加减价、中标厚度、钢材联动、LLM 问句都走 §5.2
 - [x] 基价与政策的关联、唯一键使用 `steel_mill_id`。基准价列表、加减价列表主字是缩写
-- [x] LLM 加减价异常比较按 `steel_mill_id` 配对。问句里的钢厂先 `resolve` 成 id 再查
+- [x] LLM 加减价异常比较按结果行上的 `steel_mill_id` 配对。问句里的钢厂在本结果表上收成 id，不调用钢厂 Service
 - [x] 钢材联动结果带同一个 id；外键 `RESTRICT`。唯一键里的钢厂也是这个 id
 - [x] 删除仍被引用的钢厂返回「仍被引用，不能删除」
 - [x] `adjustment_common.py` 里靠猜钢厂的别名表、「(新)」自动互通和 `steel_mill_matches` 整段删除，不迁入 `app/common/`
@@ -385,9 +384,9 @@ static/js/features/masterdata/steel-mill/{template,index}.js
 
 §9 本期不做的仍然不做。
 
-## 12. 还剩一项
+## 12. 已对齐
 
 - [x] §6 拒绝句带上位置。基准价写出 Excel 行，加减价写出 sheet。同一原文只引用先出现的那一处
 - [x] 冲压钢材联动价列表主字是缩写，筛选按 `steel_mill_id`。结果行上的 `steel_mill` 仍是计算当时的字
 - [x] 中标钢厂厚度价格列表的钢厂列是缩写。配对仍按 `steel_mill_id`
-- [ ] LLM 加减价异常交给模型的钢厂字仍是政策行上的全称。配对键已经是 `steel_mill_id`，这个字要改成档案缩写
+- [x] LLM 加减价异常交给模型的钢厂字是结果行上的 `steel_mill`。配对键是 `steel_mill_id`。不读钢厂档案

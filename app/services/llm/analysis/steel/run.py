@@ -42,7 +42,6 @@ from app.services.llm.analysis.steel.winning_thickness import (
     load_winning_thickness_rows,
 )
 from app.services.llm.comparison_basis import resolve_comparability
-from app.services.masterdata.steel_mill.service import SteelMillService
 from app.services.yishiyiyi.winning_thickness.export.service import (
     WinningThicknessExportService,
 )
@@ -60,24 +59,13 @@ class SteelAnalysis:
         """对齐「加减价政策列表」#/steel-price-policy-download。"""
         tr = query.time_range
         policy_type = query.filter_get("policy_type")
-        asked_mill = query.filter_get("steel_mill")
-        mill_id: int | None = None
-        if asked_mill:
-            hit = SteelMillService().resolve(db, asked_mill)
-            if hit is None:
-                return AnalysisRunResult(
-                    comparability=resolve_comparability(query.comparison_basis),
-                    has_data=False,
-                    data_message="当前范围无加减价政策数据",
-                )
-            mill_id = hit.id
         rows = self._policy_repo.query_ladder_rows(
             db,
             start_year=tr.start_year,
             start_month=tr.start_month,
             end_year=tr.end_year,
             end_month=tr.end_month,
-            steel_mill_id=mill_id,
+            steel_mill=query.filter_get("steel_mill"),
             category_name=query.filter_get("category_name"),
             policy_type=policy_type,
         )
@@ -189,7 +177,11 @@ class SteelAnalysis:
         )
         if not in_window:
             return out
-        payload = build_base_price_month_move_over(rows, limit=limit, window_start=window_start)
+        payload = build_base_price_month_move_over(
+            rows,
+            limit=limit,
+            window_start=window_start,
+        )
         out.data_message = str(payload.get("note") or "")
         out.result = payload
         return out

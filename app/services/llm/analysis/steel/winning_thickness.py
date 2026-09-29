@@ -27,6 +27,7 @@ class WinningThicknessAnalysisRow:
     month: int
     location: str
     steel_mill: str
+    steel_mill_id: int
     category_name: str
     grade: str
     thickness_range: str
@@ -69,6 +70,7 @@ def load_winning_thickness_rows(
                 month=int(row.month),
                 location=str(row.location),
                 steel_mill=str(row.steel_mill),
+                steel_mill_id=int(row.steel_mill_id),
                 category_name=str(row.category_name),
                 grade=str(row.grade),
                 thickness_range=str(row.thickness_range),
@@ -92,7 +94,7 @@ def build_winning_thickness_summary(rows: list[WinningThicknessAnalysisRow]) -> 
             "months": [],
         }
 
-    mills = {row.steel_mill for row in rows}
+    mills = {row.steel_mill_id for row in rows}
     categories = {row.category_name for row in rows}
     final_sum = sum((row.final_price for row in rows), start=Decimal("0"))
     count = Decimal(len(rows))
@@ -118,18 +120,18 @@ def build_winning_thickness_drivers(
     *,
     top_n: int = 15,
 ) -> DriversPayload:
-    """按钢厂汇总厚度阶梯行数。"""
-    by_mill: dict[str, list[WinningThicknessAnalysisRow]] = defaultdict(list)
+    """按 steel_mill_id 汇总厚度阶梯行数。行上的钢厂字已是档案缩写。"""
+    by_mill: dict[int, list[WinningThicknessAnalysisRow]] = defaultdict(list)
     for row in rows:
-        by_mill[row.steel_mill].append(row)
+        by_mill[row.steel_mill_id].append(row)
 
     items: list[DriverItem] = []
-    for mill, mill_rows in by_mill.items():
+    for _mill_id, mill_rows in by_mill.items():
         finals = [row.final_price for row in mill_rows]
         items.append(
             {
                 "object_type": "winning_thickness",
-                "steel_mill": mill,
+                "steel_mill": mill_rows[0].steel_mill,
                 "row_count": len(mill_rows),
                 "max_final_price": money_str(max(finals)),
                 "min_final_price": money_str(min(finals)),

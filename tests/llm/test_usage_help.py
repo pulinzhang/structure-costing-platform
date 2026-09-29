@@ -67,6 +67,8 @@ def test_detect_query_mode(question: str, expected_mode: str) -> None:
         ("怎么用简码问某个件的价？", "part_lookup_how"),
         ("文件溯源在哪看", "file_trace"),
         ("牌号分类在哪维护", "masterdata"),
+        ("钢厂在哪维护", "masterdata"),
+        ("中标钢厂厚度价格列表在哪", "yishiyiyi_extra"),
         ("工程变更怎么上传", "engineering-change"),
         ("投产后改图换号走哪里", "engineering-change"),
         ("此件不装怎么填", "engineering-change"),
@@ -119,6 +121,15 @@ def test_load_corpus_has_p1a_sections() -> None:
         "faq_ec_tree_vs_procurement",
     ):
         assert required in chunk_ids
+
+
+def test_steel_mill_help_stays_on_masterdata() -> None:
+    load_corpus_chunks.cache_clear()
+    chunks = retrieve_chunks("钢厂在哪维护", primary_topic="masterdata", top_k=1)
+    assert chunks
+    assert chunks[0].chunk_id == "masterdata"
+    assert "缩写是页面上的字" in chunks[0].text
+    assert "山钢(新)" in chunks[0].text
 
 
 def test_retrieve_engine_chunk() -> None:

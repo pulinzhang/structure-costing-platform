@@ -6,7 +6,6 @@ import json
 from dataclasses import dataclass
 
 from app.schemas.llm.analysis_snapshot import AnalysisSnapshot
-from app.services.llm.analysis.steel.base_price import apply_base_price_month_move_order
 from app.services.llm.catalog.field_labels import (
     AGGREGATE_FIELD_LABELS,
     L0_FIELD_LABELS,
@@ -120,8 +119,6 @@ class LlmReportGenerator:
         )
         combined_prompt = f"{system}\n\n{user}"
         markdown = sanitize_report_markdown(result.content)
-        if isinstance(snapshot.result, dict):
-            markdown = apply_base_price_month_move_order(markdown, snapshot.result)
         return GeneratedReport(
             markdown_content=markdown,
             prompt_version=prompt.prompt_version,
@@ -212,8 +209,12 @@ class LlmReportGenerator:
             )
 
         if isinstance(snapshot.result, dict):
-            pinned = apply_base_price_month_move_order("", snapshot.result)
-            if snapshot.result.get("kind") == "base_price_month_move_over" and pinned:
+            pinned = snapshot.result.get("table")
+            if (
+                snapshot.result.get("kind") == "base_price_month_move_over"
+                and isinstance(pinned, str)
+                and pinned.strip()
+            ):
                 question = snapshot.query.user_question
                 return "\n".join(
                     [

@@ -5,15 +5,16 @@ from __future__ import annotations
 from dataclasses import dataclass
 from decimal import Decimal
 
-from sqlalchemy.orm import Session, joinedload
+from sqlalchemy.orm import Session
 
-from app.models.masterdata.steel_mill import SteelMill
 from app.models.yishiyiyi.steel_price_policy import SteelPriceLadderItem, SteelPricePolicy
 from app.services.llm._money import ym_int
 
 
 @dataclass(frozen=True, slots=True)
 class PolicyLadderRow:
+    """steel_mill 是结果行上的字。是不是同一家只看 steel_mill_id。不读钢厂档案。"""
+
     policy_id: int
     year: int
     month: int
@@ -38,7 +39,7 @@ class PolicyAnalysisRepository:
         start_month: int,
         end_year: int,
         end_month: int,
-        steel_mill_id: int | None = None,
+        steel_mill: str | None = None,
         category_name: str | None = None,
         policy_type: str | None = None,
         limit: int = 8000,
@@ -48,13 +49,19 @@ class PolicyAnalysisRepository:
         ym_expr = SteelPricePolicy.year * 100 + SteelPricePolicy.month
 
         q = (
-            db.query(SteelPricePolicy, SteelPriceLadderItem, SteelMill.abbreviation)
+            db.query(SteelPricePolicy, SteelPriceLadderItem)
             .join(SteelPriceLadderItem, SteelPriceLadderItem.policy_id == SteelPricePolicy.id)
-            .outerjoin(SteelMill, SteelMill.id == SteelPricePolicy.steel_mill_id)
             .filter(ym_expr >= start, ym_expr <= end)
         )
-        if steel_mill_id is not None:
-            q = q.filter(SteelPricePolicy.steel_mill_id == steel_mill_id)
+        asked_mill = (steel_mill or "").strip()
+        if asked_mill:
+            # 问句里的字只用来在本表找到 id，随后按 id 取行。不读钢厂档案。
+            matched_ids = (
+                db.query(SteelPricePolicy.steel_mill_id)
+                .filter(SteelPricePolicy.steel_mill == asked_mill)
+                .distinct()
+            )
+            q = q.filter(SteelPricePolicy.steel_mill_id.in_(matched_ids))
         if category_name:
             q = q.filter(SteelPricePolicy.category_name == category_name)
         if policy_type:
@@ -63,18 +70,18 @@ class PolicyAnalysisRepository:
         q = q.order_by(
             SteelPricePolicy.year.asc(),
             SteelPricePolicy.month.asc(),
-            SteelPricePolicy.steel_mill.asc(),
+            SteelPricePolicy.steel_mill_id.asc(),
             SteelPriceLadderItem.sort_order.asc(),
         ).limit(limit)
 
         rows: list[PolicyLadderRow] = []
-        for policy, item, abbreviation in q.all():
+        for policy, item in q.all():
             rows.append(
                 PolicyLadderRow(
                     policy_id=int(policy.id),
                     year=int(policy.year),
                     month=int(policy.month),
-                    steel_mill=str(abbreviation or policy.steel_mill),
+                    steel_mill=str(policy.steel_mill),
                     steel_mill_id=int(policy.steel_mill_id),
                     category_name=str(policy.category_name),
                     policy_type=str(policy.policy_type),
@@ -95,38 +102,3 @@ class PolicyAnalysisRepository:
                 )
             )
         return rows
-
-    def query_policies(
-        self,
-        db: Session,
-        *,
-        start_year: int,
-        start_month: int,
-        end_year: int,
-        end_month: int,
-        steel_mill: str | None = None,
-        category_name: str | None = None,
-        policy_type: str | None = None,
-        limit: int = 2000,
-    ) -> list[SteelPricePolicy]:
-        start = ym_int(start_year, start_month)
-        end = ym_int(end_year, end_month)
-        ym_expr = SteelPricePolicy.year * 100 + SteelPricePolicy.month
-
-        q = db.query(SteelPricePolicy).options(joinedload(SteelPricePolicy.items))
-        q = q.filter(ym_expr >= start, ym_expr <= end)
-        if steel_mill:
-            q = q.filter(SteelPricePolicy.steel_mill == steel_mill)
-        if category_name:
-            q = q.filter(SteelPricePolicy.category_name == category_name)
-        if policy_type:
-            q = q.filter(SteelPricePolicy.policy_type == policy_type)
-        return (
-            q.order_by(
-                SteelPricePolicy.year.asc(),
-                SteelPricePolicy.month.asc(),
-                SteelPricePolicy.steel_mill.asc(),
-            )
-            .limit(limit)
-            .all()
-        )

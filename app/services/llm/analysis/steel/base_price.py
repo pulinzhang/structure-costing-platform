@@ -2,7 +2,6 @@
 
 from __future__ import annotations
 
-import re
 from collections import defaultdict
 from collections.abc import Mapping, Sequence
 from dataclasses import dataclass
@@ -35,7 +34,7 @@ def build_base_price_summary(rows: list[BasePricePeriodRow]) -> SummaryPayload:
         }
 
     locations = {row.location for row in rows}
-    mills = {row.steel_mill for row in rows}
+    mills = {row.steel_mill_id for row in rows}
     base_sum = sum((row.base_price for row in rows), start=Decimal("0"))
     fee_sum = sum((row.processing_fee for row in rows), start=Decimal("0"))
     count = Decimal(len(rows))
@@ -58,18 +57,19 @@ def build_base_price_summary(rows: list[BasePricePeriodRow]) -> SummaryPayload:
 
 
 def build_base_price_drivers(rows: list[BasePricePeriodRow], *, top_n: int = 15) -> DriversPayload:
-    by_mill: dict[str, list[BasePricePeriodRow]] = defaultdict(list)
+    """按 steel_mill_id 汇总。钢厂字用结果行上的字。"""
+    by_mill: dict[int, list[BasePricePeriodRow]] = defaultdict(list)
     for row in rows:
-        by_mill[row.steel_mill].append(row)
+        by_mill[row.steel_mill_id].append(row)
 
     items: list[DriverItem] = []
-    for mill, mill_rows in by_mill.items():
+    for _mill_id, mill_rows in by_mill.items():
         prices = [row.base_price for row in mill_rows]
         avg = sum(prices, start=Decimal("0")) / Decimal(len(prices))
         items.append(
             {
                 "object_type": "steel_base_price",
-                "steel_mill": mill,
+                "steel_mill": mill_rows[0].steel_mill,
                 "row_count": len(mill_rows),
                 "avg_base_price": money_str(avg),
                 "max_base_price": money_str(max(prices)),
@@ -107,7 +107,7 @@ def build_base_price_trend(
 
 
 def _base_price_series_key(row: BasePricePeriodRow) -> str:
-    return f"{row.location}|{row.steel_mill}|{row.category_name}|{row.grade}|{row.spec}"
+    return f"{row.location}|{row.steel_mill_id}|{row.category_name}|{row.grade}|{row.spec}"
 
 
 def build_base_price_mom_anomalies(
@@ -117,7 +117,7 @@ def build_base_price_mom_anomalies(
     min_abs_change: Decimal = Decimal("50"),
     min_rate: Decimal = Decimal("0.03"),
 ) -> DomainAnomaliesPayload:
-    """同钢厂/牌号/规格在各月间的基准价跳变（疑似传错价）。"""
+    """同 steel_mill_id、牌号、规格的基准价跳变。清单按月份从早到晚。钢厂字用结果行上的字。"""
     by_key: dict[str, dict[str, BasePricePeriodRow]] = defaultdict(dict)
     for row in rows:
         month = month_key(row.year, row.month)
@@ -132,6 +132,7 @@ def build_base_price_mom_anomalies(
             month=row.month,
             location=row.location,
             steel_mill=row.steel_mill,
+            steel_mill_id=row.steel_mill_id,
             category_name=row.category_name,
             grade=row.grade,
             spec=row.spec,
@@ -170,7 +171,7 @@ def build_base_price_mom_anomalies(
                 }
             )
 
-    ranked = sorted(
+    picked = sorted(
         spikes,
         key=lambda item: (
             abs(Decimal(item["change"] or "0")),
@@ -178,11 +179,12 @@ def build_base_price_mom_anomalies(
         ),
         reverse=True,
     )[:top_n]
-    for index, item in enumerate(ranked, start=1):
+    picked.sort(key=lambda item: str(item.get("month") or ""))
+    for index, item in enumerate(picked, start=1):
         item["rank"] = index
     return {
         "kind": "base_price_anomalies",
-        "items": ranked,
+        "items": picked,
         "top_n": top_n,
         "subject": "steel_base_price",
     }
@@ -249,7 +251,7 @@ def build_base_price_month_move_over(
     limit_text = money_str(limit)
     note = (
         f"单价加加工费相对上月同基地，大于 {limit_text} 元/吨的有 {len(found)} 条。"
-        "等于这个数不算。下面按年、月、基地、牌号排列，回答时保持这个顺序。"
+        "等于这个数不算。清单已按年、月、基地、牌号排好，回答时按这个顺序写。"
     )
     if len(found) > len(shown):
         note += f"这里只列出前 {len(shown)} 条。"
@@ -268,10 +270,6 @@ def build_base_price_month_move_over(
     }
 
 
-_TABLE_LINE = re.compile(r"^\s*\|")
-_LISTED_PERIOD_LINE = re.compile(r"^\s*(?:[-*+]|\d{1,3}[.)、])?\s*\d{4}\s*年\s*\d{1,2}\s*月")
-_MAGNITUDE_ORDER_LINE = re.compile(r"从大到小|从小到大|按变动|跌幅最大|降幅最大|幅度最大")
-_ADVICE_HEADING = re.compile(r"^\s*(?:#{1,3}\s*)?(?:\*\*)?(?:风险提示|建议)(?:\*\*)?\s*[:：]?\s*$")
 _TABLE_COLUMNS = (
     "period",
     "location",
@@ -303,57 +301,10 @@ def render_base_price_month_move_table(items: Sequence[object]) -> str:
     return "\n".join(rows)
 
 
-def apply_base_price_month_move_order(markdown: str, result: Mapping[str, object]) -> str:
-    """模型答完后，清单改回年、月、基地、牌号。模型自己画的表和按跌幅举例都拿掉。"""
-    if result.get("kind") != "base_price_month_move_over":
-        return markdown
-    kept = [
-        line
-        for line in markdown.splitlines()
-        if not _TABLE_LINE.match(line)
-        and not _LISTED_PERIOD_LINE.match(line)
-        and not _MAGNITUDE_ORDER_LINE.search(line)
-    ]
-    body = _collapse_blank_lines(kept)
-    items = result.get("items")
-    table = render_base_price_month_move_table(items) if isinstance(items, list) else ""
-    if table:
-        lead, advice = _split_advice(body)
-        parts = [part for part in (lead, table, advice) if part]
-        return "\n\n".join(parts)
-    note = result.get("note")
-    if isinstance(note, str) and note and note not in body:
-        return f"{body}\n\n{note}".strip() if body else note
-    return body
-
-
 def _table_cell(item: Mapping[str, object], key: str) -> str:
     value = item.get(key)
     text = "" if value is None else str(value)
     return text.replace("|", "｜")
-
-
-def _split_advice(body: str) -> tuple[str, str]:
-    """风险提示和建议留在表下面。"""
-    lines = body.splitlines()
-    for index, line in enumerate(lines):
-        if _ADVICE_HEADING.match(line):
-            return _collapse_blank_lines(lines[:index]), _collapse_blank_lines(lines[index:])
-    return body, ""
-
-
-def _collapse_blank_lines(lines: list[str]) -> str:
-    collapsed: list[str] = []
-    previous_blank = False
-    for line in lines:
-        blank = not line.strip()
-        if blank and (previous_blank or not collapsed):
-            continue
-        collapsed.append(line)
-        previous_blank = blank
-    while collapsed and not collapsed[-1].strip():
-        collapsed.pop()
-    return "\n".join(collapsed)
 
 
 def _previous_period(year: int, month: int) -> tuple[int, int]:
@@ -382,8 +333,8 @@ def _counterpart(
     row: BasePricePeriodRow,
     group: list[BasePricePeriodRow],
 ) -> BasePricePeriodRow | None:
-    """同一钢厂对上月那一条。上月这一规格只有一条时，钢厂换了也对照。多家则不猜。"""
-    same_mill = [item for item in group if item.steel_mill == row.steel_mill]
+    """同一 steel_mill_id 对上月那一条。上月这一规格只有一条时，钢厂换了也对照。多家则不猜。"""
+    same_mill = [item for item in group if item.steel_mill_id == row.steel_mill_id]
     if len(same_mill) == 1:
         return same_mill[0]
     if same_mill:
