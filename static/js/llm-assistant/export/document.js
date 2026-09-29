@@ -2,7 +2,7 @@
  * 将 AI 回答组装为可打印 / 可导出 Word 的独立 HTML 文档（仅正文，不含快照与操作）
  */
 
-import { renderMarkdown } from '../markdown/render.js?v=4';
+import { renderMarkdown } from '../markdown/render.js?v=6';
 import { analysesKeyLabelZh } from '../report/labels.js';
 
 /**

@@ -11,7 +11,7 @@ export function renderMarkdown(markdown) {
     let html = '';
     try {
         if (typeof marked !== 'undefined' && typeof marked.parse === 'function') {
-            html = marked.parse(source, { breaks: true, gfm: true });
+            html = marked.parse(protectDomainNotation(source), { breaks: true, gfm: true });
         } else {
             html = fallbackMarkdownToHtml(source);
         }
@@ -31,6 +31,40 @@ export function renderMarkdown(markdown) {
     }
 
     return enhanceMarkdownTables(html);
+}
+
+/**
+ * 业务符号在进 marked 之前转义，避免被当成格式。代码块原样保留。
+ * - 1.80~2.00：单个 ~ 会配成 <del>
+ * - 行首 >=2.30 / >2.30：> 会变成引用，大于号消失
+ * - 1.2*800：数字之间的 * 会变成斜体
+ * - <DC01>：尖括号会变成 HTML 标签，净化后牌号消失
+ * - [说明](备注)：不是网址的方括号链接会把括号吃进地址
+ * **加粗**、~~删除线~~、列表、表格、真正的 http 链接仍按 Markdown 渲染。
+ * @param {string} markdown
+ * @returns {string}
+ */
+function protectDomainNotation(markdown) {
+    const stash = [];
+    const stashed = markdown.replace(/```[\s\S]*?```|~~~[\s\S]*?~~~|`[^`\n]+`/g, (block) => {
+        const token = `\u0000CODE${stash.length}\u0000`;
+        stash.push(block);
+        return token;
+    });
+    const protectedText = stashed
+        .replace(/(?<!\\)</g, '\\<')
+        .replace(/(?<!\\)>=/g, '\\>=')
+        .replace(/^( {0,3})>(?=\d)/gm, '$1\\>')
+        .replace(/^([ ]{0,3}(?:[-*+]|\d+\.)[ ]+)>(?=\d)/gm, '$1\\>')
+        .replace(/(\d)~(\d)/g, '$1\\~$2')
+        .replace(/(\d)\*(?=\d)/g, '$1\\*')
+        .replace(/\[([^\]]+)\]\(([^)]*)\)/g, (full, label, target) => {
+            if (/^(https?:|mailto:|tel:|\/)/i.test(String(target).trim())) {
+                return full;
+            }
+            return `\\[${label}\\](${target})`;
+        });
+    return protectedText.replace(/\u0000CODE(\d+)\u0000/g, (_, index) => stash[Number(index)]);
 }
 
 /**
