@@ -9,6 +9,10 @@ from fastapi import APIRouter, Depends, Query
 from fastapi.responses import StreamingResponse
 from sqlalchemy.orm import Session
 
+from app.common.period import (
+    COSTING_YEAR_MAX,
+    COSTING_YEAR_MIN,
+)
 from app.common.permissions.codes import Perm
 from app.database import get_db
 from app.deps.permissions import require_any_perm, require_perm
@@ -139,7 +143,7 @@ def list_bom_versions(
     summary="查询焊接费计算就绪状态",
 )
 def get_calc_ready(
-    year: int = Query(..., ge=2000, le=2100),
+    year: int = Query(..., ge=COSTING_YEAR_MIN, le=COSTING_YEAR_MAX),
     location: str = Query(..., min_length=1),
     vehicle_model: str = Query(..., min_length=1),
     db: Session = Depends(get_db),
@@ -291,7 +295,7 @@ def list_fees(
 
 @router.get("/export-download", summary="按当前筛选条件导出焊接费 Excel")
 def export_download(
-    year: int | None = Query(None, ge=2000, le=2100, description="年度"),
+    year: int | None = Query(None, ge=COSTING_YEAR_MIN, le=COSTING_YEAR_MAX, description="年度"),
     location: str | None = Query(None, description="基地"),
     vehicle_model: str | None = Query(None, description="项目"),
     bom_version: str | None = Query(None, description="版本"),

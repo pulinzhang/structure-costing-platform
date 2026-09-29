@@ -16,6 +16,7 @@ from openpyxl.workbook.workbook import Workbook
 from openpyxl.worksheet.worksheet import Worksheet
 
 from app.common.engineering_change_gates import quoted
+from app.common.period import MONTH_MAX, MONTH_MIN
 from app.exceptions.base import BusinessException
 from app.parsers.engineering_change.material_change.codes import (
     ECM_CELL_NOT_EXACT,
@@ -243,7 +244,7 @@ def _year_month_from_text(value: str) -> tuple[int, int] | None:
     if match is None:
         return None
     month = int(match.group(2))
-    if month < 1 or month > 12:
+    if month < MONTH_MIN or month > MONTH_MAX:
         return None
     return int(match.group(1)), month
 

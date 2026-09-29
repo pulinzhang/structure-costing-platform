@@ -6,6 +6,12 @@
 from fastapi import APIRouter, Depends, Query
 from sqlalchemy.orm import Session
 
+from app.common.period import (
+    COSTING_YEAR_MAX,
+    COSTING_YEAR_MIN,
+    MONTH_MAX,
+    MONTH_MIN,
+)
 from app.common.permissions.codes import Perm
 from app.database import get_db
 from app.deps.permissions import require_perm
@@ -37,8 +43,10 @@ _async_task_service = AsyncTaskService()
     summary="分页查询钢价计算历史",
 )
 def list_calc_logs(
-    year: int | None = Query(None, ge=2000, le=2100, description="核价年度"),
-    month: int | None = Query(None, ge=1, le=12, description="核价月份"),
+    year: int | None = Query(
+        None, ge=COSTING_YEAR_MIN, le=COSTING_YEAR_MAX, description="核价年度"
+    ),
+    month: int | None = Query(None, ge=MONTH_MIN, le=MONTH_MAX, description="核价月份"),
     location: str | None = Query(None, description="生产基地"),
     page: int = Query(1, ge=1, description="页码"),
     size: int = Query(20, ge=1, le=100, description="每页条数"),

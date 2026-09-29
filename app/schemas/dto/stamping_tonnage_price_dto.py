@@ -8,6 +8,10 @@ from typing import Any
 from pydantic import BaseModel, Field, field_validator
 
 from app.common.money import Q3, quantize_money
+from app.common.period import (
+    COSTING_YEAR_MAX,
+    COSTING_YEAR_MIN,
+)
 
 
 def quantize_price_per_stroke(value: Any) -> Decimal:
@@ -19,7 +23,7 @@ class StampingTonnagePriceCreate(BaseModel):
     """冲次单价创建请求"""
 
     location: str = Field(..., min_length=1, max_length=50, description="采购基地")
-    year: int = Field(..., ge=2000, le=2100, description="年份")
+    year: int = Field(..., ge=COSTING_YEAR_MIN, le=COSTING_YEAR_MAX, description="年份")
     tonnage: int = Field(..., ge=1, description="压机吨位(T)")
     price_per_stroke: Decimal = Field(..., ge=0, description="单冲次价格(元)，Decimal 保留3位小数")
 
@@ -54,7 +58,7 @@ class StampingTonnagePriceScopeDTO(BaseModel):
     """范围必填：基地 + 年度（上传 / 删除 / 审核 / 反审核共用）"""
 
     location: str = Field(..., min_length=1, max_length=50, description="采购基地（必填）")
-    year: int = Field(..., ge=2000, le=2100, description="年度（必填）")
+    year: int = Field(..., ge=COSTING_YEAR_MIN, le=COSTING_YEAR_MAX, description="年度（必填）")
 
 
 class StampingTonnagePriceBatchDeleteDTO(StampingTonnagePriceScopeDTO):

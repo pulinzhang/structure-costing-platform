@@ -5,6 +5,7 @@ from decimal import Decimal
 from sqlalchemy import ForeignKeyConstraint, Index, Integer, Numeric, String, UniqueConstraint
 from sqlalchemy.orm import Mapped, mapped_column
 
+from app.common.system_defaults import DEFAULT_ALLOCATION_QTY
 from app.database import Base
 from app.models.common.audit_mixin import AuditUserMixin
 
@@ -27,7 +28,10 @@ class StampingDieUnitPrice(AuditUserMixin, Base):
         Numeric(12, 4), nullable=False, comment="级进模单价（万元/吨）"
     )
     allocation_qty: Mapped[Decimal] = mapped_column(
-        Numeric(12, 4), nullable=False, default=Decimal("10"), comment="项目分摊数量（万台）"
+        Numeric(12, 4),
+        nullable=False,
+        default=DEFAULT_ALLOCATION_QTY,
+        comment="项目分摊数量（万台）",
     )
     status: Mapped[str] = mapped_column(
         String(20),

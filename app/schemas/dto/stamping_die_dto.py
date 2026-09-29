@@ -6,6 +6,12 @@ from decimal import Decimal
 from pydantic import BaseModel, Field, field_validator
 
 from app.common.money import Q2, quantize_money
+from app.common.period import (
+    COSTING_YEAR_MAX,
+    COSTING_YEAR_MIN,
+    MONTH_MAX,
+    MONTH_MIN,
+)
 
 
 class StampingDiePartQuery(BaseModel):
@@ -14,8 +20,12 @@ class StampingDiePartQuery(BaseModel):
     part_number: str | None = None
     page: int = Field(1, ge=1)
     size: int = Field(10, ge=1, le=100)
-    year: int | None = Field(None, ge=2000, le=2100, description="查看年；空则墙钟")
-    month: int | None = Field(None, ge=1, le=12, description="查看月；与年同空或同有")
+    year: int | None = Field(
+        None, ge=COSTING_YEAR_MIN, le=COSTING_YEAR_MAX, description="查看年；空则墙钟"
+    )
+    month: int | None = Field(
+        None, ge=MONTH_MIN, le=MONTH_MAX, description="查看月；与年同空或同有"
+    )
     include_expired: bool = Field(False, description="含已失效；模具列表不提供开关")
 
     @field_validator("part_number", mode="before")

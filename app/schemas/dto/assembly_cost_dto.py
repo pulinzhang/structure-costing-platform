@@ -6,14 +6,21 @@ from typing import Literal
 
 from pydantic import BaseModel, Field, field_validator
 
+from app.common.period import (
+    COSTING_YEAR_MAX,
+    COSTING_YEAR_MIN,
+    MONTH_MAX,
+    MONTH_MIN,
+)
+
 AssemblyCostView = Literal["finance", "procurement", "all"]
 
 
 class AssemblyCostCalcDTO(BaseModel):
     """计算请求：年+月+基地+项目。版本忽略。取该月有效期内 BOM 树。"""
 
-    year: int = Field(..., ge=2000, le=2100)
-    month: int = Field(..., ge=1, le=12)
+    year: int = Field(..., ge=COSTING_YEAR_MIN, le=COSTING_YEAR_MAX)
+    month: int = Field(..., ge=MONTH_MIN, le=MONTH_MAX)
     location: str = Field(..., min_length=1, max_length=50)
     vehicle_model: str = Field(..., min_length=1, max_length=50)
     bom_version: str | None = Field(None, description="忽略。取该月有效期内 BOM 树")
@@ -48,8 +55,8 @@ class AssemblyCostQuery(BaseModel):
 class AssemblyCostScopeDTO(BaseModel):
     """批量操作范围：年+月+基地+项目；版本可选（工程变更后同月可多版本）。"""
 
-    year: int = Field(..., ge=2000, le=2100)
-    month: int = Field(..., ge=1, le=12)
+    year: int = Field(..., ge=COSTING_YEAR_MIN, le=COSTING_YEAR_MAX)
+    month: int = Field(..., ge=MONTH_MIN, le=MONTH_MAX)
     location: str = Field(..., min_length=1, max_length=50)
     vehicle_model: str = Field(..., min_length=1, max_length=50)
     bom_version: str | None = Field(

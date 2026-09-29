@@ -12,6 +12,7 @@ from openpyxl.styles import Alignment, Border, Font, PatternFill, Side
 from sqlalchemy.orm import Session
 
 from app.common.audit import audit_create, audit_update
+from app.common.period import is_costing_year
 from app.config import settings
 from app.exceptions.base import BusinessException
 from app.parsers.stamping.tonnage_price_parser import (
@@ -109,7 +110,7 @@ class StampingTonnagePriceImportService:
         current_user: UserVO,
     ) -> StampingTonnagePriceImportResultVO:
         location = LocationService().require_enabled(db, (location or "").strip())
-        if year < 2000 or year > 2100:
+        if not is_costing_year(year):
             raise BusinessException("年度不正确")
 
         original_name = Path(filename or "").name

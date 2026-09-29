@@ -35,11 +35,7 @@ from app.services.masterdata.location.service import LocationService
 from app.services.masterdata.vehicle_model.service import VehicleModelService
 from app.services.stamping.die_fee.engineering.change import (
     EngineeringChangeDieFeeCloneResult,
-)
-from app.services.stamping.die_fee.engineering.change import (
     clone_revise_for_engineering_change as clone_revise_die_fee,
-)
-from app.services.stamping.die_fee.engineering.change import (
     delete_for_engineering_change_rollback as delete_die_fee_for_rollback,
 )
 from app.services.stamping.die_fee.rules.fee_math import ZERO, resolve_final_die_fee

@@ -15,6 +15,7 @@ from app.common.audit import (
     display_name,
 )
 from app.common.bom.welding_standard_process import validate_welding_unit_price_catalog
+from app.common.period import is_costing_year
 from app.common.timezone import now
 from app.exceptions.base import BusinessException, NotFoundException
 from app.repositories.bom.welding_unit_price_repository import (
@@ -270,7 +271,7 @@ class BomWeldingUnitPriceService:
         location = (location or "").strip()
         if not location:
             raise BusinessException("请选择采购基地")
-        if year < 2000 or year > 2100:
+        if not is_costing_year(year):
             raise BusinessException("请选择正确的年度")
 
         existing = self.repository.list_by_location_year(db, location, year)

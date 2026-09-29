@@ -2,11 +2,20 @@
 
 from pydantic import BaseModel, Field
 
+from app.common.period import (
+    EFFECTIVE_YEAR_MAX,
+    EFFECTIVE_YEAR_MIN,
+    MONTH_MAX,
+    MONTH_MIN,
+)
+
 
 class EffectivePeriodUpdateDTO(BaseModel):
-    effective_year: int = Field(..., ge=1990, le=2100, description="生效年")
-    effective_month: int = Field(..., ge=1, le=12, description="生效月")
-    expiry_year: int | None = Field(
-        None, ge=1990, le=2100, description="失效年；与失效月同空或同有"
+    effective_year: int = Field(
+        ..., ge=EFFECTIVE_YEAR_MIN, le=EFFECTIVE_YEAR_MAX, description="生效年"
     )
-    expiry_month: int | None = Field(None, ge=1, le=12, description="失效月")
+    effective_month: int = Field(..., ge=MONTH_MIN, le=MONTH_MAX, description="生效月")
+    expiry_year: int | None = Field(
+        None, ge=EFFECTIVE_YEAR_MIN, le=EFFECTIVE_YEAR_MAX, description="失效年；与失效月同空或同有"
+    )
+    expiry_month: int | None = Field(None, ge=MONTH_MIN, le=MONTH_MAX, description="失效月")

@@ -9,6 +9,7 @@ from typing import Any
 
 from sqlalchemy.orm import Session
 
+from app.common.measures import KG_PER_TON, MM3_G_PER_CM3_TO_KG
 from app.common.money import Q2, optional_format_money
 from app.common.swing_shear import steel_kg_price_with_swing_shear
 from app.models.costing import SteelPrice
@@ -135,7 +136,7 @@ def _join_kg_prices(ton_prices: list[Decimal | None]) -> str | None:
             labels.append("—")
             continue
         has_price = True
-        kg = ton / Decimal("1000")
+        kg = ton / KG_PER_TON
         labels.append(format_ton_price_label(kg))
     if not has_price:
         return None
@@ -187,7 +188,7 @@ def build_blank_row_m_formula(excel_row: int, density: Decimal) -> str:
     """子片行 P：与普通件相同，引用本行 J/M/N/O（料厚/长/宽/可制件数）。"""
     return (
         f"=M{excel_row}*N{excel_row}*J{excel_row}"
-        f"*{formula_number(density)}/1000000/O{excel_row}"
+        f"*{formula_number(density)}/{formula_number(MM3_G_PER_CM3_TO_KG)}/O{excel_row}"
     )
 
 
@@ -258,7 +259,7 @@ def resolve_part_cost_display(
     )
     steel_kg_text = None
     if steel_ton is not None:
-        steel_kg_text = format_ton_price_label(Decimal(str(steel_ton)) / Decimal("1000"))
+        steel_kg_text = format_ton_price_label(Decimal(str(steel_ton)) / KG_PER_TON)
     return PartCostDisplayFields(
         is_tailor_welded=False,
         thickness=optional_format_money(getattr(row, "thickness", None), Q2, 2),

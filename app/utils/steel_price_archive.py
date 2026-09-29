@@ -16,6 +16,7 @@ import logging
 import re
 from pathlib import Path
 
+from app.common.period import MONTH_MAX, MONTH_MIN, is_costing_year
 from app.common.timezone import now
 from app.config import settings
 
@@ -51,9 +52,9 @@ def save_steel_price_upload(
     """
     if not file_content:
         raise ValueError("归档文件内容为空")
-    if year < 2000 or year > 2100:
+    if not is_costing_year(year):
         raise ValueError(f"无效年度: {year}")
-    if month < 1 or month > 12:
+    if month < MONTH_MIN or month > MONTH_MAX:
         raise ValueError(f"无效月份: {month}")
     if file_kind not in {FILE_KIND_BASE_PRICE, FILE_KIND_POLICY}:
         raise ValueError(f"未知归档类型: {file_kind}")

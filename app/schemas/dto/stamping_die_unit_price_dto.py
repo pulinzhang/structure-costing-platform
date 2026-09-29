@@ -7,10 +7,10 @@ from typing import TypedDict
 from pydantic import BaseModel, Field, field_validator
 
 from app.common.money import Q4, quantize_money, quantize_positive_whole
+from app.common.system_defaults import DEFAULT_ALLOCATION_QTY
 from app.models.stamping.die_unit_price import STATUS_EFFECTIVE, STATUS_INVALID
 
 _ALLOWED_STATUS = frozenset({STATUS_EFFECTIVE, STATUS_INVALID})
-DEFAULT_ALLOCATION_QTY = Decimal("10")
 
 
 def _strip(value: object) -> str | None:

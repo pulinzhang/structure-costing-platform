@@ -13,6 +13,7 @@ from openpyxl.workbook.defined_name import DefinedName
 from sqlalchemy.orm import Session
 
 from app.common.bom.manufacturing_category import short_part_number_digits
+from app.common.measures import KG_PER_TON, MM3_G_PER_CM3_TO_KG
 from app.common.money import Q2, Q4
 from app.common.timezone import now
 from app.models.stamping import StampingPart, StampingProcess, StampingTailorWeldBlank
@@ -380,7 +381,7 @@ class SteelPurchaseExport:
             14: parts_per_sheet,
             15: (
                 f'=IF(OR(L{excel_row}="",M{excel_row}="",K{excel_row}=""),"",'
-                f"L{excel_row}*M{excel_row}*K{excel_row}*SteelDensity/1000000)"
+                f"L{excel_row}*M{excel_row}*K{excel_row}*SteelDensity/{MM3_G_PER_CM3_TO_KG})"
             ),
             16: _num(part_weight, Q4),
             17: "是" if part.is_offal_nested else "否",
@@ -391,7 +392,7 @@ class SteelPurchaseExport:
             22: (
                 f'=IF(OR(Q{excel_row}="是",R{excel_row}="是"),0,'
                 f'IF(OR(O{excel_row}="",N{excel_row}="",N{excel_row}<=0,U{excel_row}=""),"",'
-                f"O{excel_row}/N{excel_row}*U{excel_row}/1000))"
+                f"O{excel_row}/N{excel_row}*U{excel_row}/{KG_PER_TON}))"
             ),
         }
         zebra_fill = _ZEBRA if zebra else None

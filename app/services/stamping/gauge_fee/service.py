@@ -27,11 +27,7 @@ from app.services.masterdata.location.service import LocationService
 from app.services.masterdata.vehicle_model.service import VehicleModelService
 from app.services.stamping.gauge_fee.engineering.change import (
     EngineeringChangeGaugeFeeCloneResult,
-)
-from app.services.stamping.gauge_fee.engineering.change import (
     clone_revise_for_engineering_change as clone_revise_gauge_fee,
-)
-from app.services.stamping.gauge_fee.engineering.change import (
     delete_for_engineering_change_rollback as delete_gauge_fee_for_rollback,
 )
 

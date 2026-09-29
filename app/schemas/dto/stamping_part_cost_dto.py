@@ -8,13 +8,19 @@ from typing import Any, TypedDict
 from pydantic import BaseModel, Field, field_validator
 
 from app.common.money import Q6, quantize_money
+from app.common.period import (
+    COSTING_YEAR_MAX,
+    COSTING_YEAR_MIN,
+    MONTH_MAX,
+    MONTH_MIN,
+)
 
 
 class StampingPartCostScopeDTO(BaseModel):
     """范围：年度 + 月份 + 基地 + 车型必填；版本与工厂可选（列表/批量可收窄，计算忽略版本）。"""
 
-    year: int = Field(..., ge=2000, le=2100, description="年度")
-    month: int = Field(..., ge=1, le=12, description="月份")
+    year: int = Field(..., ge=COSTING_YEAR_MIN, le=COSTING_YEAR_MAX, description="年度")
+    month: int = Field(..., ge=MONTH_MIN, le=MONTH_MAX, description="月份")
     location: str = Field(..., min_length=1, description="基地")
     vehicle_model: str = Field(..., min_length=1, description="项目")
     version: str | None = Field(None, description="版本")

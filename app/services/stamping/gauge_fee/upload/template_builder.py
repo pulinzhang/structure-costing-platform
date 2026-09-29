@@ -7,7 +7,8 @@ from io import BytesIO
 from openpyxl import Workbook
 from openpyxl.styles import Alignment, Font, PatternFill
 
-from app.models.stamping.gauge_fee import DEFAULT_ALLOCATION_QTY, DEFAULT_GAUGE_FEE
+from app.common.system_defaults import DEFAULT_ALLOCATION_QTY
+from app.models.stamping.gauge_fee import DEFAULT_GAUGE_FEE
 from app.parsers.stamping.gauge_fee_parser import (
     HEADER_ALLOCATION_QTY,
     HEADER_GAUGE_FEE,

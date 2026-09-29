@@ -8,6 +8,12 @@ from fastapi import APIRouter, Depends, Query
 from fastapi.responses import StreamingResponse
 from sqlalchemy.orm import Session
 
+from app.common.period import (
+    COSTING_YEAR_MAX,
+    COSTING_YEAR_MIN,
+    MONTH_MAX,
+    MONTH_MIN,
+)
 from app.common.permissions.codes import Perm
 from app.common.scrap_categories import (
     SCRAP_CATEGORY_LABELS,
@@ -43,8 +49,8 @@ _scrap_price_export_service = StampingScrapPriceExportService()
     summary="取某月录入矩阵：已启用基地行",
 )
 def get_month_sheet(
-    year: int = Query(..., ge=2000, le=2100, description="年份"),
-    month: int = Query(..., ge=1, le=12, description="月份"),
+    year: int = Query(..., ge=COSTING_YEAR_MIN, le=COSTING_YEAR_MAX, description="年份"),
+    month: int = Query(..., ge=MONTH_MIN, le=MONTH_MAX, description="月份"),
     scrap_category: str = Query(SCRAP_CATEGORY_STEEL, description="废料类别：钢材 / 铝板"),
     db: Session = Depends(get_db),
     current_user: UserVO = Depends(require_perm(Perm.SCRAP_PRICE_VIEW)),
@@ -88,8 +94,8 @@ def save_month(
     summary="删除该月当前类别",
 )
 def delete_month(
-    year: int = Query(..., ge=2000, le=2100, description="年份"),
-    month: int = Query(..., ge=1, le=12, description="月份"),
+    year: int = Query(..., ge=COSTING_YEAR_MIN, le=COSTING_YEAR_MAX, description="年份"),
+    month: int = Query(..., ge=MONTH_MIN, le=MONTH_MAX, description="月份"),
     scrap_category: str = Query(SCRAP_CATEGORY_STEEL, description="废料类别：钢材 / 铝板"),
     db: Session = Depends(get_db),
     current_user: UserVO = Depends(require_perm(Perm.SCRAP_PRICE_DELETE)),
@@ -106,7 +112,9 @@ def delete_month(
     summary="已维护月份列表（维护页导航，按类别）",
 )
 def list_months(
-    year: int | None = Query(None, ge=2000, le=2100, description="按年筛选"),
+    year: int | None = Query(
+        None, ge=COSTING_YEAR_MIN, le=COSTING_YEAR_MAX, description="按年筛选"
+    ),
     scrap_category: str = Query(SCRAP_CATEGORY_STEEL, description="废料类别：钢材 / 铝板"),
     db: Session = Depends(get_db),
     current_user: UserVO = Depends(require_perm(Perm.SCRAP_PRICE_VIEW)),
@@ -136,7 +144,9 @@ def get_filter_options(
     summary="导出废料销售价宽表 Excel",
 )
 def export_excel(
-    year: int | None = Query(None, ge=2000, le=2100, description="仅导出指定年；空则导出全部年份"),
+    year: int | None = Query(
+        None, ge=COSTING_YEAR_MIN, le=COSTING_YEAR_MAX, description="仅导出指定年；空则导出全部年份"
+    ),
     db: Session = Depends(get_db),
     current_user: UserVO = Depends(require_perm(Perm.SCRAP_PRICE_EXPORT)),
 ) -> StreamingResponse:

@@ -20,18 +20,13 @@ from app.schemas.vo.supplier_vo import (
 from app.schemas.vo.user_vo import UserVO
 from app.services.masterdata.supplier.catalog import (
     build_template as build_catalog_template,
-)
-from app.services.masterdata.supplier.catalog import (
     export_excel as export_catalog_excel,
-)
-from app.services.masterdata.supplier.catalog import (
     write_catalog_to_workbook,
 )
 from app.services.masterdata.supplier.crud import (
     add_alias as add_supplier_alias,
-)
-from app.services.masterdata.supplier.crud import (
     create_supplier,
+    delete_alias as delete_supplier_alias,
     delete_supplier,
     list_enabled,
     list_enabled_choices,
@@ -40,9 +35,6 @@ from app.services.masterdata.supplier.crud import (
     list_registered_names,
     search_enabled_choices,
     update_supplier,
-)
-from app.services.masterdata.supplier.crud import (
-    delete_alias as delete_supplier_alias,
 )
 from app.services.masterdata.supplier.identity import (
     expand_for_query,

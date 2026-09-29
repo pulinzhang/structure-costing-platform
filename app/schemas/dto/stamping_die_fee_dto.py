@@ -8,11 +8,15 @@ from typing import Any, TypedDict
 from pydantic import BaseModel, Field, field_validator
 
 from app.common.money import Q4, optional_quantize_money
+from app.common.period import (
+    COSTING_YEAR_MAX,
+    COSTING_YEAR_MIN,
+)
 from app.common.vehicle_model import normalize_vehicle_model
 
 
 class StampingDieFeeScopeDTO(BaseModel):
-    year: int = Field(..., ge=2000, le=2100)
+    year: int = Field(..., ge=COSTING_YEAR_MIN, le=COSTING_YEAR_MAX)
     location: str = Field(..., min_length=1)
     vehicle_model: str = Field(..., min_length=1)
 

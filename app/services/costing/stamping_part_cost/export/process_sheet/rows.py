@@ -12,7 +12,13 @@ from openpyxl.styles import Alignment, Border, Font, PatternFill
 from openpyxl.worksheet.worksheet import Worksheet
 from sqlalchemy.orm import Session
 
+from app.common.measures import KG_PER_TON, MM3_G_PER_CM3_TO_KG
 from app.common.money import Q4, excel_money_cell
+from app.common.system_defaults import (
+    DEFAULT_MATERIAL_LOSS_RATE,
+    DEFAULT_SCRAP_RECOVERY_RATE,
+    DEFAULT_STEEL_DENSITY,
+)
 from app.repositories.bom.bom.node import BomNodeRepository
 from app.repositories.bom.bom.snapshot import BomSnapshotRepository
 from app.repositories.costing.steel_price.steel_price_repository import SteelPriceRepository
@@ -55,17 +61,12 @@ from app.services.costing.stamping_part_cost.export.tailor_weld_display import (
 )
 from app.services.costing.stamping_part_cost.export.trace_lookups import load_trace_maps
 from app.services.costing.stamping_part_cost.helpers import (
-    DEFAULT_MATERIAL_LOSS_RATE,
-    DEFAULT_SCRAP_RECOVERY_RATE,
-    DEFAULT_STEEL_DENSITY,
+    format_number as _num,
     format_process_fee_trace,
     format_scrap_price_trace,
     format_steel_price_excel_trace,
     part_excel_row_col,
     to_decimal,
-)
-from app.services.costing.stamping_part_cost.helpers import (
-    format_number as _num,
 )
 
 
@@ -202,7 +203,7 @@ def write_process_data_rows(
             steel_index,
         )
         scrap_ton = to_decimal(row.scrap_ton_price)
-        scrap_kg = (scrap_ton / Decimal("1000")) if scrap_ton is not None else None
+        scrap_kg = (scrap_ton / KG_PER_TON) if scrap_ton is not None else None
         assembly_supply_no = resolve_assembly_supply_no(
             db,
             bom_snapshot_repo=bom_snapshot_repo,
@@ -333,7 +334,7 @@ def write_process_data_rows(
         else:
             material_n = (
                 f"=M{excel_row}*N{excel_row}*J{excel_row}"
-                f"*{formula_number(density)}/1000000/O{excel_row}"
+                f"*{formula_number(density)}/{formula_number(MM3_G_PER_CM3_TO_KG)}/O{excel_row}"
             )
             material_o = f"=K{excel_row}/P{excel_row}"
             material_p = f"=P{excel_row}-K{excel_row}"

@@ -17,6 +17,7 @@ from decimal import Decimal
 
 from sqlalchemy.orm import Session
 
+from app.common.measures import KG_PER_TON, MM3_G_PER_CM3_TO_KG, PERCENT
 from app.common.money import Q4
 from app.common.swing_shear import applied_swing_shear_fee_per_ton, steel_kg_price_with_swing_shear
 from app.models.costing import SteelPrice
@@ -89,8 +90,7 @@ class TailorWeldPartCostCalculator:
                 reason="拼焊总成净重（焊后）为空",
             )
 
-        kg_scale = Decimal("1000")
-        scrap_kg_price = scrap_ton_price / kg_scale
+        scrap_kg_price = scrap_ton_price / KG_PER_TON
         applied_swing_fee = applied_swing_shear_fee_per_ton(
             has_swing_shear=bool(part.has_swing_shear),
             fee_per_ton=swing_shear_fee_per_ton,
@@ -139,7 +139,7 @@ class TailorWeldPartCostCalculator:
             )
 
         scrap_kg = blank_kg_total - finished_total_kg
-        utilization = quantize((finished_total_kg / blank_kg_total) * Decimal("100"), UTIL_QUANTIZE)
+        utilization = quantize((finished_total_kg / blank_kg_total) * PERCENT, UTIL_QUANTIZE)
 
         process = self.process_fee_resolver.lookup(db, part=part, year=year, supplier=supplier)
         if isinstance(process, StampingPartCostFailedItemVO):
@@ -277,7 +277,7 @@ class TailorWeldPartCostCalculator:
 
         blank_kg = (
             (sheet_length * sheet_width * thickness * density)
-            / Decimal("1000000")
+            / MM3_G_PER_CM3_TO_KG
             / Decimal(parts_per_sheet)
         )
         if blank_kg <= 0:

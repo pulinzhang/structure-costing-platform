@@ -23,6 +23,7 @@ from openpyxl.utils import get_column_letter
 
 from app.common.export_watermark import workbook_to_xlsx_bytes
 from app.common.money import Q2, excel_money_cell, parse_decimal
+from app.common.period import MONTH_MAX, MONTH_MIN
 from app.common.scrap_categories import SCRAP_CATEGORIES, SCRAP_CATEGORY_LABELS
 from app.common.timezone import now
 from app.schemas.vo.user_vo import UserVO
@@ -181,7 +182,7 @@ class StampingScrapPriceExporter:
                 by_location.setdefault(loc, {})
                 by_location[loc][int(record.month)] = record
             label = SCRAP_CATEGORY_LABELS[category]
-            headers = [f"{year}年 {label}"] + [f"{m}月" for m in range(1, 13)]
+            headers = [f"{year}年 {label}"] + [f"{m}月" for m in range(MONTH_MIN, MONTH_MAX + 1)]
             for col, text in enumerate(headers, start=1):
                 cell = ws.cell(row=row, column=col, value=text)
                 cell.font = _YEAR_FONT if col == 1 else _MONTH_FONT
@@ -212,7 +213,7 @@ class StampingScrapPriceExporter:
         name_cell.border = _THIN
         _set_row_height(ws, row)
 
-        for month in range(1, 13):
+        for month in range(MONTH_MIN, MONTH_MAX + 1):
             record = month_map.get(month)
             cell = ws.cell(row=row, column=month + 1)
             cell.border = _THIN
@@ -254,7 +255,7 @@ class StampingScrapPriceExporter:
             ws.cell(row=r, column=1).border = _THIN
             _set_row_height(ws, r)
 
-        for month in range(1, 13):
+        for month in range(MONTH_MIN, MONTH_MAX + 1):
             col = month + 1
             col_letter = get_column_letter(col)
             record = month_map.get(month)

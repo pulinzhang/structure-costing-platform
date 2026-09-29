@@ -6,6 +6,7 @@ from decimal import Decimal, InvalidOperation
 
 from openpyxl.worksheet.worksheet import Worksheet
 
+from app.common.measures import PERCENT
 from app.common.money import Q2, Q4, parse_decimal, quantize_money
 from app.common.scrap_byproduct import layout_is_scrap_byproduct
 
@@ -29,14 +30,14 @@ def parse_unit_interval(value: object) -> Decimal | None:
         except (InvalidOperation, ValueError):
             return None
         if has_percent or number > Decimal("1"):
-            number = number / Decimal("100")
+            number = number / PERCENT
         return quantize_money(number, Q4)
     try:
         number = parse_decimal(value)
     except (InvalidOperation, ValueError):
         return None
     if number > Decimal("1"):
-        number = number / Decimal("100")
+        number = number / PERCENT
     return quantize_money(number, Q4)
 
 

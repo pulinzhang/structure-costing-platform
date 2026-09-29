@@ -9,6 +9,8 @@ import re
 from dataclasses import dataclass
 from pathlib import Path
 
+from app.common.period import MONTH_MAX, MONTH_MIN, expand_two_digit_year
+
 _PAREN_SEGMENT_RE = re.compile(r"[（(]([^）)]+)[）)]")
 # 例：2026年2月 / 24年7月 / 2025年6月和7月
 _PERIOD_IN_PAREN_RE = re.compile(r"(\d{2,4})\s*年\s*(\d{1,2})\s*月(?:\s*和\s*(\d{1,2})\s*月)?")
@@ -28,14 +30,8 @@ class PolicyEffectivePeriod:
     month: int
 
 
-def _normalize_year(raw_year: int) -> int:
-    if raw_year < 100:
-        return 2000 + raw_year
-    return raw_year
-
-
 def _period_or_none(year: int, month: int) -> PolicyEffectivePeriod | None:
-    if month < 1 or month > 12:
+    if month < MONTH_MIN or month > MONTH_MAX:
         return None
     return PolicyEffectivePeriod(year=year, month=month)
 
@@ -53,7 +49,7 @@ def effective_periods_from_directory_name(directory_name: str) -> list[PolicyEff
     cross = _DIR_CROSS_YEAR_RE.search(name)
     if cross:
         period = _period_or_none(
-            _normalize_year(int(cross.group(3))),
+            expand_two_digit_year(int(cross.group(3))),
             int(cross.group(4)),
         )
         return [period] if period is not None else []
@@ -61,7 +57,7 @@ def effective_periods_from_directory_name(directory_name: str) -> list[PolicyEff
     same = _DIR_SAME_YEAR_RE.search(name)
     if same:
         period = _period_or_none(
-            _normalize_year(int(same.group(1))),
+            expand_two_digit_year(int(same.group(1))),
             int(same.group(3)),
         )
         return [period] if period is not None else []
@@ -84,7 +80,7 @@ def effective_periods_from_policy_filename(filename: str) -> list[PolicyEffectiv
     if not period_match:
         return []
 
-    year = _normalize_year(int(period_match.group(1)))
+    year = expand_two_digit_year(int(period_match.group(1)))
     first_month = int(period_match.group(2))
     periods: list[PolicyEffectivePeriod] = []
     first = _period_or_none(year, first_month)

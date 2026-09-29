@@ -17,8 +17,6 @@ from app.schemas.vo.vehicle_model_vo import (
 from app.services.masterdata.location.service import LocationService
 from app.services.masterdata.vehicle_model.catalog import (
     build_template as build_catalog_template,
-)
-from app.services.masterdata.vehicle_model.catalog import (
     export_excel as export_catalog_excel,
 )
 from app.services.masterdata.vehicle_model.crud import (

@@ -9,6 +9,12 @@ from fastapi import APIRouter, Depends, Query
 from fastapi.responses import StreamingResponse
 from sqlalchemy.orm import Session
 
+from app.common.period import (
+    COSTING_YEAR_MAX,
+    COSTING_YEAR_MIN,
+    MONTH_MAX,
+    MONTH_MIN,
+)
 from app.common.permissions.codes import Perm
 from app.database import get_db
 from app.deps.permissions import require_perm
@@ -77,10 +83,10 @@ def list_report(
     location: str = Query(..., min_length=1),
     vehicle_model: str = Query(..., min_length=1),
     bom_version: str | None = Query(None),
-    start_year: int = Query(..., ge=2000, le=2100),
-    start_month: int = Query(..., ge=1, le=12),
-    end_year: int = Query(..., ge=2000, le=2100),
-    end_month: int = Query(..., ge=1, le=12),
+    start_year: int = Query(..., ge=COSTING_YEAR_MIN, le=COSTING_YEAR_MAX),
+    start_month: int = Query(..., ge=MONTH_MIN, le=MONTH_MAX),
+    end_year: int = Query(..., ge=COSTING_YEAR_MIN, le=COSTING_YEAR_MAX),
+    end_month: int = Query(..., ge=MONTH_MIN, le=MONTH_MAX),
     supplier_name: str | None = Query(None),
     view: Literal["procurement", "assembly"] = Query("procurement"),
     keyword: str | None = Query(None),
@@ -133,10 +139,10 @@ def prep_report(
     location: str = Query(..., min_length=1),
     vehicle_model: str = Query(..., min_length=1),
     bom_version: str | None = Query(None),
-    start_year: int = Query(..., ge=2000, le=2100),
-    start_month: int = Query(..., ge=1, le=12),
-    end_year: int = Query(..., ge=2000, le=2100),
-    end_month: int = Query(..., ge=1, le=12),
+    start_year: int = Query(..., ge=COSTING_YEAR_MIN, le=COSTING_YEAR_MAX),
+    start_month: int = Query(..., ge=MONTH_MIN, le=MONTH_MAX),
+    end_year: int = Query(..., ge=COSTING_YEAR_MIN, le=COSTING_YEAR_MAX),
+    end_month: int = Query(..., ge=MONTH_MIN, le=MONTH_MAX),
     supplier_name: str | None = Query(None),
     view: Literal["procurement", "assembly"] = Query("procurement"),
     db: Session = Depends(get_db),
@@ -163,10 +169,10 @@ def export_report(
     location: str = Query(..., min_length=1),
     vehicle_model: str = Query(..., min_length=1),
     bom_version: str | None = Query(None),
-    start_year: int = Query(..., ge=2000, le=2100),
-    start_month: int = Query(..., ge=1, le=12),
-    end_year: int = Query(..., ge=2000, le=2100),
-    end_month: int = Query(..., ge=1, le=12),
+    start_year: int = Query(..., ge=COSTING_YEAR_MIN, le=COSTING_YEAR_MAX),
+    start_month: int = Query(..., ge=MONTH_MIN, le=MONTH_MAX),
+    end_year: int = Query(..., ge=COSTING_YEAR_MIN, le=COSTING_YEAR_MAX),
+    end_month: int = Query(..., ge=MONTH_MIN, le=MONTH_MAX),
     supplier_name: str | None = Query(None),
     view: Literal["procurement", "assembly"] = Query("procurement"),
     db: Session = Depends(get_db),

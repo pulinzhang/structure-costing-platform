@@ -10,6 +10,10 @@ from typing import Any, TypedDict
 from pydantic import BaseModel, Field, field_validator
 
 from app.common.money import Q3, optional_quantize_money
+from app.common.period import (
+    COSTING_YEAR_MAX,
+    COSTING_YEAR_MIN,
+)
 
 
 class StampingProcessFeeScopeDTO(BaseModel):
@@ -18,7 +22,7 @@ class StampingProcessFeeScopeDTO(BaseModel):
     工厂仅列表/批量删除收窄；计算与审核忽略。
     """
 
-    year: int = Field(..., ge=2000, le=2100, description="年度")
+    year: int = Field(..., ge=COSTING_YEAR_MIN, le=COSTING_YEAR_MAX, description="年度")
     location: str = Field(..., min_length=1, description="基地")
     vehicle_model: str = Field(..., min_length=1, description="项目")
     version: str | None = Field(None, description="版本")

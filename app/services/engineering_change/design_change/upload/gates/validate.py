@@ -32,7 +32,14 @@ from app.common.engineering_change_gates import (
     listed,
     quoted,
 )
-from app.common.period import format_period, is_in_period, period, previous_month
+from app.common.period import (
+    MONTH_MAX,
+    MONTH_MIN,
+    format_period,
+    is_in_period,
+    period,
+    previous_month,
+)
 from app.exceptions.base import BusinessException
 from app.models.bom import BomNode
 from app.parsers.bom.bom_parser import BomParsedNode
@@ -55,7 +62,7 @@ def parse_effective_period_text(text: str) -> tuple[int, int]:
         )
     year = int(match.group(1))
     month = int(match.group(2))
-    if month < 1 or month > 12:
+    if month < MONTH_MIN or month > MONTH_MAX:
         raise BusinessException(
             f"{EC_EFFECTIVE_MISMATCH}：工程变更单月份 {month} 无效，请写成 1–12 月。"
         )

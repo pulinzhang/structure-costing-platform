@@ -12,6 +12,7 @@ from openpyxl.styles import Alignment, Border, Font, PatternFill, Side
 from sqlalchemy.orm import Session
 
 from app.common.audit import audit_create, audit_update
+from app.common.period import is_costing_year
 from app.config import settings
 from app.exceptions.base import BusinessException
 from app.parsers.bom.packaging_transport_fee_parser import (
@@ -160,7 +161,7 @@ class BomPackagingTransportFeeImportService:
         vehicle_model = (vehicle_model or "").strip()
         if not vehicle_model:
             raise BusinessException("请选择项目")
-        if year < 2000 or year > 2100:
+        if not is_costing_year(year):
             raise BusinessException("年度不正确")
         location, vehicle_model = VehicleModelService().require_overlaps_year(
             db, location, vehicle_model, year

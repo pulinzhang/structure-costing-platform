@@ -6,13 +6,11 @@ from collections.abc import Sequence
 from dataclasses import dataclass
 from decimal import Decimal
 
+from app.common.measures import MM3_G_PER_CM3_TO_TON, PERCENT
 from app.common.money import Q4, format_money, quantize_money
 
-DIE_STEEL_DENSITY = Decimal("7.85")
 WEIGHT_RELATIVE_LIMIT = Decimal("0.10")
 ZERO = Decimal("0")
-# 长宽高 mm、密度 g/cm³ → 吨
-_MM3_G_CM3_TO_TON = Decimal("1000000000")
 
 
 @dataclass(frozen=True, slots=True)
@@ -43,7 +41,7 @@ def calc_die_weight_t(
     die_width: Decimal | None,
     die_height: Decimal | None,
     hollow_factor: Decimal | None,
-    density: Decimal = DIE_STEEL_DENSITY,
+    density: Decimal,
 ) -> Decimal | None:
     """外形核对重量（吨）= 长×宽×高×掏空系数×密度 / 10^9。缺尺寸则 None。"""
     if (
@@ -58,11 +56,15 @@ def calc_die_weight_t(
         return None
     if hollow_factor < ZERO or density <= ZERO:
         return None
-    raw = die_length * die_width * die_height * hollow_factor * density / _MM3_G_CM3_TO_TON
+    raw = die_length * die_width * die_height * hollow_factor * density / MM3_G_PER_CM3_TO_TON
     return quantize_money(raw, Q4, allow_negative=False)
 
 
-def find_die_weight_mismatches(rows: Sequence[DieWeightCheckRow]) -> list[DieWeightMismatch]:
+def find_die_weight_mismatches(
+    rows: Sequence[DieWeightCheckRow],
+    *,
+    density: Decimal,
+) -> list[DieWeightMismatch]:
     """有完整外形且有模具重量时，相对差 > 10% 记一条。缺长宽高/掏空则跳过。"""
     issues: list[DieWeightMismatch] = []
     for row in rows:
@@ -74,6 +76,7 @@ def find_die_weight_mismatches(rows: Sequence[DieWeightCheckRow]) -> list[DieWei
             die_width=row.die_width,
             die_height=row.die_height,
             hollow_factor=row.hollow_factor,
+            density=density,
         )
         if checked is None:
             continue
@@ -119,7 +122,7 @@ def format_die_weight_mismatch_issues(issues: Sequence[DieWeightMismatch]) -> st
         return ""
     lines = [
         "上传失败：模具重量与外形核对超差（相对差 > 10%），"
-        "核对重量 = 长×宽×高×掏空系数×7.85÷10^9。"
+        "核对重量 = 长×宽×高×掏空系数×密度÷10^9。"
         f"共 {len(issues)} 道工序，导入已拒绝，未改已有布点：",
     ]
     for item in issues:
@@ -129,7 +132,7 @@ def format_die_weight_mismatch_issues(issues: Sequence[DieWeightMismatch]) -> st
         if item.relative_gap is None:
             gap_text = "相对差无法计算（模具重量为 0）"
         else:
-            percent_text = format_money(item.relative_gap * Decimal("100"), Decimal("0.01"), 2)
+            percent_text = format_money(item.relative_gap * PERCENT, Decimal("0.01"), 2)
             gap_text = f"相对差 {percent_text}%"
         lines.append(
             f"零件 {item.part_number} 工序 {item.process_seq}{row_bit}："

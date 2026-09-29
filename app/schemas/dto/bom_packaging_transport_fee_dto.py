@@ -8,6 +8,10 @@ from typing import Any
 from pydantic import BaseModel, Field, field_validator
 
 from app.common.money import Q4, quantize_money
+from app.common.period import (
+    COSTING_YEAR_MAX,
+    COSTING_YEAR_MIN,
+)
 
 
 def quantize_fee(value: Any) -> Decimal:
@@ -19,7 +23,7 @@ class BomPackagingTransportFeeCreate(BaseModel):
     """包装运输费创建请求"""
 
     location: str = Field(..., min_length=1, max_length=50, description="采购基地")
-    year: int = Field(..., ge=2000, le=2100, description="定价年度")
+    year: int = Field(..., ge=COSTING_YEAR_MIN, le=COSTING_YEAR_MAX, description="定价年度")
     vehicle_model: str = Field(..., min_length=1, max_length=50, description="项目")
     part_number: str = Field(..., min_length=1, max_length=50, description="零件号")
     part_name: str | None = Field(None, max_length=200, description="产品名称")
@@ -141,7 +145,7 @@ class BomPackagingTransportFeeScopeDTO(BaseModel):
     """范围：基地 + 年度 + 项目"""
 
     location: str = Field(..., min_length=1, max_length=50, description="采购基地")
-    year: int = Field(..., ge=2000, le=2100, description="年度")
+    year: int = Field(..., ge=COSTING_YEAR_MIN, le=COSTING_YEAR_MAX, description="年度")
     vehicle_model: str = Field(..., min_length=1, max_length=50, description="项目")
 
 

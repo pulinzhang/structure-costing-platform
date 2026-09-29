@@ -26,6 +26,12 @@ from sqlalchemy import (
 )
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
+from app.common.system_defaults import (
+    DEFAULT_FINISHED_FINANCE_RATE,
+    DEFAULT_FINISHED_MANAGEMENT_RATE,
+    DEFAULT_FINISHED_PRETAX_PROFIT_RATE,
+    DEFAULT_FINISHED_SCRAP_RATE,
+)
 from app.database import Base
 from app.models.common.audit_mixin import AuditUserMixin
 
@@ -156,16 +162,22 @@ class AssemblyCost(AuditUserMixin, Base):
     )
 
     finance_rate: Mapped[Decimal] = mapped_column(
-        Numeric(8, 6), nullable=False, default=Decimal("0.02"), comment="财务费率快照"
+        Numeric(8, 6), nullable=False, default=DEFAULT_FINISHED_FINANCE_RATE, comment="财务费率快照"
     )
     management_rate: Mapped[Decimal] = mapped_column(
-        Numeric(8, 6), nullable=False, default=Decimal("0.02"), comment="管理费率快照"
+        Numeric(8, 6),
+        nullable=False,
+        default=DEFAULT_FINISHED_MANAGEMENT_RATE,
+        comment="管理费率快照",
     )
     scrap_rate: Mapped[Decimal] = mapped_column(
-        Numeric(8, 6), nullable=False, default=Decimal("0.003"), comment="报废费率快照"
+        Numeric(8, 6), nullable=False, default=DEFAULT_FINISHED_SCRAP_RATE, comment="报废费率快照"
     )
     pretax_profit_rate: Mapped[Decimal] = mapped_column(
-        Numeric(8, 6), nullable=False, default=Decimal("0.02"), comment="税前利润率快照"
+        Numeric(8, 6),
+        nullable=False,
+        default=DEFAULT_FINISHED_PRETAX_PROFIT_RATE,
+        comment="税前利润率快照",
     )
 
     welding_fee_id: Mapped[int | None] = mapped_column(

@@ -8,6 +8,7 @@ from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
 
 from app.common.audit import AUDIT_APPROVED, AUDIT_PENDING, audit_create, display_name
+from app.common.period import is_costing_year
 from app.common.timezone import now
 from app.exceptions.base import BusinessException, NotFoundException
 from app.repositories.bom.packaging_transport_fee_repository import (
@@ -30,11 +31,7 @@ from app.schemas.vo.bom_packaging_transport_fee_vo import (
 from app.schemas.vo.user_vo import UserVO
 from app.services.bom.packaging_transport_fee.engineering_change import (
     EngineeringChangePackagingFeeCloneResult,
-)
-from app.services.bom.packaging_transport_fee.engineering_change import (
     clone_revise_for_engineering_change as clone_revise_packaging_fee,
-)
-from app.services.bom.packaging_transport_fee.engineering_change import (
     delete_for_engineering_change_rollback as delete_packaging_fee_for_rollback,
 )
 from app.services.masterdata.location.service import LocationService
@@ -209,7 +206,7 @@ class BomPackagingTransportFeeService:
             raise BusinessException("请选择采购基地")
         if not vehicle_model:
             raise BusinessException("请选择项目")
-        if year < 2000 or year > 2100:
+        if not is_costing_year(year):
             raise BusinessException("请选择正确的年度")
 
         existing = self.repository.list_by_scope(db, location, year, vehicle_model)

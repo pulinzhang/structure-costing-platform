@@ -6,6 +6,7 @@ from typing import TYPE_CHECKING
 
 from sqlalchemy.orm import Session
 
+from app.common.period import MONTH_MAX, MONTH_MIN, is_calendar_month
 from app.common.scrap_categories import SCRAP_CATEGORY_STEEL
 from app.common.timezone import now
 from app.schemas.dto.stamping_part_dto import StampingCascadeFilterQuery
@@ -81,12 +82,12 @@ def resolve_scope(
     resolved_year = year if year is not None else (years[0] if years else clock.year)
     months_for_resolved = months_for_year(svc, db, resolved_year, fallback=months_all)
     if not months_for_resolved:
-        months_for_resolved = list(range(1, 13))
+        months_for_resolved = list(range(MONTH_MIN, MONTH_MAX + 1))
 
     # 默认优先「有基价/钢价/零件价」的最近月，避免落到仅有废料的空核价月
     preferred = preferred_months(svc, db, resolved_year)
 
-    if month is not None and 1 <= month <= 12:
+    if month is not None and is_calendar_month(month):
         resolved_month = month
     elif preferred:
         resolved_month = max(preferred)

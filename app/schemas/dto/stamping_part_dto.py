@@ -8,6 +8,12 @@ from typing import Any
 from pydantic import BaseModel, Field, field_validator
 
 from app.common.money import Q2, quantize_money
+from app.common.period import (
+    COSTING_YEAR_MAX,
+    COSTING_YEAR_MIN,
+    MONTH_MAX,
+    MONTH_MIN,
+)
 
 
 class StampingPartOffalUpdateDTO(BaseModel):
@@ -54,8 +60,12 @@ class StampingPartQuery(BaseModel):
     stamping_supplier: str | None = Field(None, description="冲压供应商")
     page: int = Field(1, ge=1, description="页码")
     size: int = Field(100, ge=1, le=500, description="每页条数")
-    year: int | None = Field(None, ge=2000, le=2100, description="查看年；空则墙钟")
-    month: int | None = Field(None, ge=1, le=12, description="查看月；与年同空或同有")
+    year: int | None = Field(
+        None, ge=COSTING_YEAR_MIN, le=COSTING_YEAR_MAX, description="查看年；空则墙钟"
+    )
+    month: int | None = Field(
+        None, ge=MONTH_MIN, le=MONTH_MAX, description="查看月；与年同空或同有"
+    )
     include_expired: bool = Field(False, description="含已失效；零件列表不提供开关")
 
 
@@ -100,9 +110,14 @@ class StampingCascadeFilterQuery(BaseModel):
     vehicle_model: str | None = Field(None, description="项目")
     version: str | None = Field(None, description="版本")
     year: int | None = Field(
-        None, ge=2000, le=2100, description="年度；只带年时项目下拉按冲压件有效期年交集"
+        None,
+        ge=COSTING_YEAR_MIN,
+        le=COSTING_YEAR_MAX,
+        description="年度；只带年时项目下拉按冲压件有效期年交集",
     )
-    month: int | None = Field(None, ge=1, le=12, description="月份；与年度一起时下拉为该月可引入")
+    month: int | None = Field(
+        None, ge=MONTH_MIN, le=MONTH_MAX, description="月份；与年度一起时下拉为该月可引入"
+    )
 
 
 class StampingMaterialQuery(BaseModel):

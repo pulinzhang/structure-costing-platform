@@ -9,6 +9,12 @@ from typing import Any
 from pydantic import BaseModel, Field, field_validator, model_validator
 
 from app.common.money import Q2, optional_quantize_money, quantize_money
+from app.common.period import (
+    COSTING_YEAR_MAX,
+    COSTING_YEAR_MIN,
+    MONTH_MAX,
+    MONTH_MIN,
+)
 from app.common.scrap_categories import SCRAP_CATEGORY_STEEL, ScrapCategory
 
 
@@ -58,8 +64,8 @@ class StampingScrapPriceMonthRowInput(BaseModel):
 class StampingScrapPriceMonthSaveDTO(BaseModel):
     """整月一次提交：覆盖当前类别下全部已启用基地。"""
 
-    year: int = Field(..., ge=2000, le=2100, description="年份")
-    month: int = Field(..., ge=1, le=12, description="月份（1-12）")
+    year: int = Field(..., ge=COSTING_YEAR_MIN, le=COSTING_YEAR_MAX, description="年份")
+    month: int = Field(..., ge=MONTH_MIN, le=MONTH_MAX, description="月份（1-12）")
     scrap_category: ScrapCategory = Field(
         default=SCRAP_CATEGORY_STEEL,
         description="废料类别：钢材 / 铝板",
@@ -81,10 +87,10 @@ class StampingScrapPriceMonthSaveDTO(BaseModel):
 class StampingScrapPriceCopyMonth(BaseModel):
     """从源年月复制到目标年月（仅当前类别）"""
 
-    source_year: int = Field(..., ge=2000, le=2100, description="源年份")
-    source_month: int = Field(..., ge=1, le=12, description="源月份")
-    target_year: int = Field(..., ge=2000, le=2100, description="目标年份")
-    target_month: int = Field(..., ge=1, le=12, description="目标月份")
+    source_year: int = Field(..., ge=COSTING_YEAR_MIN, le=COSTING_YEAR_MAX, description="源年份")
+    source_month: int = Field(..., ge=MONTH_MIN, le=MONTH_MAX, description="源月份")
+    target_year: int = Field(..., ge=COSTING_YEAR_MIN, le=COSTING_YEAR_MAX, description="目标年份")
+    target_month: int = Field(..., ge=MONTH_MIN, le=MONTH_MAX, description="目标月份")
     scrap_category: ScrapCategory = Field(
         default=SCRAP_CATEGORY_STEEL,
         description="废料类别：钢材 / 铝板",

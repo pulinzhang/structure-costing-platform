@@ -3,6 +3,12 @@
 from fastapi import APIRouter, Depends, Query
 from sqlalchemy.orm import Session
 
+from app.common.period import (
+    COSTING_YEAR_MAX,
+    COSTING_YEAR_MIN,
+    MONTH_MAX,
+    MONTH_MIN,
+)
 from app.common.permissions.codes import Perm
 from app.database import get_db
 from app.deps.permissions import require_perm
@@ -31,8 +37,8 @@ _service = CostingEngineService()
 )
 def get_ready(
     location: str = Query(..., min_length=1, description="生产基地"),
-    year: int = Query(..., ge=2000, le=2100),
-    month: int = Query(..., ge=1, le=12),
+    year: int = Query(..., ge=COSTING_YEAR_MIN, le=COSTING_YEAR_MAX),
+    month: int = Query(..., ge=MONTH_MIN, le=MONTH_MAX),
     db: Session = Depends(get_db),
     current_user: UserVO = Depends(require_perm(Perm.COSTING_VIEW)),
 ) -> ApiResponse[CostingEngineReadyVO]:
@@ -88,8 +94,8 @@ def get_run(
 )
 def list_runs(
     location: str | None = Query(None),
-    year: int | None = Query(None, ge=2000, le=2100),
-    month: int | None = Query(None, ge=1, le=12),
+    year: int | None = Query(None, ge=COSTING_YEAR_MIN, le=COSTING_YEAR_MAX),
+    month: int | None = Query(None, ge=MONTH_MIN, le=MONTH_MAX),
     status_filter: str | None = Query(None, alias="status"),
     page: int = Query(1, ge=1),
     size: int = Query(20, ge=1, le=100),

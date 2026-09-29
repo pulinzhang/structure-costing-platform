@@ -7,9 +7,7 @@ from typing import Any, TypedDict
 from pydantic import BaseModel, Field, field_validator
 
 from app.common.money import Q2, Q4, Q6, quantize_money
-
-DEFAULT_BASE_PRICE_PROCESSING_FEE_LIMIT = Decimal("120")
-MAX_BASE_PRICE_PROCESSING_FEE_LIMIT = 300
+from app.common.system_defaults import MAX_BASE_PRICE_PROCESSING_FEE_LIMIT
 
 
 class SystemConfigUpdateDTO(BaseModel):
