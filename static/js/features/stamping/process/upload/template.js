@@ -77,7 +77,7 @@ export function uploadTemplate() {
                                         <div id="stampingProgressPanel" class="hidden text-left w-full">
                                             <div class="flex items-center justify-between gap-3 mb-3">
                                                 <div class="flex items-center gap-2 min-w-0">
-                                                    ${window.svgIcon('spinner', 'w-4 h-4 text-brand')}
+                                                    <span id="stampingProgressIcon">${window.svgIcon('spinner', 'w-4 h-4 text-brand')}</span>
                                                     <h5 id="stampingProgressTitle" class="text-xs font-medium text-ink truncate mb-0">正在解析工艺文件...</h5>
                                                 </div>
                                                 <span id="stampingProgressPercent" class="text-xs font-mono tabular-nums text-brand shrink-0">0%</span>

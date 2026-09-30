@@ -41,6 +41,78 @@ function stampCell(cell, label, omit, chrome) {
     cell.appendChild(value);
 }
 
+function visibleText(cell) {
+    const value = cell.querySelector(':scope > .record-list-value');
+    return ((value || cell).textContent || '').replace(/\s+/g, ' ').trim();
+}
+
+function realCells(row) {
+    return [...row.children].filter((cell) => cell.tagName === 'TD' && !cell.classList.contains('record-list-carry'));
+}
+
+function carryCell(row, col, text) {
+    let carry = [...row.children].find((cell) => (
+        cell.classList.contains('record-list-carry') && Number(cell.dataset.recordCol) === col
+    ));
+    if (!carry) {
+        carry = document.createElement('td');
+        carry.className = 'record-list-carry';
+        carry.dataset.recordCol = String(col);
+        row.appendChild(carry);
+    }
+    if (visibleText(carry) !== text) carry.textContent = text;
+    return carry;
+}
+
+function orderCells(row, cells) {
+    const current = [...row.children].filter((cell) => cell.tagName === 'TD');
+    const same = current.length === cells.length && current.every((cell, index) => cell === cells[index]);
+    if (!same) cells.forEach((cell) => row.appendChild(cell));
+}
+
+/**
+ * 桌面用 rowspan 把牌号等合并到后续厚度行。那些行的 DOM 里没有这些格子，
+ * 按子节点序号贴表头就会把加减价标成牌号。这里按视觉列号贴，并把合并值补进后续行。
+ */
+function rowPlans(rows) {
+    const active = new Map();
+    return rows.map((row) => {
+        const cells = realCells(row);
+        const spanCell = cells.find((cell) => cell.colSpan > 1);
+        if (spanCell) {
+            active.clear();
+            return { row, spanCell, cells };
+        }
+        let col = 0;
+        const placed = [];
+        cells.forEach((cell) => {
+            while (active.has(col)) col += 1;
+            placed.push({ cell, col });
+            const down = cell.rowSpan || 1;
+            const width = cell.colSpan || 1;
+            if (down > 1) {
+                for (let offset = 0; offset < width; offset += 1) {
+                    active.set(col + offset, { cell, left: down, start: col });
+                }
+            }
+            col += width;
+        });
+        const holes = [];
+        active.forEach((span, covered) => {
+            if (span.start === covered && !placed.some((item) => item.col === covered)) {
+                holes.push({ col: covered, source: span.cell });
+            }
+        });
+        const expired = [];
+        active.forEach((span, covered) => {
+            span.left -= 1;
+            if (span.left <= 0) expired.push(covered);
+        });
+        expired.forEach((covered) => active.delete(covered));
+        return { row, placed, holes };
+    });
+}
+
 function stampTable(table) {
     if (table.closest('#llmAssistantPanel, #sidebar')) return;
     const heads = [...table.querySelectorAll('thead th')];
@@ -48,16 +120,14 @@ function stampTable(table) {
     const labels = heads.map(headerLabel);
     if (!labels.some(Boolean)) return;
     table.classList.add('record-list');
-    table.querySelectorAll('tbody > tr').forEach((row) => {
-        const cells = [...row.children];
-        const spanCell = cells.find((cell) => cell.tagName === 'TD' && cell.colSpan > 1);
-        const section = Boolean(spanCell) && cells.length > 1;
-        row.classList.toggle('record-list-span', Boolean(spanCell));
-        row.classList.toggle('record-list-section', section);
-        if (spanCell) {
-            cells.forEach((cell) => {
-                if (cell.tagName !== 'TD') return;
-                if (cell !== spanCell) {
+    const plans = rowPlans([...table.querySelectorAll('tbody > tr')]);
+    plans.forEach((plan) => {
+        const { row } = plan;
+        row.classList.toggle('record-list-span', Boolean(plan.spanCell));
+        row.classList.toggle('record-list-section', Boolean(plan.spanCell) && plan.cells.length > 1);
+        if (plan.spanCell) {
+            plan.cells.forEach((cell) => {
+                if (cell !== plan.spanCell) {
                     stampCell(cell, '', true, false);
                     return;
                 }
@@ -67,10 +137,20 @@ function stampTable(table) {
             });
             return;
         }
-        cells.forEach((cell, index) => {
-            if (cell.tagName !== 'TD') return;
-            const omit = columnOmitted(table, index) || cell.classList.contains('hidden');
-            const label = labels[index] || '';
+        const byCol = new Map(plan.placed.map((item) => [item.col, item.cell]));
+        const wanted = new Set(plan.holes.map((hole) => hole.col));
+        row.querySelectorAll(':scope > td.record-list-carry').forEach((cell) => {
+            if (!wanted.has(Number(cell.dataset.recordCol))) cell.remove();
+        });
+        plan.holes.forEach((hole) => {
+            byCol.set(hole.col, carryCell(row, hole.col, visibleText(hole.source)));
+        });
+        const ordered = [...byCol.keys()].sort((left, right) => left - right).map((col) => byCol.get(col));
+        orderCells(row, ordered);
+        ordered.forEach((cell) => {
+            const col = [...byCol.entries()].find(([, node]) => node === cell)[0];
+            const omit = columnOmitted(table, col) || cell.classList.contains('hidden');
+            const label = labels[col] || '';
             const chrome = !omit && !label && isChromeCell(cell);
             stampCell(cell, label, omit, chrome);
         });

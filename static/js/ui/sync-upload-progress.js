@@ -1,4 +1,27 @@
 /**
+ * 进度标题左侧图标。失败/完成必须换掉转圈，否则任务结束后动画还在转。
+ *
+ * @param {HTMLElement | null} icon
+ * @param {string | undefined} status running / completed / completed-warn / failed
+ */
+export function paintUploadProgressIcon(icon, status) {
+    if (!icon) return;
+    if (status === 'failed') {
+        icon.innerHTML = window.svgIcon('exclamation-circle', 'w-4 h-4 text-danger');
+        return;
+    }
+    if (status === 'completed-warn') {
+        icon.innerHTML = window.svgIcon('exclamation-triangle', 'w-4 h-4 text-warn');
+        return;
+    }
+    if (status === 'completed') {
+        icon.innerHTML = window.svgIcon('check-circle', 'w-4 h-4 text-ok');
+        return;
+    }
+    icon.innerHTML = window.svgIcon('spinner', 'w-4 h-4 text-brand');
+}
+
+/**
  * 同步 Excel 上传进度面板：进行中假进度 → 结束满条，避免操作员以为还在跑。
  *
  * @param {{

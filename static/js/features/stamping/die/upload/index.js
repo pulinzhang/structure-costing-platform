@@ -1,5 +1,6 @@
-import { dieUploadTemplate } from './template.js?v=21';
+import { dieUploadTemplate } from './template.js?v=22';
 import { uploadSubmitLabelHtml } from '../../../../ui/upload-actions.js?v=2';
+import { paintUploadProgressIcon } from '../../../../ui/sync-upload-progress.js?v=4';
 import {
     setDropzoneDragActive,
     setDropzoneFileSelected,
@@ -328,6 +329,7 @@ export const DieUploadPage = {
         } else if (bar) {
             bar.className = 'h-full bg-brand hud-brand-glow transition-all duration-300';
         }
+        paintUploadProgressIcon(document.getElementById('dieProgressIcon'), status);
     },
 
     setUploading(isUploading) {

@@ -18,7 +18,7 @@
 import { installConfirmDialog } from './ui/confirm-dialog.js?v=6';
 import { installDeleteErrorDialog } from './ui/error-dialog.js?v=11';
 import { bindCurrentRowOnOps } from './ui/table-row.js?v=3';
-import { installRecordLists } from './ui/record-list.js?v=6';
+import { installRecordLists } from './ui/record-list.js?v=7';
 import { bindHudSelects, closeHudSelectMenu } from './ui/hud-select.js?v=1';
 import { pageMeta } from './features/index.js?v=54';
 
@@ -31,9 +31,9 @@ import {
 } from './core/permissions.js?v=15';
 import { bootLlmAssistant } from './llm-assistant/boot.js?v=64';
 import { pageConfig as dashboardPage }      from './features/dashboard/index.js?v=19';
-import { pageConfig as stampingUploadPage } from './features/stamping/process/upload/index.js?v=74';
+import { pageConfig as stampingUploadPage } from './features/stamping/process/upload/index.js?v=75';
 import { pageConfig as stampingPartsPage }  from './features/stamping/process/parts/index.js?v=90';
-import { pageConfig as stampingDieUploadPage } from './features/stamping/die/upload/index.js?v=28';
+import { pageConfig as stampingDieUploadPage } from './features/stamping/die/upload/index.js?v=29';
 import { pageConfig as stampingDieListPage } from './features/stamping/die/list/index.js?v=43';
 import { pageConfig as stampingDieUnitPricePage } from './features/stamping/die/unit-price/index.js?v=27';
 import { pageConfig as stampingDieFeeCalcPage } from './features/stamping/die-fee/calc/index.js?v=32';
@@ -51,9 +51,9 @@ import { pageConfig as stampingPartCostPage } from './features/costing/stamping-
 import { pageConfig as assemblyCostCalcPage } from './features/costing/assembly-cost/calc/index.js?v=26';
 import { pageConfig as assemblyCostPage } from './features/costing/assembly-cost/list/index.js?v=66';
 import { pageConfig as procurementContractReportPage } from './features/costing/procurement-contract-report/index.js?v=57';
-import { pageConfig as steelPricePolicyUploadPage } from './features/yishiyiyi/policy/upload/index.js?v=49';
+import { pageConfig as steelPricePolicyUploadPage } from './features/yishiyiyi/policy/upload/index.js?v=50';
 import { pageConfig as steelPricePolicyDownloadPage } from './features/yishiyiyi/policy/list/index.js?v=62';
-import { pageConfig as basePriceUploadPage } from './features/yishiyiyi/base-price/upload/index.js?v=60';
+import { pageConfig as basePriceUploadPage } from './features/yishiyiyi/base-price/upload/index.js?v=61';
 import { pageConfig as basePriceDownloadPage } from './features/yishiyiyi/base-price/list/index.js?v=54';
 import { pageConfig as winningThicknessDownloadPage } from './features/yishiyiyi/winning-thickness/list/index.js?v=31';
 import { pageConfig as steelGradeCategoryPage } from './features/masterdata/steel-grade-category/index.js?v=29';
@@ -62,7 +62,7 @@ import { pageConfig as scrapPricePage } from './features/yishiyiyi/scrap-price/i
 import { pageConfig as bomStructurePage }  from './features/bom/material/structure/index.js?v=19';
 import { pageConfig as bomWhereUsedPage } from './features/bom/material/where-used/index.js?v=23';
 import { pageConfig as bomVizPage }        from './features/bom/material/viz/index.js?v=39';
-import { pageConfig as bomUploadPage }     from './features/bom/material/upload/index.js?v=26';
+import { pageConfig as bomUploadPage }     from './features/bom/material/upload/index.js?v=27';
 import { pageConfig as bomMaterialListPage } from './features/bom/material/list/index.js?v=25';
 import { pageConfig as bomWeldingUnitPriceUploadPage } from './features/bom/welding-unit-price/upload/index.js?v=26';
 import { pageConfig as bomWeldingUnitPricePage } from './features/bom/welding-unit-price/list/index.js?v=41';
@@ -77,7 +77,7 @@ import { pageConfig as bomWeldingProcessBreakdownGeneratePage } from './features
 import { pageConfig as bomWeldingProcessBreakdownListPage } from './features/bom/welding-process-breakdown/list/index.js?v=66';
 import { pageConfig as bomWeldingFeeCalcPage } from './features/bom/welding-fee/calc/index.js?v=28';
 import { pageConfig as bomWeldingFeeListPage } from './features/bom/welding-fee/list/index.js?v=39';
-import { pageConfig as engineeringChangeUploadPage } from './features/engineering-change/design-change/upload/index.js?v=26';
+import { pageConfig as engineeringChangeUploadPage } from './features/engineering-change/design-change/upload/index.js?v=27';
 import { pageConfig as engineeringChangeListPage } from './features/engineering-change/design-change/list/index.js?v=45';
 import { pageConfig as engineeringChangeMaterialUploadPage } from './features/engineering-change/material-change/upload/index.js?v=9';
 import { pageConfig as engineeringChangeMaterialListPage } from './features/engineering-change/material-change/list/index.js?v=11';
