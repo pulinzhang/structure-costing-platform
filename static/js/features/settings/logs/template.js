@@ -2,7 +2,7 @@
  * 操作日志 — 与用户管理同一套设置页表格（非 HUD）
  */
 
-import { paginationBarHtml } from '../../../ui/page-size.js?v=6';
+import { paginationBarHtml } from '../../../ui/page-size.js?v=8';
 import { HUD_FILTER, HUD_INPUT, BTN_FILTER_SEARCH, BTN_GHOST } from '../../../ui/classes.js?v=13';
 
 export function logsTemplate() {
@@ -58,7 +58,7 @@ export function logsTemplate() {
                 </div>
 
                 <div class="overflow-x-auto brabus-bg-grid">
-                    <table class="w-full text-left text-xs border-collapse">
+                    <table class="w-full min-w-[720px] text-left text-xs border-collapse">
                         <thead>
                             <tr class="bg-app-deep border-b border-line text-ink-muted">
                                 <th class="px-4 py-3 text-[10px] font-semibold tracking-wider whitespace-nowrap">时间</th>
@@ -73,7 +73,7 @@ export function logsTemplate() {
                     </table>
                 </div>
 
-                ${paginationBarHtml({ infoId: 'totalCountPagination', selectId: 'logsPageSize', buttonsId: 'paginationBtns', wrapperId: 'paginationContainer', wrapperClass: 'flex items-center justify-between px-4 py-2.5 border-t border-line-subtle bg-app-deep' })}
+                ${paginationBarHtml({ infoId: 'totalCountPagination', selectId: 'logsPageSize', buttonsId: 'paginationBtns', wrapperId: 'paginationContainer', wrapperClass: 'flex flex-wrap items-center justify-between gap-2 px-4 py-2.5 border-t border-line-subtle bg-app-deep' })}
 
                 <div id="emptyState" class="hidden flex flex-col items-center justify-center py-16 text-center">
                     <div class="p-3 bg-app-surface border border-line text-ink-dim mb-2">

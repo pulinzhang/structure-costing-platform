@@ -4,13 +4,13 @@
  */
 
 import { basePriceDownloadTemplate } from './template.js?v=46';
-import { bindMoreMenu } from '../../../../ui/more-menu.js?v=6';
+import { bindMoreMenu } from '../../../../ui/more-menu.js?v=7';
 import {
     DEFAULT_PREVIEW_PAGE_SIZE,
     PREVIEW_PAGE_SIZE_OPTIONS,
     bindPagination,
     paintPagination,
-} from '../../../../ui/page-size.js?v=6';
+} from '../../../../ui/page-size.js?v=8';
 import { setSearchBusy } from '../../../../ui/search-busy.js?v=4';
 import {
     requireExportYearMonth,

@@ -2,7 +2,7 @@
  * 冲压模具费计算页模板
  */
 
-import { paginationBarHtml } from '../../../../ui/page-size.js?v=6';
+import { paginationBarHtml } from '../../../../ui/page-size.js?v=8';
 import { filterSelect, BTN_ABORT, BTN_GHOST } from '../../../../ui/classes.js?v=13';
 
 
@@ -11,7 +11,7 @@ export const CALC_HISTORY_COLSPAN = 14;
 export function dieFeeCalcTemplate() {
     return `
         <div class="space-y-4 w-full font-sans antialiased text-ink">
-            <div class="flex items-center justify-between pb-2 border-b border-line-subtle">
+            <div class="hidden sm:flex items-center justify-between pb-2 border-b border-line-subtle">
                 <h1 class="text-xs font-bold text-ink tracking-wider">冲压模具费计算</h1>
             </div>
             <div class="flex items-center justify-between py-2.5 border-y border-app-surface">
@@ -26,8 +26,8 @@ export function dieFeeCalcTemplate() {
                     </button>
                 </div>
             </div>
-            <div class="flex items-center justify-between border-b border-line-subtle py-2.5">
-                <div class="flex items-center gap-8">
+            <div class="flex flex-col items-stretch gap-3 border-b border-line-subtle py-2.5 sm:flex-row sm:items-center sm:justify-between">
+                <div class="flex items-center gap-4 flex-wrap sm:gap-8">
                     <div>
                         <span class="text-[9px] text-ink-dim block">布点零件</span>
                         <span id="cntParts" class="text-xs font-mono font-bold text-ink">- <span class="text-[9px] font-normal text-ink-faint">件</span></span>
@@ -43,7 +43,7 @@ export function dieFeeCalcTemplate() {
                         <span id="cntUnitPrice" class="text-xs font-mono font-bold text-ink">-</span>
                     </div>
                 </div>
-                <div class="flex items-center gap-3">
+                <div class="flex flex-col items-stretch gap-2 sm:flex-row sm:items-center sm:justify-end">
                     <span class="text-[9px] text-ink-dim">只算这一年还有效的布点。共用一套模具、这件没填重量时，沿用上一件。已经审核的不能再算。</span>
                     <button id="startCalcBtn"
                             class="${BTN_ABORT}">

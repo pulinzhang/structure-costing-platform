@@ -35,15 +35,6 @@ module.exports = {
         danger: 'rgb(var(--danger-color) / <alpha-value>)',
         overlay: 'rgb(var(--overlay) / <alpha-value>)',
       },
-      keyframes: {
-        'llm-dock-breathe': {
-          '0%, 100%': { opacity: '0.62', transform: 'scale(1)' },
-          '50%': { opacity: '1', transform: 'scale(1.045)' },
-        },
-      },
-      animation: {
-        'llm-dock-breathe': 'llm-dock-breathe 6s ease-in-out infinite',
-      },
     },
   },
   plugins: [],

@@ -78,6 +78,11 @@ const openProcessReportInNewTab = (root) => {
     const metaHtml = metaParts.length
         ? `<div class="meta">${metaParts.map((part) => esc(part).replace(/\n/g, '<br>')).join('')}</div>`
         : '';
+    const themeNames = ['--bg-deep', '--bg-main', '--border-color', '--text-main', '--text-muted', '--text-faint'];
+    const themeStyle = getComputedStyle(document.documentElement);
+    const themeVars = themeNames
+        .map((name) => `${name}: ${themeStyle.getPropertyValue(name).trim()};`)
+        .join('');
     const html = `<!DOCTYPE html>
 <html lang="zh-CN">
 <head>
@@ -85,25 +90,26 @@ const openProcessReportInNewTab = (root) => {
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>${esc(title)}</title>
 <style>
-  html, body { margin: 0; background: #0a0a0a; color: #e4e4e4; }
+  :root { ${themeVars} }
+  html, body { margin: 0; background: rgb(var(--bg-deep)); color: rgb(var(--text-main)); }
   body { font-family: "JetBrains Mono", ui-monospace, "Cascadia Mono", Consolas, monospace; }
   header {
     position: sticky; top: 0; z-index: 1;
     padding: 18px 32px 16px;
-    background: #111111;
-    border-bottom: 1px solid #222222;
+    background: rgb(var(--bg-main));
+    border-bottom: 1px solid rgb(var(--border-color));
   }
   h1 {
     margin: 0; font-size: 13px; font-weight: 600;
-    letter-spacing: 0.08em; text-transform: uppercase; color: #b0b0b0;
+    letter-spacing: 0.08em; text-transform: uppercase; color: rgb(var(--text-muted));
   }
   .meta {
-    padding: 16px 32px 0; font-size: 13px; line-height: 1.8; color: #888888;
+    padding: 16px 32px 0; font-size: 13px; line-height: 1.8; color: rgb(var(--text-faint));
   }
   pre {
     margin: 20px 32px 48px; padding: 0;
     font: inherit; font-size: 15px; line-height: 1.75;
-    white-space: pre-wrap; word-break: break-word; color: #d0d0d0;
+    white-space: pre-wrap; word-break: break-word; color: rgb(var(--text-main));
   }
 </style>
 </head>
@@ -361,7 +367,7 @@ function getOrCreateToastContainer() {
     let container = document.querySelector('.toast-container');
     if (!container) {
         container = document.createElement('div');
-        container.className = 'fixed top-4 right-4 flex flex-col gap-2 z-[9999]';
+        container.className = 'toast-container fixed top-4 right-4 flex flex-col gap-2 z-[9999]';
         document.body.appendChild(container);
     }
     return container;

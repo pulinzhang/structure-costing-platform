@@ -125,6 +125,13 @@
             transform: translateY(8px);
             transition: opacity 0.2s ease, transform 0.2s ease;
         }
+        @media (max-width: 639.98px) {
+            .toast {
+                left: 12px;
+                right: 12px;
+                bottom: 12px;
+            }
+        }
         .toast.is-on { opacity: 1; transform: none; }
         .toast.is-error { background: var(--brabus-red); color: #fff; border-color: var(--brabus-red); }
         .meta {

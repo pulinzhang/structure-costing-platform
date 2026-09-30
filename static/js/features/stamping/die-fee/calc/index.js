@@ -1,5 +1,5 @@
 import { DRAWER_SHELL, DRAWER_BACKDROP } from '../../../../ui/classes.js?v=13';
-import { opsIconButtonHtml } from '../../../../ui/hud-table.js?v=2';
+import { opsIconButtonHtml } from '../../../../ui/hud-table.js?v=3';
 import {
     dieFeeCalcTemplate,
     CALC_HISTORY_COLSPAN,
@@ -8,7 +8,7 @@ import {
     DEFAULT_PAGE_SIZE,
     bindPagination,
     paintPagination,
-} from '../../../../ui/page-size.js?v=6';
+} from '../../../../ui/page-size.js?v=8';
 import {
     formatDurationSeconds,
     formatTimingLine,

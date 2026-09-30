@@ -6,6 +6,10 @@
 
 import { BTN_PAGINATION_CURRENT } from './classes.js?v=13';
 import { clearCurrentTableRows } from './table-row.js?v=4';
+import { isPhoneLayout } from './record-list.js?v=6';
+
+/** 手机分页固定 10，不提供每页条数。 */
+export const PHONE_PAGE_SIZE = 10;
 
 export const PAGE_SIZE_OPTIONS = Object.freeze([10, 20, 50, 100]);
 export const DEFAULT_PAGE_SIZE = 10;
@@ -16,13 +20,14 @@ export const DEFAULT_PREVIEW_PAGE_SIZE = 200;
 const PAGINATION_BTN_CLASS = 'page-btn';
 
 const HUD_BAR_CLASS =
-    'flex items-center justify-between px-5 py-2.5 border-t border-line-subtle bg-app-hud';
+    'flex flex-wrap items-center justify-between gap-x-3 gap-y-2 px-3 py-2.5 border-t border-line-subtle bg-app-hud sm:px-5';
 
 export function normalizePageSize(
     value,
     options = PAGE_SIZE_OPTIONS,
     fallback = DEFAULT_PAGE_SIZE,
 ) {
+    if (isPhoneLayout()) return PHONE_PAGE_SIZE;
     const size = Number.parseInt(value, 10);
     return options.includes(size) ? size : fallback;
 }
@@ -46,7 +51,7 @@ function pageSizeSelectHtml(
         .map((n) => `<option value="${n}"${n === size ? ' selected' : ''}>${n}</option>`)
         .join('');
     return `
-        <label class="inline-flex items-center gap-1.5 shrink-0">
+        <label class="record-page-size inline-flex items-center gap-1.5 shrink-0">
             <span class="text-[10px] font-mono text-ink-faint">每页</span>
             <select id="${selectId}"
                     class="h-6 min-w-[3.25rem] pl-1.5 pr-5 text-[10px] font-mono bg-app-main border border-line-hud text-ink-muted appearance-none cursor-pointer focus:outline-none focus:border-brand-hud rounded-[2px] hud-filter">
@@ -76,12 +81,12 @@ export function paginationBarHtml(spec) {
     const currentSize = spec.currentSize ?? DEFAULT_PAGE_SIZE;
     const options = spec.options ?? PAGE_SIZE_OPTIONS;
     return `
-        <div class="${wrapperClass}"${idAttr}>
-            <div class="flex items-center gap-3 min-w-0">
+        <div class="record-pager ${wrapperClass}"${idAttr}>
+            <div class="record-pager-meta flex items-center gap-3 shrink-0">
                 ${infoHtml}
                 ${pageSizeSelectHtml(spec.selectId, currentSize, options)}
             </div>
-            <div class="flex items-center gap-0.5" id="${spec.buttonsId}"></div>
+            <div class="record-pager-pages flex items-center gap-0.5" id="${spec.buttonsId}"></div>
         </div>`;
 }
 
@@ -110,6 +115,27 @@ function bindPageSizeSelect(
 }
 
 /**
+ * 手机分页：上一页 / 当前页 / 下一页，按钮铺满一行。
+ * @param {number} page
+ * @param {number} pages
+ * @param {string} btnClass
+ */
+function renderPhonePageButtons(page, pages, btnClass) {
+    const idle =
+        'flex-1 h-10 border border-line-hud text-[12px] text-ink bg-transparent';
+    const disabledCls =
+        'flex-1 h-10 border border-line-hud text-[12px] text-ink-faint cursor-not-allowed opacity-40';
+    const prevCls = page === 1 ? disabledCls : idle;
+    const nextCls = page === pages ? disabledCls : idle;
+    return `
+        <button type="button" class="${btnClass} ${prevCls}"
+                data-page="${page - 1}" ${page === 1 ? 'disabled' : ''}>上一页</button>
+        <span class="shrink-0 min-w-[4.5rem] text-center text-[12px] font-mono tabular-nums text-ink">${page} / ${pages}</span>
+        <button type="button" class="${btnClass} ${nextCls}"
+                data-page="${page + 1}" ${page === pages ? 'disabled' : ''}>下一页</button>`;
+}
+
+/**
  * 页码按钮（左右箭头 + 最多 5 个数字 + 省略）。
  * @param {number} currentPage
  * @param {number} totalPages
@@ -119,6 +145,7 @@ function renderPageButtons(currentPage, totalPages, btnClass = PAGINATION_BTN_CL
     const pages = Number(totalPages) || 0;
     const page = Number(currentPage) || 1;
     if (pages <= 1) return '';
+    if (isPhoneLayout()) return renderPhonePageButtons(page, pages, btnClass);
     const idle =
         'flex items-center justify-center w-6 h-6 text-[10px] text-ink-dim hover:text-ink hover:bg-app-surface';
     const disabledCls =
@@ -183,6 +210,11 @@ export function bindPagination({
     options = PAGE_SIZE_OPTIONS,
     defaultSize = DEFAULT_PAGE_SIZE,
 }) {
+    if (isPhoneLayout()) {
+        const before = Number(getSize());
+        setSize(PHONE_PAGE_SIZE);
+        if (before !== PHONE_PAGE_SIZE) onPage(1);
+    }
     bindPageSizeSelect(selectId, {
         getSize,
         setSize,

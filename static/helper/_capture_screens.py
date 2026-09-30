@@ -112,7 +112,7 @@ def _wait_page_ready(page, wait_text: str | None) -> None:
 
 
 def _capture_llm(page) -> None:
-    """右侧圆钮浮窗 + 打印新开页（/llm-analysis-report）。"""
+    """顶栏入口打开浮窗 + 打印新开页（/llm-analysis-report）。"""
     page.goto(f"{BASE}/app#/dashboard", wait_until="domcontentloaded")
     dock = page.locator("#llmAssistantDock")
     dock.wait_for(state="visible", timeout=15000)

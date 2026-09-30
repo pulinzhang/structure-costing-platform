@@ -38,7 +38,7 @@ export function bomUploadTemplate() {
                                     <select id="bomUploadLocation"
                                             name="location"
                                             required
-                                            class="${UPLOAD_INPUT} hud-filter w-[280px]">
+                                            class="${UPLOAD_INPUT} hud-filter w-full max-w-[280px]">
                                         <option value="">请选择采购基地</option>
                                     </select>
                                     <p class="mt-1.5 text-[11px] text-ink-dim">核价按基地匹配钢价，导入时必须指定基地</p>
@@ -58,7 +58,7 @@ export function bomUploadTemplate() {
                                     <select id="bomUploadVehicleModel"
                                             name="vehicle_model"
                                             required
-                                            class="${UPLOAD_INPUT} hud-filter w-[280px]">
+                                            class="${UPLOAD_INPUT} hud-filter w-full max-w-[280px]">
                                         <option value="">请先选择采购基地</option>
                                     </select>
                                     <p class="mt-1.5 text-[11px] text-ink-dim">必选这个月可以上传的项目。文件里的项目代号必须和所选一致。</p>

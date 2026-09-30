@@ -3,8 +3,8 @@
  */
 
 import { HUD_SHELL, DRAWER_BACKDROP, DRAWER_SHELL, HUD_BAND, OPS_TH, filterSelect, BTN_GHOST, FILTER_LABEL, HUD_FILTER, BTN_SOLID_DANGER, BTN_HUD_CREATE, BTN_SOLID } from '../../../../ui/classes.js?v=13';
-import { filterBarHtml } from '../../../../ui/filter-bar.js?v=4';
-import { hudTableHtml, hudRowHtml, opsIconButtonHtml } from '../../../../ui/hud-table.js?v=2';
+import { filterBarHtml } from '../../../../ui/filter-bar.js?v=6';
+import { hudTableHtml, hudRowHtml, opsIconButtonHtml } from '../../../../ui/hud-table.js?v=3';
 
 
 function canOp(code) {
@@ -16,7 +16,7 @@ export function dieUnitPriceTemplate() {
         <div class="space-y-2 w-full max-w-full">
             <div class="${HUD_SHELL}">
                 <div class="${HUD_BAND}">
-                    <div class="flex items-start justify-between gap-4 mb-3">
+                    <div class="flex flex-col items-stretch gap-3 mb-3 sm:flex-row sm:items-start sm:justify-between sm:gap-4">
                         <div>
                             <h2 class="text-[13px] font-semibold text-ink tracking-wide">模具单价</h2>
                             <p class="text-[11px] text-ink-faint">按基地 + 项目维护钢板模 / 级进模单价与分摊台数，不必先有冲压工艺</p>

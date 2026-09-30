@@ -2,7 +2,7 @@
  * 登录页逻辑（对接后端 /api/auth/login）
  */
 
-// import { bindThemeSwitch } from '../../ui/theme.js?v=1';
+import { bindThemeSwitch } from '../../ui/theme.js?v=2';
 
 const SESSION_KEY = 'brabus_user';
 const REMEMBER_KEY = 'brabus_operator_id';
@@ -208,7 +208,7 @@ export function initUserMenu() {
         });
     }
 
-    // bindThemeSwitch(document.getElementById('userThemeLightSwitch'));
+    bindThemeSwitch(document.getElementById('userThemeLightSwitch'));
     syncHeaderUser();
 }
 

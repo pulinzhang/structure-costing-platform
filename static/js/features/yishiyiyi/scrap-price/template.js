@@ -6,7 +6,7 @@
 
 import { DRAWER_BACKDROP, BTN_GHOST, BTN_SOLID } from '../../../ui/classes.js?v=13';
 
-import { moreMenuItemHtml, moreMenuShellHtml } from '../../../ui/more-menu.js?v=6';
+import { moreMenuItemHtml, moreMenuShellHtml } from '../../../ui/more-menu.js?v=7';
 
 /** 金额展示：固定 2 位小数 + 千分位（输入框用，空值返回 ''） */
 export function fmtPrice(value) {
@@ -84,10 +84,10 @@ const REMARK_INPUT =
 
 export function scrapPriceTemplate() {
     return `
-        <div class="w-full max-w-[1400px] mx-auto px-6 lg:px-8 py-4">
+        <div class="w-full max-w-[1400px] mx-auto px-1 sm:px-6 lg:px-8 py-4">
 
             <!-- 顶栏 -->
-            <div class="flex items-start justify-between gap-6 mb-10">
+            <div class="flex flex-col gap-4 mb-6 sm:flex-row sm:items-start sm:justify-between sm:gap-6 sm:mb-10">
                 <div class="min-w-0 flex items-baseline gap-3 flex-wrap">
                     <h2 class="text-[14px] font-medium text-ink shrink-0">废料月度销售价</h2>
                     <div class="flex items-center gap-1.5" role="group" aria-label="废料类别">
@@ -103,7 +103,7 @@ export function scrapPriceTemplate() {
                     <p id="scrapMonthBadge" class="text-[12px] font-mono tabular-nums text-ink-dim tracking-wide">—</p>
                     <span id="scrapMonthStatus" class="text-[11px] text-ink-faint"></span>
                 </div>
-                <div class="flex items-center gap-2 shrink-0 pt-0.5">
+                <div class="flex items-center justify-end gap-2 shrink-0 pt-0.5 w-full sm:w-auto">
                     ${moreMenuShellHtml({
                         wrapId: 'scrapMoreWrap',
                         btnId: 'btnScrapMore',
@@ -148,22 +148,22 @@ export function scrapPriceTemplate() {
             </div>
 
             <!-- 价格矩阵 -->
-            <div class="relative brabus-bg-grid" id="scrapTableWrap">
+            <div class="relative brabus-bg-grid overflow-x-auto" id="scrapTableWrap">
                 <table class="w-full border-collapse table-fixed">
                     <colgroup>
-                        <col class="w-[22%]">
-                        <col class="w-[18%]">
-                        <col class="w-[16%]">
-                        <col class="w-[22%]">
-                        <col class="w-[22%]">
+                        <col class="w-[26%] sm:w-[22%]">
+                        <col class="w-[24%] sm:w-[18%]">
+                        <col class="w-[18%] sm:w-[16%]">
+                        <col class="w-[32%] sm:w-[22%]">
+                        <col class="hidden w-[22%] sm:table-column">
                     </colgroup>
                     <thead>
                         <tr class="border-b border-app-surface">
-                            <th class="pb-4 pr-6 text-left text-[10px] font-medium text-ink-faint tracking-[0.16em]">基地</th>
-                            <th class="pb-4 px-4 text-right text-[10px] font-medium text-ink-faint tracking-[0.16em]">大盘价</th>
-                            <th class="pb-4 px-4 text-right text-[10px] font-medium text-ink-faint tracking-[0.16em]">扣费</th>
-                            <th class="pb-4 px-4 text-right text-[10px] font-medium text-ink-dim tracking-[0.16em]">净价</th>
-                            <th class="pb-4 pl-6 text-left text-[10px] font-medium text-ink-faint tracking-[0.16em]"></th>
+                            <th class="pb-3 pr-2 text-left text-[10px] font-medium text-ink-faint tracking-[0.16em] sm:pb-4 sm:pr-6">基地</th>
+                            <th class="pb-3 px-1 text-right text-[10px] font-medium text-ink-faint tracking-[0.16em] sm:pb-4 sm:px-4">大盘价</th>
+                            <th class="pb-3 px-1 text-right text-[10px] font-medium text-ink-faint tracking-[0.16em] sm:pb-4 sm:px-4">扣费</th>
+                            <th class="pb-3 px-1 text-right text-[10px] font-medium text-ink-dim tracking-[0.16em] sm:pb-4 sm:px-4">净价</th>
+                            <th class="hidden pb-4 pl-6 text-left text-[10px] font-medium text-ink-faint tracking-[0.16em] sm:table-cell"></th>
                         </tr>
                     </thead>
                     <tbody id="scrapPriceTableBody">
@@ -175,7 +175,7 @@ export function scrapPriceTemplate() {
                 </div>
             </div>
 
-            <div class="mt-10 pt-5 border-t border-line-subtle flex items-center justify-between gap-4">
+            <div class="mt-6 pt-5 border-t border-line-subtle flex flex-col gap-2 sm:mt-10 sm:flex-row sm:items-center sm:justify-between sm:gap-4">
                 <span id="scrapFooterMeta" class="text-[11px] text-ink-faint tracking-[0.08em]">—</span>
                 <span id="scrapFooterHint" class="text-[11px] text-ink-faint text-right"></span>
             </div>
@@ -299,13 +299,13 @@ export function renderScrapRows(items, { editable }) {
             return `
                 <tr class="group border-b border-line-subtle hover:bg-ink/[0.012] transition-colors"
                     data-row-index="${index}" data-location="${location}">
-                    <td class="py-5 pr-6 whitespace-nowrap align-middle">
+                    <td class="py-4 pr-2 whitespace-nowrap align-middle sm:py-5 sm:pr-6">
                         <div class="flex items-center gap-3">
-                            <span class="w-px h-4 bg-app-elevated group-hover:bg-brand transition-colors shrink-0"></span>
+                            <span class="hidden h-4 w-px shrink-0 bg-app-elevated transition-colors group-hover:bg-brand sm:block"></span>
                             <span class="text-[15px] font-medium text-ink tracking-wide">${location}</span>
                         </div>
                     </td>
-                    <td class="py-5 px-4 text-right align-middle">
+                    <td class="py-4 px-1 text-right align-middle sm:py-5 sm:px-4">
                         <input type="text" inputmode="decimal" autocomplete="off"
                                class="scrap-market ${MARKET_INPUT}"
                                data-field="market_price"
@@ -313,7 +313,7 @@ export function renderScrapRows(items, { editable }) {
                                placeholder="—"
                                ${disabledAttr}>
                     </td>
-                    <td class="py-5 px-4 text-right align-middle">
+                    <td class="py-4 px-1 text-right align-middle sm:py-5 sm:px-4">
                         <input type="text" inputmode="decimal" autocomplete="off"
                                class="scrap-deduction ${DEDUCTION_INPUT}"
                                data-field="deduction_fee"
@@ -321,12 +321,12 @@ export function renderScrapRows(items, { editable }) {
                                placeholder="—"
                                ${disabledAttr}>
                     </td>
-                    <td class="py-5 px-4 text-right align-middle">
-                        <span class="scrap-net inline-block min-w-[7rem] text-right text-[17px] leading-none font-mono font-semibold tabular-nums text-ink tracking-wide">
+                    <td class="py-4 px-1 text-right align-middle sm:py-5 sm:px-4">
+                        <span class="scrap-net inline-block min-w-0 text-right text-[17px] leading-none font-mono font-semibold tabular-nums text-ink tracking-wide sm:min-w-[7rem]">
                             ${net}
                         </span>
                     </td>
-                    <td class="py-5 pl-6 align-middle">
+                    <td class="hidden py-5 pl-6 align-middle sm:table-cell">
                         <div class="${remarkVisibility} transition-opacity duration-150">
                             <input type="text"
                                    class="${REMARK_INPUT}"

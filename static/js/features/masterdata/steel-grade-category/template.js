@@ -3,9 +3,9 @@
  */
 
 import { HUD_SHELL, DRAWER_BACKDROP, DRAWER_SHELL, HUD_BAND, OPS_TH, BTN_HUD_CREATE, HUD_FILTER, BTN_GHOST, BTN_SOLID, BTN_SOLID_DANGER } from '../../../ui/classes.js?v=13';
-import { hudTableHtml, hudRowHtml, opsIconButtonHtml } from '../../../ui/hud-table.js?v=2';
+import { hudTableHtml, hudRowHtml, opsIconButtonHtml } from '../../../ui/hud-table.js?v=3';
 
-import { moreMenuItemHtml, moreMenuShellHtml } from '../../../ui/more-menu.js?v=6';
+import { moreMenuItemHtml, moreMenuShellHtml } from '../../../ui/more-menu.js?v=7';
 
 export const CATEGORY_TABS = Object.freeze([
     { id: 'all', label: '全部' },
@@ -33,12 +33,12 @@ export function steelGradeCategoryTemplate() {
             <div class="${HUD_SHELL}">
 
                 <div class="${HUD_BAND}">
-                    <div class="flex items-start justify-between gap-4">
+                    <div class="flex flex-col items-stretch gap-3 sm:flex-row sm:items-start sm:justify-between sm:gap-4">
                         <div>
                             <h2 class="text-[13px] font-semibold text-ink tracking-wide">牌号分类</h2>
                             <p class="mt-1 text-[11px] text-ink-faint">核价材质分类；工艺与基价只读本档，不自动补行</p>
                         </div>
-                        <div class="flex items-center gap-1.5 shrink-0">
+                        <div class="flex items-center justify-end gap-1.5 shrink-0 w-full sm:w-auto">
                             ${moreMenuShellHtml({
                                 wrapId: 'sgcMoreWrap',
                                 btnId: 'sgcMoreBtn',

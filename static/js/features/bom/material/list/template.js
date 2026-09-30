@@ -3,8 +3,8 @@
  */
 
 import { filterSelect, HUD_SHELL, HUD_BAND, OPS_TH, BTN_GHOST } from '../../../../ui/classes.js?v=13';
-import { filterBarHtml } from '../../../../ui/filter-bar.js?v=4';
-import { hudTableHtml, hudRowHtml, opsIconButtonHtml } from '../../../../ui/hud-table.js?v=2';
+import { filterBarHtml } from '../../../../ui/filter-bar.js?v=6';
+import { hudTableHtml, hudRowHtml, opsIconButtonHtml } from '../../../../ui/hud-table.js?v=3';
 import { hudKpiCardHtml } from '../../../../ui/hud-kpi.js?v=1';
 
 

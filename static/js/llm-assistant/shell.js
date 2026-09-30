@@ -20,7 +20,7 @@ import {
 } from './storage/conversation.js';
 import { applyPanelWidth, bindPanelResize } from './panel-size.js?v=2';
 import { pollTask } from './task/poller.js';
-import { panelClass, shellHtml } from './template.js?v=18';
+import { panelClass, shellHtml } from './template.js?v=19';
 
 /** @typedef {'closed'|'panel'|'maximized'|'docked'} AssistantMode */
 
@@ -49,7 +49,7 @@ export function createShell(options) {
 
     const els = {
         mask: root.querySelector('#llmAssistantMask'),
-        dock: root.querySelector('#llmAssistantDock'),
+        dock: document.getElementById('llmAssistantDock'),
         panel: root.querySelector('#llmAssistantPanel'),
         status: root.querySelector('#llmAssistantStatus'),
         thread: root.querySelector('#llmThread'),
@@ -62,7 +62,10 @@ export function createShell(options) {
     bindPanelResize(els.panel, { isMaximized: () => mode === 'maximized' });
     applyMode('closed');
 
-    els.dock?.addEventListener('click', () => setMode('panel'));
+    els.dock?.addEventListener('click', () => {
+        const open = mode === 'panel' || mode === 'maximized';
+        setMode(open ? 'docked' : 'panel');
+    });
     els.mask?.addEventListener('click', () => setMode('docked'));
     root.querySelector('#llmBtnDock')?.addEventListener('click', () => setMode('docked'));
     root.querySelector('#llmBtnMaximize')?.addEventListener('click', () => {
@@ -248,15 +251,26 @@ export function createShell(options) {
         setComposerCarry(els.composer, sourceMsg?.carry || null, sourceMsg?.scope || null);
     }
 
+    /**
+     * 顶栏入口一直留着。打开时字色变实，收起时回到和帮助一样的灰。
+     * @param {boolean} showPanel
+     */
+    function syncDock(showPanel) {
+        if (!els.dock) return;
+        els.dock.classList.remove('hidden');
+        els.dock.classList.add('inline-flex');
+        els.dock.setAttribute('aria-expanded', showPanel ? 'true' : 'false');
+        els.dock.classList.toggle('text-ink', showPanel);
+        els.dock.classList.toggle('text-ink-muted', !showPanel);
+    }
+
     function applyMode(next) {
         mode = next;
         const showPanel = mode === 'panel' || mode === 'maximized';
-        const showDock = !showPanel;
         const opening = showPanel && Boolean(els.panel?.classList.contains('hidden'));
 
         els.panel?.classList.toggle('hidden', !showPanel);
-        els.dock?.classList.toggle('hidden', !showDock);
-        els.dock?.classList.toggle('inline-flex', showDock);
+        syncDock(showPanel);
         els.mask?.classList.toggle('hidden', !showPanel);
         if (opening) focusComposer();
         els.history?.classList.add('hidden');

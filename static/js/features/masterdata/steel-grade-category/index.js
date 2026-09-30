@@ -11,8 +11,8 @@ import {
     DEFAULT_PAGE_SIZE,
     bindPagination,
     paintPagination,
-} from '../../../ui/page-size.js?v=6';
-import { bindMoreMenu } from '../../../ui/more-menu.js?v=6';
+} from '../../../ui/page-size.js?v=8';
+import { bindMoreMenu } from '../../../ui/more-menu.js?v=7';
 
 const API_BASE = '/api/masterdata/steel-grade-category';
 const DRAWER_ANIMATION_MS = 300;

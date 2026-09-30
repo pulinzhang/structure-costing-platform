@@ -1,13 +1,13 @@
 import { dieListTemplate } from './template.js?v=31';
-import { hudRowHtml, opsIconButtonHtml } from '../../../../ui/hud-table.js?v=2';
-import { bindMoreMenu } from '../../../../ui/more-menu.js?v=6';
-import { bindFilterBar } from '../../../../ui/filter-bar.js?v=4';
+import { hudRowHtml, opsIconButtonHtml } from '../../../../ui/hud-table.js?v=3';
+import { bindMoreMenu } from '../../../../ui/more-menu.js?v=7';
+import { bindFilterBar } from '../../../../ui/filter-bar.js?v=6';
 import {
     DEFAULT_PAGE_SIZE,
     bindPagination,
     paintPagination,
     normalizePageSize,
-} from '../../../../ui/page-size.js?v=6';
+} from '../../../../ui/page-size.js?v=8';
 import { setSearchBusy } from '../../../../ui/search-busy.js?v=4';
 import { partShortCodeCellHtml, partNumberNameCellHtml, shortPartNumber } from '../../../../domain/part-identity.js?v=5';
 import { fmtPeriodRange } from '../../../common/period-ui.js?v=4';
@@ -324,7 +324,7 @@ export const DieListPage = {
                 <div class="text-[10px] text-ink-faint mt-1">${esc(part.location)} · ${esc(part.vehicle_model)}</div>
                 <div class="text-[10px] text-ink-faint mt-0.5">${esc(fmtPeriodRange(part.effective_year, part.effective_month, part.expiry_year, part.expiry_month))}</div>
             </div>
-            <div class="grid grid-cols-3 gap-3 text-[11px] mb-5">
+            <div class="grid grid-cols-1 gap-3 text-[11px] mb-5 sm:grid-cols-3">
                 <div class="bg-app-main border border-line-subtle p-3">
                     <span class="text-[9px] tracking-wider text-ink-faint">模具类型</span>
                     <div class="text-ink mt-1">${esc(part.die_type)}</div>

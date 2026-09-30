@@ -5,11 +5,11 @@
  */
 
 import { HUD_SHELL, BTN_GHOST, filterSelect, filterInput, DRAWER_CLOSE, DRAWER_SHELL, DRAWER_BACKDROP, TH_KEY, TH_TEXT, TH_NUM, TH_FOCUS, HUD_BAND, OPS_TH, HUD_LED, BTN_SOLID } from '../../../../ui/classes.js?v=13';
-import { filterBarHtml } from '../../../../ui/filter-bar.js?v=4';
-import { hudTableHtml, hudRowHtml, opsIconButtonHtml } from '../../../../ui/hud-table.js?v=2';
+import { filterBarHtml } from '../../../../ui/filter-bar.js?v=6';
+import { hudTableHtml, hudRowHtml, opsIconButtonHtml } from '../../../../ui/hud-table.js?v=3';
 import { hudKpiCardHtml } from '../../../../ui/hud-kpi.js?v=1';
 
-import { moreMenuItemHtml, moreMenuShellHtml } from '../../../../ui/more-menu.js?v=6';
+import { moreMenuItemHtml, moreMenuShellHtml } from '../../../../ui/more-menu.js?v=7';
 import { partShortCodeCellHtml, partNumberNameCellHtml } from '../../../../domain/part-identity.js?v=5';
 
 export function partCostListTemplate() {
@@ -19,7 +19,7 @@ export function partCostListTemplate() {
 
                 <!-- HUD 战术数据看板 + 操作 -->
                 <div class="${HUD_BAND}">
-                    <div class="flex items-start justify-between gap-4 mb-3">
+                    <div class="flex flex-col items-stretch gap-3 mb-3 sm:flex-row sm:items-start sm:justify-between sm:gap-4">
                         <div class="grid grid-cols-2 lg:grid-cols-4 gap-3 font-mono flex-1 min-w-0">
                             ${hudKpiCardHtml({
                                 variant: 'focus',
@@ -48,7 +48,7 @@ export function partCostListTemplate() {
                                 footer: [{ label: '已审', valueHtml: '<span id="costHudApproved">—</span> 条' }],
                             })}
                         </div>
-                        <div class="flex items-center gap-1.5 shrink-0">
+                        <div class="flex items-center justify-end gap-1.5 shrink-0 w-full sm:w-auto">
                             ${moreMenuShellHtml({
                                 wrapId: 'costMoreWrap',
                                 btnId: 'costMoreBtn',

@@ -8,7 +8,7 @@ import {
     DEFAULT_PREVIEW_PAGE_SIZE,
     PREVIEW_PAGE_SIZE_OPTIONS,
     paginationBarHtml,
-} from '../../../../ui/page-size.js?v=6';
+} from '../../../../ui/page-size.js?v=8';
 
 export function winningThicknessDownloadTemplate() {
     return `
@@ -29,8 +29,8 @@ export function winningThicknessDownloadTemplate() {
                     </div>
                 </div>
 
-                <div class="flex items-center justify-between px-5 py-2.5 border-b border-app-surface">
-                    <div class="flex items-end gap-3 flex-wrap">
+                <div class="flex flex-col gap-3 px-5 py-2.5 border-b border-app-surface sm:flex-row sm:items-center sm:justify-between">
+                    <div class="flex items-end gap-3 flex-wrap w-full min-w-0">
                         ${filterSelect('winningThicknessYear', '年度', false)}
                         ${filterSelect('winningThicknessMonth', '月份', false)}
                         ${filterSelect('winningThicknessLocation', '基地', false)}
@@ -38,9 +38,9 @@ export function winningThicknessDownloadTemplate() {
                         ${filterSelect('winningThicknessCategory', '分类', false)}
                         ${filterInputWithDatalist('winningThicknessGrade', '牌号', 'winningThicknessGradeOptions', { disabled: true, placeholder: '请先选择分类' })}
                     </div>
-                    <div class="flex items-center gap-2">
+                    <div class="flex items-center gap-2 w-full sm:w-auto">
                         <button id="btnPreviewWinningThickness"
-                                class="${BTN_FILTER_SEARCH} h-7">
+                                class="${BTN_FILTER_SEARCH} h-7 w-full justify-center whitespace-nowrap sm:w-auto">
                             ${window.svgIcon('search', 'w-3 h-3')}
                             查询
                         </button>
@@ -57,7 +57,7 @@ export function winningThicknessDownloadTemplate() {
                 </div>
 
                 <div class="p-5">
-                    <div class="mb-3 px-3 py-2 rounded-sm relative">
+                    <div class="hidden sm:block mb-3 px-3 py-2 rounded-sm relative">
                         <div class="absolute top-0 left-0 right-0 h-px"></div>
                         <div class="flex items-center gap-2 text-[11px]">
                             <span class="text-ink-faint">已选条件：</span>
@@ -97,7 +97,7 @@ export function winningThicknessDownloadTemplate() {
                     ${paginationBarHtml({
                         infoHtml: `<div class="text-[11px] text-ink-dim">
                             共 <span id="winningThicknessRecordCount" class="text-ink-muted font-mono">0</span> 条阶梯行
-                            <span class="text-ink-faint ml-2">（同牌号多行 = 各厚度区间）</span>
+                            <span class="hidden sm:inline text-ink-faint ml-2">（同牌号多行 = 各厚度区间）</span>
                         </div>`,
                         selectId: 'winningThicknessPageSize',
                         buttonsId: 'winningThicknessPagination',

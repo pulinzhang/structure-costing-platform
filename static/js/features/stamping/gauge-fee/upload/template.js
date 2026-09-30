@@ -33,7 +33,7 @@ export function gaugeFeeUploadTemplate() {
                                     <span class="text-[13px] text-ink-dim font-medium tracking-wide uppercase">选择采购基地</span>
                                 </div>
                                 <div class="ml-6">
-                                    <select id="gfuLocation" name="location" required class="${UPLOAD_INPUT} hud-filter w-[280px]">
+                                    <select id="gfuLocation" name="location" required class="${UPLOAD_INPUT} hud-filter w-full max-w-[280px]">
                                         <option value="">请选择采购基地</option>
                                     </select>
                                 </div>
@@ -47,7 +47,7 @@ export function gaugeFeeUploadTemplate() {
                                     <span class="text-[13px] text-ink-dim font-medium tracking-wide uppercase">选择项目</span>
                                 </div>
                                 <div class="ml-6">
-                                    <select id="gfuVehicle" name="vehicle_model" required class="${UPLOAD_INPUT} hud-filter w-[280px]">
+                                    <select id="gfuVehicle" name="vehicle_model" required class="${UPLOAD_INPUT} hud-filter w-full max-w-[280px]">
                                         <option value="">请先选择基地</option>
                                     </select>
                                     <p class="mt-2 text-[10px] text-ink-faint">选项与模具布点相同。须先选基地和项目才能下载模板；模板零件来自已入库模具布点。</p>

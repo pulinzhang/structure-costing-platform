@@ -2,7 +2,7 @@
  * BOM 焊接工艺拆解 — 生成页模板（对齐钢价计算布局）
  */
 
-import { paginationBarHtml } from '../../../../ui/page-size.js?v=6';
+import { paginationBarHtml } from '../../../../ui/page-size.js?v=8';
 import { filterSelect, BTN_ABORT, BTN_GHOST } from '../../../../ui/classes.js?v=13';
 
 
@@ -11,7 +11,7 @@ export function weldingProcessBreakdownGenerateTemplate() {
         <div class="space-y-4 w-full font-sans antialiased text-ink">
 
             <div class="flex items-center justify-between pb-2 border-b border-line-subtle">
-                <h1 class="text-xs font-bold text-ink tracking-wider">焊接工艺拆解</h1>
+                <h1 class="hidden sm:block text-xs font-bold text-ink tracking-wider">焊接工艺拆解</h1>
                 <a href="#/bom-welding-process-breakdown-list"
                    class="text-[10px] text-ink-dim hover:text-brand-hud transition-colors">
                     前往拆解列表 →
@@ -30,8 +30,8 @@ export function weldingProcessBreakdownGenerateTemplate() {
                 </div>
             </div>
 
-            <div class="flex items-center justify-between border-b border-line-subtle py-2.5">
-                <div class="flex items-center gap-8">
+            <div class="flex flex-col items-stretch gap-3 border-b border-line-subtle py-2.5 sm:flex-row sm:items-center sm:justify-between">
+                <div class="flex items-center gap-4 flex-wrap sm:gap-8">
                     <div>
                         <span class="text-[9px] text-ink-dim block">焊接原文节点</span>
                         <span id="cntWeldNodes" class="text-xs font-mono font-bold text-ink">- <span class="text-[9px] font-normal text-ink-faint">条</span></span>
@@ -48,7 +48,7 @@ export function weldingProcessBreakdownGenerateTemplate() {
                     </div>
                 </div>
 
-                <div class="flex items-center gap-3">
+                <div class="flex flex-col items-stretch gap-2 sm:flex-row sm:items-center sm:justify-end">
                     <span id="reGenNotice" class="text-[9px] text-ink-dim">
                         再拆一次时，没审核的会重写。已经审核的，要先反审核。
                     </span>

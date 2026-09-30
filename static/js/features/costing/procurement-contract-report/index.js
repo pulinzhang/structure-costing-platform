@@ -18,7 +18,7 @@ import {
     DEFAULT_PAGE_SIZE,
     bindPagination,
     paintPagination,
-} from '../../../ui/page-size.js?v=6';
+} from '../../../ui/page-size.js?v=8';
 
 const API_BASE = '/api/costing/procurement-contract-report';
 const CASCADE_API = '/api/bom/filters/cascade';

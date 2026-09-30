@@ -5,12 +5,12 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta name="description" content="结构件自动核价平台">
     <title>结构件自动核价平台</title>
-    <script src="/static/js/ui/theme-boot.js?v=1"></script>
+    <script src="/static/js/ui/theme-boot.js?v=2"></script>
     <link rel="icon" type="image/x-icon" href="/static/assets/favicon.ico">
     <link href="/static/css/fonts.css?v=5" rel="stylesheet">
-    <link href="/static/css/tailwind.css?v=28" rel="stylesheet">
-    <link href="/static/css/style.css?v=68" rel="stylesheet">
-    <link href="/static/css/brabus-light-tokens.css?v=5" rel="stylesheet">
+    <link href="/static/css/tailwind.css?v=34" rel="stylesheet">
+    <link href="/static/css/style.css?v=84" rel="stylesheet">
+    <link href="/static/css/brabus-light-tokens.css?v=6" rel="stylesheet">
 </head>
 <body class="bg-app-deep min-h-screen antialiased">
     <!-- Navigation Layer backdrop -->
@@ -594,6 +594,18 @@
             </div>
             <div class="page-header-right">
                 <div id="topActions"></div>
+                <button type="button" id="llmAssistantDock"
+                        class="hidden items-center justify-center w-8 h-8 rounded-full border border-line text-ink-muted hover:bg-ink/[0.08] hover:border-ink/25 hover:text-ink transition-colors"
+                        aria-label="AI助理" title="AI助理" aria-expanded="false" aria-controls="llmAssistantPanel">
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5"
+                              d="M9.813 15.904L9 18.75l-.813-2.846a4.5 4.5 0 00-3.09-3.09L2.25 12l2.846-.813a4.5 4.5 0 003.09-3.09L9 5.25l.813 2.846a4.5 4.5 0 003.09 3.09L15.75 12l-2.846.813a4.5 4.5 0 00-3.09 3.09z"/>
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5"
+                              d="M18.259 8.715L18 9.75l-.259-1.035a3.375 3.375 0 00-2.455-2.456L14.25 6l1.036-.259a3.375 3.375 0 002.455-2.456L18 2.25l.259 1.035a3.375 3.375 0 002.456 2.456L21.75 6l-1.035.259a3.375 3.375 0 00-2.456 2.456z"/>
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5"
+                              d="M16.894 20.567L16.5 21.75l-.394-1.183a2.25 2.25 0 00-1.423-1.423L13.5 18.75l1.183-.394a2.25 2.25 0 001.423-1.423l.394-1.183.394 1.183a2.25 2.25 0 001.423 1.423l1.183.394-1.183.394a2.25 2.25 0 00-1.423 1.423z"/>
+                    </svg>
+                </button>
                 <a href="/helper/" target="_blank" rel="noopener noreferrer"
                    class="flex items-center justify-center w-8 h-8 rounded-full border border-line text-ink-muted hover:bg-ink/[0.08] hover:border-ink/25 hover:text-ink transition-colors"
                    aria-label="使用帮助" title="使用帮助">
@@ -628,8 +640,7 @@
                                 </svg>
                                 账号设置
                             </a>
-                            <!-- 浅色难看，产品面不挂开关；接线仍在 theme.js / theme-boot.js
-                            <label class="flex items-center justify-between gap-2.5 px-4 py-2.5 text-xs text-ink-muted hover:bg-ink/[0.03] hover:text-ink transition-colors cursor-pointer">
+                            <label id="userThemeRow" class="flex items-center justify-between gap-2.5 px-4 py-2.5 text-xs text-ink-muted hover:bg-ink/[0.03] hover:text-ink transition-colors cursor-pointer">
                                 <span class="inline-flex items-center gap-2.5 min-w-0">
                                     <svg class="w-3.5 h-3.5 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
                                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364 6.364-.707-.707M6.343 6.343l-.707-.707m12.728 0-.707.707M6.343 17.657l-.707.707M16 12a4 4 0 11-8 0 4 4 0 018 0z"></path>
@@ -639,7 +650,6 @@
                                 <input type="checkbox" id="userThemeLightSwitch" class="brabus-check"
                                        role="switch" aria-label="浅色界面">
                             </label>
-                            -->
                             <button type="button" id="userLogoutBtn" role="menuitem"
                                     class="w-full flex items-center gap-2.5 px-4 py-2.5 text-xs text-ink-muted hover:bg-ink/[0.03] hover:text-ink transition-colors text-left">
                                 <svg class="w-3.5 h-3.5 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
@@ -664,7 +674,7 @@
     <script src="/static/js/vendor/marked.min.js"></script>
     <script src="/static/js/vendor/purify.min.js"></script>
 
-    <script src="/static/js/main.js?v=27"></script>
-    <script type="module" src="/static/js/app.js?v=846"></script>
+    <script src="/static/js/main.js?v=29"></script>
+    <script type="module" src="/static/js/app.js?v=858"></script>
 </body>
 </html>

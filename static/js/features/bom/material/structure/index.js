@@ -374,7 +374,7 @@ const BomStructurePage = {
         }
 
         el.innerHTML = `
-            <div class="inline-flex items-stretch border border-line bg-app-deep p-0.5" role="tablist" aria-label="采购基地">
+            <div class="flex flex-wrap max-w-full items-stretch border border-line bg-app-deep p-0.5" role="tablist" aria-label="采购基地">
                 ${locations
                     .map((loc) => {
                         const isActive = loc === bomStructureState.selectedLocation;

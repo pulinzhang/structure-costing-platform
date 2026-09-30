@@ -10,13 +10,13 @@ import {
     parseUnitPriceInput,
     updateWeldingHud,
 } from './template.js?v=34';
-import { bindMoreMenu } from '../../../../ui/more-menu.js?v=6';
-import { bindFilterBar } from '../../../../ui/filter-bar.js?v=4';
+import { bindMoreMenu } from '../../../../ui/more-menu.js?v=7';
+import { bindFilterBar } from '../../../../ui/filter-bar.js?v=6';
 import {
     DEFAULT_PAGE_SIZE,
     bindPagination,
     paintPagination,
-} from '../../../../ui/page-size.js?v=6';
+} from '../../../../ui/page-size.js?v=8';
 import { setSearchBusy } from '../../../../ui/search-busy.js?v=4';
 
 /** @type {{ setOpen: (isOpen: boolean) => void, close: () => void, unbind: () => void } | null} */

@@ -35,7 +35,7 @@ export const HUD_INPUT =
 /* —— 筛选 / 胶囊 —— */
 
 export const FILTER_STRIP =
-    'flex items-center justify-between gap-4 bg-app-deep border border-line-hud px-4 py-2.5 rounded-[2px] font-mono text-[11px] shadow-[inset_0_1px_0_rgb(var(--text-main)/0.02)]';
+    'flex flex-col gap-2.5 bg-app-deep border border-line-hud px-3 py-2.5 rounded-[2px] font-mono text-[11px] shadow-[inset_0_1px_0_rgb(var(--text-main)/0.02)] sm:flex-row sm:items-center sm:justify-between sm:gap-4 sm:px-4';
 
 export const FILTER_ADVANCED =
     'hidden mt-3 pt-3 border-t border-line-hud';
@@ -65,9 +65,9 @@ export function filterSelect(id, label, requiredOrOpts = false, emptyLabelArg) {
         : { required: Boolean(requiredOrOpts), emptyLabel: emptyLabelArg };
     const required = Boolean(opts.required);
     const emptyLabel = opts.emptyLabel ?? (required ? '请选择' : '全部');
-    const widthClass = opts.widthClass || 'w-32';
+    const widthClass = opts.widthClass || 'w-full sm:w-32';
     const mark = required ? '<span class="text-brand">*</span>' : '';
-    return `<label class="space-y-1">
+    return `<label class="space-y-1 block w-full sm:w-auto">
         <span class="${FILTER_LABEL}">${label}${mark}</span>
         <select id="${id}" class="${widthClass} ${HUD_FILTER}">
             <option value="">${emptyLabel}</option>
@@ -82,19 +82,19 @@ export function filterSelect(id, label, requiredOrOpts = false, emptyLabelArg) {
  * @param {{ widthClass?: string }} [opts]
  */
 export function filterInput(id, label, placeholder = '', opts = {}) {
-    const widthClass = opts.widthClass || 'w-32';
-    return `<label class="space-y-1">
+    const widthClass = opts.widthClass || 'w-full sm:w-32';
+    return `<label class="space-y-1 block w-full sm:w-auto">
         <span class="${FILTER_LABEL}">${label}</span>
         <input id="${id}" placeholder="${placeholder}" class="${widthClass} ${HUD_INPUT}">
     </label>`;
 }
 
 export function filterInputWithDatalist(id, label, datalistId, opts = {}) {
-    const widthClass = opts.widthClass || 'w-44';
+    const widthClass = opts.widthClass || 'w-full sm:w-44';
     const placeholder = opts.placeholder || '输入搜索或选择牌号';
     const disabledAttr = opts.disabled ? ' disabled' : '';
     const disabledClass = opts.disabled ? ' disabled:opacity-50 disabled:cursor-not-allowed' : '';
-    return `<label class="space-y-1">
+    return `<label class="space-y-1 block w-full sm:w-auto">
         <span class="${FILTER_LABEL}">${label}</span>
         <input type="text" id="${id}" list="${datalistId}"${disabledAttr}
                class="${widthClass} ${HUD_INPUT}${disabledClass}"

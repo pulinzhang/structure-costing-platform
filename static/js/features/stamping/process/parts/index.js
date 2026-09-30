@@ -11,9 +11,9 @@ import {
     updatePartsHud,
 } from './template.js?v=63';
 import { can } from '../../../../core/permissions.js?v=8';
-import { hudRowHtml, opsIconButtonHtml } from '../../../../ui/hud-table.js?v=2';
-import { bindMoreMenu } from '../../../../ui/more-menu.js?v=6';
-import { bindFilterBar } from '../../../../ui/filter-bar.js?v=4';
+import { hudRowHtml, opsIconButtonHtml } from '../../../../ui/hud-table.js?v=3';
+import { bindMoreMenu } from '../../../../ui/more-menu.js?v=7';
+import { bindFilterBar } from '../../../../ui/filter-bar.js?v=6';
 import { fmtPeriodRange } from '../../../common/period-ui.js?v=4';
 import {
     BTN_SOLID,
@@ -27,7 +27,7 @@ import {
     bindPagination,
     paintPagination,
     normalizePageSize,
-} from '../../../../ui/page-size.js?v=6';
+} from '../../../../ui/page-size.js?v=8';
 import { setSearchBusy } from '../../../../ui/search-busy.js?v=4';
 import { partShortCodeCellHtml, partNumberNameCellHtml } from '../../../../domain/part-identity.js?v=5';
 
@@ -609,8 +609,8 @@ export const PartsPage = {
             modal.className = 'fixed inset-0 z-[100] flex items-center justify-center';
             modal.innerHTML = `
                 <div class="absolute inset-0 bg-overlay/70 backdrop-blur-sm" id="sketchModalBackdrop"></div>
-                <div class="relative z-10 max-w-4xl w-full mx-8 max-h-[85vh] flex flex-col">
-                    <button type="button" id="closeSketchModal" class="absolute -top-10 right-0 flex items-center gap-1.5 text-[10px] text-ink-faint hover:text-ink transition-colors tracking-wider group">
+                <div class="relative z-10 flex w-[min(56rem,92vw)] max-h-[85vh] flex-col">
+                    <button type="button" id="closeSketchModal" class="mb-2 flex shrink-0 items-center justify-end gap-1.5 self-end text-[10px] text-ink-faint hover:text-ink transition-colors tracking-wider group">
                         <span class="group-hover:text-brand transition-colors">关闭</span>
                         ${window.svgIcon('x-lg', 'w-3.5 h-3.5 group-hover:text-brand transition-colors')}
                     </button>

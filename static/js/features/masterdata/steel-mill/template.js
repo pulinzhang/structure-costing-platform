@@ -3,14 +3,14 @@
  */
 
 import { HUD_SHELL, DRAWER_SHELL, DRAWER_BACKDROP, HUD_BAND, OPS_TH, BTN_HUD_CREATE, BTN_GHOST, BTN_SOLID, BTN_SOLID_DANGER } from '../../../ui/classes.js?v=13';
-import { hudTableHtml, hudRowHtml, opsIconButtonHtml } from '../../../ui/hud-table.js?v=2';
+import { hudTableHtml, hudRowHtml, opsIconButtonHtml } from '../../../ui/hud-table.js?v=3';
 
 export function steelMillTemplate() {
     return `
         <div class="space-y-2 w-full max-w-full">
             <div class="${HUD_SHELL}">
                 <div class="${HUD_BAND}">
-                    <div class="flex items-start justify-between gap-4 mb-3">
+                    <div class="flex flex-col items-stretch gap-3 mb-3 sm:flex-row sm:items-start sm:justify-between sm:gap-4">
                         <div class="min-w-0">
                             <h2 class="text-[13px] font-semibold text-ink tracking-wide">钢厂</h2>
                             <p class="mt-1 text-[11px] text-ink-faint">缩写显示在页面上，全称用来对表头。停用之后不能再选用。</p>
@@ -21,7 +21,7 @@ export function steelMillTemplate() {
                         </button>
                     </div>
                     <div class="flex flex-wrap items-center gap-2">
-                        <div class="relative flex-1 min-w-[220px] max-w-sm">
+                        <div class="relative flex-1 min-w-0 w-full sm:min-w-[220px] sm:max-w-sm">
                             <span class="absolute inset-y-0 left-0 pl-2.5 flex items-center pointer-events-none text-ink-faint">
                                 ${window.svgIcon('search', 'w-3.5 h-3.5')}
                             </span>
