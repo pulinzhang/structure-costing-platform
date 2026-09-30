@@ -4,9 +4,13 @@
  */
 
 import { canAccessPage } from '../../core/permissions.js?v=11';
-import { dashboardTemplate } from './template.js?v=16';
+import { bindFilterBar } from '../../ui/filter-bar.js?v=6';
+import { dashboardTemplate } from './template.js?v=19';
 
 const DASHBOARD_STATS_API = '/api/dashboard/stats';
+
+/** @type {{ paint: () => void, unbind: () => void } | null} */
+let filterBar = null;
 
 const dashState = {
     year: null,
@@ -86,35 +90,24 @@ function applyScopeOptions(scope) {
         blankLabel: '全部项目',
     });
 
-    const loc = scope.location || '全部基地';
-    const vehicle = scope.vehicle_model || '全部项目';
-    setText(
-        'dashScopeLabel',
-        `${fmtPeriod(scope.year, scope.month)} · ${loc} · ${vehicle}`
-    );
-    setText('dashOutcomeSub', `${fmtPeriod(scope.year, scope.month)} · ${loc} · ${vehicle}`);
+    filterBar?.paint();
 }
 
 function renderOutcome(outcome, partCost, steelPrice) {
     const o = outcome || {};
     setText('dashPartAvg', fmtNum(o.part_cost_avg));
-    setText(
-        'dashPartAvgMeta',
-        `已审 ${partCost?.approved_count ?? o.part_cost_approved ?? 0} · 待审 ${partCost?.pending_count ?? o.part_cost_pending ?? 0}`
-            + (dashState.vehicleModel ? ' · 各厂混合' : '')
-    );
+    setText('dashPartApproved', String(partCost?.approved_count ?? o.part_cost_approved ?? 0));
+    setText('dashPartPending', String(partCost?.pending_count ?? o.part_cost_pending ?? 0));
+    document.getElementById('dashPartMix')?.classList.toggle('hidden', !dashState.vehicleModel);
     setText('dashPendingTotal', String(o.pending_total ?? 0));
-    setText(
-        'dashPendingBreakdown',
-        `加工费 ${o.process_fee_pending ?? 0} · 钢价 ${o.steel_price_pending ?? 0} · 冲压件 ${o.part_cost_pending ?? 0}`
-    );
+    setText('dashFeePending', String(o.process_fee_pending ?? 0));
+    setText('dashSteelPricePending', String(o.steel_price_pending ?? 0));
+    setText('dashPartCostPending', String(o.part_cost_pending ?? 0));
     setText('dashFeeZero', String(o.process_fee_zero ?? 0));
-    setText('dashFeeAvg', `件均 ${fmtNum(o.process_fee_avg)}`);
+    setText('dashFeeAvg', fmtNum(o.process_fee_avg));
     setText('dashSteelAvg', fmtNum(o.steel_price_avg));
-    setText(
-        'dashSteelMeta',
-        `已审 ${steelPrice?.approved_count ?? 0} · 待审 ${steelPrice?.pending_count ?? 0}`
-    );
+    setText('dashSteelApproved', String(steelPrice?.approved_count ?? 0));
+    setText('dashSteelPendingCount', String(steelPrice?.pending_count ?? 0));
 
     const pendingEl = document.getElementById('dashPendingTotal');
     if (pendingEl) {
@@ -137,9 +130,9 @@ function renderAttention(items) {
 
     if (!visible.length) {
         list.innerHTML = `
-            <div class="px-5 py-10 text-center">
-                <p class="text-sm text-ok font-medium">本期暂无待办</p>
-                <p class="mt-1 text-[10px] text-ink-faint">核价闭环可按就绪清单推进或复核已审结果</p>
+            <div class="dash-attention-empty">
+                <p class="dash-attention-clear">本期暂无待办</p>
+                <p>核价闭环可按就绪清单推进或复核已审结果</p>
             </div>
         `;
         return;
@@ -150,26 +143,22 @@ function renderAttention(items) {
             const meta = SEVERITY_META[item.severity] || SEVERITY_META.info;
             const countBadge =
                 item.count != null
-                    ? `<span class="font-mono text-[11px] tabular-nums text-ink">${esc(item.count)}</span>`
+                    ? `<span class="dash-attention-num">${esc(item.count)}</span>`
                     : '';
             const link =
                 item.page && canAccessPage(item.page)
-                    ? `<a href="#/${item.page}" data-page="${esc(item.page)}"
-                           class="shrink-0 text-[10px] text-brand hover:underline">去处理</a>`
+                    ? `<a href="#/${item.page}" data-page="${esc(item.page)}" class="dash-attention-link">去处理</a>`
                     : '';
             return `
-                <div class="flex items-start gap-3 px-5 py-3.5 hover:bg-app-surface transition-colors">
-                    <span class="mt-0.5 shrink-0 px-1.5 py-0.5 text-[9px] font-semibold tracking-wide border ${meta.className}">
-                        ${meta.label}
-                    </span>
-                    <div class="flex-1 min-w-0">
-                        <div class="flex items-center gap-2">
-                            <p class="text-xs font-medium text-ink truncate">${esc(item.title)}</p>
-                            ${countBadge}
+                <div class="dash-attention-row">
+                    <span class="dash-attention-badge ${meta.className}">${meta.label}</span>
+                    <div class="dash-attention-body">
+                        <div class="dash-attention-title-row">
+                            <p class="dash-attention-title">${esc(item.title)}${countBadge}</p>
+                            ${link}
                         </div>
-                        <p class="mt-0.5 text-[10px] text-ink-muted leading-relaxed">${esc(item.detail)}</p>
+                        <p class="dash-attention-detail">${esc(item.detail)}</p>
                     </div>
-                    ${link}
                 </div>
             `;
         })
@@ -186,18 +175,15 @@ function renderReadiness(readiness) {
         const ok = Boolean(r[row.key]);
         const canGo = canAccessPage(row.page);
         const status = ok
-            ? '<span class="text-ok font-mono text-[10px]">READY</span>'
-            : '<span class="text-warn font-mono text-[10px]">GAP</span>';
+            ? '<span class="dash-ready-state text-ok">已齐</span>'
+            : '<span class="dash-ready-state text-warn">缺口</span>';
         const link = !ok && canGo
-            ? `<a href="#/${row.page}" data-page="${row.page}" class="text-[10px] text-brand hover:underline">补齐</a>`
+            ? `<a href="#/${row.page}" data-page="${row.page}" class="dash-ready-link">补齐</a>`
             : '';
         return `
-            <div class="flex items-center justify-between gap-2 px-3 py-2 border border-line-subtle bg-app-main">
-                <span class="text-xs text-ink">${esc(row.label)}</span>
-                <div class="flex items-center gap-2">
-                    ${status}
-                    ${link}
-                </div>
+            <div class="dash-ready-row">
+                <span class="dash-ready-label">${esc(row.label)}</span>
+                <span class="dash-ready-side">${status}${link}</span>
             </div>
         `;
     }).join('');
@@ -221,19 +207,24 @@ function renderContext(master, bom, yishiyiyi, scope) {
     const b = bom || {};
     const y = yishiyiyi || {};
     const loc = scope?.location;
-    const masterEl = document.getElementById('dashMasterBlock');
-    if (masterEl) {
-        if (!m.parts) {
-            masterEl.innerHTML = canAccessPage('stamping-upload')
-                ? `<span class="text-ink-muted">${loc ? esc(loc) + ' ' : ''}尚无工艺零件</span>
-                   <a href="#/stamping-upload" data-page="stamping-upload" class="text-brand hover:underline ml-1 text-xs">去上传</a>`
-                : `<span class="text-ink-muted">${loc ? esc(loc) + ' ' : ''}尚无工艺零件</span>`;
-        } else {
-            const scopeTag = loc
-                ? `<span class="text-ink-faint">（${esc(loc)}${scope?.vehicle_model ? ' · ' + esc(scope.vehicle_model) : ''}）</span> `
-                : `<span class="text-ink-faint">（${scope?.vehicle_model ? esc(scope.vehicle_model) : '全部基地'}）</span> `;
-            masterEl.innerHTML = `${scopeTag}<span class="text-ink">冲压零件 ${esc(m.parts)} · 工序 ${esc(m.processes)} · 项目 ${esc(m.models)}</span>`;
+    const masterEmpty = document.getElementById('dashMasterEmpty');
+    const masterStats = document.getElementById('dashMasterStats');
+    if (!m.parts) {
+        masterStats?.classList.add('hidden');
+        if (masterEmpty) {
+            masterEmpty.classList.remove('hidden');
+            const where = loc ? esc(loc) + ' ' : '';
+            masterEmpty.innerHTML = canAccessPage('stamping-upload')
+                ? `<span>${where}尚无工艺零件</span>
+                   <a href="#/stamping-upload" data-page="stamping-upload" class="dash-ready-link">去上传</a>`
+                : `<span>${where}尚无工艺零件</span>`;
         }
+    } else {
+        masterEmpty?.classList.add('hidden');
+        masterStats?.classList.remove('hidden');
+        setText('dashMasterParts', String(m.parts ?? '—'));
+        setText('dashMasterProcesses', String(m.processes ?? '—'));
+        setText('dashMasterModels', String(m.models ?? '—'));
     }
 
     let scrapText;
@@ -247,12 +238,9 @@ function renderContext(master, bom, yishiyiyi, scope) {
             : `废料月 ${y.scrap_filled_count ?? 0}/${y.scrap_required_count ?? 0}`;
     }
 
-    const period = scope ? fmtPeriod(scope.year, scope.month) : '—';
-    const bomLoc = loc || '全部';
-    const vehicleTag = scope?.vehicle_model ? ` · ${scope.vehicle_model}` : '';
     setText(
         'dashBomBlock',
-        `${period} · ${bomLoc}${vehicleTag}：BOM ${b.snapshot_count ?? 0} 版 / ${b.node_count ?? 0} 节点 · 基价 ${y.base_price_count ?? 0} · 政策 ${y.policy_count ?? 0} · ${scrapText}`
+        `BOM ${b.snapshot_count ?? 0} 版 · ${b.node_count ?? 0} 节点 · 基价 ${y.base_price_count ?? 0} · 政策 ${y.policy_count ?? 0} · ${scrapText}`
     );
 }
 
@@ -301,22 +289,55 @@ async function loadStats() {
     }
 }
 
+function readScopeFromControls() {
+    const yearEl = document.getElementById('dashYear');
+    const monthEl = document.getElementById('dashMonth');
+    const locationEl = document.getElementById('dashLocation');
+    const vehicleEl = document.getElementById('dashVehicle');
+    dashState.year = yearEl?.value ? Number(yearEl.value) : null;
+    dashState.month = monthEl?.value ? Number(monthEl.value) : null;
+    dashState.location = locationEl?.value || '';
+    dashState.vehicleModel = vehicleEl?.value || '';
+}
+
+function resetFilters() {
+    const locationEl = document.getElementById('dashLocation');
+    const vehicleEl = document.getElementById('dashVehicle');
+    if (locationEl) locationEl.value = '';
+    if (vehicleEl) vehicleEl.value = '';
+    dashState.location = '';
+    dashState.vehicleModel = '';
+    loadStats();
+}
+
 function bindScopeEvents() {
     const reload = () => {
-        const yearEl = document.getElementById('dashYear');
-        const monthEl = document.getElementById('dashMonth');
-        const locationEl = document.getElementById('dashLocation');
-        const vehicleEl = document.getElementById('dashVehicle');
-        dashState.year = yearEl?.value ? Number(yearEl.value) : null;
-        dashState.month = monthEl?.value ? Number(monthEl.value) : null;
-        dashState.location = locationEl?.value || '';
-        dashState.vehicleModel = vehicleEl?.value || '';
+        readScopeFromControls();
         loadStats();
     };
-    document.getElementById('dashYear')?.addEventListener('change', reload);
-    document.getElementById('dashMonth')?.addEventListener('change', reload);
-    document.getElementById('dashLocation')?.addEventListener('change', reload);
-    document.getElementById('dashVehicle')?.addEventListener('change', reload);
+    filterBar = bindFilterBar({
+        prefix: 'dash',
+        searchId: 'dashBtnSearch',
+        resetId: 'dashResetBtn',
+        capsules: [
+            {
+                capsuleId: 'dashCapsulePeriod',
+                fieldIds: ['dashYear', 'dashMonth'],
+                idleLabel: '全部期间',
+                display: () => fmtPeriod(
+                    document.getElementById('dashYear')?.value,
+                    document.getElementById('dashMonth')?.value,
+                ) || '',
+            },
+            { capsuleId: 'dashCapsuleLocation', fieldId: 'dashLocation', idleLabel: '全部基地' },
+            { capsuleId: 'dashCapsuleVehicle', fieldId: 'dashVehicle', idleLabel: '全部项目' },
+        ],
+        onSearch: reload,
+        onReset: resetFilters,
+    });
+    ['dashYear', 'dashMonth', 'dashLocation', 'dashVehicle'].forEach((id) => {
+        document.getElementById(id)?.addEventListener('change', reload);
+    });
 }
 
 export const DashboardPage = {

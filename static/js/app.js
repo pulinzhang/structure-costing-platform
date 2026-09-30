@@ -30,7 +30,7 @@ import {
     fallbackPageName,
 } from './core/permissions.js?v=15';
 import { bootLlmAssistant } from './llm-assistant/boot.js?v=64';
-import { pageConfig as dashboardPage }      from './features/dashboard/index.js?v=19';
+import { pageConfig as dashboardPage }      from './features/dashboard/index.js?v=22';
 import { pageConfig as stampingUploadPage } from './features/stamping/process/upload/index.js?v=75';
 import { pageConfig as stampingPartsPage }  from './features/stamping/process/parts/index.js?v=90';
 import { pageConfig as stampingDieUploadPage } from './features/stamping/die/upload/index.js?v=29';
