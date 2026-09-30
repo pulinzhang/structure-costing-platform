@@ -30,8 +30,7 @@ export function loginTemplate() {
                 <div id="loginError" class="hidden text-[11px] text-danger border border-brand-hud/40/40 bg-danger/10 px-3 py-2 rounded-[2px]"></div>
 
                 <label class="flex items-center gap-2 cursor-pointer">
-                    <input type="checkbox" id="loginRememberMe"
-                        class="brabus-check">
+                    <input type="checkbox" id="loginRememberMe" class="brabus-check">
                     <span class="text-[11px] text-ink-muted">记住账号</span>
                 </label>
 

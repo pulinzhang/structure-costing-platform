@@ -1,5 +1,5 @@
 /**
- * 手机可切换深浅。未选过时手机默认浅色，桌面保持深色。
+ * 电脑和手机都可切换深浅。未选过时手机默认浅色，桌面默认深色。
  * 键名与 theme-boot.js 一致。
  */
 
@@ -22,7 +22,10 @@ function storedTheme() {
 }
 
 export function isLightTheme() {
-    return isPhoneLayout() && storedTheme() !== THEME_DARK;
+    const stored = storedTheme();
+    if (stored === THEME_LIGHT) return true;
+    if (stored === THEME_DARK) return false;
+    return isPhoneLayout();
 }
 
 export function applyStoredTheme() {

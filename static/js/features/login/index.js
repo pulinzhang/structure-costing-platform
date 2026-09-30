@@ -2,7 +2,7 @@
  * 登录页逻辑（对接后端 /api/auth/login）
  */
 
-import { bindThemeSwitch } from '../../ui/theme.js?v=2';
+import { bindThemeSwitch } from '../../ui/theme.js?v=3';
 
 const SESSION_KEY = 'brabus_user';
 const REMEMBER_KEY = 'brabus_operator_id';

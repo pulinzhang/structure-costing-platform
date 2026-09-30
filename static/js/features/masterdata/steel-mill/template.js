@@ -96,7 +96,7 @@ export function steelMillTemplate() {
                         <p class="text-[10px] text-ink-faint mt-1">别名不能与任何缩写或全称相同</p>
                     </div>
                     <label id="steelMillEnabledWrap" class="hidden flex items-center gap-2 text-[11px] text-ink-muted">
-                        <input type="checkbox" id="steelMillEnabled" class="accent-brand-hud">
+                        <input type="checkbox" id="steelMillEnabled" class="brabus-switch" role="switch">
                         启用。停用之后不能再选用。
                     </label>
                 </form>

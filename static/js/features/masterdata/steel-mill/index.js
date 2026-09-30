@@ -8,7 +8,7 @@ import {
     DEFAULT_PAGE_SIZE,
     normalizePageSize,
 } from '../../../ui/page-size.js?v=8';
-import { renderSteelMillRows, steelMillTemplate } from './template.js?v=1';
+import { renderSteelMillRows, steelMillTemplate } from './template.js?v=2';
 
 const API_BASE = '/api/masterdata/steel-mills';
 const DRAWER_ANIMATION_MS = 300;
