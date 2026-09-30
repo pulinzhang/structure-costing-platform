@@ -1,21 +1,10 @@
 /**
  * 浮动窗 DOM 模板。对话是文稿，不是密表。
+ * 入口在顶栏，不在这层。
  */
 
 const PANEL_ICON =
     'w-7 h-7 inline-flex items-center justify-center rounded-full text-ink-faint hover:text-ink hover:bg-app-elevated transition-colors';
-
-/** 顶栏入口与右侧常驻用的星芒，聊天里的操作图标不用它。 */
-function aiMarkHtml(sizeClass) {
-    return `<svg class="${sizeClass} block shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
-    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5"
-          d="M9.813 15.904L9 18.75l-.813-2.846a4.5 4.5 0 00-3.09-3.09L2.25 12l2.846-.813a4.5 4.5 0 003.09-3.09L9 5.25l.813 2.846a4.5 4.5 0 003.09 3.09L15.75 12l-2.846.813a4.5 4.5 0 00-3.09 3.09z"/>
-    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5"
-          d="M18.259 8.715L18 9.75l-.259-1.035a3.375 3.375 0 00-2.455-2.456L14.25 6l1.036-.259a3.375 3.375 0 002.455-2.456L18 2.25l.259 1.035a3.375 3.375 0 002.456 2.456L21.75 6l-1.035.259a3.375 3.375 0 00-2.456 2.456z"/>
-    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5"
-          d="M16.894 20.567L16.5 21.75l-.394-1.183a2.25 2.25 0 00-1.423-1.423L13.5 18.75l1.183-.394a2.25 2.25 0 001.423-1.423l.394-1.183.394 1.183a2.25 2.25 0 001.423 1.423l1.183.394-1.183.394a2.25 2.25 0 00-1.423 1.423z"/>
-  </svg>`;
-}
 
 const PANEL_BASE =
     'fixed z-[110] flex flex-col overflow-hidden bg-app-main text-ink';
@@ -34,13 +23,6 @@ export function panelClass(maximized) {
 export function shellHtml() {
     return `
 <div id="llmAssistantMask" class="hidden fixed inset-0 z-[109] bg-transparent" aria-hidden="true"></div>
-
-<button type="button" id="llmAssistantDock"
-        class="group hidden fixed z-[110] items-center justify-center w-11 h-11 rounded-full border border-line-subtle bg-app-main text-ink-muted hover:text-ink
-               right-3 top-1/2 -translate-y-1/2 max-md:right-4 max-md:top-auto max-md:bottom-4 max-md:translate-y-0"
-        aria-label="展开AI助理" title="AI助理">
-  ${aiMarkHtml('w-5 h-5 motion-safe:animate-llm-dock-breathe group-hover:[animation-play-state:paused]')}
-</button>
 
 <section id="llmAssistantPanel"
          class="hidden ${panelClass(false)}"
