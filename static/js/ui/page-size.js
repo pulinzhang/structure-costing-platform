@@ -115,24 +115,263 @@ function bindPageSizeSelect(
 }
 
 /**
- * 手机分页：上一页 / 当前页 / 下一页，按钮铺满一行。
+ * 手机分页：还有下一页时提示滑动；到最后一页在底部写「没有更多了」。
  * @param {number} page
  * @param {number} pages
- * @param {string} btnClass
  */
-function renderPhonePageButtons(page, pages, btnClass) {
-    const idle =
-        'flex-1 h-10 border border-line-hud text-[12px] text-ink bg-transparent';
-    const disabledCls =
-        'flex-1 h-10 border border-line-hud text-[12px] text-ink-faint cursor-not-allowed opacity-40';
-    const prevCls = page === 1 ? disabledCls : idle;
-    const nextCls = page === pages ? disabledCls : idle;
-    return `
-        <button type="button" class="${btnClass} ${prevCls}"
-                data-page="${page - 1}" ${page === 1 ? 'disabled' : ''}>上一页</button>
-        <span class="shrink-0 min-w-[4.5rem] text-center text-[12px] font-mono tabular-nums text-ink">${page} / ${pages}</span>
-        <button type="button" class="${btnClass} ${nextCls}"
-                data-page="${page + 1}" ${page === pages ? 'disabled' : ''}>下一页</button>`;
+function renderPhoneLoadMore(page, pages) {
+    if (page >= pages) {
+        return '<p class="record-pager-more" data-phone-more="end">没有更多了</p>';
+    }
+    return '<p class="record-pager-more" data-phone-more="next">滑动加载更多</p>';
+}
+
+const phoneSessions = new Map();
+let phoneMediaBound = false;
+
+function pagerTbody(buttonsEl) {
+    const pager = buttonsEl.closest('.record-pager');
+    if (!pager) return null;
+    let node = pager.previousElementSibling;
+    while (node) {
+        if (node.matches && node.matches('table')) {
+            const body = node.querySelector('tbody');
+            if (body) return body;
+        }
+        const nested = node.querySelector ? node.querySelector('tbody') : null;
+        if (nested) return nested;
+        node = node.previousElementSibling;
+    }
+    return null;
+}
+
+function observePhoneSentinel(session) {
+    if (!session.observer) return;
+    session.observer.disconnect();
+    if (!isPhoneLayout()) return;
+    const node = session.el.querySelector('[data-phone-more="next"]');
+    if (node) session.observer.observe(node);
+}
+
+function pageScroller() {
+    return document.scrollingElement || document.documentElement;
+}
+
+function rememberPhoneScroll(session, tbody) {
+    const anchor = tbody?.querySelector('tr') || null;
+    session.anchor = anchor;
+    session.anchorTop = anchor ? anchor.getBoundingClientRect().top : null;
+    session.scrollTop = pageScroller().scrollTop;
+}
+
+function keepPhonePose(pose) {
+    const scroller = pageScroller();
+    if (!scroller || !pose) return;
+    const previous = scroller.style.scrollBehavior;
+    scroller.style.scrollBehavior = 'auto';
+    const anchor = pose.anchor;
+    if (anchor && anchor.isConnected && pose.anchorTop != null) {
+        const delta = anchor.getBoundingClientRect().top - pose.anchorTop;
+        if (Math.abs(delta) > 1) scroller.scrollTop += delta;
+    } else if (pose.scrollTop != null) {
+        scroller.scrollTop = pose.scrollTop;
+    }
+    scroller.style.scrollBehavior = previous;
+}
+
+function keepPhoneScroll(session) {
+    keepPhonePose(session);
+}
+
+function placeSnapshot(session, tbody) {
+    const snap = session.snapshot || [];
+    if (!snap.length || !tbody) return;
+    if (tbody.firstElementChild === snap[0]) return;
+    const frag = document.createDocumentFragment();
+    snap.forEach((row) => frag.appendChild(row));
+    tbody.insertBefore(frag, tbody.firstChild);
+}
+
+function finishPhoneAppend(session, tbody) {
+    placeSnapshot(session, tbody);
+    session.snapshot = null;
+    session.appending = false;
+    session.stacked = true;
+    if (tbody) tbody.style.overflowAnchor = '';
+    const pose = {
+        anchor: session.anchor,
+        anchorTop: session.anchorTop,
+        scrollTop: session.scrollTop,
+    };
+    keepPhonePose(pose);
+    requestAnimationFrame(() => keepPhonePose(pose));
+}
+
+function watchPhoneReplace(session, tbody) {
+    if (session.mo) session.mo.disconnect();
+    if (!tbody) {
+        session.appending = false;
+        session.snapshot = null;
+        return;
+    }
+    tbody.style.overflowAnchor = 'none';
+    const obs = new MutationObserver(() => {
+        if (!session.appending || !session.snapshot) return;
+        if (tbody.children.length === 0) {
+            placeSnapshot(session, tbody);
+            keepPhoneScroll(session);
+            return;
+        }
+        const snap = session.snapshot;
+        const holding = tbody.firstElementChild === snap[0] && tbody.children.length === snap.length;
+        if (holding) {
+            keepPhoneScroll(session);
+            return;
+        }
+        obs.disconnect();
+        session.mo = null;
+        clearTimeout(session.timer);
+        finishPhoneAppend(session, tbody);
+    });
+    session.mo = obs;
+    obs.observe(tbody, { childList: true });
+    clearTimeout(session.timer);
+    session.timer = setTimeout(() => {
+        if (!session.appending) return;
+        obs.disconnect();
+        session.mo = null;
+        tbody.style.overflowAnchor = '';
+        session.appending = false;
+        session.snapshot = null;
+        session.loading = false;
+        session.wasAppend = false;
+    }, 8000);
+}
+
+function requestPhoneNext(session) {
+    if (!isPhoneLayout() || session.loading || session.appending) return;
+    if (session.page >= session.pages) return;
+    const tbody = pagerTbody(session.el);
+    session.loading = true;
+    session.appending = true;
+    session.wasAppend = true;
+    session.snapshot = tbody ? [...tbody.children] : [];
+    rememberPhoneScroll(session, tbody);
+    const sentinel = session.el.querySelector('[data-phone-more="next"]');
+    if (sentinel) sentinel.textContent = '加载中';
+    clearCurrentTableRows();
+    watchPhoneReplace(session, tbody);
+    try {
+        session.onPage(session.page + 1);
+    } catch (err) {
+        session.loading = false;
+        session.appending = false;
+        session.wasAppend = false;
+        session.snapshot = null;
+        if (session.mo) session.mo.disconnect();
+        session.mo = null;
+        throw err;
+    }
+}
+
+function sentinelStillVisible(session) {
+    const node = session.el.querySelector('[data-phone-more="next"]');
+    if (!node) return false;
+    const rect = node.getBoundingClientRect();
+    return rect.top < window.innerHeight + 200 && rect.bottom > -200;
+}
+
+function dropDetachedPhoneSessions() {
+    const detached = [];
+    phoneSessions.forEach((session, buttonsId) => {
+        if (!session.el.isConnected) detached.push(buttonsId);
+    });
+    detached.forEach((buttonsId) => {
+        const session = phoneSessions.get(buttonsId);
+        session.observer?.disconnect();
+        session.mo?.disconnect();
+        clearTimeout(session.timer);
+        phoneSessions.delete(buttonsId);
+    });
+}
+
+function ensurePhoneMedia() {
+    if (phoneMediaBound) return;
+    phoneMediaBound = true;
+    window.matchMedia('(max-width: 639.98px)').addEventListener('change', () => {
+        dropDetachedPhoneSessions();
+        phoneSessions.forEach((session) => {
+            if (isPhoneLayout()) session.setSize(PHONE_PAGE_SIZE);
+            session.stacked = false;
+            session.loading = false;
+            session.appending = false;
+            session.wasAppend = false;
+            session.snapshot = null;
+            if (session.mo) session.mo.disconnect();
+            session.mo = null;
+            session.onPage(1);
+        });
+    });
+}
+
+function bindPhoneLoadMore(buttonsId, onPage, setSize) {
+    const el = document.getElementById(buttonsId);
+    if (!el) return;
+    const previous = phoneSessions.get(buttonsId);
+    if (previous) {
+        previous.observer?.disconnect();
+        previous.mo?.disconnect();
+        clearTimeout(previous.timer);
+    }
+    const session = {
+        el,
+        onPage,
+        setSize,
+        page: 1,
+        pages: 1,
+        loading: false,
+        appending: false,
+        wasAppend: false,
+        stacked: false,
+        snapshot: null,
+        observer: null,
+        mo: null,
+        timer: 0,
+    };
+    session.observer = new IntersectionObserver((entries) => {
+        if (!entries.some((entry) => entry.isIntersecting)) return;
+        requestPhoneNext(session);
+    }, { root: null, rootMargin: '200px' });
+    phoneSessions.set(buttonsId, session);
+    ensurePhoneMedia();
+    observePhoneSentinel(session);
+}
+
+function notePhonePaint(buttonsId, currentPage, totalPages) {
+    const session = phoneSessions.get(buttonsId);
+    const el = document.getElementById(buttonsId);
+    if (!session || !el || !isPhoneLayout()) return;
+    const page = Number(currentPage) || 1;
+    const pages = Number(totalPages) || 0;
+    const prev = session.page;
+    const grew = session.wasAppend && page > prev;
+    if (session.wasAppend && page <= prev) {
+        session.appending = false;
+        session.snapshot = null;
+        if (session.mo) session.mo.disconnect();
+        session.mo = null;
+    }
+    session.el = el;
+    session.page = page;
+    session.pages = pages;
+    session.wasAppend = false;
+    session.loading = false;
+    observePhoneSentinel(session);
+    if (!grew) return;
+    queueMicrotask(() => {
+        if (session.loading || session.appending || !isPhoneLayout()) return;
+        if (sentinelStillVisible(session)) requestPhoneNext(session);
+    });
 }
 
 /**
@@ -144,8 +383,11 @@ function renderPhonePageButtons(page, pages, btnClass) {
 function renderPageButtons(currentPage, totalPages, btnClass = PAGINATION_BTN_CLASS) {
     const pages = Number(totalPages) || 0;
     const page = Number(currentPage) || 1;
+    if (isPhoneLayout()) {
+        if (pages < 1) return '';
+        return renderPhoneLoadMore(page, pages);
+    }
     if (pages <= 1) return '';
-    if (isPhoneLayout()) return renderPhonePageButtons(page, pages, btnClass);
     const idle =
         'flex items-center justify-center w-6 h-6 text-[10px] text-ink-dim hover:text-ink hover:bg-app-surface';
     const disabledCls =
@@ -186,6 +428,7 @@ export function paintPagination(buttonsId, currentPage, totalPages) {
     const el = document.getElementById(buttonsId);
     if (!el) return;
     el.innerHTML = renderPageButtons(currentPage, totalPages);
+    notePhonePaint(buttonsId, currentPage, totalPages);
 }
 
 function bindPaginationButtons(buttonsId, onPage) {
@@ -210,6 +453,7 @@ export function bindPagination({
     options = PAGE_SIZE_OPTIONS,
     defaultSize = DEFAULT_PAGE_SIZE,
 }) {
+    bindPhoneLoadMore(buttonsId, onPage, setSize);
     if (isPhoneLayout()) {
         const before = Number(getSize());
         setSize(PHONE_PAGE_SIZE);

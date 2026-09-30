@@ -5,7 +5,7 @@
  * 抽屉：编辑新增、修改密码、删除确认、授权
  */
 
-import { paginationBarHtml } from '../../../ui/page-size.js?v=8';
+import { paginationBarHtml } from '../../../ui/page-size.js?v=11';
 import { DRAWER_SHELL, DRAWER_BACKDROP, BTN_FILTER_SEARCH, HUD_FILTER, BTN_GHOST, BTN_HUD_CREATE, BTN_SOLID, BTN_SOLID_DANGER } from '../../../ui/classes.js?v=13';
 import { opsIconButtonHtml } from '../../../ui/hud-table.js?v=3';
 

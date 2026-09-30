@@ -11,7 +11,7 @@ import {
     PREVIEW_PAGE_SIZE_OPTIONS,
     bindPagination,
     paintPagination,
-} from '../../../../ui/page-size.js?v=8';
+} from '../../../../ui/page-size.js?v=11';
 import { setSearchBusy } from '../../../../ui/search-busy.js?v=4';
 import {
     requireExportYearMonth,

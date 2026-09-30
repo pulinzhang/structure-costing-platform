@@ -66,3 +66,14 @@ html[data-theme="light"] {
     --viz-consumable: 90 83 76;
     --viz-other: 112 119 125;
 }
+
+/* 手机浅色：纸面抬升，关掉深色霓虹。桌面浅色仍用上面的阴影和 2px。 */
+@media (max-width: 639.98px) {
+    html[data-theme="light"] {
+        --shadow-hud: 0 1px 2px rgb(var(--overlay) / 0.04), 0 8px 24px rgb(var(--overlay) / 0.06);
+        --shadow-drawer: -12px 0 32px rgb(var(--overlay) / 0.12);
+        --glow-hud: none;
+        --glow-brand: none;
+        --radius-ctl: 8px;
+    }
+}

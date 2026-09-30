@@ -4,7 +4,7 @@
  */
 
 import { TH_ROW, TR_HUD, ROW_LED, OPS_TD, OPS_ICON, OPS_ICON_DANGER } from './classes.js?v=13';
-import { paginationBarHtml } from './page-size.js?v=8';
+import { paginationBarHtml } from './page-size.js?v=11';
 
 /**
  * @param {string} prefix
