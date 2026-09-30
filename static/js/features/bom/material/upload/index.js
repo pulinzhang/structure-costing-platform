@@ -3,8 +3,9 @@
  * 与冲压工艺上传同一模式：task_id + 进度轮询
  */
 
-import { bomUploadTemplate } from './template.js?v=15';
+import { bomUploadTemplate } from './template.js?v=16';
 import { uploadSubmitLabelHtml } from '../../../../ui/upload-actions.js?v=2';
+import { paintUploadProgressIcon } from '../../../../ui/sync-upload-progress.js?v=4';
 import { can } from '../../../../core/permissions.js?v=8';
 import {
     SOP_INTRO,
@@ -341,6 +342,7 @@ const BomUploadPage = {
             bar.className = 'h-full bg-brand hud-brand-glow transition-all duration-300';
             if (percentEl) percentEl.className = 'text-xs font-mono tabular-nums text-brand shrink-0';
         }
+        paintUploadProgressIcon(document.getElementById('bomUploadProgressIcon'), status);
     },
 
     hideError() {

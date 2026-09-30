@@ -1,5 +1,6 @@
-import { policyUploadTemplate } from './template.js?v=9';
+import { policyUploadTemplate } from './template.js?v=10';
 import { uploadSubmitLabelHtml } from '../../../../ui/upload-actions.js?v=2';
+import { paintUploadProgressIcon } from '../../../../ui/sync-upload-progress.js?v=4';
 
 const MAX_RECENT_UPLOADS = 8;
 const POLL_INTERVAL_MS = 2000;
@@ -292,6 +293,7 @@ const PolicyUploadPage = {
             bar.className = 'h-full bg-brand hud-brand-glow transition-all duration-300';
             if (percentEl) percentEl.className = 'text-xs font-mono tabular-nums text-brand shrink-0';
         }
+        paintUploadProgressIcon(document.getElementById('policyProgressIcon'), status);
     },
 
     setUploading(isUploading) {

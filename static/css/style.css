@@ -621,6 +621,10 @@ textarea:-webkit-autofill:active {
     display: none;
 }
 
+td.record-list-carry {
+    display: none;
+}
+
 /* ============ 手机 (<640px) ============ */
 @media (max-width: 639.98px) {
     .main-content {

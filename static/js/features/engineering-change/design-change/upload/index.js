@@ -2,8 +2,9 @@
  * 工程变更上传页 — 异步 task_id + 拖拽区原位进度（对齐布点 / 工艺上传）
  */
 
-import { engineeringChangeUploadTemplate } from './template.js?v=21';
+import { engineeringChangeUploadTemplate } from './template.js?v=22';
 import { uploadSubmitLabelHtml } from '../../../../ui/upload-actions.js?v=2';
+import { paintUploadProgressIcon } from '../../../../ui/sync-upload-progress.js?v=4';
 import { can } from '../../../../core/permissions.js?v=8';
 import {
     setDropzoneDragActive,
@@ -356,6 +357,7 @@ const EngineeringChangeUploadPage = {
         } else if (bar) {
             bar.className = 'h-full bg-brand hud-brand-glow transition-all duration-300';
         }
+        paintUploadProgressIcon(document.getElementById('ecProgressIcon'), status);
     },
 
     setUploading(isUploading) {

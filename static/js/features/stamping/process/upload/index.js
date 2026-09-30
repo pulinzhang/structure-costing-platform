@@ -3,8 +3,9 @@
  * 冲压工艺上传 — 异步 task_id + 进度轮询
  */
 
-import { uploadTemplate } from './template.js?v=27';
+import { uploadTemplate } from './template.js?v=28';
 import { uploadSubmitLabelHtml } from '../../../../ui/upload-actions.js?v=2';
+import { paintUploadProgressIcon } from '../../../../ui/sync-upload-progress.js?v=4';
 import {
     setDropzoneDragActive,
     setDropzoneFileSelected,
@@ -358,6 +359,7 @@ export const UploadPage = {
             bar.className = 'h-full bg-brand hud-brand-glow transition-all duration-300';
             if (percentEl) percentEl.className = 'text-xs font-mono tabular-nums text-brand shrink-0';
         }
+        paintUploadProgressIcon(document.getElementById('stampingProgressIcon'), status);
     },
 
     updateSubmitEnabled() {

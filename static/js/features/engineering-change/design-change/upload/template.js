@@ -98,7 +98,7 @@ export function engineeringChangeUploadTemplate() {
                                         <div id="ecProgressPanel" class="hidden text-left w-full">
                                             <div class="flex items-center justify-between gap-3 mb-3">
                                                 <div class="flex items-center gap-2 min-w-0">
-                                                    ${window.svgIcon('spinner', 'w-4 h-4 text-brand')}
+                                                    <span id="ecProgressIcon">${window.svgIcon('spinner', 'w-4 h-4 text-brand')}</span>
                                                     <h5 id="ecProgressTitle" class="text-xs font-medium text-ink truncate mb-0">正在解析设计变更...</h5>
                                                 </div>
                                                 <span id="ecProgressPercent" class="text-xs font-mono tabular-nums text-brand shrink-0">0%</span>

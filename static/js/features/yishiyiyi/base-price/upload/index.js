@@ -3,8 +3,9 @@
  * 基准价格上传 — 异步 task_id + 进度轮询
  */
 
-import { basePriceUploadTemplate } from './template.js?v=55';
+import { basePriceUploadTemplate } from './template.js?v=56';
 import { uploadSubmitLabelHtml } from '../../../../ui/upload-actions.js?v=2';
+import { paintUploadProgressIcon } from '../../../../ui/sync-upload-progress.js?v=4';
 
 const POLL_INTERVAL_MS = 2000;
 
@@ -238,6 +239,7 @@ const BasePriceUploadPage = {
             bar.className = 'h-full bg-brand hud-brand-glow transition-all duration-300';
             if (percentEl) percentEl.className = 'text-xs font-mono tabular-nums text-brand shrink-0';
         }
+        paintUploadProgressIcon(document.getElementById('basePriceProgressIcon'), status);
     },
 
     setUploading(isUploading) {
