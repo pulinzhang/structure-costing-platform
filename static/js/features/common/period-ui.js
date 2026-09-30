@@ -143,7 +143,7 @@ export function asOfFilterHtml(prefix, options = {}) {
     const checkbox = includeExpired
         ? `<label class="flex items-center gap-1.5 h-9 mt-5">
             <input id="${prefix}IncludeExpired" type="checkbox"
-                   class="brabus-check">
+                   class="brabus-switch" role="switch">
             <span class="text-[10px] text-ink-muted">含已失效</span>
         </label>`
         : '';

@@ -161,9 +161,9 @@ export function profileTemplate(user = {}) {
                             <p id="passwordMatchTip" class="text-[10px] text-ink-faint mt-1.5"></p>
                         </div>
 
-                        <label class="flex items-start gap-2 cursor-pointer select-none">
+                        <label class="flex items-center gap-2 cursor-pointer select-none">
                             <input type="checkbox" id="logoutOtherSessions" checked
-                                   class="mt-0.5 brabus-check">
+                                   class="brabus-switch" role="switch">
                             <span class="text-[11px] text-ink-muted leading-relaxed">改密成功后注销其他设备登录</span>
                         </label>
                     </form>

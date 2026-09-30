@@ -20,10 +20,10 @@ alwaysApply: false
 - JS 第三方：`static/js/vendor/`。禁止 jsDelivr。
 - `static/js` 根目录只留入口：`main.js`、`app.js`。横切 `core/`（`permissions.js`）；跨页领域展示 `domain/`（`part-identity.js`、`duration.js`）；HUD 原语与控件 `ui/`（`classes.js`、`filter-bar.js`、`hud-table.js`、`page-size.js` 等）。禁止把新控件或工具再扔回根目录。
 - 脚本：先普通 `<script> main.js`，再 `type="module"` 的 `app.js` / `login/boot.js`。改脚本递增对应 `?v=`。
-- 禁止 Jinja2。禁止往 `style.css` 加业务 class（壳层：sidebar / page-header / 滚动条 / `@keyframes` / `.sr-only` / `.toast-shell` / `.brabus-bg-grid` / `.brabus-check` / `.hud-filter` / `.hud-select-menu` / `.hud-led` / `.hud-brand-glow` / `.hud-brand-glow-hover` / `.hud-kpi-*-glow` / `.hud-kpi-aux-inset` 可留）。
+- 禁止 Jinja2。禁止往 `style.css` 加业务 class（壳层：sidebar / page-header / 滚动条 / `@keyframes` / `.sr-only` / `.toast-shell` / `.brabus-bg-grid` / `.brabus-switch` / `.brabus-check` / `.hud-filter` / `.hud-select-menu` / `.hud-led` / `.hud-brand-glow` / `.hud-brand-glow-hover` / `.hud-kpi-*-glow` / `.hud-kpi-aux-inset` 可留）。
 - 内联 `style` 仅阴影/渐变等 Tailwind 表达不了的；历史抽屉不追溯。
 
-`:root` 色板在 `style.css`（RGB 通道）。浅色靠 `html[data-theme="light"]` + `brabus-light-tokens.css`；默认不设该属性（Carbon）。用户菜单「浅色界面」现网注释掉；需要浅色时本地写入 `brabus_theme=light`，`theme-boot.js` 在 CSS 前同步。禁止 Tailwind `dark:`，禁止业务页为浅色再写一套 class。帮助站不要挂此文件；`helper.css` 用官网 **WHITE**（底 `#fff`），OFFWHITE `#f5f5f5` 只给浅层/页脚类块，不跟平台 HUD、不跟 Material。另有 `--grid-size` / `--radius-ctl` / `--shadow-hud` / `--shadow-drawer` / `--glow-hud` / `--hairline`（迎光 1px 高光，深浅都是白）。业务用 Tailwind 语义色：`bg-app-deep` / `bg-app-main` / `bg-app-surface` / `bg-app-elevated` / `bg-app-hud`；字 `text-ink` / `text-ink-muted` / `text-ink-dim` / `text-ink-faint`；实心底上的字 `text-ink-onbrand`（`--text-on-brand`，禁止再用 `text-white`）；边 `border-line` / `border-line-hud`；红 `brand`（`#b70826`）与 HUD `brand-hud`（`#FF1E27`）。**禁止新写主题 hex 任意值**（`bg-[#0a0a0a]`）。同表不得两套红混用。原语在 `static/js/ui/classes.js`。
+`:root` 色板在 `style.css`（RGB 通道）。浅色靠 `html[data-theme="light"]` + `brabus-light-tokens.css`；默认不设该属性（Carbon）。用户菜单「浅色界面」电脑和手机都可切；未写入 `brabus_theme` 时手机默认浅色、电脑默认深色，`theme-boot.js` 在 CSS 前同步。禁止 Tailwind `dark:`，禁止业务页为浅色再写一套 class。帮助站不要挂此文件；`helper.css` 用官网 **WHITE**（底 `#fff`），OFFWHITE `#f5f5f5` 只给浅层/页脚类块，不跟平台 HUD、不跟 Material。另有 `--grid-size` / `--radius-ctl` / `--shadow-hud` / `--shadow-drawer` / `--glow-hud` / `--hairline`（迎光 1px 高光，深浅都是白）。业务用 Tailwind 语义色：`bg-app-deep` / `bg-app-main` / `bg-app-surface` / `bg-app-elevated` / `bg-app-hud`；字 `text-ink` / `text-ink-muted` / `text-ink-dim` / `text-ink-faint`；实心底上的字 `text-ink-onbrand`（`--text-on-brand`，禁止再用 `text-white`）；边 `border-line` / `border-line-hud`；红 `brand`（`#b70826`）与 HUD `brand-hud`（`#FF1E27`）。**禁止新写主题 hex 任意值**（`bg-[#0a0a0a]`）。同表不得两套红混用。原语在 `static/js/ui/classes.js`。
 
 新页必须同时：`pageMeta`、`app.js` 注册、侧栏 `data-page`（若需菜单）、权限码（`docs/permission-design.md`）。
 
@@ -47,7 +47,7 @@ JS 标识符：camelCase；页面对象 PascalCase；常量 `UPPER_SNAKE`；与�
 - 抽屉：`DRAWER_BACKDROP` z-80、`DRAWER_SHELL` z-85，append 到 `body`。禁止 `z-40`/`z-50`。
 - 弹出的错误提示框走 `static/js/ui/error-dialog.js`。删除失败（含批量删除）由壳上的 `showDeleteError` 弹出，全站只有一个。禁止各页再复制这套遮罩、正文和复制按钮，也禁止删除失败再走 Toast。上传页嵌在表单里的错误面板保持原样，不要改成这个弹层。
 - 操作前确认（删除等）走 `static/js/ui/confirm-dialog.js` 的 `confirmAction`，全站只有一个。禁止 `window.confirm` / `confirm()`。各页已有的确认抽屉保持原样。
-- 禁止 Bootstrap、浅色底（`bg-white` 等）、`rounded-lg` 及以上、`shadow-md` 等。控件圆角 2px。图标走 `svgIcon`，描边 1.5。
+- 禁止 Bootstrap、浅色底（`bg-white` 等）、`rounded-lg` 及以上、`shadow-md` 等。控件圆角 2px。业务勾选用 `.brabus-switch`（胶囊轨道）。登录页「记住账号」用 `.brabus-check` 方框。禁止系统方框或 `accent-*`。图标走 `svgIcon`，描边 1.5。
 
 ## 全局 JS（禁止页面重写）
 
