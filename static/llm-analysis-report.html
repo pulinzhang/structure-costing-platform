@@ -401,6 +401,46 @@
             .llm-body .cell-keep { font-size: 8pt; }
             a { color: inherit; text-decoration: none; }
         }
+        @media screen and (max-width: 960px) {
+            .page { padding: 16px 12px 40px; }
+            header.report-head {
+                padding: 20px 16px 16px;
+                align-items: flex-start;
+            }
+            .report-actions {
+                flex-wrap: wrap;
+                width: 100%;
+            }
+            .export-hint { max-width: none; flex: 1 1 100%; }
+            .meta { padding: 14px 16px; }
+            .meta div { min-width: 0; }
+            .meta strong { overflow-wrap: anywhere; }
+            .body { padding: 16px 16px 28px; }
+            .narrative,
+            .llm-body,
+            .doc-footer { overflow-wrap: anywhere; }
+            table.print-frame { table-layout: fixed; width: 100%; }
+            table.print-frame > tbody > tr > td {
+                max-width: 100%;
+                overflow-wrap: anywhere;
+            }
+            .llm-body .table-scroll {
+                max-width: 100%;
+                min-width: 0;
+                -webkit-overflow-scrolling: touch;
+                overscroll-behavior-x: contain;
+            }
+            .llm-body pre {
+                max-width: 100%;
+                overflow-x: auto;
+                white-space: pre-wrap;
+                word-break: break-word;
+            }
+            .llm-body img { max-width: 100%; height: auto; }
+        }
+        @media screen and (max-width: 640px) {
+            header.report-head h1 { font-size: 22px; }
+        }
     </style>
 </head>
 <body>

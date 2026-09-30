@@ -513,6 +513,88 @@
             .cover-row, .spec { grid-template-columns: 1fr; }
             .cover-money { text-align: left; margin-top: 16px; }
         }
+        @media screen and (max-width: 960px) {
+            .stage, .sheet, .chapter, .cover { min-width: 0; max-width: 100%; }
+            .company, .full-part, .part-name, .hero-amount,
+            .calc-eq, .calc-note, .calc-proof, .quote-block, .refs, .ex-msg {
+                overflow-wrap: anywhere;
+            }
+            .masthead { align-items: flex-start; }
+            .company { min-width: 0; }
+        }
+        @media screen and (max-width: 720px) {
+            .stage { padding: 12px 10px 40px; }
+            .short-code { font-size: 32px; overflow-wrap: anywhere; }
+            .hero-amount { font-size: 28px; }
+            .node-head {
+                grid-template-columns: 16px minmax(0, max-content) minmax(0, 1fr) minmax(0, max-content);
+                grid-template-areas:
+                    "fold seq short amt"
+                    "fold main main main";
+                column-gap: 8px;
+                row-gap: 2px;
+                align-items: start;
+            }
+            .fold-mark { grid-area: fold; }
+            .node-seq { grid-area: seq; }
+            .node-short { grid-area: short; }
+            .node-main { grid-area: main; }
+            .node-amt { grid-area: amt; }
+            .fold-mark, .node-seq, .node-short, .node-main, .node-amt,
+            .node-full, .node-name {
+                min-width: 0;
+                overflow-wrap: anywhere;
+            }
+            .node-open { white-space: nowrap; }
+            .node-body { padding-left: 16px; }
+            .bom-tree .bom-tree { margin-left: 4px; padding-left: 8px; }
+            .ledger-head, .id-row {
+                display: flex;
+                flex-wrap: wrap;
+                align-items: baseline;
+                gap: 4px 12px;
+            }
+            .ledger-head { letter-spacing: 0.04em; }
+            .ledger-head > :first-child,
+            .id-row .label {
+                flex: 1 1 100%;
+                min-width: 0;
+                overflow-wrap: anywhere;
+            }
+            .ledger-head > :empty,
+            .id-row > :empty { display: none; }
+            .ledger-head .num,
+            .id-row .num {
+                white-space: nowrap;
+            }
+            .ledger-head .num:last-of-type,
+            .id-row .num:last-of-type { margin-left: auto; }
+            .ops-head, .ops-row {
+                grid-template-columns: minmax(0, 0.8fr) minmax(0, 0.9fr) minmax(0, 1.3fr) minmax(0, 0.8fr);
+                gap: 6px 8px;
+            }
+            .ops-head span, .ops-row span {
+                min-width: 0;
+                overflow-wrap: anywhere;
+            }
+            .calc-head {
+                grid-template-columns: auto minmax(0, 1fr) minmax(0, max-content);
+                gap: 8px;
+            }
+            .calc-head span { min-width: 0; overflow-wrap: anywhere; }
+            .fact-row { grid-template-columns: 4.5rem minmax(0, 1fr); }
+            .fact-row .k, .fact-row span, .fact-note {
+                min-width: 0;
+                overflow-wrap: anywhere;
+            }
+            .fact-note { margin-left: 0; padding-left: 0; }
+            .waterfall li { grid-template-columns: minmax(0, 1fr) minmax(0, max-content); gap: 8px; }
+            .waterfall .k, .waterfall .amt { min-width: 0; overflow-wrap: anywhere; }
+            .ex-list li { grid-template-columns: minmax(0, 1fr); gap: 4px; }
+            .ex-short { overflow-wrap: anywhere; }
+            .wm { gap: 72px 16px; padding: 40px 8px; }
+            .wm span { font-size: 14px; letter-spacing: 0.1em; }
+        }
         @media print {
             @page { size: A4 portrait; margin: 10mm 12mm; }
             html, body {
