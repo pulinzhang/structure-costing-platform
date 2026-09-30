@@ -98,7 +98,7 @@ function fallbackMarkdownToHtml(markdown) {
 const SHORT_CELL_MAX = 10;
 
 /**
- * 宽表横向滚动；短单元格禁止拆字，长文本限宽换行。
+ * 宽表在电脑上横向滚动。手机沿用记录列表：表头收成每格的标签，行收成卡片。
  * @param {string} html
  * @returns {string}
  */
@@ -111,6 +111,7 @@ function enhanceMarkdownTables(html) {
     wrap.querySelectorAll('table').forEach((table) => {
         table.querySelectorAll('th').forEach((cell) => applyCellLayout(cell, true));
         table.querySelectorAll('td').forEach((cell) => applyCellLayout(cell, false));
+        applyRecordList(table);
         if (table.parentElement?.classList.contains('table-scroll')) {
             return;
         }
@@ -120,6 +121,52 @@ function enhanceMarkdownTables(html) {
         holder.appendChild(table);
     });
     return wrap.innerHTML;
+}
+
+/**
+ * 与记录列表同一套标记。窄屏样式在 style.css，宽屏仍是原表。
+ * @param {HTMLTableElement} table
+ */
+function applyRecordList(table) {
+    const labels = [...table.querySelectorAll('thead th')].map((cell) => (
+        String(cell.textContent || '').replace(/\s+/g, ' ').trim()
+    ));
+    if (!labels.some(Boolean)) return;
+    table.classList.add('record-list');
+    table.querySelectorAll('tbody > tr').forEach((row) => {
+        const cells = [...row.children].filter((cell) => cell.tagName === 'TD');
+        const spanCell = cells.length === 1 && cells[0].colSpan > 1 ? cells[0] : null;
+        row.classList.toggle('record-list-span', Boolean(spanCell));
+        cells.forEach((cell, index) => {
+            if (spanCell) {
+                cell.removeAttribute('data-label');
+                wrapRecordValue(cell);
+                return;
+            }
+            const label = labels[index] || '';
+            const text = String(cell.textContent || '').replace(/\s+/g, ' ').trim();
+            const hasControl = Boolean(cell.querySelector('a, button, img'));
+            if (!label && !text && !hasControl) {
+                cell.classList.add('record-list-chrome');
+                cell.removeAttribute('data-label');
+                return;
+            }
+            if (label) cell.setAttribute('data-label', label);
+            else cell.removeAttribute('data-label');
+            wrapRecordValue(cell);
+        });
+    });
+}
+
+/**
+ * @param {HTMLElement} cell
+ */
+function wrapRecordValue(cell) {
+    if (cell.querySelector(':scope > .record-list-value')) return;
+    const value = document.createElement('div');
+    value.className = 'record-list-value';
+    while (cell.firstChild) value.appendChild(cell.firstChild);
+    cell.appendChild(value);
 }
 
 /**

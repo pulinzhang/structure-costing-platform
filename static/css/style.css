@@ -687,7 +687,8 @@ td.record-list-carry {
     }
 
     .overflow-x-auto:has(> table.record-list),
-    .overflow-auto:has(> table.record-list) {
+    .overflow-auto:has(> table.record-list),
+    .table-scroll:has(> table.record-list) {
         overflow: visible !important;
         max-height: none !important;
     }
