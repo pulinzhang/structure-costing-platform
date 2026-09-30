@@ -3,7 +3,7 @@
  */
 
 import { HUD_SHELL, BTN_GHOST } from '../../../ui/classes.js?v=13';
-import { paginationBarHtml } from '../../../ui/page-size.js?v=8';
+import { paginationBarHtml } from '../../../ui/page-size.js?v=11';
 
 const RING_SELECT_IDS = [
     'pcrLocationFilter',
@@ -52,6 +52,7 @@ const PCR_FX_CSS = `@keyframes pcr-laser-sweep{0%{left:-72px;opacity:1}100%{left
     + `.pcr-view-toggle__label:focus-visible{outline:1px solid rgb(var(--border-active));outline-offset:2px}`
     + `.pcr-amt-mark{opacity:0}`
     + `.pcr-amt-cell:hover .pcr-amt-mark,.pcr-amt-cell:focus-within .pcr-amt-mark{opacity:.8}`
+    + `@media (max-width:639.98px){html[data-theme="light"] .pcr-ignition-pulse{animation:none;box-shadow:none}html[data-theme="light"] .pcr-bento:hover{box-shadow:none}}`
     + `@media (prefers-reduced-motion:reduce){.pcr-laser-spot,.pcr-ignition-pulse{animation:none!important}.pcr-bento{transition:none}}`;
 
 function cornerMarks() {

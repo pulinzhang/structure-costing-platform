@@ -2,7 +2,7 @@
  * BOM 焊接工艺拆解 — 生成页模板（对齐钢价计算布局）
  */
 
-import { paginationBarHtml } from '../../../../ui/page-size.js?v=8';
+import { paginationBarHtml } from '../../../../ui/page-size.js?v=11';
 import { filterSelect, BTN_ABORT, BTN_GHOST } from '../../../../ui/classes.js?v=13';
 
 

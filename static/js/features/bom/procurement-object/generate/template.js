@@ -2,7 +2,7 @@
  * 采购对象列表 — 生成页（对齐冲压零件价格计算壳 + 焊接拆解历史）
  */
 
-import { paginationBarHtml } from '../../../../ui/page-size.js?v=8';
+import { paginationBarHtml } from '../../../../ui/page-size.js?v=11';
 import { filterSelect, BTN_ABORT, BTN_GHOST } from '../../../../ui/classes.js?v=13';
 
 import { SECTION_LABELS } from '../labels.js?v=4';

@@ -13,12 +13,12 @@ import {
     cancelPcrHudCountUp,
     updatePcrViewButtons,
     updateRingIndicators,
-} from './template.js?v=56';
+} from './template.js?v=57';
 import {
     DEFAULT_PAGE_SIZE,
     bindPagination,
     paintPagination,
-} from '../../../ui/page-size.js?v=8';
+} from '../../../ui/page-size.js?v=11';
 
 const API_BASE = '/api/costing/procurement-contract-report';
 const CASCADE_API = '/api/bom/filters/cascade';

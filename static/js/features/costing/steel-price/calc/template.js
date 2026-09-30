@@ -3,7 +3,7 @@
  * 冲压钢材：基准价与加减价联动计算
  */
 
-import { paginationBarHtml } from '../../../../ui/page-size.js?v=8';
+import { paginationBarHtml } from '../../../../ui/page-size.js?v=11';
 import { filterSelect, BTN_ABORT, BTN_GHOST } from '../../../../ui/classes.js?v=13';
 
 

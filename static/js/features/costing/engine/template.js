@@ -3,7 +3,7 @@
  * 视觉原则：唯一焦点 + 异常优先 + 渐进披露；中文为主
  */
 
-import { paginationBarHtml } from '../../../ui/page-size.js?v=8';
+import { paginationBarHtml } from '../../../ui/page-size.js?v=11';
 
 const engineMotionStyles = `
 <style id="engineConsoleMotion">

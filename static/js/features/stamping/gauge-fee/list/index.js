@@ -15,7 +15,7 @@ import {
     bindPagination,
     paintPagination,
     normalizePageSize,
-} from '../../../../ui/page-size.js?v=8';
+} from '../../../../ui/page-size.js?v=11';
 import { setSearchBusy } from '../../../../ui/search-busy.js?v=4';
 
 const API_BASE = '/api/stamping/gauge-fees';

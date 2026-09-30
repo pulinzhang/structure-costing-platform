@@ -8,7 +8,7 @@ import {
     DEFAULT_PREVIEW_PAGE_SIZE,
     PREVIEW_PAGE_SIZE_OPTIONS,
     paginationBarHtml,
-} from '../../../../ui/page-size.js?v=8';
+} from '../../../../ui/page-size.js?v=11';
 
 export function winningThicknessDownloadTemplate() {
     return `

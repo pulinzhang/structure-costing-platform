@@ -3,7 +3,7 @@
  * 布局：筛选栏 + 就绪统计 + 进度条+ 计算历史
  */
 
-import { paginationBarHtml } from '../../../../ui/page-size.js?v=8';
+import { paginationBarHtml } from '../../../../ui/page-size.js?v=11';
 import { filterSelect, BTN_ABORT, BTN_GHOST } from '../../../../ui/classes.js?v=13';
 
 

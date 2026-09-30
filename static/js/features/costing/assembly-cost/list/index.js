@@ -9,7 +9,7 @@ import {
     DEFAULT_PAGE_SIZE,
     bindPagination,
     paintPagination,
-} from '../../../../ui/page-size.js?v=8';
+} from '../../../../ui/page-size.js?v=11';
 import { bindMoreMenu } from '../../../../ui/more-menu.js?v=7';
 import { bindFilterBar } from '../../../../ui/filter-bar.js?v=6';
 import { setSearchBusy } from '../../../../ui/search-busy.js?v=4';

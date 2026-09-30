@@ -3,7 +3,7 @@
  * 布局对齐钢材联动 / 冲压加工费：筛选 + 就绪统计 + 进度 + 计算历史
  */
 
-import { paginationBarHtml } from '../../../../ui/page-size.js?v=8';
+import { paginationBarHtml } from '../../../../ui/page-size.js?v=11';
 import { filterSelect, BTN_ABORT, BTN_GHOST } from '../../../../ui/classes.js?v=13';
 
 

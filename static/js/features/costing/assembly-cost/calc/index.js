@@ -9,7 +9,7 @@ import {
     DEFAULT_PAGE_SIZE,
     bindPagination,
     paintPagination,
-} from '../../../../ui/page-size.js?v=8';
+} from '../../../../ui/page-size.js?v=11';
 import {
     formatDurationSeconds,
 } from '../../../../domain/duration.js?v=3';

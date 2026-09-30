@@ -702,6 +702,7 @@ td.record-list-carry {
         flex-direction: column;
         gap: 0.5rem;
         padding: 0.55rem 0.45rem 0.75rem;
+        counter-reset: record-card;
     }
 
     table.record-list tr {
@@ -714,6 +715,26 @@ td.record-list-carry {
         background: rgb(var(--bg-main));
         padding: 0.7rem 0.75rem 0.55rem 0.8rem;
         box-shadow: inset 0 1px 0 rgb(var(--hairline) / 0.06);
+    }
+
+    table.record-list tr:not(.record-list-span) {
+        position: relative;
+        counter-increment: record-card;
+        padding-top: 1.35rem;
+    }
+
+    table.record-list tr:not(.record-list-span)::after {
+        content: counter(record-card);
+        position: absolute;
+        top: 0.32rem;
+        right: 0.55rem;
+        font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+        font-size: 10px;
+        line-height: 1;
+        letter-spacing: 0.08em;
+        font-variant-numeric: tabular-nums;
+        color: rgb(var(--text-faint));
+        pointer-events: none;
     }
 
     table.record-list tr.record-list-span {
@@ -1220,4 +1241,192 @@ td.record-list-carry {
 
 .hud-kpi-aux-inset {
     box-shadow: inset 0 1px 0 rgb(var(--hairline) / 0.03);
+}
+
+/* 手机操作：深浅都修。纸面圆角只在浅色。 */
+@media (max-width: 639.98px) {
+    .main-content {
+        padding-top: calc(0.875rem + env(safe-area-inset-top));
+        padding-bottom: calc(2rem + env(safe-area-inset-bottom));
+        padding-left: max(0.875rem, env(safe-area-inset-left));
+        padding-right: max(0.875rem, env(safe-area-inset-right));
+    }
+
+    .sidebar {
+        padding-top: calc(1.5rem + env(safe-area-inset-top));
+        padding-bottom: calc(1.25rem + env(safe-area-inset-bottom));
+    }
+
+    #userMenuPanel {
+        top: calc(4.5rem + env(safe-area-inset-top));
+    }
+
+    input:not([type="checkbox"]):not([type="radio"]):not([type="file"]):not([type="hidden"]):not([type="range"]),
+    select,
+    textarea {
+        font-size: 16px;
+        min-height: 2.75rem;
+    }
+
+    .fixed.inset-y-0.right-0 {
+        width: 100%;
+        max-width: 100%;
+        padding-bottom: env(safe-area-inset-bottom);
+    }
+
+    #llmThread .opacity-0 {
+        opacity: 1;
+    }
+
+    #llmComposer {
+        padding-bottom: calc(0.75rem + env(safe-area-inset-bottom));
+    }
+
+    #loginRoot {
+        padding-top: env(safe-area-inset-top);
+        padding-bottom: env(safe-area-inset-bottom);
+    }
+
+    .record-pager-more {
+        width: 100%;
+        margin: 0;
+        padding: 0.85rem 0 0.35rem;
+        min-height: 1.25rem;
+        text-align: center;
+        font-size: 12px;
+        line-height: 1.25rem;
+        color: rgb(var(--text-muted));
+    }
+
+    .record-pager-more:empty {
+        min-height: 1px;
+    }
+
+    html[data-theme="light"] .page-header {
+        position: fixed;
+        top: calc(env(safe-area-inset-top) + 0.5rem);
+        left: max(0.875rem, env(safe-area-inset-left));
+        right: max(0.875rem, env(safe-area-inset-right));
+        z-index: 70;
+        width: auto;
+        max-width: none;
+        height: auto;
+        min-height: 52px;
+        margin: 0;
+        background: rgb(var(--bg-main));
+        border: 1px solid rgb(var(--border-color));
+        border-radius: 8px;
+        box-shadow: none;
+    }
+
+    html[data-theme="light"] .main-content {
+        padding-top: calc(env(safe-area-inset-top) + 0.5rem + 52px + 1.15rem);
+    }
+
+    html[data-theme="light"] #userMenuPanel {
+        top: calc(env(safe-area-inset-top) + 0.5rem + 52px + 0.35rem);
+    }
+
+    html[data-theme="light"] #userMenuPanel {
+        border-radius: 8px;
+    }
+
+    html[data-theme="light"] .sidebar {
+        box-shadow: 12px 0 32px rgb(var(--overlay) / 0.12);
+    }
+
+    html[data-theme="light"] .sidebar-backdrop {
+        background: rgb(var(--overlay) / 0.28);
+    }
+
+    html[data-theme="light"] .sidebar-brand::after {
+        box-shadow: none;
+    }
+
+    html[data-theme="light"] .sidebar-nav-link,
+    html[data-theme="light"] .submenu-link {
+        border-radius: 8px;
+        min-height: 44px;
+    }
+
+    html[data-theme="light"] table.record-list tbody {
+        gap: 0.75rem;
+        padding: 0.75rem;
+    }
+
+    html[data-theme="light"] table.record-list tr {
+        border-radius: 8px;
+        padding: 1rem;
+        box-shadow: none;
+    }
+
+    html[data-theme="light"] table.record-list tr:not(.record-list-span) {
+        padding-top: 1.55rem;
+    }
+
+    html[data-theme="light"] table.record-list tr.record-list-span,
+    html[data-theme="light"] table.record-list tr.record-list-section {
+        border-radius: 0;
+        padding: 0.2rem 0.1rem 0;
+    }
+
+    html[data-theme="light"] table.record-list tr.record-list-section::before {
+        box-shadow: none;
+    }
+
+    html[data-theme="light"] .hud-led,
+    html[data-theme="light"] .hud-kpi-line-glow,
+    html[data-theme="light"] .hud-kpi-dot-glow,
+    html[data-theme="light"] .hud-kpi-card-glow,
+    html[data-theme="light"] .hud-brand-glow,
+    html[data-theme="light"] .hud-brand-glow-hover {
+        box-shadow: none;
+    }
+
+    html[data-theme="light"] .hud-kpi-num-glow {
+        text-shadow: none;
+    }
+
+    html[data-theme="light"] .hud-kpi-card-glow,
+    html[data-theme="light"] .hud-kpi-aux-inset,
+    html[data-theme="light"] .font-mono.grid[class*="grid-cols-2"] > * {
+        border-radius: 8px;
+    }
+
+    html[data-theme="light"] .brabus-bg-grid {
+        background-image: none;
+    }
+
+    html[data-theme="light"] .toast-shell {
+        border-radius: 8px;
+        box-shadow: 0 8px 24px rgb(var(--overlay) / 0.06);
+    }
+
+    html[data-theme="light"] .fixed.inset-y-0.right-0 {
+        border-radius: 8px 0 0 8px;
+        box-shadow: var(--shadow-drawer);
+    }
+
+    html[data-theme="light"] [role="alertdialog"] button[id$="Btn"] {
+        min-height: 44px;
+        border-radius: 8px;
+    }
+
+    html[data-theme="light"] .hud-select-menu [role="option"] {
+        display: flex;
+        align-items: center;
+        min-height: 44px;
+        padding-left: 0.75rem;
+        padding-right: 0.75rem;
+    }
+
+    html[data-theme="light"] #loginRoot .max-w-\[340px\] {
+        border-radius: 8px;
+    }
+
+    html[data-theme="light"] #loginRoot input:not([type="checkbox"]),
+    html[data-theme="light"] #btnLogin {
+        border-radius: 8px;
+        height: 44px;
+    }
 }
