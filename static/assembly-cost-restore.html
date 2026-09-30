@@ -6,6 +6,7 @@
     <title>计算过程</title>
     <link rel="icon" type="image/x-icon" href="/static/assets/favicon.ico">
     <link href="/static/css/fonts.css?v=1" rel="stylesheet">
+    <link href="/static/css/report-close.css?v=1" rel="stylesheet">
     <style>
         :root {
             --bg-canvas: #F4F4F5;
@@ -60,7 +61,7 @@
         .stage {
             max-width: 1100px;
             margin: 0 auto;
-            padding: 24px 16px 72px;
+            padding: 44px 16px 72px;
         }
         .sheet {
             background: var(--paper);
@@ -523,7 +524,7 @@
             .company { min-width: 0; }
         }
         @media screen and (max-width: 720px) {
-            .stage { padding: 12px 10px 40px; }
+            .stage { padding: 44px 10px 40px; }
             .short-code { font-size: 32px; overflow-wrap: anywhere; }
             .hero-amount { font-size: 28px; }
             .node-head {
@@ -656,12 +657,16 @@
     </style>
 </head>
 <body>
+    <div class="report-close-bar is-stage">
+        <button type="button" id="reportCloseBtn"><span aria-hidden="true">×</span>关闭</button>
+    </div>
     <div class="wm" id="reportWatermark" aria-hidden="true"></div>
     <div class="stage">
         <div class="sheet" id="reportRoot">
             <div class="state">正在打开计算过程…</div>
         </div>
     </div>
+    <script src="/static/js/ui/report-close.js?v=1"></script>
     <script src="/static/js/main.js?v=20"></script>
     <script type="module" src="/static/js/features/costing/assembly-cost/restore/boot.js?v=48"></script>
 </body>

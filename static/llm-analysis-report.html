@@ -6,6 +6,7 @@
     <title>AI 分析报告</title>
     <link rel="icon" type="image/x-icon" href="/static/assets/favicon.ico">
     <link href="/static/css/fonts.css?v=1" rel="stylesheet">
+    <link href="/static/css/report-close.css?v=1" rel="stylesheet">
     <style>
         :root {
             --bg-canvas: #F4F4F5;
@@ -402,7 +403,7 @@
             a { color: inherit; text-decoration: none; }
         }
         @media screen and (max-width: 960px) {
-            .page { padding: 16px 12px 40px; }
+            .page { padding: 44px 12px 40px; }
             header.report-head {
                 padding: 20px 16px 16px;
                 align-items: flex-start;
@@ -444,15 +445,19 @@
     </style>
 </head>
 <body>
+    <div class="report-close-bar">
+        <button type="button" id="reportCloseBtn"><span aria-hidden="true">×</span>关闭</button>
+    </div>
     <div class="page">
         <div class="sheet" id="reportRoot">
             <div class="empty">加载分析报告…</div>
         </div>
     </div>
     <div class="toast" id="reportToast" role="status"></div>
+    <script src="/static/js/ui/report-close.js?v=1"></script>
     <script src="/static/js/vendor/marked.min.js"></script>
     <script src="/static/js/vendor/purify.min.js"></script>
     <script src="/static/js/main.js?v=21"></script>
-    <script type="module" src="/static/js/llm-assistant/report-page/boot.js?v=5"></script>
+    <script type="module" src="/static/js/llm-assistant/report-page/boot.js?v=6"></script>
 </body>
 </html>
