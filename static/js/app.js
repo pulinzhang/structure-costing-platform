@@ -52,10 +52,10 @@ import { pageConfig as assemblyCostCalcPage } from './features/costing/assembly-
 import { pageConfig as assemblyCostPage } from './features/costing/assembly-cost/list/index.js?v=66';
 import { pageConfig as procurementContractReportPage } from './features/costing/procurement-contract-report/index.js?v=58';
 import { pageConfig as steelPricePolicyUploadPage } from './features/yishiyiyi/policy/upload/index.js?v=50';
-import { pageConfig as steelPricePolicyDownloadPage } from './features/yishiyiyi/policy/list/index.js?v=62';
+import { pageConfig as steelPricePolicyDownloadPage } from './features/yishiyiyi/policy/list/index.js?v=64';
 import { pageConfig as basePriceUploadPage } from './features/yishiyiyi/base-price/upload/index.js?v=61';
-import { pageConfig as basePriceDownloadPage } from './features/yishiyiyi/base-price/list/index.js?v=54';
-import { pageConfig as winningThicknessDownloadPage } from './features/yishiyiyi/winning-thickness/list/index.js?v=31';
+import { pageConfig as basePriceDownloadPage } from './features/yishiyiyi/base-price/list/index.js?v=55';
+import { pageConfig as winningThicknessDownloadPage } from './features/yishiyiyi/winning-thickness/list/index.js?v=32';
 import { pageConfig as steelGradeCategoryPage } from './features/masterdata/steel-grade-category/index.js?v=29';
 import { pageConfig as steelMillPage } from './features/masterdata/steel-mill/index.js?v=2';
 import { pageConfig as scrapPricePage } from './features/yishiyiyi/scrap-price/index.js?v=33';
@@ -82,15 +82,15 @@ import { pageConfig as engineeringChangeListPage } from './features/engineering-
 import { pageConfig as engineeringChangeMaterialUploadPage } from './features/engineering-change/material-change/upload/index.js?v=9';
 import { pageConfig as engineeringChangeMaterialListPage } from './features/engineering-change/material-change/list/index.js?v=11';
 import { pageConfig as costingPage }        from './features/costing/engine/index.js?v=49';
-import { pageConfig as fileTracePage }       from './features/file-trace/index.js?v=27';
+import { pageConfig as fileTracePage }       from './features/file-trace/index.js?v=29';
 import { pageConfig as locationPage }        from './features/masterdata/location/index.js?v=24';
 import { pageConfig as vehicleModelUploadPage } from './features/masterdata/vehicle-model/upload/index.js?v=14';
 import { pageConfig as vehicleModelListPage } from './features/masterdata/vehicle-model/list/index.js?v=28';
 import { pageConfig as supplierUploadPage } from './features/masterdata/supplier/upload/index.js?v=15';
 import { pageConfig as supplierListPage } from './features/masterdata/supplier/list/index.js?v=29';
 import { pageConfig as settingsPage }       from './features/settings/system/index.js?v=38';
-import { pageConfig as settingsUsersPage }  from './features/settings/users/index.js?v=31';
-import { pageConfig as settingsLogsPage }   from './features/settings/logs/index.js?v=26';
+import { pageConfig as settingsUsersPage }  from './features/settings/users/index.js?v=33';
+import { pageConfig as settingsLogsPage }   from './features/settings/logs/index.js?v=28';
 import { pageConfig as settingsProfilePage } from './features/settings/profile/index.js?v=17';
 
 // 未登录禁止进入主应用：不渲染业务页，避免请求 dashboard 等后端

@@ -2,7 +2,7 @@
  * 生失效展示 / 年+月筛 / SOP 上传说明（对齐项目列表 fillYearMonthSelects）。
  */
 
-import { FILTER_LABEL, HUD_FILTER } from '../../ui/classes.js?v=13';
+import { FILTER_LABEL, HUD_FILTER } from '../../ui/classes.js?v=14';
 
 export const SOP_INTRO =
     '本页只导入第一次投产。投产之后要换零件号，请走工程变更，不要在本页操作。';

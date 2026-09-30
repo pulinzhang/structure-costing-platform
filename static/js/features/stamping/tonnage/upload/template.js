@@ -3,7 +3,7 @@
  * 基地 + 年度必选；三列 Excel（名称 / 单位 / 单价）；同步导入
  */
 
-import { UPLOAD_DROPZONE, UPLOAD_INPUT, UPLOAD_LABEL, HUD_LED } from '../../../../ui/classes.js?v=13';
+import { UPLOAD_DROPZONE, UPLOAD_INPUT, UPLOAD_LABEL, HUD_LED } from '../../../../ui/classes.js?v=14';
 import {
     uploadBrowseButtonHtml,
     uploadFileHintHtml,

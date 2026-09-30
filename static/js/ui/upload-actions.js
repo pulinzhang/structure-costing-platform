@@ -2,7 +2,7 @@
  * 上传页四颗控件：下载模板、浏览文件、重置、上传。文案与图标只写这一处。
  */
 
-import { BTN_FILE_SELECT, BTN_GHOST, BTN_UPLOAD_SUBMIT } from './classes.js?v=13';
+import { BTN_FILE_SELECT, BTN_GHOST, BTN_UPLOAD_SUBMIT } from './classes.js?v=14';
 
 const DOWNLOAD_ICON =
     '<svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"></path></svg>';

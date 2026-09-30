@@ -8,13 +8,17 @@
  * - 删除确认  →deleteDrawer
  */
 
-import { usersTemplate, renderTableRows } from './template.js?v=21';
+import { usersTemplate, renderTableRows } from './template.js?v=23';
 import {
     DEFAULT_PAGE_SIZE,
     bindPagination,
     paintPagination,
 } from '../../../ui/page-size.js?v=11';
+import { bindFilterBar } from '../../../ui/filter-bar.js?v=6';
 import { setSearchBusy } from '../../../ui/search-busy.js?v=4';
+
+/** @type {{ paint: () => void, setOpen: (isOpen: boolean) => void, unbind: () => void } | null} */
+let filterBar = null;
 
 const usersState = {
     records: [],
@@ -200,36 +204,40 @@ function bindEvents() {
         btnAdd.addEventListener('click', () => openAddDrawer());
     }
 
-    const btnFilter = document.getElementById('btnFilter');
-    if (btnFilter) {
-        btnFilter.addEventListener('click', () => {
+    filterBar = bindFilterBar({
+        prefix: 'users',
+        searchId: 'btnFilter',
+        resetId: 'usersResetBtn',
+        capsules: [
+            { capsuleId: 'usersCapsuleKeyword', fieldId: 'filterKeyword', idleLabel: '全部账号' },
+            { capsuleId: 'usersCapsuleStatus', fieldId: 'filterIsActive', idleLabel: '全部状态' },
+        ],
+        enterFieldIds: ['filterKeyword'],
+        onSearch: () => {
             applyFilters();
             loadData(1);
-        });
-    }
+        },
+        onReset: resetFilters,
+    });
 
-    const keywordInput = document.getElementById('filterKeyword');
-    if (keywordInput) {
-        keywordInput.addEventListener('keydown', (e) => {
-            if (e.key === 'Enter') {
-                applyFilters();
-                loadData(1);
-            }
-        });
-    }
-
-    const filterIsActive = document.getElementById('filterIsActive');
-    if (filterIsActive) {
-        filterIsActive.addEventListener('change', () => {
-            applyFilters();
-            loadData(1);
-        });
-    }
+    document.getElementById('filterIsActive')?.addEventListener('change', () => {
+        applyFilters();
+        loadData(1);
+    });
 
     bindEditDrawerEvents();
     bindPasswordDrawerEvents();
     bindDeleteDrawerEvents();
     bindGrantDrawerEvents();
+}
+
+function resetFilters() {
+    const keywordInput = document.getElementById('filterKeyword');
+    const isActiveSelect = document.getElementById('filterIsActive');
+    if (keywordInput) keywordInput.value = '';
+    if (isActiveSelect) isActiveSelect.value = '';
+    applyFilters();
+    loadData(1);
 }
 
 function applyFilters() {

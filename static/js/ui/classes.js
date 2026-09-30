@@ -59,6 +59,19 @@ export function capsuleClass(isActive) {
  * @param {boolean | { required?: boolean, emptyLabel?: string, widthClass?: string }} [requiredOrOpts]
  * @param {string} [emptyLabelArg]
  */
+function filterOption(value, label) {
+    const text = String(label ?? value ?? '')
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;');
+    const optionValue = String(value ?? '')
+        .replace(/&/g, '&amp;')
+        .replace(/"/g, '&quot;')
+        .replace(/</g, '&lt;');
+    return `<option value="${optionValue}">${text}</option>`;
+}
+
 export function filterSelect(id, label, requiredOrOpts = false, emptyLabelArg) {
     const opts = requiredOrOpts && typeof requiredOrOpts === 'object'
         ? requiredOrOpts
@@ -67,10 +80,12 @@ export function filterSelect(id, label, requiredOrOpts = false, emptyLabelArg) {
     const emptyLabel = opts.emptyLabel ?? (required ? '请选择' : '全部');
     const widthClass = opts.widthClass || 'w-full sm:w-32';
     const mark = required ? '<span class="text-brand">*</span>' : '';
+    const extra = (opts.options || []).map((item) => filterOption(item.value, item.label)).join('');
     return `<label class="space-y-1 block w-full sm:w-auto">
         <span class="${FILTER_LABEL}">${label}${mark}</span>
         <select id="${id}" class="${widthClass} ${HUD_FILTER}">
             <option value="">${emptyLabel}</option>
+            ${extra}
         </select>
     </label>`;
 }
@@ -83,9 +98,10 @@ export function filterSelect(id, label, requiredOrOpts = false, emptyLabelArg) {
  */
 export function filterInput(id, label, placeholder = '', opts = {}) {
     const widthClass = opts.widthClass || 'w-full sm:w-32';
+    const type = opts.type && opts.type !== 'text' ? ` type="${opts.type}"` : '';
     return `<label class="space-y-1 block w-full sm:w-auto">
         <span class="${FILTER_LABEL}">${label}</span>
-        <input id="${id}" placeholder="${placeholder}" class="${widthClass} ${HUD_INPUT}">
+        <input id="${id}"${type} placeholder="${placeholder}" class="${widthClass} ${HUD_INPUT}">
     </label>`;
 }
 

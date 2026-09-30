@@ -4,7 +4,7 @@
  * - 一事一议预览页：默认 200，可选 10 / 20 / 50 / 100 / 200
  */
 
-import { BTN_PAGINATION_CURRENT } from './classes.js?v=13';
+import { BTN_PAGINATION_CURRENT } from './classes.js?v=14';
 import { clearCurrentTableRows } from './table-row.js?v=4';
 import { isPhoneLayout } from './record-list.js?v=6';
 

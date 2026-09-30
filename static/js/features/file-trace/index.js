@@ -6,13 +6,17 @@ import {
     fileTraceTemplate,
     renderDrawerDetail,
     renderTableRows,
-} from './template.js?v=22';
+} from './template.js?v=24';
 import {
     DEFAULT_PAGE_SIZE,
     bindPagination,
     paintPagination,
 } from '../../ui/page-size.js?v=11';
+import { bindFilterBar } from '../../ui/filter-bar.js?v=6';
 import { setSearchBusy } from '../../ui/search-busy.js?v=4';
+
+/** @type {{ paint: () => void, setOpen: (isOpen: boolean) => void, unbind: () => void } | null} */
+let filterBar = null;
 
 const ftState = {
     items: [],
@@ -182,8 +186,35 @@ function bindEvents() {
         },
         onPage: (page) => loadData(page),
     });
-    document.getElementById('ftBtnSearch')?.addEventListener('click', () => loadData(1));
-    document.getElementById('ftBtnReset')?.addEventListener('click', resetFilters);
+    filterBar = bindFilterBar({
+        prefix: 'ft',
+        searchId: 'ftBtnSearch',
+        resetId: 'ftBtnReset',
+        capsules: [
+            {
+                capsuleId: 'ftCapsulePeriod',
+                fieldIds: ['ftFilterYear', 'ftFilterMonth'],
+                idleLabel: '全部期间',
+                display: () => fmtPeriod(
+                    document.getElementById('ftFilterYear')?.value,
+                    document.getElementById('ftFilterMonth')?.value,
+                ) || '',
+            },
+            { capsuleId: 'ftCapsuleLocation', fieldId: 'ftFilterLocation', idleLabel: '全部基地' },
+            { capsuleId: 'ftCapsuleVehicle', fieldId: 'ftFilterVehicle', idleLabel: '全部项目' },
+            { capsuleId: 'ftCapsuleCategory', fieldId: 'ftFilterCategory', idleLabel: '全部分类' },
+            { capsuleId: 'ftCapsuleCreator', fieldId: 'ftFilterCreator', idleLabel: '全部上传人' },
+            { capsuleId: 'ftCapsuleFilename', fieldId: 'ftFilterFilename', idleLabel: '全部文件名' },
+            {
+                capsuleId: 'ftCapsuleUploaded',
+                fieldIds: ['ftFilterFrom', 'ftFilterTo'],
+                idleLabel: '全部上传时间',
+            },
+        ],
+        enterFieldIds: ['ftFilterFilename'],
+        onSearch: () => loadData(1),
+        onReset: resetFilters,
+    });
     [
         'ftFilterCategory',
         'ftFilterLocation',
@@ -195,12 +226,6 @@ function bindEvents() {
         'ftFilterTo',
     ].forEach((id) => {
         document.getElementById(id)?.addEventListener('change', () => loadData(1));
-    });
-    document.getElementById('ftFilterFilename')?.addEventListener('keydown', (event) => {
-        if (event.key === 'Enter') {
-            event.preventDefault();
-            loadData(1);
-        }
     });
     document.getElementById('ftDrawerClose')?.addEventListener('click', closeDrawer);
     document.getElementById('ftDrawerBackdrop')?.addEventListener('click', closeDrawer);
@@ -233,6 +258,8 @@ function onKeyDown(event) {
 }
 
 function destroy() {
+    filterBar?.unbind();
+    filterBar = null;
     document.removeEventListener('keydown', onKeyDown);
     closeDrawer();
 }
@@ -240,7 +267,10 @@ function destroy() {
 const FileTracePage = {
     init() {
         bindEvents();
-        loadFilters().then(() => loadData(1));
+        loadFilters().then(() => {
+            filterBar?.paint();
+            loadData(1);
+        });
     },
     destroy,
 };

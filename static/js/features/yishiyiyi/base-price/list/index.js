@@ -3,7 +3,8 @@
  * 基准价格列表页面逻辑
  */
 
-import { basePriceDownloadTemplate } from './template.js?v=46';
+import { basePriceDownloadTemplate } from './template.js?v=47';
+import { bindFilterBar } from '../../../../ui/filter-bar.js?v=6';
 import { bindMoreMenu } from '../../../../ui/more-menu.js?v=7';
 import {
     DEFAULT_PREVIEW_PAGE_SIZE,
@@ -19,6 +20,8 @@ import {
 
 /** @type {{ setOpen: (isOpen: boolean) => void, close: () => void, unbind: () => void } | null} */
 let moreMenu = null;
+/** @type {{ paint: () => void, setOpen: (isOpen: boolean) => void, unbind: () => void } | null} */
+let filterBar = null;
 
 // 状态管理
 const basePriceDownloadState = {
@@ -53,7 +56,7 @@ function init() {
     // DOM 重建后必须重新拉选项；先同步填月份，避免接口返回前下拉空白
     fillMonthOptions();
     loadFilterOptions().then(() => {
-        updateConditionsDisplay();
+        filterBar?.paint();
         previewData(1);
     });
     applyPermissionUi();
@@ -141,11 +144,29 @@ function fillSelect(id, options = []) {
  * 绑定事件
  */
 function bindEvents() {
-    // 预览按钮
-    const btnPreview = document.getElementById('btnPreviewBasePrice');
-    if (btnPreview) {
-        btnPreview.addEventListener('click', () => previewData(1));
-    }
+    filterBar = bindFilterBar({
+        prefix: 'basePriceDownload',
+        searchId: 'btnPreviewBasePrice',
+        resetId: 'basePriceDownloadResetBtn',
+        capsules: [
+            {
+                capsuleId: 'basePriceCapsulePeriod',
+                fieldIds: ['basePriceDownloadYear', 'basePriceDownloadMonth'],
+                idleLabel: '全部期间',
+                display: () => fmtPeriod(
+                    document.getElementById('basePriceDownloadYear')?.value,
+                    document.getElementById('basePriceDownloadMonth')?.value,
+                ) || '',
+            },
+            { capsuleId: 'basePriceCapsuleLocation', fieldId: 'basePriceDownloadLocation', idleLabel: '全部基地' },
+            { capsuleId: 'basePriceCapsuleMill', fieldId: 'basePriceDownloadMill', idleLabel: '全部钢厂' },
+            { capsuleId: 'basePriceCapsuleCategory', fieldId: 'basePriceDownloadCategory', idleLabel: '全部钢种大类' },
+            { capsuleId: 'basePriceCapsuleGrade', fieldId: 'basePriceDownloadGrade', idleLabel: '全部牌号' },
+        ],
+        enterFieldIds: ['basePriceDownloadGrade'],
+        onSearch: () => previewData(1),
+        onReset: resetFilters,
+    });
 
     // 导出按钮
     const btnExport = document.getElementById('btnExportBasePrice');
@@ -173,41 +194,27 @@ function bindEvents() {
             if (el) el.addEventListener('change', () => queryAfterFilterSelect());
         });
 
-    const gradeInput = document.getElementById('basePriceDownloadGrade');
-    if (gradeInput) {
-        gradeInput.addEventListener('input', () => updateConditionsDisplay());
-        gradeInput.addEventListener('keydown', event => {
-            if (event.key === 'Enter') {
-                event.preventDefault();
-                previewData(1);
-            }
-        });
-    }
-
 }
 
-function queryAfterFilterSelect() {
-    updateConditionsDisplay();
+function resetFilters() {
+    [
+        'basePriceDownloadMonth',
+        'basePriceDownloadLocation',
+        'basePriceDownloadMill',
+        'basePriceDownloadCategory',
+    ].forEach((id) => {
+        const element = document.getElementById(id);
+        if (element) element.value = '';
+    });
+    const gradeInput = document.getElementById('basePriceDownloadGrade');
+    if (gradeInput) gradeInput.value = '';
+    selectDefaultYear('basePriceDownloadYear');
     previewData(1);
 }
 
-/**
- * 更新已选条件显示
- */
-function updateConditionsDisplay() {
-    const filters = collectFilters();
-    const conditions = [];
-    const period = fmtPeriod(filters.year, filters.month);
-    if (period) conditions.push(period);
-    if (filters.location) conditions.push(`基地: ${filters.location}`);
-    if (filters.steel_mill) conditions.push(`钢厂: ${filters.steel_mill}`);
-    if (filters.category_name) conditions.push(`钢种大类: ${filters.category_name}`);
-    if (filters.grade) conditions.push(`牌号: ${filters.grade}`);
-
-    const display = document.getElementById('selectedBasePriceConditions');
-    if (display) {
-        display.textContent = conditions.length > 0 ? conditions.join(' | ') : '全部';
-    }
+function queryAfterFilterSelect() {
+    filterBar?.paint();
+    previewData(1);
 }
 
 function getFilterValue(id) {
@@ -296,7 +303,6 @@ async function previewData(page = 1) {
                 basePriceDownloadState.page,
                 basePriceDownloadState.totalPages,
             );
-        updateConditionsDisplay();
     } catch (error) {
         console.error('预览数据失败:', error);
         if (tableBody) {

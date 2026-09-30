@@ -6,7 +6,7 @@
  * - 拖拽区加大垂直留白
  */
 
-import { UPLOAD_DROPZONE, HUD_LED } from '../../../../ui/classes.js?v=13';
+import { UPLOAD_DROPZONE, HUD_LED } from '../../../../ui/classes.js?v=14';
 import {
     uploadBrowseButtonHtml,
     uploadFileHintHtml,

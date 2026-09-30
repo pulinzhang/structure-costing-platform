@@ -2,7 +2,7 @@
  * 冲压零件价格列表
  */
 
-import { DRAWER_SHELL, DRAWER_BACKDROP, BTN_SOLID } from '../../../../ui/classes.js?v=13';
+import { DRAWER_SHELL, DRAWER_BACKDROP, BTN_SOLID } from '../../../../ui/classes.js?v=14';
 import {
     partCostListTemplate,
     renderCostRows,

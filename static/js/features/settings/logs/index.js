@@ -2,13 +2,17 @@
  * 操作日志 — 对接 /api/settings/logs，筛选项来自权限目录
  */
 
-import { logsTemplate, renderTableRows } from './template.js?v=21';
+import { logsTemplate, renderTableRows } from './template.js?v=23';
 import {
     DEFAULT_PAGE_SIZE,
     bindPagination,
     paintPagination,
 } from '../../../ui/page-size.js?v=11';
+import { bindFilterBar } from '../../../ui/filter-bar.js?v=6';
 import { setSearchBusy } from '../../../ui/search-busy.js?v=4';
+
+/** @type {{ paint: () => void, setOpen: (isOpen: boolean) => void, unbind: () => void } | null} */
+let filterBar = null;
 
 const logsState = {
     records: [],
@@ -218,30 +222,45 @@ async function loadData(page = 1) {
 }
 
 
-function bindEvents() {
-    document.getElementById('btnFilter')?.addEventListener('click', () => {
-        applyFiltersToState();
-        loadData(1);
-    });
-
-    document.getElementById('btnResetFilter')?.addEventListener('click', () => {
-        ['filterUsername', 'filterClientIp', 'filterMenu', 'filterPermission', 'filterSuccess', 'filterCreatedFrom', 'filterCreatedTo']
-            .forEach((id) => {
-                const el = document.getElementById(id);
-                if (el) el.value = '';
-            });
-        applyFiltersToState();
-        fillPermissionOptions();
-        loadData(1);
-    });
-
-    ['filterUsername', 'filterClientIp'].forEach((id) => {
-        document.getElementById(id)?.addEventListener('keydown', (event) => {
-            if (event.key === 'Enter') {
-                applyFiltersToState();
-                loadData(1);
-            }
+function resetFilters() {
+    ['filterUsername', 'filterClientIp', 'filterMenu', 'filterPermission', 'filterSuccess', 'filterCreatedFrom', 'filterCreatedTo']
+        .forEach((id) => {
+            const el = document.getElementById(id);
+            if (el) el.value = '';
         });
+    applyFiltersToState();
+    fillPermissionOptions();
+    loadData(1);
+}
+
+function bindEvents() {
+    filterBar = bindFilterBar({
+        prefix: 'logs',
+        searchId: 'btnFilter',
+        resetId: 'btnResetFilter',
+        capsules: [
+            { capsuleId: 'logsCapsuleUsername', fieldId: 'filterUsername', idleLabel: '全部账号' },
+            { capsuleId: 'logsCapsuleIp', fieldId: 'filterClientIp', idleLabel: '全部 IP' },
+            { capsuleId: 'logsCapsuleMenu', fieldId: 'filterMenu', idleLabel: '全部功能' },
+            { capsuleId: 'logsCapsulePermission', fieldId: 'filterPermission', idleLabel: '全部动作' },
+            { capsuleId: 'logsCapsuleSuccess', fieldId: 'filterSuccess', idleLabel: '全部结果' },
+            {
+                capsuleId: 'logsCapsuleCreated',
+                fieldIds: ['filterCreatedFrom', 'filterCreatedTo'],
+                idleLabel: '全部时间',
+                display: () => {
+                    const from = document.getElementById('filterCreatedFrom')?.value || '';
+                    const to = document.getElementById('filterCreatedTo')?.value || '';
+                    return [from, to].filter(Boolean).map((value) => value.replace('T', ' ')).join(' · ');
+                },
+            },
+        ],
+        enterFieldIds: ['filterUsername', 'filterClientIp'],
+        onSearch: () => {
+            applyFiltersToState();
+            loadData(1);
+        },
+        onReset: resetFilters,
     });
 
     document.getElementById('filterMenu')?.addEventListener('change', () => {
@@ -250,6 +269,7 @@ function bindEvents() {
         const perm = document.getElementById('filterPermission');
         if (perm) perm.value = '';
         fillPermissionOptions();
+        filterBar?.paint();
         applyFiltersToState();
         loadData(1);
     });

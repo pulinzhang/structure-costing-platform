@@ -4,7 +4,8 @@
  * 用于测试部门核对数据，主子表联合查询Excel
  */
 
-import { filterSelect, filterInputWithDatalist, HUD_LED, BTN_GHOST, BTN_FILTER_SEARCH, DRAWER_BACKDROP } from '../../../../ui/classes.js?v=13';
+import { filterSelect, filterInputWithDatalist, HUD_LED, BTN_GHOST, DRAWER_BACKDROP } from '../../../../ui/classes.js?v=14';
+import { filterBarHtml } from '../../../../ui/filter-bar.js?v=6';
 import {
     DEFAULT_PREVIEW_PAGE_SIZE,
     PREVIEW_PAGE_SIZE_OPTIONS,
@@ -40,54 +41,40 @@ export function policyDownloadTemplate() {
                     </div>
                 </div>
 
-                <!-- 筛选工具栏 -->
-                <div class="flex flex-col gap-3 px-5 py-2.5 border-b border-app-surface sm:flex-row sm:items-center sm:justify-between">
-                    <div class="flex items-end gap-3 flex-wrap w-full min-w-0">
-                        ${filterSelect('policyDownloadYear', '年度')}
-                        ${filterSelect('policyDownloadMonth', '月份')}
-                        ${filterInputWithDatalist('policyDownloadMill', '钢厂', 'policyMillOptions', {
-                            placeholder: '输入搜索或选择钢厂',
-                        })}
-                        ${filterSelect('policyDownloadSheet', '表页', { widthClass: 'w-full sm:w-40' })}
-                        ${filterSelect('policyDownloadCategory', '钢种大类')}
-                        ${filterInputWithDatalist('policyDownloadGrade', '牌号', 'policyGradeOptions', {
-                            placeholder: '请先选择钢种大类',
-                            disabled: true,
-                        })}
-                    </div>
-                    <div class="flex items-center gap-2 w-full sm:w-auto">
-                        <button id="btnPreview"
-                                class="${BTN_FILTER_SEARCH} h-7 w-full justify-center whitespace-nowrap sm:w-auto">
-                            ${window.svgIcon('search', 'w-3 h-3')}
-                            查询
-                        </button>
-                    </div>
-                </div>
-
-                <!-- 提示信息 -->
                 <div class="px-5 py-3 border-b border-line-subtle bg-gradient-to-b from-app-hud to-app-deep">
-                    <div class="bg-app-deep border border-line-subtle rounded p-3">
-                        <p class="text-[11px] text-ink-muted leading-5">
-                            <span class="text-ink-muted font-medium">说明：</span>
-                            打开默认当年。年度、月份、钢厂、表页、钢种大类、牌号都可以不选。表页按前面的年度、月份、钢厂去重。导出必须先选年度和月份。删除必须先选年度和月份；钢厂和表页可不选，不选就删掉该年该月对应范围。
-                        </p>
-                    </div>
+                    ${filterBarHtml({
+                        prefix: 'policyDownload',
+                        searchId: 'btnPreview',
+                        capsules: [
+                            { capsuleId: 'policyCapsulePeriod', idleLabel: '全部期间' },
+                            { capsuleId: 'policyCapsuleMill', idleLabel: '全部钢厂' },
+                            { capsuleId: 'policyCapsuleSheet', idleLabel: '全部表页' },
+                            { capsuleId: 'policyCapsuleCategory', idleLabel: '全部钢种大类' },
+                            { capsuleId: 'policyCapsuleGrade', idleLabel: '全部牌号' },
+                        ],
+                        alwaysHintHtml: '打开默认当年。年度、月份、钢厂、表页、钢种大类、牌号都可以不选。表页按前面的年度、月份、钢厂去重。导出必须先选年度和月份。删除必须先选年度和月份；钢厂和表页可不选，不选就删掉该年该月对应范围。',
+                        fieldsHtml: [
+                            filterSelect('policyDownloadYear', '年度'),
+                            filterSelect('policyDownloadMonth', '月份'),
+                            filterInputWithDatalist('policyDownloadMill', '钢厂', 'policyMillOptions', {
+                                placeholder: '输入搜索或选择钢厂',
+                            }),
+                            filterSelect('policyDownloadSheet', '表页', { widthClass: 'w-full sm:w-40' }),
+                            filterSelect('policyDownloadCategory', '钢种大类'),
+                            filterInputWithDatalist('policyDownloadGrade', '牌号', 'policyGradeOptions', {
+                                placeholder: '请先选择钢种大类',
+                                disabled: true,
+                            }),
+                            `<button id="policyDownloadResetBtn" type="button" class="${BTN_GHOST}">
+                                ${window.svgIcon('refresh', 'w-3 h-3')}
+                                重置
+                            </button>`,
+                        ].join(''),
+                    })}
                 </div>
 
                 <!-- 预览区域 -->
                 <div class="p-5">
-                    <!-- 已选条件：嵌入式仪表盘风格 -->
-                    <div class="hidden sm:block mb-3 px-3 py-2 rounded-sm relative">
-                        <!-- 顶部高光线 -->
-                        <div class="absolute top-0 left-0 right-0 h-px"></div>
-                        <div class="flex items-center gap-2 text-[11px]">
-                            <span class="text-ink-faint">已选条件：</span>
-                            <span id="selectedConditions" class="text-ink-muted ml-2 font-medium tracking-wide">全部</span>
-                        </div>
-                        <!-- 底部暗线 -->
-                        <div class="absolute bottom-0 left-0 right-0 h-px"></div>
-                    </div>
-
                     <!-- 预览表格 -->
                     <div class="bg-app-main border border-line-subtle rounded-sm overflow-hidden">
                         <div class="overflow-x-auto max-h-[400px] brabus-bg-grid">

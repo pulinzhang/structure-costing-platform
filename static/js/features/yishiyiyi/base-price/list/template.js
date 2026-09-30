@@ -3,7 +3,8 @@
  * 基准价格列表页面
  */
 
-import { filterSelect, filterInputWithDatalist, HUD_LED, BTN_GHOST, BTN_FILTER_SEARCH, DRAWER_BACKDROP } from '../../../../ui/classes.js?v=13';
+import { filterSelect, filterInputWithDatalist, HUD_LED, BTN_GHOST, DRAWER_BACKDROP } from '../../../../ui/classes.js?v=14';
+import { filterBarHtml } from '../../../../ui/filter-bar.js?v=6';
 import {
     DEFAULT_PREVIEW_PAGE_SIZE,
     PREVIEW_PAGE_SIZE_OPTIONS,
@@ -38,47 +39,35 @@ export function basePriceDownloadTemplate() {
                     </div>
                 </div>
 
-                <!-- 筛选工具栏 -->
-                <div class="flex flex-col gap-3 px-5 py-2.5 border-b border-app-surface sm:flex-row sm:items-center sm:justify-between">
-                    <div class="flex items-end gap-3 flex-wrap w-full min-w-0">
-                        ${filterSelect('basePriceDownloadYear', '年度')}
-                        ${filterSelect('basePriceDownloadMonth', '月份')}
-                        ${filterSelect('basePriceDownloadLocation', '基地')}
-                        ${filterSelect('basePriceDownloadMill', '钢厂')}
-                        ${filterSelect('basePriceDownloadCategory', '钢种大类')}
-                        ${filterInputWithDatalist('basePriceDownloadGrade', '牌号', 'basePriceGradeOptions')}
-                    </div>
-                    <div class="flex items-center gap-2 w-full sm:w-auto">
-                        <button id="btnPreviewBasePrice"
-                                class="${BTN_FILTER_SEARCH} h-7 w-full justify-center whitespace-nowrap sm:w-auto">
-                            ${window.svgIcon('search', 'w-3 h-3')}
-                            查询
-                        </button>
-                    </div>
-                </div>
-
-                <!-- 提示信息 -->
                 <div class="px-5 py-3 border-b border-line-subtle bg-gradient-to-b from-app-hud to-app-deep">
-                    <div class="bg-app-deep border border-line-subtle rounded p-3">
-                        <p class="text-[11px] text-ink-muted leading-5">
-                            <span class="text-ink-muted font-medium">说明：</span>
-                            打开默认当年。年度、月份、基地、钢厂、钢种大类、牌号都可以不选。这里记每个基地、每个钢厂、每个牌号、每个月的到厂原卷承兑价。导出必须先选年度和月份。
-                        </p>
-                    </div>
+                    ${filterBarHtml({
+                        prefix: 'basePriceDownload',
+                        searchId: 'btnPreviewBasePrice',
+                        capsules: [
+                            { capsuleId: 'basePriceCapsulePeriod', idleLabel: '全部期间' },
+                            { capsuleId: 'basePriceCapsuleLocation', idleLabel: '全部基地' },
+                            { capsuleId: 'basePriceCapsuleMill', idleLabel: '全部钢厂' },
+                            { capsuleId: 'basePriceCapsuleCategory', idleLabel: '全部钢种大类' },
+                            { capsuleId: 'basePriceCapsuleGrade', idleLabel: '全部牌号' },
+                        ],
+                        alwaysHintHtml: '打开默认当年。年度、月份、基地、钢厂、钢种大类、牌号都可以不选。这里记每个基地、每个钢厂、每个牌号、每个月的到厂原卷承兑价。导出必须先选年度和月份。',
+                        fieldsHtml: [
+                            filterSelect('basePriceDownloadYear', '年度'),
+                            filterSelect('basePriceDownloadMonth', '月份'),
+                            filterSelect('basePriceDownloadLocation', '基地'),
+                            filterSelect('basePriceDownloadMill', '钢厂'),
+                            filterSelect('basePriceDownloadCategory', '钢种大类'),
+                            filterInputWithDatalist('basePriceDownloadGrade', '牌号', 'basePriceGradeOptions'),
+                            `<button id="basePriceDownloadResetBtn" type="button" class="${BTN_GHOST}">
+                                ${window.svgIcon('refresh', 'w-3 h-3')}
+                                重置
+                            </button>`,
+                        ].join(''),
+                    })}
                 </div>
 
                 <!-- 预览区域 -->
                 <div class="p-5">
-                    <!-- 已选条件 -->
-                    <div class="hidden sm:block mb-3 px-3 py-2 rounded-sm relative">
-                        <div class="absolute top-0 left-0 right-0 h-px"></div>
-                        <div class="flex items-center gap-2 text-[11px]">
-                            <span class="text-ink-faint">已选条件：</span>
-                            <span id="selectedBasePriceConditions" class="text-ink-muted ml-2 font-medium tracking-wide">全部</span>
-                        </div>
-                        <div class="absolute bottom-0 left-0 right-0 h-px"></div>
-                    </div>
-
                     <!-- 预览表格 -->
                     <div class="bg-app-main border border-line-subtle rounded-sm overflow-hidden">
                         <div class="overflow-x-auto max-h-[400px] brabus-bg-grid">

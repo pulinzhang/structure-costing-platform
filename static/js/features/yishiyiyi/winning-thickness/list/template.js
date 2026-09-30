@@ -3,7 +3,8 @@
  * 必填基地/年/月；中标基价叠厚度加减价后外发
  */
 
-import { filterSelect, filterInputWithDatalist, HUD_LED, BTN_GHOST, BTN_FILTER_SEARCH, DRAWER_BACKDROP } from '../../../../ui/classes.js?v=13';
+import { filterSelect, filterInputWithDatalist, HUD_LED, BTN_GHOST, DRAWER_BACKDROP } from '../../../../ui/classes.js?v=14';
+import { filterBarHtml } from '../../../../ui/filter-bar.js?v=6';
 import {
     DEFAULT_PREVIEW_PAGE_SIZE,
     PREVIEW_PAGE_SIZE_OPTIONS,
@@ -29,43 +30,34 @@ export function winningThicknessDownloadTemplate() {
                     </div>
                 </div>
 
-                <div class="flex flex-col gap-3 px-5 py-2.5 border-b border-app-surface sm:flex-row sm:items-center sm:justify-between">
-                    <div class="flex items-end gap-3 flex-wrap w-full min-w-0">
-                        ${filterSelect('winningThicknessYear', '年度', false)}
-                        ${filterSelect('winningThicknessMonth', '月份', false)}
-                        ${filterSelect('winningThicknessLocation', '基地', false)}
-                        ${filterSelect('winningThicknessMill', '钢厂', false)}
-                        ${filterSelect('winningThicknessCategory', '分类', false)}
-                        ${filterInputWithDatalist('winningThicknessGrade', '牌号', 'winningThicknessGradeOptions', { disabled: true, placeholder: '请先选择分类' })}
-                    </div>
-                    <div class="flex items-center gap-2 w-full sm:w-auto">
-                        <button id="btnPreviewWinningThickness"
-                                class="${BTN_FILTER_SEARCH} h-7 w-full justify-center whitespace-nowrap sm:w-auto">
-                            ${window.svgIcon('search', 'w-3 h-3')}
-                            查询
-                        </button>
-                    </div>
-                </div>
-
                 <div class="px-5 py-3 border-b border-line-subtle bg-gradient-to-b from-app-hud to-app-deep">
-                    <div class="bg-app-deep border border-line-subtle rounded p-3">
-                        <p class="text-[11px] text-ink-muted leading-5">
-                            <span class="text-ink-muted font-medium">说明：</span>
-                            打开默认当年。年度、月份、基地都可以不选。按中标基价，用牌号分类里的钢种去对厚度加减价。每个牌号列出全部厚度区间，一行一个区间。最终价 = 基准价 + 厚度加减价 + 加工费。导出必须先选年度和月份。
-                        </p>
-                    </div>
+                    ${filterBarHtml({
+                        prefix: 'winningThickness',
+                        searchId: 'btnPreviewWinningThickness',
+                        capsules: [
+                            { capsuleId: 'winningThicknessCapsulePeriod', idleLabel: '全部期间' },
+                            { capsuleId: 'winningThicknessCapsuleLocation', idleLabel: '全部基地' },
+                            { capsuleId: 'winningThicknessCapsuleMill', idleLabel: '全部钢厂' },
+                            { capsuleId: 'winningThicknessCapsuleCategory', idleLabel: '全部分类' },
+                            { capsuleId: 'winningThicknessCapsuleGrade', idleLabel: '全部牌号' },
+                        ],
+                        alwaysHintHtml: '打开默认当年。年度、月份、基地都可以不选。按中标基价，用牌号分类里的钢种去对厚度加减价。每个牌号列出全部厚度区间，一行一个区间。最终价 = 基准价 + 厚度加减价 + 加工费。导出必须先选年度和月份。',
+                        fieldsHtml: [
+                            filterSelect('winningThicknessYear', '年度', false),
+                            filterSelect('winningThicknessMonth', '月份', false),
+                            filterSelect('winningThicknessLocation', '基地', false),
+                            filterSelect('winningThicknessMill', '钢厂', false),
+                            filterSelect('winningThicknessCategory', '分类', false),
+                            filterInputWithDatalist('winningThicknessGrade', '牌号', 'winningThicknessGradeOptions', { disabled: true, placeholder: '请先选择分类' }),
+                            `<button id="winningThicknessResetBtn" type="button" class="${BTN_GHOST}">
+                                ${window.svgIcon('refresh', 'w-3 h-3')}
+                                重置
+                            </button>`,
+                        ].join(''),
+                    })}
                 </div>
 
                 <div class="p-5">
-                    <div class="hidden sm:block mb-3 px-3 py-2 rounded-sm relative">
-                        <div class="absolute top-0 left-0 right-0 h-px"></div>
-                        <div class="flex items-center gap-2 text-[11px]">
-                            <span class="text-ink-faint">已选条件：</span>
-                            <span id="selectedWinningThicknessConditions" class="text-ink-muted ml-2 font-medium tracking-wide">全部</span>
-                        </div>
-                        <div class="absolute bottom-0 left-0 right-0 h-px"></div>
-                    </div>
-
                     <div class="bg-app-main border border-line-subtle rounded-sm overflow-hidden">
                         <div class="overflow-x-auto max-h-[400px] brabus-bg-grid">
                             <table class="w-full min-w-[1400px]">

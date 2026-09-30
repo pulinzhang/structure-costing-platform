@@ -4,7 +4,8 @@
  * 用于测试部门核对数据，主子表联合查询导出 Excel
  */
 
-import { policyDownloadTemplate, renderPolicyRows } from './template.js?v=53';
+import { policyDownloadTemplate, renderPolicyRows } from './template.js?v=54';
+import { bindFilterBar } from '../../../../ui/filter-bar.js?v=6';
 import { bindMoreMenu } from '../../../../ui/more-menu.js?v=7';
 import {
     DEFAULT_PREVIEW_PAGE_SIZE,
@@ -20,6 +21,8 @@ import {
 
 /** @type {{ setOpen: (isOpen: boolean) => void, close: () => void, unbind: () => void } | null} */
 let moreMenu = null;
+/** @type {{ paint: () => void, setOpen: (isOpen: boolean) => void, unbind: () => void } | null} */
+let filterBar = null;
 
 // 状态管理
 const policyDownloadState = {
@@ -63,7 +66,7 @@ function init() {
             await loadGradesForCategory(pendingCategory);
         }
         await loadSheetNames();
-        updateConditionsDisplay();
+        filterBar?.paint();
         previewData(1);
     });
     applyPermissionUi();
@@ -251,11 +254,29 @@ function fillDatalist(id, values = []) {
  * 绑定事件
  */
 function bindEvents() {
-    // 预览按钮
-    const btnPreview = document.getElementById('btnPreview');
-    if (btnPreview) {
-        btnPreview.addEventListener('click', () => previewData(1));
-    }
+    filterBar = bindFilterBar({
+        prefix: 'policyDownload',
+        searchId: 'btnPreview',
+        resetId: 'policyDownloadResetBtn',
+        capsules: [
+            {
+                capsuleId: 'policyCapsulePeriod',
+                fieldIds: ['policyDownloadYear', 'policyDownloadMonth'],
+                idleLabel: '全部期间',
+                display: () => fmtPeriod(
+                    document.getElementById('policyDownloadYear')?.value,
+                    document.getElementById('policyDownloadMonth')?.value,
+                ) || '',
+            },
+            { capsuleId: 'policyCapsuleMill', fieldId: 'policyDownloadMill', idleLabel: '全部钢厂' },
+            { capsuleId: 'policyCapsuleSheet', fieldId: 'policyDownloadSheet', idleLabel: '全部表页' },
+            { capsuleId: 'policyCapsuleCategory', fieldId: 'policyDownloadCategory', idleLabel: '全部钢种大类' },
+            { capsuleId: 'policyCapsuleGrade', fieldId: 'policyDownloadGrade', idleLabel: '全部牌号' },
+        ],
+        enterFieldIds: ['policyDownloadGrade'],
+        onSearch: () => previewData(1),
+        onReset: resetFilters,
+    });
 
     // 导出按钮
     const btnExportPolicy = document.getElementById('btnExportPolicy');
@@ -297,35 +318,31 @@ function bindEvents() {
         });
     }
 
-    bindDatalistFilterInput('policyDownloadMill', {
-        onChange: () => reloadSheetsThenQuery(),
-        onEnter: () => reloadSheetsThenQuery(),
+    const millInput = document.getElementById('policyDownloadMill');
+    millInput?.addEventListener('change', () => reloadSheetsThenQuery());
+    millInput?.addEventListener('keydown', (event) => {
+        if (event.key !== 'Enter') return;
+        event.preventDefault();
+        reloadSheetsThenQuery();
     });
-    bindDatalistFilterInput('policyDownloadGrade');
 }
 
-/**
- * datalist 输入框：输入时刷新已选条件；回车查询；选中建议项后按 onChange 触发。
- */
-function bindDatalistFilterInput(id, { onChange, onEnter } = {}) {
-    const input = document.getElementById(id);
-    if (!input) return;
-    input.addEventListener('input', () => updateConditionsDisplay());
-    input.addEventListener('change', () => {
-        updateConditionsDisplay();
-        if (typeof onChange === 'function') onChange();
+function resetFilters() {
+    policyDownloadState.pendingFilters = null;
+    policyDownloadState.pendingSheetApplied = true;
+    ['policyDownloadMonth', 'policyDownloadSheet', 'policyDownloadCategory'].forEach((id) => {
+        const element = document.getElementById(id);
+        if (element) element.value = '';
     });
-    input.addEventListener('keydown', (event) => {
-        if (event.key === 'Enter') {
-            event.preventDefault();
-            if (typeof onEnter === 'function') onEnter();
-            else previewData(1);
-        }
-    });
+    const millInput = document.getElementById('policyDownloadMill');
+    if (millInput) millInput.value = '';
+    selectDefaultYear('policyDownloadYear');
+    loadGradesForCategory('');
+    reloadSheetsThenQuery();
 }
 
 function queryAfterFilterSelect() {
-    updateConditionsDisplay();
+    filterBar?.paint();
     previewData(1);
 }
 
@@ -370,25 +387,6 @@ function pendingSheetName() {
     if (policyDownloadState.pendingSheetApplied) return '';
     policyDownloadState.pendingSheetApplied = true;
     return policyDownloadState.pendingFilters?.sheet_name || '';
-}
-
-/**
- * 更新已选条件显示
- */
-function updateConditionsDisplay() {
-    const filters = collectFilters();
-    const conditions = [];
-    const period = fmtPeriod(filters.year, filters.month);
-    if (period) conditions.push(period);
-    if (filters.steel_mill) conditions.push(`钢厂: ${filters.steel_mill}`);
-    if (filters.sheet_name) conditions.push(`表页: ${filters.sheet_name}`);
-    if (filters.category_name) conditions.push(`钢种大类: ${filters.category_name}`);
-    if (filters.grade_value) conditions.push(`牌号: ${filters.grade_value}`);
-
-    const display = document.getElementById('selectedConditions');
-    if (display) {
-        display.textContent = conditions.length > 0 ? conditions.join(' | ') : '全部';
-    }
 }
 
 function getFilterValue(id) {
@@ -485,7 +483,6 @@ async function previewData(page = 1) {
             `;
         }
         paintPagination('policyPagination', policyDownloadState.page, policyDownloadState.totalPages);
-        updateConditionsDisplay();
     } catch (error) {
         console.error('预览数据失败:', error);
         if (tableBody) {
