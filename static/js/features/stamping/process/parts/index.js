@@ -20,7 +20,7 @@ import {
     SKETCH_PLACEHOLDER,
     SKETCH_THUMBNAIL,
     ZOOM_OVERLAY,
-} from '../../../../ui/classes.js?v=13';
+} from '../../../../ui/classes.js?v=14';
 import {
     DEFAULT_PAGE_SIZE,
     PAGE_SIZE_OPTIONS,

@@ -11,14 +11,18 @@ import {
     paintPagination,
 } from '../../../../ui/page-size.js?v=11';
 import { setSearchBusy } from '../../../../ui/search-busy.js?v=4';
+import { bindFilterBar } from '../../../../ui/filter-bar.js?v=6';
 import {
     winningThicknessDownloadTemplate,
     renderWinningThicknessRows,
-} from './template.js?v=27';
+} from './template.js?v=28';
 import {
     requireExportYearMonth,
     selectDefaultYear,
 } from '../../../common/period-ui.js?v=7';
+
+/** @type {{ paint: () => void, setOpen: (isOpen: boolean) => void, unbind: () => void } | null} */
+let filterBar = null;
 
 const winningThicknessState = {
     records: [],
@@ -50,7 +54,7 @@ function init() {
     });
     fillMonthOptions();
     loadFilterOptions().then(() => {
-        updateConditionsDisplay();
+        filterBar?.paint();
         previewData();
     });
     applyPermissionUi();
@@ -168,12 +172,33 @@ function fillSelect(id, options = [], required = false) {
 }
 
 function bindEvents() {
-    document.getElementById('btnPreviewWinningThickness')?.addEventListener('click', () => {
-        winningThicknessState.page = 1;
-        previewData();
+    filterBar = bindFilterBar({
+        prefix: 'winningThickness',
+        searchId: 'btnPreviewWinningThickness',
+        resetId: 'winningThicknessResetBtn',
+        capsules: [
+            {
+                capsuleId: 'winningThicknessCapsulePeriod',
+                fieldIds: ['winningThicknessYear', 'winningThicknessMonth'],
+                idleLabel: '全部期间',
+                display: () => fmtPeriod(
+                    document.getElementById('winningThicknessYear')?.value,
+                    document.getElementById('winningThicknessMonth')?.value,
+                ) || '',
+            },
+            { capsuleId: 'winningThicknessCapsuleLocation', fieldId: 'winningThicknessLocation', idleLabel: '全部基地' },
+            { capsuleId: 'winningThicknessCapsuleMill', fieldId: 'winningThicknessMill', idleLabel: '全部钢厂' },
+            { capsuleId: 'winningThicknessCapsuleCategory', fieldId: 'winningThicknessCategory', idleLabel: '全部分类' },
+            { capsuleId: 'winningThicknessCapsuleGrade', fieldId: 'winningThicknessGrade', idleLabel: '全部牌号' },
+        ],
+        enterFieldIds: ['winningThicknessGrade'],
+        onSearch: () => {
+            winningThicknessState.page = 1;
+            previewData();
+        },
+        onReset: resetFilters,
     });
     document.getElementById('btnExportWinningThickness')?.addEventListener('click', () => exportExcel());
-
 
     [
         'winningThicknessYear',
@@ -193,39 +218,28 @@ function bindEvents() {
             queryAfterFilterSelect();
         });
     }
-
-    const gradeInput = document.getElementById('winningThicknessGrade');
-    if (gradeInput) {
-        gradeInput.addEventListener('input', () => updateConditionsDisplay());
-        gradeInput.addEventListener('keydown', event => {
-            if (event.key === 'Enter') {
-                event.preventDefault();
-                previewData();
-            }
-        });
-    }
 }
 
-function queryAfterFilterSelect() {
-    updateConditionsDisplay();
+function resetFilters() {
+    [
+        'winningThicknessMonth',
+        'winningThicknessLocation',
+        'winningThicknessMill',
+        'winningThicknessCategory',
+    ].forEach((id) => {
+        const element = document.getElementById(id);
+        if (element) element.value = '';
+    });
+    selectDefaultYear('winningThicknessYear');
+    loadGradesForCategory('');
     winningThicknessState.page = 1;
     previewData();
 }
 
-function updateConditionsDisplay() {
-    const filters = collectFilters();
-    const conditions = [];
-    const period = fmtPeriod(filters.year, filters.month);
-    if (period) conditions.push(period);
-    if (filters.location) conditions.push(`基地: ${filters.location}`);
-    if (filters.steel_mill) conditions.push(`钢厂: ${filters.steel_mill}`);
-    if (filters.category_name) conditions.push(`分类: ${filters.category_name}`);
-    if (filters.grade) conditions.push(`牌号: ${filters.grade}`);
-
-    const display = document.getElementById('selectedWinningThicknessConditions');
-    if (display) {
-        display.textContent = conditions.length > 0 ? conditions.join(' | ') : '全部';
-    }
+function queryAfterFilterSelect() {
+    filterBar?.paint();
+    winningThicknessState.page = 1;
+    previewData();
 }
 
 function getFilterValue(id) {
@@ -309,8 +323,6 @@ async function previewData() {
 
         const totalPages = Math.max(1, Math.ceil(total / pageSize));
         paintPagination('winningThicknessPagination', page, totalPages);
-
-        updateConditionsDisplay();
     } catch (error) {
         console.error('查询失败:', error);
         showToast(error.message || '查询失败', 'error');

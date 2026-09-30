@@ -4,7 +4,7 @@
  * DOM ID / 字段 / 事件契约保持不变
  */
 
-import { DRAWER_BACKDROP, BTN_GHOST, BTN_SOLID } from '../../../ui/classes.js?v=13';
+import { DRAWER_BACKDROP, BTN_GHOST, BTN_SOLID } from '../../../ui/classes.js?v=14';
 
 import { moreMenuItemHtml, moreMenuShellHtml } from '../../../ui/more-menu.js?v=7';
 

@@ -1,4 +1,4 @@
-import { UPLOAD_DROPZONE, UPLOAD_INPUT, HUD_LED } from '../../../../ui/classes.js?v=13';
+import { UPLOAD_DROPZONE, UPLOAD_INPUT, HUD_LED } from '../../../../ui/classes.js?v=14';
 import {
     uploadBrowseButtonHtml,
     uploadFileHintHtml,

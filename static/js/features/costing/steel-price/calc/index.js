@@ -4,7 +4,7 @@
  */
 
 import { steelPriceCalcTemplate } from './template.js?v=21';
-import { DRAWER_CLOSE, DRAWER_SHELL, DRAWER_BACKDROP } from '../../../../ui/classes.js?v=13';
+import { DRAWER_CLOSE, DRAWER_SHELL, DRAWER_BACKDROP } from '../../../../ui/classes.js?v=14';
 import { opsIconButtonHtml } from '../../../../ui/hud-table.js?v=3';
 
 import {

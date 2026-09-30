@@ -2,7 +2,8 @@
  * 文件溯源 — HUD 密表 + 筛选 + 详情抽屉
  */
 
-import { HUD_SHELL, OPS_TH, DRAWER_BACKDROP, HUD_FILTER, BTN_FILTER_SEARCH, BTN_GHOST } from '../../ui/classes.js?v=13';
+import { HUD_SHELL, OPS_TH, DRAWER_BACKDROP, BTN_GHOST, filterSelect, filterInput } from '../../ui/classes.js?v=14';
+import { filterBarHtml } from '../../ui/filter-bar.js?v=6';
 import { hudTableHtml, hudRowHtml, opsIconButtonHtml } from '../../ui/hud-table.js?v=3';
 
 
@@ -13,53 +14,35 @@ export function fileTraceTemplate() {
         <div class="space-y-2 w-full max-w-full">
             <div class="${HUD_SHELL}">
 
-                <div class="px-5 pt-4 pb-3 border-b border-line-subtle bg-app-main">
-                    <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 xl:grid-cols-6 gap-2 mb-3">
-                        <select id="ftFilterCategory" class="w-full ${HUD_FILTER}">
-                            <option value="">全部分类</option>
-                        </select>
-                        <select id="ftFilterLocation" class="w-full ${HUD_FILTER}">
-                            <option value="">全部基地</option>
-                        </select>
-                        <select id="ftFilterYear" class="w-full ${HUD_FILTER}">
-                            <option value="">全部年度</option>
-                        </select>
-                        <select id="ftFilterMonth" class="w-full ${HUD_FILTER}">
-                            <option value="">全部月份</option>
-                        </select>
-                        <select id="ftFilterVehicle" class="w-full ${HUD_FILTER}">
-                            <option value="">全部项目</option>
-                        </select>
-                        <select id="ftFilterCreator" class="w-full ${HUD_FILTER}">
-                            <option value="">全部上传人</option>
-                        </select>
-                    </div>
-                    <div class="flex flex-wrap items-end gap-2">
-                        <div class="basis-full w-full sm:basis-auto sm:flex-1 sm:min-w-[180px] sm:w-auto">
-                            <label class="block text-[9px] text-ink-faint mb-1 tracking-[0.08em]">文件名</label>
-                            <input id="ftFilterFilename" type="text" placeholder="模糊搜索原件名"
-                                   class="w-full h-9 px-3 text-xs bg-app-deep border border-line text-ink placeholder:text-ink-dim focus:outline-none focus:border-brand-active">
-                        </div>
-                        <div>
-                            <label class="block text-[9px] text-ink-faint mb-1 tracking-[0.08em]">上传时间起</label>
-                            <input id="ftFilterFrom" type="date"
-                                   class="w-full min-w-0 h-9 px-3 text-xs bg-app-deep border border-line text-ink-muted focus:outline-none focus:border-brand-active">
-                        </div>
-                        <div>
-                            <label class="block text-[9px] text-ink-faint mb-1 tracking-[0.08em]">上传时间止</label>
-                            <input id="ftFilterTo" type="date"
-                                   class="w-full min-w-0 h-9 px-3 text-xs bg-app-deep border border-line text-ink-muted focus:outline-none focus:border-brand-active">
-                        </div>
-                        <button id="ftBtnSearch" type="button"
-                                class="${BTN_FILTER_SEARCH} h-7">
-                            ${window.svgIcon('search', 'w-3 h-3')}
-                            查询
-                        </button>
-                        <button id="ftBtnReset" type="button"
-                                class="${BTN_GHOST} justify-center">
-                            重置
-                        </button>
-                    </div>
+                <div class="px-5 py-3 border-b border-line-subtle bg-gradient-to-b from-app-hud to-app-deep">
+                    ${filterBarHtml({
+                        prefix: 'ft',
+                        searchId: 'ftBtnSearch',
+                        capsules: [
+                            { capsuleId: 'ftCapsulePeriod', idleLabel: '全部期间' },
+                            { capsuleId: 'ftCapsuleLocation', idleLabel: '全部基地' },
+                            { capsuleId: 'ftCapsuleVehicle', idleLabel: '全部项目' },
+                            { capsuleId: 'ftCapsuleCategory', idleLabel: '全部分类' },
+                            { capsuleId: 'ftCapsuleCreator', idleLabel: '全部上传人' },
+                            { capsuleId: 'ftCapsuleFilename', idleLabel: '全部文件名' },
+                            { capsuleId: 'ftCapsuleUploaded', idleLabel: '全部上传时间' },
+                        ],
+                        fieldsHtml: [
+                            filterSelect('ftFilterYear', '年度', { emptyLabel: '全部年度' }),
+                            filterSelect('ftFilterMonth', '月份', { emptyLabel: '全部月份' }),
+                            filterSelect('ftFilterLocation', '基地', { emptyLabel: '全部基地' }),
+                            filterSelect('ftFilterVehicle', '项目', { emptyLabel: '全部项目' }),
+                            filterSelect('ftFilterCategory', '分类', { emptyLabel: '全部分类' }),
+                            filterSelect('ftFilterCreator', '上传人', { emptyLabel: '全部上传人' }),
+                            filterInput('ftFilterFilename', '文件名', '模糊搜索原件名', { widthClass: 'w-full sm:w-44' }),
+                            filterInput('ftFilterFrom', '上传时间起', '', { type: 'date', widthClass: 'w-full sm:w-36' }),
+                            filterInput('ftFilterTo', '上传时间止', '', { type: 'date', widthClass: 'w-full sm:w-36' }),
+                            `<button id="ftBtnReset" type="button" class="${BTN_GHOST}">
+                                ${window.svgIcon('refresh', 'w-3 h-3')}
+                                重置
+                            </button>`,
+                        ].join(''),
+                    })}
                 </div>
 
                 <div id="ftNoCategoryHint" class="hidden px-5 py-16 text-center border-b border-line-subtle">

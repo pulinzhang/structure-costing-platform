@@ -3,58 +3,53 @@
  */
 
 import { paginationBarHtml } from '../../../ui/page-size.js?v=11';
-import { HUD_FILTER, HUD_INPUT, BTN_FILTER_SEARCH, BTN_GHOST } from '../../../ui/classes.js?v=13';
+import { BTN_GHOST, filterSelect, filterInput } from '../../../ui/classes.js?v=14';
+import { filterBarHtml } from '../../../ui/filter-bar.js?v=6';
 
 export function logsTemplate() {
     return `
         <div class="space-y-3 w-full max-w-full text-ink-muted">
             <div class="bg-app-main border border-line">
 
-                <div class="p-3 border-b border-line-subtle flex flex-wrap items-center justify-between gap-3 bg-app-surface">
-                    <div class="flex items-center gap-2 flex-wrap flex-1 min-w-0">
-                        <input type="text" id="filterUsername" placeholder="账号 / 操作人"
-                               class="w-36 ${HUD_INPUT}">
-                        <input type="text" id="filterClientIp" placeholder="IP 地址"
-                               class="w-36 ${HUD_INPUT}">
-
-                        <select id="filterMenu"
-                                class="max-w-[220px] ${HUD_FILTER}">
-                            <option value="">全部功能</option>
-                        </select>
-
-                        <select id="filterPermission"
-                                class="max-w-[180px] ${HUD_FILTER}">
-                            <option value="">全部动作</option>
-                        </select>
-
-                        <select id="filterSuccess"
-                                class="${HUD_FILTER}">
-                            <option value="">全部结果</option>
-                            <option value="true">成功</option>
-                            <option value="false">失败</option>
-                        </select>
-
-                        <input type="datetime-local" id="filterCreatedFrom"
-                               class="${HUD_INPUT}">
-                        <input type="datetime-local" id="filterCreatedTo"
-                               class="${HUD_INPUT}">
-
-                        <button id="btnFilter"
-                                class="${BTN_FILTER_SEARCH} h-7">
-                            ${window.svgIcon('search', 'w-3 h-3')}
-                            查询
-                        </button>
-                        <button id="btnResetFilter"
+                <div class="px-5 py-3 border-b border-line-subtle bg-gradient-to-b from-app-hud to-app-deep">
+                    <div class="flex items-center justify-end mb-3">
+                        <button id="btnExportLogs"
                                 class="${BTN_GHOST}">
-                            重置
+                            ${window.svgIcon('download', 'w-3.5 h-3.5')}
+                            导出
                         </button>
                     </div>
-
-                    <button id="btnExportLogs"
-                            class="${BTN_GHOST}">
-                        ${window.svgIcon('download', 'w-3.5 h-3.5')}
-                        导出
-                    </button>
+                    ${filterBarHtml({
+                        prefix: 'logs',
+                        searchId: 'btnFilter',
+                        capsules: [
+                            { capsuleId: 'logsCapsuleUsername', idleLabel: '全部账号' },
+                            { capsuleId: 'logsCapsuleIp', idleLabel: '全部 IP' },
+                            { capsuleId: 'logsCapsuleMenu', idleLabel: '全部功能' },
+                            { capsuleId: 'logsCapsulePermission', idleLabel: '全部动作' },
+                            { capsuleId: 'logsCapsuleSuccess', idleLabel: '全部结果' },
+                            { capsuleId: 'logsCapsuleCreated', idleLabel: '全部时间' },
+                        ],
+                        fieldsHtml: [
+                            filterInput('filterUsername', '账号 / 操作人', '账号 / 操作人', { widthClass: 'w-full sm:w-36' }),
+                            filterInput('filterClientIp', 'IP 地址', 'IP 地址', { widthClass: 'w-full sm:w-36' }),
+                            filterSelect('filterMenu', '功能', { emptyLabel: '全部功能', widthClass: 'w-full sm:w-52' }),
+                            filterSelect('filterPermission', '动作', { emptyLabel: '全部动作', widthClass: 'w-full sm:w-44' }),
+                            filterSelect('filterSuccess', '结果', {
+                                emptyLabel: '全部结果',
+                                options: [
+                                    { value: 'true', label: '成功' },
+                                    { value: 'false', label: '失败' },
+                                ],
+                            }),
+                            filterInput('filterCreatedFrom', '开始时间', '', { type: 'datetime-local', widthClass: 'w-full sm:w-44' }),
+                            filterInput('filterCreatedTo', '结束时间', '', { type: 'datetime-local', widthClass: 'w-full sm:w-44' }),
+                            `<button id="btnResetFilter" type="button" class="${BTN_GHOST}">
+                                ${window.svgIcon('refresh', 'w-3 h-3')}
+                                重置
+                            </button>`,
+                        ].join(''),
+                    })}
                 </div>
 
                 <div class="overflow-x-auto brabus-bg-grid">

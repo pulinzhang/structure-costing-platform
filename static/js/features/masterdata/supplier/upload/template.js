@@ -2,7 +2,7 @@
  * 供应商上传 — 核价厂档补录；列：缩写 / 全称 / 对外代码 / 别名
  */
 
-import { UPLOAD_DROPZONE } from '../../../../ui/classes.js?v=13';
+import { UPLOAD_DROPZONE } from '../../../../ui/classes.js?v=14';
 import {
     uploadBrowseButtonHtml,
     uploadFileHintHtml,

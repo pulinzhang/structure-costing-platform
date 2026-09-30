@@ -6,7 +6,8 @@
  */
 
 import { paginationBarHtml } from '../../../ui/page-size.js?v=11';
-import { DRAWER_SHELL, DRAWER_BACKDROP, BTN_FILTER_SEARCH, HUD_FILTER, BTN_GHOST, BTN_HUD_CREATE, BTN_SOLID, BTN_SOLID_DANGER } from '../../../ui/classes.js?v=13';
+import { DRAWER_SHELL, DRAWER_BACKDROP, HUD_FILTER, BTN_GHOST, BTN_HUD_CREATE, BTN_SOLID, BTN_SOLID_DANGER, filterInput, filterSelect } from '../../../ui/classes.js?v=14';
+import { filterBarHtml } from '../../../ui/filter-bar.js?v=6';
 import { opsIconButtonHtml } from '../../../ui/hud-table.js?v=3';
 
 
@@ -52,34 +53,35 @@ export function usersTemplate() {
             <!-- 主面板-->
             <div class="bg-app-main border border-line">
 
-                <div class="p-3 border-b border-line-subtle flex flex-wrap items-center justify-between gap-3 bg-app-surface">
-                    <div class="flex items-center gap-2 flex-wrap flex-1 min-w-0 w-full sm:w-auto">
-                        <div class="relative w-full sm:flex-1 sm:max-w-xs">
-                            <span class="absolute inset-y-0 left-0 pl-2.5 flex items-center pointer-events-none text-ink-dim">
-                                ${window.svgIcon('search', 'w-3.5 h-3.5')}
-                            </span>
-                            <input type="text" id="filterKeyword" placeholder="搜索账号 / 姓名..."
-                                   class="w-full h-8 pl-8 pr-3 text-xs bg-app-hud border border-line text-ink placeholder:text-ink-dim focus:outline-none focus:border-brand-active transition-colors">
-                        </div>
-
-                        <select id="filterIsActive"
-                                class="${HUD_FILTER}">
-                            <option value="">全部状态</option>
-                            <option value="true">启用</option>
-                            <option value="false">停用</option>
-                        </select>
-
-                        <button id="btnFilter"
-                                class="${BTN_FILTER_SEARCH} h-7">
-                            ${window.svgIcon('search', 'w-3 h-3')}
-                            查询
+                <div class="px-5 py-3 border-b border-line-subtle bg-gradient-to-b from-app-hud to-app-deep">
+                    <div class="flex items-center justify-end mb-3">
+                        <button id="btnAddUser" class="${BTN_HUD_CREATE}">
+                            ${window.svgIcon('plus', 'w-3.5 h-3.5')}
+                            <span>新增用户</span>
                         </button>
                     </div>
-
-                    <button id="btnAddUser" class="${BTN_HUD_CREATE}">
-                        ${window.svgIcon('plus', 'w-3.5 h-3.5')}
-                        <span>新增用户</span>
-                    </button>
+                    ${filterBarHtml({
+                        prefix: 'users',
+                        searchId: 'btnFilter',
+                        capsules: [
+                            { capsuleId: 'usersCapsuleKeyword', idleLabel: '全部账号' },
+                            { capsuleId: 'usersCapsuleStatus', idleLabel: '全部状态' },
+                        ],
+                        fieldsHtml: [
+                            filterInput('filterKeyword', '账号 / 姓名', '搜索账号 / 姓名', { widthClass: 'w-full sm:w-44' }),
+                            filterSelect('filterIsActive', '状态', {
+                                emptyLabel: '全部状态',
+                                options: [
+                                    { value: 'true', label: '启用' },
+                                    { value: 'false', label: '停用' },
+                                ],
+                            }),
+                            `<button id="usersResetBtn" type="button" class="${BTN_GHOST}">
+                                ${window.svgIcon('refresh', 'w-3 h-3')}
+                                重置
+                            </button>`,
+                        ].join(''),
+                    })}
                 </div>
 
                 <div class="overflow-x-auto brabus-bg-grid">

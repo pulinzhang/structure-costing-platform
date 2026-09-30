@@ -2,7 +2,7 @@
  * 采购价格 — BRABUS 800 中控交车（协议黑匣）
  */
 
-import { HUD_SHELL, BTN_GHOST } from '../../../ui/classes.js?v=13';
+import { HUD_SHELL, BTN_GHOST } from '../../../ui/classes.js?v=14';
 import { paginationBarHtml } from '../../../ui/page-size.js?v=11';
 
 const RING_SELECT_IDS = [

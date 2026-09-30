@@ -3,7 +3,7 @@
  * 菜单项业务由各页自行绑定；本模块不拼 id。
  */
 
-import { BTN_MORE } from './classes.js?v=13';
+import { BTN_MORE } from './classes.js?v=14';
 
 const ITEM_CLASS =
     'w-full px-3.5 py-2 text-left text-[12px] text-ink-muted hover:bg-brand hover:text-ink-onbrand transition-colors';
