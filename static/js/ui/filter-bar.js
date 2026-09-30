@@ -72,15 +72,15 @@ export function filterBarHtml({
         : '';
     return `
                     <div class="${FILTER_STRIP}">
-                        <div class="flex items-center gap-3 min-w-0 flex-1">
-                            <span class="text-ink-faint shrink-0 tracking-wider">当前筛选：</span>
-                            <div id="${ids.capsulesWrapId}" class="flex items-center gap-2 flex-wrap min-w-0">
+                        <div class="filter-summary flex items-center gap-3 min-w-0 w-full sm:flex-1">
+                            <span class="filter-current-label text-ink-faint shrink-0 tracking-wider">当前筛选：</span>
+                            <div id="${ids.capsulesWrapId}" class="filter-capsules flex items-center gap-2 flex-wrap min-w-0 w-full">
                                 ${leadHtml}
                                 ${capsuleHtml}
                                 ${extraCapsulesHtml}
                             </div>
                         </div>
-                        <div class="flex items-center gap-3 shrink-0">
+                        <div class="flex items-center justify-end gap-3 shrink-0">
                             <button type="button" id="${ids.toggleId}" class="${TOGGLE_BTN_CLASS}">
                                 <span id="${ids.labelId}">展开高级筛选</span>
                                 <span id="${ids.countId}" class="text-ink-faint">(0)</span>

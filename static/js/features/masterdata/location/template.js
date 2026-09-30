@@ -1,5 +1,5 @@
 import { HUD_SHELL, DRAWER_SHELL, DRAWER_BACKDROP, HUD_BAND, OPS_TH, BTN_HUD_CREATE, BTN_HUD_SAVE, BTN_HUD_CHIP, BTN_GHOST, BTN_SOLID, BTN_SOLID_DANGER } from '../../../ui/classes.js?v=13';
-import { hudTableHtml, hudRowHtml, opsIconButtonHtml } from '../../../ui/hud-table.js?v=2';
+import { hudTableHtml, hudRowHtml, opsIconButtonHtml } from '../../../ui/hud-table.js?v=3';
 /**
  * 基地主数据 — HUD 密表 + 抽屉（无 KPI / 搜索 / 分页）
  */
@@ -9,7 +9,7 @@ export function locationTemplate() {
         <div class="space-y-2 w-full max-w-full">
             <div class="${HUD_SHELL}">
                 <div class="${HUD_BAND}">
-                    <div class="flex items-start justify-between gap-4">
+                    <div class="flex flex-col items-stretch gap-3 sm:flex-row sm:items-start sm:justify-between sm:gap-4">
                         <div class="min-w-0">
                             <h2 class="text-[13px] font-semibold text-ink tracking-wide">基地</h2>
                             <p class="mt-1 text-[11px] text-ink-faint">核价作用域锚点；别名吸收表头乱写；启用后才能写入</p>

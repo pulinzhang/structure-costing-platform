@@ -4,11 +4,11 @@
  */
 
 import { filterSelect, filterInput, HUD_SHELL, DRAWER_SHELL, DRAWER_BACKDROP, HUD_FILTER, FILTER_LABEL, BTN_GHOST, HUD_BAND, OPS_TH, BTN_SOLID, BTN_SOLID_DANGER } from '../../../../ui/classes.js?v=13';
-import { filterBarHtml } from '../../../../ui/filter-bar.js?v=4';
-import { hudTableHtml, hudRowHtml, opsIconButtonHtml } from '../../../../ui/hud-table.js?v=2';
+import { filterBarHtml } from '../../../../ui/filter-bar.js?v=6';
+import { hudTableHtml, hudRowHtml, opsIconButtonHtml } from '../../../../ui/hud-table.js?v=3';
 import { hudKpiCardHtml } from '../../../../ui/hud-kpi.js?v=1';
 
-import { moreMenuItemHtml, moreMenuShellHtml } from '../../../../ui/more-menu.js?v=6';
+import { moreMenuItemHtml, moreMenuShellHtml } from '../../../../ui/more-menu.js?v=7';
 import { partShortCodeCellHtml, partNumberNameCellHtml } from '../../../../domain/part-identity.js?v=5';
 
 function canOp(code) {
@@ -25,7 +25,7 @@ export function gaugeFeeListTemplate() {
             <div class="${HUD_SHELL}">
 
                 <div class="${HUD_BAND}">
-                    <div class="flex items-start justify-between gap-4 mb-3">
+                    <div class="flex flex-col items-stretch gap-3 mb-3 sm:flex-row sm:items-start sm:justify-between sm:gap-4">
                         <div class="grid grid-cols-2 gap-3 font-mono flex-1 min-w-0">
                             ${hudKpiCardHtml({
                                 variant: 'focus',
@@ -42,7 +42,7 @@ export function gaugeFeeListTemplate() {
                                 metaHtml: '生效 <span id="gflHudEffectiveCount">—</span><span class="text-ink-faint mx-1">/</span>失效 <span id="gflHudInvalidCount">—</span>',
                             })}
                         </div>
-                        <div class="flex items-center gap-1.5 shrink-0">
+                        <div class="flex items-center justify-end gap-1.5 shrink-0 w-full sm:w-auto">
                             ${canDelete ? moreMenuShellHtml({
                                 wrapId: 'gflMoreWrap',
                                 btnId: 'gflMoreBtn',
@@ -57,7 +57,7 @@ export function gaugeFeeListTemplate() {
                             </button>` : ''}
                         </div>
                     </div>
-                    <div class="text-[11px] font-mono text-ink-faint truncate">
+                    <div class="hidden sm:block text-[11px] font-mono text-ink-faint truncate">
                         查询范围：<span id="gflHudScope" class="text-ink-muted">全部范围</span>
                     </div>
                 </div>

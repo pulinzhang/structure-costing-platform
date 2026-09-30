@@ -2,7 +2,7 @@
  * 采购对象列表 — 生成页（对齐冲压零件价格计算壳 + 焊接拆解历史）
  */
 
-import { paginationBarHtml } from '../../../../ui/page-size.js?v=6';
+import { paginationBarHtml } from '../../../../ui/page-size.js?v=8';
 import { filterSelect, BTN_ABORT, BTN_GHOST } from '../../../../ui/classes.js?v=13';
 
 import { SECTION_LABELS } from '../labels.js?v=4';
@@ -12,7 +12,7 @@ export function procurementObjectGenerateTemplate() {
         <div class="space-y-4 w-full font-sans antialiased text-ink">
 
             <div class="flex items-center justify-between pb-2 border-b border-line-subtle">
-                <h1 class="text-xs font-bold text-ink tracking-wider">生成采购对象列表</h1>
+                <h1 class="hidden sm:block text-xs font-bold text-ink tracking-wider">生成采购对象列表</h1>
                 <a href="#/bom-procurement-object-list"
                    class="text-[10px] text-ink-dim hover:text-brand-hud transition-colors">
                     前往采购对象列表 →
@@ -31,7 +31,7 @@ export function procurementObjectGenerateTemplate() {
                 </div>
             </div>
 
-            <div class="flex items-center justify-between border-b border-line-subtle py-2.5">
+            <div class="flex flex-col items-stretch gap-3 border-b border-line-subtle py-2.5 sm:flex-row sm:items-center sm:justify-between">
                 <div class="flex items-center gap-6 flex-wrap">
                     <div>
                         <span class="text-[9px] text-ink-dim block">BOM 节点</span>
@@ -59,7 +59,7 @@ export function procurementObjectGenerateTemplate() {
                     </div>
                 </div>
 
-                <div class="flex items-center gap-3">
+                <div class="flex flex-col items-stretch gap-2 sm:flex-row sm:items-center sm:justify-end">
                     <span id="poGenNotice" class="text-[9px] text-ink-dim">
                         从材料清单生成采购件。同一个版本再生成时，会带回上次确认的结果；已经审核的要先反审核。
                     </span>

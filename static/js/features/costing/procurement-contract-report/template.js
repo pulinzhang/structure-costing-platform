@@ -3,7 +3,7 @@
  */
 
 import { HUD_SHELL, BTN_GHOST } from '../../../ui/classes.js?v=13';
-import { paginationBarHtml } from '../../../ui/page-size.js?v=6';
+import { paginationBarHtml } from '../../../ui/page-size.js?v=8';
 
 const RING_SELECT_IDS = [
     'pcrLocationFilter',
@@ -77,8 +77,8 @@ export function procurementContractReportTemplate() {
             <div class="${HUD_SHELL} pcr-cockpit relative rounded-md p-2.5 mb-2">
                 <span class="pcr-laser-track" aria-hidden="true"><span class="pcr-laser-spot"></span></span>
 
-                <div class="pcr-glass flex items-center gap-2 -mx-2.5 px-2.5 py-1.5 mb-2 text-[11px]">
-                    <div class="flex items-center gap-2 overflow-x-auto min-w-0 flex-1">
+                <div class="pcr-glass flex flex-col gap-2 -mx-2.5 px-2.5 py-1.5 mb-2 text-[11px] sm:flex-row sm:items-center">
+                    <div class="flex flex-wrap items-center gap-2 min-w-0 w-full sm:flex-1 sm:flex-nowrap sm:overflow-x-auto">
                         ${ringChip('pcrLocationFilter', '基地')}
                         ${ringChip('pcrVehicleModelFilter', '项目')}
                         ${ringChip('pcrBomVersionFilter', '版本')}
@@ -98,8 +98,8 @@ export function procurementContractReportTemplate() {
                     </button>
                 </div>
 
-                <div class="grid grid-cols-12 gap-2 items-stretch">
-                    <div class="pcr-bento relative col-span-4 rounded min-w-0 flex flex-col justify-center"
+                <div class="grid grid-cols-1 gap-2 items-stretch sm:grid-cols-2 lg:grid-cols-12">
+                    <div class="pcr-bento relative col-span-1 rounded min-w-0 flex flex-col justify-center sm:col-span-2 lg:col-span-4"
                          style="${BENTO_H}">
                         ${cornerMarks()}
                         <div class="pcr-label">单车合计</div>
@@ -110,7 +110,7 @@ export function procurementContractReportTemplate() {
                         <div id="pcrHudVehicleTotalHint" class="text-[9px] text-ink-muted truncate leading-none mt-0.5">窗口内各月 · 数量×结算价</div>
                     </div>
 
-                    <div class="col-span-4 grid grid-cols-2 gap-2">
+                    <div class="col-span-1 grid grid-cols-2 gap-2 lg:col-span-4">
                         <div id="pcrHudPriceCard" class="pcr-bento rounded min-w-0 flex flex-col justify-center"
                              style="${BENTO_H}">
                             <div class="pcr-label">零件种数</div>
@@ -133,7 +133,7 @@ export function procurementContractReportTemplate() {
                         </div>
                     </div>
 
-                    <div class="col-span-4 rounded min-w-0 border border-line-hud"
+                    <div class="col-span-1 rounded min-w-0 border border-line-hud sm:col-span-2 lg:col-span-4"
                          style="${BENTO_H}">
                         <button id="pcrExportBtn" type="button"
                                 class="pcr-export relative w-full h-full inline-flex items-center justify-center gap-2 border border-brand-hud [border-top-color:rgb(var(--hairline)/0.35)] text-brand-hud text-[12px] font-black tracking-widest uppercase rounded active:scale-[0.99] transition-all"

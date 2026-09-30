@@ -2,7 +2,7 @@
  * 冲压零件价格计算页模板
  */
 
-import { paginationBarHtml } from '../../../../ui/page-size.js?v=6';
+import { paginationBarHtml } from '../../../../ui/page-size.js?v=8';
 import { filterSelect, BTN_ABORT, BTN_GHOST } from '../../../../ui/classes.js?v=13';
 
 
@@ -10,7 +10,7 @@ export function partCostCalcTemplate() {
     return `
         <div class="space-y-4 w-full font-sans antialiased text-ink">
 
-            <div class="flex items-center justify-between pb-2 border-b border-line-subtle">
+            <div class="hidden sm:flex items-center justify-between pb-2 border-b border-line-subtle">
                 <h1 class="text-xs font-bold text-ink tracking-wider">冲压零件价格计算</h1>
             </div>
 
@@ -28,7 +28,7 @@ export function partCostCalcTemplate() {
                 </div>
             </div>
 
-            <div class="flex items-center justify-between border-b border-line-subtle py-2.5">
+            <div class="flex flex-col items-stretch gap-3 border-b border-line-subtle py-2.5 sm:flex-row sm:items-center sm:justify-between">
                 <div class="flex items-center gap-6 flex-wrap">
                     <div>
                         <span class="text-[9px] text-ink-dim block">匹配零件</span>
@@ -61,7 +61,7 @@ export function partCostCalcTemplate() {
                     </div>
                 </div>
 
-                <div class="flex items-center gap-3">
+                <div class="flex flex-col items-stretch gap-2 sm:flex-row sm:items-center sm:justify-end">
                     <span id="reCalcNotice" class="text-[9px] text-ink-dim">
                         钢材价按零件的牌号和料厚取，好几家钢厂时用最低的。再算一次时，没审核的会重写，已经审核的不动。
                     </span>

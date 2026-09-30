@@ -30,7 +30,7 @@ export function dieUploadTemplate() {
                                     <span class="text-[13px] text-ink-dim font-medium tracking-wide uppercase">选择采购基地</span>
                                 </div>
                                 <div class="ml-6">
-                                    <select id="dieLocation" name="location" required class="${UPLOAD_INPUT} hud-filter w-[280px]">
+                                    <select id="dieLocation" name="location" required class="${UPLOAD_INPUT} hud-filter w-full max-w-[280px]">
                                         <option value="">请选择采购基地</option>
                                     </select>
                                     <p class="mt-2 text-[10px] text-ink-faint">必选。</p>
@@ -46,7 +46,7 @@ export function dieUploadTemplate() {
                                 </div>
                                 <div class="ml-6">
                                     <select id="dieVehicleModel" name="vehicle_model" required
-                                            class="${UPLOAD_INPUT} hud-filter w-[280px]">
+                                            class="${UPLOAD_INPUT} hud-filter w-full max-w-[280px]">
                                         <option value="">请先选择采购基地</option>
                                     </select>
                                     <p class="mt-2 text-[10px] text-ink-faint">必选这个月可以上传的项目。须和文件名或标题里的项目一致。</p>

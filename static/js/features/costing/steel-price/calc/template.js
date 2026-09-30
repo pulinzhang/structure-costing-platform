@@ -3,7 +3,7 @@
  * 冲压钢材：基准价与加减价联动计算
  */
 
-import { paginationBarHtml } from '../../../../ui/page-size.js?v=6';
+import { paginationBarHtml } from '../../../../ui/page-size.js?v=8';
 import { filterSelect, BTN_ABORT, BTN_GHOST } from '../../../../ui/classes.js?v=13';
 
 
@@ -11,7 +11,7 @@ export function steelPriceCalcTemplate() {
     return `
         <div class="space-y-4 w-full font-sans antialiased text-ink">
             
-            <div class="flex items-center justify-between pb-2 border-b border-line-subtle">
+            <div class="hidden sm:flex items-center justify-between pb-2 border-b border-line-subtle">
                 <h1 class="text-xs font-bold text-ink tracking-wider">冲压钢材基准价与加减价联动计算</h1>
             </div>
 
@@ -29,8 +29,8 @@ export function steelPriceCalcTemplate() {
                 </div>
             </div>
 
-            <div class="flex items-center justify-between border-b border-line-subtle py-2.5">
-                <div class="flex items-center gap-8">
+            <div class="flex flex-col items-stretch gap-3 border-b border-line-subtle py-2.5 sm:flex-row sm:items-center sm:justify-between">
+                <div class="flex items-center gap-4 flex-wrap sm:gap-8">
                     <a href="javascript:void(0)" onclick="openDetailModal('basePrice')" class="group">
                         <span class="text-[9px] text-ink-dim block group-hover:text-ink-muted">中标基价库</span>
                         <span id="cntBasePrice" class="text-xs font-mono font-bold text-ink group-hover:text-ink">- <span class="text-[9px] font-normal text-ink-faint">条</span></span>
@@ -51,7 +51,7 @@ export function steelPriceCalcTemplate() {
                     </a>
                 </div>
 
-                <div class="flex items-center gap-3">
+                <div class="flex flex-col items-stretch gap-2 sm:flex-row sm:items-center sm:justify-end">
                     <span id="reCalcNotice" class="text-[9px] text-ink-dim">
                         上面的数字可以按项目看基价、调价和规格齐了多少（一个项目可以有多个工厂）。算出来的价格按基地保存，包含全部牌号和料厚。
                     </span>

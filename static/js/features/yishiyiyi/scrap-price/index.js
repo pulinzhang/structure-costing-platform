@@ -12,8 +12,8 @@ import {
     parsePriceInput,
     comparePriceStrings,
     subtractPriceStrings,
-} from './template.js?v=28';
-import { bindMoreMenu } from '../../../ui/more-menu.js?v=6';
+} from './template.js?v=29';
+import { bindMoreMenu } from '../../../ui/more-menu.js?v=7';
 
 const API_BASE = '/api/yishiyiyi/scrap-price';
 const DRAWER_ANIMATION_MS = 300;

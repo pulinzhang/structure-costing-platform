@@ -56,4 +56,13 @@ html[data-theme="light"] {
     --pcr-ignition-from: var(--bg-hud);
     --pcr-ignition-mid: var(--bg-elevated);
     --pcr-ignition-glow: 0;
+
+    --viz-assembly: 48 52 58;
+    --viz-sub-assembly: 139 106 69;
+    --viz-stamping: 84 117 140;
+    --viz-standard: 122 116 108;
+    --viz-plastic: 169 130 86;
+    --viz-rubber: 102 93 87;
+    --viz-consumable: 90 83 76;
+    --viz-other: 112 119 125;
 }

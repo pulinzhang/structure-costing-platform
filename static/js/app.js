@@ -18,11 +18,12 @@
 import { installConfirmDialog } from './ui/confirm-dialog.js?v=6';
 import { installDeleteErrorDialog } from './ui/error-dialog.js?v=11';
 import { bindCurrentRowOnOps } from './ui/table-row.js?v=3';
+import { installRecordLists } from './ui/record-list.js?v=6';
 import { bindHudSelects, closeHudSelectMenu } from './ui/hud-select.js?v=1';
 import { pageMeta } from './features/index.js?v=54';
 
 // 页面导入（路径与 index.html 菜单树 / features 目录对齐）
-import { getUserSession, initUserMenu, startTokenHeartbeat, updateUserSession } from './features/login/index.js?v=20';
+import { getUserSession, initUserMenu, startTokenHeartbeat, updateUserSession } from './features/login/index.js?v=21';
 import {
     applySidebarPermissions,
     canAccessPage,
@@ -31,7 +32,7 @@ import {
 import { bootLlmAssistant } from './llm-assistant/boot.js?v=64';
 import { pageConfig as dashboardPage }      from './features/dashboard/index.js?v=19';
 import { pageConfig as stampingUploadPage } from './features/stamping/process/upload/index.js?v=74';
-import { pageConfig as stampingPartsPage }  from './features/stamping/process/parts/index.js?v=89';
+import { pageConfig as stampingPartsPage }  from './features/stamping/process/parts/index.js?v=90';
 import { pageConfig as stampingDieUploadPage } from './features/stamping/die/upload/index.js?v=28';
 import { pageConfig as stampingDieListPage } from './features/stamping/die/list/index.js?v=43';
 import { pageConfig as stampingDieUnitPricePage } from './features/stamping/die/unit-price/index.js?v=27';
@@ -57,10 +58,10 @@ import { pageConfig as basePriceDownloadPage } from './features/yishiyiyi/base-p
 import { pageConfig as winningThicknessDownloadPage } from './features/yishiyiyi/winning-thickness/list/index.js?v=31';
 import { pageConfig as steelGradeCategoryPage } from './features/masterdata/steel-grade-category/index.js?v=29';
 import { pageConfig as steelMillPage } from './features/masterdata/steel-mill/index.js?v=1';
-import { pageConfig as scrapPricePage } from './features/yishiyiyi/scrap-price/index.js?v=32';
+import { pageConfig as scrapPricePage } from './features/yishiyiyi/scrap-price/index.js?v=33';
 import { pageConfig as bomStructurePage }  from './features/bom/material/structure/index.js?v=19';
 import { pageConfig as bomWhereUsedPage } from './features/bom/material/where-used/index.js?v=23';
-import { pageConfig as bomVizPage }        from './features/bom/material/viz/index.js?v=38';
+import { pageConfig as bomVizPage }        from './features/bom/material/viz/index.js?v=39';
 import { pageConfig as bomUploadPage }     from './features/bom/material/upload/index.js?v=26';
 import { pageConfig as bomMaterialListPage } from './features/bom/material/list/index.js?v=25';
 import { pageConfig as bomWeldingUnitPriceUploadPage } from './features/bom/welding-unit-price/upload/index.js?v=26';
@@ -84,7 +85,7 @@ import { pageConfig as costingPage }        from './features/costing/engine/inde
 import { pageConfig as fileTracePage }       from './features/file-trace/index.js?v=27';
 import { pageConfig as locationPage }        from './features/masterdata/location/index.js?v=24';
 import { pageConfig as vehicleModelUploadPage } from './features/masterdata/vehicle-model/upload/index.js?v=14';
-import { pageConfig as vehicleModelListPage } from './features/masterdata/vehicle-model/list/index.js?v=26';
+import { pageConfig as vehicleModelListPage } from './features/masterdata/vehicle-model/list/index.js?v=28';
 import { pageConfig as supplierUploadPage } from './features/masterdata/supplier/upload/index.js?v=15';
 import { pageConfig as supplierListPage } from './features/masterdata/supplier/list/index.js?v=29';
 import { pageConfig as settingsPage }       from './features/settings/system/index.js?v=38';
@@ -375,6 +376,7 @@ document.addEventListener('DOMContentLoaded', function() {
     if (!hasSession) return;
     bindCurrentRowOnOps(document);
     bindHudSelects();
+    installRecordLists();
 
     const sidebar         = document.getElementById('sidebar');
     const sidebarToggle   = document.getElementById('sidebarToggle');

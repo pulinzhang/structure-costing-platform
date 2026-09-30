@@ -9,11 +9,11 @@ import {
     DEFAULT_PAGE_SIZE,
     bindPagination,
     paintPagination,
-} from '../../../../ui/page-size.js?v=6';
+} from '../../../../ui/page-size.js?v=8';
 import {
     formatDurationSeconds,
 } from '../../../../domain/duration.js?v=3';
-import { opsIconButtonHtml } from '../../../../ui/hud-table.js?v=2';
+import { opsIconButtonHtml } from '../../../../ui/hud-table.js?v=3';
 
 const API_BASE = '/api/costing/assembly-costs';
 const CASCADE_API = '/api/bom/filters/cascade';

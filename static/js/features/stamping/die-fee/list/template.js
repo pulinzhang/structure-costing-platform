@@ -3,11 +3,11 @@
  */
 
 import { filterSelect, filterInput, HUD_SHELL, DRAWER_CLOSE, DRAWER_SHELL, DRAWER_BACKDROP, HUD_BAND, BTN_GHOST, OPS_TH, TH_KEY, TH_TEXT, TH_NUM, TH_FOCUS, HUD_LED, BTN_SOLID } from '../../../../ui/classes.js?v=13';
-import { filterBarHtml } from '../../../../ui/filter-bar.js?v=4';
-import { hudTableHtml, hudRowHtml, opsIconButtonHtml } from '../../../../ui/hud-table.js?v=2';
+import { filterBarHtml } from '../../../../ui/filter-bar.js?v=6';
+import { hudTableHtml, hudRowHtml, opsIconButtonHtml } from '../../../../ui/hud-table.js?v=3';
 import { hudKpiCardHtml, paintHudKpiAlert } from '../../../../ui/hud-kpi.js?v=1';
 
-import { moreMenuItemHtml, moreMenuShellHtml } from '../../../../ui/more-menu.js?v=6';
+import { moreMenuItemHtml, moreMenuShellHtml } from '../../../../ui/more-menu.js?v=7';
 import { partShortCodeCellHtml, partNumberNameCellHtml } from '../../../../domain/part-identity.js?v=5';
 
 export function dieFeeListTemplate() {
@@ -16,7 +16,7 @@ export function dieFeeListTemplate() {
             <div class="${HUD_SHELL}">
 
                 <div class="${HUD_BAND}">
-                    <div class="flex items-start justify-between gap-4 mb-3">
+                    <div class="flex flex-col items-stretch gap-3 mb-3 sm:flex-row sm:items-start sm:justify-between sm:gap-4">
                         <div class="grid grid-cols-2 lg:grid-cols-4 gap-3 font-mono flex-1 min-w-0">
                             ${hudKpiCardHtml({
                                 title: '整体模具费',
@@ -50,7 +50,7 @@ export function dieFeeListTemplate() {
                                 footer: [{ label: '已审核', valueHtml: '<span id="dieFeeHudApproved">—</span> 条' }],
                             })}
                         </div>
-                        <div class="flex items-center gap-1.5 shrink-0">
+                        <div class="flex items-center justify-end gap-1.5 shrink-0 w-full sm:w-auto">
                             ${moreMenuShellHtml({
                                 wrapId: 'dieFeeMoreWrap',
                                 btnId: 'dieFeeMoreBtn',
@@ -294,7 +294,7 @@ export function dieFeeListTemplate() {
                         <h6 class="text-[10px] font-semibold text-brand tracking-wider uppercase">费用构成</h6>
                     </div>
                     <div class="p-4">
-                        <div class="grid grid-cols-3 gap-3 mb-4">
+                        <div class="grid grid-cols-1 gap-3 mb-4 sm:grid-cols-3">
                             <div class="bg-app-deep border border-line px-3 py-2.5">
                                 <div class="text-[9px] text-ink-faint tracking-[0.08em] uppercase mb-1">系统模具费</div>
                                 <div id="die-fee-view-die-fee" class="text-[14px] font-mono font-bold tabular-nums text-ink-muted text-right">—</div>

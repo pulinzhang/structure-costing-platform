@@ -4,11 +4,11 @@
  */
 
 import { filterSelect, filterInput, HUD_SHELL, DRAWER_CLOSE, DRAWER_SHELL, DRAWER_BACKDROP, HUD_BAND, OPS_TH, TH_KEY, TH_TEXT, TH_NUM, TH_FOCUS, BTN_GHOST, HUD_LED, BTN_SOLID, BTN_SOLID_DANGER } from '../../../../ui/classes.js?v=13';
-import { filterBarHtml } from '../../../../ui/filter-bar.js?v=4';
-import { hudTableHtml, hudRowHtml, opsIconButtonHtml } from '../../../../ui/hud-table.js?v=2';
+import { filterBarHtml } from '../../../../ui/filter-bar.js?v=6';
+import { hudTableHtml, hudRowHtml, opsIconButtonHtml } from '../../../../ui/hud-table.js?v=3';
 import { hudKpiCardHtml } from '../../../../ui/hud-kpi.js?v=1';
 
-import { moreMenuItemHtml, moreMenuShellHtml } from '../../../../ui/more-menu.js?v=6';
+import { moreMenuItemHtml, moreMenuShellHtml } from '../../../../ui/more-menu.js?v=7';
 
 export function steelPriceListTemplate() {
     return `
@@ -17,7 +17,7 @@ export function steelPriceListTemplate() {
 
                 <!-- HUD 战术数据看板 + 操作 -->
                 <div class="${HUD_BAND}">
-                    <div class="flex items-start justify-between gap-4 mb-3">
+                    <div class="flex flex-col items-stretch gap-3 mb-3 sm:flex-row sm:items-start sm:justify-between sm:gap-4">
                         <div class="grid grid-cols-2 lg:grid-cols-4 gap-3 font-mono flex-1 min-w-0">
                             ${hudKpiCardHtml({
                                 title: '核价条数',
@@ -45,7 +45,7 @@ export function steelPriceListTemplate() {
                                 unit: '条',
                             })}
                         </div>
-                        <div class="flex items-center gap-1.5 shrink-0">
+                        <div class="flex items-center justify-end gap-1.5 shrink-0 w-full sm:w-auto">
                             ${moreMenuShellHtml({
                                 wrapId: 'steelPriceMoreWrap',
                                 btnId: 'steelPriceMoreBtn',
@@ -160,7 +160,7 @@ export function steelPriceListTemplate() {
 
                     <div>
                         <label class="text-[10px] font-semibold text-ink-dim uppercase tracking-[0.1em] mb-2 block">价格分项</label>
-                        <div class="grid grid-cols-3 gap-3">
+                        <div class="grid grid-cols-1 gap-3 sm:grid-cols-3">
                             ${editNumber('editBasePrice', '基础价base_price', '0', null, '全', '0.0001')}
                             ${editNumber('editThicknessAdjustment', '厚度加价 thickness_adjustment', null, null, '全', '0.0001')}
                             ${editNumber('editWidthAdjustment', '宽度加价 width_adjustment', null, null, '全', '0.0001')}

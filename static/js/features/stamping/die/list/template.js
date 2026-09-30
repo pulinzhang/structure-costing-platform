@@ -1,16 +1,16 @@
 import { HUD_SHELL, DRAWER_SHELL, DRAWER_BACKDROP, HUD_BAND, OPS_TH, filterSelect, filterInput, BTN_GHOST } from '../../../../ui/classes.js?v=13';
-import { filterBarHtml } from '../../../../ui/filter-bar.js?v=4';
-import { hudTableHtml } from '../../../../ui/hud-table.js?v=2';
+import { filterBarHtml } from '../../../../ui/filter-bar.js?v=6';
+import { hudTableHtml } from '../../../../ui/hud-table.js?v=3';
 import { hudKpiCardHtml } from '../../../../ui/hud-kpi.js?v=1';
 
-import { moreMenuItemHtml, moreMenuShellHtml } from '../../../../ui/more-menu.js?v=6';
+import { moreMenuItemHtml, moreMenuShellHtml } from '../../../../ui/more-menu.js?v=7';
 
 export function dieListTemplate() {
     return `
         <div class="space-y-2 w-full max-w-full">
             <div class="${HUD_SHELL}">
                 <div class="${HUD_BAND}">
-                    <div class="flex items-start justify-between gap-4 mb-3">
+                    <div class="flex flex-col items-stretch gap-3 mb-3 sm:flex-row sm:items-start sm:justify-between sm:gap-4">
                         <div class="grid grid-cols-2 gap-3 font-mono flex-1 min-w-0">
                             ${hudKpiCardHtml({
                                 title: '查询范围',
@@ -24,7 +24,7 @@ export function dieListTemplate() {
                                 valueHtml: '—',
                             })}
                         </div>
-                        <div class="flex items-center gap-1.5 shrink-0">
+                        <div class="flex items-center justify-end gap-1.5 shrink-0 w-full sm:w-auto">
                             ${moreMenuShellHtml({
                                 wrapId: 'dieMoreWrap',
                                 btnId: 'dieMoreBtn',

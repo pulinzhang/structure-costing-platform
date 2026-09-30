@@ -32,49 +32,49 @@ const PART_CATEGORY = {
     assembly: {
         key: 'assembly',
         label: '总成',
-        color: '#30343A',
+        token: '--viz-assembly',
         knowledge: '供货总成 —— 交付客户的冲焊装配单元',
     },
     sub_assembly: {
         key: 'sub_assembly',
         label: '分总成',
-        color: '#8B6A45',
+        token: '--viz-sub-assembly',
         knowledge: '分总成（焊接件）—— 有下级子件的焊接结构',
     },
     stamping: {
         key: 'stamping',
         label: '冲压件',
-        color: '#54758C',
+        token: '--viz-stamping',
         knowledge: '自制冲压成形零件（含安装支架、加强板等）',
     },
     standard: {
         key: 'standard',
         label: '标准件',
-        color: '#9A948A',
+        token: '--viz-standard',
         knowledge: '标准件 —— 螺栓、螺母等',
     },
     plastic: {
         key: 'plastic',
         label: '塑料件',
-        color: '#A98256',
+        token: '--viz-plastic',
         knowledge: '外购塑料件',
     },
     rubber: {
         key: 'rubber',
         label: '橡胶件',
-        color: '#665D57',
+        token: '--viz-rubber',
         knowledge: '橡胶 / 密封件',
     },
     consumable: {
         key: 'consumable',
         label: '辅料',
-        color: '#5A534C',
+        token: '--viz-consumable',
         knowledge: '胶、焊丝等冲焊辅料',
     },
     other: {
         key: 'other',
         label: '其他',
-        color: '#70777D',
+        token: '--viz-other',
         knowledge: '其他外购件（非电器）',
     },
 };
@@ -123,26 +123,9 @@ const bomVizState = {
     isLoading: false,
 };
 
-function parseHex(hex) {
-    const h = String(hex || '').replace('#', '');
-    if (h.length !== 6) return { r: 120, g: 120, b: 120 };
-    return {
-        r: Number.parseInt(h.slice(0, 2), 16),
-        g: Number.parseInt(h.slice(2, 4), 16),
-        b: Number.parseInt(h.slice(4, 6), 16),
-    };
-}
-
-function hexToRgba(hex, alpha) {
-    const { r, g, b } = parseHex(hex);
-    return `rgba(${r},${g},${b},${alpha})`;
-}
-
-function lightenHex(hex, amount = 0.28) {
-    const { r, g, b } = parseHex(hex);
-    const mix = (c) => Math.round(c + (255 - c) * amount);
-    const to = (n) => n.toString(16).padStart(2, '0');
-    return `#${to(mix(r))}${to(mix(g))}${to(mix(b))}`;
+function categoryInk(token, alpha) {
+    if (alpha == null) return `rgb(var(${token}))`;
+    return `rgb(var(${token}) / ${alpha})`;
 }
 
 /**
@@ -636,7 +619,7 @@ const BomVizPage = {
                     return `
                         <span class="inline-flex items-center gap-1.5 whitespace-nowrap">
                             <span class="inline-block w-1.5 h-1.5 rounded-full"
-                                  style="background:${cat.color}"></span>
+                                  style="background:${categoryInk(cat.token)}"></span>
                             ${esc(cat.label)}
                         </span>
                     `;
@@ -697,10 +680,11 @@ const BomVizPage = {
         const edgeSvg = edges
             .map((e) => {
                 const child = placements.find((p) => p.node.id === e.childId);
-                const color = child?.category?.color || PART_CATEGORY.other.color;
+                const token = child?.category?.token || PART_CATEGORY.other.token;
                 return `<path d="${orthogonalPath(e.x1, e.y1, e.x2, e.y2)}"
                             fill="none"
-                            stroke="${hexToRgba(color, 0.35)}"
+                            stroke="${categoryInk(token)}"
+                            stroke-opacity="0.35"
                             stroke-width="1.25"
                             class="bom-edge"
                             data-parent-id="${e.parentId}"
@@ -710,7 +694,7 @@ const BomVizPage = {
 
         const nodesHtml = placements
             .map((p) => {
-                const color = p.category.color;
+                const token = p.category.token;
                 const src = sketchSrc(p.node.sketch_url);
                 const left = p.x - p.w / 2;
                 const top = p.y - p.h / 2;
@@ -730,7 +714,7 @@ const BomVizPage = {
                 const badge =
                     hasKids && !p.isExpanded
                         ? `<span class="absolute -bottom-2 left-1/2 -translate-x-1/2 inline-flex items-center px-1.5 py-0.5 text-[10px] font-mono font-semibold tabular-nums bg-app-surface border text-ink"
-                                 style="border-color:${hexToRgba(color, 0.55)}">+${p.childCount}</span>`
+                                 style="border-color:${categoryInk(token, 0.55)}">+${p.childCount}</span>`
                         : hasKids && p.isExpanded
                           ? `<span class="absolute -bottom-2 left-1/2 -translate-x-1/2 inline-flex items-center px-1.5 py-0.5 text-[9px] font-mono text-ink-dim bg-app-main border border-line">−</span>`
                           : '';
@@ -750,14 +734,14 @@ const BomVizPage = {
                        data-depth="${p.depth}"
                        data-has-children="${hasKids ? '1' : '0'}"
                        style="left:${left}px;top:${top}px;width:${p.w}px;height:${p.h}px;
-                              background:${hexToRgba(color, p.depth === 0 ? 0.22 : 0.12)};
-                              border-color:${hexToRgba(color, 0.55)};
+                              background:${categoryInk(token, p.depth === 0 ? 0.22 : 0.12)};
+                              border-color:${categoryInk(token, 0.55)};
 ">
                     ${imgBlock}
                     <p class="${shortSize} font-mono font-semibold tabular-nums tracking-[0.06em] text-ink leading-tight text-center break-all px-0.5
                                drop-shadow-[0_0_12px_rgb(var(--text-main)/0.06)]">${esc(p.partNoLabel)}</p>
                     <p class="${qtySize} font-mono font-semibold tabular-nums tracking-wide mt-1.5 leading-none"
-                       style="color:${lightenHex(color, 0.45)}">${esc(p.qtyLabel)}</p>
+                       style="color:${categoryInk(token, 0.72)}">${esc(p.qtyLabel)}</p>
                     <p class="text-[10px] text-ink-faint mt-1.5 leading-tight text-center truncate w-full">${esc(p.displayName)}</p>
                     ${badge}
                   </div>
@@ -958,7 +942,7 @@ const BomVizPage = {
         const catEl = document.getElementById('bomVizPreviewCategory');
         if (catEl) {
             catEl.innerHTML = `
-                <span class="inline-block w-1.5 h-1.5 rounded-full" style="background:${category.color}"></span>
+                <span class="inline-block w-1.5 h-1.5 rounded-full" style="background:${categoryInk(category.token)}"></span>
                 ${esc(category.label)}
             `;
         }
@@ -1034,15 +1018,15 @@ const BomVizPage = {
             body.innerHTML = `
                 <div>
                     <p class="inline-flex items-center gap-1.5 text-[10px] tracking-wide mb-2"
-                       style="color:${category.color}">
-                        <span class="inline-block w-1.5 h-1.5 rounded-full" style="background:${category.color}"></span>
+                       style="color:${categoryInk(category.token)}">
+                        <span class="inline-block w-1.5 h-1.5 rounded-full" style="background:${categoryInk(category.token)}"></span>
                         ${esc(category.label)}
                     </p>
                     <h3 class="text-xl font-mono font-semibold tabular-nums tracking-[0.06em] text-ink leading-snug mb-2 break-all">${esc(
                         resolvePartNumberLabel(node, category)
                     )}</h3>
                     <p class="text-xl font-mono font-semibold tabular-nums tracking-wide mb-2"
-                       style="color:${lightenHex(category.color, 0.35)}">${esc(qtyLabel)}</p>
+                       style="color:${categoryInk(category.token, 0.72)}">${esc(qtyLabel)}</p>
                     <p class="text-[12px] text-ink-dim mb-1">${esc(displayName)}</p>
                     <p class="text-[13px] text-ink-muted mb-2">${esc(fullName)}</p>
                     ${
@@ -1060,7 +1044,7 @@ const BomVizPage = {
                         ? `
                     <button type="button" id="bomVizKnowledgeSketch"
                             class="w-full h-56 bg-app-deep border overflow-hidden hover:border-line transition-colors p-0"
-                            style="border-color:${hexToRgba(category.color, 0.45)}">
+                            style="border-color:${categoryInk(category.token, 0.45)}">
                         <img src="${esc(src)}" alt="${esc(fullName)}" class="w-full h-full object-fill" loading="lazy" draggable="false">
                     </button>
                     <p class="text-[10px] text-ink-faint -mt-3">点击在新窗口打开图纸</p>
@@ -1095,7 +1079,7 @@ const BomVizPage = {
                     </div>
                     <div>
                         <p class="text-[10px] uppercase tracking-[0.14em] text-ink-dim mb-1.5">制造类别</p>
-                        <p class="text-[13px] leading-relaxed" style="color:${lightenHex(category.color, 0.35)}">${esc(roleText)}</p>
+                        <p class="text-[13px] leading-relaxed" style="color:${categoryInk(category.token, 0.72)}">${esc(roleText)}</p>
                     </div>
                     ${
                         node.material

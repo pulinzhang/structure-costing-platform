@@ -63,8 +63,28 @@ export function bindMoreMenu({ wrapId, btnId, menuId, onToggle }) {
 
     const setOpen = (isOpen) => {
         const menu = document.getElementById(menuId);
+        const button = document.getElementById(btnId);
         if (!menu) return;
         menu.classList.toggle('hidden', !isOpen);
+        if (!isOpen || !button || !window.matchMedia('(max-width: 639.98px)').matches) {
+            menu.style.position = '';
+            menu.style.top = '';
+            menu.style.left = '';
+            menu.style.right = '';
+            menu.style.zIndex = '';
+            return;
+        }
+        const rect = button.getBoundingClientRect();
+        menu.style.position = 'fixed';
+        menu.style.zIndex = '80';
+        menu.style.right = 'auto';
+        const width = menu.offsetWidth || 132;
+        const height = menu.offsetHeight || 40;
+        const left = Math.min(Math.max(8, rect.right - width), window.innerWidth - width - 8);
+        let top = rect.bottom + 4;
+        if (top + height > window.innerHeight - 8) top = Math.max(8, rect.top - height - 4);
+        menu.style.left = `${left}px`;
+        menu.style.top = `${top}px`;
     };
 
     const close = () => setOpen(false);

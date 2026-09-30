@@ -2,9 +2,9 @@
  * 项目列表 — HUD 密表，按基地分卡 / 分段
  */
 
-import { moreMenuItemHtml, moreMenuShellHtml } from '../../../../ui/more-menu.js?v=6';
+import { moreMenuItemHtml, moreMenuShellHtml } from '../../../../ui/more-menu.js?v=7';
 import { HUD_SHELL, DRAWER_SHELL, DRAWER_BACKDROP, HUD_BAND, OPS_TH, BTN_HUD_CREATE, HUD_FILTER, BTN_GHOST, BTN_SOLID, BTN_SOLID_DANGER } from '../../../../ui/classes.js?v=13';
-import { hudTableHtml, hudRowHtml, opsIconButtonHtml } from '../../../../ui/hud-table.js?v=2';
+import { hudTableHtml, hudRowHtml, opsIconButtonHtml } from '../../../../ui/hud-table.js?v=3';
 
 
 function monthOptionsHtml(selected) {
@@ -36,9 +36,9 @@ export function vehicleModelListTemplate() {
         <div class="space-y-2 w-full max-w-full">
             <div class="${HUD_SHELL}">
                 <div class="${HUD_BAND}">
-                    <div class="flex items-start justify-between gap-4 mb-3">
-                        <div id="vmHudCards" class="flex flex-wrap gap-2 flex-1 min-w-0"></div>
-                        <div class="flex items-center gap-1.5 shrink-0">
+                    <div class="flex flex-col items-stretch gap-3 mb-3 sm:flex-row sm:items-start sm:justify-between sm:gap-4">
+                        <div id="vmHudCards" class="order-2 flex min-w-0 flex-1 snap-x snap-mandatory flex-nowrap gap-2 overflow-x-auto [scrollbar-width:none] [&::-webkit-scrollbar]:hidden sm:order-1 sm:flex-wrap sm:overflow-visible"></div>
+                        <div class="order-1 flex w-full shrink-0 items-center justify-end gap-1.5 sm:order-2 sm:w-auto">
                             ${moreMenuShellHtml({
                                 wrapId: 'vmMoreWrap',
                                 btnId: 'vmMoreBtn',
@@ -52,7 +52,7 @@ export function vehicleModelListTemplate() {
                             </button>
                         </div>
                     </div>
-                    <div class="flex items-center gap-2">
+                    <div class="hidden sm:flex items-center gap-2">
                         <span class="text-[10px] text-ink-faint tracking-wider">筛选</span>
                         <span id="vmFilterCapsule" class="px-2 py-0.5 text-[10px] font-mono rounded-md border border-line-hud text-ink-muted">全部基地</span>
                     </div>
@@ -237,7 +237,7 @@ export function renderHudCards(locations, filterLocation, asOfYear, asOfMonth) {
         : 'border-line-hud bg-app-main/80';
     const cards = [`
         <button type="button" data-action="filter-all"
-                class="text-left min-w-[140px] p-3 border ${allActive} transition-colors">
+                class="shrink-0 snap-start text-left min-w-[140px] p-3 border ${allActive} transition-colors">
             <div class="text-[10px] tracking-wider text-ink-faint">全部 · ${esc(period)}</div>
             <div class="mt-1 text-[18px] font-bold tabular-nums text-ink">${totalProjects}
                 <span class="text-[10px] text-ink-faint font-medium ml-1">项目</span>
@@ -256,7 +256,7 @@ export function renderHudCards(locations, filterLocation, asOfYear, asOfMonth) {
             : '<span class="text-[9px] text-danger ml-1">已禁用</span>';
         cards.push(`
             <button type="button" data-action="filter-location" data-location="${esc(card.location)}"
-                    class="text-left min-w-[140px] p-3 border ${selected} ${disabled} transition-colors">
+                    class="shrink-0 snap-start text-left min-w-[140px] p-3 border ${selected} ${disabled} transition-colors">
                 <div class="text-[10px] tracking-wider text-ink-faint">${esc(card.location)}${disabledLabel}</div>
                 <div class="mt-1 text-[18px] font-bold tabular-nums text-ink">${card.project_count || 0}
                     <span class="text-[10px] text-ink-faint font-medium ml-1">项目</span>

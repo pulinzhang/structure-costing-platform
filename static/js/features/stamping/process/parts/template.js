@@ -6,10 +6,10 @@
  * 明细抽屉 / renderDetailContent 保持不变
  */
 
-import { moreMenuItemHtml, moreMenuShellHtml } from '../../../../ui/more-menu.js?v=6';
+import { moreMenuItemHtml, moreMenuShellHtml } from '../../../../ui/more-menu.js?v=7';
 import { BRABUS_PANEL, BRABUS_PANEL_HEADER, BRABUS_SECTION_HEADER, BRABUS_TABLE_WRAPPER, DIE_TYPE_SELECT, filterSelect, filterInput, HUD_SHELL, DRAWER_SHELL, DRAWER_BACKDROP, DRAWER_CLOSE, HUD_BAND, BTN_GHOST, OPS_TH, TH_KEY, TH_TEXT, TH_NUM, HUD_LED, BTN_SOLID } from '../../../../ui/classes.js?v=13';
-import { filterBarHtml } from '../../../../ui/filter-bar.js?v=4';
-import { hudTableHtml } from '../../../../ui/hud-table.js?v=2';
+import { filterBarHtml } from '../../../../ui/filter-bar.js?v=6';
+import { hudTableHtml } from '../../../../ui/hud-table.js?v=3';
 import { hudKpiCardHtml } from '../../../../ui/hud-kpi.js?v=1';
 
 export function partsTemplate() {
@@ -19,7 +19,7 @@ export function partsTemplate() {
 
                 <!-- HUD + 操作 -->
                 <div class="${HUD_BAND}">
-                    <div class="flex items-start justify-between gap-4 mb-3">
+                    <div class="flex flex-col items-stretch gap-3 mb-3 sm:flex-row sm:items-start sm:justify-between sm:gap-4">
                         <div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3 font-mono flex-1 min-w-0">
                             ${hudKpiCardHtml({
                                 title: '基地',
@@ -49,7 +49,7 @@ export function partsTemplate() {
                                 unit: '个',
                             })}
                         </div>
-                        <div class="flex items-center gap-1.5 shrink-0">
+                        <div class="flex items-center justify-end gap-1.5 shrink-0 w-full sm:w-auto">
                             ${moreMenuShellHtml({
                                 wrapId: 'partsMoreWrap',
                                 btnId: 'partsMoreBtn',
@@ -68,7 +68,7 @@ export function partsTemplate() {
                             </button>
                         </div>
                     </div>
-                    <div class="text-[11px] font-mono text-ink-faint truncate">
+                    <div class="hidden sm:block text-[11px] font-mono text-ink-faint truncate">
                         查询范围：<span id="partsHudScope" class="text-ink-muted">全部范围</span>
                     </div>
                 </div>

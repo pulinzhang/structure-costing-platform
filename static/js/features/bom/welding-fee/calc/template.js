@@ -3,7 +3,7 @@
  * 布局对齐钢材联动 / 冲压加工费：筛选 + 就绪统计 + 进度 + 计算历史
  */
 
-import { paginationBarHtml } from '../../../../ui/page-size.js?v=6';
+import { paginationBarHtml } from '../../../../ui/page-size.js?v=8';
 import { filterSelect, BTN_ABORT, BTN_GHOST } from '../../../../ui/classes.js?v=13';
 
 
@@ -11,8 +11,8 @@ export function l0WeldingFeeCalcTemplate() {
     return `
         <div class="space-y-4 w-full font-sans antialiased text-ink">
 
-            <div class="flex items-center justify-between pb-2 border-b border-line-subtle">
-                <h1 class="text-xs font-bold text-ink tracking-wider">焊接费计算</h1>
+            <div class="flex flex-col items-stretch gap-1 pb-2 border-b border-line-subtle sm:flex-row sm:items-center sm:justify-between">
+                <h1 class="hidden sm:block text-xs font-bold text-ink tracking-wider">焊接费计算</h1>
                 <p class="text-[10px] text-ink-faint">公式与层级无关：有辅助量用辅助量，否则用过程量；长度 mm↔cm，面积 平方≡m2</p>
             </div>
 
@@ -29,8 +29,8 @@ export function l0WeldingFeeCalcTemplate() {
                 </div>
             </div>
 
-            <div class="flex items-center justify-between border-b border-line-subtle py-2.5">
-                <div class="flex items-center gap-8">
+            <div class="flex flex-col items-stretch gap-3 border-b border-line-subtle py-2.5 sm:flex-row sm:items-center sm:justify-between">
+                <div class="flex items-center gap-4 flex-wrap sm:gap-8">
                     <div>
                         <span class="text-[9px] text-ink-dim block">拆解节点</span>
                         <span id="l0wfCntL0" class="text-xs font-mono font-bold text-ink">- <span class="text-[9px] font-normal text-ink-faint">条</span></span>
@@ -52,7 +52,7 @@ export function l0WeldingFeeCalcTemplate() {
                     </div>
                 </div>
 
-                <div class="flex items-center gap-3">
+                <div class="flex flex-col items-stretch gap-2 sm:flex-row sm:items-center sm:justify-end">
                     <span id="l0wfReCalcNotice" class="text-[9px] text-ink-dim">
                         再算一次时，没审核的会重写；已经审核的那一行不动。
                     </span>

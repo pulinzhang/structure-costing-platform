@@ -48,6 +48,15 @@
     --shadow-drawer: -20px 0 60px rgb(var(--overlay) / 0.9);
     --glow-hud: 0 0 30px rgb(var(--hud-red) / 0.15), inset 0 1px 0 rgb(var(--hud-red) / 0.12);
     --glow-brand: 0 0 8px rgb(var(--brabus-red) / 0.5);
+
+    --viz-assembly: 183 189 198;
+    --viz-sub-assembly: 196 160 122;
+    --viz-stamping: 122 168 192;
+    --viz-standard: 196 190 180;
+    --viz-plastic: 212 180 138;
+    --viz-rubber: 181 170 163;
+    --viz-consumable: 168 159 150;
+    --viz-other: 176 182 188;
     --pcr-ignition-from: 56 10 14;
     --pcr-ignition-mid: 31 5 7;
     --pcr-ignition-glow: 0.5;
@@ -352,11 +361,11 @@ textarea:-webkit-autofill:active {
     transition: opacity 0.15s ease;
 }
 
-/* 当前页：帮助站同款墨底 #010101、白字。悬停（含当前项）品牌红底白字。必须写在三级字色之后。 */
+/* 当前页跟主题表面色；悬停（含当前项）品牌红底、字用 --text-on-brand。 */
 .sidebar-nav-link.active,
 .submenu-link.active {
-    color: rgb(var(--text-on-brand));
-    background: rgb(1 1 1);
+    color: rgb(var(--text-main));
+    background: rgb(var(--bg-elevated));
 }
 
 .sidebar-nav-link:hover,
@@ -608,6 +617,10 @@ textarea:-webkit-autofill:active {
     }
 }
 
+#userThemeRow {
+    display: none;
+}
+
 /* ============ 手机 (<640px) ============ */
 @media (max-width: 639.98px) {
     .main-content {
@@ -621,13 +634,303 @@ textarea:-webkit-autofill:active {
         padding: 1.5rem 1.1rem 1.25rem;
     }
 
+    .page-header {
+        gap: 0.5rem;
+        padding: 0 0.65rem;
+        overflow: visible;
+    }
+
+    #userMenuPanel {
+        position: fixed;
+        top: 4.5rem;
+        right: 0.75rem;
+        left: auto;
+        z-index: 80;
+    }
+
+    #userThemeRow {
+        display: flex;
+    }
+
+    .page-header-right {
+        gap: 0.35rem;
+    }
+
     .breadcrumb {
-        font-size: 0.625rem;
+        font-size: 0.8125rem;
     }
 
     .breadcrumb-list {
         flex-wrap: nowrap;
         overflow: hidden;
+        min-width: 0;
+    }
+
+    .breadcrumb-list > li:not(:last-child) {
+        display: none;
+    }
+
+    .breadcrumb-item.active {
+        display: block;
+        max-width: 100%;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+        font-size: 0.8125rem;
+    }
+
+    .breadcrumb-item.active[data-en]::after {
+        display: none;
+    }
+
+    /* 手机列表：表格收成标签+值，不再横滑 */
+    table.record-list {
+        display: block;
+        width: 100% !important;
+        min-width: 0 !important;
+    }
+
+    .overflow-x-auto:has(> table.record-list),
+    .overflow-auto:has(> table.record-list) {
+        overflow: visible !important;
+        max-height: none !important;
+    }
+
+    table.record-list colgroup,
+    table.record-list thead {
+        display: none;
+    }
+
+    table.record-list tbody {
+        display: flex;
+        flex-direction: column;
+        gap: 0.5rem;
+        padding: 0.55rem 0.45rem 0.75rem;
+    }
+
+    table.record-list tr {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        column-gap: 0.85rem;
+        row-gap: 0.45rem;
+        border: 1px solid rgb(var(--border-hud));
+        border-left: 2px solid rgb(var(--brabus-red) / 0.72);
+        background: rgb(var(--bg-main));
+        padding: 0.7rem 0.75rem 0.55rem 0.8rem;
+        box-shadow: inset 0 1px 0 rgb(var(--hairline) / 0.06);
+    }
+
+    table.record-list tr.record-list-span {
+        display: block;
+        border: 0;
+        background: transparent;
+        box-shadow: none;
+        padding: 0.65rem 0.2rem;
+    }
+
+    table.record-list tr.record-list-section {
+        display: flex;
+        align-items: center;
+        gap: 0.45rem;
+        border: 0;
+        background: transparent;
+        box-shadow: none;
+        padding: 0.2rem 0.1rem 0;
+    }
+
+    table.record-list tr.record-list-section::before {
+        content: '';
+        width: 2px;
+        height: 0.7rem;
+        flex-shrink: 0;
+        background: rgb(var(--brabus-red));
+        box-shadow: 0 0 6px rgb(var(--brabus-red) / 0.45);
+    }
+
+    table.record-list td {
+        display: flex;
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 0.12rem;
+        width: auto !important;
+        min-width: 0 !important;
+        max-width: none !important;
+        position: relative !important;
+        padding: 0;
+        border: 0;
+        overflow: visible !important;
+        white-space: normal !important;
+        text-align: left;
+        background: transparent !important;
+    }
+
+    table.record-list tr.record-list-span td {
+        display: block;
+        padding: 0;
+    }
+
+    table.record-list td[data-label]::before {
+        content: attr(data-label);
+        font-size: 10px;
+        line-height: 1.3;
+        letter-spacing: 0.08em;
+        color: rgb(var(--text-faint));
+    }
+
+    table.record-list .record-list-value {
+        min-width: 0;
+        max-width: 100%;
+        font-size: 13px;
+        line-height: 1.35;
+        text-align: left;
+        color: rgb(var(--text-main));
+        overflow-wrap: anywhere;
+    }
+
+    table.record-list tr.record-list-span .record-list-value {
+        text-align: center;
+        font-size: 11px;
+        color: rgb(var(--text-faint));
+    }
+
+    table.record-list tr.record-list-section .record-list-value {
+        text-align: left;
+        letter-spacing: 0.08em;
+        color: rgb(var(--text-muted));
+        font-size: 11px;
+    }
+
+    table.record-list .truncate {
+        white-space: normal !important;
+        overflow: visible !important;
+        text-overflow: clip !important;
+    }
+
+    table.record-list .record-list-value img {
+        max-width: 5.5rem;
+        max-height: 3.25rem;
+        margin-left: 0;
+        object-fit: contain;
+    }
+
+    table.record-list td.record-list-omit,
+    table.record-list td.record-list-chrome,
+    table.record-list td.hidden {
+        display: none !important;
+    }
+
+    table.record-list button,
+    table.record-list a {
+        opacity: 1 !important;
+    }
+
+    table.record-list .record-list-value:has(button),
+    table.record-list .record-list-value:has(a) {
+        display: flex;
+        flex-wrap: wrap;
+        justify-content: flex-start;
+        align-items: center;
+        gap: 0.35rem;
+    }
+
+    table.record-list td:not([data-label]):has(.record-list-value :is(button, a)) {
+        grid-column: 1 / -1;
+        margin-top: 0.1rem;
+        padding-top: 0.4rem;
+        border-top: 1px solid rgb(var(--border-hud));
+    }
+
+    table.record-list td:not([data-label]):has(.record-list-value :is(button, a)) .record-list-value {
+        justify-content: flex-end;
+        width: 100%;
+    }
+
+    .filter-capsules > span.text-ink-muted {
+        display: none;
+    }
+
+    .filter-current-label {
+        display: none;
+    }
+
+    .filter-summary:not(:has(.font-bold)):not(:has(input, select, textarea, button, a)) {
+        display: none;
+    }
+
+    .record-pager {
+        flex-wrap: wrap;
+        align-items: center;
+        row-gap: 0.5rem;
+    }
+
+    .record-pager-meta {
+        flex: 1 1 100%;
+        min-width: 0;
+        max-width: 100%;
+        white-space: normal;
+    }
+
+    .record-pager-pages {
+        display: flex;
+        flex: 1 0 100%;
+        width: 100%;
+        max-width: 100%;
+        margin-left: 0;
+        align-items: center;
+        gap: 0.5rem;
+    }
+
+    .page-btn {
+        min-width: 0;
+        justify-content: center;
+        align-items: center;
+    }
+
+    .font-mono.grid.grid-cols-2 > :last-child:nth-child(odd) {
+        grid-column: 1 / -1;
+    }
+
+    .record-page-size {
+        display: none;
+    }
+
+    .toast-container.fixed {
+        left: 0.75rem;
+        right: 0.75rem;
+        width: auto;
+    }
+
+    .toast-container .toast-shell {
+        width: 100%;
+        min-width: 0;
+        max-width: none;
+        box-sizing: border-box;
+    }
+
+    .toast-container .toast-shell > span {
+        min-width: 0;
+        overflow-wrap: anywhere;
+    }
+
+    [role="alertdialog"] dd.truncate {
+        white-space: normal;
+        overflow: visible;
+        text-overflow: clip;
+        overflow-wrap: anywhere;
+    }
+
+    [role="alertdialog"] button[id$="Btn"] {
+        min-height: 2.5rem;
+        padding-left: 0.35rem;
+        padding-right: 0.35rem;
+    }
+
+    #llmAssistantPanel header .opacity-0 {
+        opacity: 1;
+    }
+
+    #llmPanelResize {
+        display: none;
     }
 }
 

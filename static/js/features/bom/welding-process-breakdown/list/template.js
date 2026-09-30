@@ -3,11 +3,11 @@
  */
 
 import { filterSelect, filterInput, HUD_SHELL, DRAWER_CLOSE, DRAWER_SHELL, DRAWER_BACKDROP, HUD_BAND, OPS_TH, BTN_GHOST, HUD_LED, BTN_SOLID, HUD_FILTER } from '../../../../ui/classes.js?v=13';
-import { filterBarHtml } from '../../../../ui/filter-bar.js?v=4';
-import { hudTableHtml, hudRowHtml, opsIconButtonHtml } from '../../../../ui/hud-table.js?v=2';
+import { filterBarHtml } from '../../../../ui/filter-bar.js?v=6';
+import { hudTableHtml, hudRowHtml, opsIconButtonHtml } from '../../../../ui/hud-table.js?v=3';
 import { hudKpiCardHtml } from '../../../../ui/hud-kpi.js?v=1';
 
-import { moreMenuItemHtml, moreMenuShellHtml } from '../../../../ui/more-menu.js?v=6';
+import { moreMenuItemHtml, moreMenuShellHtml } from '../../../../ui/more-menu.js?v=7';
 import {
     partShortCodeCellHtml,
     partNumberNameCellHtml,
@@ -57,7 +57,7 @@ export function weldingProcessBreakdownListTemplate() {
             <div class="${HUD_SHELL}">
 
                 <div class="${HUD_BAND}">
-                    <div class="flex items-start justify-between gap-4 mb-3">
+                    <div class="flex flex-col items-stretch gap-3 mb-3 sm:flex-row sm:items-start sm:justify-between sm:gap-4">
                         <div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3 font-mono flex-1 min-w-0">
                             ${hudKpiCardHtml({ title: '主表', valueHtml: '<span id="wpbHudTotal">—</span>', unit: '条' })}
                             ${hudKpiCardHtml({ title: 'L0 总成', valueHtml: '<span id="wpbHudL0">—</span>', unit: '条' })}
@@ -73,7 +73,7 @@ export function weldingProcessBreakdownListTemplate() {
                                 unit: '条',
                             })}
                         </div>
-                        <div class="flex items-center gap-1.5 shrink-0">
+                        <div class="flex items-center justify-end gap-1.5 shrink-0 w-full sm:w-auto">
                             ${moreMenuShellHtml({
                                 wrapId: 'wpbMoreWrap',
                                 btnId: 'wpbMoreBtn',
@@ -383,7 +383,7 @@ export function renderWpbDetailBody(node, {
             <div class="flex flex-col gap-1.5">
                 <div class="flex items-center justify-between gap-2 min-w-0">
                     <div class="text-[12px] text-ink-muted truncate min-w-0">${esc(node.part_name || '—')}</div>
-                    <div class="flex items-center gap-1.5 shrink-0">
+                    <div class="flex items-center justify-end gap-1.5 shrink-0 w-full sm:w-auto">
                         <span class="text-[10px] font-mono text-ink">L${esc(level)}</span>
                         <span class="inline-flex px-1.5 py-0.5 text-[9px] rounded-sm ${audit.cls}">${esc(audit.text)}</span>
                         <span class="text-[10px] font-mono text-ink-muted">装配 ${esc(fmtQty(node.assembly_qty))}${qtyUnit}</span>

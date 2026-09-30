@@ -9,8 +9,8 @@ import {
     DEFAULT_PREVIEW_PAGE_SIZE,
     PREVIEW_PAGE_SIZE_OPTIONS,
     paginationBarHtml,
-} from '../../../../ui/page-size.js?v=6';
-import { moreMenuItemHtml, moreMenuShellHtml } from '../../../../ui/more-menu.js?v=6';
+} from '../../../../ui/page-size.js?v=8';
+import { moreMenuItemHtml, moreMenuShellHtml } from '../../../../ui/more-menu.js?v=7';
 
 export function policyDownloadTemplate() {
     return `
@@ -41,23 +41,23 @@ export function policyDownloadTemplate() {
                 </div>
 
                 <!-- 筛选工具栏 -->
-                <div class="flex items-center justify-between px-5 py-2.5 border-b border-app-surface">
-                    <div class="flex items-end gap-3 flex-wrap">
+                <div class="flex flex-col gap-3 px-5 py-2.5 border-b border-app-surface sm:flex-row sm:items-center sm:justify-between">
+                    <div class="flex items-end gap-3 flex-wrap w-full min-w-0">
                         ${filterSelect('policyDownloadYear', '年度')}
                         ${filterSelect('policyDownloadMonth', '月份')}
                         ${filterInputWithDatalist('policyDownloadMill', '钢厂', 'policyMillOptions', {
                             placeholder: '输入搜索或选择钢厂',
                         })}
-                        ${filterSelect('policyDownloadSheet', '表页', { widthClass: 'w-40' })}
+                        ${filterSelect('policyDownloadSheet', '表页', { widthClass: 'w-full sm:w-40' })}
                         ${filterSelect('policyDownloadCategory', '钢种大类')}
                         ${filterInputWithDatalist('policyDownloadGrade', '牌号', 'policyGradeOptions', {
                             placeholder: '请先选择钢种大类',
                             disabled: true,
                         })}
                     </div>
-                    <div class="flex items-center gap-2">
+                    <div class="flex items-center gap-2 w-full sm:w-auto">
                         <button id="btnPreview"
-                                class="${BTN_FILTER_SEARCH} h-7">
+                                class="${BTN_FILTER_SEARCH} h-7 w-full justify-center whitespace-nowrap sm:w-auto">
                             ${window.svgIcon('search', 'w-3 h-3')}
                             查询
                         </button>
@@ -77,7 +77,7 @@ export function policyDownloadTemplate() {
                 <!-- 预览区域 -->
                 <div class="p-5">
                     <!-- 已选条件：嵌入式仪表盘风格 -->
-                    <div class="mb-3 px-3 py-2 rounded-sm relative">
+                    <div class="hidden sm:block mb-3 px-3 py-2 rounded-sm relative">
                         <!-- 顶部高光线 -->
                         <div class="absolute top-0 left-0 right-0 h-px"></div>
                         <div class="flex items-center gap-2 text-[11px]">

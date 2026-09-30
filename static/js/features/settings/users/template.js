@@ -5,9 +5,9 @@
  * 抽屉：编辑新增、修改密码、删除确认、授权
  */
 
-import { paginationBarHtml } from '../../../ui/page-size.js?v=6';
+import { paginationBarHtml } from '../../../ui/page-size.js?v=8';
 import { DRAWER_SHELL, DRAWER_BACKDROP, BTN_FILTER_SEARCH, HUD_FILTER, BTN_GHOST, BTN_HUD_CREATE, BTN_SOLID, BTN_SOLID_DANGER } from '../../../ui/classes.js?v=13';
-import { opsIconButtonHtml } from '../../../ui/hud-table.js?v=2';
+import { opsIconButtonHtml } from '../../../ui/hud-table.js?v=3';
 
 
 export function usersTemplate() {
@@ -53,8 +53,8 @@ export function usersTemplate() {
             <div class="bg-app-main border border-line">
 
                 <div class="p-3 border-b border-line-subtle flex flex-wrap items-center justify-between gap-3 bg-app-surface">
-                    <div class="flex items-center gap-2 flex-wrap flex-1 min-w-[280px]">
-                        <div class="relative flex-1 max-w-xs">
+                    <div class="flex items-center gap-2 flex-wrap flex-1 min-w-0 w-full sm:w-auto">
+                        <div class="relative w-full sm:flex-1 sm:max-w-xs">
                             <span class="absolute inset-y-0 left-0 pl-2.5 flex items-center pointer-events-none text-ink-dim">
                                 ${window.svgIcon('search', 'w-3.5 h-3.5')}
                             </span>
@@ -83,12 +83,12 @@ export function usersTemplate() {
                 </div>
 
                 <div class="overflow-x-auto brabus-bg-grid">
-                    <table class="w-full text-left text-xs border-separate border-spacing-0">
+                    <table class="w-full min-w-[800px] text-left text-xs border-separate border-spacing-0">
                         <thead>
                             <tr class="bg-app-deep border-b border-line text-ink-muted">
-                                <th class="px-4 py-3 text-[10px] font-semibold tracking-wider">用户信息</th>
-                                <th class="px-4 py-3 text-[10px] font-semibold tracking-wider">部门</th>
-                                <th class="px-4 py-3 text-[10px] font-semibold tracking-wider">联系方式</th>
+                                <th class="px-4 py-3 text-[10px] font-semibold tracking-wider whitespace-nowrap">用户信息</th>
+                                <th class="px-4 py-3 text-[10px] font-semibold tracking-wider whitespace-nowrap">部门</th>
+                                <th class="px-4 py-3 text-[10px] font-semibold tracking-wider whitespace-nowrap">联系方式</th>
                                 <th class="px-4 py-3 text-[10px] font-semibold tracking-wider text-center">状态</th>
                                 <th class="px-4 py-3 text-[10px] font-semibold tracking-wider">创建时间</th>
                                 <th class="p-0 w-9 sticky right-0 z-[3] bg-app-deep" aria-label="操作"></th>
@@ -99,7 +99,7 @@ export function usersTemplate() {
                     </table>
                 </div>
 
-                ${paginationBarHtml({ infoId: 'totalCountPagination', selectId: 'usersPageSize', buttonsId: 'paginationBtns', wrapperId: 'paginationContainer', wrapperClass: 'flex items-center justify-between px-4 py-2.5 border-t border-line-subtle bg-app-deep' })}
+                ${paginationBarHtml({ infoId: 'totalCountPagination', selectId: 'usersPageSize', buttonsId: 'paginationBtns', wrapperId: 'paginationContainer', wrapperClass: 'flex flex-wrap items-center justify-between gap-2 px-4 py-2.5 border-t border-line-subtle bg-app-deep' })}
 
                 <div id="emptyState" class="hidden flex flex-col items-center justify-center py-16 text-center">
                     <div class="p-3 bg-app-surface border border-line text-ink-dim mb-2">

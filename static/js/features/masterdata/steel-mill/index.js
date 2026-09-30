@@ -7,7 +7,7 @@ import {
     paintPagination,
     DEFAULT_PAGE_SIZE,
     normalizePageSize,
-} from '../../../ui/page-size.js?v=6';
+} from '../../../ui/page-size.js?v=8';
 import { renderSteelMillRows, steelMillTemplate } from './template.js?v=1';
 
 const API_BASE = '/api/masterdata/steel-mills';

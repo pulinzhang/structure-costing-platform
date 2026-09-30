@@ -3,7 +3,7 @@
  */
 
 import { HUD_SHELL, OPS_TH, DRAWER_BACKDROP, HUD_FILTER, BTN_FILTER_SEARCH, BTN_GHOST } from '../../ui/classes.js?v=13';
-import { hudTableHtml, hudRowHtml, opsIconButtonHtml } from '../../ui/hud-table.js?v=2';
+import { hudTableHtml, hudRowHtml, opsIconButtonHtml } from '../../ui/hud-table.js?v=3';
 
 
 const CATEGORY_BADGE = 'inline-flex items-center px-2 py-0.5 text-[9px] font-semibold tracking-[0.06em] border border-line-hud text-ink-muted bg-app-main';
@@ -14,28 +14,28 @@ export function fileTraceTemplate() {
             <div class="${HUD_SHELL}">
 
                 <div class="px-5 pt-4 pb-3 border-b border-line-subtle bg-app-main">
-                    <div class="grid grid-cols-2 md:grid-cols-3 xl:grid-cols-6 gap-2 mb-3">
-                        <select id="ftFilterCategory" class="${HUD_FILTER}">
+                    <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 xl:grid-cols-6 gap-2 mb-3">
+                        <select id="ftFilterCategory" class="w-full ${HUD_FILTER}">
                             <option value="">全部分类</option>
                         </select>
-                        <select id="ftFilterLocation" class="${HUD_FILTER}">
+                        <select id="ftFilterLocation" class="w-full ${HUD_FILTER}">
                             <option value="">全部基地</option>
                         </select>
-                        <select id="ftFilterYear" class="${HUD_FILTER}">
+                        <select id="ftFilterYear" class="w-full ${HUD_FILTER}">
                             <option value="">全部年度</option>
                         </select>
-                        <select id="ftFilterMonth" class="${HUD_FILTER}">
+                        <select id="ftFilterMonth" class="w-full ${HUD_FILTER}">
                             <option value="">全部月份</option>
                         </select>
-                        <select id="ftFilterVehicle" class="${HUD_FILTER}">
+                        <select id="ftFilterVehicle" class="w-full ${HUD_FILTER}">
                             <option value="">全部项目</option>
                         </select>
-                        <select id="ftFilterCreator" class="${HUD_FILTER}">
+                        <select id="ftFilterCreator" class="w-full ${HUD_FILTER}">
                             <option value="">全部上传人</option>
                         </select>
                     </div>
                     <div class="flex flex-wrap items-end gap-2">
-                        <div class="flex-1 min-w-[180px]">
+                        <div class="basis-full w-full sm:basis-auto sm:flex-1 sm:min-w-[180px] sm:w-auto">
                             <label class="block text-[9px] text-ink-faint mb-1 tracking-[0.08em]">文件名</label>
                             <input id="ftFilterFilename" type="text" placeholder="模糊搜索原件名"
                                    class="w-full h-9 px-3 text-xs bg-app-deep border border-line text-ink placeholder:text-ink-dim focus:outline-none focus:border-brand-active">
@@ -43,12 +43,12 @@ export function fileTraceTemplate() {
                         <div>
                             <label class="block text-[9px] text-ink-faint mb-1 tracking-[0.08em]">上传时间起</label>
                             <input id="ftFilterFrom" type="date"
-                                   class="h-9 px-3 text-xs bg-app-deep border border-line text-ink-muted focus:outline-none focus:border-brand-active">
+                                   class="w-full min-w-0 h-9 px-3 text-xs bg-app-deep border border-line text-ink-muted focus:outline-none focus:border-brand-active">
                         </div>
                         <div>
                             <label class="block text-[9px] text-ink-faint mb-1 tracking-[0.08em]">上传时间止</label>
                             <input id="ftFilterTo" type="date"
-                                   class="h-9 px-3 text-xs bg-app-deep border border-line text-ink-muted focus:outline-none focus:border-brand-active">
+                                   class="w-full min-w-0 h-9 px-3 text-xs bg-app-deep border border-line text-ink-muted focus:outline-none focus:border-brand-active">
                         </div>
                         <button id="ftBtnSearch" type="button"
                                 class="${BTN_FILTER_SEARCH} h-7">
