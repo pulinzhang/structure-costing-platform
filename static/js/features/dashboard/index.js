@@ -5,12 +5,15 @@
 
 import { canAccessPage } from '../../core/permissions.js?v=11';
 import { bindFilterBar } from '../../ui/filter-bar.js?v=6';
+import { pageLoadingHtml, pageNoticeHtml } from '../../ui/page-loading.js?v=1';
 import { dashboardTemplate } from './template.js?v=19';
 
 const DASHBOARD_STATS_API = '/api/dashboard/stats';
 
 /** @type {{ paint: () => void, unbind: () => void } | null} */
 let filterBar = null;
+
+let requestSerial = 0;
 
 const dashState = {
     year: null,
@@ -267,8 +270,35 @@ function renderStats(data) {
     renderContext(data.master, data.bom, data.yishiyiyi, data.scope);
 }
 
+function isBoardMounted() {
+    return !!document.getElementById('dashAttentionList');
+}
+
+function mountBoard() {
+    const content = document.getElementById('pageContent');
+    if (!content) return;
+    filterBar?.unbind();
+    filterBar = null;
+    content.innerHTML = dashboardTemplate();
+    applyActionPermissions();
+    bindScopeEvents();
+}
+
+function showLoadFailure() {
+    if (isBoardMounted()) {
+        const list = document.getElementById('dashAttentionList');
+        if (list) {
+            list.innerHTML = `<div class="px-5 py-8 text-center text-sm text-danger">统计加载失败</div>`;
+        }
+        return;
+    }
+    const content = document.getElementById('pageContent');
+    if (content) content.innerHTML = pageNoticeHtml('统计加载失败');
+}
+
 async function loadStats() {
     if (dashState.loading) return;
+    const serial = ++requestSerial;
     dashState.loading = true;
     try {
         const params = {};
@@ -277,15 +307,16 @@ async function loadStats() {
         if (dashState.location) params.location = dashState.location;
         if (dashState.vehicleModel) params.vehicle_model = dashState.vehicleModel;
         const res = await HttpClient.get(DASHBOARD_STATS_API, { params });
+        if (serial !== requestSerial) return;
+        if (!isBoardMounted()) mountBoard();
+        if (serial !== requestSerial) return;
         renderStats(res.data);
     } catch (error) {
         console.error('加载管理者看板失败:', error);
-        const list = document.getElementById('dashAttentionList');
-        if (list) {
-            list.innerHTML = `<div class="px-5 py-8 text-center text-sm text-danger">统计加载失败</div>`;
-        }
+        if (serial !== requestSerial) return;
+        showLoadFailure();
     } finally {
-        dashState.loading = false;
+        if (serial === requestSerial) dashState.loading = false;
     }
 }
 
@@ -340,15 +371,22 @@ function bindScopeEvents() {
     });
 }
 
+function releaseDashboard() {
+    requestSerial += 1;
+    dashState.loading = false;
+    filterBar?.unbind();
+    filterBar = null;
+}
+
 export const DashboardPage = {
     init() {
-        applyActionPermissions();
-        bindScopeEvents();
         loadStats();
     },
+    destroy: releaseDashboard,
 };
 
 export const pageConfig = {
-    render: dashboardTemplate,
+    render: () => pageLoadingHtml(),
     init: () => DashboardPage.init(),
+    destroy: () => DashboardPage.destroy(),
 };
