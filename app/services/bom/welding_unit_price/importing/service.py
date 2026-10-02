@@ -14,6 +14,7 @@ from sqlalchemy.orm import Session
 from app.common.audit import audit_create, audit_update
 from app.common.bom.welding_standard_process import list_welding_standard_catalog
 from app.common.period import is_costing_year
+from app.common.workbook_reject import EMPTY_FILE, NO_DATA_ROWS, format_workbook_reject
 from app.config import settings
 from app.exceptions.base import BusinessException
 from app.parsers.bom.welding_unit_price_parser import (
@@ -172,7 +173,7 @@ class BomWeldingUnitPriceImportService:
         if Path(original_name).suffix.lower() != ".xlsx":
             raise BusinessException("仅支持 .xlsx 文件")
         if not file_content:
-            raise BusinessException("文件内容为空")
+            raise BusinessException(EMPTY_FILE)
         if len(file_content) > settings.MAX_UPLOAD_SIZE:
             max_mb = settings.MAX_UPLOAD_SIZE // (1024 * 1024)
             raise BusinessException(f"文件过大，最大支持 {max_mb}MB")
@@ -186,20 +187,17 @@ class BomWeldingUnitPriceImportService:
         archived_rel = to_upload_relpath(archive_path)
 
         parse_result = parse_welding_unit_price_excel(file_content)
-        if parse_result.errors and not parse_result.rows:
-            raise BusinessException("；".join(parse_result.errors))
-        if not parse_result.rows:
-            raise BusinessException("未解析到有效数据行")
-
-        catalog_errors = [
-            err
-            for err in parse_result.errors
-            if "不属于焊接标准工艺目录" in err or "单位应为" in err
-        ]
-        if catalog_errors:
+        if parse_result.errors:
+            catalog_errors = [
+                err
+                for err in parse_result.errors
+                if "不属于焊接标准工艺目录" in err or "单位应为" in err
+            ]
             raise BusinessException(
-                "导入中止（名称/单位必须与焊接标准工艺目录一致）：" + "；".join(catalog_errors)
+                format_workbook_reject(parse_result.errors, catalog=bool(catalog_errors))
             )
+        if not parse_result.rows:
+            raise BusinessException(NO_DATA_ROWS)
         created_count = 0
         updated_count = 0
         skipped_approved = 0
@@ -256,7 +254,7 @@ class BomWeldingUnitPriceImportService:
             db.rollback()
             raise
 
-        warnings = list(parse_result.errors)
+        warnings: list[str] = []
         if skipped_approved:
             warnings.append(f"跳过已审核 {skipped_approved} 条（未覆盖）")
         message = (
@@ -265,8 +263,6 @@ class BomWeldingUnitPriceImportService:
         )
         if skipped_approved:
             message += f"，跳过已审核 {skipped_approved} 条"
-        if parse_result.errors:
-            message += f"；有 {len(parse_result.errors)} 行解析跳过"
 
         logger.info(
             "%s file=%s archived=%s created=%s updated=%s skipped_approved=%s warnings=%s",
@@ -284,7 +280,7 @@ class BomWeldingUnitPriceImportService:
             created_count=created_count,
             updated_count=updated_count,
             total_count=created_count + updated_count,
-            skipped_count=len(parse_result.errors) + skipped_approved,
+            skipped_count=skipped_approved,
             warnings=warnings,
             message=message,
         )

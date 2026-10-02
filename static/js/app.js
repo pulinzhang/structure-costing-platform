@@ -31,7 +31,7 @@ import {
 } from './core/permissions.js?v=15';
 import { bootLlmAssistant } from './llm-assistant/boot.js?v=65';
 import { pageConfig as dashboardPage }      from './features/dashboard/index.js?v=23';
-import { pageConfig as stampingUploadPage } from './features/stamping/process/upload/index.js?v=75';
+import { pageConfig as stampingUploadPage } from './features/stamping/process/upload/index.js?v=76';
 import { pageConfig as stampingPartsPage }  from './features/stamping/process/parts/index.js?v=90';
 import { pageConfig as stampingDieUploadPage } from './features/stamping/die/upload/index.js?v=29';
 import { pageConfig as stampingDieListPage } from './features/stamping/die/list/index.js?v=43';
@@ -62,9 +62,9 @@ import { pageConfig as scrapPricePage } from './features/yishiyiyi/scrap-price/i
 import { pageConfig as bomStructurePage }  from './features/bom/material/structure/index.js?v=19';
 import { pageConfig as bomWhereUsedPage } from './features/bom/material/where-used/index.js?v=23';
 import { pageConfig as bomVizPage }        from './features/bom/material/viz/index.js?v=39';
-import { pageConfig as bomUploadPage }     from './features/bom/material/upload/index.js?v=27';
+import { pageConfig as bomUploadPage }     from './features/bom/material/upload/index.js?v=28';
 import { pageConfig as bomMaterialListPage } from './features/bom/material/list/index.js?v=25';
-import { pageConfig as bomWeldingUnitPriceUploadPage } from './features/bom/welding-unit-price/upload/index.js?v=26';
+import { pageConfig as bomWeldingUnitPriceUploadPage } from './features/bom/welding-unit-price/upload/index.js?v=27';
 import { pageConfig as bomWeldingUnitPricePage } from './features/bom/welding-unit-price/list/index.js?v=41';
 import { pageConfig as bomAnnualPartPriceUploadPage } from './features/bom/annual-part-price/upload/index.js?v=27';
 import { pageConfig as bomAnnualPartPricePage } from './features/bom/annual-part-price/list/index.js?v=42';

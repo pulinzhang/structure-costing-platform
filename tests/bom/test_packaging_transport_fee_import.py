@@ -4,9 +4,11 @@ from __future__ import annotations
 
 from collections.abc import Generator
 from decimal import Decimal
+from io import BytesIO
 from pathlib import Path
 
 import pytest
+from openpyxl import Workbook
 from sqlalchemy import create_engine
 from sqlalchemy.orm import Session, sessionmaker
 from sqlalchemy.pool import StaticPool
@@ -146,7 +148,7 @@ class TestPackagingTransportFeeParser:
     def test_parse_empty_bytes(self) -> None:
         result = parse_packaging_transport_fee_excel(b"")
         assert result.rows == []
-        assert result.errors == ["文件内容为空"]
+        assert result.errors == ["文件是空的。请重新选择已经填好的 .xlsx。"]
 
     def test_parse_invalid_bytes(self) -> None:
         result = parse_packaging_transport_fee_excel(b"not-an-xlsx")
@@ -297,6 +299,35 @@ class TestPackagingTransportFeeImport:
         assert result.updated_count == 0
         assert result.skipped_count == 84
         assert result.skipped_approved_count == 84
+
+    def test_import_rejects_workbook_when_any_row_invalid(self, memory_db: Session) -> None:
+        workbook = Workbook()
+        sheet = workbook.worksheets[0]
+        sheet.append(["零件号", "单件包装费", "单件运输费", "包装运输费合计"])
+        sheet.append(["P001", Decimal("1.0000"), Decimal("1.0000"), Decimal("2.0000")])
+        sheet.append(["P002", "坏数据", Decimal("1.0000"), Decimal("2.0000")])
+        buffer = BytesIO()
+        workbook.save(buffer)
+
+        service = BomPackagingTransportFeeImportService()
+        with pytest.raises(BusinessException, match="整本未导入") as raised:
+            service.import_excel(
+                memory_db,
+                file_content=buffer.getvalue(),
+                filename="mixed.xlsx",
+                location=LOCATION,
+                year=YEAR,
+                vehicle_model=VEHICLE_MODEL,
+                current_user=SYSTEM_USER,
+            )
+        message = str(raised.value)
+        assert "「单件包装费」填了「坏数据」" in message
+        assert "请改成大于等于 0 的数字" in message
+        assert "没有任何一行写入" in message
+        rows = BomPackagingTransportFeeRepository().list_by_scope(
+            memory_db, LOCATION, YEAR, VEHICLE_MODEL
+        )
+        assert rows == []
 
     def test_import_rejects_missing_scope(
         self, memory_db: Session, sample_xlsx_bytes: bytes

@@ -32,7 +32,7 @@
 | P5 | 工艺确认表能识别代号，解析后走 `require_introducible_by_code`（唯一可引入行带出基地），**不能当项目主数据的上传入口、不能立项**。布点/BOM 只核对已选项目。立项 Excel 只在项目上传页。工艺**不要求**已有布点（冲压厂可以只有工艺确认表，见 APQP） |
 | P6 | 按项目引入：布点 / BOM **必选**基地 + 该基地下项目。**工艺确认上传只选文件**，不选手选基地、不选手选项目；代号从文件解析，基地由项目行带出 |
 | P7 | 引擎：基地牙过了之后，先按零件/L0 as_of 收集代号，再按本文该月可引入裁掉停产/未投产 |
-| P8 | **生效必填，失效可空**（年+月；空 = 尚未失效）。该月可引入 = 项目自身已生效、未失效，**且** 基地已启用（调 [location-design.md](location-design.md)，不在本文重写基地判定）。不做暂停。**未到生效月不准传工艺 / 布点 / BOM**（无年无月用墙钟月问 `require_introducible`）。模具单价、检具费等项目档案不看生效月，见 §6.0 |
+| P8 | **生效必填，失效可空**（年+月；空 = 尚未失效）。该月可引入 = 项目自身已生效、未失效，**且** 基地已启用（调 [location-design.md](location-design.md)，不在本文重写基地判定）。不做暂停。**未到生效月不准传工艺 / 布点**（无年无月用墙钟月问 `require_introducible`）。**材料清单上传只问项目已登记**（基地已启用 + `require_registered`），不看本月是否可引入；未到开始月、已结束都可以传。第一次导入把项目开始月、结束月照抄到每个节点，结束空则空，已结束也照抄结束月。模具单价、检具费等项目档案不看生效月，见 §6.0 |
 | P9 | 代号创建后不改。所属基地创建后不改。第一期不做项目政策表、不做项目别名 |
 | P10 | **修改与删除同时支持，被引用则由数据库拒绝。** 改生效/失效、当前供货台数是改非主键，外键不管。改主键（代号或所属基地）与删除只动自己；仍被直接下游引用 → `IntegrityError` → `BusinessException("仍被引用，不能修改")` / `BusinessException("仍被引用，不能删除")`。拦的是子表 `ON UPDATE RESTRICT` + `ON DELETE RESTRICT`，不是项目去 `count` 零件/BOM。产品不提供改代号/改所属基地（P9）；子表仍必须同时声明 `onupdate="RESTRICT"`，禁止只拦删除 |
 | P11 | 不从下游表 `DISTINCT vehicle_model` 发明自己 |
@@ -428,7 +428,7 @@ VehicleModelVO
 
 ## 6. 解析契约（废止 `DISTINCT vehicle_model`）
 
-查库、门禁只发生在 **Service**（本切片或下游切片调本切片）。**禁止 Parser 调 Service / Repository**。项目上传页：Service 调 Parser 得到行，再 `resolve_canonical` / `normalize_vehicle_model` / 插入。下游工艺上传：Parser 只做 `normalize_vehicle_model`；Service 再 `require_introducible_by_code`（文件识别 ≠ 文件立项；唯一可引入行带出基地）。布点 / BOM：`require_introducible` + `assert_matches_selected`。
+查库、门禁只发生在 **Service**（本切片或下游切片调本切片）。**禁止 Parser 调 Service / Repository**。项目上传页：Service 调 Parser 得到行，再 `resolve_canonical` / `normalize_vehicle_model` / 插入。下游工艺上传：Parser 只做 `normalize_vehicle_model`；Service 再 `require_introducible_by_code`（文件识别 ≠ 文件立项；唯一可引入行带出基地）。布点：`require_introducible` + `assert_matches_selected`。材料清单：`require_registered` + 基地 `require_enabled` + `assert_matches_selected`。
 
 规范化：`normalize_vehicle_model` = 去 CJK、去 ①–⑳、strip，然后 **`str.upper()`**（P13）。空串不是项目。不做全角转换、不发明未登记代号。`青岛t13j` → `T13J`。
 
@@ -440,14 +440,14 @@ VehicleModelVO
 
 | 门禁 | 何时用 | 典型路径 |
 |---|---|---|
-| `require_registered` + 基地 `require_enabled` | **项目档案**：不按月引入 | 模具单价、检具费 |
+| `require_registered` + 基地 `require_enabled` | **项目已登记即可**，不按月引入 | 模具单价、检具费；**材料清单上传**（已结束、未到开始月都可）。第一次导入节点生失效照抄项目起止 |
 | `require_overlaps_year(location, vehicle_model, year)` | **只有年的上传，以及年度计算身份** | 包装运输费上传、年度零件价**下载模板**；冲压加工费 / 模具费 / 焊接费 `start_calc` / `prepare` / ready。**取件仍问对象期** |
-| `require_introducible(..., year, month)` | **当期引入（上传）与月度计算身份** | 布点、BOM 上传（墙钟或表单月）；冲压零件价格 / 总成核价 / 引擎发现过滤（**账期**年+月）。as_of 由调用方传入 |
+| `require_introducible(..., year, month)` | **当期引入（上传）与月度计算身份** | 布点上传（墙钟或表单月）；冲压零件价格 / 总成核价 / 引擎发现过滤（**账期**年+月）。as_of 由调用方传入。**材料清单不走这条** |
 | `require_introducible_by_code(..., year, month)` | **文件识别代号、不选手选基地** | 工艺确认上传 |
 
-无年无月的当期引入用**墙钟年月**。工艺走 `require_introducible_by_code`；布点、BOM 走 `require_introducible`（须先选基地）。**未到生效月不准传工艺**（Service 拒绝）。不要把检具费、模具单价塞进这套墙钟门禁。
+无年无月的当期引入用**墙钟年月**。工艺走 `require_introducible_by_code`；布点走 `require_introducible`（须先选基地）。材料清单上传走 `require_registered` + 基地 `require_enabled`，不看生效月。**未到生效月不准传工艺、布点**（Service 拒绝）。不要把检具费、模具单价、材料清单塞进这套墙钟门禁。
 
-下拉与门禁对齐：档案页 `list_registered`；布点页 `list_introducible`（有年+月用用户所选，否则墙钟）。包装运输费 / 年度零件价模板、年度计算页 `list_overlaps_year`。月度计算页（零件价格 / 总成，账期年+月）`list_introducible`。列表筛走 `list_filter_codes`（有基地则 `list_registered`，无则代号并集）。不要把已失效项目摆进「请选择项目」（布点 / 计算页）；档案页可以列出未生效行，便于提前建档。结果一览仍 `list_filter_codes`，含已失效。
+下拉与门禁对齐：档案页、材料清单上传页 `list_registered`（含未生效、已失效）。布点页 `list_introducible`（有年+月用用户所选，否则墙钟）。包装运输费 / 年度零件价模板、年度计算页 `list_overlaps_year`。月度计算页（零件价格 / 总成，账期年+月）`list_introducible`。列表筛走 `list_filter_codes`（有基地则 `list_registered`，无则代号并集）。不要把已失效项目摆进布点 / 计算页的「请选择项目」；材料清单上传页要列出已结束的项目。档案页可以列出未生效行，便于提前建档。结果一览仍 `list_filter_codes`，含已失效。
 
 ### 6.1 方法
 
@@ -469,7 +469,7 @@ VehicleModelVO
 
 未选基地时筛选项 = 各 `list_registered` 的代号并集（同名一次）。写路径禁止无基地只按代号落库（P15）。
 
-写路径 cascade（已选基地且带年）：有月则 `list_introducible`，无月则 `list_overlaps_year`。**不要**再包一层分发器。
+写路径 cascade（已选基地且带年）：有月则 `list_introducible`，无月则 `list_overlaps_year`。材料清单上传页不传年、月，走 `list_registered`。**不要**再包一层分发器。
 
 工艺上传仍**不要求已有布点**（P5）。冲压厂可以只有工艺确认表。不要把「解析后门禁」理解成「必须先有布点」。
 
@@ -479,7 +479,9 @@ VehicleModelVO
 
 工艺确认上传：只选文件；文件解析代号后 `require_introducible_by_code`（墙钟月）带出基地。抽不出 / 未登记 / 该月不可引入 / 同代号多基地可引入 → 硬停。**不能立项**。
 
-布点 / BOM：必选项目（P6），门禁 `require_introducible`（墙钟月），再 `assert_matches_selected`。
+布点：必选项目（P6），门禁 `require_introducible`（墙钟月），再 `assert_matches_selected`。
+
+材料清单：必选项目（P6），门禁 `require_registered` + 基地 `require_enabled`，再 `assert_matches_selected`。第一次导入每个节点的开始月、结束月照抄项目档案；项目已结束也照抄结束月，不改成墙钟月。
 
 按月计算、年度计算与引擎：身份问项目期（月度 `require_introducible(账期年, 月)`；年度 `require_overlaps_year(账期年)`）。取件按零件 / 布点 / BOM 节点有效期与计点命中，见 [bom-process-die-effective-period-design.md](../engineering-change/bom-process-die-effective-period-design.md) §4.4～§4.7、§5.4、§6。**不要**用项目期当取件 WHERE；**不要**级联改对象四列。
 
@@ -544,7 +546,7 @@ Service：`except IntegrityError` 后按动作翻译成上面两句。**禁止**
 - 各切片 cascade / filters：`vehicle_models` 列表筛走 `list_filter_codes`。**本页 HUD 计数**仍 `DISTINCT` 本表，不要改成主数据行数
 - 工艺上传：只选文件；解析后 `require_introducible_by_code` 带出基地。**不**要求先有布点
 - 模具布点上传：下拉（墙钟月 `list_introducible`）
-- BOM 材料：墙钟月 `require_introducible` + `assert_matches_selected`
+- BOM 材料：`require_registered` + 基地 `require_enabled` + `assert_matches_selected`。下拉 `list_registered`。第一次导入照抄项目起止，已结束也照抄
 - 采购对象生成 / 列表：见 [bom-procurement-objects-design.md](../bom/bom-procurement-objects-design.md)。生成 **不** `require_introducible`。列表筛 `list_filter_codes`。清单头/行/日志不加本表外键
 - 模具单价 / 检具费：下拉 `list_registered`；写入 `require_enabled` + `require_registered`
 - 包装运输费：`require_overlaps_year`；年度零件价**下载模板**同样（价表无 `vehicle_model` 列，不加本表外键）
@@ -590,9 +592,9 @@ Service：`except IntegrityError` 后按动作翻译成上面两句。**禁止**
 
 ## 10. 范围
 
-**做：** 切片 `masterdata` 项目（侧栏二级：上传 + 一览表；抽屉手工增加 + Excel 上传，模板自带基地；一览表导出列与模板相同；挂**已启用**基地、生效/失效、**当前供货台数**）；代号一律大写；同一代号可跨基地（P15）；§4.1～4.6；一览表 HUD 按基地分卡（一份 `VehicleModelListVO`）；写门禁分层（§6.0：档案 / 按年 / 当期引入；计算身份按账期问项目期）；布点/BOM `assert_matches_selected`；引擎发现 as_of 后再 `list_introducible`；工艺上传只选文件、解析后 `require_introducible_by_code` 带出基地、仍不要求布点；未生效月不准传工艺/布点/BOM；界面「项目」；直接下一跳复合外键（改主键/删除 `RESTRICT`，宪法 §4.3）。新写入必须正确；历史行允许不正确。
+**做：** 切片 `masterdata` 项目（侧栏二级：上传 + 一览表；抽屉手工增加 + Excel 上传，模板自带基地；一览表导出列与模板相同；挂**已启用**基地、生效/失效、**当前供货台数**）；代号一律大写；同一代号可跨基地（P15）；§4.1～4.6；一览表 HUD 按基地分卡（一份 `VehicleModelListVO`）；写门禁分层（§6.0：档案 / 按年 / 当期引入；材料清单只问已登记；计算身份按账期问项目期）；布点/BOM `assert_matches_selected`；引擎发现 as_of 后再 `list_introducible`；工艺上传只选文件、解析后 `require_introducible_by_code` 带出基地、仍不要求布点；未生效月不准传工艺/布点；材料清单已结束项目照抄起止；界面「项目」；直接下一跳复合外键（改主键/删除 `RESTRICT`，宪法 §4.3）。新写入必须正确；历史行允许不正确。
 
-**不做：** 上传时选手选基地；禁用基地立项；启动或脚本从下游表灌入种子；基地表/别名；项目别名 / 第二套大小写查询；政策表；下游代建立项；改代号；改所属基地；暂停；基地禁用时改项目生效/失效；未生效月传工艺/布点/BOM；把模具单价/检具费也卡生效月；工艺绑定必须先有布点；全库整型外键；给间接列加项目 FK；改写历史业务列迁就外键；项目切片 `count` 下游；逻辑删除；手改排序；分页；生效到日；一览表再打基地 HTTP；0 项目基地在表里出空段；按销量自动累加供货台数；在本文里写模具费停摊。
+**不做：** 上传时选手选基地；禁用基地立项；启动或脚本从下游表灌入种子；基地表/别名；项目别名 / 第二套大小写查询；政策表；下游代建立项；改代号；改所属基地；暂停；基地禁用时改项目生效/失效；未生效月传工艺/布点；材料清单按墙钟月拒绝已结束或未开始的项目；把模具单价/检具费也卡生效月；工艺绑定必须先有布点；全库整型外键；给间接列加项目 FK；改写历史业务列迁就外键；项目切片 `count` 下游；逻辑删除；手改排序；分页；生效到日；一览表再打基地 HTTP；0 项目基地在表里出空段；按销量自动累加供货台数；在本文里写模具费停摊。
 
 侧栏「项目」与「基地」分开展示、不是同一张表。  
 对基地：本表声明 `RESTRICT`，不在基地切片点名项目。  

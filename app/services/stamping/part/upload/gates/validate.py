@@ -6,6 +6,7 @@ from sqlalchemy.orm import Session
 
 from app.common.timezone import now
 from app.common.upload_scope_validation import validate_stamping_process_upload_scope
+from app.common.workbook_reject import format_workbook_reject
 from app.config import settings
 from app.exceptions.base import BusinessException
 from app.parsers.stamping.models.part import Part
@@ -61,6 +62,36 @@ def require_no_duplicate_process_seqs(processes: list[Process]) -> None:
         raise BusinessException(
             format_duplicate_process_seq_issues(duplicate_seqs, source_name="工艺确认表")
         )
+
+
+def require_ordinary_part_fields(
+    parts: list[Part],
+    *,
+    tailor_parent_numbers: set[str],
+) -> None:
+    """普通件零件名称、材质、料厚不得为空。拼焊总成按子片，不走这一条。"""
+    parents = {(number or "").strip() for number in tailor_parent_numbers if (number or "").strip()}
+    errors: list[str] = []
+    for part in parts:
+        part_number = (part.part_number or "").strip()
+        if not part_number or part_number in parents:
+            continue
+        missing = [
+            label
+            for label, filled in (
+                ("零件名称", bool((part.part_name or "").strip())),
+                ("材质", bool((part.material or "").strip())),
+                ("料厚", part.thickness is not None),
+            )
+            if not filled
+        ]
+        if not missing:
+            continue
+        where = f"第 {part.excel_row} 行" if part.excel_row else "未标行号"
+        joined = "、".join(missing)
+        errors.append(f"{where}零件 {part_number} 是普通件，{joined}是空的。请填上后再上传。")
+    if errors:
+        raise BusinessException(format_workbook_reject(errors))
 
 
 def require_consecutive_part_seq_nos(parts: list[Part]) -> None:

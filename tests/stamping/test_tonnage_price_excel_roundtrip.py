@@ -5,16 +5,50 @@ from __future__ import annotations
 from decimal import Decimal
 from io import BytesIO
 from types import SimpleNamespace
-from unittest.mock import MagicMock
+from unittest.mock import MagicMock, patch
 
+import pytest
 from openpyxl import Workbook, load_workbook
 
 from app.common.audit import SYSTEM_USER
+from app.config import settings
+from app.exceptions.base import BusinessException
 from app.parsers.stamping.tonnage_price_parser import parse_tonnage_price_excel
 from app.services.stamping.tonnage_price.export.service import StampingTonnagePriceExportService
 from app.services.stamping.tonnage_price.upload.service import (
     StampingTonnagePriceImportService,
 )
+
+
+@patch("app.services.stamping.tonnage_price.upload.service.LocationService")
+def test_import_rejects_workbook_when_any_row_invalid(
+    mock_location_cls: MagicMock,
+    tmp_path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    monkeypatch.setattr(settings, "UPLOAD_DIR", tmp_path)
+    mock_location_cls.return_value.require_enabled.return_value = "青岛"
+    workbook = Workbook()
+    sheet = workbook.worksheets[0]
+    sheet.append(["名称", "单位", "单价"])
+    sheet.append(["400T", "次", Decimal("0.564")])
+    sheet.append(["不是吨位", "次", Decimal("1")])
+    buffer = BytesIO()
+    workbook.save(buffer)
+
+    with pytest.raises(BusinessException, match="整本未导入") as raised:
+        StampingTonnagePriceImportService().import_excel(
+            db=None,  # type: ignore[arg-type]
+            file_content=buffer.getvalue(),
+            filename="mixed.xlsx",
+            location="青岛",
+            year=2025,
+            current_user=SYSTEM_USER,
+        )
+    message = str(raised.value)
+    assert "无法识别为吨位" in message
+    assert "请写成 400T、630T" in message
+    assert "\n· " in message
 
 
 def test_import_template_is_parseable() -> None:

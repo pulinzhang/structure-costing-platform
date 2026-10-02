@@ -9,8 +9,8 @@ from sqlalchemy.orm import Session
 
 from app.parsers.bom.bom_parser import parse_bom_excel
 from app.services.bom.bom.upload.gates.validate import (
-    require_introducible_project,
     require_l0_part_numbers,
+    require_registered_project,
     resolve_upload_scope,
     validate_parsed_nodes,
 )
@@ -29,7 +29,7 @@ def prepare_bom_upload_run(
     on_progress: ProgressCallback | None = None,
 ) -> PreparedBundle:
     report_progress(on_progress, 10, "校验项目")
-    location, selected = require_introducible_project(db, args.location, args.vehicle_model)
+    location, selected = require_registered_project(db, args.location, args.vehicle_model)
     report_progress(on_progress, 25, "正在解析 Excel...")
     parse_result = parse_bom_excel(args.file_content)
     validate_parsed_nodes(parse_result.nodes)

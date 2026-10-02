@@ -41,6 +41,8 @@ class Settings(BaseSettings):
     DATABASE_URL: str = f"sqlite:///{BASE_DIR}/data/stamping_costing.db"
     # 辅助库（无 Redis）：Token 会话、异步任务进度等，与主库隔离
     AUXILIARY_DATABASE_URL: str = f"sqlite:///{BASE_DIR}/data/auxiliary.db"
+    # SQLite 写锁等待（秒）。第二个写入排队到此上限，超时则 database is locked
+    SQLITE_BUSY_TIMEOUT_SECONDS: int = Field(default=120, ge=1)
     # 时区真相在 app.common.timezone；此处仅作配置声明/文档对齐
     TIMEZONE: str = "Asia/Shanghai"
 

@@ -102,6 +102,7 @@ scripts\windows\start.bat
 | `CORS_ORIGINS` | JSON 数组，包含实际前端来源，例如 `["http://10.0.0.8:8000"]`（同源部署通常也写上访问用的 origin） |
 | `DATABASE_URL` | 默认可用；务必定期备份 `data\*.db` |
 | `AUXILIARY_DATABASE_URL` | 会话/异步任务库，一并备份 |
+| `SQLITE_BUSY_TIMEOUT_SECONDS` | SQLite 写锁等待上限，默认 `120` 秒 |
 
 同源由本服务同时提供 `/login` 与 `/api` 时，仍建议把浏览器地址栏里的 origin 写进 `CORS_ORIGINS`。
 
