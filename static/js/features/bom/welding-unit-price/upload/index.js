@@ -225,7 +225,7 @@ const WeldingUnitPriceUploadPage = {
         }
         const expanded = [];
         for (const line of lines) {
-            const parts = line.split('；').map((part) => part.trim()).filter(Boolean);
+            const parts = line.split(/[；\n]/).map((part) => part.trim().replace(/^·\s*/, '')).filter(Boolean);
             if (parts.length > 1) expanded.push(...parts);
             else expanded.push(line);
         }

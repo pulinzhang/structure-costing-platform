@@ -3,7 +3,7 @@
  * 与冲压工艺上传同一模式：task_id + 进度轮询
  */
 
-import { bomUploadTemplate } from './template.js?v=16';
+import { bomUploadTemplate } from './template.js?v=17';
 import { uploadSubmitLabelHtml } from '../../../../ui/upload-actions.js?v=2';
 import { paintUploadProgressIcon } from '../../../../ui/sync-upload-progress.js?v=4';
 import { can } from '../../../../core/permissions.js?v=8';
@@ -88,12 +88,8 @@ const BomUploadPage = {
         const vehicleEl = document.getElementById('bomUploadVehicleModel');
         const location = locationEl?.value || '';
         if (resetVehicle && vehicleEl) vehicleEl.value = '';
-        const now = new Date();
         try {
-            const params = {
-                year: now.getFullYear(),
-                month: now.getMonth() + 1,
-            };
+            const params = {};
             if (location) params.location = location;
             const res = await HttpClient.get('/api/bom/filters/cascade', { params });
             const data = res && res.data;
@@ -112,7 +108,7 @@ const BomUploadPage = {
             if (vehicleEl) {
                 const currentVehicle = vehicleEl.value;
                 const placeholder = location
-                    ? (vehicles.length ? '请选择项目' : '这个月没有可以上传的项目')
+                    ? (vehicles.length ? '请选择项目' : '该基地还没有项目')
                     : '请先选择采购基地';
                 vehicleEl.innerHTML = `<option value="">${esc(placeholder)}</option>` +
                     vehicles.map((code) => `<option value="${esc(code)}">${esc(code)}</option>`).join('');

@@ -607,7 +607,7 @@ HUD：**采购对象**是霓虹强调格；标准件/胶等、待审、已审为
 | # | 规则 |
 |---|------|
 | O1 | 没有已启用基地，不能新生成。`LocationService.require_enabled`。找不到 / 已禁用 → 去 `#/location`，不代建 |
-| O2 | 生成不是传 BOM。BOM 上传已过墙钟 `require_introducible`。本文 **禁止** 再套一套 `require_introducible`。已失效项目：已有 snapshot 仍可生成 / 再生成；没有 snapshot 不能生成 |
+| O2 | 生成不是传 BOM。BOM 上传只要求项目已登记（含已结束），不看本月是否可引入。本文 **禁止** 再套一套 `require_introducible`。已失效项目：已有 snapshot 仍可生成 / 再生成；没有 snapshot 不能生成 |
 | O3 | 不立项。代号对不上已有 snapshot → 「未找到对应材料清单」，去焊接工程上传，不去项目一览表代建 |
 | O4 | 库字段仍 `vehicle_model`。界面、Toast、抽屉、导出页头写 **项目**，不要写车型 |
 | O5 | 代号查找前 `normalize_vehicle_model`（含大写）。`t13j` 与 `T13J` 同一代号。不做项目别名展开（项目设计 P14） |
@@ -773,3 +773,4 @@ HUD 把 AA/AB 并排计数是档案全貌，不要写成「本月待审」。计
 | 2026-09-19 | **供应商批传简化：** 与生成页同钥 + 共用 `snapshot-cascade.js`；禁止第二套级联。改前必读第 8 条。 |
 | 2026-09-19 | **级联收回 BOM 域：** 生成/批传 → `GET /api/bom/filters/cascade?version_source=snapshot`；删 PO 自挂 cascade；coverage 收进 `snapshot_scope`；废止 `get_filter_options` 空 stub。§9.2 / O8。 |
 | 2026-09-18 | §13 可维护性：文首不变量第 6 条；prep/generate 共用 `_lookup_snapshot`；回归测 normalize 与空代号拒绝。 |
+| 2026-10-02 | O2：材料清单上传改为项目已登记即可（含已结束），不再用墙钟月 `require_introducible`。生成仍不套这道门禁。 |

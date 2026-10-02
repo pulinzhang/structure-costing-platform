@@ -61,7 +61,7 @@ export function bomUploadTemplate() {
                                             class="${UPLOAD_INPUT} hud-filter w-full max-w-[280px]">
                                         <option value="">请先选择采购基地</option>
                                     </select>
-                                    <p class="mt-1.5 text-[11px] text-ink-dim">必选这个月可以上传的项目。文件里的项目代号必须和所选一致。</p>
+                                    <p class="mt-1.5 text-[11px] text-ink-dim">必选已登记的项目，已结束的也可以。文件里的项目代号必须和所选一致。</p>
                                 </div>
                             </div>
 

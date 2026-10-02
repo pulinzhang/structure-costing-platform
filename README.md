@@ -182,6 +182,7 @@ python -X utf8 your_script.py
 | `HOST` / `PORT` | 监听地址 | `0.0.0.0` / `8000` |
 | `DATABASE_URL` | 主库 | `sqlite:///./data/stamping_costing.db` |
 | `AUXILIARY_DATABASE_URL` | 会话与异步任务 | `sqlite:///./data/auxiliary.db` |
+| `SQLITE_BUSY_TIMEOUT_SECONDS` | SQLite 写锁等待上限（秒） | `120` |
 | `PASSWORD_SALT` | 密码摘要盐 | 内置默认（生产务必覆盖） |
 | `LOG_LEVEL` | 日志级别 | 随环境：开发 DEBUG / 生产 WARNING |
 | `IS_DEBUG` | 调试模式 | 开发 `True` |

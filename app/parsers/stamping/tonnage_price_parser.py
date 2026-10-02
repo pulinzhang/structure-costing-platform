@@ -17,6 +17,13 @@ from typing import Any
 from openpyxl import load_workbook
 
 from app.common.money import Q3, quantize_money
+from app.common.workbook_reject import (
+    EMPTY_FILE,
+    NO_DATA_ROWS,
+    NO_WORKSHEET,
+    UNREADABLE_EXCEL,
+    invalid_amount,
+)
 
 HEADER_NAME = "名称"
 HEADER_UNIT = "单位"
@@ -127,23 +134,26 @@ def parse_tonnage_price_excel(file_content: bytes) -> TonnagePriceParseResult:
     仅支持 .xlsx（由调用方校验扩展名）。
     """
     if not file_content:
-        return TonnagePriceParseResult(rows=[], errors=["文件内容为空"])
+        return TonnagePriceParseResult(rows=[], errors=[EMPTY_FILE])
 
     try:
         workbook = load_workbook(BytesIO(file_content), data_only=True, read_only=True)
-    except Exception as exc:
-        return TonnagePriceParseResult(rows=[], errors=[f"无法读取 Excel：{exc}"])
+    except Exception:
+        return TonnagePriceParseResult(rows=[], errors=[UNREADABLE_EXCEL])
 
     try:
         if not workbook.worksheets:
-            return TonnagePriceParseResult(rows=[], errors=["Excel 中没有工作表"])
+            return TonnagePriceParseResult(rows=[], errors=[NO_WORKSHEET])
         sheet = workbook.worksheets[0]
 
         header = _find_header_row(sheet)
         if not header:
             return TonnagePriceParseResult(
                 rows=[],
-                errors=[f"未找到表头，请使用三列：{HEADER_NAME} / {HEADER_UNIT} / {HEADER_PRICE}"],
+                errors=[
+                    "未找到表头。请下载模板，第一行列名保持为："
+                    f"{HEADER_NAME} / {HEADER_UNIT} / {HEADER_PRICE}"
+                ],
             )
 
         header_row, columns = header
@@ -165,17 +175,21 @@ def parse_tonnage_price_excel(file_content: bytes) -> TonnagePriceParseResult:
 
             tonnage = _parse_tonnage(name_raw)
             if tonnage is None:
-                errors.append(f"第 {row_idx} 行：名称「{name_raw}」无法识别为吨位（如 400T）")
+                shown = name_raw or "空"
+                errors.append(
+                    f"第 {row_idx} 行「名称」填了「{shown}」，无法识别为吨位。"
+                    "请写成 400T、630T 这种格式。"
+                )
                 continue
 
             price = _parse_price(price_raw)
             if price is None:
-                errors.append(f"第 {row_idx} 行：单价无效（{price_raw!r}）")
+                errors.append(invalid_amount(row_idx, "单价", price_raw, "0.564"))
                 continue
 
             unit = unit_raw or "次"
             if tonnage in seen_tonnage:
-                errors.append(f"第 {row_idx} 行：吨位 {tonnage}T 重复")
+                errors.append(f"第 {row_idx} 行吨位 {tonnage}T 和上面重复。每个吨位只保留一行。")
                 continue
             seen_tonnage.add(tonnage)
 
@@ -192,6 +206,6 @@ def parse_tonnage_price_excel(file_content: bytes) -> TonnagePriceParseResult:
         workbook.close()
 
     if not rows and not errors:
-        errors.append("未解析到有效数据行")
+        errors.append(NO_DATA_ROWS)
 
     return TonnagePriceParseResult(rows=rows, errors=errors)

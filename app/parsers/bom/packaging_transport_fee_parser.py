@@ -14,6 +14,7 @@ from io import BytesIO
 
 from openpyxl import load_workbook
 
+from app.common.workbook_reject import EMPTY_FILE, NO_WORKSHEET, UNREADABLE_EXCEL
 from app.parsers.bom.packaging_transport_fee.cells import (
     H_PKG_FEE,
     PROD_COL,
@@ -36,16 +37,16 @@ def parse_packaging_transport_fee_excel(
 ) -> PackagingTransportFeeParseResult:
     """解析包装运输费 Excel（.xlsx）。"""
     if not file_content:
-        return PackagingTransportFeeParseResult(rows=[], errors=["文件内容为空"])
+        return PackagingTransportFeeParseResult(rows=[], errors=[EMPTY_FILE])
 
     try:
         workbook = load_workbook(BytesIO(file_content), data_only=True, read_only=True)
-    except Exception as exc:
-        return PackagingTransportFeeParseResult(rows=[], errors=[f"无法读取 Excel：{exc}"])
+    except Exception:
+        return PackagingTransportFeeParseResult(rows=[], errors=[UNREADABLE_EXCEL])
 
     try:
         if not workbook.worksheets:
-            return PackagingTransportFeeParseResult(rows=[], errors=["Excel 中没有工作表"])
+            return PackagingTransportFeeParseResult(rows=[], errors=[NO_WORKSHEET])
         sheet = workbook.worksheets[0]
 
         # 优先识别生产双行表头
@@ -75,8 +76,8 @@ def parse_packaging_transport_fee_excel(
         return PackagingTransportFeeParseResult(
             rows=[],
             errors=[
-                "未找到表头。请使用生产样例（含「料号」「包装类型」）"
-                "或平台模板（含「零件号」「单件包装费」「包装运输费合计」）"
+                "未找到表头。请下载本页模板，第一行保留「零件号」「单件包装费」"
+                "「单件运输费」「包装运输费合计」；或使用生产样例（含「料号」「包装类型」）。列名不要改。"
             ],
         )
     finally:

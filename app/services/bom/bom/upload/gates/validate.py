@@ -7,7 +7,6 @@ from pathlib import Path
 from sqlalchemy.orm import Session
 
 from app.common.period import SOP_NEW_NUMBER_REJECT
-from app.common.timezone import now
 from app.common.upload_scope_validation import validate_bom_material_upload_scope
 from app.config import settings
 from app.exceptions.base import BusinessException
@@ -24,18 +23,19 @@ from app.services.bom.bom.rules.l0_seq_validator import (
 from app.services.bom.bom.rules.subassembly_consistency import (
     validate_subassembly_consistency,
 )
+from app.services.masterdata.location.service import LocationService
 from app.services.masterdata.vehicle_model.service import VehicleModelService
 
 
-def require_introducible_project(db: Session, location: str, vehicle_model: str) -> tuple[str, str]:
-    clock = now()
-    return VehicleModelService().require_introducible(
+def require_registered_project(db: Session, location: str, vehicle_model: str) -> tuple[str, str]:
+    """基地已启用且项目已登记即可。不看本月是否可引入；已结束的起止由落库照抄。"""
+    canonical = LocationService().require_enabled(db, (location or "").strip())
+    code = VehicleModelService().require_registered(
         db,
-        (location or "").strip(),
+        canonical,
         (vehicle_model or "").strip(),
-        clock.year,
-        clock.month,
     )
+    return canonical, code
 
 
 def validate_upload_file(*, filename: str, file_content: bytes) -> None:

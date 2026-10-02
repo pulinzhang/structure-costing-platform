@@ -51,7 +51,7 @@ def _create_engine_for_url(database_url: str, *, label: str) -> Engine:
     if "sqlite" in database_url:
         connect_args = {
             "check_same_thread": False,
-            "timeout": 30,
+            "timeout": settings.SQLITE_BUSY_TIMEOUT_SECONDS,
         }
         if "mode=memory" in database_url or database_url.endswith(":memory:"):
             engine = create_engine(
@@ -68,10 +68,11 @@ def _create_engine_for_url(database_url: str, *, label: str) -> Engine:
             )
         event.listen(engine, "connect", _configure_sqlite_connection)
         logger.info(
-            "%s SQLite 引擎创建成功: %s（业务时区 %s）",
+            "%s SQLite 引擎创建成功: %s（业务时区 %s，写锁等待 %s 秒）",
             label,
             database_url,
             CHINA_TZ_NAME,
+            settings.SQLITE_BUSY_TIMEOUT_SECONDS,
         )
         return engine
 

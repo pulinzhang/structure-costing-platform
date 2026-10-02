@@ -4,10 +4,14 @@ from __future__ import annotations
 
 from decimal import Decimal
 from io import BytesIO
+from unittest.mock import MagicMock, patch
 
 import pytest
 from openpyxl import Workbook
 
+from app.common.audit import SYSTEM_USER
+from app.config import settings
+from app.exceptions.base import BusinessException
 from app.parsers.bom.annual_part_price_parser import (
     HEADER_CONVERSION_FACTOR,
     HEADER_PART_NUMBER,
@@ -20,6 +24,9 @@ from app.parsers.bom.annual_part_price_parser import (
     parse_annual_part_price_excel,
     parse_conversion_factor,
     resolve_annual_unit_price,
+)
+from app.services.bom.annual_part_price.importing.service import (
+    BomAnnualPartPriceImportService,
 )
 from app.services.bom.annual_part_price.template_builder import (
     AnnualPartPriceTemplateRow,
@@ -194,3 +201,34 @@ def test_blank_template_roundtrip() -> None:
     assert row.purchase_unit_price is None
     assert row.conversion_factor == 1
     assert row.unit_price == Decimal("0.0000")
+
+
+@patch("app.services.bom.annual_part_price.importing.service.LocationService")
+def test_import_rejects_workbook_when_any_row_invalid(
+    mock_location_cls: MagicMock,
+    tmp_path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    monkeypatch.setattr(settings, "UPLOAD_DIR", tmp_path)
+    mock_location_cls.return_value.require_enabled.return_value = "青岛"
+    workbook = Workbook()
+    sheet = workbook.worksheets[0]
+    sheet.append(["零件号", "单价", "原供货类型"])
+    sheet.append(["P001", Decimal("1.5000"), "标准件"])
+    sheet.append(["", Decimal("2.0000"), "标准件"])
+    buffer = BytesIO()
+    workbook.save(buffer)
+
+    with pytest.raises(BusinessException, match="整本未导入") as raised:
+        BomAnnualPartPriceImportService().import_excel(
+            db=None,  # type: ignore[arg-type]
+            file_content=buffer.getvalue(),
+            filename="mixed.xlsx",
+            location="青岛",
+            year=2025,
+            current_user=SYSTEM_USER,
+        )
+    message = str(raised.value)
+    assert "「零件号」是空的" in message
+    assert "请填写零件号" in message
+    assert "\n· " in message

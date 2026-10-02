@@ -10,6 +10,7 @@ import pytest
 from openpyxl import Workbook
 
 from app.common.bom.welding_standard_process import validate_welding_unit_price_catalog
+from app.config import settings
 from app.exceptions.base import BusinessException
 from app.parsers.bom.welding_unit_price_parser import parse_welding_unit_price_excel
 from app.schemas.dto.bom_welding_unit_price_dto import BomWeldingUnitPriceCreate
@@ -81,6 +82,36 @@ def test_import_aborts_on_catalog_error(mock_location_cls: MagicMock) -> None:
             year=2025,
             current_user=None,  # type: ignore[arg-type]
         )
+
+
+@patch("app.services.bom.welding_unit_price.importing.service.LocationService")
+def test_import_rejects_workbook_when_price_invalid(
+    mock_location_cls: MagicMock,
+    tmp_path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    monkeypatch.setattr(settings, "UPLOAD_DIR", tmp_path)
+    mock_location_cls.return_value.require_enabled.return_value = "青岛"
+    content = _xlsx_bytes(
+        [
+            ("焊点", "个", Decimal("0.1300"), ""),
+            ("铆接", "个", "不是数字", ""),
+        ]
+    )
+    service = BomWeldingUnitPriceImportService()
+    with pytest.raises(BusinessException, match="整本未导入") as raised:
+        service.import_excel(
+            db=None,  # type: ignore[arg-type]
+            file_content=content,
+            filename="mixed.xlsx",
+            location="青岛",
+            year=2025,
+            current_user=None,  # type: ignore[arg-type]
+        )
+    message = str(raised.value)
+    assert "「费用」填了「不是数字」" in message
+    assert "请改成大于等于 0 的数字" in message
+    assert "\n· " in message
 
 
 def test_list_standard_catalog_includes_hemming() -> None:

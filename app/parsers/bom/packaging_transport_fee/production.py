@@ -5,6 +5,8 @@ from __future__ import annotations
 from decimal import Decimal
 from typing import Any
 
+from app.common.workbook_reject import NO_DATA_ROWS, invalid_amount
+
 from .cells import (
     PROD_COL,
     build_row,
@@ -50,12 +52,12 @@ def parse_production_sheet(sheet: Any, header_row: int) -> PackagingTransportFee
         if is_skip_row(part_number, part_name):
             continue
         if not part_number:
-            errors.append(f"第 {row_idx} 行：料号为空")
+            errors.append(f"第 {row_idx} 行「料号」是空的。请填写料号。")
             continue
         if not (part_number[0].isdigit() or part_number[0].isalpha()):
             continue
         if part_number in seen:
-            errors.append(f"第 {row_idx} 行：料号「{part_number}」重复")
+            errors.append(f"第 {row_idx} 行料号「{part_number}」和上面重复。每个料号只保留一行。")
             continue
 
         pkg_fee = parse_money(sheet.cell(row_idx, PROD_COL["unit_packaging_fee"]).value)
@@ -70,13 +72,34 @@ def parse_production_sheet(sheet: Any, header_row: int) -> PackagingTransportFee
         )
         total = parse_money(sheet.cell(row_idx, PROD_COL["packaging_transport_total"]).value)
         if pkg_fee is None:
-            errors.append(f"第 {row_idx} 行：单件包装费无效")
+            errors.append(
+                invalid_amount(
+                    row_idx,
+                    "单件包装费",
+                    sheet.cell(row_idx, PROD_COL["unit_packaging_fee"]).value,
+                    "0.9800",
+                )
+            )
             continue
         if trans_fee is None:
-            errors.append(f"第 {row_idx} 行：单件运输费无效")
+            errors.append(
+                invalid_amount(
+                    row_idx,
+                    "单件运输费",
+                    sheet.cell(row_idx, PROD_COL["unit_transport_fee"]).value,
+                    "1.5500",
+                )
+            )
             continue
         if total is None:
-            errors.append(f"第 {row_idx} 行：包装运输费合计无效")
+            errors.append(
+                invalid_amount(
+                    row_idx,
+                    "包装运输费合计",
+                    sheet.cell(row_idx, PROD_COL["packaging_transport_total"]).value,
+                    "3.7194",
+                )
+            )
             continue
 
         seen.add(part_number)
@@ -125,7 +148,7 @@ def parse_production_sheet(sheet: Any, header_row: int) -> PackagingTransportFee
         )
 
     if not rows and not errors:
-        errors.append("未解析到有效数据行")
+        errors.append(NO_DATA_ROWS)
     return PackagingTransportFeeParseResult(
         rows=rows,
         errors=errors,

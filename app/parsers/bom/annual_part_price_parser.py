@@ -16,6 +16,14 @@ from typing import Any
 from openpyxl import load_workbook
 
 from app.common.money import Q4, Q6, quantize_money
+from app.common.workbook_reject import (
+    EMPTY_FILE,
+    NO_DATA_ROWS,
+    NO_WORKSHEET,
+    UNREADABLE_EXCEL,
+    describe_cell,
+    invalid_amount,
+)
 
 HEADER_PART_NUMBER = "零件号"
 HEADER_PART_NAME = "零件名称"
@@ -115,7 +123,10 @@ def resolve_annual_unit_price(
         return derived
     filled = _round4(unit_price)
     if filled != derived:
-        raise ValueError(f"单价与采购单价÷转换系数不一致（单价 {filled}，派生 {derived}）")
+        raise ValueError(
+            f"单价与采购单价÷转换系数不一致（表里单价 {filled}，按采购单价算出 {derived}）。"
+            "请改成同一个数，或把单价留空、填 0，让系统按采购单价计算。"
+        )
     return derived
 
 
@@ -200,16 +211,16 @@ def parse_annual_part_price_excel(file_content: bytes) -> AnnualPartPriceParseRe
     仅支持 .xlsx（由调用方校验扩展名）。只读 worksheets[0]。
     """
     if not file_content:
-        return AnnualPartPriceParseResult(rows=[], errors=["文件内容为空"])
+        return AnnualPartPriceParseResult(rows=[], errors=[EMPTY_FILE])
 
     try:
         workbook = load_workbook(BytesIO(file_content), data_only=True, read_only=True)
-    except Exception as exc:
-        return AnnualPartPriceParseResult(rows=[], errors=[f"无法读取 Excel：{exc}"])
+    except Exception:
+        return AnnualPartPriceParseResult(rows=[], errors=[UNREADABLE_EXCEL])
 
     try:
         if not workbook.worksheets:
-            return AnnualPartPriceParseResult(rows=[], errors=["Excel 中没有工作表"])
+            return AnnualPartPriceParseResult(rows=[], errors=[NO_WORKSHEET])
         sheet = workbook.worksheets[0]
 
         header = _find_header_row(sheet)
@@ -217,7 +228,7 @@ def parse_annual_part_price_excel(file_content: bytes) -> AnnualPartPriceParseRe
             return AnnualPartPriceParseResult(
                 rows=[],
                 errors=[
-                    "未找到表头，请使用列："
+                    "未找到表头。请下载模板，第一行列名保持为："
                     f"{HEADER_PART_NUMBER} / {HEADER_PART_NAME} / "
                     f"{HEADER_SPECIFICATION} / {HEADER_PURCHASE_UNIT} / "
                     f"{HEADER_PURCHASE_UNIT_PRICE} / {HEADER_CONVERSION_FACTOR} / "
@@ -274,32 +285,44 @@ def parse_annual_part_price_excel(file_content: bytes) -> AnnualPartPriceParseRe
                 continue
 
             if not part_number:
-                errors.append(f"第 {row_idx} 行：零件号为空")
+                errors.append(f"第 {row_idx} 行「零件号」是空的。请填写零件号。")
                 continue
 
             if not supply_type:
-                errors.append(f"第 {row_idx} 行：原供货类型为空")
+                errors.append(f"第 {row_idx} 行「原供货类型」是空的。请填写供货类型。")
                 continue
 
             if len(supply_type) > 50:
-                errors.append(f"第 {row_idx} 行：原供货类型超过 50 字符")
+                errors.append(f"第 {row_idx} 行「原供货类型」超过 50 个字。请缩短到 50 字以内。")
                 continue
 
             try:
                 purchase_unit_price = parse_optional_purchase_unit_price(purchase_price_raw)
             except ValueError:
-                errors.append(f"第 {row_idx} 行：采购单价无效（{purchase_price_raw!r}）")
+                errors.append(invalid_amount(row_idx, "采购单价", purchase_price_raw, "12.5000"))
                 continue
 
             try:
                 conversion_factor = parse_conversion_factor(factor_raw)
             except (InvalidOperation, ValueError) as exc:
-                errors.append(f"第 {row_idx} 行：转换系数无效（{factor_raw!r}）：{exc}")
+                errors.append(
+                    f"第 {row_idx} 行「转换系数」填了「{describe_cell(factor_raw)}」。{exc}"
+                )
                 continue
 
             unit_price_raw = _parse_unit_price(price_raw)
             if unit_price_raw is None and purchase_unit_price is None:
-                errors.append(f"第 {row_idx} 行：单价无效（{price_raw!r}）")
+                shown = describe_cell(price_raw)
+                if shown == "空":
+                    errors.append(
+                        f"第 {row_idx} 行「单价」是空的，也没有采购单价。"
+                        "请填单价，或改填采购单价（转换系数空着则按 1 计算）。"
+                    )
+                else:
+                    errors.append(
+                        f"第 {row_idx} 行「单价」填了「{shown}」，不是有效金额，也没有采购单价。"
+                        "请改成数字，例如 1.2500；或改填采购单价。"
+                    )
                 continue
 
             try:
@@ -313,7 +336,9 @@ def parse_annual_part_price_excel(file_content: bytes) -> AnnualPartPriceParseRe
                 continue
 
             if part_number in seen_parts:
-                errors.append(f"第 {row_idx} 行：零件号「{part_number}」重复")
+                errors.append(
+                    f"第 {row_idx} 行零件号「{part_number}」和上面重复。每个零件号只保留一行。"
+                )
                 continue
             seen_parts.add(part_number)
 
@@ -344,6 +369,6 @@ def parse_annual_part_price_excel(file_content: bytes) -> AnnualPartPriceParseRe
         workbook.close()
 
     if not rows and not errors:
-        errors.append("未解析到有效数据行")
+        errors.append(NO_DATA_ROWS)
 
     return AnnualPartPriceParseResult(rows=rows, errors=errors)

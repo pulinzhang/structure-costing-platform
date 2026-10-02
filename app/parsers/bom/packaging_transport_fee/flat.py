@@ -5,6 +5,8 @@ from __future__ import annotations
 from decimal import Decimal
 from typing import Any
 
+from app.common.workbook_reject import NO_DATA_ROWS, invalid_amount
+
 from .cells import (
     H_COMPANY,
     H_FIX_AMOUNT,
@@ -102,10 +104,12 @@ def parse_flat_sheet(
         if is_skip_row(part_number, part_name):
             continue
         if not part_number:
-            errors.append(f"第 {row_idx} 行：零件号为空")
+            errors.append(f"第 {row_idx} 行「零件号」是空的。请填写零件号。")
             continue
         if part_number in seen:
-            errors.append(f"第 {row_idx} 行：零件号「{part_number}」重复")
+            errors.append(
+                f"第 {row_idx} 行零件号「{part_number}」和上面重复。每个零件号只保留一行。"
+            )
             continue
 
         pkg_fee = parse_money(sheet.cell(row_idx, columns[H_PKG_FEE]).value)
@@ -124,13 +128,34 @@ def parse_flat_sheet(
             else Decimal("0")
         )
         if pkg_fee is None:
-            errors.append(f"第 {row_idx} 行：单件包装费无效")
+            errors.append(
+                invalid_amount(
+                    row_idx,
+                    "单件包装费",
+                    sheet.cell(row_idx, columns[H_PKG_FEE]).value,
+                    "0.9800",
+                )
+            )
             continue
         if trans_fee is None:
-            errors.append(f"第 {row_idx} 行：单件运输费无效")
+            errors.append(
+                invalid_amount(
+                    row_idx,
+                    "单件运输费",
+                    sheet.cell(row_idx, columns[H_TRANS_FEE]).value,
+                    "1.5500",
+                )
+            )
             continue
         if total is None:
-            errors.append(f"第 {row_idx} 行：包装运输费合计无效")
+            errors.append(
+                invalid_amount(
+                    row_idx,
+                    "包装运输费合计",
+                    sheet.cell(row_idx, columns[H_TOTAL]).value,
+                    "3.7194",
+                )
+            )
             continue
 
         def opt_int(header: str, row_idx: int = row_idx) -> int | None:
@@ -177,7 +202,7 @@ def parse_flat_sheet(
         )
 
     if not rows and not errors:
-        errors.append("未解析到有效数据行")
+        errors.append(NO_DATA_ROWS)
     return PackagingTransportFeeParseResult(
         rows=rows,
         errors=errors,

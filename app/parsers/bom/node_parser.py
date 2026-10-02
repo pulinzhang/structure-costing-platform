@@ -9,6 +9,8 @@ from __future__ import annotations
 from decimal import Decimal
 from typing import Any
 
+from app.common.workbook_reject import format_workbook_reject
+from app.exceptions.base import BusinessException
 from app.parsers.bom.models import BomParsedNode
 from app.parsers.bom.value_parser import (
     cell_value,
@@ -63,6 +65,9 @@ def parse_bom_nodes(ws: Any) -> tuple[list[BomParsedNode], dict[int, int], dict[
     - 出现新总成（L0）时，A 列必须是数字序号；否则视为表尾，停止解析
     - A 列有内容但不是数字时，同样停止（序号区结束）
 
+    一级件必须挂在已出现的总成下。这一行有一级件、前面还没有总成时，
+    整本拒绝，不补占位总成。
+
     单件图示（P 列）归属规则：
     - 有 L2：归当前 L2（含合并单元格续行）
     - 无 L2：归当前 L1（P 列即一级零件图）
@@ -72,6 +77,7 @@ def parse_bom_nodes(ws: Any) -> tuple[list[BomParsedNode], dict[int, int], dict[
     current_l1_index: int | None = None
     current_l2_index: int | None = None
     sort_counter = 0
+    missing_assembly_rows: list[int] = []
     row_l0: dict[int, int] = {}
     row_part_sketch: dict[int, int] = {}  # P 列单件图归属：L2 优先，否则 L1
     seen_data_row = False
@@ -151,23 +157,9 @@ def parse_bom_nodes(ws: Any) -> tuple[list[BomParsedNode], dict[int, int], dict[
                 nodes.append(node)
                 deepest_index = current_l0_index
 
-            if has_l1:
-                if current_l0_index is None:
-                    sort_counter += 1
-                    placeholder = BomParsedNode(
-                        level=0,
-                        parent_index=None,
-                        sort_no=sort_counter,
-                        part_number=f"UNKNOWN-ASM-{sort_counter}",
-                        part_name="未识别总成",
-                        qty=Decimal("1"),
-                        node_role="supply",
-                        is_supply_unit=True,
-                        source_row=row,
-                    )
-                    current_l0_index = len(nodes)
-                    nodes.append(placeholder)
-
+            if has_l1 and current_l0_index is None:
+                missing_assembly_rows.append(row)
+            elif has_l1:
                 sort_counter += 1
                 qty, qty_unit, qty_text = parse_qty(l1_qty_raw)
                 node = BomParsedNode(
@@ -246,6 +238,19 @@ def parse_bom_nodes(ws: Any) -> tuple[list[BomParsedNode], dict[int, int], dict[
             row_part_sketch[row] = current_l2_index
         elif current_l1_index is not None:
             row_part_sketch[row] = current_l1_index
+
+    if missing_assembly_rows:
+        raise BusinessException(
+            format_workbook_reject(
+                [
+                    (
+                        f"第 {excel_row} 行填了一级件，但这一行前面还没有总成。"
+                        "请在总成零件号或总成内部号列填上所属总成。"
+                    )
+                    for excel_row in missing_assembly_rows
+                ]
+            )
+        )
 
     _finalize_structure_roles(nodes)
     return nodes, row_l0, row_part_sketch
