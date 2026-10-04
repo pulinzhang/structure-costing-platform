@@ -272,7 +272,6 @@ export function createShell(options) {
         els.panel?.classList.toggle('hidden', !showPanel);
         syncDock(showPanel);
         els.mask?.classList.toggle('hidden', !showPanel);
-        if (opening) focusComposer();
         els.history?.classList.add('hidden');
         closePrintPreview();
 
@@ -281,6 +280,25 @@ export function createShell(options) {
             if (!showPanel) els.panel.classList.add('hidden');
             applyPanelWidth(els.panel, mode === 'maximized');
         }
+        if (opening) {
+            focusComposer();
+            scrollThreadToEnd();
+        }
+    }
+
+    /**
+     * 收起时线程是 display:none，scrollHeight 为 0，打开后会停在顶部。
+     * 先读一次布局再滚到末尾，下一帧再补一次，避开宽度刚写上时的高度跳动。
+     */
+    function scrollThreadToEnd() {
+        const thread = els.thread;
+        if (!thread) return;
+        const snap = () => {
+            void els.panel?.offsetHeight;
+            thread.scrollTop = thread.scrollHeight;
+        };
+        snap();
+        requestAnimationFrame(snap);
     }
 
     function focusComposer() {
