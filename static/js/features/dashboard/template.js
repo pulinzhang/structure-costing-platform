@@ -89,7 +89,7 @@ export function dashboardTemplate() {
                 <section class="dash-surface">
                     <div class="dash-surface-head">
                         <h3 class="dash-kicker">待办与风险</h3>
-                        <span class="dash-count" id="dashAttentionCount">0 项</span>
+                        <span class="dash-count" id="dashAttentionCount">—</span>
                     </div>
                     <div id="dashAttentionList" class="dash-attention-list">
                         <div class="dash-attention-empty">加载中…</div>
