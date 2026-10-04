@@ -5,8 +5,8 @@
 
 import { canAccessPage } from '../../core/permissions.js?v=11';
 import { bindFilterBar } from '../../ui/filter-bar.js?v=6';
-import { pageLoadingHtml, pageNoticeHtml } from '../../ui/page-loading.js?v=1';
-import { dashboardTemplate } from './template.js?v=19';
+import { pageNoticeHtml } from '../../ui/page-loading.js?v=1';
+import { dashboardTemplate } from './template.js?v=20';
 
 const DASHBOARD_STATS_API = '/api/dashboard/stats';
 
@@ -270,8 +270,51 @@ function renderStats(data) {
     renderContext(data.master, data.bom, data.yishiyiyi, data.scope);
 }
 
+const SCOPE_CONTROL_IDS = [
+    'dashYear',
+    'dashMonth',
+    'dashLocation',
+    'dashVehicle',
+    'dashBtnSearch',
+    'dashResetBtn',
+    'dashToggleAdvancedFilter',
+];
+
+function renderReadinessShell() {
+    const root = document.getElementById('dashReadiness');
+    if (!root) return;
+    root.innerHTML = READY_ROWS.map((row) => `
+        <div class="dash-ready-row">
+            <span class="dash-ready-label">${esc(row.label)}</span>
+            <span class="dash-ready-side"><span class="dash-ready-state text-ink-faint">—</span></span>
+        </div>
+    `).join('');
+}
+
+function setScopeControlsEnabled(enabled) {
+    SCOPE_CONTROL_IDS.forEach((id) => {
+        const el = document.getElementById(id);
+        if (!el) return;
+        el.disabled = !enabled;
+    });
+}
+
+function setBoardBusy(busy) {
+    const board = document.querySelector('#pageContent .dash-board');
+    if (!board) return;
+    board.setAttribute('aria-busy', busy ? 'true' : 'false');
+}
+
 function isBoardMounted() {
     return !!document.getElementById('dashAttentionList');
+}
+
+function activateBoard() {
+    applyActionPermissions();
+    bindScopeEvents();
+    renderReadinessShell();
+    setScopeControlsEnabled(false);
+    setBoardBusy(true);
 }
 
 function mountBoard() {
@@ -280,16 +323,20 @@ function mountBoard() {
     filterBar?.unbind();
     filterBar = null;
     content.innerHTML = dashboardTemplate();
-    applyActionPermissions();
-    bindScopeEvents();
+    activateBoard();
 }
 
 function showLoadFailure() {
+    setBoardBusy(false);
     if (isBoardMounted()) {
         const list = document.getElementById('dashAttentionList');
         if (list) {
             list.innerHTML = `<div class="px-5 py-8 text-center text-sm text-danger">统计加载失败</div>`;
         }
+        const searchBtn = document.getElementById('dashBtnSearch');
+        const resetBtn = document.getElementById('dashResetBtn');
+        if (searchBtn) searchBtn.disabled = false;
+        if (resetBtn) resetBtn.disabled = false;
         return;
     }
     const content = document.getElementById('pageContent');
@@ -311,6 +358,8 @@ async function loadStats() {
         if (!isBoardMounted()) mountBoard();
         if (serial !== requestSerial) return;
         renderStats(res.data);
+        setScopeControlsEnabled(true);
+        setBoardBusy(false);
     } catch (error) {
         console.error('加载管理者看板失败:', error);
         if (serial !== requestSerial) return;
@@ -380,13 +429,15 @@ function releaseDashboard() {
 
 export const DashboardPage = {
     init() {
+        if (!isBoardMounted()) mountBoard();
+        else activateBoard();
         loadStats();
     },
     destroy: releaseDashboard,
 };
 
 export const pageConfig = {
-    render: () => pageLoadingHtml(),
+    render: () => dashboardTemplate(),
     init: () => DashboardPage.init(),
     destroy: () => DashboardPage.destroy(),
 };
