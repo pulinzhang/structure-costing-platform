@@ -9,7 +9,7 @@ import {
     renderSteelPriceRows,
     updateSteelPriceHud,
     millLabel,
-} from './template.js?v=74';
+} from './template.js?v=75';
 import {
     DEFAULT_PAGE_SIZE,
     bindPagination,
