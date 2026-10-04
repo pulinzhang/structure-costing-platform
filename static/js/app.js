@@ -29,7 +29,7 @@ import {
     canAccessPage,
     fallbackPageName,
 } from './core/permissions.js?v=15';
-import { bootLlmAssistant } from './llm-assistant/boot.js?v=65';
+import { bootLlmAssistant } from './llm-assistant/boot.js?v=67';
 import { pageConfig as dashboardPage }      from './features/dashboard/index.js?v=23';
 import { pageConfig as stampingUploadPage } from './features/stamping/process/upload/index.js?v=76';
 import { pageConfig as stampingPartsPage }  from './features/stamping/process/parts/index.js?v=90';
@@ -44,7 +44,7 @@ import { pageConfig as stampingTonnagePage } from './features/stamping/tonnage/l
 import { pageConfig as stampingTonnageUploadPage } from './features/stamping/tonnage/upload/index.js?v=21';
 import { pageConfig as stampingProcessFeeCalcPage } from './features/stamping/process-fee/calc/index.js?v=57';
 import { pageConfig as stampingProcessFeePage } from './features/stamping/process-fee/list/index.js?v=81';
-import { pageConfig as steelPriceListPage }   from './features/costing/steel-price/list/index.js?v=89';
+import { pageConfig as steelPriceListPage }   from './features/costing/steel-price/list/index.js?v=90';
 import { pageConfig as steelPriceCalcPage }    from './features/costing/steel-price/calc/index.js?v=38';
 import { pageConfig as stampingPartCostCalcPage } from './features/costing/stamping-part-cost/calc/index.js?v=41';
 import { pageConfig as stampingPartCostPage } from './features/costing/stamping-part-cost/list/index.js?v=105';

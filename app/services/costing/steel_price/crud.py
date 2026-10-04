@@ -1,32 +1,26 @@
-"""钢材价格：单条增删改与按条件批量删除。"""
+"""钢材价格：单条查询、改、删与按条件批量删除。"""
 
 from __future__ import annotations
 
 import logging
-import uuid
 
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
 
-from app.common.audit import AUDIT_PENDING, audit_create, display_name
-from app.common.timezone import now
+from app.common.audit import display_name
 from app.exceptions.base import BusinessException, NotFoundException
 from app.repositories.costing.steel_price.steel_price_repository import (
     SteelPriceRepository,
 )
 from app.schemas.dto.steel_price_dto import (
     SteelPriceBatchDeleteDTO,
-    SteelPriceCreate,
     SteelPricePatch,
     SteelPriceUpdate,
-    SteelPriceWrite,
 )
 from app.schemas.vo.steel_price_vo import SteelPriceBatchDeleteResultVO, SteelPriceResponse
 from app.schemas.vo.user_vo import UserVO
 from app.services.costing.steel_price.paginate import attach_mill_abbreviation
 from app.services.costing.steel_price.pricing import (
-    FORMULA_VERSION,
-    build_spec_or_none,
     compute_final_price,
     ensure_not_approved,
 )
@@ -42,76 +36,6 @@ def get_steel_price(
     if record is None:
         raise NotFoundException("记录不存在")
     return attach_mill_abbreviation(db, [record])[0]
-
-
-def create_steel_price(
-    repository: SteelPriceRepository,
-    db: Session,
-    data: SteelPriceCreate,
-    current_user: UserVO,
-) -> SteelPriceResponse:
-    current_time = now()
-    audit = audit_create(current_user)
-    mill = SteelMillService().require_enabled(db, data.steel_mill)
-    write = SteelPriceWrite(
-        year=data.year,
-        month=data.month,
-        location=data.location,
-        steel_mill=mill.abbreviation,
-        steel_mill_id=mill.id,
-        category_name=data.category_name,
-        grade=data.grade,
-        thickness=data.thickness,
-        width=data.width,
-        spec=build_spec_or_none(data.thickness, data.width, data.spec),
-        base_price=data.base_price,
-        thickness_adjustment=data.thickness_adjustment,
-        width_adjustment=data.width_adjustment,
-        zinc_adjustment=data.zinc_adjustment,
-        processing_fee=data.processing_fee,
-        other_adjustment=data.other_adjustment,
-        final_price_per_ton=compute_final_price(
-            base_price=data.base_price,
-            thickness_adjustment=data.thickness_adjustment,
-            width_adjustment=data.width_adjustment,
-            zinc_adjustment=data.zinc_adjustment,
-            processing_fee=data.processing_fee,
-            other_adjustment=data.other_adjustment,
-        ),
-        calc_batch_id=f"manual-{uuid.uuid4().hex[:16]}",
-        match_status="manual",
-        calc_status="success",
-        calc_message=None,
-        formula_version=FORMULA_VERSION,
-        calculated_at=current_time,
-        audit_status=AUDIT_PENDING,
-        remark=data.remark,
-        created_by=audit["created_by"],
-        updated_by=audit["updated_by"],
-    )
-
-    try:
-        record = repository.create(db, write)
-        db.commit()
-        db.refresh(record)
-        return attach_mill_abbreviation(db, [record])[0]
-    except IntegrityError as error:
-        db.rollback()
-        message = (
-            f"该业务键已存在：{write.year}-{write.month:02d}/"
-            f"{write.location}/{write.steel_mill}/"
-            f"{write.category_name}/{write.grade}/"
-            f"{write.thickness}*{write.width}"
-        )
-        logger.warning("创建钢材价格冲突: %s, error=%s", message, error)
-        raise BusinessException(message) from error
-    except BusinessException:
-        db.rollback()
-        raise
-    except Exception:
-        db.rollback()
-        logger.exception("创建钢材价格失败")
-        raise
 
 
 def update_steel_price(

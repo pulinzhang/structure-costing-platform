@@ -116,13 +116,13 @@ export function steelPriceListTemplate() {
                                 <th class="${TH_TEXT} whitespace-nowrap">最后修改人</th>
                                 <th class="${TH_TEXT} whitespace-nowrap">最后修改时间</th>
                                 <th class="${OPS_TH}" aria-label="操作"></th>`,
-                    empty: { title: '暂无钢材价格数据', hint: '数据由系统计算写入，或通过 Excel 导入' },
+                    empty: { title: '暂无钢材价格数据', hint: '数据由系统计算写入' },
                     loading: true,
                 })}
             </div>
         </div>
 
-        <!-- 新增 / 编辑抽屉 -->
+        <!-- 编辑抽屉 -->
         <div class="${DRAWER_BACKDROP} transition-opacity duration-300"
              id="editDrawerBackdrop" style="display:none"></div>
         <div class="${DRAWER_SHELL} w-[760px] transform translate-x-full transition-transform duration-300 ease-in-out"

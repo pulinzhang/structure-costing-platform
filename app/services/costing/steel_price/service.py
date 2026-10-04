@@ -11,7 +11,6 @@ from app.schemas.dto.steel_price_dto import (
     SteelPriceBatchApproveDTO,
     SteelPriceBatchDeleteDTO,
     SteelPriceBatchReverseAuditDTO,
-    SteelPriceCreate,
     SteelPriceQuery,
     SteelPriceUpdate,
     SteelPriceWrite,
@@ -30,7 +29,6 @@ from app.services.costing.steel_price.audit.service import (
 from app.services.costing.steel_price.calc_batch import save_calc_batch
 from app.services.costing.steel_price.crud import (
     batch_delete_steel_prices,
-    create_steel_price,
     delete_steel_price,
     get_steel_price,
     update_steel_price,
@@ -54,14 +52,6 @@ class SteelPriceService:
 
     def get_by_id(self, db: Session, record_id: int) -> SteelPriceResponse:
         return get_steel_price(self.repository, db, record_id)
-
-    def create(
-        self,
-        db: Session,
-        data: SteelPriceCreate,
-        current_user: UserVO,
-    ) -> SteelPriceResponse:
-        return create_steel_price(self.repository, db, data, current_user)
 
     def update(
         self,

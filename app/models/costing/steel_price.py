@@ -241,7 +241,7 @@ class SteelPrice(AuditUserMixin, Base):
         nullable=False,
         comment=(
             "匹配状态：full_match / base_only / no_base / "
-            "no_thickness_policy / no_width_policy / partial / failed / manual"
+            "no_thickness_policy / no_width_policy / partial / failed"
         ),
     )
     calc_status: Mapped[str] = mapped_column(

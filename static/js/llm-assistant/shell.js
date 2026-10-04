@@ -272,7 +272,6 @@ export function createShell(options) {
         els.panel?.classList.toggle('hidden', !showPanel);
         syncDock(showPanel);
         els.mask?.classList.toggle('hidden', !showPanel);
-        if (opening) focusComposer();
         els.history?.classList.add('hidden');
         closePrintPreview();
 
@@ -281,6 +280,21 @@ export function createShell(options) {
             if (!showPanel) els.panel.classList.add('hidden');
             applyPanelWidth(els.panel, mode === 'maximized');
         }
+        if (opening) {
+            focusComposer();
+            scrollThreadToEnd();
+        }
+    }
+
+    /**
+     * 收起时列表高度为 0，滚动要等展开后的这一帧。
+     */
+    function scrollThreadToEnd() {
+        const thread = els.thread;
+        if (!thread) return;
+        requestAnimationFrame(() => {
+            thread.scrollTop = thread.scrollHeight;
+        });
     }
 
     function focusComposer() {
