@@ -287,18 +287,14 @@ export function createShell(options) {
     }
 
     /**
-     * 收起时线程是 display:none，scrollHeight 为 0，打开后会停在顶部。
-     * 先读一次布局再滚到末尾，下一帧再补一次，避开宽度刚写上时的高度跳动。
+     * 收起时列表高度为 0，滚动要等展开后的这一帧。
      */
     function scrollThreadToEnd() {
         const thread = els.thread;
         if (!thread) return;
-        const snap = () => {
-            void els.panel?.offsetHeight;
+        requestAnimationFrame(() => {
             thread.scrollTop = thread.scrollHeight;
-        };
-        snap();
-        requestAnimationFrame(snap);
+        });
     }
 
     function focusComposer() {
