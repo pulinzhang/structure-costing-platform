@@ -7,6 +7,8 @@ from fastapi.staticfiles import StaticFiles
 from app.config import BASE_DIR, settings
 
 _STATIC_DIR = BASE_DIR / "static"
+# 这些 HTML 的地址不变，里面写着带 ?v= 的脚本。必须每次核对，发版后才能拿到新版本号。
+# 带 ?v= 的 /static/js、/static/css 不在这里改，见 app/middleware/frontend_cache.py。
 _NO_CACHE = {"Cache-Control": "no-cache, must-revalidate"}
 
 
