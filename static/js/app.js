@@ -11,8 +11,9 @@
  * - llm-assistant/   : 采购助理
  * - vendor/          : 第三方
  *
- * 缓存说明：所有子模块走裸路径依赖图，由 index.html 中 <script src="app.js?v=…">
- * 入口 URL 的 query 串驱动整体刷新；每次脚本更新后需要同步递增 ?v= 版本号。
+ * 缓存说明：壳层子模块走裸路径依赖图，业务页在进入路由时再 import()。
+ * 由 index.html 中 <script src="app.js?v=…"> 的 query 串驱动入口刷新；
+ * 每次脚本更新后需要同步递增 ?v= 版本号。页面模块的 ?v= 写在 pageLoaders 里。
  */
 
 import { installConfirmDialog } from './ui/confirm-dialog.js?v=6';
@@ -29,69 +30,75 @@ import {
     canAccessPage,
     fallbackPageName,
 } from './core/permissions.js?v=15';
-import { bootLlmAssistant } from './llm-assistant/boot.js?v=67';
-import { pageConfig as dashboardPage }      from './features/dashboard/index.js?v=25';
-import { pageConfig as stampingUploadPage } from './features/stamping/process/upload/index.js?v=76';
-import { pageConfig as stampingPartsPage }  from './features/stamping/process/parts/index.js?v=90';
-import { pageConfig as stampingDieUploadPage } from './features/stamping/die/upload/index.js?v=29';
-import { pageConfig as stampingDieListPage } from './features/stamping/die/list/index.js?v=43';
-import { pageConfig as stampingDieUnitPricePage } from './features/stamping/die/unit-price/index.js?v=27';
-import { pageConfig as stampingDieFeeCalcPage } from './features/stamping/die-fee/calc/index.js?v=32';
-import { pageConfig as stampingDieFeePage } from './features/stamping/die-fee/list/index.js?v=42';
-import { pageConfig as stampingGaugeFeeUploadPage } from './features/stamping/gauge-fee/upload/index.js?v=18';
-import { pageConfig as stampingGaugeFeePage } from './features/stamping/gauge-fee/list/index.js?v=36';
-import { pageConfig as stampingTonnagePage } from './features/stamping/tonnage/list/index.js?v=49';
-import { pageConfig as stampingTonnageUploadPage } from './features/stamping/tonnage/upload/index.js?v=21';
-import { pageConfig as stampingProcessFeeCalcPage } from './features/stamping/process-fee/calc/index.js?v=57';
-import { pageConfig as stampingProcessFeePage } from './features/stamping/process-fee/list/index.js?v=81';
-import { pageConfig as steelPriceListPage }   from './features/costing/steel-price/list/index.js?v=90';
-import { pageConfig as steelPriceCalcPage }    from './features/costing/steel-price/calc/index.js?v=38';
-import { pageConfig as stampingPartCostCalcPage } from './features/costing/stamping-part-cost/calc/index.js?v=41';
-import { pageConfig as stampingPartCostPage } from './features/costing/stamping-part-cost/list/index.js?v=105';
-import { pageConfig as assemblyCostCalcPage } from './features/costing/assembly-cost/calc/index.js?v=26';
-import { pageConfig as assemblyCostPage } from './features/costing/assembly-cost/list/index.js?v=66';
-import { pageConfig as procurementContractReportPage } from './features/costing/procurement-contract-report/index.js?v=58';
-import { pageConfig as steelPricePolicyUploadPage } from './features/yishiyiyi/policy/upload/index.js?v=50';
-import { pageConfig as steelPricePolicyDownloadPage } from './features/yishiyiyi/policy/list/index.js?v=64';
-import { pageConfig as basePriceUploadPage } from './features/yishiyiyi/base-price/upload/index.js?v=61';
-import { pageConfig as basePriceDownloadPage } from './features/yishiyiyi/base-price/list/index.js?v=55';
-import { pageConfig as winningThicknessDownloadPage } from './features/yishiyiyi/winning-thickness/list/index.js?v=32';
-import { pageConfig as steelGradeCategoryPage } from './features/masterdata/steel-grade-category/index.js?v=29';
-import { pageConfig as steelMillPage } from './features/masterdata/steel-mill/index.js?v=2';
-import { pageConfig as scrapPricePage } from './features/yishiyiyi/scrap-price/index.js?v=33';
-import { pageConfig as bomStructurePage }  from './features/bom/material/structure/index.js?v=19';
-import { pageConfig as bomWhereUsedPage } from './features/bom/material/where-used/index.js?v=23';
-import { pageConfig as bomVizPage }        from './features/bom/material/viz/index.js?v=39';
-import { pageConfig as bomUploadPage }     from './features/bom/material/upload/index.js?v=28';
-import { pageConfig as bomMaterialListPage } from './features/bom/material/list/index.js?v=25';
-import { pageConfig as bomWeldingUnitPriceUploadPage } from './features/bom/welding-unit-price/upload/index.js?v=27';
-import { pageConfig as bomWeldingUnitPricePage } from './features/bom/welding-unit-price/list/index.js?v=41';
-import { pageConfig as bomAnnualPartPriceUploadPage } from './features/bom/annual-part-price/upload/index.js?v=27';
-import { pageConfig as bomAnnualPartPricePage } from './features/bom/annual-part-price/list/index.js?v=42';
-import { pageConfig as bomPackagingTransportFeeUploadPage } from './features/bom/packaging-transport-fee/upload/index.js?v=19';
-import { pageConfig as bomPackagingTransportFeePage } from './features/bom/packaging-transport-fee/list/index.js?v=34';
-import { pageConfig as bomProcurementObjectGeneratePage } from './features/bom/procurement-object/generate/index.js?v=24';
-import { pageConfig as bomProcurementObjectSupplierUploadPage } from './features/bom/procurement-object/supplier-upload/index.js?v=29';
-import { pageConfig as bomProcurementObjectListPage } from './features/bom/procurement-object/list/index.js?v=58';
-import { pageConfig as bomWeldingProcessBreakdownGeneratePage } from './features/bom/welding-process-breakdown/generate/index.js?v=22';
-import { pageConfig as bomWeldingProcessBreakdownListPage } from './features/bom/welding-process-breakdown/list/index.js?v=66';
-import { pageConfig as bomWeldingFeeCalcPage } from './features/bom/welding-fee/calc/index.js?v=28';
-import { pageConfig as bomWeldingFeeListPage } from './features/bom/welding-fee/list/index.js?v=39';
-import { pageConfig as engineeringChangeUploadPage } from './features/engineering-change/design-change/upload/index.js?v=27';
-import { pageConfig as engineeringChangeListPage } from './features/engineering-change/design-change/list/index.js?v=45';
-import { pageConfig as engineeringChangeMaterialUploadPage } from './features/engineering-change/material-change/upload/index.js?v=9';
-import { pageConfig as engineeringChangeMaterialListPage } from './features/engineering-change/material-change/list/index.js?v=11';
-import { pageConfig as costingPage }        from './features/costing/engine/index.js?v=49';
-import { pageConfig as fileTracePage }       from './features/file-trace/index.js?v=29';
-import { pageConfig as locationPage }        from './features/masterdata/location/index.js?v=24';
-import { pageConfig as vehicleModelUploadPage } from './features/masterdata/vehicle-model/upload/index.js?v=14';
-import { pageConfig as vehicleModelListPage } from './features/masterdata/vehicle-model/list/index.js?v=28';
-import { pageConfig as supplierUploadPage } from './features/masterdata/supplier/upload/index.js?v=15';
-import { pageConfig as supplierListPage } from './features/masterdata/supplier/list/index.js?v=29';
-import { pageConfig as settingsPage }       from './features/settings/system/index.js?v=38';
-import { pageConfig as settingsUsersPage }  from './features/settings/users/index.js?v=33';
-import { pageConfig as settingsLogsPage }   from './features/settings/logs/index.js?v=28';
-import { pageConfig as settingsProfilePage } from './features/settings/profile/index.js?v=17';
+import { pageLoadingHtml, pageNoticeHtml } from './ui/page-loading.js?v=1';
+
+const LLM_BOOT_URL = './llm-assistant/boot.js?v=67';
+
+// 页面按路由再加载。版本号留在 import() 地址上，和以前的静态 import 一样用来破缓存。
+const pageLoaders = {
+    dashboard: () => import('./features/dashboard/index.js?v=25'),
+    'stamping-upload': () => import('./features/stamping/process/upload/index.js?v=76'),
+    'stamping-parts': () => import('./features/stamping/process/parts/index.js?v=90'),
+    'stamping-die-upload': () => import('./features/stamping/die/upload/index.js?v=29'),
+    'stamping-die-list': () => import('./features/stamping/die/list/index.js?v=43'),
+    'stamping-die-unit-price': () => import('./features/stamping/die/unit-price/index.js?v=27'),
+    'stamping-die-fee-calc': () => import('./features/stamping/die-fee/calc/index.js?v=32'),
+    'stamping-die-fee': () => import('./features/stamping/die-fee/list/index.js?v=42'),
+    'stamping-gauge-fee-upload': () => import('./features/stamping/gauge-fee/upload/index.js?v=18'),
+    'stamping-gauge-fee': () => import('./features/stamping/gauge-fee/list/index.js?v=36'),
+    'stamping-tonnage-upload': () => import('./features/stamping/tonnage/upload/index.js?v=21'),
+    'stamping-tonnage': () => import('./features/stamping/tonnage/list/index.js?v=49'),
+    'stamping-process-fee-calc': () => import('./features/stamping/process-fee/calc/index.js?v=57'),
+    'stamping-process-fee': () => import('./features/stamping/process-fee/list/index.js?v=81'),
+    'steel-price-list': () => import('./features/costing/steel-price/list/index.js?v=90'),
+    'steel-price-calc': () => import('./features/costing/steel-price/calc/index.js?v=38'),
+    'stamping-part-cost-calc': () => import('./features/costing/stamping-part-cost/calc/index.js?v=41'),
+    'stamping-part-cost': () => import('./features/costing/stamping-part-cost/list/index.js?v=105'),
+    'assembly-cost-calc': () => import('./features/costing/assembly-cost/calc/index.js?v=26'),
+    'assembly-cost': () => import('./features/costing/assembly-cost/list/index.js?v=66'),
+    'procurement-contract-report': () => import('./features/costing/procurement-contract-report/index.js?v=58'),
+    'steel-price-policy-upload': () => import('./features/yishiyiyi/policy/upload/index.js?v=50'),
+    'steel-price-policy-download': () => import('./features/yishiyiyi/policy/list/index.js?v=64'),
+    'base-price-upload': () => import('./features/yishiyiyi/base-price/upload/index.js?v=61'),
+    'base-price-download': () => import('./features/yishiyiyi/base-price/list/index.js?v=55'),
+    'steel-grade-category': () => import('./features/masterdata/steel-grade-category/index.js?v=29'),
+    'steel-mill': () => import('./features/masterdata/steel-mill/index.js?v=2'),
+    'winning-thickness-download': () => import('./features/yishiyiyi/winning-thickness/list/index.js?v=32'),
+    'scrap-price': () => import('./features/yishiyiyi/scrap-price/index.js?v=33'),
+    'bom-structure': () => import('./features/bom/material/structure/index.js?v=19'),
+    'bom-where-used': () => import('./features/bom/material/where-used/index.js?v=23'),
+    'bom-viz': () => import('./features/bom/material/viz/index.js?v=39'),
+    'bom-upload': () => import('./features/bom/material/upload/index.js?v=28'),
+    'bom-material': () => import('./features/bom/material/list/index.js?v=25'),
+    'bom-welding-unit-price-upload': () => import('./features/bom/welding-unit-price/upload/index.js?v=27'),
+    'bom-welding-unit-price': () => import('./features/bom/welding-unit-price/list/index.js?v=41'),
+    'bom-annual-part-price-upload': () => import('./features/bom/annual-part-price/upload/index.js?v=27'),
+    'bom-annual-part-price': () => import('./features/bom/annual-part-price/list/index.js?v=42'),
+    'bom-packaging-transport-fee-upload': () => import('./features/bom/packaging-transport-fee/upload/index.js?v=19'),
+    'bom-packaging-transport-fee': () => import('./features/bom/packaging-transport-fee/list/index.js?v=34'),
+    'bom-procurement-object': () => import('./features/bom/procurement-object/generate/index.js?v=24'),
+    'bom-procurement-object-list': () => import('./features/bom/procurement-object/list/index.js?v=58'),
+    'bom-procurement-object-supplier-upload': () => import('./features/bom/procurement-object/supplier-upload/index.js?v=29'),
+    'bom-welding-process-breakdown': () => import('./features/bom/welding-process-breakdown/generate/index.js?v=22'),
+    'bom-welding-process-breakdown-list': () => import('./features/bom/welding-process-breakdown/list/index.js?v=66'),
+    'bom-welding-fee-calc': () => import('./features/bom/welding-fee/calc/index.js?v=28'),
+    'bom-welding-fee-list': () => import('./features/bom/welding-fee/list/index.js?v=39'),
+    'engineering-change-upload': () => import('./features/engineering-change/design-change/upload/index.js?v=27'),
+    'engineering-change-order-list': () => import('./features/engineering-change/design-change/list/index.js?v=45'),
+    'engineering-change-material-upload': () => import('./features/engineering-change/material-change/upload/index.js?v=9'),
+    'engineering-change-material-list': () => import('./features/engineering-change/material-change/list/index.js?v=11'),
+    costing: () => import('./features/costing/engine/index.js?v=49'),
+    'file-trace': () => import('./features/file-trace/index.js?v=29'),
+    location: () => import('./features/masterdata/location/index.js?v=24'),
+    'vehicle-model-upload': () => import('./features/masterdata/vehicle-model/upload/index.js?v=14'),
+    'vehicle-model-list': () => import('./features/masterdata/vehicle-model/list/index.js?v=28'),
+    'supplier-upload': () => import('./features/masterdata/supplier/upload/index.js?v=15'),
+    'supplier-list': () => import('./features/masterdata/supplier/list/index.js?v=29'),
+    settings: () => import('./features/settings/system/index.js?v=38'),
+    'settings-users': () => import('./features/settings/users/index.js?v=33'),
+    'settings-logs': () => import('./features/settings/logs/index.js?v=28'),
+    'settings-profile': () => import('./features/settings/profile/index.js?v=17'),
+};
 
 // 未登录禁止进入主应用：不渲染业务页，避免请求 dashboard 等后端
 const hasSession = !!getUserSession();
@@ -102,71 +109,9 @@ if (!hasSession) {
     installDeleteErrorDialog();
 }
 
-// ===== 页面注册 =====
-const pages = {
-    dashboard:        dashboardPage,
-    'stamping-upload': stampingUploadPage,
-    'stamping-parts':  stampingPartsPage,
-    'stamping-die-upload': stampingDieUploadPage,
-    'stamping-die-list': stampingDieListPage,
-    'stamping-die-unit-price': stampingDieUnitPricePage,
-    'stamping-die-fee-calc': stampingDieFeeCalcPage,
-    'stamping-die-fee': stampingDieFeePage,
-    'stamping-gauge-fee-upload': stampingGaugeFeeUploadPage,
-    'stamping-gauge-fee': stampingGaugeFeePage,
-    'stamping-tonnage-upload': stampingTonnageUploadPage,
-    'stamping-tonnage': stampingTonnagePage,
-    'stamping-process-fee-calc': stampingProcessFeeCalcPage,
-    'stamping-process-fee': stampingProcessFeePage,
-    'steel-price-list': steelPriceListPage,
-    'steel-price-calc': steelPriceCalcPage,
-    'stamping-part-cost-calc': stampingPartCostCalcPage,
-    'stamping-part-cost': stampingPartCostPage,
-    'assembly-cost-calc': assemblyCostCalcPage,
-    'assembly-cost': assemblyCostPage,
-    'procurement-contract-report': procurementContractReportPage,
-    'steel-price-policy-upload': steelPricePolicyUploadPage,
-    'steel-price-policy-download': steelPricePolicyDownloadPage,
-    'base-price-upload': basePriceUploadPage,
-    'base-price-download': basePriceDownloadPage,
-    'steel-grade-category': steelGradeCategoryPage,
-    'steel-mill': steelMillPage,
-    'winning-thickness-download': winningThicknessDownloadPage,
-    'scrap-price': scrapPricePage,
-    'bom-structure':  bomStructurePage,
-    'bom-where-used': bomWhereUsedPage,
-    'bom-viz':        bomVizPage,
-    'bom-upload':     bomUploadPage,
-    'bom-material':   bomMaterialListPage,
-    'bom-welding-unit-price-upload': bomWeldingUnitPriceUploadPage,
-    'bom-welding-unit-price': bomWeldingUnitPricePage,
-    'bom-annual-part-price-upload': bomAnnualPartPriceUploadPage,
-    'bom-annual-part-price': bomAnnualPartPricePage,
-    'bom-packaging-transport-fee-upload': bomPackagingTransportFeeUploadPage,
-    'bom-packaging-transport-fee': bomPackagingTransportFeePage,
-    'bom-procurement-object': bomProcurementObjectGeneratePage,
-    'bom-procurement-object-list': bomProcurementObjectListPage,
-    'bom-procurement-object-supplier-upload': bomProcurementObjectSupplierUploadPage,
-    'bom-welding-process-breakdown': bomWeldingProcessBreakdownGeneratePage,
-    'bom-welding-process-breakdown-list': bomWeldingProcessBreakdownListPage,
-    'bom-welding-fee-calc': bomWeldingFeeCalcPage,
-    'bom-welding-fee-list': bomWeldingFeeListPage,
-    'engineering-change-upload': engineeringChangeUploadPage,
-    'engineering-change-order-list': engineeringChangeListPage,
-    'engineering-change-material-upload': engineeringChangeMaterialUploadPage,
-    'engineering-change-material-list': engineeringChangeMaterialListPage,
-    costing:          costingPage,
-    'file-trace':     fileTracePage,
-    location:         locationPage,
-    'vehicle-model-upload': vehicleModelUploadPage,
-    'vehicle-model-list': vehicleModelListPage,
-    'supplier-upload': supplierUploadPage,
-    'supplier-list': supplierListPage,
-    settings:         settingsPage,
-    'settings-users': settingsUsersPage,
-    'settings-logs': settingsLogsPage,
-    'settings-profile': settingsProfilePage,
-};
+/** @type {Map<string, { render: () => string, init: () => void, destroy?: () => void }>} */
+const loadedPages = new Map();
+let renderSerial = 0;
 
 const DEFAULT_PAGE = 'dashboard';
 let currentPageName = null;
@@ -201,8 +146,46 @@ function getPageFromHash() {
  * 导航到指定页面（更新 Hash + 渲染）
  */
 function navigateTo(pageName) {
-    if (!pages[pageName]) return;
+    if (!pageLoaders[pageName]) return;
     window.location.hash = '/' + pageName;
+}
+
+/** @type {Map<string, Promise<{ render: () => string, init: () => void, destroy?: () => void }>>} */
+const pagePromises = new Map();
+
+function loadPage(pageName) {
+    const cached = loadedPages.get(pageName);
+    if (cached) return Promise.resolve(cached);
+    const pending = pagePromises.get(pageName);
+    if (pending) return pending;
+    const loader = pageLoaders[pageName];
+    if (!loader) return Promise.resolve(null);
+    const promise = loader()
+        .then((mod) => {
+            const page = mod.pageConfig;
+            if (!page) {
+                throw new Error('页面模块缺少 pageConfig');
+            }
+            loadedPages.set(pageName, page);
+            pagePromises.delete(pageName);
+            return page;
+        })
+        .catch((error) => {
+            pagePromises.delete(pageName);
+            throw error;
+        });
+    pagePromises.set(pageName, promise);
+    return promise;
+}
+
+function destroyPage(pageName) {
+    const page = loadedPages.get(pageName);
+    if (!page || typeof page.destroy !== 'function') return;
+    try {
+        page.destroy();
+    } catch (error) {
+        console.error('页面销毁失败:', error);
+    }
 }
 
 /**
@@ -283,48 +266,60 @@ function renderBreadcrumb(pageName, meta) {
 /**
  * 渲染页面（仅渲染，不改 Hash）
  */
-function renderPage(pageName) {
+async function renderPage(pageName) {
     if (!pageName) return;
 
-    let targetPage = pageName;
-    if (!pages[targetPage]) {
-        document.getElementById('pageContent').innerHTML =
-            '<div class="text-center text-ink-dim py-12">页面不存在</div>';
+    const content = document.getElementById('pageContent');
+    const targetPage = pageName;
+    if (!pageLoaders[targetPage]) {
+        if (content) {
+            content.innerHTML = '<div class="text-center text-ink-dim py-12">页面不存在</div>';
+        }
         return;
     }
 
     if (!canAccessPage(targetPage)) {
         const fallback = fallbackPageName();
-        if (fallback !== targetPage && pages[fallback]) {
+        if (fallback !== targetPage && pageLoaders[fallback]) {
             if (typeof showToast === 'function') {
                 showToast('无访问权限', 'warning');
             }
             window.location.hash = '/' + fallback;
             return;
         }
-        document.getElementById('pageContent').innerHTML =
-            '<div class="text-center text-ink-dim py-12">无访问权限</div>';
+        if (content) {
+            content.innerHTML = '<div class="text-center text-ink-dim py-12">无访问权限</div>';
+        }
         return;
     }
 
-    const page = pages[targetPage];
-
-    // 离开上一页时调用 destroy（停止轮询等），避免后台定时器污染当前页
-    if (currentPageName && pages[currentPageName]?.destroy) {
-        try {
-            pages[currentPageName].destroy();
-        } catch (error) {
-            console.error('页面销毁失败:', error);
-        }
+    const serial = ++renderSerial;
+    if (currentPageName) {
+        destroyPage(currentPageName);
+        currentPageName = null;
     }
+
+    const alreadyLoaded = loadedPages.has(targetPage);
+    if (!alreadyLoaded && content) {
+        content.innerHTML = pageLoadingHtml();
+    }
+
+    let page;
+    try {
+        page = await loadPage(targetPage);
+    } catch (error) {
+        console.error('加载页面模块失败:', error);
+        if (serial !== renderSerial) return;
+        if (content) content.innerHTML = pageNoticeHtml('页面加载失败');
+        return;
+    }
+    if (serial !== renderSerial || !page) return;
 
     closeHudSelectMenu();
 
-    const content = document.getElementById('pageContent');
-    const title   = document.getElementById('pageTitle');
+    const title = document.getElementById('pageTitle');
     const topActions = document.getElementById('topActions');
 
-    // 同步导航高亮（Overlay 复用同一套菜单 DOM）
     highlightMenu(targetPage);
 
     const meta = pageMeta[targetPage] || { title: targetPage, breadcrumb: [targetPage] };
@@ -333,13 +328,15 @@ function renderPage(pageName) {
     if (topActions) topActions.innerHTML = '';
 
     try {
-        content.innerHTML = page.render();
+        if (content) content.innerHTML = page.render();
         page.init();
         currentPageName = targetPage;
     } catch (error) {
         console.error('渲染页面失败:', error);
         currentPageName = null;
-        content.innerHTML = `<div class="p-4 bg-app-deep border border-line text-brand">加载失败: ${esc(error.message)}</div>`;
+        if (content) {
+            content.innerHTML = `<div class="p-4 bg-app-deep border border-line text-brand">加载失败: ${esc(error.message)}</div>`;
+        }
     }
 }
 
@@ -471,26 +468,42 @@ document.addEventListener('DOMContentLoaded', function() {
     initUserMenu();
     startTokenHeartbeat();
 
-    // 启动时拉一次 me，刷新权限后再过滤侧栏与路由
+    // 本地 session 已有权限，先画当前页。me 在后台对账。
+    applySidebarPermissions();
+    initRouter();
+    const assistantModule = import(LLM_BOOT_URL);
+
     HttpClient.get('/api/auth/me')
         .then((res) => {
             const user = res?.data;
-            if (user) {
-                updateUserSession({
-                    is_admin: user.is_admin === true,
-                    permissions: Array.isArray(user.permissions) ? user.permissions : [],
-                    real_name: user.real_name,
-                    username: user.username,
-                    avatar: user.avatar,
-                    department: user.department,
-                    email: user.email,
-                });
-            }
+            if (!user) return;
+            updateUserSession({
+                is_admin: user.is_admin === true,
+                permissions: Array.isArray(user.permissions) ? user.permissions : [],
+                real_name: user.real_name,
+                username: user.username,
+                avatar: user.avatar,
+                department: user.department,
+                email: user.email,
+            });
         })
         .catch(() => {})
         .finally(() => {
             applySidebarPermissions();
-            bootLlmAssistant();
-            initRouter();
+            const pageName = currentPageName || getPageFromHash();
+            if (pageName && !canAccessPage(pageName)) {
+                const fallback = fallbackPageName();
+                if (fallback !== pageName && pageLoaders[fallback]) {
+                    if (typeof showToast === 'function') {
+                        showToast('无访问权限', 'warning');
+                    }
+                    window.location.hash = '/' + fallback;
+                }
+            }
+            assistantModule
+                .then((mod) => mod.bootLlmAssistant())
+                .catch((error) => {
+                    console.error('采购助理加载失败:', error);
+                });
         });
 });
