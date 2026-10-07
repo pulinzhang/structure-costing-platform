@@ -331,6 +331,7 @@ async function downloadOriginal(uploadLogId, fallbackName) {
         window.URL.revokeObjectURL(url);
         showToast(`下载成功: ${filename}`, 'success');
     } catch (error) {
+        if (error?.wechatGuide) return;
         showToast(error?.message || '下载失败', 'error');
     }
 }

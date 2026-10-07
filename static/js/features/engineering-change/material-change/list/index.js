@@ -314,6 +314,7 @@ async function downloadOriginal(uploadLogId, fallbackName) {
     try {
         await downloadMaterialChangeFile(uploadLogId, fallbackName);
     } catch (error) {
+        if (error?.wechatGuide) return;
         showToast(error?.message || '下载失败', 'error');
     }
 }

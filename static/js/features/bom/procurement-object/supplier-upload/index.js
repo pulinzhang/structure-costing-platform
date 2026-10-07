@@ -243,6 +243,7 @@ async function downloadTemplate() {
         window.URL.revokeObjectURL(url);
         await loadQaBanner();
     } catch (error) {
+        if (error.wechatGuide) return;
         failOnPanel(error.message || '模板下载失败');
     }
 }

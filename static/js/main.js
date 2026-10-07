@@ -373,6 +373,84 @@ function getOrCreateToastContainer() {
     return container;
 }
 
+// 微信内置浏览器不认页面里的临时下载链接，登录态又在本机，地址栏打开导出会 401。
+// 这里不发请求，只说明去系统浏览器打开。手机微信、企业微信、电脑版微信窗口都算。
+const WECHAT_EXPORT_GUIDE = '微信里不能保存文件。请点右上角 ··· ，选择在浏览器中打开，然后再导出。';
+
+function isWeChatBrowser() {
+    return /MicroMessenger/i.test(navigator.userAgent || '');
+}
+
+function showWeChatExportGuide() {
+    let dialog = document.getElementById('wechatExportGuide');
+    if (!dialog) {
+        dialog = document.createElement('div');
+        dialog.id = 'wechatExportGuide';
+        dialog.className = 'fixed inset-0 z-[100] flex items-center justify-center p-4';
+        dialog.setAttribute('role', 'alertdialog');
+        dialog.setAttribute('aria-modal', 'true');
+        dialog.setAttribute('aria-labelledby', 'wechatExportGuideTitle');
+
+        const backdrop = document.createElement('div');
+        backdrop.className = 'absolute inset-0 bg-overlay/70 backdrop-blur-sm';
+
+        const panel = document.createElement('div');
+        panel.tabIndex = -1;
+        panel.className = 'relative flex w-[420px] max-w-[92vw] flex-col overflow-hidden rounded-[2px] border border-line bg-app-main outline-none';
+        panel.style.boxShadow = '0 30px 60px rgb(var(--overlay) / 0.8)';
+
+        const accent = document.createElement('span');
+        accent.className = 'pointer-events-none absolute left-0 right-0 top-0 h-[2px] bg-gradient-to-r from-brand to-transparent';
+        accent.setAttribute('aria-hidden', 'true');
+
+        const body = document.createElement('div');
+        body.className = 'px-5 pb-3 pt-4';
+        const title = document.createElement('h6');
+        title.id = 'wechatExportGuideTitle';
+        title.className = 'mb-0 text-[13px] font-semibold leading-snug tracking-wide text-ink';
+        title.textContent = '微信里不能保存文件';
+        const lead = document.createElement('p');
+        lead.className = 'mt-2 mb-0 text-[11px] font-normal leading-relaxed text-ink-muted';
+        lead.textContent = '请点右上角 ··· ，选择在浏览器中打开，然后再导出。';
+        body.append(title, lead);
+
+        const footer = document.createElement('div');
+        footer.className = 'flex items-center justify-end border-t border-line-subtle px-5 py-3';
+        const ok = document.createElement('button');
+        ok.id = 'wechatExportGuideOk';
+        ok.type = 'button';
+        ok.className = 'inline-flex items-center px-1 py-1 text-[11px] text-ink transition-colors hover:text-brand';
+        ok.textContent = '知道了';
+
+        const close = () => dialog.classList.add('hidden');
+        ok.addEventListener('click', close);
+        backdrop.addEventListener('click', close);
+        dialog.addEventListener('keydown', (event) => {
+            if (event.key === 'Escape') close();
+        });
+
+        footer.append(ok);
+        panel.append(accent, body, footer);
+        dialog.append(backdrop, panel);
+        document.body.appendChild(dialog);
+    }
+    dialog.classList.remove('hidden');
+    document.getElementById('wechatExportGuideOk')?.focus();
+}
+
+function refuseWeChatDownload() {
+    if (!isWeChatBrowser()) return false;
+    showWeChatExportGuide();
+    return true;
+}
+
+function wechatDownloadError() {
+    const err = new Error(WECHAT_EXPORT_GUIDE);
+    err.status = 'wechat';
+    err.wechatGuide = true;
+    return err;
+}
+
 // ===== HttpClient =====
 //
 // 统一封装 fetch：自动 query 序列化、JSON 头、超时、成功失败 toast、自动解包 { success, data, message }。
@@ -558,6 +636,7 @@ const HttpClient = (() => {
      * 文件下载（Excel 等）：带 token，返回 blob，不走 JSON 解包。
      */
     async function download(url, { params, headers, timeout, skipAuth, skipToast, defaultFilename } = {}) {
+        if (refuseWeChatDownload()) throw wechatDownloadError();
         const query = { ...(params || {}), _t: Date.now() };
         const fullUrl = buildUrl(url, query);
         const controller = new AbortController();
@@ -635,6 +714,7 @@ const HttpClient = (() => {
 // 这样 window.* 在 app.js / 各 page 模块运行之前已就绪。
 
 window.HttpClient = HttpClient;
+window.refuseWeChatDownload = refuseWeChatDownload;
 window.esc = esc;
 window.fmtNum = fmtNum;
 window.fmtYear = fmtYear;

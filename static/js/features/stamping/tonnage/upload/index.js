@@ -246,6 +246,7 @@ const TonnageUploadPage = {
             document.body.removeChild(anchor);
             window.URL.revokeObjectURL(url);
         } catch (error) {
+            if (error.wechatGuide) return;
             this.failOnPanel(error.message || '模板下载失败');
         }
     },

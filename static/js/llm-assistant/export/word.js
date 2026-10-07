@@ -14,6 +14,7 @@ export function downloadWordDocument(msg) {
         }
         return;
     }
+    if (typeof window.refuseWeChatDownload === 'function' && window.refuseWeChatDownload()) return;
 
     const html = buildAssistantDocumentHtml(msg);
     const blob = new Blob(['\ufeff', html], { type: 'application/msword;charset=utf-8' });

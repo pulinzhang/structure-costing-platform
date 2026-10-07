@@ -179,6 +179,7 @@ function exportWord() {
         showToast('暂无可导出的 AI 回答', 'error');
         return;
     }
+    if (typeof window.refuseWeChatDownload === 'function' && window.refuseWeChatDownload()) return;
     const html = buildAssistantDocumentHtml(msg);
     const blob = new Blob(['\ufeff', html], { type: 'application/msword;charset=utf-8' });
     const url = URL.createObjectURL(blob);

@@ -424,6 +424,7 @@ const BomUploadPage = {
             document.body.removeChild(anchor);
             window.URL.revokeObjectURL(url);
         } catch (error) {
+            if (error.wechatGuide) return;
             this.showError(error.message || '模板下载失败');
         }
     },
