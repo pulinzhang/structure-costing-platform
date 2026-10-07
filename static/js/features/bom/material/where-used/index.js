@@ -306,6 +306,7 @@ async function exportExcel() {
         link.click();
         URL.revokeObjectURL(url);
     } catch (error) {
+        if (error?.wechatGuide) return;
         showToast(error?.message || '导出失败', 'error');
     }
 }

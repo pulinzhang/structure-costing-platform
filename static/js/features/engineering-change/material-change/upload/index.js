@@ -315,6 +315,7 @@ const MaterialChangeUploadPage = {
             document.body.removeChild(anchor);
             window.URL.revokeObjectURL(url);
         } catch (error) {
+            if (error?.wechatGuide) return;
             this.failOnPanel(error?.message || '下载模板失败');
         }
     },

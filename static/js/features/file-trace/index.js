@@ -150,9 +150,16 @@ async function openDetail(fileId) {
 }
 
 async function downloadFile(fileId) {
-    const { blob, filename } = await HttpClient.download(`${API_BASE}/${fileId}/download`, {
-        defaultFilename: 'download.xlsx',
-    });
+    let blob;
+    let filename;
+    try {
+        ({ blob, filename } = await HttpClient.download(`${API_BASE}/${fileId}/download`, {
+            defaultFilename: 'download.xlsx',
+        }));
+    } catch (error) {
+        if (error?.wechatGuide) return;
+        throw error;
+    }
     const url = window.URL.createObjectURL(blob);
     const anchor = document.createElement('a');
     anchor.href = url;

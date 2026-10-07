@@ -376,6 +376,7 @@ async function exportExcel() {
 
         showToast('导出成功', 'success');
     } catch (error) {
+        if (error.wechatGuide) return;
         console.error('导出失败:', error);
         showToast(error.message || '导出失败', 'error');
     } finally {
