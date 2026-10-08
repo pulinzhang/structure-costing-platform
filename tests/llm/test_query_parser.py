@@ -1237,3 +1237,273 @@ def test_build_base_price_month_move_over_uses_landed_price() -> None:
     assert all("HC440" not in line for line in lines)
     assert all("SPHC" not in line for line in lines)
     assert all("HC180B" not in line for line in lines)
+
+
+def _mock_grade_archive(parser: QueryParser) -> None:
+    known = {"DC01": "DC01", "DC51D+Z": "DC51D+Z"}
+
+    def match_grade(_db: object, candidates: list[str]) -> str | None:
+        for candidate in candidates:
+            hit = known.get(candidate.upper())
+            if hit:
+                return hit
+        return None
+
+    parser._grade_repo.match_grade = match_grade
+
+
+def _parse_grade_question(question: str, *, location: str | None = None):
+    parser = QueryParser()
+    db = MagicMock()
+    _mock_aligner(parser)
+    _mock_grade_archive(parser)
+    filters: dict[str, str] = {}
+    if location:
+        filters["location"] = location
+    parser._extractor.extract = MagicMock(
+        return_value={
+            "time_range": {"start": "2026-02", "end": "2026-02"},
+            "filters": filters,
+            "compare_locations": [],
+        }
+    )
+    return parser.parse(db, user_question=question)
+
+
+def test_query_parser_steel_grade_thickness_price() -> None:
+    query = _parse_grade_question("2026年02月，DC01 0.6的钢材价格")
+    assert query.subject == "steel_price"
+    assert query.filters.get("grade") == "DC01"
+    assert query.filters.get("thickness") == "0.6"
+    assert query.time_range.start == "2026-02"
+    assert query.time_range.end == "2026-02"
+
+
+def test_query_parser_steel_grade_each_thickness() -> None:
+    query = _parse_grade_question("DC01，2026年02月，各厚度的价格")
+    assert query.subject == "steel_price"
+    assert query.filters.get("grade") == "DC01"
+    assert "thickness" not in query.filters
+
+
+def test_query_parser_steel_price_without_grade_stays_average_scope() -> None:
+    query = _parse_grade_question("2026年02月钢材价格")
+    assert query.subject == "steel_price"
+    assert "grade" not in query.filters
+    assert "thickness" not in query.filters
+
+
+def test_query_parser_named_grade_does_not_steal_base_or_winning_thickness() -> None:
+    base_price = _parse_grade_question("DC01 基准价")
+    assert base_price.subject == "steel_base_price"
+    winning = _parse_grade_question("2026年02月厚度价格列表")
+    assert winning.subject == "winning_thickness"
+
+
+def test_query_parser_steel_grade_list_params_include_grade_not_thickness() -> None:
+    from app.services.llm.menu_catalog import build_list_params
+
+    query = _parse_grade_question(
+        "2026年02月，青岛，DC01 0.6的钢材价格",
+        location="青岛",
+    )
+    params = build_list_params(query)
+    assert params["year"] == "2026"
+    assert params["month"] == "2"
+    assert params["location"] == "青岛"
+    assert params["grade"] == "DC01"
+    assert "thickness" not in params
+
+
+def test_extract_grade_candidates_keeps_plus_suffix() -> None:
+    from app.services.llm.query.parser.steel_grade import (
+        extract_grade_candidates,
+        extract_thickness,
+    )
+
+    assert extract_grade_candidates("DC51D+Z 1.2mm 和 HC180YD+Z") == ["DC51D+Z", "HC180YD+Z"]
+    assert extract_thickness("DC51D+Z 1.2mm", "DC51D+Z") == "1.2"
+    assert extract_thickness("各厚度 DC01 0.6", "DC01") is None
+
+
+def test_steel_price_rows_list_each_location_not_average() -> None:
+    from app.services.llm.analysis.steel.price_rows import (
+        GradeThicknessPriceRow,
+        build_steel_price_rows,
+    )
+
+    def row(
+        location: str,
+        price: str,
+        thick_min: str = "0.50",
+        thickness_range: str = "0.50≤t<0.70",
+    ) -> GradeThicknessPriceRow:
+        return GradeThicknessPriceRow(
+            year=2026,
+            month=2,
+            location=location,
+            steel_mill="宝钢",
+            category_name="冷轧",
+            grade="DC01",
+            thickness_range=thickness_range,
+            thick_min=Decimal(thick_min),
+            thick_min_operator=">=",
+            thick_max=Decimal(thick_min) + Decimal("0.20"),
+            thick_max_operator="<",
+            base_price=Decimal("4000"),
+            thickness_adjustment=Decimal("200"),
+            processing_fee=Decimal("80"),
+            final_price=Decimal(price),
+        )
+
+    result = build_steel_price_rows([row("芜湖", "4700"), row("青岛", "4500")])
+    table = str(result["table"])
+    data_lines = [line for line in table.splitlines() if line.startswith("| 2026")]
+    assert "4500.00" in table
+    assert "4700.00" in table
+    assert "4600.00" not in table
+    assert "基准价（元/吨）" in table
+    assert "厚度加减价（元/吨）" in table
+    assert "加工费（元/吨）" in table
+    assert "厚度档" in table
+    assert "4000.00" in table
+    assert "200.00" in table
+    assert "80.00" in table
+    assert "芜湖" in data_lines[0]
+    assert "青岛" in data_lines[1]
+
+    spread = build_steel_price_rows(
+        [
+            row("青岛", "4500", "0.80", "0.80≤t<1.00"),
+            row("青岛", "4400", "0.60", "0.60≤t<0.80"),
+        ]
+    )
+    spread_table = str(spread["table"])
+    assert "0.60≤t<0.80" in spread_table
+    assert "0.80≤t<1.00" in spread_table
+    assert spread_table.index("0.60≤t<0.80") < spread_table.index("0.80≤t<1.00")
+
+
+def test_run_steel_grade_uses_winning_thickness_bands() -> None:
+    from app.schemas.llm.analysis_query import AnalysisQuery, TimeRange
+    from app.schemas.vo.winning_thickness_vo import WinningThicknessRowVO
+    from app.services.llm.analysis.steel.run import SteelAnalysis
+
+    def band(
+        location: str,
+        mill: str,
+        thick_min: str,
+        thick_max: str,
+        thickness_range: str,
+        final_price: str,
+    ) -> WinningThicknessRowVO:
+        return WinningThicknessRowVO(
+            year=2026,
+            month=2,
+            location=location,
+            steel_mill=mill,
+            category_name="冷轧",
+            grade="DC01",
+            thickness_range=thickness_range,
+            thick_min=Decimal(thick_min),
+            thick_min_operator=">=",
+            thick_max=Decimal(thick_max),
+            thick_max_operator="<",
+            base_price=Decimal("4100"),
+            thickness_adjustment=Decimal("-50"),
+            processing_fee=Decimal("120"),
+            final_price=Decimal(final_price),
+        )
+
+    analysis = SteelAnalysis()
+    analysis._steel_repo = MagicMock()
+    analysis._winning_thickness_export = MagicMock()
+    analysis._winning_thickness_export.build_rows.return_value = [
+        band("芜湖", "马钢", "0.50", "0.70", "0.50≤t<0.70", "4170"),
+        band("芜湖", "马钢", "1.00", "1.20", "1.00≤t<1.20", "4300"),
+        band("青岛", "邯钢", "0.50", "0.70", "0.50≤t<0.70", "4500"),
+        band("青岛", "邯钢", "1.00", "1.20", "1.00≤t<1.20", "3754"),
+    ]
+    query = AnalysisQuery(
+        time_range=TimeRange(start="2026-02", end="2026-02"),
+        filters={"grade": "DC01", "thickness": "0.6"},
+        subject="steel_price",
+        user_question="2026年02月，DC01 0.6的钢材价格",
+    )
+    result = analysis.run_steel(MagicMock(), query)
+    analysis._steel_repo.query_monthly_avg.assert_not_called()
+    kwargs = analysis._winning_thickness_export.build_rows.call_args.kwargs
+    assert kwargs["grade"] == "DC01"
+    assert kwargs["year"] == 2026
+    assert kwargs["month"] == 2
+    assert kwargs["location"] is None
+    assert result.has_data is True
+    table = str(result.result.get("table"))
+    assert "4500.00" in table
+    assert "4170.00" in table
+    assert "4100.00" in table
+    assert "-50.00" in table
+    assert "120.00" in table
+    assert "0.50≤t<0.70" in table
+    assert "1.00≤t<1.20" not in table
+    assert "3754" not in table
+
+
+def test_pin_steel_price_table_keeps_price_composition() -> None:
+    from app.schemas.llm.analysis_query import AnalysisQuery, TimeRange
+    from app.schemas.llm.analysis_snapshot import AnalysisSnapshot, SnapshotMeta
+    from app.services.llm.generator import pin_steel_price_table
+
+    canonical = (
+        "| 年月 | 基地 | 基准价（元/吨） | 厚度加减价（元/吨） | 加工费（元/吨） | 联动价（元/吨） | 审核 |\n"
+        "| --- | --- | --- | --- | --- | --- | --- |\n"
+        "| 2026年02月 | 芜湖 | 3800.00 | 100.00 | 162.00 | 4062.00 | 待审 |"
+    )
+    snapshot = AnalysisSnapshot(
+        query=AnalysisQuery(
+            time_range=TimeRange(start="2026-02", end="2026-02"),
+            subject="steel_price",
+            user_question="2026年02月，DC01 0.6的钢材价格",
+        ),
+        meta=SnapshotMeta(has_data=True),
+        result={"kind": "steel_price_rows", "table": canonical},
+    )
+    draft = (
+        "2026年02月，DC01、料厚 0.6 的钢材联动价共 1 条：\n"
+        "\n"
+        "| 年月 | 基地 | 钢厂 | 大类 | 牌号 | 料厚 | 宽度 | 联动价（元/吨） | 审核 |\n"
+        "| --- | --- | --- | --- | --- | --- | --- | --- | --- |\n"
+        "| 2026年02月 | 芜湖 | 马钢 | 冷轧 | DC01 | 0.6 | 1250 | 4062.00 | 待审 |\n"
+        "\n"
+        "这条是芜湖基地、马钢的冷轧料，联动价 4062.00 元/吨，目前待审。"
+    )
+    pinned = pin_steel_price_table(draft, snapshot)
+    assert "基准价（元/吨）" in pinned
+    assert "厚度加减价（元/吨）" in pinned
+    assert "加工费（元/吨）" in pinned
+    assert "3800.00" in pinned
+    assert "100.00" in pinned
+    assert "162.00" in pinned
+    assert "4062.00" in pinned
+    assert "目前待审" in pinned
+    assert "| 宽度 | 联动价（元/吨） |" not in pinned
+
+
+def test_run_steel_grade_without_rows_does_not_fall_back_to_average() -> None:
+    from app.schemas.llm.analysis_query import AnalysisQuery, TimeRange
+    from app.services.llm.analysis.steel.run import SteelAnalysis
+
+    analysis = SteelAnalysis()
+    analysis._steel_repo = MagicMock()
+    analysis._winning_thickness_export = MagicMock()
+    analysis._winning_thickness_export.build_rows.return_value = []
+    query = AnalysisQuery(
+        time_range=TimeRange(start="2026-02", end="2026-02"),
+        filters={"grade": "DC01", "thickness": "0.6"},
+        subject="steel_price",
+        user_question="2026年02月，DC01 0.6的钢材价格",
+    )
+    result = analysis.run_steel(MagicMock(), query)
+    assert result.has_data is False
+    assert "无该牌号该料厚" in result.data_message
+    analysis._steel_repo.query_monthly_avg.assert_not_called()

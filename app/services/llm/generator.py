@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import json
+import re
 from dataclasses import dataclass
 
 from app.schemas.llm.analysis_snapshot import AnalysisSnapshot
@@ -78,6 +79,25 @@ def _build_field_card() -> str:
 
 
 _FIELD_CARD = _build_field_card()
+_MD_TABLE_RE = re.compile(r"(?m)(?:^\|[^\n]*\|\s*\n){2,}")
+
+
+def pin_steel_price_table(markdown: str, snapshot: AnalysisSnapshot) -> str:
+    """模型常把分项列删掉。有联动价行表时，用取数排好的表换掉正文里的表。"""
+    result = snapshot.result
+    if not isinstance(result, dict) or result.get("kind") != "steel_price_rows":
+        return markdown
+    table = result.get("table")
+    if not isinstance(table, str) or not table.strip():
+        return markdown
+    pinned = table.strip()
+    match = _MD_TABLE_RE.search(markdown)
+    if match is not None:
+        return f"{markdown[: match.start()]}{pinned}\n{markdown[match.end() :]}"
+    blocks = markdown.split("\n\n", 1)
+    if len(blocks) == 2:
+        return f"{blocks[0].rstrip()}\n\n{pinned}\n\n{blocks[1].lstrip()}"
+    return f"{markdown.rstrip()}\n\n{pinned}"
 
 
 class LlmReportGenerator:
@@ -118,7 +138,7 @@ class LlmReportGenerator:
             max_tokens=prompt.max_tokens,
         )
         combined_prompt = f"{system}\n\n{user}"
-        markdown = sanitize_report_markdown(result.content)
+        markdown = pin_steel_price_table(sanitize_report_markdown(result.content), snapshot)
         return GeneratedReport(
             markdown_content=markdown,
             prompt_version=prompt.prompt_version,
@@ -210,17 +230,22 @@ class LlmReportGenerator:
 
         if isinstance(snapshot.result, dict):
             pinned = snapshot.result.get("table")
+            kind = snapshot.result.get("kind")
             if (
-                snapshot.result.get("kind") == "base_price_month_move_over"
+                kind in ("base_price_month_move_over", "steel_price_rows")
                 and isinstance(pinned, str)
                 and pinned.strip()
             ):
                 question = snapshot.query.user_question
+                if kind == "steel_price_rows":
+                    listing = "以下按年、月、基地、牌号、料厚列出："
+                else:
+                    listing = "以下按年、月、基地、牌号列出："
                 return "\n".join(
                     [
                         f"## {question}",
                         "",
-                        f"模型暂不可用（{error_hint}），以下按年、月、基地、牌号列出：",
+                        f"模型暂不可用（{error_hint}），{listing}",
                         "",
                         pinned,
                     ]

@@ -505,6 +505,14 @@ def is_winning_thickness_question(question: str) -> bool:
     return any(term in question for term in _WINNING_THICKNESS_TERMS)
 
 
+_GRADE_PRICE_WORDS: tuple[str, ...] = ("价格", "价钱", "多少钱", "单价", "厚度")
+
+
+def asks_steel_grade_price(question: str) -> bool:
+    """点了牌号，又在问价或厚度。基准价 / 加减价 / 中标厚度列表不走这里。"""
+    return any(word in (question or "") for word in _GRADE_PRICE_WORDS)
+
+
 def resolve_subject(
     *,
     question: str,
@@ -726,4 +734,6 @@ def resolve_subject(
         return "l0"
     if "核价" in question and any(word in question for word in ("异常", "有无异常", "有没有异常")):
         return "l0"
+    if filters.get("grade") and asks_steel_grade_price(question):
+        return "steel_price"
     return "cost_total"
