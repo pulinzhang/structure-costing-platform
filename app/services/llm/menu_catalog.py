@@ -535,6 +535,16 @@ def build_list_params(query: AnalysisQuery) -> dict[str, str]:
             params["vehicle_model"] = vehicle_model
         return params
 
+    if query.subject == "steel_price" and query.filter_get("grade"):
+        params = {"year": year, "month": month}
+        location = (query.location() or "").strip()
+        grade = query.filter_get("grade")
+        if location:
+            params["location"] = location
+        if grade:
+            params["grade"] = grade
+        return params
+
     location = query.location() or ""
     start = query.time_range.start
     end = query.time_range.end

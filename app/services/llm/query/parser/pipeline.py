@@ -8,6 +8,7 @@ from app.common.part_number import extract_part_number_from_text, sanitize_part_
 from app.common.timezone import now
 from app.common.tonnage import extract_tonnage_from_text
 from app.repositories.llm.cost_analysis.repository import L0CostAnalysisRepository
+from app.repositories.llm.steel_grade_repository import SteelGradeRepository
 from app.schemas.llm.analysis_query import AnalysisQuery, TimeRange
 from app.schemas.llm.parser_draft import ParserDraft
 from app.services.llm.client.openai_compatible import LlmClientError
@@ -30,6 +31,7 @@ from app.services.llm.query.parser.carry import (
 from app.services.llm.query.parser.draft import parse_time_range_from_draft, rule_fallback_draft
 from app.services.llm.query.parser.part_price import question_asks_part_price
 from app.services.llm.query.parser.pin_latest import pin_table_latest_month, should_pin_table_latest
+from app.services.llm.query.parser.steel_grade import extract_grade_candidates, extract_thickness
 from app.services.llm.query.parser.subjects import resolve_subject
 from app.services.llm.query.time_range import (
     DefaultScopeMonth,
@@ -49,10 +51,12 @@ class QueryParser:
         extractor: ConditionExtractor | None = None,
         aligner: EntityAligner | None = None,
         cost_repo: L0CostAnalysisRepository | None = None,
+        grade_repo: SteelGradeRepository | None = None,
     ) -> None:
         self._extractor = extractor or ConditionExtractor()
         self._aligner = aligner or EntityAligner()
         self._cost_repo = cost_repo or L0CostAnalysisRepository()
+        self._grade_repo = grade_repo or SteelGradeRepository()
 
     def parse(
         self,
@@ -309,6 +313,14 @@ class QueryParser:
             elif not draft_has_time_range(draft) and not question_has_explicit_time(question):
                 parser_fallback_level = 3
                 parser_data_message = "未识别到时间范围，默认分析当月"
+
+        grade_candidates = extract_grade_candidates(question)
+        grade = self._grade_repo.match_grade(db, grade_candidates) if grade_candidates else None
+        if grade:
+            filters["grade"] = grade
+            thickness = extract_thickness(question, grade)
+            if thickness:
+                filters["thickness"] = thickness
 
         analyses = resolve_analyses(
             question=question,

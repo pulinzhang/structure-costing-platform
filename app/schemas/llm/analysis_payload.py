@@ -360,6 +360,7 @@ class DomainAnomaliesPayload(TypedDict, total=False):
         "policy_anomalies",
         "base_price_anomalies",
         "base_price_month_move_over",
+        "steel_price_rows",
         "annual_price_anomalies",
         "standard_part_anomalies",
     ]

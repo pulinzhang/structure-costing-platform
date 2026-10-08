@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from decimal import Decimal
+from decimal import Decimal, InvalidOperation
 
 from sqlalchemy.orm import Session
 
@@ -14,6 +14,7 @@ from app.schemas.llm.analysis_payload import (
     AnalysisResultLeafPayload,
 )
 from app.schemas.llm.analysis_query import AnalysisQuery
+from app.schemas.vo.winning_thickness_vo import WinningThicknessRowVO
 from app.services.llm._money import money_str
 from app.services.llm.analysis.shared.compose import compose_result
 from app.services.llm.analysis.shared.cost_trend import build_steel_trend
@@ -31,6 +32,11 @@ from app.services.llm.analysis.steel.policy import (
     build_policy_mom_anomalies,
     build_policy_summary,
     build_policy_trend,
+)
+from app.services.llm.analysis.steel.price_rows import (
+    GradeThicknessPriceRow,
+    build_steel_price_rows,
+    thickness_in_band,
 )
 from app.services.llm.analysis.steel.scrap import (
     build_scrap_price_drivers,
@@ -264,6 +270,9 @@ class SteelAnalysis:
         return out
 
     def run_steel(self, db: Session, query: AnalysisQuery) -> AnalysisRunResult:
+        grade = query.filter_get("grade")
+        if grade:
+            return self._run_steel_grade_rows(db, query, grade)
         tr = query.time_range
         location = query.location()
         steel_rows = self._steel_repo.query_monthly_avg(
@@ -295,3 +304,90 @@ class SteelAnalysis:
             for row in steel_rows
         ]
         return out
+
+    def _run_steel_grade_rows(
+        self,
+        db: Session,
+        query: AnalysisQuery,
+        grade: str,
+    ) -> AnalysisRunResult:
+        """按中标基价 × 厚度阶梯列价。不读冲压件联动价结果表。"""
+        tr = query.time_range
+        thickness = _parse_thickness(query.filter_get("thickness"))
+        location = (query.location() or "").strip() or None
+        collected: list[GradeThicknessPriceRow] = []
+        for year, month in _iter_months(tr.start_year, tr.start_month, tr.end_year, tr.end_month):
+            vos = self._winning_thickness_export.build_rows(
+                db,
+                year=year,
+                month=month,
+                location=location,
+                grade=grade,
+            )
+            collected.extend(_grade_price_row(row) for row in vos)
+        if thickness is not None:
+            collected = [row for row in collected if thickness_in_band(thickness, row)]
+        if not collected:
+            if thickness is None:
+                message = "当前范围无该牌号的中标厚度价"
+            else:
+                message = "当前范围无该牌号该料厚所在的厚度档"
+            return AnalysisRunResult(
+                comparability=resolve_comparability(query.comparison_basis),
+                has_data=False,
+                data_message=message,
+            )
+        payload = build_steel_price_rows(collected)
+        return AnalysisRunResult(
+            comparability=resolve_comparability(query.comparison_basis),
+            has_data=True,
+            data_message=str(payload.get("note") or ""),
+            result=payload,
+        )
+
+
+def _iter_months(
+    start_year: int,
+    start_month: int,
+    end_year: int,
+    end_month: int,
+) -> list[tuple[int, int]]:
+    months: list[tuple[int, int]] = []
+    year, month = start_year, start_month
+    while (year, month) <= (end_year, end_month):
+        months.append((year, month))
+        if month == 12:
+            year, month = year + 1, 1
+        else:
+            month += 1
+    return months
+
+
+def _grade_price_row(row: WinningThicknessRowVO) -> GradeThicknessPriceRow:
+    return GradeThicknessPriceRow(
+        year=int(row.year),
+        month=int(row.month),
+        location=str(row.location or ""),
+        steel_mill=str(row.steel_mill or ""),
+        category_name=str(row.category_name or ""),
+        grade=str(row.grade or ""),
+        thickness_range=str(row.thickness_range or ""),
+        thick_min=row.thick_min,
+        thick_min_operator=row.thick_min_operator,
+        thick_max=row.thick_max,
+        thick_max_operator=row.thick_max_operator,
+        base_price=Decimal(str(row.base_price)),
+        thickness_adjustment=Decimal(str(row.thickness_adjustment)),
+        processing_fee=Decimal(str(row.processing_fee)),
+        final_price=Decimal(str(row.final_price)),
+    )
+
+
+def _parse_thickness(text: str | None) -> Decimal | None:
+    raw = (text or "").strip()
+    if not raw:
+        return None
+    try:
+        return Decimal(raw)
+    except InvalidOperation:
+        return None
