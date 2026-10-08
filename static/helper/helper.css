@@ -268,6 +268,39 @@ a:hover { color: var(--color__link--hover); text-decoration: none; }
   text-decoration: none;
 }
 
+/* 仅微信内置浏览器注入。落在导航顶上留白里，不挡标题。 */
+.wechat-help-close {
+  position: fixed;
+  z-index: 90;
+  top: max(12px, env(safe-area-inset-top));
+  right: max(12px, env(safe-area-inset-right));
+  appearance: none;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  height: 32px;
+  margin: 0;
+  padding: 0 14px;
+  border: 0;
+  background: var(--color__button__background);
+  color: var(--color__button__text);
+  font-family: inherit;
+  font-size: 13px;
+  font-weight: 500;
+  letter-spacing: 0;
+  line-height: 1;
+  cursor: pointer;
+}
+.wechat-help-close:hover,
+.wechat-help-close:focus-visible {
+  background: var(--color__button__background--hover);
+  color: var(--color__button__text--hover);
+}
+.wechat-help-close:focus-visible {
+  outline: 1px solid var(--color__border--strong);
+  outline-offset: 3px;
+}
+
 .scope-pill {
   display: flex;
   flex-wrap: wrap;
