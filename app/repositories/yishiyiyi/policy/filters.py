@@ -3,7 +3,6 @@
 from decimal import Decimal
 from typing import TypeVar
 
-from sqlalchemy import distinct
 from sqlalchemy.orm import InstrumentedAttribute, Query, Session
 
 from app.models.yishiyiyi import SteelPricePolicy
@@ -92,7 +91,7 @@ def distinct_values(
     descending: bool = False,
 ) -> list[TValue]:
     """通用 distinct 值查询。"""
-    query = db.query(distinct(column))
+    query = db.query(column).distinct()
     if filter_none:
         query = query.filter(column.isnot(None))
     order_col = column.desc() if descending else column.asc()

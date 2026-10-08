@@ -6,7 +6,7 @@
 from collections.abc import Sequence
 from typing import TypeVar
 
-from sqlalchemy import distinct, func
+from sqlalchemy import func
 from sqlalchemy.orm import InstrumentedAttribute, Session
 
 from app.common.types.repository_types import SteelBasePriceFilterOptions
@@ -138,7 +138,7 @@ class SteelBasePriceRepository:
         descending: bool = False,
     ) -> list[TValue]:
         """通用 distinct 值查询。"""
-        query = db.query(distinct(column))
+        query = db.query(column).distinct()
         if filter_none:
             query = query.filter(column.isnot(None))
         order_col = column.desc() if descending else column.asc()

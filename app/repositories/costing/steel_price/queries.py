@@ -2,7 +2,7 @@
 
 from decimal import Decimal
 
-from sqlalchemy import case, distinct, func
+from sqlalchemy import case, func
 from sqlalchemy.orm import Query, Session
 
 from app.common.audit import AUDIT_APPROVED, AUDIT_PENDING
@@ -28,7 +28,7 @@ class SteelPriceQueries:
         """去重年度，降序。"""
         return [
             row[0]
-            for row in (db.query(distinct(SteelPrice.year)).order_by(SteelPrice.year.desc()).all())
+            for row in db.query(SteelPrice.year).distinct().order_by(SteelPrice.year.desc()).all()
             if row[0] is not None
         ]
 
@@ -217,26 +217,28 @@ class SteelPriceQueries:
     def get_filter_options(self, db: Session) -> SteelPriceFilterOptionValues:
         years = [
             row[0]
-            for row in db.query(distinct(SteelPrice.year)).order_by(SteelPrice.year.desc()).all()
+            for row in db.query(SteelPrice.year).distinct().order_by(SteelPrice.year.desc()).all()
         ]
         months = [
-            row[0] for row in db.query(distinct(SteelPrice.month)).order_by(SteelPrice.month).all()
+            row[0] for row in db.query(SteelPrice.month).distinct().order_by(SteelPrice.month).all()
         ]
         locations = [
             row[0]
-            for row in db.query(distinct(SteelPrice.location)).order_by(SteelPrice.location).all()
+            for row in db.query(SteelPrice.location).distinct().order_by(SteelPrice.location).all()
             if row[0]
         ]
         category_names = [
             row[0]
-            for row in db.query(distinct(SteelPrice.category_name))
+            for row in db.query(SteelPrice.category_name)
+            .distinct()
             .order_by(SteelPrice.category_name)
             .all()
             if row[0]
         ]
         audit_statuses = [
             row[0]
-            for row in db.query(distinct(SteelPrice.audit_status))
+            for row in db.query(SteelPrice.audit_status)
+            .distinct()
             .order_by(SteelPrice.audit_status)
             .all()
             if row[0]
@@ -251,7 +253,8 @@ class SteelPriceQueries:
 
     def get_distinct_months_for_year(self, db: Session, year: int) -> list[int]:
         results = (
-            db.query(distinct(SteelPrice.month))
+            db.query(SteelPrice.month)
+            .distinct()
             .filter(SteelPrice.year == year)
             .order_by(SteelPrice.month)
             .all()
