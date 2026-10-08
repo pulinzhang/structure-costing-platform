@@ -1,5 +1,7 @@
 # 异步任务 Service（`async_task/`）
 
+设计说明：[docs/async-task/async-task-design.md](../../../docs/async-task/async-task-design.md)。
+
 入队、进度快照、worker 执行。各切片 upload/calc 经本包发任务，不自己起线程。
 
 | 你要做什么 | 调 |

@@ -387,6 +387,8 @@ function showWeChatExportGuide() {
         dialog = document.createElement('div');
         dialog.id = 'wechatExportGuide';
         dialog.className = 'fixed inset-0 z-[100] flex items-center justify-center p-4';
+        // 助理面板是 110，打印预览是 120。提示必须盖在它们上面，否则对话里导出 Word 看不见。
+        dialog.style.zIndex = '140';
         dialog.setAttribute('role', 'alertdialog');
         dialog.setAttribute('aria-modal', 'true');
         dialog.setAttribute('aria-labelledby', 'wechatExportGuideTitle');

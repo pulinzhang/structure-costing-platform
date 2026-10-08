@@ -96,6 +96,12 @@ English: **Structural Parts Automated Costing Platform** / short **Costing Platf
 | [material-change/](engineering-change/material-change/README.md) | 材料变更（已落地）：同号切材料、不影响互换性；挂在工程变更下与设计变更并列 |
 | [t28-2025-07-import-bundle-test-design.md](engineering-change/t28-2025-07-import-bundle-test-design.md) | 测试：青岛 T28 · 五种改法一本即可上传 |
 
+## 异步任务 `async-task/`
+
+| 文档 | 状态 |
+|------|------|
+| [async-task-design.md](async-task/async-task-design.md) | 长任务 runner（已上线）：辅助库进度、进程内线程池、各业务路由轮询 |
+
 ## 文件溯源 `file-trace/`
 
 | 文档 | 状态 |

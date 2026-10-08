@@ -59,3 +59,40 @@
 @media print {
     .report-close-bar { display: none !important; }
 }
+
+/* 微信里与帮助页同一套：右上角黑底白字「关闭」，悬停变红。网页仍是页边灰字。 */
+.report-close-bar.is-wechat {
+    position: fixed;
+    top: max(12px, env(safe-area-inset-top));
+    right: max(12px, env(safe-area-inset-right));
+    left: auto;
+    z-index: 90;
+    height: auto;
+    max-width: none;
+    width: auto;
+    margin: 0;
+    padding: 0;
+}
+.report-close-bar.is-wechat button {
+    top: 0;
+    gap: 0;
+    height: 32px;
+    padding: 0 14px;
+    background: #010101;
+    color: #fff;
+    font-size: 13px;
+    font-weight: 500;
+    letter-spacing: 0;
+}
+.report-close-bar.is-wechat button span {
+    display: none;
+}
+.report-close-bar.is-wechat button:hover,
+.report-close-bar.is-wechat button:focus-visible {
+    background: #b70826;
+    color: #fff;
+}
+.report-close-bar.is-wechat button:focus-visible {
+    outline: 1px solid #1a1a1a;
+    outline-offset: 3px;
+}
