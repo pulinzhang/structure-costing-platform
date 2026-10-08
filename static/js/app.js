@@ -50,7 +50,7 @@ const pageLoaders = {
     'stamping-tonnage': () => import('./features/stamping/tonnage/list/index.js?v=49'),
     'stamping-process-fee-calc': () => import('./features/stamping/process-fee/calc/index.js?v=57'),
     'stamping-process-fee': () => import('./features/stamping/process-fee/list/index.js?v=81'),
-    'steel-price-list': () => import('./features/costing/steel-price/list/index.js?v=91'),
+    'steel-price-list': () => import('./features/costing/steel-price/list/index.js?v=90'),
     'steel-price-calc': () => import('./features/costing/steel-price/calc/index.js?v=38'),
     'stamping-part-cost-calc': () => import('./features/costing/stamping-part-cost/calc/index.js?v=41'),
     'stamping-part-cost': () => import('./features/costing/stamping-part-cost/list/index.js?v=105'),

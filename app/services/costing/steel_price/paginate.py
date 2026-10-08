@@ -43,8 +43,7 @@ def paginate_steel_prices(
     repository: SteelPriceRepository,
     db: Session,
     query: SteelPriceQuery,
-) -> tuple[list[SteelPriceResponse], int, SteelPriceListSummaryVO]:
-    """当前筛选下的一页，以及同一套条件的总条数和汇总。不含下拉。"""
+) -> tuple[list[SteelPriceResponse], int, SteelPriceFilterOptionsVO]:
     skip = (query.page - 1) * query.size
     year = query.year
     month = query.month
@@ -53,12 +52,27 @@ def paginate_steel_prices(
     grade = query.grade.strip() if query.grade else None
     steel_mill_id = SteelMillService().filter_id(db, query.steel_mill)
     audit_status = query.audit_status.strip() if query.audit_status else None
+    location_service = LocationService()
+    mill_abbreviations = _enabled_mill_abbreviations(db)
     locations: list[str] | None = None
     if location_raw:
-        locations = LocationService().expand_for_query(db, location_raw)
+        locations = location_service.expand_for_query(db, location_raw)
         if not locations:
-            return [], 0, SteelPriceListSummaryVO()
-    records, total, summary = repository.paginate(
+            options = repository.get_filter_options(db)
+            return (
+                [],
+                0,
+                SteelPriceFilterOptionsVO(
+                    years=list(options["years"]),
+                    months=list(options["months"]),
+                    locations=location_service.list_registered(db),
+                    category_names=list(options["category_names"]),
+                    steel_mills=mill_abbreviations,
+                    audit_statuses=list(options["audit_statuses"]),
+                    summary=SteelPriceListSummaryVO(),
+                ),
+            )
+    records, total = repository.paginate(
         db,
         year=year,
         month=month,
@@ -70,24 +84,26 @@ def paginate_steel_prices(
         skip=skip,
         limit=query.size,
     )
-    return (
-        attach_mill_abbreviation(db, records),
-        total,
-        SteelPriceListSummaryVO.model_validate(summary),
-    )
-
-
-def steel_price_filter_options(
-    repository: SteelPriceRepository,
-    db: Session,
-) -> SteelPriceFilterOptionsVO:
-    """下拉：表里有哪些年度、月份、基地、品类、钢厂、审核状态。"""
+    rows = attach_mill_abbreviation(db, records)
     options = repository.get_filter_options(db)
-    return SteelPriceFilterOptionsVO(
+    filters = SteelPriceFilterOptionsVO(
         years=list(options["years"]),
         months=list(options["months"]),
-        locations=LocationService().list_registered(db),
+        locations=location_service.list_registered(db),
         category_names=list(options["category_names"]),
-        steel_mills=_enabled_mill_abbreviations(db),
+        steel_mills=mill_abbreviations,
         audit_statuses=list(options["audit_statuses"]),
+        summary=SteelPriceListSummaryVO.model_validate(
+            repository.summarize_by_filters(
+                db,
+                year=year,
+                month=month,
+                locations=locations,
+                category_name=category_name,
+                grade=grade,
+                steel_mill_id=steel_mill_id,
+                audit_status=audit_status,
+            )
+        ),
     )
+    return rows, total, filters
