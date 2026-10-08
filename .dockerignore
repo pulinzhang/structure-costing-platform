@@ -22,6 +22,7 @@ env/
 .run/
 *.swp
 *.swo
+.DS_Store
 
 # Git
 .git/
@@ -43,12 +44,12 @@ htmlcov/
 # 不进镜像的仓库附属文件
 docs/
 *.md
-!requirements.txt
 .env.local
 .env.*.local
 excel_sample/
 dump_all.txt
 *.db
 *.sqlite
+*.sqlite3
 *.db-wal
 *.db-shm
