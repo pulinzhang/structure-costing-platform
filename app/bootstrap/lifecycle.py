@@ -4,12 +4,13 @@ import socket
 
 from app.config import ensure_directories, settings
 from app.database import AuxiliaryDatabaseConfig, DatabaseConfig
-from app.utils.logging_config import get_logger
+from app.utils.logging_config import attach_health_probe_access_filter, get_logger
 
 logger = get_logger("bootstrap.lifecycle")
 
 
 def on_startup() -> None:
+    attach_health_probe_access_filter()
     ensure_directories()
     from app import models as _orm_models  # noqa: F401
 
