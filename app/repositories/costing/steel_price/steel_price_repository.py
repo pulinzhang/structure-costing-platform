@@ -81,7 +81,7 @@ class SteelPriceRepository:
         audit_status: str | None = None,
         skip: int = 0,
         limit: int = 20,
-    ) -> tuple[list[SteelPrice], int, SteelPriceFilterSummary]:
+    ) -> tuple[list[SteelPrice], int]:
         return self._queries.paginate(
             db,
             year=year,

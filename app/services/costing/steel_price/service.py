@@ -19,7 +19,6 @@ from app.schemas.vo.steel_price_vo import (
     SteelPriceBatchAuditResultVO,
     SteelPriceBatchDeleteResultVO,
     SteelPriceFilterOptionsVO,
-    SteelPriceListSummaryVO,
     SteelPriceResponse,
 )
 from app.schemas.vo.user_vo import UserVO
@@ -34,10 +33,7 @@ from app.services.costing.steel_price.crud import (
     get_steel_price,
     update_steel_price,
 )
-from app.services.costing.steel_price.paginate import (
-    paginate_steel_prices,
-    steel_price_filter_options,
-)
+from app.services.costing.steel_price.paginate import paginate_steel_prices
 from app.services.costing.steel_price.pricing import FORMULA_VERSION
 
 __all__ = ["FORMULA_VERSION", "SteelPriceService"]
@@ -51,11 +47,8 @@ class SteelPriceService:
 
     def paginate(
         self, db: Session, query: SteelPriceQuery
-    ) -> tuple[list[SteelPriceResponse], int, SteelPriceListSummaryVO]:
+    ) -> tuple[list[SteelPriceResponse], int, SteelPriceFilterOptionsVO]:
         return paginate_steel_prices(self.repository, db, query)
-
-    def filter_options(self, db: Session) -> SteelPriceFilterOptionsVO:
-        return steel_price_filter_options(self.repository, db)
 
     def get_by_id(self, db: Session, record_id: int) -> SteelPriceResponse:
         return get_steel_price(self.repository, db, record_id)
