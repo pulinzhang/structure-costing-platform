@@ -132,7 +132,7 @@ if grep -qE '^STAMPING_PUBLISH_PORT=' .env; then
 fi
 
 echo
-echo "发版完成。本机探测: curl -I http://127.0.0.1:${publish_port}/login"
+echo "发版完成。本机探测: curl -fsS http://127.0.0.1:${publish_port}/health"
 echo "停止容器: bash deploy.sh --stop"
 echo "==> 跟随容器日志（Ctrl+C 回到 shell，容器继续运行）"
 
