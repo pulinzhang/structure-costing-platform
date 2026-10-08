@@ -30,7 +30,7 @@ services:
       - ./uploads:/opt/stamping-costing-platform/uploads
       - ./logs:/opt/stamping-costing-platform/logs
     healthcheck:
-      test: ["CMD", "curl", "-fsS", "http://127.0.0.1:8000/login"]
+      test: ["CMD", "curl", "-fsS", "http://127.0.0.1:8000/health"]
       interval: 30s
       timeout: 5s
       retries: 3

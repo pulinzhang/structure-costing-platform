@@ -8,7 +8,24 @@ import sys
 from logging.handlers import RotatingFileHandler
 from typing import Any
 
+from app.bootstrap.frontend import HEALTH_PATH
 from app.config import settings
+
+
+class HealthProbeAccessFilter(logging.Filter):
+    """容器健康检查不进 uvicorn 访问日志。"""
+
+    def filter(self, record: logging.LogRecord) -> bool:
+        args = record.args
+        return not (isinstance(args, tuple) and len(args) >= 3 and args[2] == HEALTH_PATH)
+
+
+def attach_health_probe_access_filter() -> None:
+    """挂到 uvicorn.access。必须在 uvicorn 配完日志之后调用，否则会被 dictConfig 清掉。"""
+    access_logger = logging.getLogger("uvicorn.access")
+    if any(isinstance(item, HealthProbeAccessFilter) for item in access_logger.filters):
+        return
+    access_logger.addFilter(HealthProbeAccessFilter())
 
 
 class LoggerConfig:
