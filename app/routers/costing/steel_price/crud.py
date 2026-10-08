@@ -28,6 +28,7 @@ from app.schemas.dto.steel_price_dto import (
 from app.schemas.vo.steel_price_vo import (
     SteelPriceBatchAuditResultVO,
     SteelPriceBatchDeleteResultVO,
+    SteelPriceFilterOptionsVO,
     SteelPriceResponse,
 )
 from app.schemas.vo.user_vo import UserVO
@@ -52,14 +53,27 @@ def list_steel_prices(
     current_user: UserVO = Depends(require_perm(Perm.STEEL_PRICE_LIST_VIEW)),
 ) -> ApiResponse[PageResult[SteelPriceResponse]]:
     """分页浏览钢材价格。"""
-    records, total, filters = _steel_price_service.paginate(db, query)
+    records, total, summary = _steel_price_service.paginate(db, query)
     return ApiResponse.list_(
         items=records,
         total=total,
         page=query.page,
         page_size=query.size,
-        filters=filters,
+        filters=summary,
     )
+
+
+@router.get(
+    "/filters",
+    response_model=ApiResponse[SteelPriceFilterOptionsVO],
+    summary="钢材价格筛选下拉",
+)
+def list_steel_price_filters(
+    db: Session = Depends(get_db),
+    current_user: UserVO = Depends(require_perm(Perm.STEEL_PRICE_LIST_VIEW)),
+) -> ApiResponse[SteelPriceFilterOptionsVO]:
+    """下拉选项。与分页无关，数据有增删后再取。"""
+    return ApiResponse.ok(data=_steel_price_service.filter_options(db))
 
 
 @router.post(

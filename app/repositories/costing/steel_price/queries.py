@@ -107,7 +107,7 @@ class SteelPriceQueries:
         audit_status: str | None = None,
         skip: int = 0,
         limit: int = 20,
-    ) -> tuple[list[SteelPrice], int]:
+    ) -> tuple[list[SteelPrice], int, SteelPriceFilterSummary]:
         query = self._build_list_query(
             db,
             year=year,
@@ -119,7 +119,7 @@ class SteelPriceQueries:
             steel_mill_id=steel_mill_id,
             audit_status=audit_status,
         )
-        total = query.count()
+        total, summary = self._count_and_summarize(query)
         records = (
             query.order_by(
                 SteelPrice.year.desc(),
@@ -135,7 +135,27 @@ class SteelPriceQueries:
             .limit(limit)
             .all()
         )
-        return records, total
+        return records, total, summary
+
+    def _count_and_summarize(self, query: Query[SteelPrice]) -> tuple[int, SteelPriceFilterSummary]:
+        """同一套筛选：总条数、均价、待审、已审，一次聚合。"""
+        row = query.with_entities(
+            func.count(SteelPrice.id).label("total"),
+            func.avg(SteelPrice.final_price_per_ton).label("avg_final_price"),
+            func.sum(case((SteelPrice.audit_status == AUDIT_PENDING, 1), else_=0)).label(
+                "pending_count"
+            ),
+            func.sum(case((SteelPrice.audit_status == AUDIT_APPROVED, 1), else_=0)).label(
+                "approved_count"
+            ),
+        ).one()
+        avg_value = row.avg_final_price
+        summary: SteelPriceFilterSummary = {
+            "avg_final_price": Decimal(str(avg_value)) if avg_value is not None else None,
+            "pending_count": int(row.pending_count or 0),
+            "approved_count": int(row.approved_count or 0),
+        }
+        return int(row.total or 0), summary
 
     def summarize_by_filters(
         self,
@@ -162,21 +182,8 @@ class SteelPriceQueries:
             steel_mill_id=steel_mill_id,
             audit_status=audit_status,
         )
-        row = query.with_entities(
-            func.avg(SteelPrice.final_price_per_ton).label("avg_final_price"),
-            func.sum(case((SteelPrice.audit_status == AUDIT_PENDING, 1), else_=0)).label(
-                "pending_count"
-            ),
-            func.sum(case((SteelPrice.audit_status == AUDIT_APPROVED, 1), else_=0)).label(
-                "approved_count"
-            ),
-        ).one()
-        avg_value = row.avg_final_price
-        return {
-            "avg_final_price": (Decimal(str(avg_value)) if avg_value is not None else None),
-            "pending_count": int(row.pending_count or 0),
-            "approved_count": int(row.approved_count or 0),
-        }
+        _total, summary = self._count_and_summarize(query)
+        return summary
 
     def list_for_export(
         self,

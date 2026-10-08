@@ -30,7 +30,6 @@ const steelPriceState = {
     page: 1,
     size: DEFAULT_PAGE_SIZE,
     totalPages: 1,
-    filtersLoaded: false,
     currentViewId: null,
     pendingFilters: null,
     batchAuditSubmitting: false,
@@ -76,9 +75,12 @@ function init() {
         onPage: (page) => loadData(page),
     });
     applyPermissionUi();
-    steelPriceState.filtersLoaded = false;
     steelPriceState.pendingFilters = readHashFilters();
-    loadData(1);
+    loadFilterOptions()
+        .catch((error) => {
+            console.error('加载钢材价格筛选项失败:', error);
+        })
+        .then(() => loadData(1));
 }
 
 function applyPermissionUi() {
@@ -165,18 +167,12 @@ async function loadData(page = 1) {
 
         const total = document.getElementById('steelPricePageInfo');
         if (total) total.textContent = `全${steelPriceState.total} 条`;
-        updateSteelPriceHud(steelPriceState.total, payload.filters?.summary || null);
+        updateSteelPriceHud(steelPriceState.total, payload.filters || null);
 
         paintPagination('steelPricePagination', 
                 steelPriceState.page,
                 steelPriceState.totalPages
             );
-
-        if (!steelPriceState.filtersLoaded && payload.filters) {
-            renderFilters(payload.filters);
-            applyPendingFiltersToSelects();
-            steelPriceState.filtersLoaded = true;
-        }
         filterBar?.paint();
     } catch (error) {
         console.error('加载钢材价格失败:', error);
@@ -196,6 +192,29 @@ async function loadData(page = 1) {
 
 function getFilterValue(id) {
     return document.getElementById(id)?.value || '';
+}
+
+async function loadFilterOptions() {
+    const current = {
+        year: getFilterValue('steelPriceYear'),
+        month: getFilterValue('steelPriceMonth'),
+        location: getFilterValue('steelPriceLocation'),
+        category_name: getFilterValue('steelPriceCategory'),
+        steel_mill: getFilterValue('steelPriceMill'),
+    };
+    const response = await HttpClient.get(`${API_BASE}/filters`);
+    const filters = response.data || {};
+    renderFilters(filters);
+    if (steelPriceState.pendingFilters) {
+        applyPendingFiltersToSelects();
+    } else {
+        setSelectValue('steelPriceYear', current.year);
+        setSelectValue('steelPriceMonth', current.month);
+        setSelectValue('steelPriceLocation', current.location);
+        setSelectValue('steelPriceCategory', current.category_name);
+        setSelectValue('steelPriceMill', current.steel_mill);
+    }
+    filterBar?.paint();
 }
 
 function renderFilters(filters) {
@@ -477,8 +496,11 @@ async function batchDeleteByFilters() {
                 `已删除${deleted} 条` + (skipped ? `，跳过已审核 ${skipped} 条` : ''),
             deleted > 0 ? 'success' : 'warning'
         );
-        steelPriceState.filtersLoaded = false;
-        loadData(1);
+        loadFilterOptions()
+            .catch((error) => {
+                console.error('加载钢材价格筛选项失败:', error);
+            })
+            .then(() => loadData(1));
     } catch (error) {
         console.error('批量删除钢材价格失败:', error);
     } finally {
@@ -843,7 +865,6 @@ async function saveRecord() {
         });
         showToast('更新成功', 'success');
         closeDrawer('editDrawer', 'editDrawerBackdrop');
-        steelPriceState.filtersLoaded = false;
         loadData(steelPriceState.page);
     } catch (error) {
         console.error('保存钢材价格失败:', error);
@@ -858,8 +879,11 @@ async function deleteRecord(id) {
         const nextPage = steelPriceState.records.length === 1 && steelPriceState.page > 1
             ? steelPriceState.page - 1
             : steelPriceState.page;
-        steelPriceState.filtersLoaded = false;
-        loadData(nextPage);
+        loadFilterOptions()
+            .catch((error) => {
+                console.error('加载钢材价格筛选项失败:', error);
+            })
+            .then(() => loadData(nextPage));
     } catch (error) {
         console.error('删除钢材价格失败:', error);
     }
