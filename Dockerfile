@@ -76,4 +76,5 @@ RUN mkdir -p \
 EXPOSE 8000
 
 # SQLite 场景用单进程；勿在镜像内盲目加 --workers
-CMD ["uvicorn", "main:app", "--host", "0.0.0.0", "--port", "8000"]
+# --no-access-log：访问日志只留请求中间件（含耗时），不重复打 Uvicorn access log
+CMD ["uvicorn", "main:app", "--host", "0.0.0.0", "--port", "8000", "--no-access-log"]
