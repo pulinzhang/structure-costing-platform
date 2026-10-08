@@ -337,6 +337,7 @@ ApiResponse[AsyncTaskAcceptedVO]
 | **engineering-change** | [目录](engineering-change/README.md) · [有效期（已落地）](engineering-change/bom-process-die-effective-period-design.md) · [工程变更切片+权限+契约（设计）](engineering-change/part-number-revision-design.md) · [T28 对照/拆测](engineering-change/t28-2025-07-import-bundle-test-design.md) |
 | **yishiyiyi** | [分类级厚度政策](yishiyiyi/thickness-policy-category-level-design.md) |
 | **costing** | [核价引擎](costing/costing-engine-design.md) · [总成核价](costing/assembly-costing-design.md) · [L0 成品核价（冻结）](costing/l0-assembly-costing-design.md) · [采购价格协议](costing/procurement-contract-report-design.md) · [协议价生效期（已否决）](costing/effective-period-design.md) · [暂估正式（已否决）](costing/provisional-final-settlement-design.md) · [锚点送货（已否决）](costing/anchor-true-up-design.md) |
+| **async_task** | [异步任务](async-task/async-task-design.md) |
 | **file_trace** | [文件溯源](file-trace/file-trace-design.md) |
 | **llm** | [切片实现导读](llm/llm-slice-design.md) · [产品契约](llm/llm-costing-analysis-report-design.md) |
 
