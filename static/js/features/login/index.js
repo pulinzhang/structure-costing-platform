@@ -9,6 +9,13 @@ const REMEMBER_KEY = 'brabus_operator_id';
 
 const BTN_IDLE_HTML = `登录`;
 const BTN_LOADING_HTML = `登录中…`;
+const APP_HOME = '/app#/dashboard';
+
+function openAppIfSignedIn() {
+    if (!getUserSession()) return false;
+    window.location.replace(APP_HOME);
+    return true;
+}
 
 /**
  * 读取本地登录会话
@@ -51,7 +58,7 @@ export function clearUserSession() {
 
     const goLogin = () => {
         localStorage.removeItem(SESSION_KEY);
-        window.location.href = '/login';
+        window.location.replace('/login');
     };
 
     if (token && typeof HttpClient !== 'undefined') {
@@ -248,6 +255,14 @@ function setButtonLoading(btn, isLoading) {
 
 export const LoginPage = {
     init() {
+        // 手机返回会把提交中的登录页从缓存里拿出来，按钮停在「登录中」。
+        // 还有 token 就回主界面；没有 token 就把按钮恢复成可点的「登录」。
+        window.addEventListener('pageshow', () => {
+            if (openAppIfSignedIn()) return;
+            setButtonLoading(document.getElementById('btnLogin'), false);
+        });
+        if (openAppIfSignedIn()) return;
+
         const form = document.getElementById('loginForm');
         const usernameInput = document.getElementById('loginUsername');
         const rememberInput = document.getElementById('loginRememberMe');
@@ -324,7 +339,7 @@ export const LoginPage = {
                 showToast('登录成功', 'success');
             }
 
-            window.location.href = '/app#/dashboard';
+            window.location.replace(APP_HOME);
         } catch (error) {
             showLoginError(error.message || '登录失败');
             setButtonLoading(btn, false);

@@ -56,6 +56,8 @@ def register_frontend(app: FastAPI) -> None:
     async def favicon() -> Response:
         return Response(status_code=204)
 
+    # 根路径就是主界面。没有 token，或登录过期，由主界面自己换到 /login。
+    # 这里若 302 到 /login，手机返回会落在登录页，并停在「登录中」。
     @app.get("/", include_in_schema=False)
-    async def root() -> RedirectResponse:
-        return RedirectResponse(url="/login", status_code=302)
+    async def root() -> FileResponse:
+        return FileResponse(_STATIC_DIR / "index.html", headers=_NO_CACHE)
