@@ -41,7 +41,7 @@ export function materialChangeUploadTemplate() {
                                             <option value="">请先选择采购基地</option>
                                         </select>
                                     </div>
-                                    <p class="mt-2 text-[10px] text-ink-faint">必选。这个月这个项目必须还在做，并且和「工程变更单（材质）」上的项目一致。</p>
+                                    <p class="mt-2 text-[10px] text-ink-faint">必选。下载模板前也要先选好。表里的举例会按这里的基地、项目和生效年月来写，并且要和「工程变更单（材质）」上的项目一致。</p>
                                 </div>
                             </div>
                             <div class="h-px bg-app-surface mx-6 mb-4"></div>
@@ -85,7 +85,7 @@ export function materialChangeUploadTemplate() {
                                             <div class="h-1.5 w-full bg-app-deep border border-line overflow-hidden mb-3">
                                                 <div id="ecmProgressBar" class="h-full bg-brand hud-brand-glow transition-all duration-300" style="width: 0%"></div>
                                             </div>
-                                            <p id="ecmProgressMsg" class="text-[11px] text-ink-muted leading-relaxed mb-0 whitespace-pre-wrap break-words max-h-48 overflow-y-auto">已提交解析队列</p>
+                                            <p id="ecmProgressMsg" class="text-[11px] text-ink-muted leading-relaxed mb-0 whitespace-pre-wrap break-words max-h-48 overflow-y-auto">正在导入，请稍候</p>
                                         </div>
                                     </div>
                                     <div id="ecmFilePreview" class="hidden mb-4"></div>
@@ -118,6 +118,7 @@ export function materialChangeUploadTemplate() {
                         <h5 class="text-[11px] font-bold text-ink-muted mb-0 tracking-widest uppercase">说明</h5>
                     </div>
                     <div class="p-4 space-y-3 text-[11px] text-ink-muted leading-relaxed">
+                        <p>先选好基地和项目再下载。模板里有两行举例，零件号、名称、冲压工厂、材料和料厚都要换成这个项目正在用的，不要原样上传。</p>
                         <p>只收表「工程变更单（材质）」。有一行不对，这一整份都不收。格子不要留空，也不要多打空格。</p>
                         <p>变更前的材料和料厚，必须是系统里这个月正在用的。还要再改，请换一个更晚的月份另传一份。</p>
                         <p>工艺表上的材料不会改。要撤销，到材料变更列表里删掉这一整份。</p>

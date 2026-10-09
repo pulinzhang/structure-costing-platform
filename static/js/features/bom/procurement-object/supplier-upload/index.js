@@ -2,7 +2,7 @@
  * 采购对象批量上传供应商
  */
 
-import { procurementObjectSupplierUploadTemplate } from './template.js?v=16';
+import { procurementObjectSupplierUploadTemplate } from './template.js?v=18';
 import { bindSyncUploadProgress } from '../../../../ui/sync-upload-progress.js?v=3';
 import { loadSnapshotCascade } from '../snapshot-cascade.js?v=5';
 
@@ -163,7 +163,7 @@ function resetForm() {
     loadCascade();
 }
 
-function showProgress(msg = '解析并写入数据库，请稍候') {
+function showProgress(msg = '正在导入，请稍候') {
     uploadProgress.setRunning(msg);
 }
 

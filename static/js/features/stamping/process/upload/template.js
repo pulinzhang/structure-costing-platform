@@ -87,7 +87,7 @@ export function uploadTemplate() {
                                                      class="h-full bg-brand hud-brand-glow transition-all duration-300"
                                                      style="width: 0%"></div>
                                             </div>
-                                            <p id="stampingProgressMsg" class="text-[11px] text-ink-muted leading-relaxed mb-0 whitespace-pre-wrap break-words max-h-48 overflow-y-auto">已提交解析队列</p>
+                                            <p id="stampingProgressMsg" class="text-[11px] text-ink-muted leading-relaxed mb-0 whitespace-pre-wrap break-words max-h-48 overflow-y-auto">正在导入，请稍候</p>
                                             <a id="stampingGradeAction" href="#/steel-grade-category"
                                                class="hidden mt-3 inline-flex items-center gap-1 text-[11px] text-brand-hud hover:text-brand-active">打开牌号分类</a>
                                         </div>
@@ -119,14 +119,17 @@ export function uploadTemplate() {
                         </div>
                     </div>
                     <div class="p-4 space-y-3 text-[11px] text-ink-muted leading-relaxed">
-                        <p class="text-warn">本页只导入第一次投产，选文件即可。项目和冲压工厂从表格抬头读取，基地按项目档案带出。项目没登记、已停用、这个月不能做，或同一个项目代号挂在多个基地上，整份退回。按档案里的项目代号和供应商全称保存。已经投产后再传：文件里已有的零件会更新，没写到的不会删；出现新零件号整份退回，换零件号走工程变更。这个范围已经算过冲压加工费的零件，不能删。不必先有模具布点。</p>
-                        <p>模具编号可空。冲压厂若要算模具费，再另传模具布点。</p>
-                        <p><span class="text-ink-muted">是否利废</span>只看本表「料片式样」。写成「利用××废料」（例如利用侧围废料），或格子里写「利废」（写成「利费」也算），就是利用件：材料按成品净重 × 废料月度价，不按新板价。写「要利废」是这件会产出废料给别人用，不是利用件。方料、卷料、条料只表示料片形状，和利废无关。</p>
-                        <p><span class="text-ink-muted">废料副产品</span>：长、宽、可制件数、料片式样都空，但有零件净重。这是家模带出的小件，材料按废料净重算，不算冲压费。不要只空长和宽、其它格还填着。</p>
-                        <p>模具布点是计划，不作为利废或废料副产品依据；与本表不一致时以本表为准。</p>
-                        <p>同一零件的工序号（如 OP30）不可重复，否则整单失败并标出 Excel 行号。</p>
-                        <p>普通件必须填写零件名称、材质和料厚。这三格有空的，整份退回并标出 Excel 行号。</p>
-                        <p>拼焊件：零件号整段合并，料片的长和宽可以按每一小片分开填。下载的模板里有普通件和拼焊的例子。</p>
+                        <p class="text-warn">这一页导入第一次投产，选好文件就能传。项目和冲压工厂从表头读取，基地按项目档案带出。</p>
+                        <p>项目没登记、已停用、这个月还不能做，或者同一个项目代号挂在两个基地上，这一整份都退回。保存时用档案里的项目代号和供应商全称。</p>
+                        <p>已经投产后再传：表里已有的零件会更新，没写到的不删。出现新零件号，这一整份都退回。换零件号请走设计变更。</p>
+                        <p>这个范围内已经算过冲压加工费的零件，不能删。不必先有模具布点。</p>
+                        <p>模具编号可以空着。冲压厂如果要算模具费，再另外上传模具布点。</p>
+                        <p><span class="text-ink-muted">是否利废</span>只看本表「料片式样」。写成「利用××废料」（例如利用侧围废料），或格子里写「利废」（写成「利费」也算），就是利用件。材料按成品净重乘废料月度价来算，不按新钢板的价。写「要利废」是这件会产出废料给别人用，不是利用件。方料、卷料、条料只表示料片形状，和利废无关。</p>
+                        <p><span class="text-ink-muted">废料副产品</span>：长、宽、可制件数、料片式样都空着，但要有零件净重。这是家模带出来的小件，材料按废料净重算，不算冲压费。不要只空长和宽、其它格子还填着。</p>
+                        <p>利废和废料副产品只看这张工艺表。和模具布点写得不一样时，以这张表为准。</p>
+                        <p>同一个零件的工序号不能重复，比如不能有两个 OP30。重复了这一整份都不收，并标出是哪一行。</p>
+                        <p>普通件必须填写零件名称、材质和料厚。这三格有空的，这一整份都退回，并标出是哪一行。</p>
+                        <p>拼焊件：零件号那一格上下合成一格，每一小片的长和宽分开填。下载的模板里有普通件和拼焊的例子。</p>
                     </div>
                 </div>
 

@@ -50,7 +50,7 @@ export function gaugeFeeUploadTemplate() {
                                     <select id="gfuVehicle" name="vehicle_model" required class="${UPLOAD_INPUT} hud-filter w-full max-w-[280px]">
                                         <option value="">请先选择基地</option>
                                     </select>
-                                    <p class="mt-2 text-[10px] text-ink-faint">选项与模具布点相同。须先选基地和项目才能下载模板；模板零件来自已入库模具布点。</p>
+                                    <p class="mt-2 text-[10px] text-ink-faint">先选基地和项目才能下载。模板里的零件来自已经上传的模具布点。</p>
                                 </div>
                             </div>
                             <div class="h-px bg-app-surface mx-6 mb-4"></div>
@@ -73,7 +73,7 @@ export function gaugeFeeUploadTemplate() {
                                             ${uploadFileHintHtml('gfuHint')}
                                             <input type="file" id="gfuFileInput" class="hidden" accept=".xlsx">
                                             ${uploadBrowseButtonHtml('gfuSelectFileBtn')}
-                                            <p class="text-[10px] text-ink-faint mt-4 mb-0">仅 .xlsx · 同步导入</p>
+                                            <p class="text-[10px] text-ink-faint mt-4 mb-0">只收 .xlsx</p>
                                         </div>
                                         <div id="gfuProgressPanel" class="hidden text-left w-full">
                                             <div class="flex items-center gap-2 min-w-0 mb-3">
@@ -85,7 +85,7 @@ export function gaugeFeeUploadTemplate() {
                                                      class="h-full bg-brand hud-brand-glow transition-all duration-300 animate-pulse"
                                                      style="width: 60%"></div>
                                             </div>
-                                            <p id="gfuProgressMsg" class="text-[11px] text-ink-muted leading-relaxed mb-0 whitespace-pre-wrap break-words max-h-48 overflow-y-auto">解析并写入数据库，请稍候</p>
+                                            <p id="gfuProgressMsg" class="text-[11px] text-ink-muted leading-relaxed mb-0 whitespace-pre-wrap break-words max-h-48 overflow-y-auto">正在导入，请稍候</p>
                                         </div>
                                     </div>
                                     <div id="gfuFilePreview" class="hidden mb-4"></div>
@@ -105,10 +105,10 @@ export function gaugeFeeUploadTemplate() {
                     <h5 class="text-[11px] font-bold text-ink-muted mb-0 tracking-widest uppercase">说明</h5>
                 </div>
                 <div class="p-4 space-y-3 text-[11px] text-ink-muted leading-relaxed">
-                    <p class="text-warn">模板零件来自该基地+项目的模具布点。没有模具布点则无需维护检具费，请先上传模具布点。</p>
-                    <p>检具费（万元）、项目分摊数量（万台）必填，不能为空或负数。模板预填 0.8 万 / 10 万台 / 生效。</p>
-                    <p>再上传会按这个基地和项目整份替换。不算年度分摊，也不算进成品价格。</p>
-                    <p>Excel 里的零件号必须已经在这个基地和项目的模具布点里，否则整份不收。</p>
+                    <p class="text-warn">模板里的零件来自这个基地、这个项目的模具布点。还没有模具布点，就先去上传模具布点，这里先不用维护检具费。</p>
+                    <p>检具费（万元）和项目分摊数量（万台）必填，不能空，也不能是负数。模板里先写成 0.8 万、10 万台、生效。</p>
+                    <p>再上传会把这个基地、这个项目整份换成新表。这里不算每年分摊多少，也不算进零件价格。</p>
+                    <p>表里的零件号必须已经在模具布点里，否则这一整份都不收。</p>
                 </div>
             </div>
         </div>

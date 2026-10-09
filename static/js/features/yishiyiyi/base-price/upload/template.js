@@ -82,7 +82,7 @@ export function basePriceUploadTemplate() {
                                          class="h-full bg-brand hud-brand-glow transition-all duration-300"
                                          style="width: 0%"></div>
                                 </div>
-                                <p id="basePriceProgressMsg" class="text-[11px] text-ink-muted leading-relaxed mb-0 whitespace-pre-wrap break-words max-h-48 overflow-y-auto">已提交解析队列</p>
+                                <p id="basePriceProgressMsg" class="text-[11px] text-ink-muted leading-relaxed mb-0 whitespace-pre-wrap break-words max-h-48 overflow-y-auto">正在导入，请稍候</p>
                                 <a id="basePriceGradeAction" href="#/steel-grade-category"
                                    class="hidden mt-3 inline-flex items-center gap-1 text-[11px] text-brand-hud hover:text-brand-active">打开牌号分类</a>
                             </div>
@@ -109,31 +109,24 @@ export function basePriceUploadTemplate() {
                         <h5 class="text-xs font-semibold text-ink-dim mb-0">导入说明</h5>
                     </div>
                     <div class="p-5">
-                        <h6 class="${UPLOAD_LABEL} mb-2.5">文件来源</h6>
+                        <h6 class="${UPLOAD_LABEL} mb-2.5">传什么</h6>
                         <ul class="list-disc list-inside text-xs text-ink-dim space-y-1.5 mb-4">
-                            <li>发布价格及中标钢厂 Excel 文件（如：外协钢板2025年7月订单(2025年8月冲焊件原料)发布价格及中标.xlsx）</li>
-                            <li>由奇瑞发布的中标钢厂及到厂原卷承兑价格</li>
+                            <li>钢厂发布的价格表，里面有中标钢厂和到厂原卷价格。</li>
+                            <li>价格是元/吨，不含税。</li>
                         </ul>
-                        <h6 class="${UPLOAD_LABEL} mb-2.5">数据位置</h6>
+                        <h6 class="${UPLOAD_LABEL} mb-2.5">表长什么样</h6>
                         <ul class="list-disc list-inside text-xs text-ink-dim space-y-1.5 mb-4">
-                            <li>表头位于第4-5行，数据从第6行开始</li>
-                            <li>包含钢种、牌号、参考规格及各基地的中标钢厂和到厂价格</li>
-                            <li>各基地价格列之后必须有表头含「加工费」的列，每个牌号填数字（元/吨）</li>
-                            <li>没有加工费列，或单元格为空、不是数字时整批拒绝。不会改读旁边的价格，也不会填默认加工费</li>
-                            <li>单价加加工费相对上月同一基地、同一规格的涨跌，超出系统设置里的基准价月度价格变动范围（默认 ±300 元/吨）则整批拒绝</li>
-                            <li>加工费大于系统设置里的基准价加工费上限则整批拒绝</li>
+                            <li>表头在第 4 到第 5 行，数据从第 6 行开始。</li>
+                            <li>要有钢种、牌号、参考规格，以及各基地的中标钢厂和到厂价格。</li>
+                            <li>每个基地的价格后面，必须有一列标题里带「加工费」。每个牌号都要填数字，单位是元/吨。</li>
+                            <li>没有加工费这一列，或者格子是空的、不是数字，这一整份都不收。不会改去读旁边的价格，也不会自动填一个加工费。</li>
+                            <li>单价加上加工费，跟上个月同一基地、同一规格比，涨跌超过系统里设的范围（默认上下 300 元/吨），这一整份都不收。</li>
+                            <li>加工费超过系统里设的上限，这一整份都不收。</li>
                         </ul>
-                        <h6 class="${UPLOAD_LABEL} mb-2.5">Upsert 规则</h6>
+                        <h6 class="${UPLOAD_LABEL} mb-2.5">再传一份时</h6>
                         <ul class="list-disc list-inside text-xs text-ink-dim space-y-1.5 mb-4">
-                            <li>按 (年度, 月份, 基地, 钢厂, 牌号, 厚度, 宽度) 匹配</li>
-                            <li>已存在的记录会被覆盖替换</li>
-                            <li>支持新增和更新</li>
-                        </ul>
-                        <h6 class="${UPLOAD_LABEL} mb-2.5">支持的数据</h6>
-                        <ul class="list-disc list-inside text-xs text-ink-dim space-y-1.5">
-                            <li>只导入基地页已启用的采购基地；宽表其它基地列会跳过</li>
-                            <li>中标钢厂及到厂原卷承兑价格</li>
-                            <li>价格单位：元/吨，不含税</li>
+                            <li>同一年、同一个月、同一个基地、同一家钢厂、同一个牌号、同一厚度和宽度，再传会盖掉原来的。没有的会新增。</li>
+                            <li>只导入已经启用的采购基地。表里其它基地的列会跳过。</li>
                         </ul>
                     </div>
                 </div>

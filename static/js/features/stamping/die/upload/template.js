@@ -96,7 +96,7 @@ export function dieUploadTemplate() {
                                             <div class="h-1.5 w-full bg-app-deep border border-line overflow-hidden mb-3">
                                                 <div id="dieProgressBar" class="h-full bg-brand hud-brand-glow transition-all duration-300" style="width: 0%"></div>
                                             </div>
-                                            <p id="dieProgressMsg" class="text-[11px] text-ink-muted leading-relaxed mb-0 whitespace-pre-wrap break-words max-h-48 overflow-y-auto">已提交解析队列</p>
+                                            <p id="dieProgressMsg" class="text-[11px] text-ink-muted leading-relaxed mb-0 whitespace-pre-wrap break-words max-h-48 overflow-y-auto">正在导入，请稍候</p>
                                         </div>
                                     </div>
                                     <div id="dieFilePreview" class="hidden mb-4"></div>
@@ -119,16 +119,15 @@ export function dieUploadTemplate() {
                         </div>
                     </div>
                     <div class="p-4 space-y-3 text-[11px] text-ink-muted leading-relaxed">
-                        <p>请先选择采购基地，再选择这个月可以上传的项目。</p>
-                        <p>文件名或标题里的项目必须和所选一致，不一致将退回、不会入库。</p>
-                        <p>本页不选冲压厂：开模时尚无定点供应商。</p>
-                        <p>模具编号可空，系统按规则自动编号；已填写的编号保持不变。</p>
-                        <p>废料副产品：长、宽、可制件数、板料形状都空，但有零件净重。这是家模带出的小件，分摊比例记 0，不算模具费。不要只空长和宽、其它格还填着。</p>
-                        <p class="font-mono text-[10px] text-ink-dim leading-relaxed">
-                            示意：<span class="text-ink-muted">T13J项目冲压模具布点工艺清单.xlsx</span>
-                        </p>
-                        <p>本表用来算模具费。本页只保存尺寸和分摊比例，不算金额，金额在「冲压模具费计算」里算。第一次投产按项目的起止时间。已经投产后再传：只更新文件里已有的零件，没写到的不删。出现新零件号，整份退回。已经改过的分摊比例按零件号保留；废料副产品一律记 0。</p>
-                        <p>同一零件的工序号不能重复。不导入简图与费用列。</p>
+                        <p>请先选采购基地，再选这个月可以上传的项目。</p>
+                        <p>文件名或标题里的项目必须和所选的一样。不一样就退回，不会保存。</p>
+                        <p>这一页不用选冲压厂。开模的时候往往还没定供应商。</p>
+                        <p>模具编号可以空着，空着的由系统编号。已经填了的编号保持不变。</p>
+                        <p>废料副产品：长、宽、可制件数、板料形状都空着，但要有零件净重。这是家模带出来的小件，分摊比例记 0，不算模具费。不要只空长和宽、其它格子还填着。</p>
+                        <p>这张表用来以后算模具费。本页只保存尺寸和分摊比例，不算金额。金额在「冲压模具费计算」里算。</p>
+                        <p>第一次投产，按项目的开始和结束时间保存。已经投产后再传，只更新表里写到的零件，没写到的不删。出现新零件号，这一整份都退回。</p>
+                        <p>已经改过的分摊比例，按零件号保留。废料副产品一律记 0。</p>
+                        <p>同一个零件的工序号不能重复。简图和费用这两列不导入。</p>
                     </div>
                 </div>
                 <div class="bg-app-surface border border-line">

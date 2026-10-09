@@ -3,7 +3,7 @@
  * 同步导入：基地 + 年度必选，仅 .xlsx
  */
 
-import { tonnageUploadTemplate } from './template.js?v=16';
+import { tonnageUploadTemplate } from './template.js?v=18';
 import { can } from '../../../../core/permissions.js?v=10';
 import { bindSyncUploadProgress } from '../../../../ui/sync-upload-progress.js?v=3';
 
@@ -200,7 +200,7 @@ const TonnageUploadPage = {
         if (year) year.value = '';
     },
 
-    showProgress(msg = '解析并写入数据库，请稍候') {
+    showProgress(msg = '正在导入，请稍候') {
         uploadProgress.setRunning(msg);
         document.getElementById('tonnageUploadZone')?.classList.remove('border-brand');
     },

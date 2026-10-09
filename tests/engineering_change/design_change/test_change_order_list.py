@@ -373,7 +373,7 @@ def test_failed_upload_lists_message_without_change_order(memory_db: Session) ->
             created_by="tester",
             updated_by="tester",
             status="failed",
-            message="工程变更单第2行：变更后总成不能为空",
+            message="设计变更单第2行：变更后总成不能为空",
         ),
     )
     memory_db.commit()
@@ -384,7 +384,7 @@ def test_failed_upload_lists_message_without_change_order(memory_db: Session) ->
     assert total == 1
     assert items[0].change_order_id is None
     assert items[0].status == "failed"
-    assert items[0].message == "工程变更单第2行：变更后总成不能为空"
+    assert items[0].message == "设计变更单第2行：变更后总成不能为空"
     assert items[0].vehicle_model == "T2AA"
 
 

@@ -94,11 +94,7 @@ export function weldingUnitPriceUploadTemplate() {
                                             </div>
                                             <input type="file" id="weldingUnitPriceUploadFileInput" class="hidden" accept=".xlsx">
                                             ${uploadBrowseButtonHtml('weldingUnitPriceUploadSelectFileBtn')}
-                                            <p class="text-[10px] text-ink-faint mt-4 mb-0">
-                                                仅 .xlsx
-                                                <span class="mx-2 text-ink-faint">|</span>
-                                                同步导入
-                                            </p>
+                                            <p class="text-[10px] text-ink-faint mt-4 mb-0">只收 .xlsx</p>
                                         </div>
 
                                         <div id="weldingUnitPriceUploadProgressPanel" class="hidden text-left w-full">
@@ -111,7 +107,7 @@ export function weldingUnitPriceUploadTemplate() {
                                                      class="h-full bg-brand hud-brand-glow transition-all duration-300 animate-pulse"
                                                      style="width: 60%"></div>
                                             </div>
-                                            <p id="weldingUnitPriceUploadProgressMsg" class="text-[11px] text-ink-muted leading-relaxed mb-0 whitespace-pre-wrap break-words max-h-48 overflow-y-auto">解析并写入数据库，请稍候</p>
+                                            <p id="weldingUnitPriceUploadProgressMsg" class="text-[11px] text-ink-muted leading-relaxed mb-0 whitespace-pre-wrap break-words max-h-48 overflow-y-auto">正在导入，请稍候</p>
                                         </div>
                                     </div>
 
@@ -157,16 +153,15 @@ export function weldingUnitPriceUploadTemplate() {
                             <span class="${HUD_LED}"></span>
                             <h5 class="text-[11px] font-bold text-ink-muted mb-0 tracking-widest uppercase">格式说明</h5>
                         </div>
-                        <span class="text-[10px] text-ink-dim tracking-wider">SPEC</span>
                     </div>
                     <div class="p-4 space-y-4">
                         <div>
-                            <h6 class="text-[10px] uppercase tracking-wider text-ink-dim mb-2">固定四列</h6>
+                            <h6 class="text-[10px] uppercase tracking-wider text-ink-dim mb-2">四列怎么填</h6>
                             <ul class="list-disc list-inside text-xs text-ink-dim space-y-1.5">
-                                <li><span class="text-ink-muted">名称</span>：须与下方标准工艺目录<span class="font-semibold text-ink-muted">完全一致</span></li>
-                                <li><span class="text-ink-muted">单位</span>：须与目录单位一致（个 / CM / MM / 平方）</li>
-                                <li><span class="text-ink-muted">费用</span>：工费单价（元），固定保留四位小数</li>
-                                <li><span class="text-ink-muted">备注</span>：可选</li>
+                                <li><span class="text-ink-muted">名称</span>必须和下方目录一字不差。</li>
+                                <li><span class="text-ink-muted">单位</span>也必须和目录一样，只能是：个、CM、MM、平方。</li>
+                                <li><span class="text-ink-muted">费用</span>是工费单价，单位是元，保留四位小数。</li>
+                                <li><span class="text-ink-muted">备注</span>可以空着。</li>
                             </ul>
                         </div>
                         <div>
@@ -175,7 +170,7 @@ export function weldingUnitPriceUploadTemplate() {
                                 <span id="weldingUnitPriceCatalogCount" class="text-[10px] font-mono text-ink-faint">—</span>
                             </div>
                             <p class="text-[10px] text-ink-dim mb-2 leading-relaxed">
-                                名称写错一字（如「拆边」）导入会整批中止；模板另含同名工作表。
+                                名称写错一个字（比如写成「拆边」），这一整份都不收。模板里另外有一张同名的表，可以对照。
                             </p>
                             <div class="overflow-hidden border border-line max-h-[320px] overflow-y-auto">
                                 <table class="w-full">
@@ -194,13 +189,12 @@ export function weldingUnitPriceUploadTemplate() {
                             </div>
                         </div>
                         <div>
-                            <h6 class="text-[10px] uppercase tracking-wider text-ink-dim mb-2">写入规则</h6>
+                            <h6 class="text-[10px] uppercase tracking-wider text-ink-dim mb-2">再传一份时</h6>
                             <ul class="list-disc list-inside text-xs text-ink-dim space-y-1.5">
-                                <li>同一条按基地、年度、名称区分，不能重复</li>
-                                <li>已存在则更新费用/单位/备注，不存在则新增</li>
-                                <li>列表导出含基地/年份/审核列；导入只读名称/单位/费用/备注（基地/年度以本页选择为准）</li>
-                                <li>非目录名称 / 单位不匹配 → 整批中止</li>
-                                <li>仅支持 .xlsx，同步导入无需等待队列</li>
+                                <li>同一个基地、同一年、同一个名称，再传会更新费用、单位和备注。没有的会新增。</li>
+                                <li>基地和年度以本页选择为准。表里只要名称、单位、费用、备注。</li>
+                                <li>名称不在目录里，或者单位和目录对不上，这一整份都不收。</li>
+                                <li>只收 .xlsx。</li>
                             </ul>
                         </div>
                     </div>

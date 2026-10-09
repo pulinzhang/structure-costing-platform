@@ -3,7 +3,7 @@
  * 下载模板：基地 + 项目 + 年度；导入：基地 + 年度
  */
 
-import { annualPartPriceUploadTemplate } from './template.js?v=24';
+import { annualPartPriceUploadTemplate } from './template.js?v=26';
 import { bindSyncUploadProgress } from '../../../../ui/sync-upload-progress.js?v=3';
 
 const API_BASE = '/api/bom/annual-part-price';
@@ -265,7 +265,7 @@ const AnnualPartPriceUploadPage = {
         this.loadCascadeFilters({ clearVehicleModel: true });
     },
 
-    showProgress(msg = '解析并写入数据库，请稍候') {
+    showProgress(msg = '正在导入，请稍候') {
         uploadProgress.setRunning(msg);
         document.getElementById('annualPartPriceUploadZone')?.classList.remove('border-brand');
     },

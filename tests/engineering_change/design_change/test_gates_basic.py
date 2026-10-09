@@ -32,11 +32,14 @@ from app.parsers.engineering_change.design_change.change_order_parser import (
     parse_change_order_sheet,
 )
 from app.services.engineering_change.design_change.upload.template_builder import (
+    BOM_SAMPLES,
     CHANGE_ORDER_SAMPLES,
     PROCESS_SAMPLES,
     SCENARIO_SAMPLES,
     TEMPLATE_FILENAME,
+    TemplateMeta,
     build_engineering_change_template,
+    example_book,
 )
 
 
@@ -102,19 +105,19 @@ def test_template_change_order_examples_and_parses_as_book() -> None:
     assert filename == TEMPLATE_FILENAME
     workbook = load_workbook(BytesIO(content), data_only=True)
     assert workbook.sheetnames == [
-        "工程变更单",
-        "工程变更填写说明",
+        "设计变更单",
+        "设计变更填写说明",
         "车身件材料清单",
         "材料清单填写说明",
         "冲压工艺确认表",
         "工艺确认填写说明",
     ]
-    instructions = workbook["工程变更填写说明"]
+    instructions = workbook["设计变更填写说明"]
     instruction_text = " ".join(str(instructions.cell(row, 1).value or "") for row in range(1, 10))
     assert "项目代号" in instruction_text
     assert "同一个字" in instruction_text
     assert "采购对象" in instruction_text
-    change_order = workbook["工程变更单"]
+    change_order = workbook["设计变更单"]
     types = [change_order.cell(row, 6).value for row in range(5, 5 + len(CHANGE_ORDER_SAMPLES))]
     assert types == [sample.change_type for sample in CHANGE_ORDER_SAMPLES]
     assert change_order.cell(4 + len(CHANGE_ORDER_SAMPLES), 6).value == CHANGE_TYPE_ADD_PART
@@ -149,6 +152,45 @@ def test_template_change_order_examples_and_parses_as_book() -> None:
         row.after_assembly_part_number for row in rows if row.after_assembly_part_number
     ]
     assert len(after_numbers) == len(set(after_numbers))
+
+
+def test_scope_template_follows_selected_project() -> None:
+    meta = TemplateMeta(
+        location="大连",
+        vehicle_model="DEMO",
+        customer_name="请填写顾客名称",
+        period_label="2026年10月",
+        change_version="EC-202610",
+        stamping_supplier="请填写冲压工厂",
+        bom_version_label="V1",
+        header_date="2026-10-01",
+        doc_no="EC-DEMO-202610",
+    )
+    content, filename = build_engineering_change_template(example_book(meta))
+    assert filename == "设计变更导入模板_大连_DEMO.xlsx"
+    workbook = load_workbook(BytesIO(content), data_only=True)
+    change_order = workbook["设计变更单"]
+    assert change_order["A5"].value == "DEMO"
+    assert change_order["B5"].value == "2026年10月"
+    assert change_order["C5"].value == "EX-STOP-AA"
+    bom = workbook["车身件材料清单"]
+    assert bom["A3"].value == "项目代号：  DEMO"
+    assert "请填写顾客名称" in str(bom["N3"].value)
+    process = workbook["冲压工艺确认表"]
+    assert process["D2"].value == "DEMO项目冲压工艺确认表-设计变更"
+    assert process["D3"].value == "请填写冲压工厂"
+    visible = " ".join(
+        str(cell.value)
+        for sheet in workbook.worksheets
+        for row in sheet.iter_rows()
+        for cell in row
+        if cell.value
+    )
+    workbook.close()
+    assert "青岛" not in visible
+    assert "T28" not in visible
+    assert "奇瑞" not in visible
+    assert "海众" not in visible
 
 
 def test_template_passes_import_change_order_and_bom_l0_gates() -> None:
@@ -292,7 +334,7 @@ def _change_order_xlsx(
     workbook = Workbook()
     sheet = workbook.active
     assert sheet is not None
-    sheet.title = "工程变更单"
+    sheet.title = "设计变更单"
     for col, header in enumerate(CHANGE_ORDER_HEADERS, start=1):
         sheet.cell(1, col, header)
     for excel_row, values in enumerate(rows, start=2):
@@ -612,7 +654,8 @@ def test_template_bom_l1_leaves_have_part_sketches() -> None:
     ]
     assert required
     assert all(node.sketch_bytes for node in required)
-    skipped = [node for node in leaves if node.part_number == "504000341AA"]
+    not_install = next(sample.l1_part_number for sample in BOM_SAMPLES if sample.is_not_assembled)
+    skipped = [node for node in leaves if node.part_number == not_install]
     assert skipped
     assert all(not node.sketch_bytes for node in skipped)
     assert all(NOT_INSTALL_REMARK in (node.remark or "") for node in skipped)
@@ -685,7 +728,7 @@ def test_scenario_template_parses_and_passes_gates(scenario) -> None:
 
     content, _ = build_engineering_change_template(scenario.book)
     workbook = load_workbook(BytesIO(content), data_only=True)
-    change_order = workbook["工程变更单"]
+    change_order = workbook["设计变更单"]
     merged = {str(item) for item in change_order.merged_cells.ranges}
     workbook.close()
     assert "A5:A5" not in merged
@@ -722,7 +765,7 @@ def test_empty_change_order_rejected() -> None:
     workbook = Workbook()
     sheet = workbook.active
     assert sheet is not None
-    sheet.title = "工程变更单"
+    sheet.title = "设计变更单"
     headers = (
         "项目",
         "生效年月",

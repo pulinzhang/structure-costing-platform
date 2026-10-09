@@ -2,7 +2,7 @@
  * 冲压检具费同步上传
  */
 
-import { gaugeFeeUploadTemplate } from './template.js?v=15';
+import { gaugeFeeUploadTemplate } from './template.js?v=16';
 import { setDropzoneDragActive } from '../../../../ui/upload-dropzone.js?v=3';
 import { bindSyncUploadProgress } from '../../../../ui/sync-upload-progress.js?v=3';
 
@@ -159,7 +159,7 @@ const GaugeFeeUploadPage = {
         if (submitBtn) submitBtn.disabled = true;
     },
 
-    showProgress(msg = '解析并写入数据库，请稍候') {
+    showProgress(msg = '正在导入，请稍候') {
         uploadProgress.setRunning(msg);
         document.getElementById('gfuZone')?.classList.remove('border-brand');
     },

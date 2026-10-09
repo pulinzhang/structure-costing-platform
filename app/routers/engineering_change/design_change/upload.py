@@ -2,7 +2,7 @@
 
 from urllib.parse import quote
 
-from fastapi import APIRouter, Depends, File, Form, UploadFile
+from fastapi import APIRouter, Depends, File, Form, Query, UploadFile
 from fastapi.responses import StreamingResponse
 from sqlalchemy.orm import Session
 
@@ -30,10 +30,21 @@ _upload_service = EngineeringChangeUploadService()
 
 @router.get("/template", summary="下载设计变更导入模板")
 def download_template(
+    location: str = Query(..., min_length=1),
+    vehicle_model: str = Query(..., min_length=1),
+    effective_year: int = Query(...),
+    effective_month: int = Query(..., ge=1, le=12),
+    db: Session = Depends(get_db),
     current_user: UserVO = Depends(require_perm(Perm.ENGINEERING_CHANGE_UPLOAD_UPLOAD)),
 ) -> StreamingResponse:
     _ = current_user
-    content, filename = _upload_service.build_template()
+    content, filename = _upload_service.build_template(
+        db,
+        location=location,
+        vehicle_model=vehicle_model,
+        effective_year=effective_year,
+        effective_month=effective_month,
+    )
     return StreamingResponse(
         iter([content]),
         media_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",

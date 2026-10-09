@@ -117,7 +117,7 @@ export function bomUploadTemplate() {
                                                      class="h-full bg-brand hud-brand-glow transition-all duration-300"
                                                      style="width: 0%"></div>
                                             </div>
-                                            <p id="bomUploadProgressMsg" class="text-[11px] text-ink-muted leading-relaxed mb-0 whitespace-pre-wrap break-words max-h-48 overflow-y-auto">已提交解析队列</p>
+                                            <p id="bomUploadProgressMsg" class="text-[11px] text-ink-muted leading-relaxed mb-0 whitespace-pre-wrap break-words max-h-48 overflow-y-auto">正在导入，请稍候</p>
                                         </div>
                                     </div>
 
@@ -130,7 +130,7 @@ export function bomUploadTemplate() {
                                             <div class="min-w-0">
                                                 <h6 id="bomUploadErrorTitle"
                                                     class="text-[11px] font-semibold text-danger mb-0.5 tracking-wide">导入失败</h6>
-                                                <p class="text-[10px] text-ink-muted mb-0">请对照 Excel 行号修改原始表后重新上传，可复制全文</p>
+                                                <p class="text-[10px] text-ink-muted mb-0">请按提示里的行号改好原表后再上传。这段话可以复制。</p>
                                             </div>
                                             <div class="flex items-center gap-1 shrink-0">
                                                 <button type="button"
@@ -168,33 +168,32 @@ export function bomUploadTemplate() {
                             <span class="${HUD_LED}"></span>
                             <h5 class="text-[11px] font-bold text-ink-muted mb-0 tracking-widest uppercase">导入说明</h5>
                         </div>
-                        <span class="text-[10px] text-ink-dim tracking-wider">SPEC</span>
                     </div>
                     <div class="p-4 space-y-4">
                         <div>
-                            <h6 class="text-[10px] uppercase tracking-wider text-ink-dim mb-2">文件要求</h6>
+                            <h6 class="text-[10px] uppercase tracking-wider text-ink-dim mb-2">传什么</h6>
                             <ul class="list-disc list-inside text-xs text-ink-dim space-y-1.5">
-                                <li>车身件产品材料清单 Excel（.xlsx / .xls）</li>
-                                <li>要写出总成、一级、二级</li>
-                                <li>项目、版本从文件头自动解析</li>
+                                <li>车身件材料清单，.xlsx 或 .xls。</li>
+                                <li>要写出总成、一级零件、二级零件。</li>
+                                <li>项目和版本从表头读取。</li>
                             </ul>
                         </div>
                         <div>
-                            <h6 class="text-[10px] uppercase tracking-wider text-ink-dim mb-2">对齐规则</h6>
+                            <h6 class="text-[10px] uppercase tracking-wider text-ink-dim mb-2">再传一份时</h6>
                             <ul class="list-disc list-inside text-xs text-ink-dim space-y-1.5">
-                                <li>第一次投产按项目的起止时间；已经投产后再传，只更新文件里已有的总成</li>
-                                <li>文件里出现新零件号会整份拒绝，换零件号请走工程变更</li>
-                                <li>文件里没写到的总成会留下，不会整份删掉重来</li>
-                                <li>有内部号的物料必须一物一码（同一零件号对应唯一内部号，反之亦然）</li>
-                                <li>同一分总成挂在不同总成下时，焊信与二级子件单车用量必须相同</li>
+                                <li>第一次投产，按项目的开始和结束时间保存。已经投产后再传，只更新表里写到的总成。</li>
+                                <li>表里出现新零件号，这一整份都不收。换零件号请走设计变更。</li>
+                                <li>表里没写到的总成会留下，不会整份删掉重来。</li>
+                                <li>填了内部号的，一个零件号只能对应一个内部号，一个内部号也只能对应一个零件号。</li>
+                                <li>同一个分总成挂在不同总成下面时，焊接信息和下面二级零件每台车用几个，必须一样。</li>
                             </ul>
                         </div>
                         <div>
-                            <h6 class="text-[10px] uppercase tracking-wider text-ink-dim mb-2">节点角色</h6>
+                            <h6 class="text-[10px] uppercase tracking-wider text-ink-dim mb-2">系统怎么认</h6>
                             <ul class="list-disc list-inside text-xs text-ink-dim space-y-1.5">
-                                <li>板料（料厚 T=…）→ 自制件</li>
-                                <li>标准件（M6 等）→ 外购件</li>
-                                <li>胶类用量 mm → 耗材</li>
+                                <li>板料（料厚写成 T=…）按自制件。</li>
+                                <li>标准件（如 M6）按外购件。</li>
+                                <li>胶的用量如果是毫米，按耗材。</li>
                             </ul>
                         </div>
                     </div>

@@ -3,7 +3,7 @@
  * 与冲压工艺上传同一模式：task_id + 进度轮询
  */
 
-import { bomUploadTemplate } from './template.js?v=17';
+import { bomUploadTemplate } from './template.js?v=19';
 import { uploadSubmitLabelHtml } from '../../../../ui/upload-actions.js?v=2';
 import { paintUploadProgressIcon } from '../../../../ui/sync-upload-progress.js?v=4';
 import { can } from '../../../../core/permissions.js?v=8';
@@ -281,7 +281,7 @@ const BomUploadPage = {
         if (vehicle) vehicle.value = '';
     },
 
-    showProgress(progress = 0, msg = '已提交解析队列') {
+    showProgress(progress = 0, msg = '正在导入，请稍候') {
         const idle = document.getElementById('bomUploadDropIdle');
         const panel = document.getElementById('bomUploadProgressPanel');
         const zone = document.getElementById('bomUploadZone');
@@ -301,7 +301,7 @@ const BomUploadPage = {
         if (idle) idle.classList.remove('hidden');
         if (panel) panel.classList.add('hidden');
         if (zone) zone.classList.remove('pointer-events-none');
-        this.updateProgress(0, '已提交解析队列');
+        this.updateProgress(0, '正在导入，请稍候');
     },
 
     updateProgress(progress, msg, status) {
@@ -534,7 +534,7 @@ const BomUploadPage = {
         const fileName = this.selectedFile.name;
         this.hideError();
         this.setUploading(true);
-        this.showProgress(0, '已提交解析队列');
+        this.showProgress(0, '正在导入，请稍候');
 
         try {
             const res = await HttpClient.post('/api/bom/upload', formData, {

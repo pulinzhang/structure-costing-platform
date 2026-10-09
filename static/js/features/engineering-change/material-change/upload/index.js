@@ -2,7 +2,7 @@
  * 材料变更上传页
  */
 
-import { materialChangeUploadTemplate } from './template.js?v=7';
+import { materialChangeUploadTemplate } from './template.js?v=9';
 import { uploadSubmitLabelHtml } from '../../../../ui/upload-actions.js?v=2';
 import { can } from '../../../../core/permissions.js?v=8';
 import {
@@ -256,7 +256,7 @@ const MaterialChangeUploadPage = {
         await navigator.clipboard.writeText(text);
     },
 
-    showProgress(progress = 0, msg = '已提交解析队列') {
+    showProgress(progress = 0, msg = '正在导入，请稍候') {
         document.getElementById('ecmDropIdle')?.classList.add('hidden');
         document.getElementById('ecmProgressPanel')?.classList.remove('hidden');
         document.getElementById('ecmUploadZone')?.classList.add('pointer-events-none');
@@ -267,7 +267,7 @@ const MaterialChangeUploadPage = {
         document.getElementById('ecmDropIdle')?.classList.remove('hidden');
         document.getElementById('ecmProgressPanel')?.classList.add('hidden');
         document.getElementById('ecmUploadZone')?.classList.remove('pointer-events-none');
-        this.updateProgress(0, '已提交解析队列');
+        this.updateProgress(0, '正在导入，请稍候');
     },
 
     updateProgress(progress, msg, status) {
@@ -301,9 +301,27 @@ const MaterialChangeUploadPage = {
     },
 
     async downloadTemplate() {
+        const location = document.getElementById('ecmUploadLocation')?.value?.trim();
+        const vehicleModel = document.getElementById('ecmUploadVehicleModel')?.value?.trim();
+        const year = Number(document.getElementById('ecmUploadYear')?.value);
+        const month = Number(document.getElementById('ecmUploadMonth')?.value);
+        if (!location || !vehicleModel) {
+            showToast('请先选择采购基地和项目，再下载模板', 'warning');
+            return;
+        }
+        if (!year || !month) {
+            showToast('请先选择生效年月，再下载模板', 'warning');
+            return;
+        }
         try {
             const { blob, filename } = await HttpClient.download(`${API}/template`, {
-                defaultFilename: '材料变更导入模板.xlsx',
+                params: {
+                    location,
+                    vehicle_model: vehicleModel,
+                    effective_year: year,
+                    effective_month: month,
+                },
+                defaultFilename: `材料变更导入模板_${location}_${vehicleModel}.xlsx`,
                 skipToast: true,
             });
             const url = window.URL.createObjectURL(blob);
@@ -421,7 +439,7 @@ const MaterialChangeUploadPage = {
         const scopeLabel = `${location} / ${vehicleModel} / ${periodLabel}`;
         this.setUploading(true);
         this.hideError();
-        this.showProgress(0, '已提交解析队列');
+        this.showProgress(0, '正在导入，请稍候');
         try {
             const res = await HttpClient.post(`${API}/upload`, formData, { skipToast: true, timeout: 60000 });
             const taskId = res?.data?.task_id;

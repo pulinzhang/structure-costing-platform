@@ -61,7 +61,7 @@ export function pkgTransportFeeUploadTemplate() {
                                     先选基地，再填年度。项目只列出这一年还有效、并且已经有材料清单的代号。同一条按基地、年度、项目、零件号区分，不能重复。
                                 </p>
                                 <div id="pkgTransportFeeUploadNoBomBanner" class="hidden ml-6 mt-2 text-[10px] text-warn bg-app-hud px-2.5 py-1.5 border-l-2 border-warn/40">
-                                    尚未上传材料清单，或当前账号无对应清单数据。请先在「上传材料清单」导入 BOM 后再上传包装运输费。
+                                    尚未上传材料清单，或当前账号无对应清单数据。请先在「上传材料清单」导入后再上传包装运输费。
                                 </div>
                             </div>
 
@@ -87,7 +87,7 @@ export function pkgTransportFeeUploadTemplate() {
                                             ${uploadFileHintHtml('pkgTransportFeeUploadHint')}
                                             <input type="file" id="pkgTransportFeeUploadFileInput" class="hidden" accept=".xlsx">
                                             ${uploadBrowseButtonHtml('pkgTransportFeeUploadSelectFileBtn')}
-                                            <p class="text-[10px] text-ink-faint mt-4 mb-0">仅 .xlsx · 同步导入（读已算好的费用，不重算公式）</p>
+                                            <p class="text-[10px] text-ink-faint mt-4 mb-0">只收 .xlsx。费用请填算好的数，不要留公式。</p>
                                         </div>
                                         <div id="pkgTransportFeeUploadProgressPanel" class="hidden text-left w-full">
                                             <div class="flex items-center gap-2 mb-3">
@@ -99,7 +99,7 @@ export function pkgTransportFeeUploadTemplate() {
                                                      class="h-full bg-brand hud-brand-glow transition-all duration-300 animate-pulse"
                                                      style="width: 60%"></div>
                                             </div>
-                                            <p id="pkgTransportFeeUploadProgressMsg" class="text-[11px] text-ink-muted mb-0 whitespace-pre-wrap break-words max-h-48 overflow-y-auto">解析并写入数据库，请稍候</p>
+                                            <p id="pkgTransportFeeUploadProgressMsg" class="text-[11px] text-ink-muted mb-0 whitespace-pre-wrap break-words max-h-48 overflow-y-auto">正在导入，请稍候</p>
                                         </div>
                                     </div>
                                     <div id="pkgTransportFeeUploadFilePreview" class="hidden mb-4"></div>
@@ -121,28 +121,27 @@ export function pkgTransportFeeUploadTemplate() {
                             <span class="${HUD_LED}"></span>
                             <h5 class="text-[11px] font-bold text-ink-muted mb-0 tracking-widest uppercase">格式说明</h5>
                         </div>
-                        <span class="text-[10px] text-ink-dim tracking-wider">SPEC</span>
                     </div>
                     <div class="p-4 space-y-4">
                         <div>
-                            <h6 class="text-[10px] uppercase tracking-wider text-ink-dim mb-2">支持版式</h6>
+                            <h6 class="text-[10px] uppercase tracking-wider text-ink-dim mb-2">两种表都能传</h6>
                             <ul class="list-disc list-inside text-xs text-ink-dim space-y-1.5">
-                                <li><span class="text-ink-muted">生产样例</span>：含「料号」「包装类型」「包装运输费合计」</li>
-                                <li><span class="text-ink-muted">平台模板</span>：扁平单表头（可点下载）</li>
+                                <li>车间原来的表：要有「料号」「包装类型」「包装运输费合计」。</li>
+                                <li>本页下载的模板：表头只有一行。</li>
                             </ul>
                         </div>
                         <div>
-                            <h6 class="text-[10px] uppercase tracking-wider text-ink-dim mb-2">核价取价</h6>
+                            <h6 class="text-[10px] uppercase tracking-wider text-ink-dim mb-2">算价看哪一列</h6>
                             <ul class="list-disc list-inside text-xs text-ink-dim space-y-1.5">
-                                <li>只认 <span class="text-ink-muted">包装运输费合计</span></li>
-                                <li>分项：单件包装费 / 单件运输费 / 维护费 / 其它费用</li>
+                                <li>只认「包装运输费合计」。</li>
+                                <li>分项可以填：单件包装费、单件运输费、维护费、其它费用。</li>
                             </ul>
                         </div>
                         <div>
-                            <h6 class="text-[10px] uppercase tracking-wider text-ink-dim mb-2">写入规则</h6>
+                            <h6 class="text-[10px] uppercase tracking-wider text-ink-dim mb-2">再传一份时</h6>
                             <ul class="list-disc list-inside text-xs text-ink-dim space-y-1.5">
-                                <li>同键更新；已审核跳过</li>
-                                <li>系统不重算 Excel 公式</li>
+                                <li>同一个零件再传会更新。已经审核过的跳过，不改。</li>
+                                <li>格子里如果是公式，请先算出数再传。系统不会帮你重算。</li>
                             </ul>
                         </div>
                     </div>

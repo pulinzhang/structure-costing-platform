@@ -1,4 +1,4 @@
-import { policyUploadTemplate } from './template.js?v=10';
+import { policyUploadTemplate } from './template.js?v=12';
 import { uploadSubmitLabelHtml } from '../../../../ui/upload-actions.js?v=2';
 import { paintUploadProgressIcon } from '../../../../ui/sync-upload-progress.js?v=4';
 
@@ -231,7 +231,7 @@ const PolicyUploadPage = {
         `;
     },
 
-    showProgress(progress = 0, msg = '已提交解析队列') {
+    showProgress(progress = 0, msg = '正在导入，请稍候') {
         const idle = document.getElementById('policyDropIdle');
         const panel = document.getElementById('policyProgressPanel');
         const zone = document.getElementById('policyUploadZone');
@@ -251,7 +251,7 @@ const PolicyUploadPage = {
         if (idle) idle.classList.remove('hidden');
         if (panel) panel.classList.add('hidden');
         if (zone) zone.classList.remove('pointer-events-none');
-        this.updateProgress(0, '已提交解析队列');
+        this.updateProgress(0, '正在导入，请稍候');
     },
 
     updateProgress(progress, msg, status) {
@@ -449,7 +449,7 @@ const PolicyUploadPage = {
         formData.append('file', this.selectedFile);
 
         this.setUploading(true);
-        this.showProgress(0, '已提交解析队列');
+        this.showProgress(0, '正在导入，请稍候');
 
         try {
             const response = await HttpClient.post('/api/yishiyiyi/policy/upload', formData, { skipToast: true, timeout: 60000 });

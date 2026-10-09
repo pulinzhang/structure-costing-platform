@@ -38,6 +38,9 @@ _HEADERS = (
 )
 _COLUMN_WIDTHS = (18, 22, 16, 14, 10, 10, 36)
 _INTERNAL_NUMBER_COL = 3
+_SUPPLIER_COL = _HEADERS.index(HEADER_SUPPLIER) + 1
+_SUPPLIER_FILL = PatternFill(start_color="FFFF00", end_color="FFFF00", fill_type="solid")
+_SUPPLIER_HEADER_FONT = Font(name="微软雅黑", size=10, bold=True, color="000000")
 _NOTES = (
     "第一页按零件号去重，是该范围采购对象的库现况。同一零件号只填一次供应商。",
     "「内部号」给人看，方便到 ERP 按编号找厂、对照。导入不读这一列。",
@@ -86,8 +89,8 @@ def write_object_sheet(workbook: Workbook, rows: list[BomProcurementObject]) -> 
     )
     for col, title in enumerate(_HEADERS, start=1):
         cell = sheet.cell(row=1, column=col, value=title)
-        cell.font = header_font
-        cell.fill = header_fill
+        cell.font = _SUPPLIER_HEADER_FONT if col == _SUPPLIER_COL else header_font
+        cell.fill = _SUPPLIER_FILL if col == _SUPPLIER_COL else header_fill
         cell.alignment = header_alignment
         cell.border = thin_border
     for row_idx, row in enumerate(rows, start=2):
@@ -103,6 +106,8 @@ def write_object_sheet(workbook: Workbook, rows: list[BomProcurementObject]) -> 
         for col, value in enumerate(values, start=1):
             cell = sheet.cell(row=row_idx, column=col, value=value)
             cell.font = muted_font if col == _INTERNAL_NUMBER_COL else data_font
+            if col == _SUPPLIER_COL:
+                cell.fill = _SUPPLIER_FILL
             cell.border = thin_border
             cell.alignment = align_left
     for idx, width in enumerate(_COLUMN_WIDTHS, start=1):

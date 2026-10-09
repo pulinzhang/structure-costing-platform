@@ -85,7 +85,7 @@ export function policyUploadTemplate() {
                                          class="h-full bg-brand hud-brand-glow transition-all duration-300"
                                          style="width: 0%"></div>
                                 </div>
-                                <p id="policyProgressMsg" class="text-[11px] text-ink-muted leading-relaxed mb-0 whitespace-pre-wrap break-words max-h-48 overflow-y-auto">已提交解析队列</p>
+                                <p id="policyProgressMsg" class="text-[11px] text-ink-muted leading-relaxed mb-0 whitespace-pre-wrap break-words max-h-48 overflow-y-auto">正在导入，请稍候</p>
                             </div>
                         </div>
 
@@ -110,25 +110,14 @@ export function policyUploadTemplate() {
                         <h5 class="text-xs font-semibold text-ink-dim mb-0">导入说明</h5>
                     </div>
                     <div class="p-5">
-                        <h6 class="${UPLOAD_LABEL} mb-2.5">Excel 文件格式要求</h6>
+                        <h6 class="${UPLOAD_LABEL} mb-2.5">传什么</h6>
                         <ul class="list-disc list-inside text-xs text-ink-dim space-y-1.5 mb-4">
-                            <li>文件应包含钢价政策相关信息</li>
-                            <li>支持马钢、宝钢、首钢、鞍钢等钢厂</li>
-                            <li>数据从第一行开始，不要有空行</li>
+                            <li>钢厂的价格政策。马钢、宝钢、首钢、鞍钢都能认，唐钢、邯钢、VAMA、山钢、涟钢也可以。</li>
+                            <li>数据从第一行开始写，中间不要空行。</li>
                         </ul>
-                        <h6 class="${UPLOAD_LABEL} mb-2.5">upsert 规则</h6>
-                        <ul class="list-disc list-inside text-xs text-ink-dim space-y-1.5 mb-4">
-                            <li>按 (年度, 月份, 钢厂, 钢种, 类型, 牌号, 基准厚度) 匹配</li>
-                            <li>已存在的政策会被覆盖替换</li>
-                            <li>支持新增和更新</li>
-                        </ul>
-                        <h6 class="${UPLOAD_LABEL} mb-2.5">支持的政策文件</h6>
+                        <h6 class="${UPLOAD_LABEL} mb-2.5">再传一份时</h6>
                         <ul class="list-disc list-inside text-xs text-ink-dim space-y-1.5">
-                            <li>马钢政策</li>
-                            <li>宝钢政策</li>
-                            <li>首钢政策</li>
-                            <li>鞍钢政策</li>
-                            <li>唐钢、邯钢、VAMA、山钢、涟钢等</li>
+                            <li>同一年、同一个月、同一家钢厂、同一个钢种、同一种类型、同一个牌号、同一个基准厚度，再传会盖掉原来的。没有的会新增。</li>
                         </ul>
                     </div>
                 </div>

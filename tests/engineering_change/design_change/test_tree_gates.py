@@ -590,61 +590,73 @@ def test_apply_process_sketches_fills_missing_part_sketch() -> None:
     validate_identity_gates(old_nodes, nodes)
 
 
-def test_t2aa_sample_blocks_missing_l1_part_sketch() -> None:
-    from pathlib import Path
+def _template_without_part_sketches() -> bytes:
+    """下载模板里拿掉材料清单「单件图示」，总成图和工艺简图留着。"""
+    from io import BytesIO
 
+    from openpyxl import load_workbook
+
+    from app.parsers.engineering_change.design_change.sheet_extract import SHEET_BOM
+    from app.services.engineering_change.design_change.upload.template_builder import (
+        build_engineering_change_template,
+    )
+
+    content, _ = build_engineering_change_template()
+    workbook = load_workbook(BytesIO(content))
+    sheet = workbook[SHEET_BOM]
+    kept = []
+    for image in list(getattr(sheet, "_images", [])):
+        marker = getattr(getattr(image, "anchor", None), "_from", None)
+        if getattr(marker, "col", None) == 15:
+            continue
+        kept.append(image)
+    sheet._images = kept
+    buffer = BytesIO()
+    workbook.save(buffer)
+    workbook.close()
+    return buffer.getvalue()
+
+
+def test_template_blocks_missing_l1_part_sketch() -> None:
     from app.parsers.bom.bom_parser import parse_bom_excel
     from app.parsers.engineering_change.design_change.sheet_extract import SHEET_BOM
+    from app.services.engineering_change.design_change.upload.template_builder import (
+        PROCESS_SAMPLES,
+    )
 
-    sample = Path("tests/engineering_change/design_change/fixtures/工程变更导入T2AA-1.xlsx")
-    parsed = parse_bom_excel(sample.read_bytes(), sheet_name=SHEET_BOM)
-    target = next(node for node in parsed.nodes if node.part_number == "551005982AB")
+    content = _template_without_part_sketches()
+    parsed = parse_bom_excel(content, sheet_name=SHEET_BOM)
+    part_number = PROCESS_SAMPLES[0].part_number
+    target = next(node for node in parsed.nodes if node.part_number == part_number)
     assert int(target.level) == 1
     assert not target.sketch_bytes
-    old_nodes = [
-        _old(node_id=1, parent_id=None, level=0, part_number="551007577AA"),
-        _old(
-            node_id=2,
-            parent_id=1,
-            level=1,
-            part_number="551005982AA",
-            internal_number="ACA610001",
-        ),
-    ]
     with pytest.raises(BusinessException) as exc:
-        validate_identity_gates(old_nodes, parsed.nodes)
+        validate_identity_gates([], parsed.nodes)
     message = str(exc.value)
     assert message.startswith(EC_PART_SKETCH_REQUIRED)
-    assert "551005982AB" in message
+    assert part_number in message
     assert "单件图示" in message
 
 
-def test_t2aa_sample_copies_process_sketch_onto_bom_l1() -> None:
-    from pathlib import Path
-
+def test_template_copies_process_sketch_onto_bom_l1() -> None:
     from app.parsers.bom.bom_parser import parse_bom_excel
     from app.parsers.engineering_change.design_change.sheet_extract import SHEET_BOM
     from app.services.engineering_change.design_change.upload.gates.process_gates import (
         parse_process_confirmation,
     )
+    from app.services.engineering_change.design_change.upload.template_builder import (
+        PROCESS_SAMPLES,
+    )
 
-    sample = Path("tests/engineering_change/design_change/fixtures/工程变更导入T2AA-1.xlsx")
-    content = sample.read_bytes()
+    content = _template_without_part_sketches()
     parsed = parse_bom_excel(content, sheet_name=SHEET_BOM)
-    target = next(node for node in parsed.nodes if node.part_number == "551005982AB")
+    target = next(
+        node for node in parsed.nodes if node.part_number == PROCESS_SAMPLES[0].part_number
+    )
     assert not target.sketch_bytes
     apply_process_sketches_to_bom_nodes(
         parsed.nodes, parse_process_confirmation(content).images_by_part
     )
     assert target.sketch_bytes
-    old_nodes = [
-        _old(node_id=1, parent_id=None, level=0, part_number="551007577AA"),
-        _old(
-            node_id=2,
-            parent_id=1,
-            level=1,
-            part_number="551005982AA",
-            internal_number="ACA610001",
-        ),
-    ]
-    validate_identity_gates(old_nodes, parsed.nodes)
+    assert target.sketch_bytes[:8] == b"\x89PNG\r\n\x1a\n"
+    validate_identity_gates([], parsed.nodes)

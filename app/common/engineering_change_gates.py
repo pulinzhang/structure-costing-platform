@@ -82,9 +82,9 @@ def snapshot_blocks_full_generate(
 
 
 # --- 工程变更校验拒收 ---
-EC_CHANGE_ORDER_ROW_COUNT = "工程变更单至少一行"
+EC_CHANGE_ORDER_ROW_COUNT = "设计变更单至少一行"
 EC_CHANGE_ORDER_TYPE_INVALID = "变更类型只准四句：完成停止、改图、增加零件、此件不装"
-EC_CHANGE_ORDER_COLUMNS = "工程变更单这一行填法不对"
+EC_CHANGE_ORDER_COLUMNS = "设计变更单这一行填法不对"
 EC_CHANGE_ORDER_ASSEMBLY_REPEAT = "同一个总成写了多次"
 EC_EFFECTIVE_MISMATCH = "生效年月与上传页不一致"
 EC_PROJECT_MISMATCH = "一本只能一个项目号"
@@ -120,14 +120,14 @@ def listed(values: Iterable[object]) -> str:
 EC_BEFORE_ASSEMBLY_INVALID = "找不到这个变更前总成，或者这个月已经不用了"
 EC_AFTER_ASSEMBLY_EXISTS = "变更后总成系统里已经有了"
 EC_AFTER_ASSEMBLY_BUSY = "这个变更后总成正在导入，请等这次完成"
-EC_BOM_NEW_ROOT = "材料清单里的交货总成和工程变更单对不上"
+EC_BOM_NEW_ROOT = "材料清单里的交货总成和设计变更单对不上"
 EC_QTY_CHANGED = "用量与变更前总成不一致（工程变更不改用量）"
 EC_NOT_INSTALL_SIGNAL = "此件不装必须用量 0 且备注含「此件不装」"
 EC_ADD_VS_REVISE = "改图漏了变更前零件，或把新零件号写成了总成"
 EC_PROCESS_MISSING_NEW = "冲压工艺确认表少了这个新零件号"
 EC_PROCESS_EXTRA_NEW = "冲压工艺确认表多了材料清单没有的号"
 EC_PROCESS_NOT_ON_BOM = "冲压工艺确认表有、材料清单没有"
-EC_AFTER_PART_NOT_ON_BOM = "工程变更单变更后零件有、材料清单没有"
+EC_AFTER_PART_NOT_ON_BOM = "设计变更单变更后零件有、材料清单没有"
 EC_BOM_HEADER_VERSION_REQUIRED = "车身件材料清单表头版本必须填写"
 EC_PROCESS_HEADER_VERSION_REQUIRED = "冲压工艺确认表表头版本必须填写"
 EC_BOM_PROCESS_VERSION_MISMATCH = "车身件材料清单和冲压工艺确认表的版本必须写成同一个字"
@@ -177,7 +177,7 @@ def require_ec_sheet_versions(*, bom_version: str | None, process_version: str |
 def after_assembly_missing_message(part_number: object | None) -> str:
     return (
         f"{EC_AFTER_ROOT_MISSING}。"
-        f"工程变更单上的变更后总成{quoted(part_number)}对不上。"
+        f"设计变更单上的变更后总成{quoted(part_number)}对不上。"
         "请看「车身件材料清单」里有没有这个交货总成，改完再传。"
     )
 
@@ -196,7 +196,7 @@ def after_assembly_not_on_bom_message(part_number: object | None) -> str:
 
 
 EC_PROCESS_SHARED_OLD = "这个旧号还装在别的总成上，不能按改图停掉"
-EC_SHEET_REQUIRED = "缺工程变更单 / 车身件材料清单 / 冲压工艺确认表"
+EC_SHEET_REQUIRED = "缺设计变更单 / 车身件材料清单 / 冲压工艺确认表"
 EC_EFFECTIVE_TOO_EARLY = "生效年月必须晚于旧总成生效月"
 EC_ROLLBACK_BLOCKED = "其后还有未回滚的变更，或对象已审未反审，不能删本次"
 EC_INTERNAL_REQUIRED = "交货总成、分总成必须有内部号"
