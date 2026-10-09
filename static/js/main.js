@@ -502,7 +502,7 @@ const HttpClient = (() => {
         try { localStorage.removeItem('brabus_user'); } catch (_) {}
         if (!window.location.pathname.startsWith('/login')) {
             showToast(message || '登录已失效，请重新登录', 'error');
-            window.location.href = '/login';
+            window.location.replace('/login');
         }
     }
 

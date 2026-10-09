@@ -2,8 +2,8 @@
 
 入口页和带版本号的静态文件不是同一种缓存。四年后改这里之前先看这条：
 
-- ``/app``、``/login`` 的地址不会变，HTML 里写着 ``app.js?v=``。
-  这两页必须 ``no-cache, must-revalidate``。浏览器每次核对页面，才能拿到新版本号。
+- ``/``、``/app``、``/login`` 的地址不会变，HTML 里写着 ``app.js?v=``。
+  这三页必须 ``no-cache, must-revalidate``。浏览器每次核对页面，才能拿到新版本号。
   报表页同样是固定地址，头在 ``app/bootstrap/frontend.py`` 的 FileResponse 上。
 - ``/static/js/``、``/static/css/`` 的请求带非空查询参数 ``v`` 时，内容变了地址就变。
   用 ``public, max-age=31536000, immutable``。第二次打开不再为每个文件回源。
@@ -18,7 +18,7 @@ from starlette.requests import Request
 
 _NO_CACHE = "no-cache, must-revalidate"
 _VERSIONED_ASSET = "public, max-age=31536000, immutable"
-_ENTRY_PAGES = frozenset({"/app", "/login"})
+_ENTRY_PAGES = frozenset({"/", "/app", "/login"})
 
 
 def frontend_cache_control(path: str, version: str | None) -> str | None:

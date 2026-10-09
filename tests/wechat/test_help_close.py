@@ -71,11 +71,19 @@ def _content_type(name: str) -> str:
 def _serve_helper(page: Page) -> None:
     def fulfill(route: Route) -> None:
         url = route.request.url.split("?", 1)[0]
-        if url.rstrip("/") == _ORIGIN:
+        path = url.removeprefix(_ORIGIN)
+        if path in {"/", "/login"}:
             route.fulfill(
                 status=200,
                 content_type="text/html; charset=utf-8",
-                body="<html><body>home</body></html>",
+                body="<html><body>login</body></html>",
+            )
+            return
+        if path == "/app" or path.startswith("/app#"):
+            route.fulfill(
+                status=200,
+                content_type="text/html; charset=utf-8",
+                body="<html><body>app</body></html>",
             )
             return
         marker = "/helper/"
@@ -134,17 +142,44 @@ def test_desktop_help_has_no_close(chromium: Browser, page_name: str) -> None:
         page.close()
 
 
-def test_wechat_close_returns_home(chromium: Browser) -> None:
-    page = _open(
-        chromium,
+def test_wechat_close_returns_to_previous_page(chromium: Browser) -> None:
+    page = chromium.new_page(
         user_agent=_WECHAT_USER_AGENTS[0][1],
-        mobile=True,
-        page_name="index.html",
+        viewport={"width": 390, "height": 700},
+        is_mobile=True,
+        has_touch=True,
     )
+    _serve_helper(page)
     try:
+        page.goto(f"{_ORIGIN}/app", wait_until="domcontentloaded")
+        page.goto(f"{_ORIGIN}/helper/index.html", wait_until="domcontentloaded")
         page.click("#wechatHelpClose")
-        page.wait_for_url(f"{_ORIGIN}/", timeout=3000)
-        assert page.locator("body").inner_text() == "home"
+        page.wait_for_url(f"{_ORIGIN}/app", timeout=3000)
+        assert page.locator("body").inner_text() == "app"
+    finally:
+        if not page.is_closed():
+            page.close()
+
+
+def test_wechat_close_without_history_opens_app(chromium: Browser) -> None:
+    page = chromium.new_page(
+        user_agent=_WECHAT_USER_AGENTS[0][1],
+        viewport={"width": 390, "height": 700},
+        is_mobile=True,
+        has_touch=True,
+    )
+    _serve_helper(page)
+    try:
+        # replace 掉空白页，历史只剩帮助这一条，才会走 /app，而不是退回空白页。
+        page.goto("about:blank")
+        page.evaluate(f"() => location.replace({_ORIGIN + '/helper/index.html'!r})")
+        page.wait_for_selector("#wechatHelpClose")
+        assert page.evaluate("() => history.length") == 1
+        # 微信里 window.close() 关不掉由链接打开的页。这里同样让它空转，才会走到 /app。
+        page.evaluate("() => { window.close = () => {}; }")
+        page.click("#wechatHelpClose")
+        page.wait_for_url(f"{_ORIGIN}/app", timeout=3000)
+        assert page.locator("body").inner_text() == "app"
     finally:
         if not page.is_closed():
             page.close()
