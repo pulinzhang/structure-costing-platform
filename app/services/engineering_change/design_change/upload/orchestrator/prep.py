@@ -85,7 +85,7 @@ def prepare_engineering_change_run(
         db, location, vehicle_model, effective_year, effective_month
     )
 
-    report_progress(on_progress, 10, "校验工程变更单与抽表")
+    report_progress(on_progress, 10, "校验设计变更单与抽表")
     sheets = extract_named_sheets(args.file_content)
     change_orders = parse_change_order_sheet(sheets[SHEET_CHANGE_ORDER])
     validate_change_order_rows(
@@ -203,7 +203,7 @@ def prepare_engineering_change_run(
         after_number = item.change_order.after_assembly_part_number
         if not after_number:
             raise BusinessException(
-                f"{EC_CHANGE_ORDER_COLUMNS}：工程变更单第 {item.change_order.excel_row} 行"
+                f"{EC_CHANGE_ORDER_COLUMNS}：设计变更单第 {item.change_order.excel_row} 行"
                 f"是{item.change_order.change_type}，必须填变更后总成。"
             )
         item.sliced_bom_nodes = slice_bom_nodes_for_l0(parsed_bom.nodes, after_number)

@@ -152,7 +152,7 @@ const SupplierUploadPage = {
         this.clearSelectedFile(true);
     },
 
-    showProgress(msg = '解析并写入数据库，请稍候') {
+    showProgress(msg = '正在导入，请稍候') {
         uploadProgress.setRunning(msg);
         document.getElementById('supplierUploadZone')?.classList.remove('border-brand');
     },

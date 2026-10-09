@@ -1,4 +1,4 @@
-"""工程变更导入模板：青岛 T28 五种改法，一本即可上传。"""
+"""设计变更导入模板：一套五种改法举例。抬头随所选基地和项目变，零件号是占位。"""
 
 from __future__ import annotations
 
@@ -24,10 +24,14 @@ from app.common.engineering_change_gates import (
     PART_LEVEL_L2,
 )
 from app.parsers.engineering_change.design_change.change_order_parser import CHANGE_ORDER_HEADERS
+from app.parsers.engineering_change.design_change.sheet_extract import (
+    SHEET_CHANGE_ORDER,
+    SHEET_CHANGE_ORDER_HINT,
+)
 from app.services.bom.bom.upload.template_builder import build_bom_material_template
 from app.services.stamping.part.upload.template_builder import build_stamping_process_template
 
-TEMPLATE_FILENAME = "工程变更导入模板.xlsx"
+TEMPLATE_FILENAME = "设计变更导入模板.xlsx"
 
 LOCATION = "青岛"
 VEHICLE_MODEL = "T28"
@@ -39,13 +43,13 @@ BOM_VERSION_LABEL = "D/00"
 HEADER_DATE = "2026-07-01"
 DOC_NO = "EC-T28-202607"
 SLASH = "/"
-ADD_PART_NUMBER = "501007040AA"
+ADD_PART_NUMBER = "EX-ADD-1AB"
 _ASSEMBLY_CHANGE_ORDER_COLS = (3, 4, 5)
 
 
 @dataclass(frozen=True, slots=True)
 class TemplateMeta:
-    """表头/变更单项目与生效年月；默认青岛 T28，测试样本可换芜湖 T13J。"""
+    """表头。不传项目时用青岛 T28，只给测试；下载会换成所选基地和项目。零件号不在这里。"""
 
     location: str = LOCATION
     vehicle_model: str = VEHICLE_MODEL
@@ -188,9 +192,9 @@ def _merge_vertical(sheet: Worksheet, col: int, start_row: int, end_row: int) ->
 CHANGE_ORDER_SAMPLES = (
     ChangeOrderSample(
         CHANGE_TYPE_STOP,
-        "501009533AA",
+        "EX-STOP-AA",
         None,
-        "发盖左铰链安装支架总成",
+        "示例总成（完成停止）",
         PART_LEVEL_ASSEMBLY,
         None,
         None,
@@ -198,129 +202,129 @@ CHANGE_ORDER_SAMPLES = (
     ),
     ChangeOrderSample(
         CHANGE_TYPE_REVISE,
-        "501006873AA",
-        "501006873AB",
-        "流水槽加强梁总成",
+        "EX-L1-AA",
+        "EX-L1-AB",
+        "示例总成（改图一级）",
         PART_LEVEL_L1,
-        "501006875AA",
-        "501006875AB",
-        "雨刮电机安装支架Ⅰ",
+        "EX-L1-PART-AA",
+        "EX-L1-PART-AB",
+        "示例零件（改图一级）",
     ),
     ChangeOrderSample(
         CHANGE_TYPE_REVISE,
-        "501009144AA",
-        "501009144AB",
-        "后防撞梁总成",
+        "EX-L2-AA",
+        "EX-L2-AB",
+        "示例总成（改图二级）",
         PART_LEVEL_L2,
-        "501009122AA",
-        "501009122AB",
-        "后保下安装支架",
+        "EX-L2-PART-AA",
+        "EX-L2-PART-AB",
+        "示例零件（改图二级）",
     ),
     ChangeOrderSample(
         CHANGE_TYPE_NOT_INSTALL,
-        "501008897AA",
-        "501008897AB",
-        "后围总成",
+        "EX-SKIP-AA",
+        "EX-SKIP-AB",
+        "示例总成（此件不装）",
         PART_LEVEL_L1,
-        "504000341AA",
+        "EX-SKIP-PART-AA",
         None,
-        "左D柱下结构增强胶块",
+        "示例零件（此件不装）",
     ),
     ChangeOrderSample(
         CHANGE_TYPE_ADD_PART,
-        "501007029AA",
-        "501007029AB",
-        "中通道左后纵梁总成",
+        "EX-ADD-AA",
+        "EX-ADD-AB",
+        "示例总成（增加零件）",
         PART_LEVEL_L1,
         None,
         ADD_PART_NUMBER,
-        "中通道后纵梁加强板",
+        "示例零件（增加零件）",
     ),
 )
 
 BOM_SAMPLES = (
     BomSample(
         seq_no=1,
-        internal_number="ACA610",
-        part_number="501006873AB",
-        part_name="流水槽加强梁总成",
-        weld_info="焊点：4 凸焊：2",
-        l1_internal="ACA610001",
-        l1_part_number="501006875AB",
-        l1_part_name="雨刮电机安装支架Ⅰ",
+        internal_number="EX610",
+        part_number="EX-L1-AB",
+        part_name="示例总成（改图一级）",
+        weld_info="焊点：4",
+        l1_internal="EX610001",
+        l1_part_number="EX-L1-PART-AB",
+        l1_part_name="示例零件（改图一级）",
         l1_qty="1",
         l1_weld=SLASH,
         l2_internal=SLASH,
         l2_part_number=SLASH,
         l2_part_name=SLASH,
         l2_qty=SLASH,
-        material="DC51D+Z",
-        thickness_text="T=1.2",
-        part_weight=0.096,
+        material="DC01",
+        thickness_text="T=1.0",
+        part_weight=0.1,
         gauge_developed="是",
         remark=None,
     ),
     BomSample(
         seq_no=2,
-        internal_number="ACA611",
-        part_number="501008897AB",
-        part_name="后围总成",
-        weld_info="焊点：99 凸焊：7 涂胶：1550mm",
-        l1_internal="ACA611009",
-        l1_part_number="504000341AA",
-        l1_part_name="左D柱下结构增强胶块",
+        internal_number="EX611",
+        part_number="EX-SKIP-AB",
+        part_name="示例总成（此件不装）",
+        weld_info=SLASH,
+        l1_internal="EX611001",
+        l1_part_number="EX-SKIP-PART-AA",
+        l1_part_name="示例零件（此件不装）",
         l1_qty=0,
         l1_weld=SLASH,
         l2_internal=SLASH,
         l2_part_number=SLASH,
         l2_part_name=SLASH,
         l2_qty=SLASH,
-        material="PA6+GF36",
-        thickness_text="发泡料（环氧树脂等）",
-        part_weight=0.136,
+        material=SLASH,
+        thickness_text=SLASH,
+        part_weight=0.1,
         gauge_developed="否",
         remark=CHANGE_TYPE_NOT_INSTALL,
         is_not_assembled=True,
     ),
     BomSample(
         seq_no=3,
-        internal_number="ACA612",
-        part_number="501009144AB",
-        part_name="后防撞梁总成",
-        weld_info="焊缝：58条（1392mm) 凸焊：4",
-        l1_internal="ACA612N01",
-        l1_part_number="501009122AB-1",
-        l1_part_name="后保下安装支架总成",
-        l1_qty="2",
+        internal_number="EX612",
+        part_number="EX-L2-AB",
+        part_name="示例总成（改图二级）",
+        weld_info="焊缝：1条",
+        l1_internal="EX612N01",
+        l1_part_number="EX-L2-SUB-AB",
+        l1_part_name="示例分总成（改图二级）",
+        l1_qty="1",
         l1_weld="凸焊:1",
         l2_internal=SLASH,
-        l2_part_number="501009122AB",
-        l2_part_name="后保下安装支架",
+        l2_part_number="EX-L2-PART-AB",
+        l2_part_name="示例零件（改图二级）",
         l2_qty="1",
-        material="HC180YD+Z",
+        material="DC01",
         thickness_text="T=1.0",
-        part_weight=0.041,
+        part_weight=0.1,
         gauge_developed="是",
-        remark="凸焊总成供货",
+        remark=None,
     ),
     BomSample(
         seq_no=4,
-        internal_number="ACA613",
-        part_number="501007029AB",
-        part_name="中通道左后纵梁总成",
-        weld_info="焊点：7 焊缝：2条（52mm）",
-        l1_internal="ACA613002",
+        internal_number="EX613",
+        part_number="EX-ADD-AB",
+        part_name="示例总成（增加零件）",
+        weld_info="焊点：1",
+        l1_internal="EX613001",
         l1_part_number=ADD_PART_NUMBER,
-        l1_part_name="中通道后纵梁加强板",
+        l1_part_name="示例零件（增加零件）",
         l1_qty="1",
         l1_weld=SLASH,
         l2_internal=SLASH,
         l2_part_number=SLASH,
         l2_part_name=SLASH,
         l2_qty=SLASH,
-        material="HC340/590DP",
+        material="DC01",
         thickness_text="T=1.0",
-        part_weight=0.235,
+        part_weight=0.1,
         gauge_developed=SLASH,
         remark=None,
         is_added_part=True,
@@ -329,29 +333,29 @@ BOM_SAMPLES = (
 
 PROCESS_SAMPLES = (
     ProcessSample(
-        "501006875AB",
-        "雨刮电机安装支架Ⅰ",
-        "DC51D+Z",
-        1.2,
-        0.096,
-        165,
-        122,
+        "EX-L1-PART-AB",
+        "示例零件（改图一级）",
+        "DC01",
+        1.0,
+        0.1,
+        100,
+        80,
         1,
         "卷料",
         "OP10",
         "PRG",
         1,
-        315,
+        250,
         "钢板模",
     ),
     ProcessSample(
-        "501009122AB",
-        "后保下安装支架",
-        "HC180YD+Z",
-        1,
-        0.041,
-        136,
-        54,
+        "EX-L2-PART-AB",
+        "示例零件（改图二级）",
+        "DC01",
+        1.0,
+        0.1,
+        100,
+        80,
         1,
         "卷料",
         "OP10",
@@ -362,43 +366,44 @@ PROCESS_SAMPLES = (
     ),
     ProcessSample(
         ADD_PART_NUMBER,
-        "中通道后纵梁加强板",
-        "HC340/590DP",
-        1,
-        0.235,
-        149,
-        230,
+        "示例零件（增加零件）",
+        "DC01",
+        1.0,
+        0.1,
+        100,
+        80,
         1,
         "卷料",
         "OP10",
         "PRG",
         1,
-        315,
+        250,
         "钢板模",
     ),
 )
 
-COMBINED_CHANGE_ORDER_NOTE = (
-    "青岛 T28 五种改法，一行一个交货总成，可直接上传。"
-    f"基地 {LOCATION}，顾客 {CUSTOMER_NAME}，投产清单版本 D/00。"
-    f"五行：{CHANGE_TYPE_STOP} / 一级{CHANGE_TYPE_REVISE} / 二级{CHANGE_TYPE_REVISE} / "
-    f"{CHANGE_TYPE_NOT_INSTALL} / {CHANGE_TYPE_ADD_PART}。"
-    "同一个总成改了好几处，请把变更前总成、变更后总成格子上下合并；完成停止不用填变更后总成。"
-    "先写原来的交货总成，再写变更类型和这一次动到的零件。"
-    "材料清单只写变化的行；改图二级写出整条链。没变的零件不要抄。"
-    f"{CHANGE_TYPE_STOP}：变更后总成空，材料清单不写这个总成。"
-    f"{CHANGE_TYPE_NOT_INSTALL}：变更后零件空；用量 0、备注含「{CHANGE_TYPE_NOT_INSTALL}」。"
-    f"{CHANGE_TYPE_ADD_PART}：加在原来的总成上；变更前零件空、变更后零件写新号。"
-    "材料清单和确认表项目号、版本都要对齐（版本写成同一个字）；"
-    "先到焊接工程生成采购对象；生效月须在项目有效期内。细节看「工程变更填写说明」。"
-)
 
-COMBINED_BOOK = TemplateBook(
-    change_orders=CHANGE_ORDER_SAMPLES,
-    bom=BOM_SAMPLES,
-    process=PROCESS_SAMPLES,
-    change_order_note=COMBINED_CHANGE_ORDER_NOTE,
-)
+def _fill_note(meta: TemplateMeta, change_type: str | None = None) -> str:
+    """变更单说明。整本和单种改法共用这一段，只换开头。"""
+    if change_type:
+        opening = f"{meta.location} {meta.vehicle_model} 一种改法举例：{change_type}。"
+    else:
+        opening = f"{meta.location} {meta.vehicle_model} 五种改法举例，一行一个交货总成。"
+    return (
+        opening + "零件号是例子，请改成这个项目自己的零件号后再上传。"
+        f"基地 {meta.location}，项目 {meta.vehicle_model}，顾客 {meta.customer_name}，"
+        f"生效 {meta.period_label}，投产清单版本 {meta.bom_version_label}。"
+        f"五行：{CHANGE_TYPE_STOP} / 一级{CHANGE_TYPE_REVISE} / 二级{CHANGE_TYPE_REVISE} / "
+        f"{CHANGE_TYPE_NOT_INSTALL} / {CHANGE_TYPE_ADD_PART}。"
+        "同一个总成改了好几处，请把变更前总成、变更后总成格子上下合并；完成停止不用填变更后总成。"
+        "先写原来的交货总成，再写变更类型和这一次动到的零件。"
+        "材料清单只写变化的行；改图二级写出整条链。没变的零件不要抄。"
+        f"{CHANGE_TYPE_STOP}：变更后总成空，材料清单不写这个总成。"
+        f"{CHANGE_TYPE_NOT_INSTALL}：变更后零件空；用量 0、备注含「{CHANGE_TYPE_NOT_INSTALL}」。"
+        f"{CHANGE_TYPE_ADD_PART}：加在原来的总成上；变更前零件空、变更后零件写新号。"
+        "材料清单和确认表项目号、版本都要对齐（版本写成同一个字）；"
+        "先到焊接工程生成采购对象；生效月须在项目有效期内。细节看「设计变更填写说明」。"
+    )
 
 
 @dataclass(frozen=True, slots=True)
@@ -408,18 +413,7 @@ class ScenarioSample:
 
 
 def _scenario_note(sample: ChangeOrderSample) -> str:
-    after_assembly = sample.after_assembly or "空"
-    return (
-        f"青岛 T28 单种改法：{sample.change_type}。"
-        f"基地 {LOCATION}，顾客 {CUSTOMER_NAME}，投产清单版本 D/00。"
-        f"变更前总成 {sample.before_assembly}，变更后总成 {after_assembly}。"
-        "材料清单只写变化的行；改图二级写出整条链。没变的零件不要抄。"
-        f"{CHANGE_TYPE_STOP}：变更后总成空，材料清单不写这个总成。"
-        f"{CHANGE_TYPE_NOT_INSTALL}：变更后零件空；用量 0、备注含「{CHANGE_TYPE_NOT_INSTALL}」。"
-        f"{CHANGE_TYPE_ADD_PART}：加在原来的总成上；变更前零件空、变更后零件写新号。"
-        "材料清单和确认表项目号、版本都要对齐（版本写成同一个字）；"
-        "先到焊接工程生成采购对象；生效月须在项目有效期内。细节看「工程变更填写说明」。"
-    )
+    return _fill_note(DEFAULT_META, sample.change_type)
 
 
 def _book_for_change_order(sample: ChangeOrderSample) -> TemplateBook:
@@ -445,11 +439,11 @@ def _book_for_change_order(sample: ChangeOrderSample) -> TemplateBook:
 
 
 SCENARIO_FILENAMES = (
-    "t28-2025-07-stop.xlsx",
-    "t28-2025-07-rev-l1.xlsx",
-    "t28-2025-07-rev-l2.xlsx",
-    "t28-2025-07-not-install.xlsx",
-    "t28-2025-07-add-part.xlsx",
+    "example-stop.xlsx",
+    "example-rev-l1.xlsx",
+    "example-rev-l2.xlsx",
+    "example-not-install.xlsx",
+    "example-add-part.xlsx",
 )
 
 SCENARIO_SAMPLES = tuple(
@@ -464,18 +458,35 @@ _ASSEMBLY_SKETCH_PNG = (
 )
 
 
+def example_book(meta: TemplateMeta) -> TemplateBook:
+    """按所选基地、项目写五种改法举例。零件号与不传 book 时是同一套。"""
+    return TemplateBook(
+        change_orders=CHANGE_ORDER_SAMPLES,
+        bom=BOM_SAMPLES,
+        process=PROCESS_SAMPLES,
+        change_order_note=_fill_note(meta),
+        meta=meta,
+    )
+
+
+COMBINED_BOOK = example_book(DEFAULT_META)
+
+
 def build_engineering_change_template(
     book: TemplateBook | None = None,
 ) -> tuple[bytes, str]:
-    """运行时拼工程变更导入样表：默认青岛 T28；也可传入其它项目的 TemplateBook。"""
+    """不传 book 时用默认抬头和同一套举例零件。下载按所选项目另传 book。"""
     samples = book or COMBINED_BOOK
     meta = samples.meta
     dest_wb = Workbook()
     order_sheet = dest_wb.active
     assert order_sheet is not None
-    order_sheet.title = "工程变更单"
+    order_sheet.title = SHEET_CHANGE_ORDER
     _write_change_order(order_sheet, samples.change_orders, samples.change_order_note, meta)
-    _write_ec_fill_instructions(dest_wb.create_sheet("工程变更填写说明", 1))
+    _write_ec_fill_instructions(dest_wb.create_sheet(SHEET_CHANGE_ORDER_HINT, 1), meta)
+    filename = TEMPLATE_FILENAME
+    if meta != DEFAULT_META:
+        filename = f"设计变更导入模板_{meta.location}_{meta.vehicle_model}.xlsx"
 
     bom_wb = load_workbook(BytesIO(build_bom_material_template()[0]))
     bom_sheet = _copy_sheet(bom_wb["车身件材料清单"], dest_wb, "车身件材料清单")
@@ -516,7 +527,7 @@ def build_engineering_change_template(
             process_sheet, process_sketch_rows, png_path, file_prefix="process", anchor_column="D"
         )
         dest_wb.save(buffer)
-    return buffer.getvalue(), TEMPLATE_FILENAME
+    return buffer.getvalue(), filename
 
 
 def _write_change_order(
@@ -529,7 +540,7 @@ def _write_change_order(
     label = Font(name="微软雅黑", size=10)
     head = Font(name="微软雅黑", size=10, bold=True, color="FFFFFF")
     fill = PatternFill("solid", fgColor="4472C4")
-    sheet["A1"] = "工程变更单"
+    sheet["A1"] = SHEET_CHANGE_ORDER
     sheet["A1"].font = title
     sheet.merge_cells("A1:J1")
     sheet["A2"] = change_order_note
@@ -579,16 +590,16 @@ def _write_change_order(
     sheet.freeze_panes = "A5"
 
 
-def _write_ec_fill_instructions(sheet: Worksheet) -> None:
-    sheet["A1"] = "工程变更填写说明"
+def _write_ec_fill_instructions(sheet: Worksheet, meta: TemplateMeta) -> None:
+    sheet["A1"] = SHEET_CHANGE_ORDER_HINT
     sheet["A1"].font = Font(name="微软雅黑", size=14, bold=True)
     lines = (
         "上传页不填版本。车身件材料清单第 2 行「版本：」必填；冲压工艺确认表表头「版本」必填。"
-        f"两张表必须写成同一个字（样表都是 {CHANGE_VERSION}）。任一张空、或两张写成不一样，整单不能导入。"
-        "设变后的总成、工艺、布点都用这个字，不会改成投产清单的 D/00，也不会各用各的。布点不要另填表。",
+        f"两张表必须写成同一个字（样表都是 {meta.change_version}）。任一张空、或两张写成不一样，整单不能导入。"
+        f"设变后的总成、工艺、布点都用这个字，不会改成投产清单的 {meta.bom_version_label}，也不会各用各的。布点不要另填表。",
         "一本只能一个项目号。系统会拆：材料清单第 3 行「项目代号」、确认表标题"
         "「某某项目冲压工艺确认表」里「项目」前面那一段（或表头项目名称）。"
-        "必须和上传页、工程变更单同一项目。拆不出或对不上，整单不能导入。",
+        "必须和上传页、设计变更单同一项目。拆不出或对不上，整单不能导入。",
         "上传前，该基地+项目须已在「焊接工程 → 采购对象」生成过清单。没有清单则拒收；系统不代建空清单。",
         "完成停止：材料清单不要写这个总成；确认表可以空表体。项目号仍要对齐；"
         "两张表头「版本」仍必须同一字且非空。没有「只建议、不拦截」。",
@@ -705,7 +716,7 @@ def _embed_part_sketches(
 
 
 def _strip_process_sample(sheet: Worksheet, meta: TemplateMeta) -> None:
-    sheet["D2"] = f"{meta.vehicle_model}项目冲压工艺确认表-工程变更"
+    sheet["D2"] = f"{meta.vehicle_model}项目冲压工艺确认表-设计变更"
     sheet["D3"] = meta.stamping_supplier
     sheet["S3"] = meta.change_version
     sheet.column_dimensions["D"].width = 14

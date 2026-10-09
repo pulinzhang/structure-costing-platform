@@ -41,7 +41,7 @@ export function engineeringChangeUploadTemplate() {
                                             <option value="">请先选择采购基地</option>
                                         </select>
                                     </div>
-                                    <p class="mt-2 text-[10px] text-ink-faint">必选。用基地找到投产清单。这个月这个项目必须还在做，并且和工程变更单上的项目一致。</p>
+                                    <p class="mt-2 text-[10px] text-ink-faint">必选。用基地找到投产清单。这个月这个项目必须还在做，并且和设计变更单上的项目一致。</p>
                                 </div>
                             </div>
                             <div class="h-px bg-app-surface mx-6 mb-4"></div>
@@ -59,7 +59,7 @@ export function engineeringChangeUploadTemplate() {
                                         <select id="ecUploadMonth" name="effective_month" required
                                                 class="${UPLOAD_INPUT} hud-filter w-[120px]"></select>
                                     </div>
-                                    <p class="mt-2 text-[10px] text-ink-faint">须和工程变更单上的生效年月一致。从这个月起用新零件号，上个月仍按变更前的总成结账。</p>
+                                    <p class="mt-2 text-[10px] text-ink-faint">须和设计变更单上的生效年月一致。从这个月起用新零件号，上个月仍按变更前的总成结账。</p>
                                 </div>
                             </div>
                             <div class="h-px bg-app-surface mx-6 mb-4"></div>
@@ -93,7 +93,7 @@ export function engineeringChangeUploadTemplate() {
                                             </div>
                                             <input type="file" id="ecUploadFileInput" class="hidden" accept=".xlsx,.xls">
                                             ${uploadBrowseButtonHtml('ecUploadSelectFileBtn')}
-                                            <p class="text-[10px] text-ink-faint mt-4 mb-0">.xlsx / .xls<span class="mx-2 text-ink-faint">|</span>最大 50MB · 须含工程变更单、材料清单、工艺确认表</p>
+                                            <p class="text-[10px] text-ink-faint mt-4 mb-0">.xlsx / .xls<span class="mx-2 text-ink-faint">|</span>最大 50MB · 须含设计变更单、材料清单、工艺确认表</p>
                                         </div>
                                         <div id="ecProgressPanel" class="hidden text-left w-full">
                                             <div class="flex items-center justify-between gap-3 mb-3">
@@ -106,7 +106,7 @@ export function engineeringChangeUploadTemplate() {
                                             <div class="h-1.5 w-full bg-app-deep border border-line overflow-hidden mb-3">
                                                 <div id="ecProgressBar" class="h-full bg-brand hud-brand-glow transition-all duration-300" style="width: 0%"></div>
                                             </div>
-                                            <p id="ecProgressMsg" class="text-[11px] text-ink-muted leading-relaxed mb-0 whitespace-pre-wrap break-words max-h-48 overflow-y-auto">已提交解析队列</p>
+                                            <p id="ecProgressMsg" class="text-[11px] text-ink-muted leading-relaxed mb-0 whitespace-pre-wrap break-words max-h-48 overflow-y-auto">正在导入，请稍候</p>
                                         </div>
                                     </div>
                                     <div id="ecFilePreview" class="hidden mb-4"></div>
@@ -117,7 +117,7 @@ export function engineeringChangeUploadTemplate() {
                                             <div class="min-w-0">
                                                 <h6 id="ecUploadErrorTitle"
                                                     class="text-[11px] font-semibold text-danger mb-0.5 tracking-wide">导入失败</h6>
-                                                <p class="text-[10px] text-ink-muted mb-0">请对照提示修改 Excel 后重新上传，可复制全文</p>
+                                                <p class="text-[10px] text-ink-muted mb-0">请按提示改好表格后再上传。这段话可以复制。</p>
                                             </div>
                                             <div class="flex items-center gap-1 shrink-0">
                                                 <button type="button"
@@ -155,12 +155,12 @@ export function engineeringChangeUploadTemplate() {
                         </div>
                     </div>
                     <div class="p-4 space-y-3 text-[11px] text-ink-muted leading-relaxed">
-                        <p>下载模板即青岛 T28 五种填法样表。整本一次上传，后台解析，本页看进度。</p>
-                        <p>工程变更单一行一种改法：完成停止 / 改图 / 增加零件 / 此件不装。同一本可以多行，也可以只有一行。</p>
-                        <p>上方基地、项目、生效年月须与 Excel 互校。项目、生效年月必须和工程变更单一致。</p>
-                        <p>必须有三张表：工程变更单、车身件材料清单、冲压工艺确认表。不要「零件汇总」。有旧模具布点的，系统按变更单建到新零件号上，简图从工艺确认表抄过去。</p>
-                        <p>Excel 只写改了什么。系统会按整份材料清单启用新总成。要看采购件，请筛选这次变更后的版本。</p>
-                        <p class="text-warn">改图之后，不要再在投产的材料清单、工艺、布点三页整份覆盖。换零件号只在本页上传。</p>
+                        <p>先选好基地和项目，再下载模板。模板里的项目和生效年月跟上面选的一样。五种改法是例子，零件号要改成这个项目自己的。</p>
+                        <p>设计变更单每一行写一种改法：完成停止、改图、增加零件、此件不装。可以多行，也可以只写一行。</p>
+                        <p>上面选的基地、项目、生效年月，必须和表里写的一样。</p>
+                        <p>必须有三张表：设计变更单、车身件材料清单、冲压工艺确认表。不要「零件汇总」。已经有模具布点的，会按变更单建到新零件号上，简图从工艺确认表抄过去。</p>
+                        <p>表里只写改了什么。系统按整份材料清单启用新总成。要看采购件，到列表里选这次变更后的版本。</p>
+                        <p class="text-warn">改图之后，不要再在材料清单、工艺、模具布点这三页整份覆盖。换零件号只在本页上传。</p>
                     </div>
                 </div>
                 <div class="bg-app-surface border border-line">

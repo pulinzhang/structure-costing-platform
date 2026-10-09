@@ -302,6 +302,9 @@ def test_template_sheet_order_and_existing_supplier(db: Session) -> None:
     assert object_sheet["C1"].value == HEADER_INTERNAL_NUMBER
     assert object_sheet["C2"].value == "ACA674001"
     assert object_sheet["G1"].value == HEADER_SUPPLIER
+    assert object_sheet["G1"].fill.fgColor.rgb in {"00FFFF00", "FFFF00"}
+    assert object_sheet["G2"].fill.fgColor.rgb in {"00FFFF00", "FFFF00"}
+    assert object_sheet["A2"].fill.fgColor is None or object_sheet["A2"].fill.fill_type is None
     assert object_sheet["G2"].value is None
     assert object_sheet["A1"].value == "零件号"
     assert workbook.worksheets[1]["B2"].value == FULL_NAME

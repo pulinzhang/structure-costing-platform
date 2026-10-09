@@ -3,7 +3,7 @@
  * 冲压工艺上传 — 异步 task_id + 进度轮询
  */
 
-import { uploadTemplate } from './template.js?v=29';
+import { uploadTemplate } from './template.js?v=30';
 import { uploadSubmitLabelHtml } from '../../../../ui/upload-actions.js?v=2';
 import { paintUploadProgressIcon } from '../../../../ui/sync-upload-progress.js?v=4';
 import {
@@ -296,7 +296,7 @@ export const UploadPage = {
         `;
     },
 
-    showProgress(progress = 0, msg = '已提交解析队列') {
+    showProgress(progress = 0, msg = '正在导入，请稍候') {
         const idle = document.getElementById('stampingDropIdle');
         const panel = document.getElementById('stampingProgressPanel');
         const zone = document.getElementById('uploadZone');
@@ -316,7 +316,7 @@ export const UploadPage = {
         if (idle) idle.classList.remove('hidden');
         if (panel) panel.classList.add('hidden');
         if (zone) zone.classList.remove('pointer-events-none');
-        this.updateProgress(0, '已提交解析队列');
+        this.updateProgress(0, '正在导入，请稍候');
     },
 
     updateProgress(progress, msg, status) {
@@ -501,7 +501,7 @@ export const UploadPage = {
         formData.append('file', fileInput.files[0]);
 
         this.setUploading(true);
-        this.showProgress(0, '已提交解析队列');
+        this.showProgress(0, '正在导入，请稍候');
 
         try {
             const response = await HttpClient.post('/api/stamping/upload/', formData, { skipToast: true, timeout: 60000 });

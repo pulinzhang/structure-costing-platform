@@ -70,7 +70,7 @@ export function annualPartPriceUploadTemplate() {
                                                class="${UPLOAD_INPUT} w-full">
                                     </div>
                                 </div>
-                                <p class="ml-6 mt-1.5 text-[11px] text-ink-dim">下载模板须选基地、项目、年度。第二页「填写说明」：1 采购单位 = N 核价单位，N 可小数（如 25.4），核价单价=采购单价÷N。导入仍写入该基地该年，不必删说明页。</p>
+                                <p class="ml-6 mt-1.5 text-[11px] text-ink-dim">先选基地、项目和年度再下载。第二页是填写说明，不用删。换算看右边说明：1 个采购单位等于多少个核价单位。</p>
                             </div>
 
                             <div class="h-px bg-app-surface mx-6 mb-4"></div>
@@ -106,9 +106,7 @@ export function annualPartPriceUploadTemplate() {
                                             <input type="file" id="annualPartPriceUploadFileInput" class="hidden" accept=".xlsx">
                                             ${uploadBrowseButtonHtml('annualPartPriceUploadSelectFileBtn')}
                                             <p class="text-[10px] text-ink-faint mt-4 mb-0">
-                                                仅 .xlsx
-                                                <span class="mx-2 text-ink-faint">|</span>
-                                                同步导入
+                                                只收 .xlsx
                                             </p>
                                         </div>
 
@@ -122,7 +120,7 @@ export function annualPartPriceUploadTemplate() {
                                                      class="h-full bg-brand hud-brand-glow transition-all duration-300 animate-pulse"
                                                      style="width: 60%"></div>
                                             </div>
-                                            <p id="annualPartPriceUploadProgressMsg" class="text-[11px] text-ink-muted leading-relaxed mb-0 whitespace-pre-wrap break-words max-h-48 overflow-y-auto">解析并写入数据库，请稍候</p>
+                                            <p id="annualPartPriceUploadProgressMsg" class="text-[11px] text-ink-muted leading-relaxed mb-0 whitespace-pre-wrap break-words max-h-48 overflow-y-auto">正在导入，请稍候</p>
                                         </div>
                                     </div>
 
@@ -146,27 +144,26 @@ export function annualPartPriceUploadTemplate() {
                             <span class="${HUD_LED}"></span>
                             <h5 class="text-[11px] font-bold text-ink-muted mb-0 tracking-widest uppercase">格式说明</h5>
                         </div>
-                        <span class="text-[10px] text-ink-dim tracking-wider">SPEC</span>
                     </div>
                     <div class="p-4 space-y-4">
                         <div>
-                            <h6 class="text-[10px] uppercase tracking-wider text-ink-dim mb-2">Excel 列</h6>
+                            <h6 class="text-[10px] uppercase tracking-wider text-ink-dim mb-2">怎么填</h6>
                             <ul class="list-disc list-inside text-xs text-ink-dim space-y-1.5">
-                                <li><span class="text-ink-muted">零件号</span>：必填；模板按所选项目带出外购叶子（含未进工艺库的板料、L2 标准件）</li>
-                                <li><span class="text-ink-muted">零件名称</span> / <span class="text-ink-muted">规格</span> / <span class="text-ink-muted">供应商</span> / <span class="text-ink-muted">备注</span>：可选；规格不参与取价</li>
-                                <li><span class="text-ink-muted">单位 / 单价</span>：核价口径；单位抄 BOM；单价模板预填 0</li>
-                                <li><span class="text-ink-muted">采购单位</span>：模板与单位相同；<span class="text-ink-muted">采购单价</span>留空；<span class="text-ink-muted">转换系数</span>默认 1</li>
-                                <li><span class="text-ink-muted">换算</span>：1 采购单位 = N 核价单位。N 默认 1，可小数（1 英寸=25.4 mm 填 25.4；1 打=12 填 12）。核价单价 = 采购单价 ÷ N。不要填 1/12</li>
-                                <li><span class="text-ink-muted">原供货类型</span>：模板按行预填「标准件」/「胶块」/「沿用」；导入可改</li>
+                                <li><span class="text-ink-muted">零件号</span>必填。模板会带出这个项目要外购的零件，包括还没进工艺的板料和二级标准件。</li>
+                                <li>零件名称、规格、供应商、备注可以空着。规格不参与算价。</li>
+                                <li>单位跟材料清单。单价是用来核价的，模板里先写成 0。</li>
+                                <li>采购单位先和单位写成一样。采购单价先空着。转换系数先写 1。</li>
+                                <li>换算：1 个采购单位等于多少个核价单位。默认是 1，可以写小数。1 英寸等于 25.4 毫米就写 25.4，1 打等于 12 个就写 12。核价单价等于采购单价除以这个数。不要写成 1/12。</li>
+                                <li>原供货类型模板会写成「标准件」「胶块」或「沿用」，上传时可以改。</li>
                             </ul>
                         </div>
                         <div>
-                            <h6 class="text-[10px] uppercase tracking-wider text-ink-dim mb-2">写入规则</h6>
+                            <h6 class="text-[10px] uppercase tracking-wider text-ink-dim mb-2">再传一份时</h6>
                             <ul class="list-disc list-inside text-xs text-ink-dim space-y-1.5">
-                                <li>下载模板须先选基地、项目、年度，且该基地该项目已有材料清单</li>
-                                <li>同一条按基地、年度、零件号区分。一样的就更新，没有的就新增。只接受 .xlsx</li>
-                                <li>列表导出含基地/年份/审核列；导入只读模板同列（基地/年度以本页选择为准）</li>
-                                <li>已审核记录导入不会覆盖，所以会出现「更新 0 条」；改价须先在列表反审核</li>
+                                <li>下载前先选基地、项目、年度。这个项目要已经有材料清单。</li>
+                                <li>同一个基地、同一年、同一个零件号，再传会更新。没有的会新增。只收 .xlsx。</li>
+                                <li>基地和年度以本页选择为准。</li>
+                                <li>已经审核过的不会被盖掉，所以可能显示更新了 0 条。要改价，先到列表里取消审核。</li>
                             </ul>
                         </div>
                     </div>

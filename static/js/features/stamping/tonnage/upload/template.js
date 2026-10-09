@@ -94,11 +94,7 @@ export function tonnageUploadTemplate() {
                                             </div>
                                             <input type="file" id="tonnageUploadFileInput" class="hidden" accept=".xlsx">
                                             ${uploadBrowseButtonHtml('tonnageUploadSelectFileBtn')}
-                                            <p class="text-[10px] text-ink-faint mt-4 mb-0">
-                                                仅 .xlsx
-                                                <span class="mx-2 text-ink-faint">|</span>
-                                                同步导入
-                                            </p>
+                                            <p class="text-[10px] text-ink-faint mt-4 mb-0">只收 .xlsx</p>
                                         </div>
 
                                         <div id="tonnageUploadProgressPanel" class="hidden text-left w-full">
@@ -111,7 +107,7 @@ export function tonnageUploadTemplate() {
                                                      class="h-full bg-brand hud-brand-glow transition-all duration-300 animate-pulse"
                                                      style="width: 60%"></div>
                                             </div>
-                                            <p id="tonnageUploadProgressMsg" class="text-[11px] text-ink-muted leading-relaxed mb-0 whitespace-pre-wrap break-words max-h-48 overflow-y-auto">解析并写入数据库，请稍候</p>
+                                            <p id="tonnageUploadProgressMsg" class="text-[11px] text-ink-muted leading-relaxed mb-0 whitespace-pre-wrap break-words max-h-48 overflow-y-auto">正在导入，请稍候</p>
                                         </div>
                                     </div>
 
@@ -135,15 +131,14 @@ export function tonnageUploadTemplate() {
                             <span class="${HUD_LED}"></span>
                             <h5 class="text-[11px] font-bold text-ink-muted mb-0 tracking-widest uppercase">格式说明</h5>
                         </div>
-                        <span class="text-[10px] text-ink-dim tracking-wider">SPEC</span>
                     </div>
                     <div class="p-4 space-y-4">
                         <div>
-                            <h6 class="text-[10px] uppercase tracking-wider text-ink-dim mb-2">固定三列</h6>
+                            <h6 class="text-[10px] uppercase tracking-wider text-ink-dim mb-2">三列怎么填</h6>
                             <ul class="list-disc list-inside text-xs text-ink-dim space-y-1.5">
-                                <li><span class="text-ink-muted">名称</span>：吨位，如 400T</li>
-                                <li><span class="text-ink-muted">单位</span>：固定为「次」</li>
-                                <li><span class="text-ink-muted">单价</span>：元/次，固定保留三位小数</li>
+                                <li><span class="text-ink-muted">名称</span>填吨位，比如 400T。</li>
+                                <li><span class="text-ink-muted">单位</span>固定写「次」。</li>
+                                <li><span class="text-ink-muted">单价</span>是每冲一次多少钱，保留三位小数。</li>
                             </ul>
                         </div>
                         <div>
@@ -169,12 +164,11 @@ export function tonnageUploadTemplate() {
                             </div>
                         </div>
                         <div>
-                            <h6 class="text-[10px] uppercase tracking-wider text-ink-dim mb-2">写入规则</h6>
+                            <h6 class="text-[10px] uppercase tracking-wider text-ink-dim mb-2">再传一份时</h6>
                             <ul class="list-disc list-inside text-xs text-ink-dim space-y-1.5">
-                                <li>同一条按基地、年度、吨位区分，不能重复</li>
-                                <li>已存在则更新单价，不存在则新增</li>
-                                <li>列表导出含基地/年份/审核列；导入只读名称/单位/单价（基地/年度以本页选择为准）</li>
-                                <li>仅支持 .xlsx，同步导入无需等待队列</li>
+                                <li>同一个基地、同一年、同一个吨位，再传会更新单价。没有的会新增。</li>
+                                <li>基地和年度以本页选择为准。表里只要名称、单位、单价。</li>
+                                <li>只收 .xlsx。</li>
                             </ul>
                         </div>
                     </div>

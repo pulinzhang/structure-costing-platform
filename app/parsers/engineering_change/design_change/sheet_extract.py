@@ -13,7 +13,8 @@ from openpyxl.worksheet.worksheet import Worksheet
 from app.common.engineering_change_gates import EC_SHEET_REQUIRED, listed
 from app.exceptions.base import BusinessException
 
-SHEET_CHANGE_ORDER = "工程变更单"
+SHEET_CHANGE_ORDER = "设计变更单"
+SHEET_CHANGE_ORDER_HINT = "设计变更填写说明"
 SHEET_BOM = "车身件材料清单"
 SHEET_BOM_HINT = "材料清单填写说明"
 SHEET_PROCESS = "冲压工艺确认表"
@@ -25,7 +26,7 @@ REQUIRED_SHEETS = (SHEET_CHANGE_ORDER, SHEET_BOM, SHEET_PROCESS)
 def extract_named_sheets(file_content: bytes) -> dict[str, bytes]:
     """
     按表名抽出工作表为独立 xlsx 字节。
-    缺工程变更单 / 车身件材料清单 / 冲压工艺确认表 → EC_SHEET_REQUIRED。
+    缺设计变更单 / 车身件材料清单 / 冲压工艺确认表 → EC_SHEET_REQUIRED。
     不抽「零件汇总」：模具布点逻辑建立，不读 Excel。
     """
     workbook = load_workbook(BytesIO(file_content), data_only=False)
@@ -34,7 +35,7 @@ def extract_named_sheets(file_content: bytes) -> dict[str, bytes]:
     if missing:
         raise BusinessException(
             f"{EC_SHEET_REQUIRED}：缺 {listed(missing)}。"
-            "表名必须是：工程变更单、车身件材料清单、冲压工艺确认表。"
+            f"表名必须是：{SHEET_CHANGE_ORDER}、{SHEET_BOM}、{SHEET_PROCESS}。"
         )
 
     result: dict[str, bytes] = {}

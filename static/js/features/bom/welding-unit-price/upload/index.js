@@ -4,7 +4,7 @@ import { HUD_LED } from '../../../../ui/classes.js?v=14';
  * 同步导入：基地 + 年度必选，仅 .xlsx
  */
 
-import { weldingUnitPriceUploadTemplate } from './template.js?v=17';
+import { weldingUnitPriceUploadTemplate } from './template.js?v=19';
 import { bindSyncUploadProgress } from '../../../../ui/sync-upload-progress.js?v=3';
 
 const API_BASE = '/api/bom/welding-unit-price';
@@ -315,7 +315,7 @@ const WeldingUnitPriceUploadPage = {
         if (year) year.value = '';
     },
 
-    showProgress(msg = '解析并写入数据库，请稍候') {
+    showProgress(msg = '正在导入，请稍候') {
         uploadProgress.setRunning(msg);
         document.getElementById('weldingUnitPriceUploadZone')?.classList.remove('border-brand');
     },

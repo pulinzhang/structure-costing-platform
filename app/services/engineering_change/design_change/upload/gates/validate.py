@@ -1,4 +1,4 @@
-"""工程变更单与工程变更校验。"""
+"""设计变更单与工程变更校验。"""
 
 from __future__ import annotations
 
@@ -49,7 +49,7 @@ _PERIOD_TEXT_RE = re.compile(r"^(\d{4})\s*年\s*(\d{1,2})\s*月$")
 
 
 def _row(change_order: ChangeOrderRowParsed) -> str:
-    return f"工程变更单第 {change_order.excel_row} 行"
+    return f"设计变更单第 {change_order.excel_row} 行"
 
 
 def parse_effective_period_text(text: str) -> tuple[int, int]:
@@ -58,13 +58,13 @@ def parse_effective_period_text(text: str) -> tuple[int, int]:
     match = _PERIOD_TEXT_RE.match(raw)
     if not match:
         raise BusinessException(
-            f"{EC_EFFECTIVE_MISMATCH}：工程变更单写成{quoted(raw)}，请写成「2026年07月」这种。"
+            f"{EC_EFFECTIVE_MISMATCH}：设计变更单写成{quoted(raw)}，请写成「2026年07月」这种。"
         )
     year = int(match.group(1))
     month = int(match.group(2))
     if month < MONTH_MIN or month > MONTH_MAX:
         raise BusinessException(
-            f"{EC_EFFECTIVE_MISMATCH}：工程变更单月份 {month} 无效，请写成 1–12 月。"
+            f"{EC_EFFECTIVE_MISMATCH}：设计变更单月份 {month} 无效，请写成 1–12 月。"
         )
     return year, month
 
@@ -76,9 +76,9 @@ def validate_change_order_rows(
     page_effective_year: int,
     page_effective_month: int,
 ) -> tuple[int, int]:
-    """工程变更单表内门禁：先项目与变更年月，再变更前/后总成唯一（多场景须合并单元格）。"""
+    """设计变更单表内门禁：先项目与变更年月，再变更前/后总成唯一（多场景须合并单元格）。"""
     if not change_orders:
-        raise BusinessException(f"{EC_CHANGE_ORDER_ROW_COUNT}。工程变更单表头下面没有数据行。")
+        raise BusinessException(f"{EC_CHANGE_ORDER_ROW_COUNT}。设计变更单表头下面没有数据行。")
     year, month = validate_change_order_project(
         change_orders,
         page_vehicle_model=page_vehicle_model,
@@ -107,26 +107,26 @@ def validate_change_order_project(
         file_project = change_order.project_code.strip().upper()
         if not file_project or file_project != page_project:
             raise BusinessException(
-                f"{EC_PROJECT_MISMATCH}。工程变更单{row}项目写成{quoted(change_order.project_code)}，"
+                f"{EC_PROJECT_MISMATCH}。设计变更单{row}项目写成{quoted(change_order.project_code)}，"
                 f"上传页是{quoted(page_vehicle_model)}。请改成同一个后再传。"
             )
         projects.add(file_project)
         periods.add(parse_effective_period_text(change_order.effective_period_text))
     if len(projects) != 1:
         raise BusinessException(
-            f"{EC_PROJECT_MISMATCH}。工程变更单项目写成了 {listed(projects)}。"
+            f"{EC_PROJECT_MISMATCH}。设计变更单项目写成了 {listed(projects)}。"
             "请改成同一个项目后再传。"
         )
     if len(periods) != 1:
         labels = [format_period(year, month) for year, month in sorted(periods)]
         raise BusinessException(
             f"{EC_EFFECTIVE_MISMATCH}：一次上传只能有一个变更年月。"
-            f"工程变更单写成了 {listed(labels)}。"
+            f"设计变更单写成了 {listed(labels)}。"
         )
     year, month = next(iter(periods))
     if year != page_effective_year or month != page_effective_month:
         raise BusinessException(
-            f"{EC_EFFECTIVE_MISMATCH}：工程变更单 {format_period(year, month)}，"
+            f"{EC_EFFECTIVE_MISMATCH}：设计变更单 {format_period(year, month)}，"
             f"上传页 {format_period(page_effective_year, page_effective_month)}"
         )
     return year, month
@@ -182,12 +182,12 @@ def _assert_unique_assembly_column(
         row_text = f"第 {listed(excel_rows)} 行"
         if contiguous:
             raise BusinessException(
-                f"{EC_CHANGE_ORDER_ASSEMBLY_REPEAT}：工程变更单{row_text}的{label}"
+                f"{EC_CHANGE_ORDER_ASSEMBLY_REPEAT}：设计变更单{row_text}的{label}"
                 f"都是{quoted(number)}。一个总成改了好几处，请把这几行的「{label}」"
                 "格子上下合并成一格。"
             )
         raise BusinessException(
-            f"{EC_CHANGE_ORDER_ASSEMBLY_REPEAT}：工程变更单{row_text}都写了{label}"
+            f"{EC_CHANGE_ORDER_ASSEMBLY_REPEAT}：设计变更单{row_text}都写了{label}"
             f"{quoted(number)}。同一个总成不要隔开写。请改成不同的号，"
             f"或者把这几行挨着写并把「{label}」上下合并成一格。"
         )

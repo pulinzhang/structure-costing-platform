@@ -1,4 +1,4 @@
-import { dieUploadTemplate } from './template.js?v=22';
+import { dieUploadTemplate } from './template.js?v=24';
 import { uploadSubmitLabelHtml } from '../../../../ui/upload-actions.js?v=2';
 import { paintUploadProgressIcon } from '../../../../ui/sync-upload-progress.js?v=4';
 import {
@@ -287,7 +287,7 @@ export const DieUploadPage = {
         `).join('');
     },
 
-    showProgress(progress = 0, msg = '已提交解析队列') {
+    showProgress(progress = 0, msg = '正在导入，请稍候') {
         document.getElementById('dieDropIdle')?.classList.add('hidden');
         document.getElementById('dieProgressPanel')?.classList.remove('hidden');
         document.getElementById('dieUploadZone')?.classList.add('pointer-events-none');
@@ -298,7 +298,7 @@ export const DieUploadPage = {
         document.getElementById('dieDropIdle')?.classList.remove('hidden');
         document.getElementById('dieProgressPanel')?.classList.add('hidden');
         document.getElementById('dieUploadZone')?.classList.remove('pointer-events-none');
-        this.updateProgress(0, '已提交解析队列');
+        this.updateProgress(0, '正在导入，请稍候');
     },
 
     updateProgress(progress, msg, status) {
@@ -463,7 +463,7 @@ export const DieUploadPage = {
         formData.append('file', fileInput.files[0]);
         const scopeLabel = `${location} / ${vehicleModel}`;
         this.setUploading(true);
-        this.showProgress(0, '已提交解析队列');
+        this.showProgress(0, '正在导入，请稍候');
         try {
             const response = await HttpClient.post('/api/stamping/die/upload', formData, { skipToast: true, timeout: 60000 });
             const taskId = response.data?.task_id;

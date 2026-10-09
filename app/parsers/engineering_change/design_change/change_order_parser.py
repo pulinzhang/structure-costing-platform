@@ -58,7 +58,7 @@ def parse_change_order_sheet(file_content: bytes) -> list[ChangeOrderRowParsed]:
     header_row = _find_header_row(sheet)
     if header_row is None:
         raise BusinessException(
-            f"{EC_CHANGE_ORDER_ROW_COUNT}：没找到工程变更单十列表头"
+            f"{EC_CHANGE_ORDER_ROW_COUNT}：没找到设计变更单十列表头"
             "（项目、生效年月、变更前总成…）。"
         )
 
@@ -89,7 +89,7 @@ def parse_change_order_sheet(file_content: bytes) -> list[ChangeOrderRowParsed]:
         )
 
     if not data_rows:
-        raise BusinessException(f"{EC_CHANGE_ORDER_ROW_COUNT}。工程变更单表头下面没有数据行。")
+        raise BusinessException(f"{EC_CHANGE_ORDER_ROW_COUNT}。设计变更单表头下面没有数据行。")
     return data_rows
 
 

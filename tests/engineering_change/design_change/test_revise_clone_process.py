@@ -168,17 +168,34 @@ def test_save_process_sketches_writes_png(tmp_path, monkeypatch) -> None:
     assert saved.read_bytes() == png
 
 
-def test_t2aa_process_sheet_keeps_revised_part_sketch() -> None:
+def test_template_process_sheet_keeps_revised_part_sketch() -> None:
+    import tempfile
     from pathlib import Path
 
-    from app.parsers.engineering_change.design_change.sheet_extract import SHEET_PROCESS
+    from app.parsers.engineering_change.design_change.sheet_extract import (
+        SHEET_PROCESS,
+        extract_named_sheets,
+    )
     from app.parsers.stamping.stamping_parser import parse_stamping_excel
+    from app.services.engineering_change.design_change.upload.template_builder import (
+        PROCESS_SAMPLES,
+        build_engineering_change_template,
+    )
 
-    sample = Path("tests/engineering_change/design_change/fixtures/工程变更导入T2AA-1.xlsx")
-    parsed = parse_stamping_excel(str(sample), sheet_title=SHEET_PROCESS)
-    png = parsed.images_by_part.get("551005982AB")
-    assert png, "工程变更工艺确认表 5982AB 必须抽出零件简图，不能落到旧号图上"
+    content, _ = build_engineering_change_template()
+    sheets = extract_named_sheets(content)
+    with tempfile.NamedTemporaryFile(suffix=".xlsx", delete=False) as tmp:
+        tmp.write(sheets[SHEET_PROCESS])
+        tmp_path = tmp.name
+    try:
+        parsed = parse_stamping_excel(tmp_path)
+    finally:
+        Path(tmp_path).unlink(missing_ok=True)
+    part_number = PROCESS_SAMPLES[0].part_number
+    png = parsed.images_by_part.get(part_number)
+    assert png, "设计变更工艺确认表必须把简图挂在变更后零件号上"
     assert png[:8] == b"\x89PNG\r\n\x1a\n"
+    assert part_number.endswith("AB")
 
 
 def test_revise_remaps_tailor_weld_blank_part_number() -> None:

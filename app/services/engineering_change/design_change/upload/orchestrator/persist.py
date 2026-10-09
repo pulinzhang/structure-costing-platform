@@ -84,7 +84,7 @@ def persist_engineering_change_result(
         for link in pipeline.effect_links:
             index = link.change_order_id
             if index < 0 or index >= len(change_order_rows):
-                raise BusinessException("这次导入对不上工程变更单的行，没有保存成功。请再传一次。")
+                raise BusinessException("这次导入对不上设计变更单的行，没有保存成功。请再传一次。")
             link.change_order_id = change_order_rows[index].id
             link.upload_log_id = prepared.log_id
         effect_repo.bulk_create(db, pipeline.effect_links)
