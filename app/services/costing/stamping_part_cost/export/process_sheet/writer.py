@@ -59,12 +59,6 @@ def write_process_sheet_to_workbook(
     steel_price_repo: SteelPriceRepository,
     scrap_price_repo: StampingScrapPriceRepository,
     process_fee_repo: StampingProcessFeeRepository,
-    year: int | None = None,
-    month: int | None = None,
-    location: str | None = None,
-    stamping_supplier: str | None = None,
-    vehicle_model: str | None = None,
-    version: str | None = None,
     sheet_title: str = "冲压核价结果",
 ) -> tuple[str, int]:
     """
@@ -405,12 +399,6 @@ def export_process_sheet(
         steel_price_repo=steel_price_repo,
         scrap_price_repo=scrap_price_repo,
         process_fee_repo=process_fee_repo,
-        year=year,
-        month=month,
-        location=location,
-        stamping_supplier=stamping_supplier,
-        vehicle_model=vehicle_model,
-        version=version,
     )
 
     content = workbook_to_xlsx_bytes(workbook, current_user)

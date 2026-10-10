@@ -130,7 +130,7 @@ def build_part_lookup_summary(
     }
 
 
-def _l0_presence(rows: list[L0PartPeriodRow], query_token: str) -> PartPresenceBlock:
+def _l0_presence(rows: list[L0PartPeriodRow]) -> PartPresenceBlock:
     if not rows:
         return {
             "found": False,
@@ -213,7 +213,6 @@ def _not_applicable_presence(source: str, note: str) -> PartPresenceBlock:
 
 def _stamping_cost_presence(
     rows: list[StampingPartPeriodRow],
-    query_token: str,
 ) -> PartPresenceBlock:
     if not rows:
         return {
@@ -242,7 +241,6 @@ def _stamping_cost_presence(
 
 def _stamping_process_presence(
     rows: list[StampingProcessPartRow],
-    query_token: str,
 ) -> PartPresenceBlock:
     if not rows:
         return {
@@ -283,13 +281,13 @@ def build_part_existence(
         stamping_rows=stamping_rows,
         process_rows=process_rows,
     )
-    l0 = _l0_presence(l0_rows, query_token)
+    l0 = _l0_presence(l0_rows)
     if profile.stamping_cost_applicable:
-        stamping_cost = _stamping_cost_presence(stamping_rows, query_token)
+        stamping_cost = _stamping_cost_presence(stamping_rows)
     else:
         stamping_cost = _not_applicable_presence("stamping_cost", _STAMPING_NA_NOTE)
     if profile.stamping_process_applicable:
-        stamping_process = _stamping_process_presence(process_rows, query_token)
+        stamping_process = _stamping_process_presence(process_rows)
     else:
         stamping_process = _not_applicable_presence("stamping_process", _PROCESS_NA_NOTE)
     exists_any = l0["found"] or stamping_cost["found"] or stamping_process["found"]

@@ -3,7 +3,6 @@
 """
 
 from decimal import Decimal
-from typing import Any
 
 from pydantic import BaseModel, Field, field_validator
 
@@ -14,7 +13,7 @@ from app.common.period import (
 )
 
 
-def quantize_price_per_stroke(value: Any) -> Decimal:
+def quantize_price_per_stroke(value: object) -> Decimal:
     """解析并量化为 3 位小数 Decimal（禁止以 float 作为业务类型）。"""
     return quantize_money(value, Q3)
 
@@ -29,7 +28,7 @@ class StampingTonnagePriceCreate(BaseModel):
 
     @field_validator("price_per_stroke", mode="before")
     @classmethod
-    def _coerce_price(cls, value: Any) -> Decimal:
+    def _coerce_price(cls, value: object) -> Decimal:
         return quantize_price_per_stroke(value)
 
 
@@ -40,7 +39,7 @@ class StampingTonnagePriceUpdate(BaseModel):
 
     @field_validator("price_per_stroke", mode="before")
     @classmethod
-    def _coerce_price(cls, value: Any) -> Decimal:
+    def _coerce_price(cls, value: object) -> Decimal:
         return quantize_price_per_stroke(value)
 
 

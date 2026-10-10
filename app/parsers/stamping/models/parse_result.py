@@ -5,7 +5,6 @@
 """
 
 from dataclasses import dataclass, field
-from typing import Any
 
 from app.parsers.stamping.models.part import Part
 from app.parsers.stamping.models.process import Process
@@ -46,10 +45,10 @@ class ParserResult:
     data_start_row: int = 0
 
     # 列映射
-    col_map: dict[str, Any] = field(default_factory=dict)
+    col_map: dict[str, int] = field(default_factory=dict)
 
     # Header 路径
-    header_paths: dict[str, Any] = field(default_factory=dict)
+    header_paths: dict[str, str] = field(default_factory=dict)
 
     # 总行数
     total_rows: int = 0

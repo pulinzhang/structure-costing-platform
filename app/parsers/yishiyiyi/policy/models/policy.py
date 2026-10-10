@@ -15,9 +15,9 @@ grade_type 取值:
 
 from dataclasses import dataclass, field
 from decimal import Decimal
-from typing import Any
+from typing import TypedDict
 
-from .ladder_item import ParsedLadderItem
+from .ladder_item import ParsedLadderItem, ParsedLadderItemDump
 
 POLICY_TYPE_THICKNESS = "THICKNESS"
 POLICY_TYPE_WIDTH = "WIDTH"
@@ -29,6 +29,18 @@ GRADE_TYPE_WIDTH_RANGE = "WIDTH_RANGE"
 GRADE_TYPE_CATEGORY = "CATEGORY"
 GRADE_TYPE_THICKNESS_RANGE = "THICKNESS_RANGE"
 GRADE_TYPE_THICKNESS_COND = "THICKNESS_COND"  # 厚度条件（≥0.6mm / <0.6mm）
+
+
+class ParsedPolicyDump(TypedDict):
+    steel_mill: str
+    category_name: str
+    grade_type: str
+    grade_value: str
+    policy_type: str
+    base_thickness: float | None
+    excel_filename: str | None
+    sheet_name: str | None
+    items: list[ParsedLadderItemDump]
 
 
 @dataclass
@@ -43,7 +55,7 @@ class ParsedPolicy:
     sheet_name: str | None = None
     items: list[ParsedLadderItem] = field(default_factory=list)
 
-    def model_dump(self) -> dict[str, Any]:
+    def model_dump(self) -> ParsedPolicyDump:
         """返回字典格式，兼容 Pydantic 接口"""
         return {
             "steel_mill": self.steel_mill,
@@ -59,5 +71,5 @@ class ParsedPolicy:
             "items": [item.to_dict() for item in self.items],
         }
 
-    def to_dict(self) -> dict[str, Any]:
+    def to_dict(self) -> ParsedPolicyDump:
         return self.model_dump()

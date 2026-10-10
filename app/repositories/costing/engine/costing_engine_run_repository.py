@@ -103,9 +103,6 @@ class CostingEngineRunRepository:
         db.flush()
         return step
 
-    def get_step(self, db: Session, step_id: int) -> CostingEngineRunStep | None:
-        return db.query(CostingEngineRunStep).filter(CostingEngineRunStep.id == step_id).first()
-
     def update_run_fields(
         self,
         db: Session,

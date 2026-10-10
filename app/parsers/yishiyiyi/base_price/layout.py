@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+from collections.abc import Sequence
 from typing import Any
 
 from app.parsers.yishiyiyi.base_price.cells import cell_text
@@ -110,7 +111,7 @@ def _is_price_subtitle(sub_text: str) -> bool:
 
 
 def _look_ahead_price_col(
-    header_row: Any, sub_row: Any, mill_idx: int, base_name: str
+    header_row: Sequence[object], sub_row: Sequence[object], mill_idx: int, base_name: str
 ) -> int | None:
     for lookahead in range(mill_idx + 1, len(header_row)):
         lookahead_sub = cell_text(sub_row[lookahead]) if lookahead < len(sub_row) else ""

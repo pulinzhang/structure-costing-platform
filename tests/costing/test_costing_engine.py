@@ -907,11 +907,10 @@ def test_gate_skips_die_unit_price_without_dies(
 
 
 def test_gate_skips_tonnage_without_stamping_process() -> None:
-    from app.services.costing.engine.gate.checker import GateChecker
+    from app.services.costing.engine.gate.stamping import check_tonnage_price
 
-    checker = GateChecker()
+    tonnage_repo = MagicMock()
     db = MagicMock()
-    checker.tonnage_repo = MagicMock()
     discovery = DiscoveryResult(
         location="青岛",
         year=2026,
@@ -922,19 +921,18 @@ def test_gate_skips_tonnage_without_stamping_process() -> None:
         l0_scopes=[],
     )
 
-    item = checker._check_tonnage_price(db, discovery, "青岛", 2026, 1)
+    item = check_tonnage_price(tonnage_repo, db, discovery, "青岛", 2026, 1)
 
     assert item.ok is True
     assert item.code == "tonnage_price"
-    checker.tonnage_repo.count_by_location_year_and_statuses.assert_not_called()
+    tonnage_repo.count_by_location_year_and_statuses.assert_not_called()
 
 
 def test_gate_skips_welding_unit_price_without_bom() -> None:
-    from app.services.costing.engine.gate.checker import GateChecker
+    from app.services.costing.engine.gate.welding import check_welding_unit_price
 
-    checker = GateChecker()
+    welding_unit_repo = MagicMock()
     db = MagicMock()
-    checker.welding_unit_repo = MagicMock()
     discovery = DiscoveryResult(
         location="青岛",
         year=2026,
@@ -945,19 +943,18 @@ def test_gate_skips_welding_unit_price_without_bom() -> None:
         l0_scopes=[],
     )
 
-    item = checker._check_welding_unit_price(db, discovery, "青岛", 2026, 1)
+    item = check_welding_unit_price(welding_unit_repo, db, discovery, "青岛", 2026, 1)
 
     assert item.ok is True
     assert item.code == "welding_unit_price"
-    checker.welding_unit_repo.count_by_location_year_and_statuses.assert_not_called()
+    welding_unit_repo.count_by_location_year_and_statuses.assert_not_called()
 
 
 def test_gate_skips_annual_part_price_without_bom() -> None:
-    from app.services.costing.engine.gate.checker import GateChecker
+    from app.services.costing.engine.gate.bom import check_annual_part_price
 
-    checker = GateChecker()
+    annual_part_repo = MagicMock()
     db = MagicMock()
-    checker.annual_part_repo = MagicMock()
     discovery = DiscoveryResult(
         location="青岛",
         year=2026,
@@ -968,10 +965,10 @@ def test_gate_skips_annual_part_price_without_bom() -> None:
         l0_scopes=[],
     )
 
-    item = checker._check_annual_part_price(db, discovery, "青岛", 2026, 1)
+    item = check_annual_part_price(annual_part_repo, db, discovery, "青岛", 2026, 1)
 
     assert item.ok is True
-    checker.annual_part_repo.count_by_location_year_and_statuses.assert_not_called()
+    annual_part_repo.count_by_location_year_and_statuses.assert_not_called()
 
 
 def test_stamping_complete_skips_without_process() -> None:

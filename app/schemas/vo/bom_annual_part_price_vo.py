@@ -4,7 +4,6 @@ BOM 年度零件价 VO - 响应数据结构
 
 from datetime import datetime
 from decimal import Decimal
-from typing import Any
 
 from pydantic import BaseModel, ConfigDict, field_serializer, field_validator
 
@@ -17,7 +16,7 @@ from app.parsers.bom.annual_part_price_parser import (
 from app.schemas.common.batch_result import BatchAuditCountsVO, BatchDeleteCountsVO
 
 
-def format_unit_price_decimal(value: Any) -> str:
+def format_unit_price_decimal(value: object) -> str:
     """单价序列化为固定 4 位小数字符串，避免 JSON float 精度丢失。"""
     return format_money(value if value is not None else Decimal("0"), Q4, 4)
 
@@ -53,7 +52,7 @@ class BomAnnualPartPriceResponse(BaseModel):
 
     @field_validator("conversion_factor", mode="before")
     @classmethod
-    def _coerce_conversion_factor(cls, value: Any) -> Decimal:
+    def _coerce_conversion_factor(cls, value: object) -> Decimal:
         if value is None or value == "":
             return Decimal("1")
         return parse_conversion_factor(value)

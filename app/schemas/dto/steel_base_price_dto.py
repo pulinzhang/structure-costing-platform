@@ -68,13 +68,16 @@ class SteelBasePriceCreate(BaseModel):
         mode="before",
     )
     @classmethod
+    # 非字符串要原样交给后面的校验，收成字符串会改掉现在的报错。
     def strip_strings(cls, v: Any) -> Any:
         return _strip(v)
 
     @field_validator("thick", "width", "base_price", "processing_fee", mode="before")
     @classmethod
-    def coerce_decimals(cls, v: Any) -> Any:
-        return _decimal_str(v)
+    def coerce_decimals(cls, v: object) -> Decimal | None:
+        if v is None or isinstance(v, Decimal | float | int | str):
+            return _decimal_str(v)
+        return Decimal(str(v))
 
 
 class SteelBasePriceUpdate(BaseModel):
@@ -89,13 +92,16 @@ class SteelBasePriceUpdate(BaseModel):
 
     @field_validator("excel_filename", "sheet_name", mode="before")
     @classmethod
+    # 非字符串要原样交给后面的校验，收成字符串会改掉现在的报错。
     def strip_strings(cls, v: Any) -> Any:
         return _strip(v)
 
     @field_validator("base_price", "processing_fee", mode="before")
     @classmethod
-    def coerce_decimals(cls, v: Any) -> Any:
-        return _decimal_str(v)
+    def coerce_decimals(cls, v: object) -> Decimal | None:
+        if v is None or isinstance(v, Decimal | float | int | str):
+            return _decimal_str(v)
+        return Decimal(str(v))
 
 
 # ============================
@@ -120,6 +126,7 @@ class SteelBasePriceQuery(BaseModel):
 
     @field_validator("location", "steel_mill", "category_name", "grade", "spec", mode="before")
     @classmethod
+    # 非字符串要原样交给后面的校验，收成字符串会改掉现在的报错。
     def strip_query_strings(cls, v: Any) -> Any:
         return _strip(v)
 
@@ -138,6 +145,7 @@ class SteelBasePriceExportQuery(BaseModel):
 
     @field_validator("location", "steel_mill", "category_name", "grade", mode="before")
     @classmethod
+    # 非字符串要原样交给后面的校验，收成字符串会改掉现在的报错。
     def strip_export_strings(cls, v: Any) -> Any:
         return _strip(v)
 

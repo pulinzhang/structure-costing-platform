@@ -13,24 +13,6 @@ from app.schemas.dto.steel_price_policy_dto import PolicyMatchRequest
 # =============================================================================
 
 
-def _compare(value: Decimal | None, operator: str | None) -> bool:
-    """
-    单条件比较：value 是否满足 operator 条件。
-    operator 为空或 None 时视为无限制，返回 True。
-    """
-    if operator is None or value is None:
-        return True
-    if operator == ">=":
-        return value >= Decimal(str(operator).replace(">=", ""))
-    if operator == ">":
-        return value > Decimal(str(operator).replace(">", ""))
-    if operator == "<=":
-        return value <= Decimal(str(operator).replace("<=", ""))
-    if operator == "<":
-        return value < Decimal(str(operator).replace("<", ""))
-    return True
-
-
 def _item_matches(
     item: SteelPriceLadderItem,
     thickness: Decimal | None,

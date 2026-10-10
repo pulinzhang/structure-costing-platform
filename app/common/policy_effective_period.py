@@ -95,17 +95,6 @@ def effective_periods_from_policy_filename(filename: str) -> list[PolicyEffectiv
     return periods
 
 
-def effective_period_from_policy_filename(filename: str) -> PolicyEffectivePeriod | None:
-    """
-    从文件名括号段解析首个生效年月（兼容单月文件名）。
-
-    例：外协钢板2026年1月订单（2026年2月 冲焊件原料）一事一议价格厚度加减价.xlsx
-    → year=2026, month=2（期货：订 1 月、原料 2 月生效）
-    """
-    periods = effective_periods_from_policy_filename(filename)
-    return periods[0] if periods else None
-
-
 def effective_periods_from_sample_path(
     path: Path,
     *,

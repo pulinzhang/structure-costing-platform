@@ -109,10 +109,7 @@ def test_render_engine_readiness_markdown_matches_service() -> None:
         from app.schemas.vo.costing_engine_vo import CostingEngineReadyVO
 
         ready = CostingEngineReadyVO.model_validate(run.evidence["engine_ready"])
-        text = render_engine_readiness_markdown(
-            user_question=query.user_question,
-            ready=ready,
-        )
+        text = render_engine_readiness_markdown(ready)
         assert "2026年02月" in text
         assert "跨年复用" in text
         if not ready.can_start and ready.gates.hard_stop:

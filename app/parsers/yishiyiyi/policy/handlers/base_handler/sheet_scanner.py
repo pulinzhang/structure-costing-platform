@@ -3,14 +3,14 @@
 职责：
 - 单元格读写（cell / text / text_or_none）
 - 维度探测（row_max / col_max）
-- 合并单元格处理（find_start_row / find_value_above）
-- 搜索定位（find_row_with_keywords / find_grade_label_rows /
-          find_header_row / find_block_end_row）
+- 合并单元格处理（find_start_row / find_value_above_with_row）
+- 搜索定位（find_grade_label_rows / find_header_row / find_block_end_row）
 - 收集（collect_price_cols）
 
 所有方法签名均为 (sheet: Worksheet, ...) → 纯数据，不含业务语义。
 """
 
+from decimal import Decimal
 from typing import Any
 
 from openpyxl.worksheet.worksheet import Worksheet
@@ -52,18 +52,6 @@ class SheetScanner:
     def col_max(sheet: Worksheet) -> int:
         return sheet.max_column or 0
 
-    @staticmethod
-    def col_max_on_row(
-        sheet: Worksheet, row: int, start_col: int = 1, end_col: int | None = None
-    ) -> int:
-        """返回指定行中，最后一个非空单元格的列号。"""
-        end_col = end_col or sheet.max_column
-        last = 0
-        for c in range(start_col, end_col + 1):
-            if sheet.cell(row=row, column=c).value is not None:
-                last = c
-        return last
-
     # ------------------------------------------------------------------ #
     # 合并单元格工具
     # ------------------------------------------------------------------ #
@@ -91,20 +79,6 @@ class SheetScanner:
         return None
 
     @staticmethod
-    def find_value_above(
-        sheet: Worksheet,
-        start_row: int,
-        col: int,
-        min_row: int = 1,
-    ) -> int:
-        """向上查找最近的非 None 整数值。"""
-        for r in range(start_row - 1, min_row - 1, -1):
-            val = sheet.cell(row=r, column=col).value
-            if val is not None:
-                return _to_int_price(val)
-        return 0
-
-    @staticmethod
     def find_value_above_with_row(
         sheet: Worksheet,
         start_row: int,
@@ -124,24 +98,6 @@ class SheetScanner:
     # ------------------------------------------------------------------ #
     # 搜索定位
     # ------------------------------------------------------------------ #
-
-    def find_row_with_keywords(
-        self,
-        sheet: Worksheet,
-        keywords: tuple[str, ...],
-        *,
-        start_row: int = 1,
-        end_row: int | None = None,
-        scan_col: int | None = None,
-    ) -> int | None:
-        end_row = end_row or self.row_max(sheet)
-        for r in range(start_row, end_row + 1):
-            cols = [scan_col] if scan_col is not None else range(1, self.col_max(sheet) + 1)
-            for c in cols:
-                text = _to_str(sheet.cell(row=r, column=c).value)
-                if text and any(kw in text for kw in keywords):
-                    return r
-        return None
 
     def find_grade_label_rows(
         self,
@@ -300,10 +256,8 @@ class SheetScanner:
         sheet: Worksheet,
         header_row: int,
         label_row: int,
-    ) -> Any | None:
+    ) -> Decimal | None:
         """在 header_row 附近（向上 3 行）查找 `基准厚度 X.X`。"""
-        from decimal import Decimal
-
         scan_end = self.col_max(sheet)
         for r in range(max(1, label_row - 3), header_row + 1):
             for c in range(1, scan_end + 1):

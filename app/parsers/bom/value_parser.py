@@ -11,14 +11,17 @@ from datetime import date, datetime
 from decimal import Decimal, InvalidOperation
 from typing import Any
 
+from openpyxl.worksheet.worksheet import Worksheet
+
 _EMPTY_MARKERS = {"", "/", "／", "-", "—", "无"}
 
 
-def cell_value(ws: Any, row: int, col: int) -> Any:
+def cell_value(ws: Worksheet, row: int, col: int) -> Any:
+    # openpyxl 格子值没有类型。直接标成 object 会触发返回 Any 的检查。
     return ws.cell(row, col).value
 
 
-def to_text(value: Any) -> str | None:
+def to_text(value: object) -> str | None:
     if value is None:
         return None
     text = str(value).strip()
@@ -28,11 +31,7 @@ def to_text(value: Any) -> str | None:
     return text
 
 
-def is_filled(value: Any) -> bool:
-    return to_text(value) is not None
-
-
-def parse_seq_no(value: Any) -> int | None:
+def parse_seq_no(value: object) -> int | None:
     """
     解析 A 列序号。
 
@@ -56,7 +55,7 @@ def parse_seq_no(value: Any) -> int | None:
     return int(text)
 
 
-def to_decimal(value: Any) -> Decimal | None:
+def to_decimal(value: object) -> Decimal | None:
     if value is None:
         return None
     if isinstance(value, Decimal):
@@ -73,7 +72,7 @@ def to_decimal(value: Any) -> Decimal | None:
         return None
 
 
-def parse_qty(value: Any) -> tuple[Decimal | None, str, str | None]:
+def parse_qty(value: object) -> tuple[Decimal | None, str, str | None]:
     """返回 (qty, qty_unit, qty_text)。"""
     text = to_text(value)
     if text is None:
@@ -88,7 +87,7 @@ def parse_qty(value: Any) -> tuple[Decimal | None, str, str | None]:
     return None, "pcs", text
 
 
-def parse_thickness(value: Any) -> tuple[Decimal | None, str | None]:
+def parse_thickness(value: object) -> tuple[Decimal | None, str | None]:
     text = to_text(value)
     if text is None:
         return None, None
@@ -102,7 +101,7 @@ def parse_thickness(value: Any) -> tuple[Decimal | None, str | None]:
     return None, text
 
 
-def parse_date(value: Any) -> date | None:
+def parse_date(value: object) -> date | None:
     if value is None:
         return None
     if isinstance(value, datetime):

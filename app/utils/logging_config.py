@@ -6,7 +6,6 @@
 import logging
 import sys
 from logging.handlers import RotatingFileHandler
-from typing import Any
 
 from app.bootstrap.frontend import HEALTH_PATH
 from app.config import settings
@@ -101,7 +100,7 @@ class LoggerConfig:
 
         # 自定义 Handler，确保每次写入后立即刷新到磁盘
         class SafeRotatingFileHandler(RotatingFileHandler):
-            def emit(self, record: Any) -> Any:
+            def emit(self, record: logging.LogRecord) -> None:
                 try:
                     super().emit(record)
                     self.flush()
@@ -183,17 +182,3 @@ def log_response(
 ) -> None:
     """记录 HTTP 响应"""
     logger.info(f"响应: {method} {path} - 状态:{status} - 耗时:{duration_ms:.2f}ms")
-
-
-def log_error(logger: logging.Logger, error: Exception, context: str | None = None) -> None:
-    """记录错误日志"""
-    if context:
-        logger.error(f"{context} - 错误: {type(error).__name__}: {error!s}", exc_info=True)
-    else:
-        logger.error(f"错误: {type(error).__name__}: {error!s}", exc_info=True)
-
-
-def log_business_operation(logger: logging.Logger, operation: str, details: dict[str, Any]) -> None:
-    """记录业务操作日志"""
-    detail_str = " | ".join([f"{k}={v}" for k, v in details.items()])
-    logger.info(f"业务操作: {operation} | {detail_str}")

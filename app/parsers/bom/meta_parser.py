@@ -3,14 +3,15 @@
 from __future__ import annotations
 
 import re
-from typing import Any
+
+from openpyxl.worksheet.worksheet import Worksheet
 
 from app.common.vehicle_model import normalize_vehicle_model
 from app.parsers.bom.models import BomParsedMeta
 from app.parsers.bom.value_parser import cell_value, parse_date, to_text
 
 
-def parse_bom_meta(ws: Any) -> BomParsedMeta:
+def parse_bom_meta(ws: Worksheet) -> BomParsedMeta:
     """从工作表前几行解析清单头信息。"""
     meta = BomParsedMeta()
     meta.title = to_text(cell_value(ws, 1, 1))

@@ -2,11 +2,10 @@
 
 from __future__ import annotations
 
-from typing import Any
-
 from openpyxl.worksheet.worksheet import Worksheet
 
 from app.parsers.yishiyiyi.policy.handlers.constants import GRADE_LABELS
+from app.parsers.yishiyiyi.policy.models.policy_block import PolicyBlock
 
 
 class CategoryInference:
@@ -53,7 +52,7 @@ class CategoryInference:
     def infer_block_category(
         self,
         sheet: Worksheet,
-        block: dict[str, Any],
+        block: PolicyBlock,
     ) -> str:
         """综合'字面 hint'与'grade 后缀'推断块的 category。"""
         literal_cat = block.get("category_name") or "冷轧钢"

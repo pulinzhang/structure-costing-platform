@@ -9,13 +9,12 @@
     DC01       180       140       ...
 """
 
-from typing import Any
-
 from openpyxl.worksheet.worksheet import Worksheet
 
 from app.parsers.yishiyiyi.policy.handlers.base_handler.base_handler import (
     BaseSheetHandler,
 )
+from app.parsers.yishiyiyi.policy.models.policy_block import PolicyBlock
 
 
 class DefaultSheetHandler(BaseSheetHandler):
@@ -25,12 +24,12 @@ class DefaultSheetHandler(BaseSheetHandler):
     # 厚度块查找 - 复用基类的默认扫描
     # ------------------------------------------------------------------ #
 
-    def find_thickness_blocks(self, sheet: Worksheet, steel_mill: str) -> list[dict[str, Any]]:
+    def find_thickness_blocks(self, sheet: Worksheet, steel_mill: str) -> list[PolicyBlock]:
         return self.find_default_thickness_blocks(sheet, steel_mill)
 
     # ------------------------------------------------------------------ #
     # 宽度块查找（默认无）
     # ------------------------------------------------------------------ #
 
-    def find_width_blocks(self, sheet: Worksheet, steel_mill: str) -> list[dict[str, Any]]:
+    def find_width_blocks(self, _sheet: Worksheet, _steel_mill: str) -> list[PolicyBlock]:
         return []

@@ -15,4 +15,5 @@ class PageResult(BaseModel, Generic[T]):
     total_pages: int = 0
     has_next: bool = False
     has_prev: bool = False
+    # 各列表的筛选项不一样，没有统一形状。
     filters: Any | None = None

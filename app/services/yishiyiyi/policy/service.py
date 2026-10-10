@@ -12,7 +12,6 @@ from sqlalchemy.orm import Session
 
 from app.common.audit import display_name
 from app.exceptions.base import BusinessException
-from app.repositories.yishiyiyi.policy.dto import ExportRow
 from app.schemas.dto.steel_price_policy_dto import (
     LadderItemCreate,
     LadderItemUpdate,
@@ -23,6 +22,7 @@ from app.schemas.dto.steel_price_policy_dto import (
 )
 from app.schemas.vo.async_task_vo import AsyncTaskAcceptedVO
 from app.schemas.vo.steel_price_policy_vo import (
+    ExportRow,
     ImportResultResponse,
     LadderItemResponse,
     PolicyDetailResponse,
@@ -163,7 +163,7 @@ class SteelPricePolicyService:
     ) -> list[ExportRow]:
         page = max(page, 1)
         skip = 0 if size is None else (page - 1) * size
-        return self._export_service.get_export_data(
+        rows = self._export_service.get_export_data(
             db,
             year=year,
             month=month,
@@ -174,6 +174,7 @@ class SteelPricePolicyService:
             skip=skip,
             limit=size,
         )
+        return [ExportRow.model_validate(row.model_dump()) for row in rows]
 
     def count_export_data(
         self,

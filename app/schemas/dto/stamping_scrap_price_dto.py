@@ -4,7 +4,7 @@
 
 from dataclasses import dataclass
 from decimal import Decimal
-from typing import Any
+from typing import Any, Self
 
 from pydantic import BaseModel, Field, field_validator, model_validator
 
@@ -39,23 +39,24 @@ class StampingScrapPriceMonthRowInput(BaseModel):
 
     @field_validator("location", "remark", mode="before")
     @classmethod
+    # 非字符串要原样交给后面的校验，收成字符串会改掉现在的报错。
     def strip_strings(cls, value: Any) -> Any:
         return _strip(value)
 
     @field_validator("market_price", mode="before")
     @classmethod
-    def coerce_market_price(cls, value: Any) -> Decimal:
+    def coerce_market_price(cls, value: object) -> Decimal:
         return quantize_money(value, Q2)
 
     @field_validator("deduction_fee", mode="before")
     @classmethod
-    def coerce_deduction_fee(cls, value: Any) -> Decimal:
+    def coerce_deduction_fee(cls, value: object) -> Decimal:
         if value is None or (isinstance(value, str) and not str(value).strip()):
             return Decimal("0.00")
         return optional_quantize_money(value, Q2) or Decimal("0.00")
 
     @model_validator(mode="after")
-    def validate_deduction_not_exceed_market(self) -> Any:
+    def validate_deduction_not_exceed_market(self) -> Self:
         if self.deduction_fee > self.market_price:
             raise ValueError(f"{self.location}: 扣费不能大于大盘价")
         return self
@@ -77,7 +78,7 @@ class StampingScrapPriceMonthSaveDTO(BaseModel):
     )
 
     @model_validator(mode="after")
-    def validate_unique_locations(self) -> Any:
+    def validate_unique_locations(self) -> Self:
         names = [row.location for row in self.items]
         if len(set(names)) != len(names):
             raise ValueError("items 中基地名称不能重复")

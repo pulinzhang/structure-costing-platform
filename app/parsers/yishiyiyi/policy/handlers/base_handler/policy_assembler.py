@@ -11,13 +11,12 @@
 
 from __future__ import annotations
 
-from typing import Any
-
 from openpyxl.worksheet.worksheet import Worksheet
 
 from app.parsers.yishiyiyi.policy.boundary_parser import _Boundary
 from app.parsers.yishiyiyi.policy.models.ladder_item import ParsedLadderItem
 from app.parsers.yishiyiyi.policy.models.policy import ParsedPolicy
+from app.parsers.yishiyiyi.policy.models.policy_block import PolicyBlock
 
 from .build_items import ItemBuilder
 from .build_policies import PolicyBuilder
@@ -41,7 +40,7 @@ class PolicyAssembler:
         sheet: Worksheet,
         label_row: int,
         block_end: int,
-    ) -> dict[str, Any] | None:
+    ) -> PolicyBlock | None:
         return self._locator.locate_thickness_block(sheet, label_row, block_end)
 
     def locate_width_block(
@@ -56,7 +55,7 @@ class PolicyAssembler:
         category: str = "冷轧钢",
         header_row_offset: int = 1,
         scan_cols: list[int] | None = None,
-    ) -> dict[str, Any] | None:
+    ) -> PolicyBlock | None:
         return self._locator.locate_width_block(
             sheet,
             title_row,
@@ -108,7 +107,7 @@ class PolicyAssembler:
         boundaries: dict[int, _Boundary],
         policy_type: str = "THICKNESS",
         sort_order: int = 0,
-    ) -> tuple[list[ParsedLadderItem], Any]:
+    ) -> tuple[list[ParsedLadderItem], None]:
         return self._items.build_items_for_row(
             sheet, r, price_cols, boundaries, policy_type, sort_order
         )
@@ -127,7 +126,7 @@ class PolicyAssembler:
         self,
         sheet: Worksheet,
         steel_mill: str,
-        block: dict[str, Any],
+        block: PolicyBlock,
     ) -> list[ParsedPolicy]:
         return self._policies.build_policies_from_block(sheet, steel_mill, block)
 
@@ -137,6 +136,6 @@ class PolicyAssembler:
     def infer_block_category(
         self,
         sheet: Worksheet,
-        block: dict[str, Any],
+        block: PolicyBlock,
     ) -> str:
         return self._categories.infer_block_category(sheet, block)

@@ -9,6 +9,7 @@ from app.parsers.yishiyiyi.policy.handlers.base_handler.base_handler import (
     BaseSheetHandler,
 )
 from app.parsers.yishiyiyi.policy.handlers.constants import GRADE_LABELS, parse_thickness_label
+from app.parsers.yishiyiyi.policy.models.policy_block import PolicyBlock
 
 from ..models.policy import (
     GRADE_TYPE_WIDTH_RANGE,
@@ -39,7 +40,7 @@ class ShougangSheetHandler(BaseSheetHandler):
     # 厚度块
     # ------------------------------------------------------------------ #
 
-    def find_thickness_blocks(self, sheet: Worksheet, steel_mill: str) -> list[dict[str, Any]]:
+    def find_thickness_blocks(self, sheet: Worksheet, steel_mill: str) -> list[PolicyBlock]:
         return self.find_default_thickness_blocks(sheet, steel_mill)
 
     # ------------------------------------------------------------------ #
@@ -73,7 +74,10 @@ class ShougangSheetHandler(BaseSheetHandler):
         return None
 
     def _get_merge_end_col(self, sheet: Worksheet, row: int, col: int) -> Any:
-        """返回合并单元格的结束列号；若非合并单元格则返回传入的列号。"""
+        """返回合并单元格的结束列号；若非合并单元格则返回传入的列号。
+
+        openpyxl 的 max_col 没有类型，标成 int 会触发 no-any-return。
+        """
         for merged in sheet.merged_cells.ranges:
             if merged.min_row <= row <= merged.max_row and merged.min_col <= col <= merged.max_col:
                 return merged.max_col
@@ -83,7 +87,7 @@ class ShougangSheetHandler(BaseSheetHandler):
     # 块定位
     # ------------------------------------------------------------------ #
 
-    def find_width_blocks(self, sheet: Worksheet, steel_mill: str) -> list[dict[str, Any]]:
+    def find_width_blocks(self, sheet: Worksheet, _steel_mill: str) -> list[PolicyBlock]:
         """定位首钢所有宽度块。
 
         1. 扫描全表，找含"宽度"关键字的行 → 块标题（其合并单元格 end_col 即为价格列终点）
@@ -91,7 +95,7 @@ class ShougangSheetHandler(BaseSheetHandler):
         3. 从列头行含"宽"的列确定为起始列，标题合并单元格 end_col 为终止列
         4. 在块范围内扫描数据行
         """
-        blocks: list[dict[str, Any]] = []
+        blocks: list[PolicyBlock] = []
         max_row = self.row_max(sheet)
         max_col = self.col_max(sheet)
 
@@ -190,7 +194,7 @@ class ShougangSheetHandler(BaseSheetHandler):
         self,
         sheet: Worksheet,
         steel_mill: str,
-        block: dict[str, Any],
+        block: PolicyBlock,
     ) -> list[ParsedPolicy]:
         header_row = block["header_row"]
         price_cols = sorted(block["price_cols"])

@@ -33,7 +33,6 @@ def test_process_log_roundtrip_cards() -> None:
     message = compose_card_message(
         status="partial",
         missing_leaf_count=2,
-        missing_parts=missing,
     )
     builder.add_card(
         part_number="5010002AA",

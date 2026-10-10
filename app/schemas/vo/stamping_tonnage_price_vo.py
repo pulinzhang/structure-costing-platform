@@ -4,7 +4,6 @@
 
 from datetime import datetime
 from decimal import Decimal
-from typing import Any
 
 from pydantic import BaseModel, ConfigDict, field_serializer
 
@@ -13,7 +12,7 @@ from app.common.timezone import datetime_to_iso
 from app.schemas.common.batch_result import BatchAuditCountsVO, BatchDeleteCountsVO
 
 
-def format_price_per_stroke(value: Any) -> str:
+def format_price_per_stroke(value: object) -> str:
     """单价序列化为固定 3 位小数字符串，避免 JSON float 精度丢失。"""
     return format_money(value if value is not None else Decimal("0"), Q3, 3)
 

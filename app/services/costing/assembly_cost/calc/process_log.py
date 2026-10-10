@@ -52,12 +52,11 @@ def compose_card_message(
     *,
     status: str,
     missing_leaf_count: int = 0,
-    missing_parts: list[str] | None = None,
     weld_incomplete: bool = False,
     is_purchased_assembly: bool = False,
     extra: str | None = None,
 ) -> str | None:
-    """卡片说明：短句。缺价件号放 missing_parts。
+    """卡片说明：短句。缺价件号由卡片自己的 missing_parts 携带。
 
     外购件总成（P4）价齐时写 PURCHASED_ASSEMBLY_NOTE，核算报告「说明」列用同一句。
     """

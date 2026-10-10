@@ -2,8 +2,6 @@
 
 from __future__ import annotations
 
-from typing import Any
-
 from openpyxl.worksheet.worksheet import Worksheet
 
 from app.parsers.yishiyiyi.policy.boundary_parser import _Boundary
@@ -52,7 +50,7 @@ class ItemBuilder:
         boundaries: dict[int, _Boundary],
         policy_type: str = "THICKNESS",
         sort_order: int = 0,
-    ) -> tuple[list[ParsedLadderItem], Any]:
+    ) -> tuple[list[ParsedLadderItem], None]:
         """构建行内阶梯明细项列表。返回 (items, extra)。"""
         items: list[ParsedLadderItem] = []
         sorted_cols = sorted(price_cols)

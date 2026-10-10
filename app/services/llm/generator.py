@@ -299,10 +299,7 @@ class LlmReportGenerator:
             from app.schemas.vo.costing_engine_vo import CostingEngineReadyVO
 
             ready = CostingEngineReadyVO.model_validate(ready_raw)
-            body = render_engine_readiness_markdown(
-                user_question=snapshot.query.user_question,
-                ready=ready,
-            )
+            body = render_engine_readiness_markdown(ready)
             return f"{body}\n\n> 说明：模型暂不可用（{error_hint}），以上为系统就绪检查结果。"
         return (
             f"## {snapshot.query.user_question}\n\n"

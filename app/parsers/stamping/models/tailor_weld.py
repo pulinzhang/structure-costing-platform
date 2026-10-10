@@ -46,10 +46,6 @@ class TailorWeldBlankParsed:
     remark: str | None = None
     excel_sheet_name: str | None = None
 
-    @property
-    def excel_row_span(self) -> int:
-        return self.excel_row_end - self.excel_row_start + 1
-
 
 @dataclass(slots=True)
 class TailorWeldAssemblyParsed:
@@ -81,10 +77,6 @@ class TailorWeldAssemblyParsed:
     def blank_count(self) -> int:
         return len(self.blanks)
 
-    @property
-    def excel_row_span(self) -> int:
-        return self.excel_row_end - self.excel_row_start + 1
-
 
 @dataclass(slots=True)
 class TailorWeldParseResult:
@@ -111,6 +103,3 @@ class TailorWeldParseResult:
     @property
     def parent_part_numbers(self) -> list[str]:
         return [item.parent_part_number for item in self.assemblies]
-
-    def blanks_by_parent(self) -> dict[str, list[TailorWeldBlankParsed]]:
-        return {item.parent_part_number: list(item.blanks) for item in self.assemblies}

@@ -3,7 +3,6 @@
 from __future__ import annotations
 
 from collections.abc import Iterable
-from typing import Any
 
 _EXCEL_SUFFIXES = (".xlsx", ".xls", ".xlsm", ".xlsb")
 _MAX_FILENAME_LEN = 200
@@ -34,7 +33,9 @@ def should_audit_upload_filename(path: str, filename: str) -> bool:
     return is_upload_path(path)
 
 
-def collect_audit_upload_filenames(path: str, form_items: Iterable[tuple[str, Any]]) -> list[str]:
+def collect_audit_upload_filenames(
+    path: str, form_items: Iterable[tuple[str, object]]
+) -> list[str]:
     names: list[str] = []
     seen: set[str] = set()
     for _key, value in form_items:

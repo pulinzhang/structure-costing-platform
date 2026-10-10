@@ -11,9 +11,9 @@ from __future__ import annotations
 from dataclasses import dataclass
 from decimal import Decimal, InvalidOperation
 from io import BytesIO
-from typing import Any
 
 from openpyxl import load_workbook
+from openpyxl.worksheet.worksheet import Worksheet
 
 from app.common.money import Q4, Q6, quantize_money
 from app.common.workbook_reject import (
@@ -71,7 +71,7 @@ def _round4(value: Decimal) -> Decimal:
     return quantize_money(value, Q4)
 
 
-def parse_conversion_factor(value: Any) -> Decimal:
+def parse_conversion_factor(value: object) -> Decimal:
     """转换系数：空则 1；须 > 0，最多 6 位小数（1 采购单位 = N 核价单位）。"""
     if value is None:
         return DEFAULT_CONVERSION_FACTOR
@@ -94,7 +94,7 @@ def format_conversion_factor(value: Decimal) -> str:
     return f"{number:.6f}".rstrip("0").rstrip(".")
 
 
-def parse_optional_purchase_unit_price(value: Any) -> Decimal | None:
+def parse_optional_purchase_unit_price(value: object) -> Decimal | None:
     """采购单价：空为未填；0 是有效报价。"""
     if value is None or value == "":
         return None
@@ -130,7 +130,7 @@ def resolve_annual_unit_price(
     return derived
 
 
-def _cell_text(value: Any) -> str:
+def _cell_text(value: object) -> str:
     if value is None:
         return ""
     if isinstance(value, float) and value.is_integer():
@@ -138,7 +138,7 @@ def _cell_text(value: Any) -> str:
     return str(value).strip()
 
 
-def _parse_unit_price(value: Any) -> Decimal | None:
+def _parse_unit_price(value: object) -> Decimal | None:
     if value is None or value == "":
         return None
     try:
@@ -158,7 +158,7 @@ def _parse_unit_price(value: Any) -> Decimal | None:
     return _round4(number)
 
 
-def _find_header_row(sheet: Any) -> tuple[int, dict[str, int]] | None:
+def _find_header_row(sheet: Worksheet) -> tuple[int, dict[str, int]] | None:
     """定位表头行，返回 (行号, 列名→列号)。"""
     aliases = {
         HEADER_PART_NUMBER: {HEADER_PART_NUMBER, "零件号", "料号", "part_number"},

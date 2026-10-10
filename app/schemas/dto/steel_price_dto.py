@@ -5,7 +5,7 @@
 from dataclasses import dataclass
 from datetime import datetime
 from decimal import Decimal
-from typing import Any, TypedDict
+from typing import TypedDict
 
 from pydantic import BaseModel, Field, field_validator
 
@@ -46,7 +46,7 @@ class SteelPriceUpdate(BaseModel):
 
     @field_validator("base_price", "processing_fee", mode="before")
     @classmethod
-    def _coerce_nonneg_q4(cls, value: Any) -> Decimal | None:
+    def _coerce_nonneg_q4(cls, value: object) -> Decimal | None:
         return optional_quantize_money(value, Q4)
 
     @field_validator(
@@ -57,7 +57,7 @@ class SteelPriceUpdate(BaseModel):
         mode="before",
     )
     @classmethod
-    def _coerce_signed_q4(cls, value: Any) -> Decimal | None:
+    def _coerce_signed_q4(cls, value: object) -> Decimal | None:
         return optional_quantize_money(value, Q4, allow_negative=True)
 
 

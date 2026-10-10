@@ -16,6 +16,8 @@ import time
 from decimal import Decimal, InvalidOperation
 from typing import Any
 
+from openpyxl.worksheet.worksheet import Worksheet
+
 from app.common.offal_nested import parse_offal_from_sheet_type
 from app.parsers.stamping.excel_context import ExcelContext
 from app.parsers.stamping.header_resolver import HeaderResolver
@@ -32,14 +34,14 @@ from app.utils.logging_config import get_logger
 logger = get_logger("parser.stamping.tailor_weld")
 
 
-def _as_text(value: Any) -> str | None:
+def _as_text(value: object) -> str | None:
     if value is None:
         return None
     text = str(value).strip()
     return text if text else None
 
 
-def _split_thickness_segments(raw: Any) -> list[Decimal]:
+def _split_thickness_segments(raw: object) -> list[Decimal]:
     """
     将父格料厚拆成各片。
 
@@ -64,7 +66,7 @@ def _split_thickness_segments(raw: Any) -> list[Decimal]:
 
 
 def _column_vertical_merges(
-    sheet: Any,
+    sheet: Worksheet,
     col: int,
 ) -> list[tuple[int, int]]:
     """某列纵向合并块，按起始行排序：(start_row, end_row)。"""
@@ -162,11 +164,11 @@ class TailorWeldExcelParser:
         excel_ctx = ExcelContext()
         try:
             excel_ctx.load(file_path)
-            excel_ctx.find_sheet()
-            result.sheet_name = excel_ctx.sheet.title if excel_ctx.sheet else ""
+            sheet = excel_ctx.find_sheet()
+            result.sheet_name = sheet.title
 
             header_resolver = HeaderResolver(excel_ctx.get_value)
-            header_ctx: HeaderContext = header_resolver.resolve(excel_ctx.sheet)
+            header_ctx: HeaderContext = header_resolver.resolve(sheet)
 
             part_no_col = header_ctx.col_map.get("part_no", 2)
             length_col = header_ctx.col_map.get("length", 8)
@@ -179,8 +181,8 @@ class TailorWeldExcelParser:
             part_name_col = header_ctx.col_map.get("part_name", 3)
 
             excel_ctx.build_merged_cache(part_no_col)
-            length_merges = _column_vertical_merges(excel_ctx.sheet, length_col)
-            width_merges = _column_vertical_merges(excel_ctx.sheet, width_col)
+            length_merges = _column_vertical_merges(sheet, length_col)
+            width_merges = _column_vertical_merges(sheet, width_col)
 
             for part_range in _iter_part_ranges(excel_ctx, header_ctx.data_start_row):
                 assembly = self._parse_part_range(

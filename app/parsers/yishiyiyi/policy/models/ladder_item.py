@@ -7,7 +7,28 @@
 
 from dataclasses import dataclass
 from decimal import Decimal
-from typing import Any
+from typing import TypedDict
+
+
+class ParsedLadderItemDump(TypedDict):
+    target_sub_group: str | None
+    thick_min: float | None
+    thick_min_operator: str | None
+    thick_max: float | None
+    thick_max_operator: str | None
+    width_min: float | None
+    width_min_operator: str | None
+    width_max: float | None
+    width_max_operator: str | None
+    zinc_coating_min: float | None
+    zinc_coating_min_operator: str | None
+    zinc_coating_max: float | None
+    zinc_coating_max_operator: str | None
+    price_adjustment: int
+    is_base: int
+    sort_order: int
+    excel_row: int | None
+    excel_col: int | None
 
 
 @dataclass
@@ -44,31 +65,7 @@ class ParsedLadderItem:
     excel_row: int | None = None
     excel_col: int | None = None
 
-    @property
-    def has_thickness_condition(self) -> bool:
-        """是否有厚度条件"""
-        return self.thick_min is not None or self.thick_max is not None
-
-    @property
-    def has_width_condition(self) -> bool:
-        """是否有宽度条件"""
-        return self.width_min is not None or self.width_max is not None
-
-    @property
-    def has_zinc_coating_condition(self) -> bool:
-        """是否有锌层克重条件"""
-        return self.zinc_coating_min is not None or self.zinc_coating_max is not None
-
-    @property
-    def has_any_condition(self) -> bool:
-        """是否有任一维度条件"""
-        return (
-            self.has_thickness_condition
-            or self.has_width_condition
-            or self.has_zinc_coating_condition
-        )
-
-    def model_dump(self) -> dict[str, Any]:
+    def model_dump(self) -> ParsedLadderItemDump:
         """返回字典格式，兼容 Pydantic 接口"""
         return {
             "target_sub_group": self.target_sub_group,
@@ -100,5 +97,5 @@ class ParsedLadderItem:
             "excel_col": self.excel_col,
         }
 
-    def to_dict(self) -> dict[str, Any]:
+    def to_dict(self) -> ParsedLadderItemDump:
         return self.model_dump()

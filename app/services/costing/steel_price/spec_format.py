@@ -3,10 +3,9 @@
 from __future__ import annotations
 
 from decimal import Decimal
-from typing import Any
 
 
-def _to_decimal(value: Any) -> Decimal | None:
+def _to_decimal(value: object) -> Decimal | None:
     if value is None:
         return None
     if isinstance(value, Decimal):
@@ -17,7 +16,7 @@ def _to_decimal(value: Any) -> Decimal | None:
     return Decimal(text)
 
 
-def format_thickness(value: Any) -> str:
+def format_thickness(value: object) -> str:
     """
     厚度展示：至少一位小数，去掉多余尾零。
 
@@ -34,7 +33,7 @@ def format_thickness(value: Any) -> str:
     return text
 
 
-def format_width(value: Any) -> str:
+def format_width(value: object) -> str:
     """宽度展示：整数不带小数；非整数去掉尾零。"""
     number = _to_decimal(value)
     if number is None:
@@ -47,7 +46,7 @@ def format_width(value: Any) -> str:
     return text
 
 
-def build_spec(thickness: Any, width: Any) -> str:
+def build_spec(thickness: object, width: object) -> str:
     """规格：{厚度}*{宽度}，如 0.7*1250、1.0*1250。"""
     thickness_text = format_thickness(thickness)
     width_text = format_width(width)

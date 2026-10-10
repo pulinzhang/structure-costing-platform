@@ -3,7 +3,6 @@
 """
 
 from decimal import Decimal
-from typing import Any
 
 from pydantic import BaseModel, Field, field_validator
 
@@ -79,7 +78,7 @@ class StampingProcessUpdate(BaseModel):
 
     @field_validator("cost_ratio", mode="before")
     @classmethod
-    def _coerce_cost_ratio(cls, value: Any) -> Decimal | None:
+    def _coerce_cost_ratio(cls, value: object) -> Decimal | None:
         if value is None or (isinstance(value, str) and not value.strip()):
             return None
         return quantize_money(value, Q2)
@@ -96,7 +95,7 @@ class StampingProcessItemUpdate(BaseModel):
 
     @field_validator("cost_ratio", mode="before")
     @classmethod
-    def _coerce_cost_ratio(cls, value: Any) -> Decimal | None:
+    def _coerce_cost_ratio(cls, value: object) -> Decimal | None:
         if value is None or (isinstance(value, str) and not value.strip()):
             return None
         return quantize_money(value, Q2)

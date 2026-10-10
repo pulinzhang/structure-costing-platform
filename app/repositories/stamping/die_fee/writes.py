@@ -94,7 +94,6 @@ class StampingDieFeeWrites:
         *,
         year: int,
         location: str | None = None,
-        locations: list[str] | None = None,
         vehicle_model: str,
     ) -> int:
         fee_ids = [
@@ -130,7 +129,6 @@ class StampingDieFeeWrites:
         *,
         year: int,
         location: str | None = None,
-        locations: list[str] | None = None,
         vehicle_model: str,
         audited_by: str,
         audited_at: datetime,
@@ -160,7 +158,6 @@ class StampingDieFeeWrites:
         *,
         year: int,
         location: str | None = None,
-        locations: list[str] | None = None,
         vehicle_model: str,
         reverse_audited_by: str,
         reverse_audited_at: datetime,

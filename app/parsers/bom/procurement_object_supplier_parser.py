@@ -4,9 +4,9 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 from io import BytesIO
-from typing import Any
 
 from openpyxl import load_workbook
+from openpyxl.worksheet.worksheet import Worksheet
 
 HEADER_PART_NUMBER = "零件号"
 HEADER_PART_NAME = "零件名称"
@@ -29,7 +29,7 @@ class ProcurementObjectSupplierParsedRow:
     supplier_name: str | None
 
 
-def _cell_text(value: Any) -> str:
+def _cell_text(value: object) -> str:
     if value is None:
         return ""
     if isinstance(value, float) and value.is_integer():
@@ -37,7 +37,7 @@ def _cell_text(value: Any) -> str:
     return str(value).strip()
 
 
-def _find_header_row(sheet: Any) -> tuple[int, dict[str, int]] | None:
+def _find_header_row(sheet: Worksheet) -> tuple[int, dict[str, int]] | None:
     wanted = {HEADER_PART_NUMBER, HEADER_SUPPLIER}
     max_scan = min(sheet.max_row or 1, 10)
     max_col = min(sheet.max_column or 1, 20)

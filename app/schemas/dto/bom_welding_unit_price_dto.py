@@ -15,7 +15,7 @@ from app.common.period import (
 )
 
 
-def quantize_unit_price(value: Any) -> Decimal:
+def quantize_unit_price(value: object) -> Decimal:
     """解析并量化为 4 位小数 Decimal（禁止以 float 作为业务类型）。"""
     return quantize_money(value, Q4)
 
@@ -32,12 +32,12 @@ class BomWeldingUnitPriceCreate(BaseModel):
 
     @field_validator("unit_price", mode="before")
     @classmethod
-    def _coerce_unit_price(cls, value: Any) -> Decimal:
+    def _coerce_unit_price(cls, value: object) -> Decimal:
         return quantize_unit_price(value)
 
     @field_validator("item_name", mode="before")
     @classmethod
-    def _strip_item_name(cls, value: Any) -> Any:
+    def _strip_item_name(cls, value: object) -> Any:
         if isinstance(value, str):
             return value.strip()
         return value
@@ -57,7 +57,7 @@ class BomWeldingUnitPriceUpdate(BaseModel):
 
     @field_validator("unit_price", mode="before")
     @classmethod
-    def _coerce_unit_price(cls, value: Any) -> Decimal:
+    def _coerce_unit_price(cls, value: object) -> Decimal:
         return quantize_unit_price(value)
 
 

@@ -1,9 +1,17 @@
 """解析结果聚合。"""
 
 from dataclasses import dataclass, field
-from typing import Any
+from typing import TypedDict
 
-from .policy import ParsedPolicy
+from .policy import ParsedPolicy, ParsedPolicyDump
+
+
+class SteelPricePolicyParseResultDump(TypedDict):
+    year: int
+    month: int
+    sheet_names: list[str]
+    policies: list[ParsedPolicyDump]
+    warnings: list[str]
 
 
 @dataclass
@@ -16,7 +24,7 @@ class SteelPricePolicyParseResult:
     year: int = 0
     month: int = 0
 
-    def to_dict(self) -> dict[str, Any]:
+    def to_dict(self) -> SteelPricePolicyParseResultDump:
         return {
             "year": self.year,
             "month": self.month,

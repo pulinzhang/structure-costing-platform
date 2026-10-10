@@ -5,8 +5,8 @@
 """
 
 import re
+from collections.abc import Sequence
 from decimal import Decimal
-from typing import Any
 
 from app.common.money import Q2, quantize_money
 
@@ -27,11 +27,11 @@ _PROCESS_CODE_TOKEN_RE = re.compile(r"[A-Za-z0-9]+")
 
 
 def resolve_cost_ratio(
-    automation: Any,
-    process_method: Any,
-    process_code: Any = None,
-    previous_automation: Any = None,
-    previous_first_process_code: Any = None,
+    automation: object,
+    process_method: object,
+    process_code: object = None,
+    previous_automation: object = None,
+    previous_first_process_code: object = None,
 ) -> Decimal:
     """零件级叠乘（右件继承上一件级进见设计 §4）。"""
     ratio = DEFAULT_COST_RATIO
@@ -56,28 +56,28 @@ def resolve_cost_ratio(
     return quantize_money(ratio, Q2)
 
 
-def is_prg_process_code(process_code: Any) -> bool:
+def is_prg_process_code(process_code: object) -> bool:
     """工序代码切词含 PRG。"""
     tokens = {token.upper() for token in _PROCESS_CODE_TOKEN_RE.findall(str(process_code or ""))}
     return "PRG" in tokens
 
 
-def is_shared_first_process_code(process_code: Any) -> bool:
+def is_shared_first_process_code(process_code: object) -> bool:
     """第一序代码含「共用」。"""
     return _contains_keyword(process_code, _SHARED_FIRST_KEYWORDS)
 
 
-def is_mate_process_code(process_code: Any) -> bool:
+def is_mate_process_code(process_code: object) -> bool:
     """工序代码含合并/双槽/共用（共模右件第一序常见写法）。"""
     return _contains_keyword(process_code, _MATE_PROCESS_CODE_KEYWORDS)
 
 
 def shared_die_labels(
     *,
-    die_type: Any,
-    process_method: Any,
-    process_codes: list[Any],
-    cost_ratios: list[Any],
+    die_type: object,
+    process_method: object,
+    process_codes: Sequence[object],
+    cost_ratios: Sequence[object],
 ) -> list[str]:
     """共模中文标签（去重、保序）。关键字仍只来自本模块元组。"""
     texts = [die_type, process_method, *process_codes]
@@ -97,7 +97,7 @@ def shared_die_labels(
     return labels
 
 
-def has_shared_die_ratio(cost_ratios: list[Any]) -> bool:
+def has_shared_die_ratio(cost_ratios: Sequence[object]) -> bool:
     """费用比例为共模 0.50 或级进共模 0.40。"""
     for raw in cost_ratios:
         if raw is None or raw == "":
@@ -108,25 +108,7 @@ def has_shared_die_ratio(cost_ratios: list[Any]) -> bool:
     return False
 
 
-def is_shared_die_row(
-    *,
-    die_type: Any,
-    process_method: Any,
-    process_codes: list[Any],
-    cost_ratios: list[Any],
-) -> bool:
-    """行级是否共模：标签命中，或费用比例为 0.50 / 0.40。"""
-    if shared_die_labels(
-        die_type=die_type,
-        process_method=process_method,
-        process_codes=process_codes,
-        cost_ratios=cost_ratios,
-    ):
-        return True
-    return has_shared_die_ratio(cost_ratios)
-
-
-def is_blanking_first_process_code(process_code: Any) -> bool:
+def is_blanking_first_process_code(process_code: object) -> bool:
     """第一序为落料：切词含 BL，或右件写「共用」/「BL+PI(共用)」。"""
     if is_shared_first_process_code(process_code):
         return True
@@ -134,12 +116,12 @@ def is_blanking_first_process_code(process_code: Any) -> bool:
     return "BL" in tokens
 
 
-def later_ops_have_shared_die(process_codes: list[Any]) -> bool:
+def later_ops_have_shared_die(process_codes: Sequence[object]) -> bool:
     """第一序之后的工序代码是否含双槽/合并。"""
     return any(_contains_keyword(code, _FULL_SHARED_KEYWORDS) for code in process_codes)
 
 
-def later_ops_are_blank(process_codes: list[Any]) -> bool:
+def later_ops_are_blank(process_codes: Sequence[object]) -> bool:
     """后续序有行但代码全空：右件后序与左件共用。"""
     if not process_codes:
         return False
@@ -147,8 +129,8 @@ def later_ops_are_blank(process_codes: list[Any]) -> bool:
 
 
 def is_prg_family(
-    first_process_code: Any,
-    previous_first_process_code: Any = None,
+    first_process_code: object,
+    previous_first_process_code: object = None,
 ) -> bool:
     if is_prg_process_code(first_process_code):
         return True
@@ -159,14 +141,14 @@ def is_prg_family(
 
 def resolve_new_process_cost_ratio(
     *,
-    automation: Any,
-    process_method: Any,
-    process_code: Any,
+    automation: object,
+    process_method: object,
+    process_code: object,
     is_first_process: bool,
     process_count: int,
-    first_process_code: Any,
-    previous_automation: Any = None,
-    previous_first_process_code: Any = None,
+    first_process_code: object,
+    previous_automation: object = None,
+    previous_first_process_code: object = None,
     later_ops_are_shared: bool = False,
 ) -> Decimal:
     """新增默认比例。多序 PRG / 级进落料 / 一出二 / 双槽落料见设计 §4，其余走 resolve_cost_ratio。"""
@@ -219,8 +201,8 @@ def resolve_new_process_cost_ratio(
 
 
 def _later_ops_share_die(
-    process_code: Any,
-    process_method: Any,
+    process_code: object,
+    process_method: object,
     *,
     later_ops_are_shared: bool,
 ) -> bool:
@@ -233,7 +215,7 @@ def _later_ops_share_die(
 
 
 def _previous_part_is_progressive(
-    previous_automation: Any, previous_first_process_code: Any
+    previous_automation: object, previous_first_process_code: object
 ) -> bool:
     """上一件自动化为级进/级进模，或上一件第一序切词含 PRG。"""
     return _is_progressive_text(previous_automation) or is_prg_process_code(
@@ -241,14 +223,14 @@ def _previous_part_is_progressive(
     )
 
 
-def _is_progressive_blanking(automation: Any, process_method: Any) -> bool:
+def _is_progressive_blanking(automation: object, process_method: object) -> bool:
     """自动化或工艺方法含「级进落料」：只走多序第一序 0.80，不当级进模叠到后序。"""
     return _contains_keyword(automation, _PROGRESSIVE_BLANKING_KEYWORDS) or _contains_keyword(
         process_method, _PROGRESSIVE_BLANKING_KEYWORDS
     )
 
 
-def _is_progressive_text(value: Any) -> bool:
+def _is_progressive_text(value: object) -> bool:
     """含「级进模」，或单元格整格为「级进」。不把「级进落料」当级进模。"""
     if value is None:
         return False
@@ -260,11 +242,11 @@ def _is_progressive_text(value: Any) -> bool:
     return text == "级进"
 
 
-def _matches_any(automation: Any, process_method: Any, keywords: tuple[str, ...]) -> bool:
+def _matches_any(automation: object, process_method: object, keywords: tuple[str, ...]) -> bool:
     return _contains_keyword(process_method, keywords) or _contains_keyword(automation, keywords)
 
 
-def _contains_keyword(value: Any, keywords: tuple[str, ...]) -> bool:
+def _contains_keyword(value: object, keywords: tuple[str, ...]) -> bool:
     if value is None:
         return False
     text = str(value).strip()

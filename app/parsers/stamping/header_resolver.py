@@ -8,14 +8,16 @@
 - 建立列映射
 """
 
+from collections.abc import Callable
 from typing import Any
+
+from openpyxl.worksheet.worksheet import Worksheet
 
 from app.common.vehicle_model import normalize_vehicle_model
 from app.parsers.stamping.models.header import HeaderContext
 from app.utils.logging_config import get_logger
 
 logger = get_logger("parser.stamping.header")
-
 
 # Header 路径匹配模式（精确匹配）
 # 键名与数据库字段一一对应，值列表按优先级排序
@@ -156,32 +158,14 @@ def _value_after_label(text: str, label: str) -> str | None:
 class HeaderResolver:
     """表头解析器"""
 
-    def __init__(self, get_value_fn: Any) -> None:
+    def __init__(self, get_value_fn: Callable[[int, int], object]) -> None:
         self._get_value = get_value_fn
         self.header_row: int = 0
         self.data_start_row: int = 0
         self.header_paths: dict[str, str] = {}
         self.col_map: dict[str, int] = {}
 
-    def find_stamping_sheet(self, workbook: Any) -> Any:
-        """识别冲压数据Sheet"""
-        for sheet in workbook.worksheets:
-            for row_idx in range(1, min(16, sheet.max_row + 1)):
-                row_values = [self._get_value(row_idx, col) for col in range(1, 25)]
-                row_text = " ".join([str(v) for v in row_values if v])
-
-                has_part = any(p in row_text for p in ["零件号", "件号", "Part No"])
-                has_op = any(p in row_text for p in ["工序", "OP", "Process"])
-
-                if has_part and has_op:
-                    logger.info(f"找到数据Sheet: {sheet.title}, 行{row_idx}")
-                    return sheet
-
-        if not workbook.worksheets:
-            return None
-        return workbook.worksheets[0]
-
-    def find_stamping_supplier(self, sheet: Any) -> str | None:
+    def find_stamping_supplier(self, sheet: Worksheet) -> str | None:
         """从表头区域提取冲压供应商名称（冲压承制公司）"""
         for row_idx in range(1, min(10, sheet.max_row + 1)):
             # 1. 先找标签所在列
@@ -218,7 +202,7 @@ class HeaderResolver:
 
         return None
 
-    def find_stamping_vehicle_model(self, sheet: Any) -> str | None:
+    def find_stamping_vehicle_model(self, sheet: Worksheet) -> str | None:
         """从表头标题或「项目名称/车型」标签提取车型，并归一化（剔除中文）。"""
         title_model: str | None = None
         label_model: str | None = None
@@ -260,7 +244,7 @@ class HeaderResolver:
                 logger.info("解析到车型: %s", model)
         return model
 
-    def _next_nonempty_cell(self, sheet: Any, row_idx: int, label_col: int) -> str | None:
+    def _next_nonempty_cell(self, sheet: Worksheet, row_idx: int, label_col: int) -> str | None:
         for col in range(label_col + 1, min(label_col + 10, sheet.max_column + 1)):
             val = self._get_value(row_idx, col)
             if val and str(val).strip():
@@ -280,7 +264,7 @@ class HeaderResolver:
             return None
         return text
 
-    def find_stamping_project_version(self, sheet: Any) -> str | None:
+    def find_stamping_project_version(self, sheet: Worksheet) -> str | None:
         """从表头「版本」标签提取版本，文件里写什么就是什么。
 
         只认标签右侧的值，不把数据区序号（如 1）当成版本。
@@ -308,7 +292,7 @@ class HeaderResolver:
                     return version
         return None
 
-    def find_header_row(self, sheet: Any) -> int:
+    def find_header_row(self, sheet: Worksheet) -> int:
         """找到表头起始行"""
         for row_idx in range(1, 20):
             for col in range(1, min(30, sheet.max_column + 1)):
@@ -318,7 +302,7 @@ class HeaderResolver:
                     return row_idx
         return 4
 
-    def build_header_context(self, sheet: Any, header_row: int) -> None:
+    def build_header_context(self, sheet: Worksheet, header_row: int) -> None:
         """
         构建 Header Context：支持合并单元格、隐式向右扩散填充及换行符清洗
         """
@@ -435,7 +419,7 @@ class HeaderResolver:
         logger.info(f"生成的字段列映射 (col_map): {self.col_map}")
         return col_map
 
-    def resolve(self, sheet: Any) -> HeaderContext:
+    def resolve(self, sheet: Worksheet) -> HeaderContext:
         """
         执行完整的表头解析流程。
         """

@@ -10,7 +10,6 @@ from __future__ import annotations
 import re
 from dataclasses import dataclass
 from decimal import Decimal, InvalidOperation
-from typing import Any
 
 from app.common.bom.welding_standard_process import (
     resolve_standard_process_name,
@@ -44,7 +43,7 @@ class WeldingProcessBreakdownParseResult:
     normalized_text: str = ""
 
 
-def _to_decimal(value: Any) -> Decimal | None:
+def _to_decimal(value: object) -> Decimal | None:
     if value is None or value == "":
         return None
     try:
@@ -171,7 +170,7 @@ def parse_welding_info_text(weld_info: str | None) -> WeldingProcessBreakdownPar
                 secondary = _sum_plus_expression(match.group(2))
                 if secondary is not None:
                     secondary_unit = "mm"
-            standard_name, map_status = resolve_standard_process_name(token, tags=tuple(tags))
+            standard_name, map_status = resolve_standard_process_name(token)
             items.append(
                 WeldingProcessBreakdownParsedItem(
                     process_token=token,

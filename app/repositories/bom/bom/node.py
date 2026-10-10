@@ -43,13 +43,6 @@ class BomNodeRepository:
             .all()
         )
 
-    def count_by_snapshot_and_level(self, db: Session, snapshot_id: int, level: int) -> int:
-        return (
-            db.query(BomNode)
-            .filter(BomNode.snapshot_id == snapshot_id, BomNode.level == level)
-            .count()
-        )
-
     def create(self, db: Session, data: BomNodeWrite) -> BomNode:
         snapshot = db.query(BomSnapshot).filter(BomSnapshot.id == data.snapshot_id).first()
         if snapshot is not None and not data.location:
@@ -104,15 +97,6 @@ class BomNodeRepository:
     def delete(self, db: Session, node: BomNode) -> None:
         db.delete(node)
         db.flush()
-
-    def delete_by_snapshot(self, db: Session, snapshot_id: int) -> int:
-        count = (
-            db.query(BomNode)
-            .filter(BomNode.snapshot_id == snapshot_id)
-            .delete(synchronize_session=False)
-        )
-        db.flush()
-        return count
 
     def list_where_used_hits(
         self,

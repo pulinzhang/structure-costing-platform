@@ -149,18 +149,6 @@ def asks_latest_costing(user_question: str) -> bool:
     return bool(_LATEST_COSTING_RE.search(user_question or ""))
 
 
-def latest_costing_time_range(default: DefaultScopeMonth) -> TimeRange:
-    start_year, start_month = shift_month(
-        default.year,
-        default.month,
-        -(LATEST_COSTING_LOOKBACK_MONTHS - 1),
-    )
-    return TimeRange(
-        start=month_key(start_year, start_month),
-        end=month_key(default.year, default.month),
-    )
-
-
 def question_has_explicit_time(user_question: str) -> bool:
     """问句是否包含可识别的时间表达（用于 C.4.2.1 第 3 级判定）。"""
     text = user_question or ""

@@ -114,30 +114,6 @@ class BomWeldingProcessBreakdownGenerateLogService:
             raise
         return DeletedCountVO(deleted_count=deleted_count)
 
-    def is_scope_processing(
-        self,
-        db: Session,
-        *,
-        location: str,
-        vehicle_model: str,
-        bom_version: str,
-    ) -> bool:
-        self._expire_stale_processing(
-            db,
-            location=location,
-            vehicle_model=vehicle_model,
-            bom_version=bom_version,
-        )
-        return (
-            self.repository.find_processing(
-                db,
-                location=location,
-                vehicle_model=vehicle_model,
-                bom_version=bom_version,
-            )
-            is not None
-        )
-
     def begin_processing(
         self,
         db: Session,

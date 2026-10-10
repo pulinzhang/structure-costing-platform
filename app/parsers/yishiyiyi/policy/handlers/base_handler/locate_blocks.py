@@ -4,7 +4,6 @@ from __future__ import annotations
 
 import re
 from decimal import Decimal
-from typing import Any
 
 from openpyxl.worksheet.worksheet import Worksheet
 
@@ -16,6 +15,7 @@ from app.parsers.yishiyiyi.policy.boundary_parser import (
     is_strict_gt,
 )
 from app.parsers.yishiyiyi.policy.handlers.constants import GRADE_LABELS
+from app.parsers.yishiyiyi.policy.models.policy_block import PolicyBlock
 
 from .sheet_scanner import SheetScanner
 
@@ -33,7 +33,7 @@ class BlockLocator:
         sheet: Worksheet,
         label_row: int,
         block_end: int,
-    ) -> dict[str, Any] | None:
+    ) -> PolicyBlock | None:
         """执行厚度块的 5 步定位，返回块描述或 None。"""
         title_row = self.scanner.find_thickness_title_row(
             sheet, label_row, block_end, scan_cols=None
@@ -78,7 +78,7 @@ class BlockLocator:
         category: str = "冷轧钢",
         header_row_offset: int = 1,
         scan_cols: list[int] | None = None,
-    ) -> dict[str, Any] | None:
+    ) -> PolicyBlock | None:
         """执行宽度块的 3 步定位，返回块描述。"""
         del scan_cols
         header_row = title_row + header_row_offset

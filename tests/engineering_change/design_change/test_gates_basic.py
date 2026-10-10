@@ -218,7 +218,8 @@ def test_change_order_accepts_written_ac_not_inferred_ab() -> None:
         ChangeOrderRowParsed,
     )
     from app.services.engineering_change.design_change.upload.gates.validate import (
-        validate_change_order_row,
+        validate_change_order_project,
+        validate_change_order_row_shape,
     )
 
     change_order = ChangeOrderRowParsed(
@@ -234,12 +235,13 @@ def test_change_order_accepts_written_ac_not_inferred_ab() -> None:
         part_name="雨刮电机安装支架Ⅰ",
         excel_row=5,
     )
-    year, month = validate_change_order_row(
-        change_order,
+    year, month = validate_change_order_project(
+        [change_order],
         page_vehicle_model="T28",
         page_effective_year=2025,
         page_effective_month=7,
     )
+    validate_change_order_row_shape(change_order)
     assert (year, month) == (2025, 7)
 
 

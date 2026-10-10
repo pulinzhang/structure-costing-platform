@@ -232,24 +232,6 @@ def validate_bom_l0_matches_change_orders(
         )
 
 
-def validate_change_order_row(
-    change_order: ChangeOrderRowParsed,
-    *,
-    page_vehicle_model: str,
-    page_effective_year: int,
-    page_effective_month: int,
-) -> tuple[int, int]:
-    """单行：先项目信息，再十列填法。"""
-    year, month = validate_change_order_project(
-        [change_order],
-        page_vehicle_model=page_vehicle_model,
-        page_effective_year=page_effective_year,
-        page_effective_month=page_effective_month,
-    )
-    validate_change_order_row_shape(change_order)
-    return year, month
-
-
 def validate_change_order_row_shape(change_order: ChangeOrderRowParsed) -> None:
     """变更类型、零件层级、十列填法。"""
     row = _row(change_order)

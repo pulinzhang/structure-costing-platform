@@ -22,7 +22,6 @@
 import re
 from dataclasses import dataclass
 from decimal import Decimal
-from typing import Any
 
 from .value_parser import _to_str
 
@@ -142,7 +141,7 @@ def is_lte(op: str | None) -> bool:
 # ===========================================================================
 # 3. 解析函数（按优先级顺序匹配）
 # ===========================================================================
-def _parse_boundary(header: Any) -> _Boundary | None:
+def _parse_boundary(header: object) -> _Boundary | None:
     """解析列头为区间描述。"""
     text = _to_str(header)
     if not text:

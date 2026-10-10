@@ -308,24 +308,6 @@ class StampingTailorWeldBlankService:
         )
         db.commit()
 
-    def clear_by_part_id(
-        self,
-        db: Session,
-        part_id: int,
-        current_user: UserVO,
-    ) -> int:
-        """清空父件下全部子片，并将 is_tailor_welded 置为 False。"""
-        part = self._require_parent(db, part_id)
-        count = self.repository.delete_by_part_id(db, part_id)
-        self._set_parent_tailor_flag(
-            db,
-            part,
-            is_tailor_welded=False,
-            current_user=current_user,
-        )
-        db.commit()
-        return count
-
     def save_parsed_for_upload(
         self,
         db: Session,

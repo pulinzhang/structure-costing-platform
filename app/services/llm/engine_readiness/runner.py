@@ -68,8 +68,6 @@ def _ready_to_summary(ready: CostingEngineReadyVO) -> EngineReadinessPayload:
 
 
 def render_engine_readiness_markdown(
-    *,
-    user_question: str,
     ready: CostingEngineReadyVO,
 ) -> str:
     """规则模板：与引擎页红灯一致，不依赖 LLM。"""

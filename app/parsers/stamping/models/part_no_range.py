@@ -26,7 +26,7 @@ class PartNoRange:
             PartNoRange(value="501006875AA", start_row=5, end_row=7)
     """
 
-    # 零件号值
+    # 单元格原值可能是 int。下游零件号是 str，收成 object 后要么丢掉数字件号，要么 str() 改掉现有结果。
     value: Any
 
     # 起始行号（1-based，Excel 行号）

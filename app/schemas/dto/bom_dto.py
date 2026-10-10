@@ -3,7 +3,6 @@
 from dataclasses import dataclass
 from datetime import date
 from decimal import Decimal
-from typing import Any
 
 from pydantic import BaseModel, Field, field_validator
 
@@ -117,7 +116,7 @@ class BomNodeCreate(BaseModel):
 
     @field_validator("qty", "thickness_mm", "part_weight", mode="before")
     @classmethod
-    def _coerce_q4(cls, value: Any) -> Decimal | None:
+    def _coerce_q4(cls, value: object) -> Decimal | None:
         return optional_quantize_money(value, Q4, allow_negative=True)
 
 

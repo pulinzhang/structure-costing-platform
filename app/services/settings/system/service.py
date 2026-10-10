@@ -3,7 +3,6 @@
 from __future__ import annotations
 
 from decimal import Decimal, InvalidOperation
-from typing import Any
 
 from sqlalchemy.orm import Session
 
@@ -363,11 +362,11 @@ class SettingsService:
         )
 
     @staticmethod
-    def _strip_text(value: Any) -> str:
+    def _strip_text(value: object) -> str:
         return str(value or "").strip()
 
     @staticmethod
-    def _normalize_density(value: Any) -> Decimal:
+    def _normalize_density(value: object) -> Decimal:
         try:
             density = Decimal(str(value))
         except (InvalidOperation, TypeError, ValueError):
@@ -377,7 +376,7 @@ class SettingsService:
         return quantize_money(density, Q4)
 
     @staticmethod
-    def _normalize_loss_rate(value: Any) -> Decimal:
+    def _normalize_loss_rate(value: object) -> Decimal:
         try:
             rate = Decimal(str(value))
         except (InvalidOperation, TypeError, ValueError):
@@ -387,7 +386,7 @@ class SettingsService:
         return quantize_money(rate, Q6)
 
     @staticmethod
-    def _normalize_recovery_rate(value: Any) -> Decimal:
+    def _normalize_recovery_rate(value: object) -> Decimal:
         try:
             rate = Decimal(str(value))
         except (InvalidOperation, TypeError, ValueError):
@@ -397,7 +396,7 @@ class SettingsService:
         return quantize_money(rate, Q6)
 
     @staticmethod
-    def _normalize_percent_rate(value: Any, default: Decimal) -> Decimal:
+    def _normalize_percent_rate(value: object, default: Decimal) -> Decimal:
         """百分比费率（0~1，含 0）。"""
         try:
             rate = Decimal(str(value))
@@ -408,7 +407,7 @@ class SettingsService:
         return quantize_money(rate, Q6)
 
     @staticmethod
-    def _normalize_permille_rate(value: Any, default: Decimal) -> Decimal:
+    def _normalize_permille_rate(value: object, default: Decimal) -> Decimal:
         """千分率（≥0）。"""
         try:
             rate = Decimal(str(value))
@@ -419,7 +418,7 @@ class SettingsService:
         return quantize_money(rate, Q6)
 
     @staticmethod
-    def _normalize_non_negative_q2(value: Any, default: Decimal) -> Decimal:
+    def _normalize_non_negative_q2(value: object, default: Decimal) -> Decimal:
         """非负数值，两位小数。元/吨与毫米共用。"""
         try:
             amount = Decimal(str(value))

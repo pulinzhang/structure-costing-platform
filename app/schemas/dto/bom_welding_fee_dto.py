@@ -5,7 +5,7 @@ BOM 焊接费 DTO - 请求参数 / 仓库写入载荷
 from dataclasses import dataclass, field
 from datetime import datetime
 from decimal import Decimal
-from typing import Any, TypedDict
+from typing import TypedDict
 
 from pydantic import BaseModel, Field, field_validator
 
@@ -158,7 +158,7 @@ class BomWeldingFeeUpdateDTO(BaseModel):
 
     @field_validator("other_fee", mode="before")
     @classmethod
-    def _coerce_other_fee(cls, value: Any) -> Decimal | None:
+    def _coerce_other_fee(cls, value: object) -> Decimal | None:
         return optional_quantize_money(value, Q4)
 
 

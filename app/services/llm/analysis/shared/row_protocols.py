@@ -43,10 +43,3 @@ class HasPeriodDiffAmounts(Protocol):
 
     @property
     def welding_amount(self) -> Decimal | None: ...
-
-
-class HasStandardPartPrice(Protocol):
-    """标准件单价异常：至少要有 unit_price；其余用 getattr 读可选列。"""
-
-    @property
-    def unit_price(self) -> Decimal | object | None: ...

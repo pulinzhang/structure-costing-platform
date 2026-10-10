@@ -2,7 +2,7 @@
 
 from dataclasses import dataclass
 from decimal import Decimal
-from typing import Any, TypedDict
+from typing import TypedDict
 
 from pydantic import BaseModel, Field, field_validator
 
@@ -105,7 +105,7 @@ class SystemConfigUpdateDTO(BaseModel):
 
     @field_validator("steel_density", mode="before")
     @classmethod
-    def _coerce_density(cls, value: Any) -> Decimal:
+    def _coerce_density(cls, value: object) -> Decimal:
         return quantize_money(value, Q4)
 
     @field_validator(
@@ -119,7 +119,7 @@ class SystemConfigUpdateDTO(BaseModel):
         mode="before",
     )
     @classmethod
-    def _coerce_rate(cls, value: Any) -> Decimal:
+    def _coerce_rate(cls, value: object) -> Decimal:
         return quantize_money(value, Q6)
 
     @field_validator(
@@ -130,12 +130,12 @@ class SystemConfigUpdateDTO(BaseModel):
         mode="before",
     )
     @classmethod
-    def _coerce_yuan_per_ton(cls, value: Any) -> Decimal:
+    def _coerce_yuan_per_ton(cls, value: object) -> Decimal:
         return quantize_money(value, Q2)
 
     @field_validator("company_name", "procurement_agreement_remarks", mode="before")
     @classmethod
-    def _strip_text(cls, value: Any) -> str:
+    def _strip_text(cls, value: object) -> str:
         return str(value or "").strip()
 
 

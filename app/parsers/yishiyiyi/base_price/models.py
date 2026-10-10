@@ -1,7 +1,28 @@
 """基准价解析的中间类型。"""
 
+from __future__ import annotations
+
 from dataclasses import dataclass, field
-from typing import Any
+from decimal import Decimal
+from typing import NotRequired, TypedDict
+
+
+class BasePriceRecord(TypedDict):
+    """一行基准价。解析器写入的键必填；导入会读、解析器不写的 remark 可选。"""
+
+    location: str
+    steel_mill: str
+    category_name: str
+    grade: str
+    spec: str
+    thick: Decimal | None
+    width: Decimal | None
+    base_price: Decimal
+    processing_fee: Decimal
+    sheet_name: str
+    excel_row: int
+    excel_col: int
+    remark: NotRequired[str]
 
 
 @dataclass
@@ -30,4 +51,4 @@ class ParseResult:
 
     errors: list[str] = field(default_factory=list)
     warnings: list[str] = field(default_factory=list)
-    records: list[dict[str, Any]] = field(default_factory=list)
+    records: list[BasePriceRecord] = field(default_factory=list)

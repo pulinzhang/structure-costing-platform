@@ -5,7 +5,6 @@ from __future__ import annotations
 from dataclasses import dataclass
 from decimal import Decimal, InvalidOperation
 from io import BytesIO
-from typing import Any
 
 from openpyxl import load_workbook
 
@@ -50,7 +49,7 @@ class GaugeFeeParseResult:
     errors: list[str]
 
 
-def _cell_text(value: Any) -> str:
+def _cell_text(value: object) -> str:
     if value is None:
         return ""
     if isinstance(value, float) and value.is_integer():
@@ -58,12 +57,12 @@ def _cell_text(value: Any) -> str:
     return str(value).strip()
 
 
-def _normalize_header(value: Any) -> str:
+def _normalize_header(value: object) -> str:
     text = _cell_text(value).replace(" ", "").replace("\n", "")
     return _HEADER_ALIASES.get(text, text)
 
 
-def _parse_required_allocation_qty(value: Any, field_label: str) -> Decimal:
+def _parse_required_allocation_qty(value: object, field_label: str) -> Decimal:
     if value is None or _cell_text(value) == "":
         raise ValueError(f"「{field_label}」不能为空")
     try:
@@ -72,7 +71,7 @@ def _parse_required_allocation_qty(value: Any, field_label: str) -> Decimal:
         raise ValueError(f"「{field_label}」须为正整数") from exc
 
 
-def _parse_required_money(value: Any, field_label: str) -> Decimal:
+def _parse_required_money(value: object, field_label: str) -> Decimal:
     if value is None or _cell_text(value) == "":
         raise ValueError(f"「{field_label}」不能为空")
     try:
@@ -84,7 +83,7 @@ def _parse_required_money(value: Any, field_label: str) -> Decimal:
     return number
 
 
-def _parse_status(value: Any) -> str:
+def _parse_status(value: object) -> str:
     text = _cell_text(value)
     if not text:
         return STATUS_EFFECTIVE

@@ -28,9 +28,9 @@ class RowParser:
 
     def __init__(
         self,
-        get_value_fn: Callable[..., Any],
+        get_value_fn: Callable[[int, int], object],
         col_map: dict[str, int],
-        get_merged_value_fn: Callable[..., Any] | None = None,
+        get_merged_value_fn: Callable[[int, int], object] | None = None,
     ):
         """
         Args:
@@ -170,7 +170,7 @@ class PartSaver:
     def __init__(self) -> None:
         self._warned_parts: set[Any] = set()
 
-    def save_part(self, part_number: str, process_count: int, warnings: list[Any]) -> None:
+    def save_part(self, part_number: str, process_count: int, warnings: list[str]) -> None:
         """
         保存零件（生成警告）
 
@@ -188,7 +188,3 @@ class PartSaver:
             warnings.append(f"零件 {part_number} 没有任何工序")
         elif process_count == 1:
             warnings.append(f"零件 {part_number} 只有1道工序")
-
-    def reset(self) -> None:
-        """重置警告状态（用于新文件解析）"""
-        self._warned_parts = set()

@@ -2,7 +2,6 @@
 
 from __future__ import annotations
 
-from collections.abc import Callable
 from dataclasses import dataclass
 from decimal import Decimal
 
@@ -270,36 +269,3 @@ def resolve_part_cost_display(
         blank_steels=[],
         blank_terms=[],
     )
-
-
-def format_multi_steel_trace(
-    steels: list[SteelPrice],
-    *,
-    format_steel_price_excel_trace: Callable[[SteelPrice], str],
-) -> str:
-    if not steels:
-        return ""
-    unique: list[SteelPrice] = []
-    seen: set[int] = set()
-    for steel in steels:
-        if steel.id in seen:
-            continue
-        seen.add(steel.id)
-        unique.append(steel)
-    if len(unique) == 1:
-        return format_steel_price_excel_trace(unique[0])
-    lines: list[str] = []
-    for steel in unique:
-        ton = format_ton_price_label(Decimal(str(steel.final_price_per_ton)))
-        grade = (steel.grade or "").strip()
-        thick = optional_format_money(steel.thickness, Q2, 2) or ""
-        head = f"[{grade}@{thick} {ton}元/吨]"
-        body = format_steel_price_excel_trace(steel)
-        lines.append(f"{head}\n{body}" if body else head)
-    return "\n---\n".join(lines)
-
-
-def format_steel_ids(ids: list[int]) -> str:
-    if not ids:
-        return ""
-    return "/".join(str(item) for item in ids)

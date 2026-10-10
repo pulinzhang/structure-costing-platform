@@ -37,13 +37,12 @@ from app.utils.logging_config import get_logger
 
 from .handlers.registry import find_handler
 from .models.parse_result import SteelPricePolicyParseResult
+from .models.policy import ParsedPolicy
 
 # progress_callback(progress: int, msg: str) — 可选进度回调
 ProgressCallback = Callable[[int, str], None]
 
-
 logger = get_logger("parser.steel_price_policy")
-
 
 # ============================================================================
 # Sheet 兼容层：统一 xlrd sheet → openpyxl Worksheet 接口
@@ -164,7 +163,7 @@ def parse_steel_price_policy_sheet(
     sheet_name: str,
     warnings: list[str],
     excel_filename: str | None = None,
-) -> Any:
+) -> list[ParsedPolicy]:
     """解析一张 Sheet，返回 ParsedPolicy 列表。
 
     设计要点：
@@ -200,15 +199,6 @@ def parse_steel_price_policy_sheet(
 # ============================================================================
 # 多 Sheet 编排（便捷 API，一次解析整张 Excel 并聚合）
 # ============================================================================
-
-
-def list_sheets(file: str | Path | bytes) -> list[str]:
-    """列出 Excel 文件中所有 Sheet 名称（用于前端下拉选择）。"""
-    wb, _ = _load_workbook_or_bytes(file)
-    try:
-        return list(wb.sheetnames)
-    finally:
-        wb.close()
 
 
 def parse_steel_price_policy_excel(

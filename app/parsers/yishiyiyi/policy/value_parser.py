@@ -6,11 +6,9 @@
 - _to_decimal: 数字 / 字符串 → Decimal
 - _to_int_price: 加减价 → int
 - is_carry_forward_price: 末档 ``/`` / ``无`` 是否沿用上一阶梯
-- is_decimal_like: 判断字符串是否可解析为数字
 """
 
 from decimal import ROUND_HALF_UP, Decimal, InvalidOperation
-from typing import Any
 
 _DECIMAL_STRIP_CHARS = " \t\u3000元/吨件mm\t"
 _ONE = Decimal("1")
@@ -18,34 +16,20 @@ _ONE = Decimal("1")
 _CARRY_FORWARD_PRICE_MARKERS = frozenset({"/", "／", "无"})
 
 
-def _to_str(value: Any) -> str:
+def _to_str(value: object) -> str:
     """单元格值转为字符串（已 strip）。"""
     if value is None:
         return ""
     return str(value).strip()
 
 
-def _to_str_or_none(value: Any) -> str | None:
+def _to_str_or_none(value: object) -> str | None:
     """单元格值转为 None 或字符串（已 strip）。"""
     text = _to_str(value)
     return text if text else None
 
 
-def is_decimal_like(text: str) -> bool:
-    """判断字符串能否被解析为 Decimal。"""
-    if not text:
-        return False
-    cleaned = text.strip().lstrip("+-")
-    if not cleaned:
-        return False
-    try:
-        Decimal(cleaned)
-        return True
-    except (InvalidOperation, ValueError):
-        return False
-
-
-def _to_decimal(value: Any) -> Decimal | None:
+def _to_decimal(value: object) -> Decimal | None:
     """单元格值 → Decimal。
 
     - None / 空白 / 不可解析 → None
@@ -73,7 +57,7 @@ def is_carry_forward_price(value: object) -> bool:
     return _to_str(value) in _CARRY_FORWARD_PRICE_MARKERS
 
 
-def _to_int_price(value: Any) -> int:
+def _to_int_price(value: object) -> int:
     """加减价 → int（元/吨），四舍五入。
 
     - 不能解析为数字 → 0（末档 ``/`` / ``无`` 须在装配时沿用上一档，勿直接当 0）

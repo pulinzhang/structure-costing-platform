@@ -3,7 +3,7 @@
 from dataclasses import dataclass
 from datetime import datetime
 from decimal import Decimal
-from typing import Any, TypedDict
+from typing import TypedDict
 
 from pydantic import BaseModel, Field, field_validator
 
@@ -78,7 +78,7 @@ class StampingPartCostManualUnitCostDTO(BaseModel):
 
     @field_validator("unit_cost", mode="before")
     @classmethod
-    def _coerce_unit_cost(cls, value: Any) -> Decimal:
+    def _coerce_unit_cost(cls, value: object) -> Decimal:
         return quantize_money(value, Q6)
 
 

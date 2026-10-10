@@ -3,7 +3,7 @@
 
 解析流程（与 README.md 保持一致）：
 1. 加载 Excel → ExcelContext.load()
-2. 识别 Sheet → HeaderResolver.find_stamping_sheet()
+2. 识别 Sheet → ExcelContext 打开工艺表
 3. 解析表头 → HeaderResolver.resolve()
 4. 建立零件号合并缓存 → ExcelContext.build_merged_cache(part_no_col)
 5. 解析数据行 → 遍历零件号范围，提取零件/工序数据
@@ -113,30 +113,30 @@ class StampingExcelParser:
         self._excel_ctx.load(file_path)
 
         # 先识别 Sheet（但还不知道表头在哪行）
-        self._excel_ctx.find_sheet(sheet_title)
-        self.result.sheet_name = self._excel_ctx.sheet.title
+        sheet = self._excel_ctx.find_sheet(sheet_title)
+        self.result.sheet_name = sheet.title
 
         # 初始化 HeaderResolver（需要先创建才能使用）
         self._header_resolver = HeaderResolver(self._excel_ctx.get_value)
 
         # 提取冲压供应商名称
-        stamping_supplier = self._header_resolver.find_stamping_supplier(self._excel_ctx.sheet)
+        stamping_supplier = self._header_resolver.find_stamping_supplier(sheet)
         if stamping_supplier:
             self.result.stamping_supplier = stamping_supplier
             logger.info(f"冲压供应商: {stamping_supplier}")
         # 提取车型信息,即项目名称
-        vehicle_model = self._header_resolver.find_stamping_vehicle_model(self._excel_ctx.sheet)
+        vehicle_model = self._header_resolver.find_stamping_vehicle_model(sheet)
         if vehicle_model:
             self.result.vehicle_model = vehicle_model
             logger.info(f"从Excel提取车型: {vehicle_model}")
 
         # 提取版本
-        version = self._header_resolver.find_stamping_project_version(self._excel_ctx.sheet)
+        version = self._header_resolver.find_stamping_project_version(sheet)
         if version:
             self.result.version = version
             logger.info(f"从Excel提取版本: {version}")
         # 解析表头
-        header_ctx: HeaderContext = self._header_resolver.resolve(self._excel_ctx.sheet)
+        header_ctx: HeaderContext = self._header_resolver.resolve(sheet)
 
         self.result.header_row = header_ctx.header_row
         self.result.data_start_row = header_ctx.data_start_row

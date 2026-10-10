@@ -61,12 +61,6 @@ class EngineeringChangeOrderRepository:
             .all()
         )
 
-    def get_by_upload_log_id(
-        self, db: Session, upload_log_id: int
-    ) -> EngineeringChangeOrder | None:
-        rows = self.list_by_upload_log_id(db, upload_log_id)
-        return rows[0] if rows else None
-
     def list_page(
         self,
         db: Session,
@@ -150,24 +144,6 @@ class EngineeringChangeOrderRepository:
                 EngineeringChangeOrder.status == "active",
                 EngineeringChangeOrder.before_assembly_part_number == after_assembly_part_number,
                 EngineeringChangeUploadLog.id > after_upload_log_id,
-            )
-            .all()
-        )
-
-    def list_active_success_by_project(
-        self, db: Session, *, project_code: str
-    ) -> list[EngineeringChangeOrder]:
-        """该项目仍有效的成功设计变更单。"""
-        return (
-            db.query(EngineeringChangeOrder)
-            .join(
-                EngineeringChangeUploadLog,
-                EngineeringChangeUploadLog.id == EngineeringChangeOrder.upload_log_id,
-            )
-            .filter(
-                EngineeringChangeUploadLog.status == "success",
-                EngineeringChangeOrder.status == "active",
-                EngineeringChangeOrder.project_code == project_code,
             )
             .all()
         )

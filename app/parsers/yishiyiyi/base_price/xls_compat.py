@@ -20,6 +20,8 @@ class XlsSheetWrapper:
     def iter_rows(
         self, min_row: int = 1, max_row: int | None = None, values_only: bool = True
     ) -> list[list[Any]]:
+        if not values_only:
+            raise ValueError("xls 兼容读取只返回单元格值")
         results: list[list[Any]] = []
         row_count = self._sheet.nrows
         actual_min = max(0, min_row - 1)
@@ -77,6 +79,7 @@ def _is_xls_file(file_content: bytes) -> bool:
 
 
 def open_workbook(file_content: bytes) -> Any:
+    # .xls 包装和 openpyxl 工作簿方法对得上的部分，返回值只能写成 object，调用处会丢掉现在能用的操作。
     if _is_xls_file(file_content):
         return XlsWorkbookWrapper(xlrd.open_workbook(file_contents=file_content))
     return openpyxl.load_workbook(io.BytesIO(file_content), data_only=True)
