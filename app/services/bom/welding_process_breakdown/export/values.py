@@ -5,7 +5,6 @@ L0 核对导出 — 单元格取值（与 Excel 样式无关）
 from __future__ import annotations
 
 from decimal import Decimal
-from typing import Any
 
 from app.common.bom.manufacturing_category import short_part_number_digits
 from app.common.bom.welding_standard_process import (
@@ -20,12 +19,10 @@ def part_short_code(part_number: str | None) -> str:
     return short_part_number_digits(part_number) or ""
 
 
-def qty_cell(value: Any) -> Decimal | str:
+def qty_cell(value: Decimal | None) -> Decimal | str:
     if value is None:
         return ""
-    if isinstance(value, Decimal):
-        return value
-    return Decimal(str(value))
+    return value
 
 
 def standard_name(token: str | None, name: str | None) -> str:

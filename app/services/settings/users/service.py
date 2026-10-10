@@ -156,6 +156,8 @@ class UserService:
         user_id: int,
         dto: UserUpdateDTO,
         current_user: UserVO,
+        *,
+        token_db: Session,
     ) -> UserVO:
         require_permission(current_user, Perm.SETTINGS_USERS_UPDATE)
         if not dto.model_fields_set:
@@ -169,6 +171,10 @@ class UserService:
             raise NotFoundException("用户不存在")
         db.commit()
         db.refresh(user)
+        if "is_active" in dto.model_fields_set and dto.is_active is False:
+            from app.services.settings.users.auth import AuthService
+
+            AuthService().revoke_all_sessions(token_db, user.id)
         return self._to_vo(db, user)
 
     def update_own_profile(

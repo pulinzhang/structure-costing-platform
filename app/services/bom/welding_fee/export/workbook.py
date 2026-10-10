@@ -3,15 +3,15 @@
 from __future__ import annotations
 
 from decimal import Decimal
-from typing import Any
 
+from openpyxl.cell.cell import Cell
 from openpyxl.styles import Alignment, PatternFill
 from openpyxl.utils import get_column_letter
 from openpyxl.worksheet.worksheet import Worksheet
 
 from app.common.excel_workbook import excel_write_value
 from app.common.timezone import now
-from app.models.bom import BomWeldingFee
+from app.models.bom import BomWeldingFee, BomWeldingFeeItem
 from app.services.bom.welding_fee.export.columns import (
     FILTER_H,
     GROUP_H,
@@ -159,7 +159,7 @@ def write_data_row(
     layout: WeldingSheetLayout,
     style: SheetStyle,
     seq_no: int,
-    item: Any,
+    item: BomWeldingFeeItem | None,
     write_main: bool,
     line_index: int,
     main_fill: PatternFill,
@@ -201,7 +201,7 @@ def write_data_row(
 
 
 def _style_main_cell(
-    cell: Any,
+    cell: Cell,
     col: int,
     *,
     layout: WeldingSheetLayout,
@@ -253,7 +253,7 @@ def _style_main_cell(
 
 
 def _style_detail_cell(
-    cell: Any,
+    cell: Cell,
     col: int,
     *,
     layout: WeldingSheetLayout,

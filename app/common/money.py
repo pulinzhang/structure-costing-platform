@@ -7,7 +7,6 @@
 from __future__ import annotations
 
 from decimal import ROUND_HALF_UP, Decimal
-from typing import Any
 
 # 常用量化步长（与各表 Numeric scale 对齐）
 Q0 = Decimal("1")
@@ -17,7 +16,7 @@ Q4 = Decimal("0.0001")
 Q6 = Decimal("0.000001")
 
 
-def parse_decimal(value: Any) -> Decimal:
+def parse_decimal(value: object) -> Decimal:
     """任意入参 → Decimal；JSON float 必须经 str 转回。"""
     if value is None:
         raise ValueError("数值不能为空")
@@ -34,7 +33,7 @@ def parse_decimal(value: Any) -> Decimal:
 
 
 def quantize_money(
-    value: Any,
+    value: object,
     quant: str | Decimal,
     *,
     allow_negative: bool = False,
@@ -47,7 +46,7 @@ def quantize_money(
     return number.quantize(step, rounding=ROUND_HALF_UP)
 
 
-def quantize_positive_whole(value: Any, *, label: str = "数量") -> Decimal:
+def quantize_positive_whole(value: object, *, label: str = "数量") -> Decimal:
     """正整数（如分摊万台）。计算层仍用 Decimal，禁止小数。"""
     number = parse_decimal(value)
     if number <= 0:
@@ -59,7 +58,7 @@ def quantize_positive_whole(value: Any, *, label: str = "数量") -> Decimal:
 
 
 def optional_quantize_money(
-    value: Any,
+    value: object,
     quant: str | Decimal,
     *,
     allow_negative: bool = False,
@@ -72,7 +71,7 @@ def optional_quantize_money(
 
 
 def format_money(
-    value: Any,
+    value: object,
     quant: str | Decimal,
     places: int,
     *,
@@ -90,7 +89,7 @@ def format_money(
 
 
 def optional_format_money(
-    value: Any,
+    value: object,
     quant: str | Decimal,
     places: int,
     *,
@@ -102,7 +101,7 @@ def optional_format_money(
 
 
 def excel_money_cell(
-    value: Any,
+    value: object,
     quant: str | Decimal,
     *,
     allow_negative: bool = True,

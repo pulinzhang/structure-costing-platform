@@ -4,14 +4,13 @@ from __future__ import annotations
 
 import logging
 from decimal import Decimal
-from typing import Any
 
 from openpyxl import Workbook
 from openpyxl.styles import Alignment, Border, Font, PatternFill, Side
 from openpyxl.utils import get_column_letter
 from sqlalchemy.orm import Session
 
-from app.common.excel_workbook import resolve_worksheet
+from app.common.excel_workbook import ExcelCellValue, resolve_worksheet
 from app.common.export_watermark import workbook_to_xlsx_bytes
 from app.common.money import Q4, excel_money_cell
 from app.common.timezone import now
@@ -29,7 +28,7 @@ _AUDIT_LABELS: dict[str, str] = {
 }
 
 
-def _money_cell(value: Any) -> Decimal | str:
+def _money_cell(value: Decimal | None) -> Decimal | str:
     if value is None:
         return ""
     return excel_money_cell(value, Q4)
@@ -148,7 +147,7 @@ class BomPackagingTransportFeeExportService:
         money_cols = {15, 16, 17, 18, 19, 20, 21, 22}
         for row_idx, record in enumerate(records, start=2):
             audit_label = _AUDIT_LABELS.get(record.audit_status, record.audit_status)
-            values: list[Any] = [
+            values: list[ExcelCellValue] = [
                 record.location,
                 record.year,
                 record.vehicle_model,

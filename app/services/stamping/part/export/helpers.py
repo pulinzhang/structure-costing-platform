@@ -2,10 +2,12 @@
 
 from __future__ import annotations
 
+from decimal import Decimal
 from pathlib import Path
-from typing import Any, Protocol
+from typing import Protocol
 
 from openpyxl.styles import Alignment, Font
+from openpyxl.worksheet.worksheet import Worksheet
 
 from app.common.money import excel_money_cell
 from app.config import settings
@@ -78,11 +80,11 @@ def _resolve_sketch_path(part: StampingPart) -> Path | None:
     return None
 
 
-def _num(value: Any, quant: Any) -> Any:
+def _num(value: Decimal | None, quant: Decimal) -> Decimal | str:
     return excel_money_cell(value, quant)
 
 
-def _merge_if_needed(ws: Any, start_row: int, end_row: int, col: int) -> None:
+def _merge_if_needed(ws: Worksheet, start_row: int, end_row: int, col: int) -> None:
     if end_row > start_row:
         ws.merge_cells(
             start_row=start_row,

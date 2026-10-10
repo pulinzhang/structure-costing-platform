@@ -207,12 +207,11 @@ def build_evidence_vo(
     if row.snapshot_id is not None:
         bom_nodes = node_repository.list_by_snapshot(db, row.snapshot_id)
         children_map = build_children_map(bom_nodes)
-    payload = build_node_evidence(
+    return build_node_evidence(
         row,
         scope_nodes=scope_nodes,
         children_map=children_map,
     )
-    return WeldingNodeEvidenceVO.model_validate(payload)
 
 
 def get_node(

@@ -6,7 +6,6 @@
 from __future__ import annotations
 
 from decimal import Decimal
-from typing import Any
 
 from openpyxl.styles import Alignment, Border, Font, PatternFill
 from openpyxl.worksheet.worksheet import Worksheet
@@ -19,6 +18,7 @@ from app.common.system_defaults import (
     DEFAULT_SCRAP_RECOVERY_RATE,
     DEFAULT_STEEL_DENSITY,
 )
+from app.models.costing import StampingPartCost
 from app.repositories.bom.bom.node import BomNodeRepository
 from app.repositories.bom.bom.snapshot import BomSnapshotRepository
 from app.repositories.costing.steel_price.steel_price_repository import SteelPriceRepository
@@ -73,7 +73,7 @@ from app.services.costing.stamping_part_cost.helpers import (
 def write_process_data_rows(
     sheet: Worksheet,
     db: Session,
-    rows: list[Any],
+    rows: list[StampingPartCost],
     *,
     bom_snapshot_repo: BomSnapshotRepository,
     bom_node_repo: BomNodeRepository,

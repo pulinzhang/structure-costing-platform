@@ -3,7 +3,6 @@
 from __future__ import annotations
 
 from decimal import Decimal
-from typing import Any
 
 from app.common.audit import audit_status_label
 from app.common.bom.manufacturing_category import (
@@ -12,7 +11,7 @@ from app.common.bom.manufacturing_category import (
 )
 from app.common.money import Q4, excel_money_cell, format_money, quantize_money
 from app.common.timezone import now
-from app.models.bom import BomWeldingFee
+from app.models.bom import BomWeldingFee, BomWeldingFeeItem
 from app.schemas.dto.bom_welding_fee_dto import resolve_welding_fee_levels
 from app.services.bom.welding_fee.export.columns import DATA_H
 
@@ -171,7 +170,7 @@ def main_pairs(
     ]
 
 
-def detail_values(item: Any) -> list[object]:
+def detail_values(item: BomWeldingFeeItem | None) -> list[str | Decimal]:
     match_status = (item.match_status if item else "") or ""
     return [
         (item.standard_process_name or item.process_token or "") if item else "",
@@ -184,5 +183,5 @@ def detail_values(item: Any) -> list[object]:
     ]
 
 
-def match_status_of(item: Any) -> str:
+def match_status_of(item: BomWeldingFeeItem | None) -> str:
     return (item.match_status if item else "") or ""

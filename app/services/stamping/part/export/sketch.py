@@ -4,10 +4,10 @@ from __future__ import annotations
 
 import logging
 from io import BytesIO
-from typing import Any
 
 from openpyxl.drawing.image import Image as XlImage
 from openpyxl.utils import get_column_letter
+from openpyxl.worksheet.worksheet import Worksheet
 
 from app.models.stamping import StampingPart
 from app.services.stamping.part.export.constants import (
@@ -24,7 +24,7 @@ logger = logging.getLogger("service.stamping.part.export")
 
 
 def embed_sketch(
-    ws: Any,
+    ws: Worksheet,
     *,
     part: StampingPart,
     start_row: int,

@@ -13,19 +13,20 @@ from __future__ import annotations
 
 import logging
 from decimal import Decimal
-from typing import Any
 
 from openpyxl import Workbook
-from openpyxl.cell.cell import MergedCell
+from openpyxl.cell.cell import Cell, MergedCell
 from openpyxl.comments import Comment
 from openpyxl.styles import Alignment, Border, Font, PatternFill, Side
 from openpyxl.utils import get_column_letter
+from openpyxl.worksheet.worksheet import Worksheet
 
 from app.common.export_watermark import workbook_to_xlsx_bytes
 from app.common.money import Q2, excel_money_cell, parse_decimal
 from app.common.period import MONTH_MAX, MONTH_MIN
 from app.common.scrap_categories import SCRAP_CATEGORIES, SCRAP_CATEGORY_LABELS
 from app.common.timezone import now
+from app.models.yishiyiyi import StampingScrapPrice
 from app.schemas.vo.user_vo import UserVO
 
 logger = logging.getLogger("service.stamping_scrap_price.export.excel")
@@ -54,7 +55,7 @@ _THREE_ROW_COMMENT = (
 )
 
 
-def _to_decimal(value: Any) -> Decimal | None:
+def _to_decimal(value: Decimal | None) -> Decimal | None:
     if value is None:
         return None
     try:
@@ -63,19 +64,19 @@ def _to_decimal(value: Any) -> Decimal | None:
         return None
 
 
-def _set_price(cell: Any, value: Any) -> None:
+def _set_price(cell: Cell | MergedCell, value: Decimal | None) -> None:
     if value is None:
         return
     cell.value = excel_money_cell(value, Q2)
     cell.number_format = _PRICE_FORMAT
 
 
-def _set_row_height(ws: Any, row: int) -> None:
+def _set_row_height(ws: Worksheet, row: int) -> None:
     ws.row_dimensions[row].height = _ROW_HEIGHT
 
 
 def _apply_block_outer_border(
-    ws: Any,
+    ws: Worksheet,
     min_row: int,
     max_row: int,
     *,
@@ -116,7 +117,7 @@ class StampingScrapPriceExporter:
     def generate(
         self,
         years: list[int],
-        records_by_year: dict[int, list[Any]],
+        records_by_year: dict[int, list[StampingScrapPrice]],
         *,
         locations: list[str],
         year_filter: int | None = None,
@@ -158,9 +159,9 @@ class StampingScrapPriceExporter:
 
     def _write_year_block(
         self,
-        ws: Any,
+        ws: Worksheet,
         year: int,
-        records: list[Any],
+        records: list[StampingScrapPrice],
         start_row: int,
         locations: list[str],
     ) -> int:
@@ -174,7 +175,7 @@ class StampingScrapPriceExporter:
         ordered = list(locations) + extra
         row = start_row
         for category in SCRAP_CATEGORIES:
-            by_location: dict[str, dict[int, Any]] = {name: {} for name in ordered}
+            by_location: dict[str, dict[int, StampingScrapPrice]] = {name: {} for name in ordered}
             for record in records:
                 if getattr(record, "scrap_category", None) != category:
                     continue
@@ -205,7 +206,11 @@ class StampingScrapPriceExporter:
         return row
 
     def _write_plain_location(
-        self, ws: Any, row: int, location: str, month_map: dict[int, Any]
+        self,
+        ws: Worksheet,
+        row: int,
+        location: str,
+        month_map: dict[int, StampingScrapPrice],
     ) -> int:
         name_cell = ws.cell(row=row, column=1, value=location)
         name_cell.font = _DATA_FONT
@@ -228,10 +233,10 @@ class StampingScrapPriceExporter:
 
     def _write_deduction_location(
         self,
-        ws: Any,
+        ws: Worksheet,
         row: int,
         location: str,
-        month_map: dict[int, Any],
+        month_map: dict[int, StampingScrapPrice],
     ) -> int:
         market_row = row
         deduction_row = row + 1

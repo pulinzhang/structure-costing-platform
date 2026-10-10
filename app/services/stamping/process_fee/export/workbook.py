@@ -2,8 +2,7 @@
 
 from __future__ import annotations
 
-from typing import Any
-
+from openpyxl.cell.cell import Cell
 from openpyxl.styles import Alignment, PatternFill
 from openpyxl.utils import get_column_letter
 from openpyxl.worksheet.worksheet import Worksheet
@@ -168,7 +167,7 @@ def write_data_row(
         _style_detail_cell(cell, col, style=style)
 
 
-def _style_main_cell(cell: Any, col: int, *, style: SheetStyle) -> None:
+def _style_main_cell(cell: Cell, col: int, *, style: SheetStyle) -> None:
     if col == SEQ_COL:
         cell.font = font(size=11, bold=True, color="37474F")
         cell.alignment = style.center
@@ -193,7 +192,7 @@ def _style_main_cell(cell: Any, col: int, *, style: SheetStyle) -> None:
         cell.alignment = style.left if col in LEFT_MAIN_COLS else style.center
 
 
-def _style_detail_cell(cell: Any, col: int, *, style: SheetStyle) -> None:
+def _style_detail_cell(cell: Cell, col: int, *, style: SheetStyle) -> None:
     if col == LINE_FEE_COL:
         cell.font = font(size=11, bold=True, color="E65100")
         cell.alignment = style.right

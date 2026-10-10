@@ -3,13 +3,13 @@
 from __future__ import annotations
 
 import logging
-from typing import Any
 
 from openpyxl import Workbook
 from openpyxl.styles import Alignment, Border, Font, PatternFill, Side
 
 from app.common.export_watermark import workbook_to_xlsx_bytes
 from app.common.money import Q2, excel_money_cell, quantize_money
+from app.models.yishiyiyi import SteelBasePrice
 from app.schemas.vo.user_vo import UserVO
 
 logger = logging.getLogger("service.steel_base_price.export.excel")
@@ -20,7 +20,7 @@ class SteelBasePriceExporter:
 
     def generate(
         self,
-        records: list[Any],
+        records: list[SteelBasePrice],
         *,
         year: int | None = None,
         month: int | None = None,

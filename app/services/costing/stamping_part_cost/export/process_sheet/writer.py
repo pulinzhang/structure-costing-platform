@@ -6,7 +6,6 @@
 from __future__ import annotations
 
 import logging
-from typing import Any
 
 from openpyxl import Workbook
 from openpyxl.styles import Alignment, Border, Font, PatternFill, Side
@@ -15,6 +14,7 @@ from sqlalchemy.orm import Session
 from app.common.excel_workbook import resolve_worksheet
 from app.common.export_watermark import workbook_to_xlsx_bytes
 from app.common.measures import PERCENT, PERMILLE
+from app.models.costing import StampingPartCost
 from app.repositories.bom.bom.node import BomNodeRepository
 from app.repositories.bom.bom.snapshot import BomSnapshotRepository
 from app.repositories.costing.steel_price.steel_price_repository import SteelPriceRepository
@@ -52,7 +52,7 @@ logger = logging.getLogger("service.stamping_part_cost_export")
 def write_process_sheet_to_workbook(
     workbook: Workbook,
     db: Session,
-    rows: list[Any],
+    rows: list[StampingPartCost],
     *,
     bom_snapshot_repo: BomSnapshotRepository,
     bom_node_repo: BomNodeRepository,
@@ -370,7 +370,7 @@ def write_process_sheet_to_workbook(
 
 def export_process_sheet(
     db: Session,
-    rows: list[Any],
+    rows: list[StampingPartCost],
     *,
     bom_snapshot_repo: BomSnapshotRepository,
     bom_node_repo: BomNodeRepository,

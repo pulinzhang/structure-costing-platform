@@ -2,9 +2,8 @@
 
 from __future__ import annotations
 
-from typing import Any
-
 from app.common.timezone import now
+from app.models.costing import StampingPartCost
 
 _FILENAME_ILLEGAL = '<>:"/\\|?*'
 
@@ -19,30 +18,22 @@ def _filename_token(value: object) -> str | None:
     return text or None
 
 
-def _unique_row_value(rows: list[Any], attr: str) -> object | None:
-    values = {getattr(row, attr, None) for row in rows}
-    values.discard(None)
-    values.discard("")
-    if len(values) != 1:
+def _unique_text(values: list[str]) -> str | None:
+    present = {value.strip() for value in values if value.strip()}
+    if len(present) != 1:
         return None
-    return next(iter(values))
+    return next(iter(present))
 
 
-def _unique_row_int(rows: list[Any], attr: str) -> int | None:
-    raw = _unique_row_value(rows, attr)
-    if isinstance(raw, bool):
+def _unique_int(values: list[int]) -> int | None:
+    present = set(values)
+    if len(present) != 1:
         return None
-    if isinstance(raw, int):
-        return raw
-    if isinstance(raw, str):
-        text = raw.strip()
-        if text.isdigit():
-            return int(text)
-    return None
+    return next(iter(present))
 
 
 def build_process_sheet_filename(
-    rows: list[Any],
+    rows: list[StampingPartCost],
     *,
     year: int | None = None,
     month: int | None = None,
@@ -52,12 +43,12 @@ def build_process_sheet_filename(
     version: str | None = None,
 ) -> str:
     """冲压零件核价结果导出文件名：年月 + 基地 + 工厂 + 车型版本（有则带上）。"""
-    year_value = year if year is not None else _unique_row_int(rows, "year")
-    month_value = month if month is not None else _unique_row_int(rows, "month")
-    location_value = location or _unique_row_value(rows, "location")
-    supplier_value = stamping_supplier or _unique_row_value(rows, "stamping_supplier")
-    vehicle_value = vehicle_model or _unique_row_value(rows, "vehicle_model")
-    version_value = version or _unique_row_value(rows, "version")
+    year_value = year if year is not None else _unique_int([row.year for row in rows])
+    month_value = month if month is not None else _unique_int([row.month for row in rows])
+    location_value = location or _unique_text([row.location for row in rows])
+    supplier_value = stamping_supplier or _unique_text([row.stamping_supplier for row in rows])
+    vehicle_value = vehicle_model or _unique_text([row.vehicle_model for row in rows])
+    version_value = version or _unique_text([row.version for row in rows])
 
     parts = ["冲压零件核价结果"]
     if year_value is not None and month_value is not None:

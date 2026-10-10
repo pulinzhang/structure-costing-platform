@@ -2,8 +2,6 @@
 
 from __future__ import annotations
 
-from typing import Any
-
 from app.schemas.vo.costing_engine_vo import CostingEngineNavigateVO
 
 
@@ -238,9 +236,3 @@ def _nav_system_rates(
         label="去系统设置",
         query={},
     )
-
-
-def navigate_to_dict(navigate: CostingEngineNavigateVO | None) -> dict[str, Any] | None:
-    if navigate is None:
-        return None
-    return navigate.model_dump(exclude_none=True)

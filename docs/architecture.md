@@ -45,7 +45,7 @@ Parser 是**横向工具**：只被 Service 调用；禁止依赖 Router/Service
 | **Service** | 业务规则、事务、调 Parser/Repo、ORM→VO、抛业务异常 | 直接写 SQL；用 `(None, str)` 向 Router 报错；手写 datetime/Decimal JSON |
 | **Orchestrator** | 核算指挥：`prepare → engine → persist` | 主方法里 `for` / 掐进度 / 写库（见 [指挥家宪法](orchestrator-constitution.mdc)） |
 | **Repository** | CRUD / 聚合查询；返回 Model 或具名 `TypedDict`（函数体 `return {…}` 合法） | 权限/角色分支决策；签名写成匿名 `dict` / `dict[str, Any]` |
-| **Model** | 表字段；子表外键，以及子指回直接父的 `relationship` | `to_dict`、业务 `@property`；父指向子（引用保护：父不读子） |
+| **Model** | 表字段；子表外键。主子表的父可 `relationship` 子。独立引用只允许子指回直接父 | `to_dict`、业务 `@property`；独立主数据的父指向引用方 |
 | **Schema** | DTO（`schemas/dto/`）/ VO（`schemas/vo/`） | 业务流程 |
 | **Parser** | 纯解析，无副作用 | 依赖 Router/Service/Repository |
 
@@ -290,7 +290,7 @@ ApiResponse[AsyncTaskAcceptedVO]
 
 ### Model 可以有 relationship 吗？
 
-自己只读自己和直接的父。子表只用外键指回父，子侧可以 `relationship` 指回直接父。父不读子：不查询、不 `count`、不 JOIN，父 Model 不 `relationship`、不 import 子。同切片附属行同样遵守。禁止的还有业务方法与 `to_dict`。细则见架构宪法 §3.3。
+主子表（明细、权限行、同一聚合的子行）父可以 `relationship` 子，查询和删头时带上这些行。独立主数据互引用才是自己只读自己和直接的父：不顺着父再读祖父，不读兄弟表；父不查询、不 `count`、不 JOIN 引用方，父 Model 不 `relationship`、不 import 引用方；子侧可以 `relationship` 指回直接父。两类都不写业务方法与 `to_dict`。细则见架构宪法 §3.3。
 
 ### 删除或改主键时该不该先查有没有人用？
 

@@ -6,11 +6,10 @@
 
 from __future__ import annotations
 
-from typing import Any
-
 from openpyxl.styles import Alignment, Border, Font, PatternFill, Side
 from openpyxl.utils import get_column_letter
 from openpyxl.workbook.workbook import Workbook
+from openpyxl.worksheet.worksheet import Worksheet
 
 from app.common.excel_workbook import resolve_worksheet
 from app.common.timezone import now
@@ -73,7 +72,7 @@ def _font(*, size: int = 10, bold: bool = False, color: str = _TEXT) -> Font:
 
 
 def _paint(
-    ws: Any,
+    ws: Worksheet,
     row: int,
     start: int,
     end: int,
@@ -88,7 +87,7 @@ def _paint(
 
 
 def _box(
-    ws: Any,
+    ws: Worksheet,
     *,
     row: int,
     start: int,
@@ -112,7 +111,7 @@ def _box(
 
 
 def _band(
-    ws: Any,
+    ws: Worksheet,
     *,
     row: int,
     value: str,
@@ -134,7 +133,7 @@ def _band(
     )
 
 
-def _arrow(ws: Any, row: int, text: str = "↓") -> None:
+def _arrow(ws: Worksheet, row: int, text: str = "↓") -> None:
     """流程箭头：无底色、无边框，避免灰色横条打断阅读。"""
     _box(
         ws,
@@ -150,7 +149,7 @@ def _arrow(ws: Any, row: int, text: str = "↓") -> None:
 
 
 def _cards(
-    ws: Any,
+    ws: Worksheet,
     *,
     row: int,
     items: list[str],

@@ -1,7 +1,8 @@
 """成品间接费用 Sheet。"""
 
-from typing import Any
+from openpyxl.worksheet.worksheet import Worksheet
 
+from app.common.excel_workbook import ExcelCellValue
 from app.models.costing.assembly_cost import AssemblyCost
 from app.services.costing.assembly_cost.codes import part_short_code
 from app.services.costing.assembly_cost.export.workbook.columns import (
@@ -15,7 +16,7 @@ from app.services.costing.assembly_cost.export.workbook.styles import money_cell
 
 def write_indirects_sheet(
     layout: SheetLayout,
-    ws: Any,
+    ws: Worksheet,
     records: list[AssemblyCost],
     *,
     filter_text: str,
@@ -40,7 +41,7 @@ def write_indirects_sheet(
     for record in records:
         for ind in record.indirects or []:
             seq += 1
-            row_data = [
+            row_data: list[ExcelCellValue] = [
                 seq,
                 record.year,
                 record.month,
