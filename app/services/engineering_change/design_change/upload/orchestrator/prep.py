@@ -44,6 +44,7 @@ from app.services.engineering_change.design_change.upload.gates.bom_slice import
 from app.services.engineering_change.design_change.upload.gates.process_gates import (
     ProcessGateItem,
     parse_process_confirmation,
+    require_process_supplier_full_name,
     validate_process_hard_gates,
 )
 from app.services.engineering_change.design_change.upload.gates.sheet_consistency import (
@@ -175,6 +176,7 @@ def prepare_engineering_change_run(
             f"上传页是{quoted(page_project)}。请改成同一个项目后再传。"
         )
     parsed_process = parse_process_confirmation(args.file_content)
+    require_process_supplier_full_name(db, parsed_process)
     process_project = (parsed_process.vehicle_model or "").strip()
     if not process_project or process_project.upper() != page_project.upper():
         raise BusinessException(

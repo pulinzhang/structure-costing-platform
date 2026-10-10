@@ -16,6 +16,7 @@ from app.common.engineering_change_gates import (
     EC_PROCESS_EXTRA_NEW,
     EC_PROCESS_MISSING_NEW,
     EC_PROCESS_SHARED_OLD,
+    EC_PROCESS_SUPPLIER_FULL_NAME,
     PART_LEVEL_ASSEMBLY,
     after_assembly_not_on_bom_message,
     listed,
@@ -28,6 +29,7 @@ from app.parsers.engineering_change.design_change.sheet_extract import SHEET_PRO
 from app.parsers.stamping.models.parse_result import ParserResult
 from app.parsers.stamping.stamping_parser import parse_stamping_excel
 from app.services.bom.bom.engineering import BomEngineeringService
+from app.services.masterdata.supplier.service import SupplierService
 from app.services.stamping.part.engineering.design_change.service import StampingDesignChangeService
 
 
@@ -212,6 +214,47 @@ def _parsed_needs_process(nodes: list[BomParsedNode], add_row: BomParsedNode) ->
         qty_unit=add_row.qty_unit,
     )
     return category == "stamping"
+
+
+def require_process_supplier_full_name(db: Session, parsed: ParserResult) -> None:
+    """确认表承制公司必须已是供应商全称。简称、别名不改写成全称，直接拒。"""
+    header = (parsed.stamping_supplier or "").strip()
+    part_names = [
+        (part.stamping_supplier or "").strip()
+        for part in parsed.parts
+        if (part.stamping_supplier or "").strip()
+    ]
+    if not header and not part_names:
+        raise BusinessException(
+            f"{EC_PROCESS_SUPPLIER_FULL_NAME}：冲压工艺确认表没写冲压承制公司。"
+        )
+    seen: list[str] = []
+    for name in (header, *part_names):
+        if not name or name in seen:
+            continue
+        seen.append(name)
+        _require_supplier_full_name(db, name)
+
+
+def _require_supplier_full_name(db: Session, raw: str) -> None:
+    service = SupplierService()
+    canonical = service.resolve_canonical(db, raw)
+    if canonical is None:
+        raise BusinessException(
+            f"{EC_PROCESS_SUPPLIER_FULL_NAME}：写成{quoted(raw)}。供应商档案里没有这个名字。"
+        )
+    if canonical != raw:
+        raise BusinessException(
+            f"{EC_PROCESS_SUPPLIER_FULL_NAME}：写成{quoted(raw)}。请改成{quoted(canonical)}。"
+        )
+    try:
+        service.require_enabled(db, raw)
+    except BusinessException as error:
+        if str(error).startswith("供应商已禁用"):
+            raise BusinessException(
+                f"{EC_PROCESS_SUPPLIER_FULL_NAME}：{quoted(raw)}已停用。请到供应商列表启用后再传。"
+            ) from error
+        raise
 
 
 def parse_process_confirmation(file_content: bytes | None) -> ParserResult:

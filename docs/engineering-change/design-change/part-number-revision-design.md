@@ -502,6 +502,7 @@ app/
 | `EC_REVISE_FILE_CHAIN` | 400 | 改图时材料清单要把换号后的零件一直写到总成 |
 | `EC_NOT_INSTALL_CHILDREN` | 400 | 中间层此件不装时，下级必须同样标记 |
 | `EC_ADD_ALREADY_ON_TREE` | 400 | 变更后零件已在变更前总成上 |
+| `EC_PROCESS_SUPPLIER_FULL_NAME` | 400 | 冲压承制公司请写成供应商档案里的全称，简称不行 |
 | `EC_PROCESS_MISSING_NEW` | 400 | 冲压工艺确认表少了这个新零件号 |
 | `EC_PROCESS_EXTRA_NEW` | 400 | 冲压工艺确认表多了材料清单没有的号 |
 | `EC_PROCESS_NOT_ON_BOM` | 400 | 确认表零件号不在本本材料清单 |

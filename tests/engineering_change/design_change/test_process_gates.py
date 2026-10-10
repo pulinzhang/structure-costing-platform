@@ -2,18 +2,34 @@
 
 from __future__ import annotations
 
+from collections.abc import Generator
+
+import pytest
+from sqlalchemy import create_engine, event
+from sqlalchemy.orm import Session, sessionmaker
+from sqlalchemy.pool import StaticPool
+
+from app.common.audit import SYSTEM_USER
 from app.common.engineering_change_gates import (
     CHANGE_TYPE_ADD_PART,
     CHANGE_TYPE_REVISE,
+    EC_PROCESS_SUPPLIER_FULL_NAME,
     PART_LEVEL_ASSEMBLY,
     PART_LEVEL_L1,
     PART_LEVEL_L2,
 )
+from app.database import Base
+from app.exceptions.base import BusinessException
+from app.models.masterdata.supplier import Supplier, SupplierAlias
 from app.parsers.bom.models import BomParsedNode
 from app.parsers.engineering_change.design_change.change_order_parser import ChangeOrderRowParsed
+from app.parsers.stamping.models.parse_result import ParserResult
+from app.schemas.dto.supplier_dto import SupplierCreateDTO
 from app.services.engineering_change.design_change.upload.gates.process_gates import (
     discover_bom_process_news,
+    require_process_supplier_full_name,
 )
+from app.services.masterdata.supplier.service import SupplierService
 
 
 def _change_order(
@@ -202,3 +218,61 @@ def test_add_stamping_needs_process_standard_and_glue_do_not() -> None:
     assert _parsed_needs_process(nodes, glue) is False
     assert _parsed_needs_process(nodes, nut) is False
     assert _parsed_needs_process(nodes, sub_assembly) is False
+
+
+@pytest.fixture
+def supplier_db() -> Generator[Session, None, None]:
+    engine = create_engine(
+        "sqlite://",
+        connect_args={"check_same_thread": False},
+        poolclass=StaticPool,
+    )
+
+    @event.listens_for(engine, "connect")
+    def _enable_fk(dbapi_connection: object, _connection_record: object) -> None:
+        cursor = dbapi_connection.cursor()  # type: ignore[attr-defined]
+        cursor.execute("PRAGMA foreign_keys=ON")
+        cursor.close()
+
+    Base.metadata.create_all(bind=engine, tables=[Supplier.__table__, SupplierAlias.__table__])
+    session = sessionmaker(bind=engine)()
+    SupplierService().create(
+        session,
+        SupplierCreateDTO(
+            abbreviation="烟台海众",
+            full_name="烟台海众汽车零部件有限公司",
+            erp_code="YTHZ",
+            aliases=[],
+        ),
+        current_user=SYSTEM_USER,
+    )
+    try:
+        yield session
+    finally:
+        session.close()
+        engine.dispose()
+
+
+def test_process_supplier_short_name_rejected(supplier_db: Session) -> None:
+    parsed = ParserResult(stamping_supplier="烟台海众")
+    with pytest.raises(BusinessException) as caught:
+        require_process_supplier_full_name(supplier_db, parsed)
+    message = str(caught.value)
+    assert message.startswith(EC_PROCESS_SUPPLIER_FULL_NAME)
+    assert "「烟台海众」" in message
+    assert "「烟台海众汽车零部件有限公司」" in message
+
+
+def test_process_supplier_full_name_passes(supplier_db: Session) -> None:
+    require_process_supplier_full_name(
+        supplier_db,
+        ParserResult(stamping_supplier="烟台海众汽车零部件有限公司"),
+    )
+
+
+def test_process_supplier_unknown_rejected(supplier_db: Session) -> None:
+    with pytest.raises(BusinessException) as caught:
+        require_process_supplier_full_name(
+            supplier_db, ParserResult(stamping_supplier="没有这家厂")
+        )
+    assert "供应商档案里没有这个名字" in str(caught.value)
