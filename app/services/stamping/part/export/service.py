@@ -2,10 +2,11 @@
 
 from __future__ import annotations
 
+from decimal import Decimal
 from io import BytesIO
-from typing import Any
 
 from openpyxl import Workbook
+from openpyxl.worksheet.worksheet import Worksheet
 from sqlalchemy.orm import Session
 
 from app.models.stamping import StampingPart, StampingProcess, StampingTailorWeldBlank
@@ -73,12 +74,12 @@ class StampingPartExportService:
             current_user=current_user,
         )
 
-    def _write_headers(self, ws: Any) -> None:
+    def _write_headers(self, ws: Worksheet) -> None:
         return self._process_confirm._write_headers(ws)
 
     def _write_part_block(
         self,
-        ws: Any,
+        ws: Worksheet,
         *,
         start_row: int,
         seq_no: int,
@@ -99,12 +100,12 @@ class StampingPartExportService:
             sketch_buffers=sketch_buffers,
         )
 
-    def _write_steel_purchase_headers(self, ws: Any) -> None:
+    def _write_steel_purchase_headers(self, ws: Worksheet) -> None:
         return self._steel_purchase._write_steel_purchase_headers(ws)
 
     def _write_steel_purchase_row(
         self,
-        ws: Any,
+        ws: Worksheet,
         *,
         excel_row: int,
         part: StampingPart,
@@ -125,7 +126,7 @@ class StampingPartExportService:
         self,
         parts: list[StampingPart],
         *,
-        density: Any,
+        density: Decimal,
         location: str,
         stamping_supplier: str | None,
         vehicle_model: str | None,

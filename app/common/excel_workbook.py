@@ -11,6 +11,9 @@ from openpyxl.worksheet.worksheet import Worksheet
 # openpyxl 新建 Workbook 时默认首表名；仅此类「尚未占用」的空表可改名复用
 _DEFAULT_SHEET_TITLES = frozenset({"Sheet", "工作表1"})
 
+# 写入 Worksheet.cell 之前的业务值。None 由 excel_write_value 收成空串。
+ExcelCellValue = str | int | float | Decimal | bool | None
+
 
 def excel_write_value(value: object) -> str | int | float | Decimal | bool:
     """把业务导出值收成 openpyxl Worksheet.cell 可写的类型。"""

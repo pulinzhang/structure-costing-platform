@@ -1,6 +1,6 @@
 """openpyxl 色板、字体、金额单元格。"""
 
-from typing import Any
+from decimal import Decimal
 
 from openpyxl.styles import Alignment, Border, Font, PatternFill, Side
 
@@ -28,11 +28,11 @@ def thin_border() -> Border:
     return Border(left=side, right=side, top=side, bottom=side)
 
 
-def money_cell(value: Any) -> Any:
+def money_cell(value: Decimal | None) -> Decimal | str:
     return excel_money_cell(value, Q4, allow_negative=True)
 
 
-def money_cell_blank_zero(value: Any) -> Any:
+def money_cell_blank_zero(value: Decimal | None) -> Decimal | str:
     number = money_cell(value)
     if number == "" or number == 0:
         return ""

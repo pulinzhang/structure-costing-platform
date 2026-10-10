@@ -4,11 +4,11 @@ from __future__ import annotations
 
 import logging
 from io import BytesIO
-from typing import Any
 
 from openpyxl import Workbook
 from openpyxl.styles import Alignment, Font
 from openpyxl.utils import get_column_letter
+from openpyxl.worksheet.worksheet import Worksheet
 from sqlalchemy.orm import Session
 
 from app.common.export_watermark import workbook_to_xlsx_bytes
@@ -160,7 +160,7 @@ class ProcessConfirmExport:
 
     def _write_banner(
         self,
-        ws: Any,
+        ws: Worksheet,
         *,
         title: str,
         location: str,
@@ -206,7 +206,7 @@ class ProcessConfirmExport:
         ws.row_dimensions[2].height = 20
         ws.row_dimensions[3].height = 8
 
-    def _write_headers(self, ws: Any) -> None:
+    def _write_headers(self, ws: Worksheet) -> None:
         row4 = {
             1: "序号",
             2: "零件号",
@@ -352,7 +352,7 @@ class ProcessConfirmExport:
             key=lambda item: (item.blank_seq or 0, item.id or 0),
         )
 
-    def _apply_print_chrome(self, ws: Any) -> None:
+    def _apply_print_chrome(self, ws: Worksheet) -> None:
         ws.page_setup.orientation = "landscape"
         ws.page_setup.fitToPage = True
         ws.page_setup.fitToWidth = 1
@@ -385,7 +385,7 @@ class ProcessConfirmExport:
 
     def _write_part_block(
         self,
-        ws: Any,
+        ws: Worksheet,
         *,
         start_row: int,
         seq_no: int,
@@ -413,7 +413,7 @@ class ProcessConfirmExport:
 
     def _embed_sketch(
         self,
-        ws: Any,
+        ws: Worksheet,
         *,
         part: StampingPart,
         start_row: int,

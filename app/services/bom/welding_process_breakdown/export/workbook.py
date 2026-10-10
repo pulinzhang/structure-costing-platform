@@ -4,12 +4,12 @@ L0 核对导出 — openpyxl 工作簿写入（不访问数据库）
 
 from __future__ import annotations
 
-from typing import Any
-
 from openpyxl import Workbook
 from openpyxl.styles import Alignment, PatternFill
 from openpyxl.utils import get_column_letter
+from openpyxl.worksheet.worksheet import Worksheet
 
+from app.common.excel_workbook import ExcelCellValue
 from app.common.export_watermark import workbook_to_xlsx_bytes
 from app.common.timezone import now
 from app.models.bom import (
@@ -148,7 +148,7 @@ class L0CheckWorkbookBuilder:
 
     def _write_banner(
         self,
-        ws: Any,
+        ws: Worksheet,
         *,
         filter_text: str,
         node_count: int,
@@ -183,7 +183,7 @@ class L0CheckWorkbookBuilder:
         c3.alignment = indent
         ws.row_dimensions[3].height = NOTE_H
 
-    def _write_headers(self, ws: Any) -> int:
+    def _write_headers(self, ws: Worksheet) -> int:
         style = self.style
         group_row = 4
         header_row = 5
@@ -257,7 +257,7 @@ class L0CheckWorkbookBuilder:
 
     def _merge_main(
         self,
-        ws: Any,
+        ws: Worksheet,
         start_row: int,
         end_row: int,
         main_fill: PatternFill,
@@ -288,7 +288,7 @@ class L0CheckWorkbookBuilder:
 
     def _write_row(
         self,
-        ws: Any,
+        ws: Worksheet,
         row_idx: int,
         node: BomWeldingProcessBreakdownNode,
         *,
@@ -308,7 +308,7 @@ class L0CheckWorkbookBuilder:
                 display_version = stored
             else:
                 display_version = self._version_overlay.get(int(node_id), stored)
-            main_values: list[Any] = [
+            main_values: list[ExcelCellValue] = [
                 seq_no,
                 node.location or "",
                 node.vehicle_model or "",
@@ -325,7 +325,7 @@ class L0CheckWorkbookBuilder:
 
         map_raw = ""
         if line is None:
-            line_values: list[Any] = [""] * (COL_COUNT - MAIN_COLS)
+            line_values: list[ExcelCellValue] = [""] * (COL_COUNT - MAIN_COLS)
         else:
             map_raw = line.map_status or ""
             billing_qty, billing_unit = billing_qty_unit(line)

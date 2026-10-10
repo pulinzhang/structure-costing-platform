@@ -3,16 +3,18 @@
 from __future__ import annotations
 
 import logging
-from typing import Any
+from decimal import Decimal
 
 from openpyxl import Workbook
 from openpyxl.comments import Comment
 from openpyxl.styles import Alignment, Font
 from openpyxl.utils import get_column_letter
 from openpyxl.workbook.defined_name import DefinedName
+from openpyxl.worksheet.worksheet import Worksheet
 from sqlalchemy.orm import Session
 
 from app.common.bom.manufacturing_category import short_part_number_digits
+from app.common.excel_workbook import ExcelCellValue
 from app.common.measures import KG_PER_TON, MM3_G_PER_CM3_TO_KG
 from app.common.money import Q2, Q4
 from app.common.timezone import now
@@ -124,7 +126,7 @@ class SteelPurchaseExport:
         self,
         parts: list[StampingPart],
         *,
-        density: Any,
+        density: Decimal,
         location: str,
         stamping_supplier: str | None,
         vehicle_model: str | None,
@@ -188,7 +190,7 @@ class SteelPurchaseExport:
 
     def _write_steel_purchase_banner(
         self,
-        ws: Any,
+        ws: Worksheet,
         *,
         title: str,
         location: str,
@@ -196,7 +198,7 @@ class SteelPurchaseExport:
         vehicle_model: str | None,
         version: str | None,
         part_count: int,
-        density: Any,
+        density: Decimal,
     ) -> None:
         ws.merge_cells(start_row=1, start_column=1, end_row=1, end_column=STEEL_COL_COUNT)
         title_cell = ws.cell(row=1, column=1, value=title)
@@ -240,7 +242,7 @@ class SteelPurchaseExport:
         ws.row_dimensions[2].height = 20
         ws.row_dimensions[3].height = 8
 
-    def _write_steel_purchase_headers(self, ws: Any) -> None:
+    def _write_steel_purchase_headers(self, ws: Worksheet) -> None:
         groups = [
             (1, 5, "范围"),
             (6, 9, "零件"),
@@ -300,7 +302,7 @@ class SteelPurchaseExport:
 
     def _write_steel_purchase_part(
         self,
-        ws: Any,
+        ws: Worksheet,
         *,
         start_row: int,
         part: StampingPart,
@@ -333,7 +335,7 @@ class SteelPurchaseExport:
 
     def _write_steel_purchase_row(
         self,
-        ws: Any,
+        ws: Worksheet,
         *,
         excel_row: int,
         part: StampingPart,
@@ -364,7 +366,7 @@ class SteelPurchaseExport:
             cost_ratios=cost_ratios,
         )
         is_shared = bool(labels) or has_shared_die_ratio(cost_ratios)
-        values: dict[int, Any] = {
+        values: dict[int, ExcelCellValue] = {
             1: part.seq_no,
             2: part.location,
             3: part.vehicle_model,
@@ -428,7 +430,7 @@ class SteelPurchaseExport:
             elif zebra_fill is not None:
                 cell.fill = zebra_fill
 
-    def _write_steel_purchase_total(self, ws: Any, last_data_row: int) -> None:
+    def _write_steel_purchase_total(self, ws: Worksheet, last_data_row: int) -> None:
         total_row = last_data_row + 1
         ws.merge_cells(
             start_row=total_row,
@@ -454,7 +456,7 @@ class SteelPurchaseExport:
         ton.alignment = self._right
         ws.row_dimensions[total_row].height = 20
 
-    def _protect_steel_purchase_sheet(self, ws: Any) -> None:
+    def _protect_steel_purchase_sheet(self, ws: Worksheet) -> None:
         ws.protection.sheet = True
 
     def _write_steel_purchase_help(self, workbook: Workbook) -> None:

@@ -3,9 +3,9 @@
 from __future__ import annotations
 
 from io import BytesIO
-from typing import Any
 
 from openpyxl.styles import Alignment, Font, PatternFill
+from openpyxl.worksheet.worksheet import Worksheet
 
 from app.common.bom.manufacturing_category import short_part_number_digits
 from app.common.money import Q2, Q4
@@ -22,7 +22,7 @@ from app.services.stamping.part.export.sketch import embed_sketch
 
 
 def write_part_block(
-    ws: Any,
+    ws: Worksheet,
     *,
     start_row: int,
     seq_no: int,

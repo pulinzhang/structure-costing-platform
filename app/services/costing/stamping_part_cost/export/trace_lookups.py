@@ -2,10 +2,11 @@
 
 from __future__ import annotations
 
-from typing import Any
-
 from sqlalchemy.orm import Session
 
+from app.models.costing import StampingPartCost, SteelPrice
+from app.models.stamping import StampingProcessFee
+from app.models.yishiyiyi import StampingScrapPrice
 from app.repositories.costing.steel_price.steel_price_repository import SteelPriceRepository
 from app.repositories.stamping.process_fee.repository import (
     StampingProcessFeeRepository,
@@ -17,12 +18,12 @@ from app.repositories.yishiyiyi.scrap_price.scrap_price_repository import (
 
 def load_trace_maps(
     db: Session,
-    rows: list[Any],
+    rows: list[StampingPartCost],
     *,
     steel_price_repo: SteelPriceRepository,
     scrap_price_repo: StampingScrapPriceRepository,
     process_fee_repo: StampingProcessFeeRepository,
-) -> tuple[dict[Any, Any], dict[Any, Any], dict[Any, Any]]:
+) -> tuple[dict[int, SteelPrice], dict[int, StampingScrapPrice], dict[int, StampingProcessFee]]:
     steel_ids = sorted({int(row.steel_price_id) for row in rows if row.steel_price_id is not None})
     steel_by_id = {steel.id: steel for steel in steel_price_repo.list_by_ids(db, steel_ids)}
     scrap_ids = sorted({int(row.scrap_price_id) for row in rows if row.scrap_price_id is not None})

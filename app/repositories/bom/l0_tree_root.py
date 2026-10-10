@@ -6,10 +6,10 @@
 
 from __future__ import annotations
 
-from typing import Any, TypeVar
+from typing import TypeVar
 
 from sqlalchemy import and_
-from sqlalchemy.orm import Query, Session, aliased
+from sqlalchemy.orm import InstrumentedAttribute, Query, Session, aliased
 
 from app.models.bom import BomNode
 
@@ -18,8 +18,8 @@ T = TypeVar("T")
 
 def join_l0_tree_root(
     query: Query[T],
-    snapshot_id_col: Any,
-    l0_part_number_col: Any,
+    snapshot_id_col: InstrumentedAttribute[int],
+    l0_part_number_col: InstrumentedAttribute[str],
 ) -> tuple[Query[T], type[BomNode]]:
     """INNER JOIN 所属树根。调用方再筛 tree_root.bom_version / 生失效。"""
     tree_root = aliased(BomNode)

@@ -1,9 +1,9 @@
 """BOM 零件号到 L0 总成映射。"""
 
-from typing import Any
+from app.models.bom import BomNode
 
 
-def build_part_to_l0_map(nodes: list[Any]) -> dict[str, str]:
+def build_part_to_l0_map(nodes: list[BomNode]) -> dict[str, str]:
     """
     零件号 → L0 供货总成零件号。
     同一冲压件挂在多个总成下时，收集全部 L0，英文逗号分隔（去重、保序）。

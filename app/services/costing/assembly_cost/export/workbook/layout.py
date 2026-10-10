@@ -1,9 +1,9 @@
 """表头横幅、普通表头、数据行、打印与合并。"""
 
-from typing import Any
-
 from openpyxl.utils import get_column_letter
+from openpyxl.worksheet.worksheet import Worksheet
 
+from app.common.excel_workbook import ExcelCellValue
 from app.common.timezone import now
 from app.services.costing.assembly_cost.export.workbook.styles import (
     MONEY_FORMAT,
@@ -21,7 +21,7 @@ class SheetLayout:
 
     def write_banner(
         self,
-        ws: Any,
+        ws: Worksheet,
         *,
         title: str,
         filter_text: str,
@@ -57,7 +57,7 @@ class SheetLayout:
 
     def write_simple_header(
         self,
-        ws: Any,
+        ws: Worksheet,
         header_row: int,
         headers: list[str],
         *,
@@ -80,9 +80,9 @@ class SheetLayout:
 
     def append_styled_row(
         self,
-        ws: Any,
+        ws: Worksheet,
         row_idx: int,
-        row_data: list[Any],
+        row_data: list[ExcelCellValue],
         *,
         money_cols: set[int],
         seq: int,
@@ -114,13 +114,13 @@ class SheetLayout:
                 cell.alignment = self.left
         ws.row_dimensions[row_idx].height = 20
 
-    def apply_column_widths(self, ws: Any, widths: list[int]) -> None:
+    def apply_column_widths(self, ws: Worksheet, widths: list[int]) -> None:
         for col, width in enumerate(widths, start=1):
             ws.column_dimensions[get_column_letter(col)].width = width
 
     def merge_item_group(
         self,
-        ws: Any,
+        ws: Worksheet,
         *,
         start_row: int,
         end_row: int,
@@ -140,7 +140,7 @@ class SheetLayout:
             cell = ws.cell(row=start_row, column=col)
             cell.alignment = self.left if col in left_aligned else self.center
 
-    def polish_sheet(self, ws: Any, *, header_row: int) -> None:
+    def polish_sheet(self, ws: Worksheet, *, header_row: int) -> None:
         ws.sheet_view.showGridLines = False
         ws.sheet_view.zoomScale = 110
         ws.print_title_rows = f"1:{header_row}"
@@ -155,7 +155,7 @@ class SheetLayout:
 
 
 def apply_freeze_and_filter(
-    ws: Any,
+    ws: Worksheet,
     *,
     header_row: int,
     col_count: int,

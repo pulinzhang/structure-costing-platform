@@ -103,13 +103,7 @@ def update_user(
     current_user: UserVO = Depends(require_perm(Perm.SETTINGS_USERS_UPDATE)),
 ) -> ApiResponse[UserVO]:
     """更新用户资料；若停用账号则立即作废其全部登录会话"""
-    payload = dto.model_dump(exclude_unset=True)
-    user = _user_service.update(db, user_id, dto, current_user=current_user)
-
-    # 管理员停用 → 拒绝继续使用系统（踢下线）
-    if payload.get("is_active") is False:
-        _auth_service.revoke_all_sessions(token_db, user.id)
-
+    user = _user_service.update(db, user_id, dto, current_user=current_user, token_db=token_db)
     return ApiResponse.updated(data=user, message="更新成功")
 
 

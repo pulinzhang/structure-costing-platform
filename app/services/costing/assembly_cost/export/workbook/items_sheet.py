@@ -1,7 +1,8 @@
 """材料明细 Sheet。"""
 
-from typing import Any
+from openpyxl.worksheet.worksheet import Worksheet
 
+from app.common.excel_workbook import ExcelCellValue
 from app.models.costing.assembly_cost import AssemblyCost
 from app.services.costing.assembly_cost.codes import (
     item_short_code,
@@ -32,7 +33,7 @@ from app.services.costing.assembly_cost.export.workbook.styles import fill, font
 
 def write_items_sheet(
     layout: SheetLayout,
-    ws: Any,
+    ws: Worksheet,
     records: list[AssemblyCost],
     *,
     filter_text: str,
@@ -86,6 +87,7 @@ def write_items_sheet(
         for item in items:
             # 采购：对象内序号；财务：L0 seq_no（同树根多行同号）。
             stripe_seq += 1
+            row_data: list[ExcelCellValue]
             if is_procurement:
                 row_data = [
                     object_seq,
@@ -155,7 +157,7 @@ def write_items_sheet(
 
 def _write_procurement_item_headers(
     layout: SheetLayout,
-    ws: Any,
+    ws: Worksheet,
     header_row: int,
     headers: list[str],
 ) -> None:

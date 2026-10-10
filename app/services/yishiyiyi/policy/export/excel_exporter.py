@@ -4,10 +4,10 @@
 """
 
 from decimal import Decimal, InvalidOperation
-from typing import Any
 
 from openpyxl import Workbook
 from openpyxl.styles import Alignment, Border, Font, PatternFill, Side
+from openpyxl.worksheet.worksheet import Worksheet
 
 from app.common.export_watermark import workbook_to_xlsx_bytes
 from app.common.money import Q2, format_money
@@ -69,22 +69,21 @@ COLUMN_WIDTHS = [10, 8, 8, 12, 12, 12, 10, 15, 10, 10, 15, 18, 18, 14, 8, 8, 30,
 # =============================================================================
 
 
-def format_decimal(value: Any, digits: Any = 2) -> str:
+def format_decimal(value: str | int | Decimal | None, digits: int = 2) -> str:
     if value is None:
         return ""
-    places = int(digits) if digits is not None else 2
-    quant = Q2 if places == 2 else Decimal(10) ** -places
+    quant = Q2 if digits == 2 else Decimal(10) ** -digits
     try:
-        return format_money(value, quant, places, allow_negative=True)
+        return format_money(value, quant, digits, allow_negative=True)
     except (InvalidOperation, ValueError, TypeError):
         return value if isinstance(value, str) else str(value)
 
 
 def format_interval(
     variable: str,
-    min_val: Any,
+    min_val: str | Decimal | int | None,
     min_op: str | None,
-    max_val: Any,
+    max_val: str | Decimal | int | None,
     max_op: str | None,
     decimals: int = 2,
 ) -> str:
@@ -103,10 +102,10 @@ def format_interval(
         格式化后的条件字符串
     """
 
-    def fmt(v: Any) -> Any:
-        if v is None:
+    def fmt(value: str | Decimal | int | None) -> str:
+        if value is None:
             return ""
-        return format_decimal(v, decimals)
+        return format_decimal(value, decimals)
 
     def min_symbol(op: str | None) -> str:
         if op == ">=":
@@ -207,7 +206,7 @@ class SteelPricePolicyExporter:
         content = workbook_to_xlsx_bytes(wb, current_user)
         return content, filename
 
-    def _write_headers(self, ws: Any) -> None:
+    def _write_headers(self, ws: Worksheet) -> None:
         """写入表头行"""
         ws.append(HEADERS)
         for col_idx, _ in enumerate(HEADERS, start=1):
@@ -217,7 +216,7 @@ class SteelPricePolicyExporter:
             cell.alignment = HEADER_ALIGNMENT
             cell.border = THIN_BORDER
 
-    def _write_rows(self, ws: Any, records: list[ExportRow]) -> None:
+    def _write_rows(self, ws: Worksheet, records: list[ExportRow]) -> None:
         """写入数据行"""
         for row_idx, row in enumerate(records, start=2):
             row_data = [
@@ -258,7 +257,7 @@ class SteelPricePolicyExporter:
                 else:
                     cell.alignment = DATA_ALIGNMENT
 
-    def _set_column_widths(self, ws: Any) -> None:
+    def _set_column_widths(self, ws: Worksheet) -> None:
         """设置列宽"""
         for col_idx, width in enumerate(COLUMN_WIDTHS, start=1):
             letter = ws.cell(row=1, column=col_idx).column_letter

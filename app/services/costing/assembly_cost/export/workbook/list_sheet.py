@@ -1,12 +1,13 @@
 """成本一览 / 成品核价一览。"""
 
 from decimal import Decimal
-from typing import Any
 
 from openpyxl.styles import Alignment
 from openpyxl.utils import get_column_letter
+from openpyxl.worksheet.worksheet import Worksheet
 
 from app.common.audit import audit_status_label
+from app.common.excel_workbook import ExcelCellValue
 from app.common.money import Q4, format_money, quantize_money
 from app.models.costing.assembly_cost import AssemblyCost
 from app.services.costing.assembly_cost.codes import (
@@ -48,7 +49,7 @@ from app.services.costing.assembly_cost.export.workbook.styles import (
 
 def write_list_sheet(
     layout: SheetLayout,
-    ws: Any,
+    ws: Worksheet,
     records: list[AssemblyCost],
     *,
     filter_text: str,
@@ -115,6 +116,7 @@ def write_list_sheet(
     l0_seq_map = seq_no_by_source_node_id or {}
     for row_offset, record in enumerate(records, start=1):
         row_idx = header_row + row_offset
+        row_data: list[ExcelCellValue]
         if is_procurement:
             confirm_status = ""
             if record.procurement_object_id is not None:
@@ -223,7 +225,7 @@ def _list_count_label(records: list[AssemblyCost], *, is_procurement: bool) -> s
 
 def _write_list_total_row(
     layout: SheetLayout,
-    ws: Any,
+    ws: Worksheet,
     *,
     header_row: int,
     record_count: int,

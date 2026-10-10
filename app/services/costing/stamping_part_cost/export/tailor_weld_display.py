@@ -5,14 +5,13 @@ from __future__ import annotations
 from collections.abc import Callable
 from dataclasses import dataclass
 from decimal import Decimal
-from typing import Any
 
 from sqlalchemy.orm import Session
 
 from app.common.measures import KG_PER_TON, MM3_G_PER_CM3_TO_KG
 from app.common.money import Q2, optional_format_money
 from app.common.swing_shear import steel_kg_price_with_swing_shear
-from app.models.costing import SteelPrice
+from app.models.costing import StampingPartCost, SteelPrice
 from app.models.stamping.tailor_weld_blank import StampingTailorWeldBlank
 from app.repositories.costing.steel_price.steel_price_repository import SteelPriceRepository
 from app.repositories.stamping.part.tailor_weld_blank import (
@@ -69,7 +68,7 @@ def blank_term_has_mass_inputs(term: TailorWeldBlankTerm) -> bool:
 
 def load_blanks_by_part_id(
     db: Session,
-    rows: list[Any],
+    rows: list[StampingPartCost],
     blank_repo: StampingTailorWeldBlankRepository | None = None,
 ) -> dict[int, list[StampingTailorWeldBlank]]:
     repo = blank_repo or StampingTailorWeldBlankRepository()
@@ -84,7 +83,7 @@ def load_blanks_by_part_id(
 
 def build_steel_price_index(
     db: Session,
-    rows: list[Any],
+    rows: list[StampingPartCost],
     steel_repo: SteelPriceRepository | None = None,
 ) -> dict[SteelPriceKey, SteelPrice]:
     """(year, month, location, grade, thickness) → SteelPrice 行。"""
@@ -111,15 +110,15 @@ def build_steel_price_index(
 
 
 def lookup_blank_steel(
-    row: Any,
+    row: StampingPartCost,
     blank: StampingTailorWeldBlank,
     price_index: dict[SteelPriceKey, SteelPrice],
 ) -> SteelPrice | None:
-    grade = (blank.material or getattr(row, "material", None) or "").strip()
+    grade = (blank.material or row.material or "").strip()
     thickness = blank.thickness
     if not grade or thickness is None:
         return None
-    loc = (getattr(row, "location", None) or "").strip()
+    loc = row.location.strip()
     if not loc:
         return None
     return price_index.get((row.year, row.month, loc, grade, thickness))
@@ -143,17 +142,17 @@ def _join_kg_prices(ton_prices: list[Decimal | None]) -> str | None:
     return "/".join(labels)
 
 
-def _blank_parts_per_sheet(row: Any, blank: StampingTailorWeldBlank) -> int | None:
+def _blank_parts_per_sheet(row: StampingPartCost, blank: StampingTailorWeldBlank) -> int | None:
     if blank.parts_per_sheet is not None and blank.parts_per_sheet > 0:
         return int(blank.parts_per_sheet)
-    parent = getattr(row, "parts_per_sheet", None)
+    parent = row.parts_per_sheet
     if parent is not None and int(parent) > 0:
         return int(parent)
     return None
 
 
 def build_tailor_blank_terms(
-    row: Any,
+    row: StampingPartCost,
     blanks: list[StampingTailorWeldBlank],
     price_index: dict[SteelPriceKey, SteelPrice],
 ) -> list[TailorWeldBlankTerm]:
@@ -168,7 +167,7 @@ def build_tailor_blank_terms(
         steel_kg = None
         if steel is not None and steel.final_price_per_ton is not None:
             mill_ton = Decimal(str(steel.final_price_per_ton))
-            surcharge = Decimal(str(getattr(row, "swing_shear_fee_per_ton", None) or 0))
+            surcharge = row.swing_shear_fee_per_ton
             steel_kg = steel_kg_price_with_swing_shear(mill_ton, surcharge)
         terms.append(
             TailorWeldBlankTerm(
@@ -220,7 +219,7 @@ def build_tailor_group_r_formula(
 
 
 def resolve_part_cost_display(
-    row: Any,
+    row: StampingPartCost,
     blanks: list[StampingTailorWeldBlank],
     price_index: dict[SteelPriceKey, SteelPrice],
 ) -> PartCostDisplayFields:
@@ -253,7 +252,7 @@ def resolve_part_cost_display(
             blank_terms=terms,
         )
 
-    steel_ton = getattr(row, "steel_ton_price", None)
+    steel_ton = row.steel_ton_price
     steel_ton_text = (
         format_ton_price_label(Decimal(str(steel_ton))) if steel_ton is not None else None
     )
@@ -262,12 +261,12 @@ def resolve_part_cost_display(
         steel_kg_text = format_ton_price_label(Decimal(str(steel_ton)) / KG_PER_TON)
     return PartCostDisplayFields(
         is_tailor_welded=False,
-        thickness=optional_format_money(getattr(row, "thickness", None), Q2, 2),
-        sheet_length=optional_format_money(getattr(row, "sheet_length", None), Q2, 2),
-        sheet_width=optional_format_money(getattr(row, "sheet_width", None), Q2, 2),
+        thickness=optional_format_money(row.thickness, Q2, 2),
+        sheet_length=optional_format_money(row.sheet_length, Q2, 2),
+        sheet_width=optional_format_money(row.sheet_width, Q2, 2),
         steel_ton_price=steel_ton_text,
         steel_kg_price_display=steel_kg_text,
-        blank_steel_ids=([int(row.steel_price_id)] if getattr(row, "steel_price_id", None) else []),
+        blank_steel_ids=[row.steel_price_id] if row.steel_price_id is not None else [],
         blank_steels=[],
         blank_terms=[],
     )

@@ -5,7 +5,6 @@ from __future__ import annotations
 import logging
 from datetime import datetime
 from decimal import Decimal
-from typing import Any
 
 from openpyxl import Workbook
 from openpyxl.styles import Alignment, Border, Font, PatternFill, Side
@@ -13,7 +12,7 @@ from openpyxl.utils import get_column_letter
 from sqlalchemy.orm import Session
 
 from app.common.audit import audit_status_label
-from app.common.excel_workbook import resolve_worksheet
+from app.common.excel_workbook import ExcelCellValue, resolve_worksheet
 from app.common.export_watermark import workbook_to_xlsx_bytes
 from app.common.money import Q4, excel_money_cell
 from app.common.timezone import now
@@ -29,7 +28,7 @@ from app.schemas.vo.user_vo import UserVO
 logger = logging.getLogger("service.bom_welding_unit_price_export")
 
 
-def _unit_price_cell(value: Any) -> Decimal | str:
+def _unit_price_cell(value: Decimal | None) -> Decimal | str:
     """导出单价：保持 Decimal，不经 float。"""
     return excel_money_cell(value, Q4)
 
@@ -126,7 +125,7 @@ class BomWeldingUnitPriceExportService:
             cell.border = thin_border
 
         for row_idx, record in enumerate(records, start=2):
-            values: list[Any] = [
+            values: list[ExcelCellValue] = [
                 record.location,
                 record.year,
                 record.item_name,
