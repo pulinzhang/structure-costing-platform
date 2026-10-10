@@ -32,6 +32,9 @@ COMPANY = "普炳软件"
 APP_NAME = "结构件自动核价平台"
 APP_NAME_SHORT = "核价平台"
 APP_NAME_EN = "Structural Parts Automated Costing Platform"
+TRIAL_URL = "http://117.143.214.90:8000/"
+TRIAL_USERNAME = "admin"
+TRIAL_PASSWORD = "admin123"
 
 SLIDE_COUNT = 9
 
@@ -193,6 +196,30 @@ def card(slide, left, top, width, height) -> None:
     rect(slide, left, top, width, Inches(0.045), ORANGE)
 
 
+def cover_trial_access(slide) -> None:
+    """封面试用入口。产品介绍与简介共用。"""
+    textbox(
+        slide,
+        Inches(0.7),
+        Inches(5.2),
+        Inches(11.4),
+        Inches(0.4),
+        f"试用地址  {TRIAL_URL}",
+        size=16,
+        color=ORANGE,
+    )
+    textbox(
+        slide,
+        Inches(0.7),
+        Inches(5.65),
+        Inches(11.4),
+        Inches(0.4),
+        f"默认账号  {TRIAL_USERNAME} / {TRIAL_PASSWORD}",
+        size=16,
+        color=SOFT,
+    )
+
+
 def dark_footer(slide, index: int) -> None:
     textbox(
         slide,
@@ -274,6 +301,7 @@ def make() -> Path:
         color=SOFT,
         line_pt=36,
     )
+    cover_trial_access(s)
     dark_footer(s, 1)
 
     # 02 crime / evidence

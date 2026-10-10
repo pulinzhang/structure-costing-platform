@@ -92,6 +92,7 @@ def make() -> Path:
         color=SOFT,
         line_pt=36,
     )
+    deck.cover_trial_access(s)
     dark_footer(s, 1)
 
     s = prs.slides.add_slide(blank)
