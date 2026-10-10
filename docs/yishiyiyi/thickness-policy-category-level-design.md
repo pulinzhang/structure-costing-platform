@@ -1,6 +1,6 @@
 # 厚度加减价政策 — 分类级引入改造说明
 
-> 状态：**设计定稿（待开发）**  
+> 状态：**已落地**  
 > 关联：`docs/masterdata/steel-grade-category-design.md`、`app/models/yishiyiyi/steel_price_policy.py`、`app/services/costing/steel_price/calc/steps/adjustments/thickness.py`  
 > 原则：**只做厚度加减价**（冷轧 / 镀锌 / 酸洗 **三大类均做**）；政策按 **牌号分类大类级** 存储（`grade_type = CATEGORY`，`grade_value` 与块标签共用）；**开发环境清空历史政策后重来**，不做旧数据迁移与兼容。**宽度加减价、厚宽组合、锌层等本期不做。**
 
@@ -353,3 +353,4 @@ CalcRow.width_adjustment → 0
 | 2026-08-27 | 收窄：宽度不做；开发环境清历史、不迁移 |
 | 2026-08-27 | 定稿：冷轧 / 镀锌 / 酸洗 **三类厚度均做**；仅宽度下线 |
 | 2026-08-27 | 落地：清表脚本、大类 CATEGORY 导入/匹配、样例批量导入与期货生效月解析 |
+| 2026-10-10 | 状态改为已落地。现网按大类 `CATEGORY` 匹配厚度加减价 |

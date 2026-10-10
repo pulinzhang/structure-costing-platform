@@ -1,6 +1,6 @@
 # 文件溯源 — 设计说明
 
-> 状态：**已上线（MVP）**  
+> 状态：**已上线**  
 > 历史：侧栏「报价」占位页（`#/quotation`）已替换为 **文件溯源**（`#/file-trace`）；quotation 代码与权限码已移除。  
 > 关联：`docs/architecture.md`、`docs/permission-design.md`、`docs/api-type-safety.md`  
 > 现网：`app/routers/file_trace.py`、`app/services/file_trace/`、`static/js/features/file-trace/`、`tests/file_trace/test_register.py`
@@ -75,7 +75,7 @@
 - **下载原件**，核对「当时导入的是不是这份表」；
 - **查看元数据**（谁上传、何时、对应哪期基地/项目/年月）。
 
-深链到业务列表为可选增强，**不在本期必做**。
+业务页不深链到本列表。范围字段和鉴权下载已经够用。
 
 ### 1.2 现状（纳入范围的已落盘类）
 
@@ -129,7 +129,7 @@
 | 删除 / 物理覆盖原件 | 防扯皮；仅 `superseded` 标记 |
 | 简图 PNG | 非 Excel 上传原件 |
 | 全目录扫描回填 | 易误分类；只做定向回填（§6.2） |
-| 业务页深链 | 可选后续；scope 字段已够用 |
+| 业务页深链 | 不做。scope 字段和鉴权下载已经够用 |
 
 ### 2.4 「查看」的定义
 
@@ -223,7 +223,7 @@ file_trace Service → upload_file Repository（读列表 / 下载）
 | `register` 内路径校验、hash 计算 | `file_trace` Service 依赖业务 Repository 补全展示名 |
 | 回填脚本读 `bom_snapshots`、已知 archive 路径（离线） | Router 直接登记；为未落盘模块预留枚举 |
 
-列表展示名用 **scope 字段拼接**（如「BOM · 青岛 · T28 · D_00」）。`business_ref_type` / `business_ref_id` 可选存储（BOM 写 `bom_snapshot`），**不做**详情深链 UI。
+列表展示名用 **scope 字段拼接**（如「BOM · 青岛 · T28 · D_00」）。`business_ref_type` / `business_ref_id` 可存（BOM 写 `bom_snapshot`）。详情不链到业务页。
 
 ### 4.2 文件分类 `file_category`
 
@@ -500,7 +500,7 @@ JSON 端点使用 `response_model=ApiResponse[T]`；**下载为 `StreamingRespon
 - [x] 鉴权下载 + 操作日志
 - [x] `tests/file_trace/`（现有 `test_register.py`；下载鉴权矩阵仍可补）
 
-**明确不在本清单（仍未做）：** `save_and_register`、深链、路径迁移、`superseded` 列表筛选、导出溯源 Excel。
+**现网到此为止，没有另开的增强清单。** 登记用 `register_existing`（原件先落盘再入库）。同范围再传时旧行改为 `superseded`，详情里显示「已被新文件替换」。列表按分类、基地、项目、期间、上传人和文件名筛选，下载走鉴权接口。不另做 `save_and_register`、业务页深链、搬移磁盘路径、按替换状态筛列表、导出溯源 Excel。
 
 ---
 
