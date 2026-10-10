@@ -13,6 +13,7 @@ from sqlalchemy.orm import Session
 from app.common.engineering_change_gates import (
     CHANGE_TYPE_STOP,
     EC_AFTER_ASSEMBLY_BUSY,
+    EC_AFTER_ASSEMBLY_IMPORTED,
     EC_CHANGE_ORDER_COLUMNS,
     EC_PROCUREMENT_LIST_REQUIRED_DETAIL,
     EC_PROJECT_MISMATCH,
@@ -271,12 +272,18 @@ def _assert_after_assemblies_idle(
             )
             if row.id != log_id
         ]
-        if busy:
+        if not busy:
+            continue
+        part_number = quoted(change_order.after_assembly_part_number)
+        if any(row.status == "pending" for row in busy):
             raise BusinessException(
-                f"{EC_AFTER_ASSEMBLY_BUSY}：{quoted(change_order.after_assembly_part_number)} "
-                "已有正在导入的任务。",
+                f"{EC_AFTER_ASSEMBLY_BUSY}：{part_number}。",
                 code=409,
             )
+        raise BusinessException(
+            f"{EC_AFTER_ASSEMBLY_IMPORTED}：{part_number}。" "请到设计变更列表删掉这一本后再上传。",
+            code=409,
+        )
 
 
 def _locate_before_root(

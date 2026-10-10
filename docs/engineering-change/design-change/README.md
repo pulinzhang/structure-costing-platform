@@ -125,7 +125,8 @@ flowchart TB
 | `EC_EFFECTIVE_TOO_EARLY` | 工程变更生效月 ≤ 旧总成生效月 | 上传页年月是否晚于变更前 L0 生效月；切点必须「往后切」 |
 | `EC_BEFORE_ASSEMBLY_INVALID` | 找不到这个变更前总成，或者这个月已经不用了 | 上传页年月对不对；这个号有没有已经导入、有没有被更早一次变更停掉 |
 | `EC_AFTER_ASSEMBLY_EXISTS` | 变更后总成系统里已经有了 | 不要把已经有的号再当变更后总成传一次 |
-| `EC_AFTER_ASSEMBLY_BUSY` | 这个变更后总成正在导入，请等这次完成 | 等并行任务结束或查上传记录 |
+| `EC_AFTER_ASSEMBLY_BUSY` | 这个变更后总成正在导入，请等这次完成 | 等这次导入结束 |
+| `EC_AFTER_ASSEMBLY_IMPORTED` | 这个变更后总成已经导入成功 | 到设计变更列表删掉这一本后再上传 |
 | `EC_NOT_INSTALL_SIGNAL` | 此件不装必须用量 0 且备注含「此件不装」 | 用量和备注两格都要写对 |
 | `EC_PROCESS_MISSING_NEW` | 冲压工艺确认表少了这个新零件号 | 材料清单换了号或新加了冲压件，确认表也要写出这一号 |
 | `EC_PROCESS_EXTRA_NEW` | 冲压工艺确认表多了材料清单没有的号 | 删多余工艺行，或把这个号补进材料清单 |

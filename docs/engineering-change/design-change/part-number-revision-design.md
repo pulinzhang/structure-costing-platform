@@ -490,6 +490,7 @@ app/
 | `EC_BEFORE_ASSEMBLY_INVALID` | 400 | 找不到这个变更前总成，或者这个月已经不用了 |
 | `EC_AFTER_ASSEMBLY_EXISTS` | 409 | 变更后总成系统里已经有了 |
 | `EC_AFTER_ASSEMBLY_BUSY` | 409 | 这个变更后总成正在导入，请等这次完成 |
+| `EC_AFTER_ASSEMBLY_IMPORTED` | 409 | 这个变更后总成已经导入成功，到列表删掉这一本后再上传 |
 | `EC_BOM_NEW_ROOT` | 400 | 材料清单里的交货总成和工程变更单对不上 |
 | `EC_QTY_CHANGED` | 400 | 用量与变更前总成不一致（本树没有增加零件时不改用量） |
 | `EC_NOT_INSTALL_SIGNAL` | 400 | 此件不装必须用量 0 且备注含「此件不装」 |

@@ -120,6 +120,7 @@ def listed(values: Iterable[object]) -> str:
 EC_BEFORE_ASSEMBLY_INVALID = "找不到这个变更前总成，或者这个月已经不用了"
 EC_AFTER_ASSEMBLY_EXISTS = "变更后总成系统里已经有了"
 EC_AFTER_ASSEMBLY_BUSY = "这个变更后总成正在导入，请等这次完成"
+EC_AFTER_ASSEMBLY_IMPORTED = "这个变更后总成已经导入成功"
 EC_BOM_NEW_ROOT = "材料清单里的交货总成和设计变更单对不上"
 EC_QTY_CHANGED = "用量与变更前总成不一致（工程变更不改用量）"
 EC_NOT_INSTALL_SIGNAL = "此件不装必须用量 0 且备注含「此件不装」"
