@@ -6,7 +6,7 @@ import { DRAWER_CLOSE, DRAWER_SHELL, DRAWER_BACKDROP } from '../../../../ui/clas
 import { opsIconButtonHtml } from '../../../../ui/hud-table.js?v=3';
 import {
     procurementObjectGenerateTemplate,
-} from './template.js?v=15';
+} from './template.js?v=16';
 import {
     DEFAULT_PAGE_SIZE,
     bindPagination,
@@ -108,7 +108,7 @@ function val(id) {
 
 function resetFilters() {
     if (genState.isGenerating) {
-        showToast('生成进行中，请稍候再重置', 'warning');
+        showToast('生成进行中，不能重置。', 'warning');
         return;
     }
     genState.location = '';
@@ -389,7 +389,7 @@ function showProcessDrawer(log) {
         <div class="px-5 py-3 border-b border-line-subtle text-[10px] text-ink-dim space-y-1 shrink-0">
             <div>批次 <span class="font-mono text-ink-muted">${esc(log.calc_batch_id || '-')}</span></div>
             <div>${esc(formatTimingLine(log, formatDateTime) || '-')}</div>
-            <div>汇总：节点 ${fmtInt(log.node_count)} · ${SECTION_LABELS.object} ${fmtInt(log.object_count)} · ${SECTION_LABELS.other_leaf} ${fmtInt(log.other_leaf_count)} · ${SECTION_LABELS.anomaly} ${fmtInt(log.anomaly_count)}</div>
+            <div>汇总：清单 ${fmtInt(log.node_count)} 条 · ${SECTION_LABELS.object} ${fmtInt(log.object_count)} · ${SECTION_LABELS.other_leaf} ${fmtInt(log.other_leaf_count)} · ${SECTION_LABELS.anomaly} ${fmtInt(log.anomaly_count)}</div>
         </div>
         <div class="flex-1 overflow-y-auto overscroll-contain p-5">
             <pre class="text-[11px] leading-5 font-mono text-ink-muted whitespace-pre-wrap break-words bg-app-main border border-app-elevated p-4">${esc(log.detail_text || '（无过程文本）')}</pre>

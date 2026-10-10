@@ -1,6 +1,6 @@
-import { dieUploadTemplate } from './template.js?v=24';
+import { dieUploadTemplate } from './template.js?v=25';
 import { uploadSubmitLabelHtml } from '../../../../ui/upload-actions.js?v=2';
-import { paintUploadProgressIcon } from '../../../../ui/sync-upload-progress.js?v=4';
+import { paintUploadProgressIcon } from '../../../../ui/sync-upload-progress.js?v=5';
 import {
     setDropzoneDragActive,
     setDropzoneFileSelected,
@@ -287,7 +287,7 @@ export const DieUploadPage = {
         `).join('');
     },
 
-    showProgress(progress = 0, msg = '正在导入，请稍候') {
+    showProgress(progress = 0, msg = '正在导入。') {
         document.getElementById('dieDropIdle')?.classList.add('hidden');
         document.getElementById('dieProgressPanel')?.classList.remove('hidden');
         document.getElementById('dieUploadZone')?.classList.add('pointer-events-none');
@@ -298,7 +298,7 @@ export const DieUploadPage = {
         document.getElementById('dieDropIdle')?.classList.remove('hidden');
         document.getElementById('dieProgressPanel')?.classList.add('hidden');
         document.getElementById('dieUploadZone')?.classList.remove('pointer-events-none');
-        this.updateProgress(0, '正在导入，请稍候');
+        this.updateProgress(0, '正在导入。');
     },
 
     updateProgress(progress, msg, status) {
@@ -376,7 +376,7 @@ export const DieUploadPage = {
 
     resetForm() {
         if (this.isUploading) {
-            showToast('解析进行中，请稍候再重置', 'warning');
+            showToast('导入进行中，不能重置。', 'warning');
             return;
         }
         this.stopPolling();
@@ -463,11 +463,11 @@ export const DieUploadPage = {
         formData.append('file', fileInput.files[0]);
         const scopeLabel = `${location} / ${vehicleModel}`;
         this.setUploading(true);
-        this.showProgress(0, '正在导入，请稍候');
+        this.showProgress(0, '正在导入。');
         try {
             const response = await HttpClient.post('/api/stamping/die/upload', formData, { skipToast: true, timeout: 60000 });
             const taskId = response.data?.task_id;
-            if (!taskId) throw new Error('未返回任务 ID');
+            if (!taskId) throw new Error('导入没有开始。');
             this.startPolling(taskId, fileInput.files[0].name, scopeLabel);
         } catch (error) {
             this.stopPolling();

@@ -7,7 +7,7 @@ import { DRAWER_CLOSE, DRAWER_SHELL, DRAWER_BACKDROP } from '../../../../ui/clas
 import { opsIconButtonHtml } from '../../../../ui/hud-table.js?v=3';
 import {
     weldingProcessBreakdownGenerateTemplate,
-} from './template.js?v=15';
+} from './template.js?v=16';
 import {
     DEFAULT_PAGE_SIZE,
     bindPagination,
@@ -136,7 +136,7 @@ function fillSelect(id, values, selected, emptyLabel = '请选择') {
 
 function resetFilters() {
     if (genState.isCalculating) {
-        showToast('拆解进行中，请稍候再重置', 'warning');
+        showToast('拆解进行中，不能重置。', 'warning');
         return;
     }
     genState.location = '';
@@ -456,7 +456,7 @@ function showProcessDrawer(log) {
         <div class="px-5 py-3 border-b border-line-subtle text-[10px] text-ink-dim space-y-1 shrink-0">
             <div>批次 <span class="font-mono text-ink-muted">${esc(log.calc_batch_id || '-')}</span></div>
             <div>${esc(formatTimingLine(log, formatDateTime) || '-')}</div>
-            <div>汇总：主表 ${fmtInt(log.node_count)} · 明细 ${fmtInt(log.line_count)}</div>
+            <div>汇总：拆解 ${fmtInt(log.node_count)} · 明细 ${fmtInt(log.line_count)}</div>
         </div>
         <div class="flex-1 overflow-y-auto overscroll-contain p-5">
             <pre class="text-[11px] leading-5 font-mono text-ink-muted whitespace-pre-wrap break-words bg-app-main border border-app-elevated p-4">${esc(log.detail_text || '（无过程文本）')}</pre>
@@ -514,7 +514,7 @@ async function startGenerate() {
     }
 
     setCalculating(true);
-    showProgress(0, '已提交拆解队列');
+    showProgress(0, '拆解已提交。');
 
     try {
         const response = await HttpClient.post(GENERATE_API, {
@@ -523,7 +523,7 @@ async function startGenerate() {
             bom_version: bomVersion,
         });
         const taskId = response.data?.task_id;
-        if (!taskId) throw new Error('未返回任务 ID');
+        if (!taskId) throw new Error('拆解没有开始。');
         loadCalcHistory(1);
         startPolling(taskId);
     } catch (error) {
@@ -536,14 +536,14 @@ async function startGenerate() {
     }
 }
 
-function showProgress(progress = 0, msg = '已提交拆解队列') {
+function showProgress(progress = 0, msg = '拆解已提交。') {
     document.getElementById('calcProgressPanel')?.classList.remove('hidden');
     updateProgress(progress, msg);
 }
 
 function hideProgress() {
     document.getElementById('calcProgressPanel')?.classList.add('hidden');
-    updateProgress(0, '已提交拆解队列');
+    updateProgress(0, '拆解已提交。');
 }
 
 function updateProgress(progress, msg, status) {
@@ -623,7 +623,7 @@ function startPolling(taskId) {
                 const result = data?.result || {};
                 showToast(
                     result.message
-                        || `拆解完成：主表 ${fmtInt(result.node_count)} · 明细 ${fmtInt(result.line_count)}`,
+                        || `拆解完成：拆解记录 ${fmtInt(result.node_count)} · 明细 ${fmtInt(result.line_count)}`,
                     'success',
                 );
                 genState.activeTaskId = null;

@@ -6,7 +6,7 @@ import {
     bomMaterialListTemplate,
     renderBomMatTableRows,
     updateBomMatHud,
-} from './template.js?v=19';
+} from './template.js?v=20';
 import { bindFilterBar } from '../../../../ui/filter-bar.js?v=6';
 import {
     DEFAULT_PAGE_SIZE,
@@ -237,9 +237,9 @@ async function deleteOne(deleteBtn) {
         return;
     }
     const ok = await window.confirmAction(
-        `确认删除材料清单？\n${location} / ${vehicleModel} / ${bomVersion}\n`
-        + '树节点将一并清除，不可恢复。\n'
-        + '若已有采购对象列表或焊接工艺拆解，须先删除下游。',
+        `删除材料清单。\n${location} / ${vehicleModel} / ${bomVersion}\n`
+        + '清单中的零件一并清除。\n'
+        + '已有采购对象或焊接工艺拆解时，先删除那些记录。',
     );
     if (!ok) return;
 

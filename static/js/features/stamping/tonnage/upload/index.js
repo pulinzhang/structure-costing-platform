@@ -3,9 +3,9 @@
  * 同步导入：基地 + 年度必选，仅 .xlsx
  */
 
-import { tonnageUploadTemplate } from './template.js?v=18';
+import { tonnageUploadTemplate } from './template.js?v=19';
 import { can } from '../../../../core/permissions.js?v=10';
-import { bindSyncUploadProgress } from '../../../../ui/sync-upload-progress.js?v=3';
+import { bindSyncUploadProgress } from '../../../../ui/sync-upload-progress.js?v=4';
 
 const API_BASE = '/api/stamping/tonnage-price';
 const MAX_FILE_SIZE = 5 * 1024 * 1024;
@@ -189,7 +189,7 @@ const TonnageUploadPage = {
 
     reset() {
         if (this.isUploading) {
-            showToast('导入进行中，请稍候再重置', 'warning');
+            showToast('导入进行中，不能重置。', 'warning');
             return;
         }
         this.hideProgress();
@@ -200,7 +200,7 @@ const TonnageUploadPage = {
         if (year) year.value = '';
     },
 
-    showProgress(msg = '正在导入，请稍候') {
+    showProgress(msg = '正在导入。') {
         uploadProgress.setRunning(msg);
         document.getElementById('tonnageUploadZone')?.classList.remove('border-brand');
     },

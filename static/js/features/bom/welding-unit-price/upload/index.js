@@ -4,8 +4,8 @@ import { HUD_LED } from '../../../../ui/classes.js?v=14';
  * 同步导入：基地 + 年度必选，仅 .xlsx
  */
 
-import { weldingUnitPriceUploadTemplate } from './template.js?v=19';
-import { bindSyncUploadProgress } from '../../../../ui/sync-upload-progress.js?v=3';
+import { weldingUnitPriceUploadTemplate } from './template.js?v=20';
+import { bindSyncUploadProgress } from '../../../../ui/sync-upload-progress.js?v=4';
 
 const API_BASE = '/api/bom/welding-unit-price';
 const MAX_FILE_SIZE = 5 * 1024 * 1024;
@@ -303,7 +303,7 @@ const WeldingUnitPriceUploadPage = {
 
     reset() {
         if (this.isUploading) {
-            showToast('导入进行中，请稍候再重置', 'warning');
+            showToast('导入进行中，不能重置。', 'warning');
             return;
         }
         this.hideProgress();
@@ -315,7 +315,7 @@ const WeldingUnitPriceUploadPage = {
         if (year) year.value = '';
     },
 
-    showProgress(msg = '正在导入，请稍候') {
+    showProgress(msg = '正在导入。') {
         uploadProgress.setRunning(msg);
         document.getElementById('weldingUnitPriceUploadZone')?.classList.remove('border-brand');
     },

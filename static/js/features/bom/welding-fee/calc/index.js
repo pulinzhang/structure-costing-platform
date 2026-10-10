@@ -7,7 +7,7 @@ import { DRAWER_CLOSE, DRAWER_SHELL, DRAWER_BACKDROP } from '../../../../ui/clas
 import { opsIconButtonHtml } from '../../../../ui/hud-table.js?v=3';
 import {
     l0WeldingFeeCalcTemplate,
-} from './template.js?v=21';
+} from './template.js?v=23';
 import {
     DEFAULT_PAGE_SIZE,
     bindPagination,
@@ -170,7 +170,7 @@ async function loadCascadeFilters() {
 
 function resetFilters() {
     if (calcState.isCalculating) {
-        showToast('计算进行中，请稍候再重置', 'warning');
+        showToast('计算进行中，不能重置。', 'warning');
         return;
     }
     ['l0wfCalcLocation', 'l0wfCalcVehicleModel'].forEach((id) => {
@@ -480,7 +480,7 @@ function showProcessDrawer(log) {
         <div class="px-5 py-3 border-b border-line-subtle text-[10px] text-ink-dim space-y-1 shrink-0">
             <div>批次 <span class="font-mono text-ink-muted">${esc(log.calc_batch_id || '-')}</span></div>
             <div>${esc(formatTimingLine(log, formatDateTime) || '-')}</div>
-            <div>汇总：节点 ${fmtInt(log.l0_count)} · 新增 ${fmtInt(log.created_count)} · 更新 ${fmtInt(log.updated_count)} · 失败 ${fmtInt(log.failed_count)} · 缺单价 ${fmtInt(log.missing_price_count)} · 跳过 ${fmtInt(log.skipped_approved_count)}</div>
+            <div>汇总：供货总成 ${fmtInt(log.l0_count)} · 新增 ${fmtInt(log.created_count)} · 更新 ${fmtInt(log.updated_count)} · 失败 ${fmtInt(log.failed_count)} · 缺单价 ${fmtInt(log.missing_price_count)} · 跳过已审 ${fmtInt(log.skipped_approved_count)}</div>
         </div>
         <div class="flex-1 overflow-y-auto overscroll-contain p-5">
             <pre class="text-[11px] leading-5 font-mono text-ink-muted whitespace-pre-wrap break-words bg-app-main border border-app-elevated p-4">${esc(log.detail_text || '（无过程文本）')}</pre>
@@ -518,13 +518,13 @@ async function startCalculation() {
     }
 
     setCalculating(true);
-    showProgress(0, '已提交计算队列');
+    showProgress(0, '计算已提交。');
 
     try {
         const payload = { ...scope };
         const response = await HttpClient.post(CALC_API, payload);
         const taskId = response.data?.task_id;
-        if (!taskId) throw new Error('未返回任务 ID');
+        if (!taskId) throw new Error('计算没有开始。');
         loadCalcHistory(1);
         startPolling(taskId);
     } catch (error) {
@@ -538,14 +538,14 @@ async function startCalculation() {
     }
 }
 
-function showProgress(progress = 0, msg = '已提交计算队列') {
+function showProgress(progress = 0, msg = '计算已提交。') {
     document.getElementById('l0wfCalcProgressPanel')?.classList.remove('hidden');
     updateProgress(progress, msg);
 }
 
 function hideProgress() {
     document.getElementById('l0wfCalcProgressPanel')?.classList.add('hidden');
-    updateProgress(0, '已提交计算队列');
+    updateProgress(0, '计算已提交。');
 }
 
 function updateProgress(progress, msg, status) {

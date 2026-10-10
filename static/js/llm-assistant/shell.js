@@ -6,9 +6,9 @@
 import { createReport, getReport } from './api.js';
 import { mountComposer, setComposerBusy, setComposerCarry } from './chat/composer.js?v=9';
 import { humanizeUserFacingError } from './errors.js';
-import { renderThread } from './chat/thread.js?v=24';
-import { printAssistantMessage, closePrintPreview } from './export/print.js?v=16';
-import { downloadWordDocument } from './export/word.js?v=12';
+import { renderThread } from './chat/thread.js?v=25';
+import { printAssistantMessage, closePrintPreview } from './export/print.js?v=17';
+import { downloadWordDocument } from './export/word.js?v=13';
 import { findPrompt, fillPromptTemplate } from './prompts/catalog.js?v=9';
 import { applyReportToMessage } from './report/apply-report.js?v=4';
 import { openHistoryPanel } from './report/history.js?v=12';

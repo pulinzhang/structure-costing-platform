@@ -66,7 +66,7 @@ export function processFeeCalcTemplate() {
                          class="h-full bg-brand hud-brand-glow transition-all duration-300"
                          style="width: 0%"></div>
                 </div>
-                <p id="calcProgressMsg" class="text-[11px] text-ink-muted leading-relaxed mb-0">已提交计算队列</p>
+                <p id="calcProgressMsg" class="text-[11px] text-ink-muted leading-relaxed mb-0">计算已提交。</p>
             </div>
 
             <div id="dataReadyErrorBanner" class="hidden text-[10px] text-warn bg-app-hud px-2.5 py-1.5 border-l-2 border-warn/40">

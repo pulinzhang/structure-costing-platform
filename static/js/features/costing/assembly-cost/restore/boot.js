@@ -176,7 +176,7 @@ function coverHtml(row) {
                 <div><dt>期间</dt><dd>${display(row.year)}年${display(month)}月</dd></div>
                 <div><dt>基地</dt><dd>${display(row.location)}</dd></div>
                 <div><dt>项目</dt><dd>${display(row.vehicle_model)}</dd></div>
-                <div><dt>BOM 版本</dt><dd>${display(row.bom_version)}</dd></div>
+                <div><dt>清单版本</dt><dd>${display(row.bom_version)}</dd></div>
             </dl>
             <p class="status-word">
                 ${display(CALC_STATUS[row.calc_status] || row.calc_status)}

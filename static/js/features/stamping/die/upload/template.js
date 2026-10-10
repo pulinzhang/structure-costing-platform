@@ -96,7 +96,7 @@ export function dieUploadTemplate() {
                                             <div class="h-1.5 w-full bg-app-deep border border-line overflow-hidden mb-3">
                                                 <div id="dieProgressBar" class="h-full bg-brand hud-brand-glow transition-all duration-300" style="width: 0%"></div>
                                             </div>
-                                            <p id="dieProgressMsg" class="text-[11px] text-ink-muted leading-relaxed mb-0 whitespace-pre-wrap break-words max-h-48 overflow-y-auto">正在导入，请稍候</p>
+                                            <p id="dieProgressMsg" class="text-[11px] text-ink-muted leading-relaxed mb-0 whitespace-pre-wrap break-words max-h-48 overflow-y-auto">正在导入。</p>
                                         </div>
                                     </div>
                                     <div id="dieFilePreview" class="hidden mb-4"></div>

@@ -110,7 +110,7 @@ export function dashboardTemplate() {
 
             <div class="dash-bottom">
                 <section class="dash-surface dash-context">
-                    <h3 class="dash-kicker">主数据底盘</h3>
+                    <h3 class="dash-kicker">主数据</h3>
                     <div id="dashMasterEmpty" class="dash-master-empty hidden">—</div>
                     <div id="dashMasterStats" class="dash-master-stats">
                         <div class="dash-master-stat">
@@ -126,7 +126,7 @@ export function dashboardTemplate() {
                             <span>项目</span>
                         </div>
                     </div>
-                    <p class="dash-bom-line" id="dashBomBlock">BOM —</p>
+                    <p class="dash-bom-line" id="dashBomBlock">材料清单 —</p>
                 </section>
                 <section class="dash-surface dash-context">
                     <h3 class="dash-kicker">决策入口</h3>

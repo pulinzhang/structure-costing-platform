@@ -8,7 +8,7 @@ import {
     renderWpbDetailBody,
     updateWpbHud,
     refreshWpbLineDerived,
-} from './template.js?v=62';
+} from './template.js?v=65';
 import { bindMoreMenu } from '../../../../ui/more-menu.js?v=7';
 import { bindFilterBar } from '../../../../ui/filter-bar.js?v=6';
 import {
@@ -180,7 +180,7 @@ function bindEvents() {
                     const count = document.getElementById('wpbProcessCountFilter')?.value;
                     if (count !== '0') return '';
                     const level = document.getElementById('wpbLevelFilter')?.value;
-                    return level === '0' ? 'L0 · 工艺数=0' : '工艺数 = 0';
+                    return level === '0' ? 'L0 · 工艺数为 0' : '工艺数为 0';
                 },
             },
             { capsuleId: 'wpbCapsuleAudit', fieldId: 'wpbAuditFilter', idleLabel: '全部审核' },
@@ -515,7 +515,7 @@ function openBatchDrawer(mode) {
     if (mode === 'approve') {
         remarkWrap?.classList.remove('hidden');
         if (title) title.textContent = '批量审核';
-        if (hint) hint.textContent = '将范围内待审主表标记为已审核；已审跳过。审核意见必填。';
+        if (hint) hint.textContent = '范围内待审拆解记为已审核。已审的跳过。审核意见必填。';
         if (remarkLabel) remarkLabel.innerHTML = '审核意见<span class="text-brand">*</span>';
         if (remark) remark.placeholder = '请填写审核意见（必填）';
     } else if (mode === 'reverse') {

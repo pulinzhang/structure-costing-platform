@@ -1,6 +1,6 @@
-import { policyUploadTemplate } from './template.js?v=12';
+import { policyUploadTemplate } from './template.js?v=13';
 import { uploadSubmitLabelHtml } from '../../../../ui/upload-actions.js?v=2';
-import { paintUploadProgressIcon } from '../../../../ui/sync-upload-progress.js?v=4';
+import { paintUploadProgressIcon } from '../../../../ui/sync-upload-progress.js?v=5';
 
 const MAX_RECENT_UPLOADS = 8;
 const POLL_INTERVAL_MS = 2000;
@@ -167,7 +167,7 @@ const PolicyUploadPage = {
 
     reset() {
         if (this.isUploading) {
-            showToast('解析进行中，请稍候再重置', 'warning');
+            showToast('导入进行中，不能重置。', 'warning');
             return;
         }
         this.stopPolling();
@@ -231,7 +231,7 @@ const PolicyUploadPage = {
         `;
     },
 
-    showProgress(progress = 0, msg = '正在导入，请稍候') {
+    showProgress(progress = 0, msg = '正在导入。') {
         const idle = document.getElementById('policyDropIdle');
         const panel = document.getElementById('policyProgressPanel');
         const zone = document.getElementById('policyUploadZone');
@@ -251,7 +251,7 @@ const PolicyUploadPage = {
         if (idle) idle.classList.remove('hidden');
         if (panel) panel.classList.add('hidden');
         if (zone) zone.classList.remove('pointer-events-none');
-        this.updateProgress(0, '正在导入，请稍候');
+        this.updateProgress(0, '正在导入。');
     },
 
     updateProgress(progress, msg, status) {
@@ -449,13 +449,13 @@ const PolicyUploadPage = {
         formData.append('file', this.selectedFile);
 
         this.setUploading(true);
-        this.showProgress(0, '正在导入，请稍候');
+        this.showProgress(0, '正在导入。');
 
         try {
             const response = await HttpClient.post('/api/yishiyiyi/policy/upload', formData, { skipToast: true, timeout: 60000 });
             const taskId = response.data?.task_id;
             if (!taskId) {
-                throw new Error('未返回任务 ID');
+                throw new Error('导入没有开始。');
             }
             this.startPolling(taskId, fileName, year, month);
         } catch (error) {

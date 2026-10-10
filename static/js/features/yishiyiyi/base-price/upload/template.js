@@ -82,7 +82,7 @@ export function basePriceUploadTemplate() {
                                          class="h-full bg-brand hud-brand-glow transition-all duration-300"
                                          style="width: 0%"></div>
                                 </div>
-                                <p id="basePriceProgressMsg" class="text-[11px] text-ink-muted leading-relaxed mb-0 whitespace-pre-wrap break-words max-h-48 overflow-y-auto">正在导入，请稍候</p>
+                                <p id="basePriceProgressMsg" class="text-[11px] text-ink-muted leading-relaxed mb-0 whitespace-pre-wrap break-words max-h-48 overflow-y-auto">正在导入。</p>
                                 <a id="basePriceGradeAction" href="#/steel-grade-category"
                                    class="hidden mt-3 inline-flex items-center gap-1 text-[11px] text-brand-hud hover:text-brand-active">打开牌号分类</a>
                             </div>

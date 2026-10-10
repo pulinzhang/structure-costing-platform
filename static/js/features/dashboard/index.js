@@ -6,7 +6,7 @@
 import { canAccessPage } from '../../core/permissions.js?v=11';
 import { bindFilterBar } from '../../ui/filter-bar.js?v=6';
 import { pageLoadingHtml, pageNoticeHtml } from '../../ui/page-loading.js?v=1';
-import { dashboardTemplate } from './template.js?v=20';
+import { dashboardTemplate } from './template.js?v=22';
 
 const DASHBOARD_STATS_API = '/api/dashboard/stats';
 
@@ -243,7 +243,7 @@ function renderContext(master, bom, yishiyiyi, scope) {
 
     setText(
         'dashBomBlock',
-        `BOM ${b.snapshot_count ?? 0} 版 · ${b.node_count ?? 0} 节点 · 基价 ${y.base_price_count ?? 0} · 政策 ${y.policy_count ?? 0} · ${scrapText}`
+        `材料清单 ${b.snapshot_count ?? 0} 版 · 零件 ${b.node_count ?? 0} 条 · 基价 ${y.base_price_count ?? 0} · 政策 ${y.policy_count ?? 0} · ${scrapText}`
     );
 }
 

@@ -47,7 +47,7 @@ export function bindSyncUploadProgress(ids) {
         el(ids.panelId)?.classList.remove('hidden');
     }
 
-    function setRunning(msg = '解析并写入数据库，请稍候') {
+    function setRunning(msg = '正在导入。') {
         showPanel();
         el(ids.zoneId)?.classList.add('pointer-events-none');
         const icon = el(ids.iconId);

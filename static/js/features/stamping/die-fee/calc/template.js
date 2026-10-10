@@ -62,7 +62,7 @@ export function dieFeeCalcTemplate() {
                 <div class="h-1.5 w-full bg-app-deep border border-line overflow-hidden mb-2">
                     <div id="calcProgressBar" class="h-full bg-brand hud-brand-glow transition-all duration-300" style="width: 0%"></div>
                 </div>
-                <p id="calcProgressMsg" class="text-[11px] text-ink-muted leading-relaxed mb-0">已提交计算队列</p>
+                <p id="calcProgressMsg" class="text-[11px] text-ink-muted leading-relaxed mb-0">计算已提交。</p>
             </div>
             <div id="dataReadyErrorBanner" class="hidden text-[10px] text-warn bg-app-hud px-2.5 py-1.5 border-l-2 border-warn/40">
                 提示：先选年度、基地、项目（版本可不选）。一次算出本项目各供应商的模具费。只算这一年布点还有效的零件，不按项目档案的起止时间。模具单价必须已生效。

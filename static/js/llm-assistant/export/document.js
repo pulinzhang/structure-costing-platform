@@ -114,7 +114,7 @@ function formatScope(scope) {
     if (scope.location) parts.push(String(scope.location));
     if (scope.year || scope.month) parts.push(fmtPeriod(scope.year, scope.month));
     if (scope.vehicle_model) parts.push(String(scope.vehicle_model));
-    if (scope.bom_version) parts.push(`BOM ${scope.bom_version}`);
+    if (scope.bom_version) parts.push(`材料清单 ${scope.bom_version}`);
     if (scope.part_number) parts.push(String(scope.part_number));
     return parts.join(' · ');
 }

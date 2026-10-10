@@ -3,7 +3,7 @@
  * 钢价计算 —过滤条件 + 异步后台计算 + 进度轮询 + 历史过程日志
  */
 
-import { steelPriceCalcTemplate } from './template.js?v=21';
+import { steelPriceCalcTemplate } from './template.js?v=22';
 import { DRAWER_CLOSE, DRAWER_SHELL, DRAWER_BACKDROP } from '../../../../ui/classes.js?v=14';
 import { opsIconButtonHtml } from '../../../../ui/hud-table.js?v=3';
 
@@ -113,7 +113,7 @@ function getSelectedPeriod() {
 
 function resetFilters() {
     if (calcState.isCalculating) {
-        showToast('计算进行中，请稍候再重置', 'warning');
+        showToast('计算进行中，不能重置。', 'warning');
         return;
     }
 
@@ -474,18 +474,21 @@ async function startCalculation() {
     const payload = { year, month, location };
 
     setCalculating(true);
-    showProgress(0, '已提交计算队列');
+    showProgress(0, '计算已提交。');
 
     try {
         const response = await HttpClient.post(STEEL_PRICE_CALC_API, payload);
         const taskId = response.data?.task_id;
         if (!taskId) {
-            throw new Error('未返回任加ID');
+            throw new Error('计算没有开始。');
         }
         loadCalcHistory(1);
         startPolling(taskId);
     } catch (error) {
         console.error('提交钢价计算失败:', error);
+        if (error?.message === '计算没有开始。') {
+            showToast(error.message, 'error');
+        }
         stopPolling();
         hideProgress();
         calcState.activeTaskId = null;
@@ -494,7 +497,7 @@ async function startCalculation() {
     }
 }
 
-function showProgress(progress = 0, msg = '已提交计算队列') {
+function showProgress(progress = 0, msg = '计算已提交。') {
     const panel = document.getElementById('calcProgressPanel');
     if (panel) panel.classList.remove('hidden');
     updateProgress(progress, msg);
@@ -503,7 +506,7 @@ function showProgress(progress = 0, msg = '已提交计算队列') {
 function hideProgress() {
     const panel = document.getElementById('calcProgressPanel');
     if (panel) panel.classList.add('hidden');
-    updateProgress(0, '已提交计算队列');
+    updateProgress(0, '计算已提交。');
 }
 
 function updateProgress(progress, msg, status) {

@@ -7,7 +7,7 @@ import { DRAWER_CLOSE, DRAWER_SHELL, DRAWER_BACKDROP } from '../../../../ui/clas
 import { opsIconButtonHtml } from '../../../../ui/hud-table.js?v=3';
 import {
     processFeeCalcTemplate,
-} from './template.js?v=34';
+} from './template.js?v=35';
 import {
     DEFAULT_PAGE_SIZE,
     bindPagination,
@@ -181,7 +181,7 @@ async function loadCascadeFilters() {
 
 function resetFilters() {
     if (calcState.isCalculating) {
-        showToast('计算进行中，请稍候再重置', 'warning');
+        showToast('计算进行中，不能重置。', 'warning');
         return;
     }
 
@@ -581,12 +581,12 @@ async function startCalculation() {
     if (version) payload.version = version;
 
     setCalculating(true);
-    showProgress(0, '已提交计算队列');
+    showProgress(0, '计算已提交。');
 
     try {
         const response = await HttpClient.post(CALC_API, payload);
         const taskId = response.data?.task_id;
-        if (!taskId) throw new Error('未返回任加ID');
+        if (!taskId) throw new Error('计算没有开始。');
         loadCalcHistory(1);
         startPolling(taskId);
     } catch (error) {
@@ -605,14 +605,14 @@ async function startCalculation() {
     }
 }
 
-function showProgress(progress = 0, msg = '已提交计算队列') {
+function showProgress(progress = 0, msg = '计算已提交。') {
     document.getElementById('calcProgressPanel')?.classList.remove('hidden');
     updateProgress(progress, msg);
 }
 
 function hideProgress() {
     document.getElementById('calcProgressPanel')?.classList.add('hidden');
-    updateProgress(0, '已提交计算队列');
+    updateProgress(0, '计算已提交。');
 }
 
 function updateProgress(progress, msg, status) {

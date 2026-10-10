@@ -14,6 +14,13 @@ import {
     resolveBomNodeShortCode,
 } from '../../../../domain/part-identity.js?v=5';
 
+const PARSE_LABEL = {
+    ok: '正常',
+    partial: '部分识别',
+    unparsed: '未识别',
+    anomaly: '异常',
+};
+
 const AUDIT_LABEL = {
     pending: { text: '待审', cls: 'text-warn bg-warn/15' },
     approved: { text: '已审', cls: 'text-ok bg-ok/15' },
@@ -24,7 +31,7 @@ const EVIDENCE_STATUS_LABEL = {
     mismatch: { text: '有差额', cls: 'text-danger' },
     no_child: { text: '无可比对象', cls: 'text-ink-muted' },
     skipped: { text: '本链不适用', cls: 'text-ink-faint' },
-    l0_only: { text: '仅本节点有量', cls: 'text-warn' },
+    l0_only: { text: '仅本级有用量', cls: 'text-warn' },
     orphan_only: { text: '仅下级有量', cls: 'text-warn' },
 };
 
@@ -59,12 +66,12 @@ export function weldingProcessBreakdownListTemplate() {
                 <div class="${HUD_BAND}">
                     <div class="flex flex-col items-stretch gap-3 mb-3 sm:flex-row sm:items-start sm:justify-between sm:gap-4">
                         <div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3 font-mono flex-1 min-w-0">
-                            ${hudKpiCardHtml({ title: '主表', valueHtml: '<span id="wpbHudTotal">—</span>', unit: '条' })}
+                            ${hudKpiCardHtml({ title: '拆解', valueHtml: '<span id="wpbHudTotal">—</span>', unit: '条' })}
                             ${hudKpiCardHtml({ title: 'L0 总成', valueHtml: '<span id="wpbHudL0">—</span>', unit: '条' })}
                             ${hudKpiCardHtml({ title: '待审', valueHtml: '<span id="wpbHudPending">—</span>', unit: '条' })}
                             ${hudKpiCardHtml({ title: '已审', valueHtml: '<span id="wpbHudApproved">—</span>', unit: '条' })}
                             ${hudKpiCardHtml({
-                                title: 'L0 · 工艺数=0',
+                                title: 'L0 · 工艺数为 0',
                                 tone: 'warn',
                                 id: 'wpbHudZeroProcessCard',
                                 attrs: 'data-action="filter-zero-process" data-clickable="0"',
@@ -92,11 +99,11 @@ export function weldingProcessBreakdownListTemplate() {
                         </div>
                     </div>
                     <p class="text-[10px] text-ink-muted leading-relaxed">
-                        <span class="text-warn">怎么算钱：</span>焊接费<strong class="font-semibold text-ink">只按 L0 供货总成</strong>的过程量。
-                        <span class="text-ink-faint">L1、L2 只作参考，不算钱。</span>
-                        <span class="text-ink">查异常：</span>工艺数是 0 的 L0，点上面「L0 · 工艺数=0」。
-                        「导出L0核对」按当前筛选导出供货总成和工艺明细，不含审核。
-                        主表来自材料清单，不能改；还没审核时，可以改明细里的过程量和标准工艺。
+                        焊接费<strong class="font-semibold text-ink">只按 L0 供货总成</strong>的过程量计算。
+                        <span class="text-ink-faint">L1、L2 只作参考，不计入金额。</span>
+                        工艺数为 0 的供货总成，用上方「L0 · 工艺数为 0」筛选。
+                        「导出L0核对」按当前筛选导出供货总成和工艺明细，不含审核状态。
+                        拆解记录来自材料清单，不能修改。尚未审核时，可以修改明细里的过程量和标准工艺。
                     </p>
                 </div>
 
@@ -160,7 +167,7 @@ export function weldingProcessBreakdownListTemplate() {
                                 <th class="px-2 py-2 text-center text-[9px] font-medium tracking-[0.06em] text-ink-faint">解析</th>
                                 <th class="px-2 py-2 text-center text-[9px] font-medium tracking-[0.06em] text-ink-faint">审核</th>
                                 <th class="${OPS_TH}" aria-label="操作"></th>`,
-                    empty: { title: '暂无拆解数据', hint: '请先在「焊接工艺拆解」页从 BOM 生成' },
+                    empty: { title: '没有拆解数据', hint: '当前筛选下没有拆解数据。可在「焊接工艺拆解」从材料清单生成。' },
                     loading: true,
                 })}
             </div>
@@ -336,7 +343,7 @@ export function renderWpbTableRows(records, options = {}) {
                 <td class="${countCell}" title="${esc(countTitle)}">
                     <span>${lineCount}</span>
                 </td>
-                <td class="px-2 py-2 text-center text-[10px] text-ink-muted">${esc(row.parse_status)}</td>
+                <td class="px-2 py-2 text-center text-[10px] text-ink-muted">${esc(PARSE_LABEL[row.parse_status] || (row.parse_status ? '状态不明' : '—'))}</td>
                 <td class="px-2 py-2 text-center">
                     <span class="inline-flex px-1.5 py-0.5 text-[9px] rounded-sm ${audit.cls}">${audit.text}</span>
                 </td>`,
@@ -591,7 +598,7 @@ function renderEvidencePanel(evidence) {
         body = `
             <p class="text-[9px] text-ink-faint leading-relaxed mb-2">
                 对照数按材料清单结构推出来，用来抽查；<span class="text-ink-muted">不算钱、不改原来的数</span>。
-                差额 = 原文过程量 − 对照算出来的数。L1 常常不准，差额要人工看。
+                差额 = 原文过程量 − 对照算出来的数。L1 的差额需要人工核对。
             </p>
             <div class="flex flex-col gap-2">${rows}</div>
         `;

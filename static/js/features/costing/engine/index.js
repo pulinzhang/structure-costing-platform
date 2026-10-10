@@ -2,7 +2,7 @@
  * 月度智能自动核价引擎 — 页面逻辑 (BRABUS Pure Industrial Spec)
  */
 
-import { costingTemplate } from './template.js?v=33';
+import { costingTemplate } from './template.js?v=39';
 import {
     DEFAULT_PAGE_SIZE,
     bindPagination,
@@ -1230,37 +1230,6 @@ function renderPlanScope() {
         </div>`;
 }
 
-/**
- * 确定性审计指纹（前端展示用，非服务端签名）
- */
-function auditFingerprint(row) {
-    const seed = [
-        row.id,
-        row.location || '',
-        row.year,
-        row.month,
-        row.status || '',
-        row.task_id || '',
-        row.started_at || '',
-        row.created_by || '',
-    ].join('|');
-    let hash = 0x811c9dc5;
-    for (let i = 0; i < seed.length; i += 1) {
-        hash ^= seed.charCodeAt(i);
-        hash = Math.imul(hash, 0x01000193);
-    }
-    const primary = (hash >>> 0).toString(16).toUpperCase().padStart(8, '0');
-    const secondary = (
-        (Math.imul(Number(row.id) || 1, 0x4b2a) ^ (hash >>> 8)) >>>
-        0
-    )
-        .toString(16)
-        .toUpperCase()
-        .padStart(8, '0')
-        .slice(0, 4);
-    return `0x${primary}${secondary}`;
-}
-
 function navigateWithQuery(page, query) {
     persistContext();
     const params = new URLSearchParams();
@@ -1322,7 +1291,7 @@ function updateStartButton() {
     }
 
     btn.title = canStart
-        ? '启动月度核价引擎'
+        ? '启动核算引擎'
         : !engineState.canRun
           ? '无启动权限'
           : !engineState.ready
@@ -1728,7 +1697,6 @@ function renderHistory() {
                 label: row.status,
                 className: 'text-ink-dim',
             };
-            const fingerprint = auditFingerprint(row);
             const viewBtn = opsIconButtonHtml({
                 action: 'open-run',
                 title: '查看',
@@ -1748,9 +1716,6 @@ function renderHistory() {
             <tr class="engine-history-row group font-mono text-[11px] border-b border-ink/5 hover:bg-ink/[0.02] transition-colors">
                 <td class="px-2 py-2.5 overflow-hidden">
                     <div class="text-[13px] text-ink tabular-nums">#${esc(row.id)}</div>
-                    <div class="engine-audit-hash text-[9px] text-ink-faint mt-0.5 truncate" title="${esc(fingerprint)}">
-                        ${esc(fingerprint)}
-                    </div>
                 </td>
                 <td class="px-2 py-2.5 text-ink-muted overflow-hidden truncate" title="${esc(row.location)}">${esc(row.location)}</td>
                 <td class="px-2 py-2.5 text-right text-[10px] text-ink-muted tabular-nums">${esc(fmtPeriod(row.year, row.month))}</td>

@@ -31,7 +31,7 @@ export function bomMaterialListTemplate() {
                         ${hudKpiCardHtml({ title: '草稿', valueHtml: '<span id="bomMatHudDraft">—</span>', unit: '份' })}
                         ${hudKpiCardHtml({ title: '归档', valueHtml: '<span id="bomMatHudArchived">—</span>', unit: '份' })}
                         ${hudKpiCardHtml({
-                            title: '节点合计',
+                            title: '零件合计',
                             tone: 'warn',
                             valueHtml: '<span id="bomMatHudNodes">—</span>',
                             unit: '个',
@@ -39,7 +39,7 @@ export function bomMaterialListTemplate() {
                     </div>
                     <p class="text-[10px] text-ink-muted leading-relaxed">
                         材料清单按<strong class="font-semibold text-ink">基地 + 项目 + 版本</strong>唯一。
-                        操作列可打开产品结构；删除仅针对该行清单（含全部树节点），不可恢复。
+                        操作列可打开产品结构。删除只针对这一份清单，清单中的零件一并清除。
                     </p>
                 </div>
 
@@ -89,11 +89,11 @@ export function bomMaterialListTemplate() {
                                 <th class="px-2 py-2 text-left text-[9px] font-medium tracking-[0.08em] text-ink-dim">标题 / 顾客</th>
                                 <th class="px-2 py-2 text-center text-[9px] font-medium tracking-[0.06em] text-ink-faint">阶段</th>
                                 <th class="px-2 py-2 text-center text-[9px] font-medium tracking-[0.06em] text-ink-faint">状态</th>
-                                <th class="px-2 py-2 text-right text-[9px] font-semibold tracking-[0.06em] text-brand-hud/90 bg-brand-hud/10">节点数</th>
+                                <th class="px-2 py-2 text-right text-[9px] font-semibold tracking-[0.06em] text-brand-hud/90 bg-brand-hud/10">零件数</th>
                                 <th class="px-2 py-2 text-left text-[9px] font-medium tracking-[0.08em] text-ink-faint">源文件</th>
                                 <th class="px-2 py-2 text-left text-[9px] font-medium tracking-[0.08em] text-ink-faint">更新</th>
                                 <th class="${OPS_TH}" aria-label="操作"></th>`,
-                    empty: { title: '暂无材料清单', hint: '请先在「上传材料清单」页导入 Excel' },
+                    empty: { title: '没有材料清单', hint: '当前筛选下没有材料清单。可在「上传材料清单」导入。' },
                     loading: true,
                 })}
             </div>
@@ -163,7 +163,7 @@ export function renderBomMatTableRows(records, options = {}) {
                 <td class="px-2 py-2 text-center">
                     <span class="inline-flex px-1.5 py-0.5 text-[9px] rounded-sm ${status.cls}">${esc(status.text)}</span>
                 </td>
-                <td class="${nodeCell}" title="节点数 ${nodeCount}">
+                <td class="${nodeCell}" title="零件数 ${nodeCount}">
                     <span>${nodeCount}</span>
                 </td>
                 <td class="px-2 py-2 overflow-hidden">

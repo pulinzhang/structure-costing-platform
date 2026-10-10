@@ -3,7 +3,7 @@
  */
 
 import { vehicleModelUploadTemplate } from './template.js?v=13';
-import { bindSyncUploadProgress } from '../../../../ui/sync-upload-progress.js?v=3';
+import { bindSyncUploadProgress } from '../../../../ui/sync-upload-progress.js?v=4';
 
 const API_BASE = '/api/masterdata/vehicle-models';
 const MAX_FILE_SIZE = 5 * 1024 * 1024;
@@ -145,14 +145,14 @@ const VehicleModelUploadPage = {
 
     reset() {
         if (this.isUploading) {
-            showToast('导入进行中，请稍候再重置', 'warning');
+            showToast('导入进行中，不能重置。', 'warning');
             return;
         }
         this.hideProgress();
         this.clearSelectedFile(true);
     },
 
-    showProgress(msg = '正在导入，请稍候') {
+    showProgress(msg = '正在导入。') {
         uploadProgress.setRunning(msg);
         document.getElementById('vmUploadZone')?.classList.remove('border-brand');
     },

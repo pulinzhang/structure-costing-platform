@@ -34,7 +34,7 @@ export function procurementObjectGenerateTemplate() {
             <div class="flex flex-col items-stretch gap-3 border-b border-line-subtle py-2.5 sm:flex-row sm:items-center sm:justify-between">
                 <div class="flex items-center gap-6 flex-wrap">
                     <div>
-                        <span class="text-[9px] text-ink-dim block">BOM 节点</span>
+                        <span class="text-[9px] text-ink-dim block">清单零件</span>
                         <span id="poCntNodes" class="text-xs font-mono font-bold text-ink">- <span class="text-[9px] font-normal text-ink-faint">条</span></span>
                     </div>
                     <div class="w-px h-5 bg-app-surface"></div>
@@ -87,7 +87,7 @@ export function procurementObjectGenerateTemplate() {
                          class="h-full bg-brand hud-brand-glow transition-all duration-300"
                          style="width: 0%"></div>
                 </div>
-                <p id="poGenProgressMsg" class="text-[11px] text-ink-muted leading-relaxed mb-0">正在读取材料清单树</p>
+                <p id="poGenProgressMsg" class="text-[11px] text-ink-muted leading-relaxed mb-0">正在读取材料清单。</p>
             </div>
 
             <div id="poGenReadyBanner" class="hidden text-[10px] text-warn bg-app-hud px-2.5 py-1.5 border-l-2 border-warn/40"></div>
@@ -113,7 +113,7 @@ export function procurementObjectGenerateTemplate() {
                                     <th class="py-2 px-2 font-normal whitespace-nowrap">项目</th>
                                     <th class="py-2 px-2 font-normal whitespace-nowrap">版本</th>
                                     <th class="py-2 px-2 font-normal text-center whitespace-nowrap">状态</th>
-                                    <th class="py-2 px-2 font-normal text-right whitespace-nowrap">节点</th>
+                                    <th class="py-2 px-2 font-normal text-right whitespace-nowrap">零件</th>
                                     <th class="py-2 px-2 font-normal text-right whitespace-nowrap">采购对象</th>
                                     <th class="py-2 px-2 font-normal text-right whitespace-nowrap">操作</th>
                                 </tr>

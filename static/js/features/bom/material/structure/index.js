@@ -5,7 +5,7 @@
  */
 
 import { can } from '../../../../core/permissions.js?v=10';
-import { bomStructureTemplate } from './template.js?v=9';
+import { bomStructureTemplate } from './template.js?v=10';
 import { fmtPeriodRange, hasClosedPeriod } from '../../../common/period-ui.js?v=5';
 
 const bomStructureState = {
