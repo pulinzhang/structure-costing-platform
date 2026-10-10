@@ -13,7 +13,12 @@ from sqlalchemy import create_engine, event
 from sqlalchemy.orm import Session, sessionmaker
 from sqlalchemy.pool import StaticPool
 
+from app.common.engineering_change_gates import (
+    EC_AFTER_ASSEMBLY_BUSY,
+    EC_AFTER_ASSEMBLY_IMPORTED,
+)
 from app.database import Base
+from app.exceptions.base import BusinessException
 from app.models.bom.node import BomNode, BomSnapshot
 from app.models.engineering_change.design_change.change_order import EngineeringChangeOrder
 from app.models.engineering_change.design_change.effect_link import EngineeringChangeEffectLink
@@ -21,7 +26,10 @@ from app.models.engineering_change.design_change.upload_log import EngineeringCh
 from app.models.file_trace.upload_file import UploadFile
 from app.models.masterdata.location import Location
 from app.models.masterdata.vehicle_model import VehicleModel
-from app.parsers.engineering_change.design_change.change_order_parser import CHANGE_ORDER_HEADERS
+from app.parsers.engineering_change.design_change.change_order_parser import (
+    CHANGE_ORDER_HEADERS,
+    ChangeOrderRowParsed,
+)
 from app.repositories.engineering_change.design_change.change_order_repository import (
     EngineeringChangeOrderInsert,
     EngineeringChangeOrderRepository,
@@ -37,6 +45,9 @@ from app.repositories.engineering_change.design_change.upload_log_repository imp
 from app.schemas.dto.engineering_change.design_change import EngineeringChangeOrderQueryDTO
 from app.schemas.vo.user_vo import UserVO
 from app.services.engineering_change.design_change.list.query import EngineeringChangeQueryService
+from app.services.engineering_change.design_change.upload.orchestrator.prep import (
+    _assert_after_assemblies_idle,
+)
 
 CHANGE_ORDER_FIELD_NAMES = (
     "project_code",
@@ -413,3 +424,56 @@ def test_resolve_original_excel(
     assert filename == "t2aa-fail.xlsx"
     assert absolute_path.is_file()
     assert "spreadsheet" in media_type
+
+
+def _parsed_after(part_number: str) -> ChangeOrderRowParsed:
+    return ChangeOrderRowParsed(
+        project_code="T28",
+        effective_period_text="2025年07月",
+        change_type="改图",
+        before_assembly_part_number="501009122AA",
+        after_assembly_part_number=part_number,
+        assembly_name="总成B",
+        part_level="一级",
+        before_part_number="501007040AA",
+        after_part_number="501007040AA",
+        part_name="零件",
+        excel_row=3,
+    )
+
+
+def _reject_same_after_assembly(db: Session, log_id: int) -> None:
+    _assert_after_assemblies_idle(
+        db,
+        change_orders=[_parsed_after("501009122AB")],
+        location=LOCATION,
+        vehicle_model=VEHICLE_MODEL,
+        log_id=log_id + 1,
+        log_repo=EngineeringChangeUploadLogRepository(),
+    )
+
+
+def test_success_after_assembly_tells_user_to_delete(memory_db: Session) -> None:
+    log_id = _seed_book(memory_db)
+    with pytest.raises(BusinessException) as caught:
+        _reject_same_after_assembly(memory_db, log_id)
+    message = str(caught.value)
+    assert message.startswith(EC_AFTER_ASSEMBLY_IMPORTED)
+    assert "「501009122AB」" in message
+    assert "设计变更列表" in message
+    assert caught.value.code == 409
+
+
+def test_pending_after_assembly_tells_user_to_wait(memory_db: Session) -> None:
+    log_id = _seed_book(memory_db)
+    log_row = EngineeringChangeUploadLogRepository().get_by_id(memory_db, log_id)
+    assert log_row is not None
+    log_row.status = "pending"
+    memory_db.commit()
+    with pytest.raises(BusinessException) as caught:
+        _reject_same_after_assembly(memory_db, log_id)
+    message = str(caught.value)
+    assert message.startswith(EC_AFTER_ASSEMBLY_BUSY)
+    assert "「501009122AB」" in message
+    assert "已经导入成功" not in message
+    assert caught.value.code == 409
