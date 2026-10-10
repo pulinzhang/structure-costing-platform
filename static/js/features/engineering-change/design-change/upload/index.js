@@ -2,9 +2,9 @@
  * 工程变更上传页 — 异步 task_id + 拖拽区原位进度（对齐布点 / 工艺上传）
  */
 
-import { engineeringChangeUploadTemplate } from './template.js?v=25';
+import { engineeringChangeUploadTemplate } from './template.js?v=26';
 import { uploadSubmitLabelHtml } from '../../../../ui/upload-actions.js?v=2';
-import { paintUploadProgressIcon } from '../../../../ui/sync-upload-progress.js?v=4';
+import { paintUploadProgressIcon } from '../../../../ui/sync-upload-progress.js?v=5';
 import { can } from '../../../../core/permissions.js?v=8';
 import {
     setDropzoneDragActive,
@@ -315,7 +315,7 @@ const EngineeringChangeUploadPage = {
         }
     },
 
-    showProgress(progress = 0, msg = '正在导入，请稍候') {
+    showProgress(progress = 0, msg = '正在导入。') {
         document.getElementById('ecDropIdle')?.classList.add('hidden');
         document.getElementById('ecProgressPanel')?.classList.remove('hidden');
         document.getElementById('ecUploadZone')?.classList.add('pointer-events-none');
@@ -326,7 +326,7 @@ const EngineeringChangeUploadPage = {
         document.getElementById('ecDropIdle')?.classList.remove('hidden');
         document.getElementById('ecProgressPanel')?.classList.add('hidden');
         document.getElementById('ecUploadZone')?.classList.remove('pointer-events-none');
-        this.updateProgress(0, '正在导入，请稍候');
+        this.updateProgress(0, '正在导入。');
     },
 
     updateProgress(progress, msg, status) {
@@ -414,7 +414,7 @@ const EngineeringChangeUploadPage = {
 
     resetForm() {
         if (this.isUploading) {
-            showToast('解析进行中，请稍候再重置', 'warning');
+            showToast('导入进行中，不能重置。', 'warning');
             return;
         }
         this.stopPolling();
@@ -517,11 +517,11 @@ const EngineeringChangeUploadPage = {
         const scopeLabel = `${location} / ${vehicleModel} / ${periodLabel}`;
         this.setUploading(true);
         this.hideError();
-        this.showProgress(0, '正在导入，请稍候');
+        this.showProgress(0, '正在导入。');
         try {
             const res = await HttpClient.post(`${API}/upload`, formData, { skipToast: true, timeout: 60000 });
             const taskId = res?.data?.task_id;
-            if (!taskId) throw new Error(res?.message || '未返回任务 ID');
+            if (!taskId) throw new Error(res?.message || '导入没有开始。');
             this.startPolling(taskId, this.selectedFile.name, scopeLabel);
         } catch (error) {
             this.stopPolling();

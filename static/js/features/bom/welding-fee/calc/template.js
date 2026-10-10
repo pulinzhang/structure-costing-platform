@@ -32,7 +32,7 @@ export function l0WeldingFeeCalcTemplate() {
             <div class="flex flex-col items-stretch gap-3 border-b border-line-subtle py-2.5 sm:flex-row sm:items-center sm:justify-between">
                 <div class="flex items-center gap-4 flex-wrap sm:gap-8">
                     <div>
-                        <span class="text-[9px] text-ink-dim block">拆解节点</span>
+                        <span class="text-[9px] text-ink-dim block">供货总成</span>
                         <span id="l0wfCntL0" class="text-xs font-mono font-bold text-ink">- <span class="text-[9px] font-normal text-ink-faint">条</span></span>
                     </div>
                     <div class="w-px h-5 bg-app-surface"></div>
@@ -46,15 +46,15 @@ export function l0WeldingFeeCalcTemplate() {
                         <span id="l0wfCntProcessLines" class="text-xs font-mono font-bold text-ink">- <span class="text-[9px] font-normal text-ink-faint">行</span></span>
                     </div>
                     <div class="w-px h-5 bg-app-surface"></div>
-                    <div title="工艺数为 0 的节点（异常）">
-                        <span class="text-[9px] text-ink-dim block">无工艺节点（异常）</span>
+                    <div title="工艺数是 0 的供货总成">
+                        <span class="text-[9px] text-ink-dim block">无工艺的供货总成</span>
                         <span id="l0wfCntZeroProcess" class="text-xs font-mono font-bold text-ink">- <span class="text-[9px] font-normal text-ink-faint">条</span></span>
                     </div>
                 </div>
 
                 <div class="flex flex-col items-stretch gap-2 sm:flex-row sm:items-center sm:justify-end">
                     <span id="l0wfReCalcNotice" class="text-[9px] text-ink-dim">
-                        再算一次时，没审核的会重写；已经审核的那一行不动。
+                        未审核的记录会重写。已审核的记录保持不变。
                     </span>
                     <button id="l0wfStartCalcBtn"
                             class="${BTN_ABORT}">
@@ -76,7 +76,7 @@ export function l0WeldingFeeCalcTemplate() {
                          class="h-full bg-brand hud-brand-glow transition-all duration-300"
                          style="width: 0%"></div>
                 </div>
-                <p id="l0wfCalcProgressMsg" class="text-[11px] text-ink-muted leading-relaxed mb-0">已提交计算队列</p>
+                <p id="l0wfCalcProgressMsg" class="text-[11px] text-ink-muted leading-relaxed mb-0">计算已提交。</p>
             </div>
 
             <div id="l0wfDataReadyErrorBanner" class="hidden text-[10px] text-warn bg-app-hud px-2.5 py-1.5 border-l-2 border-warn/40">

@@ -6,7 +6,7 @@ import {
     locationTemplate,
     renderLocationRows,
     renderAliasItems,
-} from './template.js?v=25';
+} from './template.js?v=26';
 
 const API_BASE = '/api/masterdata/locations';
 const DRAWER_ANIMATION_MS = 300;
@@ -269,7 +269,7 @@ function openToggleDrawer(location, currentlyEnabled) {
     if (hintEl) {
         hintEl.textContent = nextEnabled
             ? '启用后可作为采购基地写入，并出现在上传/计算下拉里。'
-            : '禁用后不能再按此基地写入或开引擎；列表筛选仍可见。';
+            : '禁用后，此基地不能再录入，也不能再核算。列表里仍可筛选。';
     }
     if (confirmBtn) confirmBtn.textContent = nextEnabled ? '确认启用' : '确认禁用';
     openDrawer('locationToggleDrawer', 'locationToggleBackdrop');

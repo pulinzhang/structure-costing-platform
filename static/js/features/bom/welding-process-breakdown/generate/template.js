@@ -33,12 +33,12 @@ export function weldingProcessBreakdownGenerateTemplate() {
             <div class="flex flex-col items-stretch gap-3 border-b border-line-subtle py-2.5 sm:flex-row sm:items-center sm:justify-between">
                 <div class="flex items-center gap-4 flex-wrap sm:gap-8">
                     <div>
-                        <span class="text-[9px] text-ink-dim block">焊接原文节点</span>
+                        <span class="text-[9px] text-ink-dim block">焊接原文</span>
                         <span id="cntWeldNodes" class="text-xs font-mono font-bold text-ink">- <span class="text-[9px] font-normal text-ink-faint">条</span></span>
                     </div>
                     <div class="w-px h-5 bg-app-surface"></div>
                     <div>
-                        <span class="text-[9px] text-ink-dim block">现有拆解主表</span>
+                        <span class="text-[9px] text-ink-dim block">现有拆解</span>
                         <span id="cntBreakdownNodes" class="text-xs font-mono font-bold text-ink">- <span class="text-[9px] font-normal text-ink-faint">条</span></span>
                     </div>
                     <div class="w-px h-5 bg-app-surface"></div>
@@ -72,7 +72,7 @@ export function weldingProcessBreakdownGenerateTemplate() {
                          class="h-full bg-brand hud-brand-glow transition-all duration-300"
                          style="width: 0%"></div>
                 </div>
-                <p id="calcProgressMsg" class="text-[11px] text-ink-muted leading-relaxed mb-0">已提交拆解队列</p>
+                <p id="calcProgressMsg" class="text-[11px] text-ink-muted leading-relaxed mb-0">拆解已提交。</p>
             </div>
 
             <div id="dataReadyErrorBanner" class="hidden text-[10px] text-warn bg-app-hud px-2.5 py-1.5 border-l-2 border-warn/40">
@@ -106,7 +106,7 @@ export function weldingProcessBreakdownGenerateTemplate() {
                                     <th class="py-2 px-2 font-normal whitespace-nowrap">项目</th>
                                     <th class="py-2 px-2 font-normal whitespace-nowrap">版本</th>
                                     <th class="py-2 px-2 font-normal text-center whitespace-nowrap">状态</th>
-                                    <th class="py-2 px-2 font-normal text-right whitespace-nowrap">主表</th>
+                                    <th class="py-2 px-2 font-normal text-right whitespace-nowrap">拆解</th>
                                     <th class="py-2 px-2 font-normal text-right whitespace-nowrap">明细</th>
                                     <th class="py-2 px-2 font-normal text-right whitespace-nowrap">操作</th>
                                 </tr>

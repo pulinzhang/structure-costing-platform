@@ -3,9 +3,9 @@
  * 基准价格上传 — 异步 task_id + 进度轮询
  */
 
-import { basePriceUploadTemplate } from './template.js?v=58';
+import { basePriceUploadTemplate } from './template.js?v=59';
 import { uploadSubmitLabelHtml } from '../../../../ui/upload-actions.js?v=2';
-import { paintUploadProgressIcon } from '../../../../ui/sync-upload-progress.js?v=4';
+import { paintUploadProgressIcon } from '../../../../ui/sync-upload-progress.js?v=5';
 
 const POLL_INTERVAL_MS = 2000;
 
@@ -157,7 +157,7 @@ const BasePriceUploadPage = {
 
     reset() {
         if (this.isUploading) {
-            showToast('解析进行中，请稍候再重置', 'warning');
+            showToast('导入进行中，不能重置。', 'warning');
             return;
         }
         this.stopPolling();
@@ -170,7 +170,7 @@ const BasePriceUploadPage = {
         if (monthInput) monthInput.value = '';
     },
 
-    showProgress(progress = 0, msg = '正在导入，请稍候') {
+    showProgress(progress = 0, msg = '正在导入。') {
         const idle = document.getElementById('basePriceDropIdle');
         const panel = document.getElementById('basePriceProgressPanel');
         const zone = document.getElementById('basePriceUploadZone');
@@ -190,7 +190,7 @@ const BasePriceUploadPage = {
         if (idle) idle.classList.remove('hidden');
         if (panel) panel.classList.add('hidden');
         if (zone) zone.classList.remove('pointer-events-none');
-        this.updateProgress(0, '正在导入，请稍候');
+        this.updateProgress(0, '正在导入。');
     },
 
     updateProgress(progress, msg, status) {
@@ -391,14 +391,14 @@ const BasePriceUploadPage = {
         formData.append('file', this.selectedFile);
 
         this.setUploading(true);
-        this.showProgress(0, '正在导入，请稍候');
+        this.showProgress(0, '正在导入。');
 
         try {
             const url = `/api/yishiyiyi/base-price/import?year=${year}&month=${month}`;
             const response = await HttpClient.post(url, formData, { skipToast: true, timeout: 60000 });
             const taskId = response.data?.task_id;
             if (!taskId) {
-                throw new Error('未返回任务 ID');
+                throw new Error('导入没有开始。');
             }
             this.startPolling(taskId);
         } catch (error) {

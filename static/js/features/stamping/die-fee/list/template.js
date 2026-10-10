@@ -128,7 +128,7 @@ export function dieFeeListTemplate() {
                                 <th class="${OPS_TH}" aria-label="操作"></th>`,
                     empty: {
                         title: '暂无模具费数据',
-                        hint: '当前筛选下暂无模具费数据；可到「冲压模具费计算」手算，或由自动核价引擎补算',
+                        hint: '当前筛选下没有模具费。可在「冲压模具费计算」计算，或在「自动核价引擎」中补算。',
                     },
                     loading: true,
                 })}

@@ -3,9 +3,9 @@
  * 冲压工艺上传 — 异步 task_id + 进度轮询
  */
 
-import { uploadTemplate } from './template.js?v=30';
+import { uploadTemplate } from './template.js?v=31';
 import { uploadSubmitLabelHtml } from '../../../../ui/upload-actions.js?v=2';
-import { paintUploadProgressIcon } from '../../../../ui/sync-upload-progress.js?v=4';
+import { paintUploadProgressIcon } from '../../../../ui/sync-upload-progress.js?v=5';
 import {
     setDropzoneDragActive,
     setDropzoneFileSelected,
@@ -158,7 +158,7 @@ export const UploadPage = {
 
     resetForm() {
         if (this.isUploading) {
-            showToast('解析进行中，请稍候再重置', 'warning');
+            showToast('导入进行中，不能重置。', 'warning');
             return;
         }
         this.stopPolling();
@@ -296,7 +296,7 @@ export const UploadPage = {
         `;
     },
 
-    showProgress(progress = 0, msg = '正在导入，请稍候') {
+    showProgress(progress = 0, msg = '正在导入。') {
         const idle = document.getElementById('stampingDropIdle');
         const panel = document.getElementById('stampingProgressPanel');
         const zone = document.getElementById('uploadZone');
@@ -316,7 +316,7 @@ export const UploadPage = {
         if (idle) idle.classList.remove('hidden');
         if (panel) panel.classList.add('hidden');
         if (zone) zone.classList.remove('pointer-events-none');
-        this.updateProgress(0, '正在导入，请稍候');
+        this.updateProgress(0, '正在导入。');
     },
 
     updateProgress(progress, msg, status) {
@@ -501,13 +501,13 @@ export const UploadPage = {
         formData.append('file', fileInput.files[0]);
 
         this.setUploading(true);
-        this.showProgress(0, '正在导入，请稍候');
+        this.showProgress(0, '正在导入。');
 
         try {
             const response = await HttpClient.post('/api/stamping/upload/', formData, { skipToast: true, timeout: 60000 });
             const taskId = response.data?.task_id;
             if (!taskId) {
-                throw new Error('未返回任务 ID');
+                throw new Error('导入没有开始。');
             }
             this.startPolling(taskId, fileName);
         } catch (error) {

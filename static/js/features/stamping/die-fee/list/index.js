@@ -7,7 +7,7 @@ import {
     dieFeeListTemplate,
     renderDieFeeRows,
     updateDieFeeHud,
-} from './template.js?v=35';
+} from './template.js?v=37';
 import { bindMoreMenu } from '../../../../ui/more-menu.js?v=7';
 import { bindFilterBar } from '../../../../ui/filter-bar.js?v=6';
 import { shortPartNumber } from '../../../../domain/part-identity.js?v=5';
@@ -478,7 +478,7 @@ async function loadData(page = 1) {
         feeState.zeroCount = Number(summary?.zero_count ?? 0);
 
         if (!feeState.records.length) {
-            showEmpty('当前筛选下暂无模具费数据；可到「冲压模具费计算」手算，或由自动核价引擎补算');
+            showEmpty('当前筛选下没有模具费。可在「冲压模具费计算」计算，或在「自动核价引擎」中补算。');
         } else if (body) {
             body.innerHTML = renderDieFeeRows(feeState.records);
             bindRowEvents();

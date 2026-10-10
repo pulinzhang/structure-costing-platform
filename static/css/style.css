@@ -521,21 +521,6 @@ textarea:-webkit-autofill:active {
     color: rgb(var(--text-main));
 }
 
-/* 英文代号：系统代号微型标签（System Sub-Tag） */
-.breadcrumb-item.active[data-en]::after {
-    content: attr(data-en);
-    font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
-    font-size: 0.625rem;
-    font-weight: 500;
-    letter-spacing: 0.12em;
-    color: rgb(var(--text-main) / 0.35);
-    background: rgb(var(--text-main) / 0.04);
-    padding: 0.15rem 0.4rem;
-    border: 1px solid rgb(var(--text-main) / 0.06);
-    border-radius: 2px;
-    text-transform: uppercase;
-}
-
 /* ====== Toast ====== */
 .toast-container {
     z-index: 9999;
@@ -673,10 +658,6 @@ td.record-list-carry {
         text-overflow: ellipsis;
         white-space: nowrap;
         font-size: 0.8125rem;
-    }
-
-    .breadcrumb-item.active[data-en]::after {
-        display: none;
     }
 
     /* 手机列表：表格收成标签+值，不再横滑 */

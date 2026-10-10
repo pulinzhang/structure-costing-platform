@@ -259,7 +259,7 @@ async function uploadAvatar(file) {
         const res = await HttpClient.post('/api/auth/avatar', formData);
         const url = res.data?.url;
         if (!url) {
-            showToast('上传成功但未返回头像地址', 'error');
+            showToast('头像没有保存。', 'error');
             return;
         }
 

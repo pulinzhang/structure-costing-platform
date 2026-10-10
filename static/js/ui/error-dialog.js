@@ -4,13 +4,13 @@
  * 引用明细是无框列表，路径能对上侧栏时给出跳转。
  */
 
-import { pageMeta } from '../features/index.js?v=54';
+import { pageMeta } from '../features/index.js?v=56';
 
 const DEFAULT_MESSAGE = '操作失败';
-const COPY_IDLE = '复制错误日志';
+const COPY_IDLE = '复制这段文字';
 const COPY_DONE = '已复制';
 const COPY_SELECTED = '已选中';
-const FOOT_LINE = '请处理完以上数据后再删除。';
+const FOOT_LINE = '以上数据仍在使用，不能删除。';
 
 const PAGE_BY_CRUMB = new Map();
 for (const [page, meta] of Object.entries(pageMeta)) {

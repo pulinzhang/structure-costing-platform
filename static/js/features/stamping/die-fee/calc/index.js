@@ -3,7 +3,7 @@ import { opsIconButtonHtml } from '../../../../ui/hud-table.js?v=3';
 import {
     dieFeeCalcTemplate,
     CALC_HISTORY_COLSPAN,
-} from './template.js?v=19';
+} from './template.js?v=20';
 import {
     DEFAULT_PAGE_SIZE,
     bindPagination,
@@ -168,7 +168,7 @@ async function loadIdentityFilters(resetDownstream) {
 
 function resetFilters() {
     if (calcState.isCalculating) {
-        showToast('计算进行中，请稍候再重置', 'warning');
+        showToast('计算进行中，不能重置。', 'warning');
         return;
     }
     const loc = document.getElementById('calcLocation');
@@ -454,7 +454,7 @@ async function startCalculation() {
         return;
     }
     setCalculating(true);
-    showProgress(0, '已提交计算队列');
+    showProgress(0, '计算已提交。');
     try {
         const payload = {
             year,
@@ -464,7 +464,7 @@ async function startCalculation() {
         if (version) payload.version = version;
         const response = await HttpClient.post(CALC_API, payload);
         const taskId = response.data?.task_id;
-        if (!taskId) throw new Error('未返回任务 ID');
+        if (!taskId) throw new Error('计算没有开始。');
         loadCalcHistory(1);
         startPolling(taskId);
     } catch (error) {

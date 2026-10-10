@@ -107,7 +107,7 @@ export function weldingUnitPriceUploadTemplate() {
                                                      class="h-full bg-brand hud-brand-glow transition-all duration-300 animate-pulse"
                                                      style="width: 60%"></div>
                                             </div>
-                                            <p id="weldingUnitPriceUploadProgressMsg" class="text-[11px] text-ink-muted leading-relaxed mb-0 whitespace-pre-wrap break-words max-h-48 overflow-y-auto">正在导入，请稍候</p>
+                                            <p id="weldingUnitPriceUploadProgressMsg" class="text-[11px] text-ink-muted leading-relaxed mb-0 whitespace-pre-wrap break-words max-h-48 overflow-y-auto">正在导入。</p>
                                         </div>
                                     </div>
 

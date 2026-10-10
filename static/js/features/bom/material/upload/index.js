@@ -3,9 +3,9 @@
  * 与冲压工艺上传同一模式：task_id + 进度轮询
  */
 
-import { bomUploadTemplate } from './template.js?v=19';
+import { bomUploadTemplate } from './template.js?v=20';
 import { uploadSubmitLabelHtml } from '../../../../ui/upload-actions.js?v=2';
-import { paintUploadProgressIcon } from '../../../../ui/sync-upload-progress.js?v=4';
+import { paintUploadProgressIcon } from '../../../../ui/sync-upload-progress.js?v=5';
 import { can } from '../../../../core/permissions.js?v=8';
 import {
     SOP_INTRO,
@@ -267,7 +267,7 @@ const BomUploadPage = {
 
     reset() {
         if (this.isUploading) {
-            showToast('解析进行中，请稍候再重置', 'warning');
+            showToast('导入进行中，不能重置。', 'warning');
             return;
         }
         this.stopPolling();
@@ -281,7 +281,7 @@ const BomUploadPage = {
         if (vehicle) vehicle.value = '';
     },
 
-    showProgress(progress = 0, msg = '正在导入，请稍候') {
+    showProgress(progress = 0, msg = '正在导入。') {
         const idle = document.getElementById('bomUploadDropIdle');
         const panel = document.getElementById('bomUploadProgressPanel');
         const zone = document.getElementById('bomUploadZone');
@@ -301,7 +301,7 @@ const BomUploadPage = {
         if (idle) idle.classList.remove('hidden');
         if (panel) panel.classList.add('hidden');
         if (zone) zone.classList.remove('pointer-events-none');
-        this.updateProgress(0, '正在导入，请稍候');
+        this.updateProgress(0, '正在导入。');
     },
 
     updateProgress(progress, msg, status) {
@@ -470,7 +470,7 @@ const BomUploadPage = {
                     this.stopPolling();
                     const result = data?.result || {};
                     const nodeCount = result.node_count ?? '-';
-                    showToast(msg || `导入成功：${nodeCount} 个节点`, 'success');
+                    showToast(msg || `导入成功：${nodeCount} 条`, 'success');
                     this.clearActiveTask();
                     this.setUploading(false);
                     this.clearSelectedFile(true);
@@ -534,7 +534,7 @@ const BomUploadPage = {
         const fileName = this.selectedFile.name;
         this.hideError();
         this.setUploading(true);
-        this.showProgress(0, '正在导入，请稍候');
+        this.showProgress(0, '正在导入。');
 
         try {
             const res = await HttpClient.post('/api/bom/upload', formData, {
@@ -543,7 +543,7 @@ const BomUploadPage = {
             });
             const taskId = res.data?.task_id;
             if (!taskId) {
-                throw new Error('未返回任务 ID');
+                throw new Error('导入没有开始。');
             }
             this.startPolling(taskId, fileName);
         } catch (error) {

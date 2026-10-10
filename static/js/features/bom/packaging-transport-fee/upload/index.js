@@ -3,8 +3,8 @@
  * 同步导入：基地 + 年度 + 项目必选；基地/项目取自材料清单（BOM）
  */
 
-import { pkgTransportFeeUploadTemplate } from './template.js?v=18';
-import { bindSyncUploadProgress } from '../../../../ui/sync-upload-progress.js?v=3';
+import { pkgTransportFeeUploadTemplate } from './template.js?v=19';
+import { bindSyncUploadProgress } from '../../../../ui/sync-upload-progress.js?v=4';
 
 const API_BASE = '/api/bom/packaging-transport-fee';
 const CASCADE_API = '/api/bom/filters/cascade';
@@ -369,7 +369,7 @@ const PkgTransportFeeUploadPage = {
 
     reset() {
         if (this.isUploading) {
-            showToast('导入进行中，请稍候再重置', 'warning');
+            showToast('导入进行中，不能重置。', 'warning');
             return;
         }
         this.hideProgress();
@@ -381,7 +381,7 @@ const PkgTransportFeeUploadPage = {
         this.loadCascadeFilters({ clearVehicleModel: true });
     },
 
-    showProgress(msg = '正在导入，请稍候') {
+    showProgress(msg = '正在导入。') {
         uploadProgress.setRunning(msg);
     },
 

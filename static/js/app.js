@@ -17,11 +17,11 @@
  */
 
 import { installConfirmDialog } from './ui/confirm-dialog.js?v=6';
-import { installDeleteErrorDialog } from './ui/error-dialog.js?v=11';
+import { installDeleteErrorDialog } from './ui/error-dialog.js?v=13';
 import { bindCurrentRowOnOps } from './ui/table-row.js?v=3';
 import { installRecordLists } from './ui/record-list.js?v=7';
 import { bindHudSelects, closeHudSelectMenu } from './ui/hud-select.js?v=1';
-import { pageMeta } from './features/index.js?v=54';
+import { pageMeta } from './features/index.js?v=56';
 
 // 页面导入（路径与 index.html 菜单树 / features 目录对齐）
 import { getUserSession, initUserMenu, startTokenHeartbeat, updateUserSession } from './features/login/index.js?v=22';
@@ -32,72 +32,72 @@ import {
 } from './core/permissions.js?v=15';
 import { pageLoadingHtml, pageNoticeHtml } from './ui/page-loading.js?v=1';
 
-const LLM_BOOT_URL = './llm-assistant/boot.js?v=68';
+const LLM_BOOT_URL = './llm-assistant/boot.js?v=69';
 
 // 页面按路由再加载。版本号留在 import() 地址上，和以前的静态 import 一样用来破缓存。
 const pageLoaders = {
-    dashboard: () => import('./features/dashboard/index.js?v=25'),
-    'stamping-upload': () => import('./features/stamping/process/upload/index.js?v=78'),
+    dashboard: () => import('./features/dashboard/index.js?v=27'),
+    'stamping-upload': () => import('./features/stamping/process/upload/index.js?v=79'),
     'stamping-parts': () => import('./features/stamping/process/parts/index.js?v=90'),
-    'stamping-die-upload': () => import('./features/stamping/die/upload/index.js?v=32'),
+    'stamping-die-upload': () => import('./features/stamping/die/upload/index.js?v=33'),
     'stamping-die-list': () => import('./features/stamping/die/list/index.js?v=43'),
     'stamping-die-unit-price': () => import('./features/stamping/die/unit-price/index.js?v=27'),
-    'stamping-die-fee-calc': () => import('./features/stamping/die-fee/calc/index.js?v=32'),
-    'stamping-die-fee': () => import('./features/stamping/die-fee/list/index.js?v=42'),
-    'stamping-gauge-fee-upload': () => import('./features/stamping/gauge-fee/upload/index.js?v=20'),
+    'stamping-die-fee-calc': () => import('./features/stamping/die-fee/calc/index.js?v=34'),
+    'stamping-die-fee': () => import('./features/stamping/die-fee/list/index.js?v=44'),
+    'stamping-gauge-fee-upload': () => import('./features/stamping/gauge-fee/upload/index.js?v=21'),
     'stamping-gauge-fee': () => import('./features/stamping/gauge-fee/list/index.js?v=36'),
-    'stamping-tonnage-upload': () => import('./features/stamping/tonnage/upload/index.js?v=24'),
+    'stamping-tonnage-upload': () => import('./features/stamping/tonnage/upload/index.js?v=25'),
     'stamping-tonnage': () => import('./features/stamping/tonnage/list/index.js?v=49'),
-    'stamping-process-fee-calc': () => import('./features/stamping/process-fee/calc/index.js?v=57'),
+    'stamping-process-fee-calc': () => import('./features/stamping/process-fee/calc/index.js?v=59'),
     'stamping-process-fee': () => import('./features/stamping/process-fee/list/index.js?v=81'),
-    'steel-price-list': () => import('./features/costing/steel-price/list/index.js?v=90'),
-    'steel-price-calc': () => import('./features/costing/steel-price/calc/index.js?v=38'),
-    'stamping-part-cost-calc': () => import('./features/costing/stamping-part-cost/calc/index.js?v=41'),
+    'steel-price-list': () => import('./features/costing/steel-price/list/index.js?v=92'),
+    'steel-price-calc': () => import('./features/costing/steel-price/calc/index.js?v=40'),
+    'stamping-part-cost-calc': () => import('./features/costing/stamping-part-cost/calc/index.js?v=43'),
     'stamping-part-cost': () => import('./features/costing/stamping-part-cost/list/index.js?v=105'),
-    'assembly-cost-calc': () => import('./features/costing/assembly-cost/calc/index.js?v=26'),
+    'assembly-cost-calc': () => import('./features/costing/assembly-cost/calc/index.js?v=28'),
     'assembly-cost': () => import('./features/costing/assembly-cost/list/index.js?v=66'),
     'procurement-contract-report': () => import('./features/costing/procurement-contract-report/index.js?v=58'),
-    'steel-price-policy-upload': () => import('./features/yishiyiyi/policy/upload/index.js?v=53'),
+    'steel-price-policy-upload': () => import('./features/yishiyiyi/policy/upload/index.js?v=54'),
     'steel-price-policy-download': () => import('./features/yishiyiyi/policy/list/index.js?v=64'),
-    'base-price-upload': () => import('./features/yishiyiyi/base-price/upload/index.js?v=64'),
+    'base-price-upload': () => import('./features/yishiyiyi/base-price/upload/index.js?v=65'),
     'base-price-download': () => import('./features/yishiyiyi/base-price/list/index.js?v=55'),
     'steel-grade-category': () => import('./features/masterdata/steel-grade-category/index.js?v=29'),
     'steel-mill': () => import('./features/masterdata/steel-mill/index.js?v=2'),
     'winning-thickness-download': () => import('./features/yishiyiyi/winning-thickness/list/index.js?v=33'),
     'scrap-price': () => import('./features/yishiyiyi/scrap-price/index.js?v=33'),
-    'bom-structure': () => import('./features/bom/material/structure/index.js?v=19'),
-    'bom-where-used': () => import('./features/bom/material/where-used/index.js?v=24'),
-    'bom-viz': () => import('./features/bom/material/viz/index.js?v=39'),
-    'bom-upload': () => import('./features/bom/material/upload/index.js?v=31'),
-    'bom-material': () => import('./features/bom/material/list/index.js?v=25'),
-    'bom-welding-unit-price-upload': () => import('./features/bom/welding-unit-price/upload/index.js?v=30'),
+    'bom-structure': () => import('./features/bom/material/structure/index.js?v=20'),
+    'bom-where-used': () => import('./features/bom/material/where-used/index.js?v=25'),
+    'bom-viz': () => import('./features/bom/material/viz/index.js?v=41'),
+    'bom-upload': () => import('./features/bom/material/upload/index.js?v=32'),
+    'bom-material': () => import('./features/bom/material/list/index.js?v=26'),
+    'bom-welding-unit-price-upload': () => import('./features/bom/welding-unit-price/upload/index.js?v=31'),
     'bom-welding-unit-price': () => import('./features/bom/welding-unit-price/list/index.js?v=41'),
-    'bom-annual-part-price-upload': () => import('./features/bom/annual-part-price/upload/index.js?v=30'),
+    'bom-annual-part-price-upload': () => import('./features/bom/annual-part-price/upload/index.js?v=31'),
     'bom-annual-part-price': () => import('./features/bom/annual-part-price/list/index.js?v=42'),
-    'bom-packaging-transport-fee-upload': () => import('./features/bom/packaging-transport-fee/upload/index.js?v=22'),
+    'bom-packaging-transport-fee-upload': () => import('./features/bom/packaging-transport-fee/upload/index.js?v=23'),
     'bom-packaging-transport-fee': () => import('./features/bom/packaging-transport-fee/list/index.js?v=34'),
-    'bom-procurement-object': () => import('./features/bom/procurement-object/generate/index.js?v=24'),
+    'bom-procurement-object': () => import('./features/bom/procurement-object/generate/index.js?v=26'),
     'bom-procurement-object-list': () => import('./features/bom/procurement-object/list/index.js?v=58'),
-    'bom-procurement-object-supplier-upload': () => import('./features/bom/procurement-object/supplier-upload/index.js?v=32'),
-    'bom-welding-process-breakdown': () => import('./features/bom/welding-process-breakdown/generate/index.js?v=22'),
-    'bom-welding-process-breakdown-list': () => import('./features/bom/welding-process-breakdown/list/index.js?v=66'),
-    'bom-welding-fee-calc': () => import('./features/bom/welding-fee/calc/index.js?v=28'),
+    'bom-procurement-object-supplier-upload': () => import('./features/bom/procurement-object/supplier-upload/index.js?v=33'),
+    'bom-welding-process-breakdown': () => import('./features/bom/welding-process-breakdown/generate/index.js?v=24'),
+    'bom-welding-process-breakdown-list': () => import('./features/bom/welding-process-breakdown/list/index.js?v=69'),
+    'bom-welding-fee-calc': () => import('./features/bom/welding-fee/calc/index.js?v=30'),
     'bom-welding-fee-list': () => import('./features/bom/welding-fee/list/index.js?v=39'),
-    'engineering-change-upload': () => import('./features/engineering-change/design-change/upload/index.js?v=31'),
+    'engineering-change-upload': () => import('./features/engineering-change/design-change/upload/index.js?v=32'),
     'engineering-change-order-list': () => import('./features/engineering-change/design-change/list/index.js?v=46'),
-    'engineering-change-material-upload': () => import('./features/engineering-change/material-change/upload/index.js?v=12'),
+    'engineering-change-material-upload': () => import('./features/engineering-change/material-change/upload/index.js?v=13'),
     'engineering-change-material-list': () => import('./features/engineering-change/material-change/list/index.js?v=12'),
-    costing: () => import('./features/costing/engine/index.js?v=49'),
-    'file-trace': () => import('./features/file-trace/index.js?v=30'),
-    location: () => import('./features/masterdata/location/index.js?v=24'),
-    'vehicle-model-upload': () => import('./features/masterdata/vehicle-model/upload/index.js?v=16'),
+    costing: () => import('./features/costing/engine/index.js?v=56'),
+    'file-trace': () => import('./features/file-trace/index.js?v=31'),
+    location: () => import('./features/masterdata/location/index.js?v=25'),
+    'vehicle-model-upload': () => import('./features/masterdata/vehicle-model/upload/index.js?v=17'),
     'vehicle-model-list': () => import('./features/masterdata/vehicle-model/list/index.js?v=28'),
-    'supplier-upload': () => import('./features/masterdata/supplier/upload/index.js?v=17'),
+    'supplier-upload': () => import('./features/masterdata/supplier/upload/index.js?v=18'),
     'supplier-list': () => import('./features/masterdata/supplier/list/index.js?v=29'),
     settings: () => import('./features/settings/system/index.js?v=38'),
     'settings-users': () => import('./features/settings/users/index.js?v=33'),
     'settings-logs': () => import('./features/settings/logs/index.js?v=28'),
-    'settings-profile': () => import('./features/settings/profile/index.js?v=17'),
+    'settings-profile': () => import('./features/settings/profile/index.js?v=18'),
 };
 
 // 未登录禁止进入主应用：不渲染业务页，避免请求 dashboard 等后端
@@ -228,9 +228,8 @@ function highlightMenu(pageName) {
 }
 
 /**
- * 渲染面包屑：STAMPING // … // 当前页
+ * 渲染面包屑：核价 // … // 当前页
  * pageMeta.breadcrumb 为路径段数组（不含品牌根）
- * pageMeta.en 写入当前页 data-en 英文刻度
  */
 function renderBreadcrumb(pageName, meta) {
     const list = document.getElementById('breadcrumbList');
@@ -240,12 +239,11 @@ function renderBreadcrumb(pageName, meta) {
         ? meta.breadcrumb
         : String(meta.breadcrumb || pageName).split(/\s*\/\s*/).filter(Boolean);
 
-    const enCode = meta.en || 'PAGE_VIEW';
     const brand = `
         <li>
             <span class="breadcrumb-brand-badge">
                 <span class="w-1.5 h-1.5 rounded-full bg-brand shadow-[0_0_6px_rgb(var(--brabus-red))]"></span>
-                STAMPING
+                核价
             </span>
         </li>
     `;
@@ -255,7 +253,7 @@ function renderBreadcrumb(pageName, meta) {
         const sep = '<li class="breadcrumb-sep" aria-hidden="true">//</li>';
 
         if (isLast) {
-            return `${sep}<li class="breadcrumb-item active" aria-current="page" id="breadcrumbItem" data-en="${esc(enCode)}">${esc(label)}</li>`;
+            return `${sep}<li class="breadcrumb-item active" aria-current="page" id="breadcrumbItem">${esc(label)}</li>`;
         }
         return `${sep}<li class="breadcrumb-item">${esc(label)}</li>`;
     }).join('');

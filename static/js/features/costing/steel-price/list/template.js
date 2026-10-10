@@ -105,7 +105,7 @@ export function steelPriceListTemplate() {
                                 <th class="${TH_NUM} whitespace-nowrap">厚度加价</th>
                                 <th class="${TH_NUM} whitespace-nowrap">宽度加价</th>
                                 <th class="${TH_NUM} whitespace-nowrap border-r border-line-hud">加工费</th>
-                                <th class="${TH_FOCUS} whitespace-nowrap">最终价/启</th>
+                                <th class="${TH_FOCUS} whitespace-nowrap">最终价/吨</th>
                                 <th class="${TH_TEXT} whitespace-nowrap">基价溯源</th>
                                 <th class="${TH_TEXT} whitespace-nowrap">厚度溯源</th>
                                 <th class="${TH_TEXT} whitespace-nowrap">宽度溯源</th>
@@ -145,7 +145,7 @@ export function steelPriceListTemplate() {
                     <input type="hidden" id="editRecordId" value="">
 
                     <div>
-                        <label class="text-[10px] font-semibold text-ink-dim uppercase tracking-[0.1em] mb-2 block">业务主键</label>
+                        <label class="text-[10px] font-semibold text-ink-dim uppercase tracking-[0.1em] mb-2 block">期间和规格</label>
                         <div class="grid grid-cols-4 gap-3">
                             ${editNumber('editYear', '年度', '2000', '2100', '2026')}
                             ${editNumber('editMonth', '月份', '1', '12', '1')}
@@ -161,14 +161,14 @@ export function steelPriceListTemplate() {
                     <div>
                         <label class="text-[10px] font-semibold text-ink-dim uppercase tracking-[0.1em] mb-2 block">价格分项</label>
                         <div class="grid grid-cols-1 gap-3 sm:grid-cols-3">
-                            ${editNumber('editBasePrice', '基础价base_price', '0', null, '全', '0.0001')}
-                            ${editNumber('editThicknessAdjustment', '厚度加价 thickness_adjustment', null, null, '全', '0.0001')}
-                            ${editNumber('editWidthAdjustment', '宽度加价 width_adjustment', null, null, '全', '0.0001')}
-                            ${editNumber('editZincAdjustment', '锌层加价 zinc_adjustment', null, null, '全', '0.0001')}
-                            ${editNumber('editProcessingFee', '加工费processing_fee', '0', null, '全', '0.0001')}
-                            ${editNumber('editOtherAdjustment', '其他调整 other_adjustment', null, null, '全', '0.0001')}
+                            ${editNumber('editBasePrice', '基础价', '0', null, '如 4500', '0.0001')}
+                            ${editNumber('editThicknessAdjustment', '厚度加价', null, null, '如 0，减价填负数', '0.0001')}
+                            ${editNumber('editWidthAdjustment', '宽度加价', null, null, '如 0，减价填负数', '0.0001')}
+                            ${editNumber('editZincAdjustment', '锌层加价', null, null, '如 0，减价填负数', '0.0001')}
+                            ${editNumber('editProcessingFee', '加工费', '0', null, '如 200', '0.0001')}
+                            ${editNumber('editOtherAdjustment', '其他调整', null, null, '如 0，减价填负数', '0.0001')}
                         </div>
-                        <p class="text-[10px] text-ink-dim mt-2">最终价由服务端按分项自动汇总，无需手工填写。</p>
+                        <p class="text-[10px] text-ink-dim mt-2">最终价按上面几项自动加总，不用手填。单位是元/吨。</p>
                     </div>
 
                     <div>
@@ -216,7 +216,7 @@ export function steelPriceListTemplate() {
             <div class="flex-1 min-h-0 overflow-y-auto overscroll-contain p-6 space-y-4" id="viewDrawerContent">
                 <div class="bg-app-main border border-app-elevated">
                     <div class="px-4 py-3 bg-app-deep border-b border-line-subtle">
-                        <h6 class="text-[10px] font-semibold text-ink-muted tracking-wider uppercase">业务主键</h6>
+                        <h6 class="text-[10px] font-semibold text-ink-muted tracking-wider uppercase">期间和规格</h6>
                     </div>
                     <div class="p-4 grid grid-cols-2 gap-x-6 gap-y-3">
                         ${viewRow('年度', 'view-year')}
@@ -233,16 +233,16 @@ export function steelPriceListTemplate() {
 
                 <div class="bg-app-main border border-app-elevated">
                     <div class="px-4 py-3 bg-app-deep border-b border-line-subtle">
-                        <h6 class="text-[10px] font-semibold text-ink-muted tracking-wider uppercase">价格分项（对齐VO）</h6>
+                        <h6 class="text-[10px] font-semibold text-ink-muted tracking-wider uppercase">价格分项（元/吨）</h6>
                     </div>
                     <div class="p-4 grid grid-cols-2 gap-x-6 gap-y-3">
-                        ${viewRow('基础价base_price', 'view-base-price')}
-                        ${viewRow('厚度加价 thickness_adjustment', 'view-thickness-adjustment')}
-                        ${viewRow('宽度加价 width_adjustment', 'view-width-adjustment')}
-                        ${viewRow('锌层加价 zinc_adjustment', 'view-zinc-adjustment')}
-                        ${viewRow('加工费processing_fee', 'view-processing-fee')}
-                        ${viewRow('其他调整 other_adjustment', 'view-other-adjustment')}
-                        ${viewRow('最终价 final_price_per_ton', 'view-final-price', true)}
+                        ${viewRow('基础价', 'view-base-price')}
+                        ${viewRow('厚度加价', 'view-thickness-adjustment')}
+                        ${viewRow('宽度加价', 'view-width-adjustment')}
+                        ${viewRow('锌层加价', 'view-zinc-adjustment')}
+                        ${viewRow('加工费', 'view-processing-fee')}
+                        ${viewRow('其他调整', 'view-other-adjustment')}
+                        ${viewRow('最终价', 'view-final-price', true)}
                     </div>
                 </div>
 
@@ -304,7 +304,7 @@ export function steelPriceListTemplate() {
             </div>
             <div class="flex-1 min-h-0 overflow-y-auto p-6">
                 <input type="hidden" id="deleteRecordId" value="">
-                <p class="text-[12px] text-ink-muted mb-3">确定要删除这条价格记录吗（</p>
+                <p class="text-[12px] text-ink-muted mb-3">确定要删除这条价格记录吗？</p>
                 <div class="bg-app-deep border border-line-subtle rounded p-3 text-[11px] text-ink-dim" id="deleteSummary"></div>
                 <p class="text-[11px] text-danger mt-3">已审核通过的记录不可删除，须先反审核。</p>
             </div>
@@ -424,7 +424,7 @@ export function renderSteelPriceRows(records) {
             <td class="${cell} text-[10px] text-ink-faint max-w-[220px]">${formatTraceCell('base', record)}</td>
             <td class="${cell} text-[10px] text-ink-faint max-w-[220px]">${formatTraceCell('thickness', record)}</td>
             <td class="${cell} text-[10px] text-ink-faint max-w-[220px]">${formatTraceCell('width', record)}</td>
-            <td class="${cell} ${muted} text-[11px]">${esc(record.match_status)}</td>
+            <td class="${cell} ${muted} text-[11px]">${esc(matchStatusLabel(record.match_status))}</td>
             <td class="${cell}">${auditBadge(record.audit_status)}</td>
             <td class="${cell} text-[9px] text-ink-faint whitespace-nowrap">${esc(record.created_by)}</td>
             <td class="${cell} text-[9px] text-ink-faint font-mono whitespace-nowrap">${esc(formatAuditDateTime(record.created_at))}</td>
@@ -522,13 +522,28 @@ function viewRow(label, id, isHighlight = false) {
     </div>`;
 }
 
+const MATCH_LABEL = {
+    full_match: '齐全',
+    base_only: '只有基价',
+    no_base: '没有基价',
+    no_thickness_policy: '没有厚度加价',
+    no_width_policy: '没有宽度加价',
+    partial: '没配齐',
+    failed: '没配上',
+};
+
+export function matchStatusLabel(status) {
+    if (!status) return '—';
+    return MATCH_LABEL[status] || '状态不明';
+}
+
 function auditBadge(status) {
     const map = {
         pending: 'bg-app-surface text-ink-muted border border-line',
         approved: 'bg-app-surface text-ink-muted border border-line',
         rejected: 'bg-app-surface text-ink-muted border border-line',
     };
-    const label = { pending: '待审', approved: '已通过', rejected: '已驳回' }[status] || status || '-';
+    const label = { pending: '待审', approved: '已通过', rejected: '已驳回' }[status] || (status ? '状态不明' : '-');
     const cls = map[status] || 'bg-app-surface text-ink-muted border border-line';
     return `<span class="inline-flex items-center px-2 py-0.5 text-[10px] font-sans rounded-sm ${cls}">${esc(label)}</span>`;
 }

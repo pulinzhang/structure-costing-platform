@@ -9,6 +9,12 @@ import { hudTableHtml, hudRowHtml, opsIconButtonHtml } from '../../ui/hud-table.
 
 const CATEGORY_BADGE = 'inline-flex items-center px-2 py-0.5 text-[9px] font-semibold tracking-[0.06em] border border-line-hud text-ink-muted bg-app-main';
 
+const FILE_STATUS_LABEL = {
+    active: '当前文件',
+    superseded: '已被新文件替换',
+    missing: '文件缺失',
+};
+
 export function fileTraceTemplate() {
     return `
         <div class="space-y-2 w-full max-w-full">
@@ -46,8 +52,8 @@ export function fileTraceTemplate() {
                 </div>
 
                 <div id="ftNoCategoryHint" class="hidden px-5 py-16 text-center border-b border-line-subtle">
-                    <div class="text-ink-muted text-sm mb-2">暂无权限范围内的文件分类</div>
-                    <div class="text-ink-faint text-xs">请联系管理员授权对应业务菜单后再查看溯源文件</div>
+                    <div class="text-ink-muted text-sm mb-2">当前账号没有可查看的文件分类。</div>
+                    <div class="text-ink-faint text-xs">由管理员开通对应菜单后可查看。</div>
                 </div>
 
                 ${hudTableHtml({
@@ -67,7 +73,7 @@ export function fileTraceTemplate() {
                                 <th class="p-0"></th>
                                 <th class="px-2 py-2 text-left text-[9px] font-medium tracking-[0.08em] text-ink-faint">分类</th>
                                 <th class="px-2 py-2 text-left text-[9px] font-medium tracking-[0.08em] text-ink-faint">原件名</th>
-                                <th class="px-2 py-2 text-left text-[9px] font-medium tracking-[0.08em] text-ink-faint">Scope</th>
+                                <th class="px-2 py-2 text-left text-[9px] font-medium tracking-[0.08em] text-ink-faint">范围</th>
                                 <th class="px-2 py-2 text-right text-[9px] font-medium tracking-[0.06em] text-ink-faint">大小</th>
                                 <th class="px-2 py-2 text-left text-[9px] font-medium tracking-[0.06em] text-ink-faint">上传人</th>
                                 <th class="px-2 py-2 text-left text-[9px] font-medium tracking-[0.06em] text-ink-faint">上传时间</th>
@@ -80,8 +86,7 @@ export function fileTraceTemplate() {
         <aside id="ftDrawer" class="fixed top-0 right-0 h-full w-full max-w-md bg-app-main border-l border-line z-[85] translate-x-full transition-transform duration-200 overflow-y-auto">
             <div class="flex items-center justify-between px-5 py-4 border-b border-line-subtle">
                 <div>
-                    <div class="text-xs text-ink-faint tracking-[0.1em]">FILE DETAIL</div>
-                    <h3 class="text-sm font-semibold text-ink mt-1">文件详情</h3>
+                    <h3 class="text-sm font-semibold text-ink">文件详情</h3>
                 </div>
                 <button id="ftDrawerClose" type="button" class="w-8 h-8 inline-flex items-center justify-center text-ink-muted hover:text-ink border border-line rounded">×</button>
             </div>
@@ -135,13 +140,13 @@ export function renderDrawerDetail(item) {
     const rows = [
         ['分类', item.file_category_label || item.file_category],
         ['原件名', item.original_filename],
-        ['Scope', item.scope_text || '-'],
-        ['SHA256', item.file_hash],
+        ['范围', item.scope_text || '-'],
+        ['校验码', item.file_hash],
         ['大小', item.file_size_text || `${item.file_size} B`],
         ['扩展名', item.extension],
         ['上传人', item.created_by],
         ['上传时间', formatDateTime(item.created_at)],
-        ['状态', item.status],
+        ['状态', FILE_STATUS_LABEL[item.status] || item.status || '-'],
     ];
     const canDownload = typeof can === 'function' && can('op:file-trace:download');
     return `

@@ -4,7 +4,7 @@
 
 import {
     assemblyCostCalcTemplate,
-} from './template.js?v=17';
+} from './template.js?v=18';
 import {
     DEFAULT_PAGE_SIZE,
     bindPagination,
@@ -212,7 +212,7 @@ async function loadCascadeFilters() {
 
 function resetFilters() {
     if (calcState.isCalculating) {
-        showToast('计算进行中，请稍候再重置', 'warning');
+        showToast('计算进行中，不能重置。', 'warning');
         return;
     }
     ['lacCalcLocation', 'lacCalcVehicleModel'].forEach((id) => {
@@ -433,11 +433,11 @@ async function startCalculation() {
     calcState.isCalculating = true;
     const startBtn = document.getElementById('lacStartCalcBtn');
     if (startBtn) startBtn.disabled = true;
-    showProgress(1, '已提交计算队列');
+    showProgress(1, '计算已提交。');
     try {
         const res = await HttpClient.post(CALC_API, scope);
         const taskId = res.data?.task_id;
-        if (!taskId) throw new Error('未返回任务 ID');
+        if (!taskId) throw new Error('计算没有开始。');
         calcState.activeTaskId = taskId;
         startPolling(taskId);
     } catch (error) {

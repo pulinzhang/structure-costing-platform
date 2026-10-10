@@ -5,7 +5,7 @@
 import { can } from '../../../../core/permissions.js?v=14';
 import { shortPartNumber } from '../../../../domain/part-identity.js?v=5';
 import { bindFilterBar } from '../../../../ui/filter-bar.js?v=6';
-import { bomWhereUsedTemplate } from './template.js?v=21';
+import { bomWhereUsedTemplate } from './template.js?v=22';
 
 const API_BASE = '/api/bom/where-used';
 const CASCADE_API = '/api/bom/filters/cascade';

@@ -153,7 +153,7 @@ export function locationTemplate() {
             <div class="flex-1 p-5">
                 <p class="text-xs text-ink-muted mb-2" id="locationToggleLead">确认禁用基地</p>
                 <p id="locationToggleName" class="text-sm font-semibold text-ink font-mono"></p>
-                <p class="text-[11px] text-ink-faint mt-3" id="locationToggleHint">禁用后不能再按此基地写入或开引擎；列表筛选仍可见。</p>
+                <p class="text-[11px] text-ink-faint mt-3" id="locationToggleHint">禁用后，此基地不能再录入，也不能再核算。列表里仍可筛选。</p>
             </div>
             <div class="px-5 py-3 border-t border-line flex items-center justify-end gap-2 bg-app-surface shrink-0">
                 <button type="button" id="cancelLocationToggleBtn" class="${BTN_GHOST}">取消</button>

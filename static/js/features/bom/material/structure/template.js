@@ -18,7 +18,7 @@ export function bomStructureTemplate() {
                         </div>
                     </div>
                     <p class="text-[11px] text-ink-dim max-w-md leading-relaxed">
-                        选择项目进入供货总成结构。当前为产品结构浏览，不展示传统 BOM 表格。
+                        选择项目后进入供货总成结构。本页只显示结构。
                     </p>
                 </div>
 

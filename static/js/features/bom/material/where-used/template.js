@@ -18,7 +18,7 @@ export function bomWhereUsedTemplate() {
                         <div class="grid grid-cols-1 gap-3 font-mono flex-1 min-w-0 sm:grid-cols-3">
                             ${hudKpiCardHtml({
                                 variant: 'focus',
-                                title: '命中节点',
+                                title: '命中零件',
                                 pulse: true,
                                 valueHtml: '<span id="wuHudHits">—</span>',
                                 unit: '条',

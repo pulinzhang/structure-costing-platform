@@ -2,9 +2,9 @@
  * 冲压检具费同步上传
  */
 
-import { gaugeFeeUploadTemplate } from './template.js?v=16';
+import { gaugeFeeUploadTemplate } from './template.js?v=17';
 import { setDropzoneDragActive } from '../../../../ui/upload-dropzone.js?v=3';
-import { bindSyncUploadProgress } from '../../../../ui/sync-upload-progress.js?v=3';
+import { bindSyncUploadProgress } from '../../../../ui/sync-upload-progress.js?v=4';
 
 const API_BASE = '/api/stamping/gauge-fees';
 
@@ -159,7 +159,7 @@ const GaugeFeeUploadPage = {
         if (submitBtn) submitBtn.disabled = true;
     },
 
-    showProgress(msg = '正在导入，请稍候') {
+    showProgress(msg = '正在导入。') {
         uploadProgress.setRunning(msg);
         document.getElementById('gfuZone')?.classList.remove('border-brand');
     },
@@ -212,7 +212,7 @@ const GaugeFeeUploadPage = {
 
     reset() {
         if (this.isUploading) {
-            showToast('导入进行中，请稍候再重置', 'warning');
+            showToast('导入进行中，不能重置。', 'warning');
             return;
         }
         this.hideProgress();

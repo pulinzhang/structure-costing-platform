@@ -9,7 +9,8 @@ import {
     renderSteelPriceRows,
     updateSteelPriceHud,
     millLabel,
-} from './template.js?v=75';
+    matchStatusLabel,
+} from './template.js?v=77';
 import {
     DEFAULT_PAGE_SIZE,
     bindPagination,
@@ -762,7 +763,7 @@ function openViewDrawer(record) {
     fillViewField('view-reverse-audited-by', record.reverse_audited_by || '—');
     fillViewField('view-reverse-audited-at', formatDateTime(record.reverse_audited_at));
     fillViewField('view-reverse-audit-remark', record.reverse_audit_remark || '—');
-    fillViewField('view-match-status', record.match_status);
+    fillViewField('view-match-status', matchStatusLabel(record.match_status));
     fillViewField('view-calc-batch-id', record.calc_batch_id);
     fillViewField('view-calculated-at', formatDateTime(record.calculated_at));
 

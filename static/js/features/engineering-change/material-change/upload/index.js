@@ -2,7 +2,7 @@
  * 材料变更上传页
  */
 
-import { materialChangeUploadTemplate } from './template.js?v=9';
+import { materialChangeUploadTemplate } from './template.js?v=10';
 import { uploadSubmitLabelHtml } from '../../../../ui/upload-actions.js?v=2';
 import { can } from '../../../../core/permissions.js?v=8';
 import {
@@ -256,7 +256,7 @@ const MaterialChangeUploadPage = {
         await navigator.clipboard.writeText(text);
     },
 
-    showProgress(progress = 0, msg = '正在导入，请稍候') {
+    showProgress(progress = 0, msg = '正在导入。') {
         document.getElementById('ecmDropIdle')?.classList.add('hidden');
         document.getElementById('ecmProgressPanel')?.classList.remove('hidden');
         document.getElementById('ecmUploadZone')?.classList.add('pointer-events-none');
@@ -267,7 +267,7 @@ const MaterialChangeUploadPage = {
         document.getElementById('ecmDropIdle')?.classList.remove('hidden');
         document.getElementById('ecmProgressPanel')?.classList.add('hidden');
         document.getElementById('ecmUploadZone')?.classList.remove('pointer-events-none');
-        this.updateProgress(0, '正在导入，请稍候');
+        this.updateProgress(0, '正在导入。');
     },
 
     updateProgress(progress, msg, status) {
@@ -340,7 +340,7 @@ const MaterialChangeUploadPage = {
 
     resetForm() {
         if (this.isUploading) {
-            showToast('解析进行中，请稍候再重置', 'warning');
+            showToast('导入进行中，不能重置。', 'warning');
             return;
         }
         this.stopPolling();
@@ -439,11 +439,11 @@ const MaterialChangeUploadPage = {
         const scopeLabel = `${location} / ${vehicleModel} / ${periodLabel}`;
         this.setUploading(true);
         this.hideError();
-        this.showProgress(0, '正在导入，请稍候');
+        this.showProgress(0, '正在导入。');
         try {
             const res = await HttpClient.post(`${API}/upload`, formData, { skipToast: true, timeout: 60000 });
             const taskId = res?.data?.task_id;
-            if (!taskId) throw new Error(res?.message || '未返回任务 ID');
+            if (!taskId) throw new Error(res?.message || '导入没有开始。');
             this.startPolling(taskId, this.selectedFile.name, scopeLabel);
         } catch (error) {
             this.stopPolling();

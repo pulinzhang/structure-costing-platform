@@ -198,7 +198,7 @@ function categoryKnowledge(node, isRoot, category) {
     if (node?.node_role && ROLE_KNOWLEDGE[node.node_role]) {
         return ROLE_KNOWLEDGE[node.node_role];
     }
-    return isRoot ? '本页供货总成' : '零件节点';
+    return isRoot ? '本页供货总成' : '零件';
 }
 
 function readHashParams() {
@@ -542,7 +542,7 @@ const BomVizPage = {
         shell?.addEventListener('mouseleave', () => this.clearHover());
 
         if (!snapshotId || !nodeId) {
-            this.renderFatal('无法打开结构视图', '缺少 snapshot_id 或 node_id');
+            this.renderFatal('无法打开结构图', '链接不完整，请从总成列表重新打开');
             return;
         }
 
@@ -565,7 +565,7 @@ const BomVizPage = {
             const tree = Array.isArray(treeResp.data) ? treeResp.data : [];
             const assembly = findNodeById(tree, nodeId);
             if (!assembly) {
-                this.renderFatal('未找到总成', `node_id=${nodeId}`);
+                this.renderFatal('未找到总成', '这张清单里没有这个总成，请回到列表重选');
                 return;
             }
 

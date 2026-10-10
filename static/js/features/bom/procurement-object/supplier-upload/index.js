@@ -2,8 +2,8 @@
  * 采购对象批量上传供应商
  */
 
-import { procurementObjectSupplierUploadTemplate } from './template.js?v=18';
-import { bindSyncUploadProgress } from '../../../../ui/sync-upload-progress.js?v=3';
+import { procurementObjectSupplierUploadTemplate } from './template.js?v=19';
+import { bindSyncUploadProgress } from '../../../../ui/sync-upload-progress.js?v=4';
 import { loadSnapshotCascade } from '../snapshot-cascade.js?v=5';
 
 const API_BASE = '/api/bom/procurement-objects';
@@ -163,7 +163,7 @@ function resetForm() {
     loadCascade();
 }
 
-function showProgress(msg = '正在导入，请稍候') {
+function showProgress(msg = '正在导入。') {
     uploadProgress.setRunning(msg);
 }
 
