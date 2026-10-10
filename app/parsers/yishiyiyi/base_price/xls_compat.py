@@ -20,6 +20,8 @@ class XlsSheetWrapper:
     def iter_rows(
         self, min_row: int = 1, max_row: int | None = None, values_only: bool = True
     ) -> list[list[Any]]:
+        if not values_only:
+            raise ValueError("xls 兼容读取只返回单元格值")
         results: list[list[Any]] = []
         row_count = self._sheet.nrows
         actual_min = max(0, min_row - 1)

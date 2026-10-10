@@ -6,7 +6,6 @@
 - _to_decimal: 数字 / 字符串 → Decimal
 - _to_int_price: 加减价 → int
 - is_carry_forward_price: 末档 ``/`` / ``无`` 是否沿用上一阶梯
-- is_decimal_like: 判断字符串是否可解析为数字
 """
 
 from decimal import ROUND_HALF_UP, Decimal, InvalidOperation
@@ -29,20 +28,6 @@ def _to_str_or_none(value: Any) -> str | None:
     """单元格值转为 None 或字符串（已 strip）。"""
     text = _to_str(value)
     return text if text else None
-
-
-def is_decimal_like(text: str) -> bool:
-    """判断字符串能否被解析为 Decimal。"""
-    if not text:
-        return False
-    cleaned = text.strip().lstrip("+-")
-    if not cleaned:
-        return False
-    try:
-        Decimal(cleaned)
-        return True
-    except (InvalidOperation, ValueError):
-        return False
 
 
 def _to_decimal(value: Any) -> Decimal | None:

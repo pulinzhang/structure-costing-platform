@@ -40,13 +40,6 @@ class SteelPriceCalcLogRepository:
     def get_by_id(self, db: Session, log_id: int) -> SteelPriceCalcLog | None:
         return db.query(SteelPriceCalcLog).filter(SteelPriceCalcLog.id == log_id).first()
 
-    def get_by_batch_id(self, db: Session, calc_batch_id: str) -> SteelPriceCalcLog | None:
-        return (
-            db.query(SteelPriceCalcLog)
-            .filter(SteelPriceCalcLog.calc_batch_id == calc_batch_id)
-            .first()
-        )
-
     def find_processing(
         self,
         db: Session,

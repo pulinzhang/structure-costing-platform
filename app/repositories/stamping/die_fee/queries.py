@@ -35,7 +35,6 @@ class StampingDieFeeQueries:
         *,
         year: int,
         location: str | None = None,
-        locations: list[str] | None = None,
         vehicle_model: str,
         part_number: str,
     ) -> StampingDieFee | None:

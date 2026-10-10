@@ -22,10 +22,6 @@ def comparison_basis_label_zh(basis: ComparisonBasis) -> str:
     return _BASIS_LABEL_ZH.get(basis.label, basis.label)
 
 
-def comparability_label_zh(comparability: str) -> str:
-    return _COMPARABILITY_LABEL_ZH.get(comparability, comparability)
-
-
 def default_comparison_basis(
     *,
     same_bom_version: bool = True,

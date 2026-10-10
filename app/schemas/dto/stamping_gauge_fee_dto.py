@@ -50,19 +50,6 @@ class StampingGaugeFeeQuery(BaseModel):
         return _require_status(text)
 
 
-class StampingGaugeFeeScopeDTO(BaseModel):
-    location: str = Field(..., min_length=1, max_length=50)
-    vehicle_model: str = Field(..., min_length=1, max_length=50)
-
-    @field_validator("location", "vehicle_model", mode="before")
-    @classmethod
-    def strip_required(cls, value: object) -> str:
-        text = _strip(value)
-        if not text:
-            raise ValueError("不能为空")
-        return text
-
-
 class StampingGaugeFeeUpdate(BaseModel):
     gauge_fee: Decimal | None = None
     allocation_qty: Decimal | None = None

@@ -331,26 +331,13 @@ class StampingProcessFeeService:
         rate_years = self.tonnage_repo.get_distinct_years(db)
         return sorted(set(fee_years) | set(rate_years), reverse=True)
 
-    def list_locations(self, db: Session, year: int | None = None) -> list[str]:
+    def list_locations(self, db: Session) -> list[str]:
         return LocationService().list_registered(db)
 
-    def list_suppliers(
-        self,
-        db: Session,
-        year: int | None = None,
-        location: str | None = None,
-        vehicle_model: str | None = None,
-        version: str | None = None,
-    ) -> list[str]:
+    def list_suppliers(self, db: Session) -> list[str]:
         return SupplierService().list_registered_names(db)
 
-    def list_vehicle_models(
-        self,
-        db: Session,
-        year: int | None = None,
-        location: str | None = None,
-        stamping_supplier: str | None = None,
-    ) -> list[str]:
+    def list_vehicle_models(self, db: Session, location: str | None = None) -> list[str]:
         return VehicleModelService().list_filter_codes(db, location)
 
     def list_versions(

@@ -147,18 +147,3 @@ class EngineeringChangeUploadLogRepository:
             )
             .all()
         )
-
-    def list_pending_or_success_by_after_assembly(
-        self,
-        db: Session,
-        *,
-        location: str,
-        vehicle_model: str,
-        after_assembly_part_number: str,
-    ) -> list[EngineeringChangeUploadLog]:
-        return self.list_busy_after_assembly(
-            db,
-            location=location,
-            vehicle_model=vehicle_model,
-            after_assembly_part_number=after_assembly_part_number,
-        )

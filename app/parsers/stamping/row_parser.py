@@ -188,7 +188,3 @@ class PartSaver:
             warnings.append(f"零件 {part_number} 没有任何工序")
         elif process_count == 1:
             warnings.append(f"零件 {part_number} 只有1道工序")
-
-    def reset(self) -> None:
-        """重置警告状态（用于新文件解析）"""
-        self._warned_parts = set()

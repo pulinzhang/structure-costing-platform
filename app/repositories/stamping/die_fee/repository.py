@@ -38,7 +38,6 @@ class StampingDieFeeRepository:
         *,
         year: int,
         location: str | None = None,
-        locations: list[str] | None = None,
         vehicle_model: str,
         part_number: str,
     ) -> StampingDieFee | None:
@@ -46,7 +45,6 @@ class StampingDieFeeRepository:
             db,
             year=year,
             location=location,
-            locations=locations,
             vehicle_model=vehicle_model,
             part_number=part_number,
         )
@@ -270,11 +268,10 @@ class StampingDieFeeRepository:
         *,
         year: int,
         location: str | None = None,
-        locations: list[str] | None = None,
         vehicle_model: str,
     ) -> int:
         return self._writes.delete_unaudited_by_scope(
-            db, year=year, location=location, locations=locations, vehicle_model=vehicle_model
+            db, year=year, location=location, vehicle_model=vehicle_model
         )
 
     def approve_by_scope(
@@ -283,7 +280,6 @@ class StampingDieFeeRepository:
         *,
         year: int,
         location: str | None = None,
-        locations: list[str] | None = None,
         vehicle_model: str,
         audited_by: str,
         audited_at: datetime,
@@ -294,7 +290,6 @@ class StampingDieFeeRepository:
             db,
             year=year,
             location=location,
-            locations=locations,
             vehicle_model=vehicle_model,
             audited_by=audited_by,
             audited_at=audited_at,
@@ -308,7 +303,6 @@ class StampingDieFeeRepository:
         *,
         year: int,
         location: str | None = None,
-        locations: list[str] | None = None,
         vehicle_model: str,
         reverse_audited_by: str,
         reverse_audited_at: datetime,
@@ -319,7 +313,6 @@ class StampingDieFeeRepository:
             db,
             year=year,
             location=location,
-            locations=locations,
             vehicle_model=vehicle_model,
             reverse_audited_by=reverse_audited_by,
             reverse_audited_at=reverse_audited_at,

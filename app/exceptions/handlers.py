@@ -74,7 +74,7 @@ async def business_exception_handler(request: Request, exc: BusinessException) -
     )
 
 
-async def generic_exception_handler(request: Request, exc: Exception) -> JSONResponse:
+async def generic_exception_handler(request: Request, _exc: Exception) -> JSONResponse:
     """处理未捕获的通用异常"""
     # TODO: 添加日志记录
     set_request_error_message(request, GENERIC_PUBLIC_ERROR)

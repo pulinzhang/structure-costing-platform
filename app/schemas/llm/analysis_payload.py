@@ -34,32 +34,9 @@ ComparisonPayload: TypeAlias = dict[str, object]  # noqa: UP040
 DrilldownPayload: TypeAlias = dict[str, object]  # noqa: UP040
 DriverItem: TypeAlias = dict[str, object]  # noqa: UP040
 
-
 # ---------------------------------------------------------------------------
 # summary 月份行等仍保留 TypedDict，供文档与局部注解
 # ---------------------------------------------------------------------------
-
-
-class SummaryMonthRow(TypedDict, total=False):
-    month: str
-    location: str
-    grand_total_sum: str
-    l0_count: int
-    part_count: int
-    unit_cost_sum: str
-    success_count: int
-    avg_final_price: str
-    row_count: int
-    ladder_row_count: int
-
-
-class SummaryBreakdown(TypedDict, total=False):
-    stamping_amount_sum: str
-    purchased_amount_sum: str
-    bundle_amount_sum: str
-    welding_amount_sum: str
-    welding_other_amount_sum: str
-
 
 # ---------------------------------------------------------------------------
 # trend
@@ -120,65 +97,14 @@ class DriversPayload(TypedDict):
 # ---------------------------------------------------------------------------
 
 
-class ComparisonPoint(TypedDict, total=False):
-    month: str
-    grand_total_sum: str
-    value: str
-
-
-class ComparisonSeriesItem(TypedDict, total=False):
-    location: str
-    points: list[ComparisonPoint]
-    start: str
-    end: str
-    change: str
-    change_rate: str | None
-    status: str
-    label: str
-
-
 class SpreadResult(TypedDict):
     spread: str | None
     status: str
 
 
-class ComparisonSpread(TypedDict, total=False):
-    location_a: str
-    location_b: str
-    spread: str | None
-    status: str
-    label_a: str
-    label_b: str
-
-
-class ComparisonWinner(TypedDict, total=False):
-    location: str
-    by: str
-    label: str
-
-
 # ---------------------------------------------------------------------------
 # risk
 # ---------------------------------------------------------------------------
-
-
-class RiskSampleRow(TypedDict, total=False):
-    """风险抽样行：字段随 risk_type 变化。"""
-
-    part_number: str
-    part_name: str | None
-    month: str
-    year: int
-    unit_price: str
-    unit_cost: str
-    should_cost: str | None
-    total_amount: str
-    grand_total: str
-    calc_status: str
-    calc_message: str | None
-    missing_leaf_count: int
-    stamping_supplier: str | None
-    vehicle_model: str | None
 
 
 class RiskEntry(TypedDict, total=False):
@@ -265,15 +191,6 @@ class DrilldownLatest(TypedDict, total=False):
     is_tree_root: bool
     object_kind: str | None
     root_part_number: str | None
-
-
-class DrilldownPoint(TypedDict, total=False):
-    month: str
-    grand_total: str
-    total_amount: str
-    calc_status: str
-    bom_version: str | None
-    card_role: str
 
 
 class KindOnlyPayload(TypedDict):
@@ -466,7 +383,6 @@ class EngineReadinessPayload(TypedDict, total=False):
 
 # summary 槽：成品 KPI、引擎门禁或运维工作台摘要
 AnalysisSummaryBag = SummaryPayload | EngineReadinessPayload | OpsWorkbenchPayload
-
 
 # 叶子 result（不含 composite；summary 袋可进 parts_result）
 AnalysisResultLeafPayload = (

@@ -195,7 +195,7 @@ def batch_delete(
     db: Session = Depends(get_db),
     current_user: UserVO = Depends(require_perm(Perm.ASSEMBLY_COST_DELETE)),
 ) -> ApiResponse[AssemblyCostBatchResultVO]:
-    result = _service.batch_delete(db, dto, current_user=current_user)
+    result = _service.batch_delete(db, dto)
     return ApiResponse.ok(data=result, message=result.message)
 
 

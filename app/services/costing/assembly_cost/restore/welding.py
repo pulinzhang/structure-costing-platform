@@ -125,7 +125,6 @@ class RestoreWelding:
         self,
         card: AssemblyCost,
         packaging: BomPackagingTransportFee | None,
-        exceptions: list[RestoreExceptionVO],
     ) -> list[RestoreIndirectLineVO]:
         lines: list[RestoreIndirectLineVO] = []
         match_key = f"{card.location} · {card.year} · {card.part_number}"

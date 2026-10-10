@@ -68,7 +68,6 @@ def collect_descendants(
 
 
 def path_qty_from_root_child(
-    children_by_parent: dict[int | None, list[RollupBomNode]],
     by_id: dict[int, RollupBomNode],
     root_id: int,
     target_id: int,

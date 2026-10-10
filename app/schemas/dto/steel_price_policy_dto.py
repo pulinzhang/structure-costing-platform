@@ -39,15 +39,6 @@ class GradeType(str, Enum):
     CATEGORY = "CATEGORY"
 
 
-class Operator(str, Enum):
-    """区间操作符枚举"""
-
-    GTE = ">="
-    GT = ">"
-    LTE = "<="
-    LT = "<"
-
-
 # ============================
 # 辅助函数
 # ============================

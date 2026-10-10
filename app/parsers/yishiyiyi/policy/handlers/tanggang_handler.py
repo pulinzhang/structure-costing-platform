@@ -148,8 +148,9 @@ class TanggangSheetHandler(BaseSheetHandler):
             return None
 
         # 唐钢：手动收集所有非空列头（含纯数字）
+        cols = scan_cols if scan_cols is not None else range(data_col_start, max_col + 1)
         price_cols: list[int] = []
-        for c in range(data_col_start, max_col + 1):
+        for c in cols:
             raw = sheet.cell(row=header_row, column=c).value
             if raw is not None and str(raw).strip():
                 price_cols.append(c)
@@ -169,7 +170,7 @@ class TanggangSheetHandler(BaseSheetHandler):
             "grade_blacklist": GRADE_LABELS,
         }
 
-    def find_width_blocks(self, sheet: Worksheet, steel_mill: str) -> list[dict[str, Any]]:
+    def find_width_blocks(self, sheet: Worksheet, _steel_mill: str) -> list[dict[str, Any]]:
         blocks: list[dict[str, Any]] = []
         max_row, max_col = self.row_max(sheet), self.col_max(sheet)
 

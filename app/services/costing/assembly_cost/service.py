@@ -314,8 +314,6 @@ class AssemblyCostService:
         self,
         db: Session,
         dto: AssemblyCostBatchDeleteDTO,
-        *,
-        current_user: UserVO,
     ) -> AssemblyCostBatchResultVO:
         return batch_delete_costs(self.cost_repo, db, dto)
 

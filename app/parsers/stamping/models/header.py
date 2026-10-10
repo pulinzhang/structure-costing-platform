@@ -50,16 +50,3 @@ class HeaderContext:
     # 格式："一级/二级"，例如 "工艺/工序号"
     # 例如：{"2": "通用/零件号", "12": "工艺/工序号", ...}
     header_paths: dict[str, str] = field(default_factory=dict)
-
-    def get_col(self, field_name: str, default: int | None = None) -> int | None:
-        """
-        获取字段对应的列号
-
-        Args:
-            field_name: 字段名（如 "part_no"、"op"、"code"）
-            default: 列号不存在时的默认值
-
-        Returns:
-            列号（1-based）
-        """
-        return self.col_map.get(field_name, default)

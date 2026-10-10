@@ -101,7 +101,6 @@ class UploadFileRepository:
 
     def mark_superseded(
         self,
-        db: Session,
         rows: list[UploadFile],
         *,
         superseded_by_id: int,

@@ -171,46 +171,6 @@ def filter_candidates(
     return matched
 
 
-def grade_alias_tokens(grade: str | None) -> frozenset[str]:
-    """
-    把政策/基价牌号拆成可互认的别名集合。
-
-    - ``B170P1/HC180Y``：两侧都是独立牌号，互认为同一钢种
-    - ``HC340/590DP``：右侧以数字开头，是双相钢屈服/抗拉写法，整段视为一个牌号
-    """
-    text = (grade or "").strip().replace("//", "/")
-    if not text:
-        return frozenset()
-    parts = [part.strip() for part in text.split("/") if part.strip()]
-    if len(parts) <= 1:
-        return frozenset({text})
-    if any(not part[0].isalpha() for part in parts):
-        return frozenset({text})
-    return frozenset(parts)
-
-
-def grades_match(policy_grade: str | None, row_grade: str | None) -> bool:
-    """牌号是否同一钢种（含斜杠双牌号别名，双向）。"""
-    left = (policy_grade or "").strip()
-    right = (row_grade or "").strip()
-    if not left or not right:
-        return False
-    if left == right:
-        return True
-    return bool(grade_alias_tokens(left) & grade_alias_tokens(right))
-
-
-def grade_exact(policy: SteelPricePolicy, row: PolicyMatchTarget) -> bool:
-    grade_type = (policy.grade_type or "GRADE").strip().upper()
-    if grade_type not in {"GRADE", ""}:
-        return False
-    return grades_match(policy.grade_value, row.grade)
-
-
-def grade_generic(policy: SteelPricePolicy) -> bool:
-    return not (policy.grade_value or "").strip()
-
-
 def grade_category(policy: SteelPricePolicy, row: PolicyMatchTarget) -> bool:
     grade_type = (policy.grade_type or "").strip().upper()
     if grade_type != "CATEGORY":
@@ -303,42 +263,6 @@ def match_items(
         return None
     hits.sort(key=lambda x: (x.sort_order or 0, x.id or 0))
     return hits[0]
-
-
-def find_best_hit(
-    row: PolicyMatchTarget,
-    candidates: list[SteelPricePolicy],
-    *,
-    policy_types: tuple[str, ...],
-    check_thickness: bool,
-    check_width: bool,
-    prefer_base_thickness: bool,
-) -> PolicyHit | None:
-    typed = [p for p in candidates if p.policy_type in policy_types]
-    if not typed:
-        return None
-
-    ranked_groups = [
-        [p for p in typed if grade_exact(p, row)],
-        [p for p in typed if grade_generic(p)],
-        [p for p in typed if grade_category(p, row)],
-    ]
-
-    for group in ranked_groups:
-        if not group:
-            continue
-        ordered = order_by_base_thickness(group, row, prefer_base_thickness)
-        for policy in ordered:
-            hit = match_items(
-                policy,
-                thickness=row.thickness,
-                width=row.width,
-                check_thickness=check_thickness,
-                check_width=check_width,
-            )
-            if hit is not None:
-                return policy, hit
-    return None
 
 
 def apply_hit(

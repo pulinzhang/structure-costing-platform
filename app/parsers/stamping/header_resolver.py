@@ -16,7 +16,6 @@ from app.utils.logging_config import get_logger
 
 logger = get_logger("parser.stamping.header")
 
-
 # Header 路径匹配模式（精确匹配）
 # 键名与数据库字段一一对应，值列表按优先级排序
 COLUMN_PATTERNS: dict[str, list[tuple[str, int]]] = {
@@ -162,24 +161,6 @@ class HeaderResolver:
         self.data_start_row: int = 0
         self.header_paths: dict[str, str] = {}
         self.col_map: dict[str, int] = {}
-
-    def find_stamping_sheet(self, workbook: Any) -> Any:
-        """识别冲压数据Sheet"""
-        for sheet in workbook.worksheets:
-            for row_idx in range(1, min(16, sheet.max_row + 1)):
-                row_values = [self._get_value(row_idx, col) for col in range(1, 25)]
-                row_text = " ".join([str(v) for v in row_values if v])
-
-                has_part = any(p in row_text for p in ["零件号", "件号", "Part No"])
-                has_op = any(p in row_text for p in ["工序", "OP", "Process"])
-
-                if has_part and has_op:
-                    logger.info(f"找到数据Sheet: {sheet.title}, 行{row_idx}")
-                    return sheet
-
-        if not workbook.worksheets:
-            return None
-        return workbook.worksheets[0]
 
     def find_stamping_supplier(self, sheet: Any) -> str | None:
         """从表头区域提取冲压供应商名称（冲压承制公司）"""

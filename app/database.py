@@ -30,7 +30,7 @@ class AuxiliaryBase(DeclarativeBase):
     """辅助库 ORM 基类（Token / 异步任务等）。"""
 
 
-def _configure_sqlite_connection(dbapi_connection: object, connection_record: object) -> None:
+def _configure_sqlite_connection(dbapi_connection: object, _connection_record: object) -> None:
     """SQLite：外键 + WAL；时间按东八区墙钟由应用层 now() 写入。"""
     cursor = dbapi_connection.cursor()  # type: ignore[attr-defined]
     cursor.execute("PRAGMA foreign_keys=ON")
@@ -39,7 +39,7 @@ def _configure_sqlite_connection(dbapi_connection: object, connection_record: ob
     cursor.close()
 
 
-def _configure_postgres_connection(dbapi_connection: object, connection_record: object) -> None:
+def _configure_postgres_connection(dbapi_connection: object, _connection_record: object) -> None:
     """PostgreSQL：会话时区固定为东八区。"""
     cursor = dbapi_connection.cursor()  # type: ignore[attr-defined]
     cursor.execute(f"SET TIME ZONE '{CHINA_TZ_NAME}'")

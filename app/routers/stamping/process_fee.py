@@ -84,7 +84,6 @@ def list_years(
     summary="获取冲压加工费基地列表",
 )
 def list_locations(
-    year: int | None = Query(None, description="年度"),
     db: Session = Depends(get_db),
     current_user: UserVO = Depends(
         require_any_perm(
@@ -93,7 +92,7 @@ def list_locations(
         )
     ),
 ) -> ApiResponse[list[str]]:
-    locations = _service.list_locations(db, year=year)
+    locations = _service.list_locations(db)
     return ApiResponse.ok(data=locations)
 
 
@@ -103,10 +102,6 @@ def list_locations(
     summary="获取冲压加工费供应商列表",
 )
 def list_suppliers(
-    year: int | None = Query(None, description="年度"),
-    location: str | None = Query(None, description="基地"),
-    vehicle_model: str | None = Query(None, description="项目"),
-    version: str | None = Query(None, description="版本"),
     db: Session = Depends(get_db),
     current_user: UserVO = Depends(
         require_any_perm(
@@ -115,13 +110,7 @@ def list_suppliers(
         )
     ),
 ) -> ApiResponse[list[str]]:
-    suppliers = _service.list_suppliers(
-        db,
-        year=year,
-        location=location,
-        vehicle_model=(vehicle_model or "").strip() or None,
-        version=(version or "").strip() or None,
-    )
+    suppliers = _service.list_suppliers(db)
     return ApiResponse.ok(data=suppliers)
 
 
@@ -131,9 +120,7 @@ def list_suppliers(
     summary="获取冲压加工费项目列表",
 )
 def list_vehicle_models(
-    year: int | None = Query(None, description="年度"),
     location: str | None = Query(None, description="基地"),
-    stamping_supplier: str | None = Query(None, description="冲压工厂"),
     db: Session = Depends(get_db),
     current_user: UserVO = Depends(
         require_any_perm(
@@ -142,12 +129,7 @@ def list_vehicle_models(
         )
     ),
 ) -> ApiResponse[list[str]]:
-    models = _service.list_vehicle_models(
-        db,
-        year=year,
-        location=location,
-        stamping_supplier=stamping_supplier,
-    )
+    models = _service.list_vehicle_models(db, location=location)
     return ApiResponse.ok(data=models)
 
 

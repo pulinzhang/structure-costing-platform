@@ -31,7 +31,6 @@ from app.services.stamping.part.export.constants import (
 )
 from app.services.stamping.part.export.helpers import PartExportStyle
 from app.services.stamping.part.export.part_block import write_part_block
-from app.services.stamping.part.export.sketch import embed_sketch
 
 logger = logging.getLogger("service.stamping.part.export")
 
@@ -409,21 +408,4 @@ class ProcessConfirmExport:
             center=self._center,
             left=self._left,
             right=self._right,
-        )
-
-    def _embed_sketch(
-        self,
-        ws: Worksheet,
-        *,
-        part: StampingPart,
-        start_row: int,
-        n_rows: int,
-        sketch_buffers: list[BytesIO],
-    ) -> bool:
-        return embed_sketch(
-            ws,
-            part=part,
-            start_row=start_row,
-            n_rows=n_rows,
-            sketch_buffers=sketch_buffers,
         )

@@ -23,7 +23,6 @@
   ...
 """
 
-import re
 from typing import Any
 
 from openpyxl.worksheet.worksheet import Worksheet
@@ -70,58 +69,7 @@ class VamaSheetHandler(BaseSheetHandler):
             policies.extend(self.assembler.build_policies_from_block(sheet, steel_mill, block))
         return policies
 
-    def _parse_width_range_from_col10(
-        self, sheet: Worksheet, block: dict[str, Any]
-    ) -> dict[str, Any] | None:
-        """从 Col 10 读取宽度范围。
-
-        表头行（或数据行）Col 10 通常是 "1000-1600" 这样的格式，
-        解析为 {min_val: 1000, min_operator: ">=", max_val: 1600, max_operator: "<="}。
-        """
-        header_row = block["header_row"]
-        data_start = block["data_row_start"]
-        max_row = self.row_max(sheet)
-
-        # 先尝试表头行（Row 5 / Row 20）
-        raw = self.text(sheet, header_row, 10)
-        if raw:
-            parsed = self._parse_width_text(raw)
-            if parsed:
-                return parsed
-
-        # 再尝试数据行第一行
-        for r in range(data_start, min(data_start + 5, max_row + 1)):
-            raw = self.text(sheet, r, 10)
-            if raw:
-                parsed = self._parse_width_text(raw)
-                if parsed:
-                    return parsed
-
-        return None
-
-    def _parse_width_text(self, text: str) -> dict[str, Any] | None:
-        """解析宽度文本，如 "1000-1600" → 闭区间 [1000, 1600]。
-
-        VAMA 的宽度范围均为闭区间（两端都含）。
-        """
-        text = text.strip()
-        if not text:
-            return None
-
-        m = re.match(r"^(\d+(?:\.\d+)?)\s*[-–—]\s*(\d+(?:\.\d+)?)$", text)
-        if m:
-            lo = float(m.group(1))
-            hi = float(m.group(2))
-            return {
-                "min_val": lo,
-                "min_operator": ">=",
-                "max_val": hi,
-                "max_operator": "<=",
-            }
-
-        return None
-
-    def find_width_blocks(self, sheet: Worksheet, steel_mill: str) -> list[dict[str, Any]]:
+    def find_width_blocks(self, _sheet: Worksheet, _steel_mill: str) -> list[dict[str, Any]]:
         # VAMA 没有独立的宽度政策块
         return []
 
@@ -276,6 +224,6 @@ class VamaSheetHandler(BaseSheetHandler):
     # VAMA 专用：grade_type 推断（THICKNESS_WIDTH 政策下 grade 始终是钢种）
     # ------------------------------------------------------------------ #
 
-    def _infer_grade_type_vama(self, grade: str, policy_type: str) -> str:
+    def _infer_grade_type_vama(self, _grade: str, _policy_type: str) -> str:
         """VAMA THICKNESS_WIDTH 政策：grade 必定是钢种牌号，始终返回 GRADE。"""
         return GRADE_TYPE_GRADE

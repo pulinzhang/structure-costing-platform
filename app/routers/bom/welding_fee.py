@@ -81,7 +81,6 @@ def list_years(
     summary="获取焊接费基地列表",
 )
 def list_locations(
-    year: int | None = Query(None, description="年度"),
     db: Session = Depends(get_db),
     current_user: UserVO = Depends(
         require_any_perm(
@@ -90,7 +89,7 @@ def list_locations(
         )
     ),
 ) -> ApiResponse[list[str]]:
-    locations = _service.list_locations(db, year=year)
+    locations = _service.list_locations(db)
     return ApiResponse.ok(data=locations)
 
 
@@ -100,7 +99,6 @@ def list_locations(
     summary="获取焊接费项目列表",
 )
 def list_vehicle_models(
-    year: int | None = Query(None, description="年度"),
     location: str | None = Query(None, description="基地"),
     db: Session = Depends(get_db),
     current_user: UserVO = Depends(
@@ -110,7 +108,7 @@ def list_vehicle_models(
         )
     ),
 ) -> ApiResponse[list[str]]:
-    models = _service.list_vehicle_models(db, year=year, location=location)
+    models = _service.list_vehicle_models(db, location=location)
     return ApiResponse.ok(data=models)
 
 

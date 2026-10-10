@@ -30,11 +30,6 @@ def month_key(year: int, month: int) -> str:
     return f"{year:04d}-{month:02d}"
 
 
-def parse_month_key(value: str) -> tuple[int, int]:
-    year_text, month_text = value.split("-", 1)
-    return int(year_text), int(month_text)
-
-
 def ym_int(year: int, month: int) -> int:
     return year * 100 + month
 

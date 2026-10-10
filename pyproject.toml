@@ -32,6 +32,7 @@ dev = [
     "black>=24.1.0",
     "isort>=5.13.0",
     "ruff>=0.5.0",
+    "vulture>=2.14",
     "mypy>=1.8.0",
     # 补充第三方库的类型存根
     "types-openpyxl>=3.1.0",

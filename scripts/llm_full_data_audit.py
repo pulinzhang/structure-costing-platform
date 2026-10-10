@@ -158,7 +158,7 @@ def run_case(
                 expect_has_data=case.expect_has_data,
             )
             draft = mock_extractor_draft(traversal_stub, scope)
-            parser._extractor.extract = lambda *args, **kwargs: draft
+            parser._extractor.extract = lambda *_args, **_kwargs: draft
 
         query = parser.parse(db, user_question=case.user_question)
         result.subject = query.subject

@@ -49,8 +49,6 @@ def main() -> None:
         "",
         "from __future__ import annotations",
         "",
-        "from collections.abc import Iterator",
-        "",
         "",
         "class Perm:",
         '    """权限码常量（值 = catalog.json 中的 code）。"""',
@@ -66,14 +64,6 @@ def main() -> None:
 
     lines.extend(
         [
-            "",
-            "",
-            "def iter_perm_codes() -> Iterator[str]:",
-            '    """遍历 Perm 上全部权限码字符串。"""',
-            "    for name, value in vars(Perm).items():",
-            '        if name.startswith("_") or not isinstance(value, str):',
-            "            continue",
-            "        yield value",
             "",
             "",
             "def get_perm_code_map() -> dict[str, str]:",

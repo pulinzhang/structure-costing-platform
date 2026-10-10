@@ -453,13 +453,7 @@ def test_query_parser_stamping_process_maps_to_parts_list() -> None:
     assert "summary" in query.analyses
     assert "drivers" in query.analyses
     assert "trend" not in query.analyses
-
-    from app.services.llm.menu_catalog import build_list_params
-
-    params = build_list_params(query)
-    assert params.get("location") == "青岛"
-    assert params.get("vehicle_model") == "T28"
-    assert params.get("version") == "V1"
+    assert query.bom_version() == "V1"
 
 
 def test_build_stamping_process_summary() -> None:
@@ -611,18 +605,13 @@ def test_query_parser_thickness_policy_question() -> None:
     assert query.time_range.start == "2025-01"
     assert "summary" in query.analyses
     assert "drivers" in query.analyses
-
-    from app.services.llm.menu_catalog import build_list_params
-
-    params = build_list_params(query)
-    assert params.get("year") == "2025"
-    assert params.get("month") == "1"
+    assert query.time_range.end_year == 2025
+    assert query.time_range.end_month == 1
 
 
 def test_query_parser_base_price_question() -> None:
     from unittest.mock import MagicMock
 
-    from app.services.llm.menu_catalog import build_list_params
     from app.services.llm.query.parser.pipeline import QueryParser
 
     parser = QueryParser()
@@ -647,11 +636,9 @@ def test_query_parser_base_price_question() -> None:
     assert query.time_range.start == "2025-01"
     assert "summary" in query.analyses
     assert "drivers" in query.analyses
-
-    params = build_list_params(query)
-    assert params.get("location") == "青岛"
-    assert params.get("year") == "2025"
-    assert params.get("month") == "1"
+    assert query.location() == "青岛"
+    assert query.time_range.end_year == 2025
+    assert query.time_range.end_month == 1
 
 
 def test_idempotency_fingerprint_stable() -> None:
@@ -1300,19 +1287,16 @@ def test_query_parser_named_grade_does_not_steal_base_or_winning_thickness() -> 
     assert winning.subject == "winning_thickness"
 
 
-def test_query_parser_steel_grade_list_params_include_grade_not_thickness() -> None:
-    from app.services.llm.menu_catalog import build_list_params
-
+def test_query_parser_steel_grade_with_location_keeps_grade_and_thickness() -> None:
     query = _parse_grade_question(
         "2026年02月，青岛，DC01 0.6的钢材价格",
         location="青岛",
     )
-    params = build_list_params(query)
-    assert params["year"] == "2026"
-    assert params["month"] == "2"
-    assert params["location"] == "青岛"
-    assert params["grade"] == "DC01"
-    assert "thickness" not in params
+    assert query.time_range.end_year == 2026
+    assert query.time_range.end_month == 2
+    assert query.location() == "青岛"
+    assert query.filters.get("grade") == "DC01"
+    assert query.filters.get("thickness") == "0.6"
 
 
 def test_extract_grade_candidates_keeps_plus_suffix() -> None:

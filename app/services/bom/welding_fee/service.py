@@ -383,15 +383,10 @@ class BomWeldingFeeService:
     def list_years(self, db: Session) -> list[int]:
         return self.fee_repo.get_distinct_years(db)
 
-    def list_locations(self, db: Session, year: int | None = None) -> list[str]:
+    def list_locations(self, db: Session) -> list[str]:
         return LocationService().list_registered(db)
 
-    def list_vehicle_models(
-        self,
-        db: Session,
-        year: int | None = None,
-        location: str | None = None,
-    ) -> list[str]:
+    def list_vehicle_models(self, db: Session, location: str | None = None) -> list[str]:
         return VehicleModelService().list_filter_codes(db, location)
 
     def list_bom_versions(

@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+from collections.abc import Callable
+
 from app.schemas.vo.costing_engine_vo import CostingEngineNavigateVO
 
 
@@ -13,26 +15,26 @@ def build_navigate(
     location: str | None = None,
 ) -> CostingEngineNavigateVO | None:
     """按门禁 code 生成 navigate；未知 code 返回 None。"""
-    builders = {
-        "vehicle_model": _nav_vehicle_model,
-        "vehicle_model_period": _nav_vehicle_model_period,
-        "stamping_process": _nav_stamping_process,
-        "tonnage_price": _nav_tonnage_price,
-        "die_unit_price": _nav_die_unit_price,
-        "welding_unit_price": _nav_welding_unit_price,
-        "bom_snapshot": _nav_bom_snapshot,
-        "annual_part_price": _nav_annual_part_price,
-        "packaging_transport": _nav_packaging_transport,
-        "base_price": _nav_base_price,
+    builders: dict[str, Callable[[], CostingEngineNavigateVO]] = {
+        "vehicle_model": lambda: _nav_vehicle_model(year=year, month=month, location=location),
+        "vehicle_model_period": lambda: _nav_vehicle_model_period(location=location),
+        "stamping_process": lambda: _nav_stamping_process(location=location),
+        "tonnage_price": lambda: _nav_tonnage_price(location=location),
+        "die_unit_price": lambda: _nav_die_unit_price(location=location),
+        "welding_unit_price": lambda: _nav_welding_unit_price(year=year, location=location),
+        "bom_snapshot": lambda: _nav_bom_snapshot(location=location),
+        "annual_part_price": lambda: _nav_annual_part_price(year=year, location=location),
+        "packaging_transport": lambda: _nav_packaging_transport(year=year, location=location),
+        "base_price": lambda: _nav_base_price(year=year, month=month, location=location),
         "thickness_policy": _nav_thickness_policy,
         "width_policy": _nav_width_policy,
-        "scrap_price": _nav_scrap_price,
+        "scrap_price": lambda: _nav_scrap_price(year=year, month=month, location=location),
         "system_rates": _nav_system_rates,
     }
     builder = builders.get(code)
     if builder is None:
         return None
-    return builder(year=year, month=month, location=location)
+    return builder()
 
 
 def _query(
@@ -73,22 +75,15 @@ def _nav_vehicle_model(
     )
 
 
-def _nav_vehicle_model_period(
-    *, year: int | None, month: int | None, location: str | None
-) -> CostingEngineNavigateVO:
+def _nav_vehicle_model_period(*, location: str | None) -> CostingEngineNavigateVO:
     return CostingEngineNavigateVO(
         page="vehicle-model-list",
         label="去项目列表",
-        query=_query(
-            location=location,
-            include_location=True,
-        ),
+        query=_query(location=location, include_location=True),
     )
 
 
-def _nav_stamping_process(
-    *, year: int | None, month: int | None, location: str | None
-) -> CostingEngineNavigateVO:
+def _nav_stamping_process(*, location: str | None) -> CostingEngineNavigateVO:
     return CostingEngineNavigateVO(
         page="stamping-upload",
         label="去上传工艺",
@@ -98,9 +93,7 @@ def _nav_stamping_process(
     )
 
 
-def _nav_tonnage_price(
-    *, year: int | None, month: int | None, location: str | None
-) -> CostingEngineNavigateVO:
+def _nav_tonnage_price(*, location: str | None) -> CostingEngineNavigateVO:
     return CostingEngineNavigateVO(
         page="stamping-tonnage-upload",
         label="去上传冲次单价",
@@ -110,9 +103,7 @@ def _nav_tonnage_price(
     )
 
 
-def _nav_die_unit_price(
-    *, year: int | None, month: int | None, location: str | None
-) -> CostingEngineNavigateVO:
+def _nav_die_unit_price(*, location: str | None) -> CostingEngineNavigateVO:
     return CostingEngineNavigateVO(
         page="stamping-die-unit-price",
         label="去维护模具单价",
@@ -120,9 +111,7 @@ def _nav_die_unit_price(
     )
 
 
-def _nav_welding_unit_price(
-    *, year: int | None, month: int | None, location: str | None
-) -> CostingEngineNavigateVO:
+def _nav_welding_unit_price(*, year: int | None, location: str | None) -> CostingEngineNavigateVO:
     return CostingEngineNavigateVO(
         page="bom-welding-unit-price-upload",
         label="去上传焊接单价",
@@ -132,9 +121,7 @@ def _nav_welding_unit_price(
     )
 
 
-def _nav_bom_snapshot(
-    *, year: int | None, month: int | None, location: str | None
-) -> CostingEngineNavigateVO:
+def _nav_bom_snapshot(*, location: str | None) -> CostingEngineNavigateVO:
     return CostingEngineNavigateVO(
         page="bom-upload",
         label="去上传材料清单",
@@ -144,9 +131,7 @@ def _nav_bom_snapshot(
     )
 
 
-def _nav_annual_part_price(
-    *, year: int | None, month: int | None, location: str | None
-) -> CostingEngineNavigateVO:
+def _nav_annual_part_price(*, year: int | None, location: str | None) -> CostingEngineNavigateVO:
     return CostingEngineNavigateVO(
         page="bom-annual-part-price-upload",
         label="去上传年度零件价",
@@ -156,9 +141,7 @@ def _nav_annual_part_price(
     )
 
 
-def _nav_packaging_transport(
-    *, year: int | None, month: int | None, location: str | None
-) -> CostingEngineNavigateVO:
+def _nav_packaging_transport(*, year: int | None, location: str | None) -> CostingEngineNavigateVO:
     return CostingEngineNavigateVO(
         page="bom-packaging-transport-fee-upload",
         label="去上传包装运输费",
@@ -187,9 +170,7 @@ def _nav_base_price(
     )
 
 
-def _nav_thickness_policy(
-    *, year: int | None, month: int | None, location: str | None
-) -> CostingEngineNavigateVO:
+def _nav_thickness_policy() -> CostingEngineNavigateVO:
     return CostingEngineNavigateVO(
         page="steel-price-policy-upload",
         label="去上传厚度加减价政策",
@@ -199,9 +180,7 @@ def _nav_thickness_policy(
     )
 
 
-def _nav_width_policy(
-    *, year: int | None, month: int | None, location: str | None
-) -> CostingEngineNavigateVO:
+def _nav_width_policy() -> CostingEngineNavigateVO:
     return CostingEngineNavigateVO(
         page="steel-price-policy-upload",
         label="去上传宽度加减价政策",
@@ -228,9 +207,7 @@ def _nav_scrap_price(
     )
 
 
-def _nav_system_rates(
-    *, year: int | None, month: int | None, location: str | None
-) -> CostingEngineNavigateVO:
+def _nav_system_rates() -> CostingEngineNavigateVO:
     return CostingEngineNavigateVO(
         page="settings",
         label="去系统设置",

@@ -73,20 +73,3 @@ class GateChecker:
         items.append(check_scrap_price(self.price_resolver, db, discovery, location, year, month))
         items.append(check_system_rates(self.system_config_repo, db, location, year, month))
         return items
-
-    def _check_tonnage_price(
-        self, db: Session, discovery: DiscoveryResult, location: str, year: int, month: int
-    ) -> CostingEngineGateItemVO:
-        return check_tonnage_price(self.tonnage_repo, db, discovery, location, year, month)
-
-    def _check_welding_unit_price(
-        self, db: Session, discovery: DiscoveryResult, location: str, year: int, month: int
-    ) -> CostingEngineGateItemVO:
-        return check_welding_unit_price(
-            self.welding_unit_repo, db, discovery, location, year, month
-        )
-
-    def _check_annual_part_price(
-        self, db: Session, discovery: DiscoveryResult, location: str, year: int, month: int
-    ) -> CostingEngineGateItemVO:
-        return check_annual_part_price(self.annual_part_repo, db, discovery, location, year, month)

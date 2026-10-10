@@ -71,9 +71,15 @@ def run_node_check() -> None:
 
 
 if __name__ == "__main__":
-    # 1. 与 pyproject.toml / pre-commit 同一套规则；不要 --preview / PLR6301
-    # （PLR6301 会把未用 self 的实例方法全判错，含 pytest 与 Service 组织方法）
-    run_step(["ruff", "check", ".", "--extend-select", "I", "--fix"], "Ruff 代码规范检查")
+    # 与 pre-commit 相同：规则来自 pyproject.toml；能自动改的也阻断，避免改完文件继续启动。
+    # 不要 --preview / PLR6301（未用 self 会误伤 Service 组织方法）。
+    # 不要在这里加 ARG：路由 current_user 与路径参数由下一行排除后再拦。
+    run_step(
+        ["ruff", "check", ".", "--fix", "--exit-non-zero-on-fix"],
+        "Ruff 代码规范检查",
+    )
+    # 路由 current_user、路径参数、中间件 dispatch、Settings.Config 不计入未使用代码
+    run_step(["scripts.check_unused_code"], "未使用代码检查")
     # 2. 运行 Mypy 静态类型检查
     run_step(["mypy", "app/"], "Mypy 静态类型检查")
 

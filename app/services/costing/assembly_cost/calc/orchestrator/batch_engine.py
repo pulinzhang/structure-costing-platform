@@ -122,7 +122,6 @@ class BatchCalculationEngine:
                         calc_message = compose_card_message(
                             status=calc_status,
                             missing_leaf_count=result.missing_leaf_count,
-                            missing_parts=missing_parts,
                             weld_incomplete=weld_incomplete,
                             is_purchased_assembly=purchased_assembly,
                         )

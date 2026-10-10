@@ -31,15 +31,15 @@ from .constants import parse_thickness_label
 class AnshenSheetHandler(BaseSheetHandler):
     """鞍神 Sheet 处理器（厚度-宽度组合加价）。"""
 
-    def parse(self, sheet: Worksheet, steel_mill: str, warnings: list[Any]) -> list[Any]:
+    def parse(self, _sheet: Worksheet, _steel_mill: str, warnings: list[Any]) -> list[Any]:
         """鞍神 THICKNESS_WIDTH 本期不导入。"""
         warnings.append("鞍神 THICKNESS_WIDTH 政策本期不导入，已跳过")
         return []
 
-    def find_thickness_blocks(self, sheet: Worksheet, steel_mill: str) -> list[dict[str, Any]]:
+    def find_thickness_blocks(self, _sheet: Worksheet, _steel_mill: str) -> list[dict[str, Any]]:
         return []
 
-    def find_width_blocks(self, sheet: Worksheet, steel_mill: str) -> list[dict[str, Any]]:
+    def find_width_blocks(self, sheet: Worksheet, _steel_mill: str) -> list[dict[str, Any]]:
         """定位鞍神规格加价表格。
 
         表格结构（从 Row 5 开始）:

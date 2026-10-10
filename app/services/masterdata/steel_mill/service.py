@@ -171,18 +171,6 @@ class SteelMillService:
             return None
         return self._table(db).get(key)
 
-    def resolve_many(self, db: Session, raws: Sequence[str | None]) -> dict[str, SteelMillHit]:
-        table = self._table(db)
-        found: dict[str, SteelMillHit] = {}
-        for raw in raws:
-            text = normalize_mill_text(raw)
-            if not text or text in found:
-                continue
-            hit = table.get(mill_lookup_key(text))
-            if hit is not None:
-                found[text] = hit
-        return found
-
     def require_enabled(self, db: Session, raw: str | None) -> SteelMillHit:
         text = normalize_mill_text(raw)
         if not text:

@@ -162,10 +162,6 @@ def list_years(
     return sorted(years, reverse=True)
 
 
-def list_locations(db: Session, year: int | None = None) -> list[str]:
-    return LocationService().list_registered(db)
-
-
 def list_suppliers(
     cost_repo: StampingPartCostRepository,
     db: Session,

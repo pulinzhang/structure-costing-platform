@@ -47,22 +47,6 @@ class BomCascadeFilterOptions(TypedDict):
     bom_versions: list[str]
 
 
-class OperationLogCatalogOption(TypedDict):
-    """操作日志权限目录筛选项。"""
-
-    code: str
-    label: str
-    parent_code: str | None
-    breadcrumb: str
-
-
-class OperationLogFilterOptions(TypedDict):
-    """操作日志筛选项（权限目录）。"""
-
-    menus: list[OperationLogCatalogOption]
-    operations: list[OperationLogCatalogOption]
-
-
 class ScrapPriceFilterOptions(TypedDict):
     """废料价筛选项（仅已有数据的年份）。"""
 

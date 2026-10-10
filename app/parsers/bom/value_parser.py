@@ -28,10 +28,6 @@ def to_text(value: Any) -> str | None:
     return text
 
 
-def is_filled(value: Any) -> bool:
-    return to_text(value) is not None
-
-
 def parse_seq_no(value: Any) -> int | None:
     """
     解析 A 列序号。

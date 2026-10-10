@@ -192,7 +192,7 @@ def rollup_assembly(
             )
         )
         for descendant in collect_descendants(children_by_parent, node.id):
-            desc_qty = path_qty_from_root_child(children_by_parent, by_id, root.id, descendant.id)
+            desc_qty = path_qty_from_root_child(by_id, root.id, descendant.id)
             emit_skipped(descendant, desc_qty, node.part_number)
 
     def walk(node: RollupBomNode, path_qty: Decimal) -> None:

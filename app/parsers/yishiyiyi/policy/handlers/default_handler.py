@@ -32,5 +32,5 @@ class DefaultSheetHandler(BaseSheetHandler):
     # 宽度块查找（默认无）
     # ------------------------------------------------------------------ #
 
-    def find_width_blocks(self, sheet: Worksheet, steel_mill: str) -> list[dict[str, Any]]:
+    def find_width_blocks(self, _sheet: Worksheet, _steel_mill: str) -> list[dict[str, Any]]:
         return []

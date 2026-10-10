@@ -6,7 +6,7 @@ from unittest.mock import MagicMock
 
 import pytest
 
-from app.services.llm.menu_catalog import SUBJECT_MENU, build_list_params
+from app.services.llm.menu_catalog import SUBJECT_MENU
 from app.services.llm.query.parser.pipeline import QueryParser
 from tests.llm.menu_question_matrix import (
     MENU_QUESTION_CASES,
@@ -31,13 +31,11 @@ def _mock_parser(parser: QueryParser) -> None:
     )
 
 
-def _parse(case) -> tuple:
+def _parse(case):
     parser = QueryParser()
     db = MagicMock()
     _mock_parser(parser)
-    query = parser.parse(db, user_question=case.user_question)
-    params = build_list_params(query)
-    return query, params
+    return parser.parse(db, user_question=case.user_question)
 
 
 @pytest.mark.parametrize(
@@ -46,7 +44,7 @@ def _parse(case) -> tuple:
     ids=[item.menu_label for item in complete_cases()],
 )
 def test_complete_menu_question_routes_correctly(case) -> None:
-    query, _params = _parse(case)
+    query = _parse(case)
 
     assert query.time_range.start == "2025-01"
     assert query.time_range.end == "2025-01"
@@ -62,78 +60,6 @@ def test_complete_menu_question_routes_correctly(case) -> None:
         assert menu.hash_page == "bom-material"
     else:
         assert menu.hash_page == case.hash_page
-
-
-@pytest.mark.parametrize(
-    "case,expected_params",
-    [
-        pytest.param(
-            next(c for c in complete_cases() if c.hash_page == "steel-price-policy-download"),
-            {"year": "2025", "month": "1", "policy_type": "THICKNESS"},
-            id="加减价政策列表",
-        ),
-        pytest.param(
-            next(c for c in complete_cases() if c.hash_page == "base-price-download"),
-            {"year": "2025", "month": "1", "location": "青岛"},
-            id="基准价格列表",
-        ),
-        pytest.param(
-            next(c for c in complete_cases() if c.hash_page == "winning-thickness-download"),
-            {"year": "2025", "month": "1", "location": "青岛"},
-            id="中标钢厂厚度价格列表",
-        ),
-        pytest.param(
-            next(c for c in complete_cases() if c.hash_page == "scrap-price"),
-            {"year": "2025", "month": "1"},
-            id="废料月度销售价",
-        ),
-        pytest.param(
-            next(c for c in complete_cases() if c.hash_page == "stamping-parts"),
-            {"location": "青岛"},
-            id="冲压零件列表",
-        ),
-        pytest.param(
-            next(c for c in complete_cases() if c.hash_page == "steel-price-list"),
-            {
-                "location": "青岛",
-                "year": "2025",
-                "month": "1",
-                "start": "2025-01",
-                "end": "2025-01",
-            },
-            id="冲压钢材联动价列表",
-        ),
-        pytest.param(
-            next(c for c in complete_cases() if c.hash_page == "stamping-part-cost"),
-            {
-                "location": "青岛",
-                "year": "2025",
-                "month": "1",
-                "start": "2025-01",
-                "end": "2025-01",
-            },
-            id="冲压零件价格列表",
-        ),
-        pytest.param(
-            next(c for c in complete_cases() if c.hash_page == "assembly-cost"),
-            {
-                "location": "青岛",
-                "year": "2025",
-                "month": "1",
-                "start": "2025-01",
-                "end": "2025-01",
-            },
-            id="总成核价列表",
-        ),
-    ],
-)
-def test_complete_menu_question_list_params(case, expected_params) -> None:
-    query, params = _parse(case)
-    for key, value in expected_params.items():
-        if key == "policy_type":
-            assert query.filters.get("policy_type") == value
-            continue
-        assert params.get(key) == value, f"{case.menu_label}: {key}"
 
 
 def test_menu_question_matrix_covers_all_coverage_items() -> None:

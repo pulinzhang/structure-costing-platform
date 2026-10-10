@@ -131,7 +131,7 @@ class AngangSheetHandler(BaseSheetHandler):
     # 宽度块
     # ------------------------------------------------------------------ #
 
-    def find_width_blocks(self, sheet: Worksheet, steel_mill: str) -> list[dict[str, Any]]:
+    def find_width_blocks(self, sheet: Worksheet, _steel_mill: str) -> list[dict[str, Any]]:
         """右侧（cols 17+）：3 个宽度子块（冷轧/镀锌/酸洗）。
 
         标题在 col 17（R4=`冷轧产品宽度加价`，R8=`镀锌...`，R12=`酸洗...`）。

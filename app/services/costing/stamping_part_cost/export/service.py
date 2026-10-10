@@ -125,11 +125,5 @@ class StampingPartCostExportService:
             steel_price_repo=self.steel_price_repo,
             scrap_price_repo=self.scrap_price_repo,
             process_fee_repo=self.process_fee_repo,
-            year=year,
-            month=month,
-            location=location,
-            stamping_supplier=stamping_supplier,
-            vehicle_model=vehicle_value,
-            version=version,
             sheet_title=sheet_title,
         )

@@ -57,13 +57,6 @@ class ThicknessOutcomeSummary(TypedDict):
     skip_mills: list[str]
 
 
-def summarize_policy_hits(rows: list[CalcRow], *, prefix: str) -> tuple[int, int]:
-    """返回 (命中数, 未命中数)，prefix 为 thickness / width。"""
-    attr = f"{prefix}_policy_id"
-    hit = sum(1 for row in rows if getattr(row, attr, None) is not None)
-    return hit, len(rows) - hit
-
-
 def summarize_thickness_outcomes(rows: list[CalcRow]) -> ThicknessOutcomeSummary:
     """厚度命中 / 该厂无厚度块（按基价） / 真实未命中。"""
     hit = 0

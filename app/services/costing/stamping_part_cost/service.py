@@ -58,7 +58,6 @@ from app.services.costing.stamping_part_cost.calc.orchestrator.orchestrator impo
 )
 from app.services.costing.stamping_part_cost.queries import (
     get_cost_by_id,
-    list_locations,
     list_suppliers,
     list_years,
     paginate_costs,
@@ -254,9 +253,6 @@ class StampingPartCostService:
 
     def list_years(self, db: Session) -> list[int]:
         return list_years(self.cost_repo, self.steel_repo, db)
-
-    def list_locations(self, db: Session, year: int | None = None) -> list[str]:
-        return list_locations(db, year)
 
     def list_suppliers(
         self,

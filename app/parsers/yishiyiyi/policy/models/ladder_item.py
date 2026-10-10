@@ -44,30 +44,6 @@ class ParsedLadderItem:
     excel_row: int | None = None
     excel_col: int | None = None
 
-    @property
-    def has_thickness_condition(self) -> bool:
-        """是否有厚度条件"""
-        return self.thick_min is not None or self.thick_max is not None
-
-    @property
-    def has_width_condition(self) -> bool:
-        """是否有宽度条件"""
-        return self.width_min is not None or self.width_max is not None
-
-    @property
-    def has_zinc_coating_condition(self) -> bool:
-        """是否有锌层克重条件"""
-        return self.zinc_coating_min is not None or self.zinc_coating_max is not None
-
-    @property
-    def has_any_condition(self) -> bool:
-        """是否有任一维度条件"""
-        return (
-            self.has_thickness_condition
-            or self.has_width_condition
-            or self.has_zinc_coating_condition
-        )
-
     def model_dump(self) -> dict[str, Any]:
         """返回字典格式，兼容 Pydantic 接口"""
         return {

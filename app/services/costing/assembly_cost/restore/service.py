@@ -239,7 +239,7 @@ class AssemblyCostRestoreService:
         welding = self._welding._build_welding(db, card, exceptions)
         rows = self.packaging_repo.list_by_location_year(db, location=card.location, year=card.year)
         packaging = next((row for row in rows if row.part_number == card.part_number), None)
-        indirects = self._welding._build_indirects(card, packaging, exceptions)
+        indirects = self._welding._build_indirects(card, packaging)
         if packaging is not None and packaging.excel_filename:
             self._documents._add_document(
                 documents,

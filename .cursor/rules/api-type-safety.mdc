@@ -124,11 +124,11 @@ def get_by_name(full_name: str): ...
 - 批量审核/删除结果 VO 继承 `BatchAuditCountsVO` / `BatchDeleteCountsVO`，范围字段留切片；字段名不同的结果不要硬套。由 **Service** `return` 该 VO，禁止 Router 解元组再填。
 - 禁止裸类名 `FilterOptions`；跨 DTO/VO 的 Enum 只定义一次（VO 引用 DTO 或 `common`）。
 - datetime / Decimal / Enum 的 **JSON 形态**只写在 VO `@field_serializer`。datetime 必须 `app.common.timezone.datetime_to_iso`。Excel 文件名可用 `strftime`。
-- **运行历史耗时**：Model 存 `started_at` + `finished_at`；VO 继承 `app.schemas.vo.timing.DurationSecondsMixin`（统一 `duration_seconds` 整秒或 null）；新 CalcLog / GenerateLog / Engine Run 必须登记进 `calc_history_timing_vo_types()`。前端历史表用 `static/js/duration.js`，列「开始 / 结束 / 耗时」。禁止各切片自写秒数公式；禁止页面内估秒——仅允许 `duration.js` 在缺 `duration_seconds` 时用起止时间兜底。
+- **运行历史耗时**：Model 存 `started_at` + `finished_at`；VO 继承 `app.schemas.vo.timing.DurationSecondsMixin`（统一 `duration_seconds` 整秒或 null）。前端历史表用 `static/js/duration.js`，列「开始 / 结束 / 耗时」。禁止各切片自写秒数公式；禁止页面内估秒——仅允许 `duration.js` 在缺 `duration_seconds` 时用起止时间兜底。
 - 金额：Model `Numeric`+`Mapped[Decimal]`；DTO `mode="before"` 经 `Decimal(str(value))` 再 quantize；VO 输出固定小数位**字符串**；计算禁止 `float`。物理量同样 JSON 字符串（`optional_format_money`）。
 - `model_dump`：DTO 与异步任务 `result` JSON（切片 Service）允许。Router `ApiResponse.ok(data=vo)` 禁止 dump。进度查询：`parse_result_json` + `VO.model_validate` 再进 `ApiResponse`。
 
 ## 8. 检查清单（仅本文件）
 
-必须：JSON `ApiResponse[T]`；业务路由 `Perm.*`；写操作传 `current_user`；整数路径 `/{name:int}`；字符串键同 router 且静态全部在前；`check_route_path_params` 通过；`model_config` 只用 `ConfigDict` 且 `check_model_config` 通过；运行历史 VO 走 `DurationSecondsMixin` + `calc_history_timing_vo_types` 登记；批量/写结果由 Service 交 VO，Router 只工厂调用。
+必须：JSON `ApiResponse[T]`；业务路由 `Perm.*`；写操作传 `current_user`；整数路径 `/{name:int}`；字符串键同 router 且静态全部在前；`check_route_path_params` 通过；`model_config` 只用 `ConfigDict` 且 `check_model_config` 通过；运行历史 VO 走 `DurationSecondsMixin`；批量/写结果由 Service 交 VO，Router 只工厂调用。
 禁止：业务签名 `Any`/`dict[str, Any]`；业务 Router `JSONResponse`；Router 输出 `model_dump`；Router `FooVO(` / 在 Router 模块定义 VO；对 Router 匿名元组（分页与下载除外）；金额 `float`；`cast` 跳过 `model_validate`；裸 `/{name}` 注解 `int`；跨模块首段 `{str}` 抢静态段；靠文件名抢路由顺序；`model_config = {...}` 可变 dict；各切片自写 `duration_seconds` 公式。

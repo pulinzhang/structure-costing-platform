@@ -8,7 +8,6 @@ from app.services.stamping.part.upload.cost_ratio_preserver import ProcessCostRa
 from app.services.stamping.part.upload.cost_ratio_resolver import (
     is_blanking_first_process_code,
     is_prg_process_code,
-    is_shared_die_row,
     later_ops_are_blank,
     later_ops_have_shared_die,
     resolve_cost_ratio,
@@ -621,12 +620,12 @@ def test_shared_die_labels_from_process_method_and_ratio() -> None:
         process_codes=["DR"],
         cost_ratios=[Decimal("0.50")],
     ) == ["双槽"]
-    assert is_shared_die_row(
+    assert shared_die_labels(
         die_type=None,
         process_method=None,
         process_codes=["合并"],
         cost_ratios=[],
-    )
+    ) == ["合并"]
     assert "级进共模" in shared_die_labels(
         die_type=None,
         process_method=None,

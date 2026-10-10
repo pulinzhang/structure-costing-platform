@@ -117,7 +117,6 @@ def _register_row(
     )
     if active_rows:
         _repo.mark_superseded(
-            db,
             active_rows,
             superseded_by_id=row.id,
             updated_by=audit["updated_by"],

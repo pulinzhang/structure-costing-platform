@@ -83,7 +83,7 @@ class ShougangSheetHandler(BaseSheetHandler):
     # 块定位
     # ------------------------------------------------------------------ #
 
-    def find_width_blocks(self, sheet: Worksheet, steel_mill: str) -> list[dict[str, Any]]:
+    def find_width_blocks(self, sheet: Worksheet, _steel_mill: str) -> list[dict[str, Any]]:
         """定位首钢所有宽度块。
 
         1. 扫描全表，找含"宽度"关键字的行 → 块标题（其合并单元格 end_col 即为价格列终点）

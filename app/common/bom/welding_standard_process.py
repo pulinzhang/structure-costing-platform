@@ -63,11 +63,7 @@ STANDARD_PROCESS_UNIT: dict[str, str] = {
 }
 
 
-def resolve_standard_process_name(
-    process_token: str,
-    *,
-    tags: tuple[str, ...] = (),
-) -> tuple[str | None, str]:
+def resolve_standard_process_name(process_token: str) -> tuple[str | None, str]:
     """
     解析标准工艺名与映射状态。
 
@@ -76,7 +72,6 @@ def resolve_standard_process_name(
 
     业务约定：原文工艺为「面积」「电泳面积」时，一律对应标准工艺电泳
     （默认「电泳（盐雾试验要求≤244H）」），不再按电镀处理。
-    ``tags`` 保留兼容调用方，面积类映射不再依赖 tags。
     """
     if process_token in ("面积", "电泳面积"):
         return WeldingStandardProcessName.E_COAT_LE_244H.value, "ready"
@@ -103,13 +98,6 @@ def list_welding_standard_catalog() -> list[tuple[str, str]]:
         for name in all_standard_process_names()
         if name in STANDARD_PROCESS_UNIT
     ]
-
-
-def is_standard_process_name(name: str | None) -> bool:
-    """名称是否属于焊接标准工艺目录。"""
-    if not name:
-        return False
-    return name.strip() in _STANDARD_PROCESS_NAME_SET
 
 
 def resolve_standard_process_unit(standard_process_name: str | None) -> str | None:

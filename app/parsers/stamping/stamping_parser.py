@@ -3,7 +3,7 @@
 
 解析流程（与 README.md 保持一致）：
 1. 加载 Excel → ExcelContext.load()
-2. 识别 Sheet → HeaderResolver.find_stamping_sheet()
+2. 识别 Sheet → ExcelContext 打开工艺表
 3. 解析表头 → HeaderResolver.resolve()
 4. 建立零件号合并缓存 → ExcelContext.build_merged_cache(part_no_col)
 5. 解析数据行 → 遍历零件号范围，提取零件/工序数据

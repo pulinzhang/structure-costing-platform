@@ -108,24 +108,6 @@ def has_shared_die_ratio(cost_ratios: list[Any]) -> bool:
     return False
 
 
-def is_shared_die_row(
-    *,
-    die_type: Any,
-    process_method: Any,
-    process_codes: list[Any],
-    cost_ratios: list[Any],
-) -> bool:
-    """行级是否共模：标签命中，或费用比例为 0.50 / 0.40。"""
-    if shared_die_labels(
-        die_type=die_type,
-        process_method=process_method,
-        process_codes=process_codes,
-        cost_ratios=cost_ratios,
-    ):
-        return True
-    return has_shared_die_ratio(cost_ratios)
-
-
 def is_blanking_first_process_code(process_code: Any) -> bool:
     """第一序为落料：切词含 BL，或右件写「共用」/「BL+PI(共用)」。"""
     if is_shared_first_process_code(process_code):

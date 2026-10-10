@@ -1,7 +1,6 @@
 """Sheet 处理器基类。
 
 职责：编排 parse 流程 + 暴露子类钩子；具体表解析委托给专用组件。
-- ZincCoatingParser — 锌层加价
 - ThicknessBlockFinder — 默认厚度块扫描
 - PolicyAssembler / SheetScanner — 语义装配与单元格读取
 
@@ -29,7 +28,6 @@ from app.parsers.yishiyiyi.policy.models.policy import ParsedPolicy
 from .policy_assembler import PolicyAssembler
 from .sheet_scanner import SheetScanner
 from .thickness_block_finder import ThicknessBlockFinder
-from .zinc_coating import ZincCoatingParser
 
 
 class BaseSheetHandler:
@@ -39,7 +37,6 @@ class BaseSheetHandler:
         # 每个实例自有 scanner/assembler，保证线程安全
         self.scanner = SheetScanner()
         self.assembler = PolicyAssembler(scanner=self.scanner)
-        self._zinc_parser = ZincCoatingParser(scanner=self.scanner)
         self._thickness_finder = ThicknessBlockFinder(
             scanner=self.scanner,
             assembler=self.assembler,
@@ -59,23 +56,17 @@ class BaseSheetHandler:
     # 子类钩子
     # ------------------------------------------------------------------ #
 
-    def find_thickness_blocks(self, sheet: Worksheet, steel_mill: str) -> list[dict[str, Any]]:
+    def find_thickness_blocks(self, _sheet: Worksheet, _steel_mill: str) -> list[dict[str, Any]]:
         """返回本 Sheet 所有厚度块描述。默认空，子类覆写。"""
         return []
 
-    def find_width_blocks(self, sheet: Worksheet, steel_mill: str) -> list[dict[str, Any]]:
+    def find_width_blocks(self, _sheet: Worksheet, _steel_mill: str) -> list[dict[str, Any]]:
         """返回本 Sheet 所有宽度块描述。默认空，子类覆写。"""
         return []
 
     # ------------------------------------------------------------------ #
     # 复用组件（对外 API 保持不变，内部委托）
     # ------------------------------------------------------------------ #
-
-    def find_zinc_coating_blocks(self, sheet: Worksheet, steel_mill: str) -> list[dict[str, Any]]:
-        return self._zinc_parser.find_blocks(sheet, steel_mill)
-
-    def parse_zinc_coating_blocks(self, sheet: Worksheet, steel_mill: str) -> list[ParsedPolicy]:
-        return self._zinc_parser.parse_blocks(sheet, steel_mill)
 
     def find_default_thickness_blocks(
         self,
@@ -255,18 +246,6 @@ class BaseSheetHandler:
         return self.assembler.build_items_for_row(
             sheet, r, price_cols, boundaries, policy_type, sort_order
         )
-
-    def _infer_grade_type(self, grade: str, policy_type: str) -> str:
-        return self.assembler.infer_grade_type(grade, policy_type)
-
-    def _find_value_above(
-        self,
-        sheet: Worksheet,
-        start_row: int,
-        col: int,
-        min_row: int = 1,
-    ) -> int:
-        return self.scanner.find_value_above(sheet, start_row, col, min_row)
 
     def _find_value_above_with_row(
         self,
