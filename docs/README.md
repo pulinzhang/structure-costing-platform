@@ -91,7 +91,7 @@ English: **Structural Parts Automated Costing Platform** / short **Costing Platf
 | 文档 | 状态 |
 |------|------|
 | [README.md](engineering-change/README.md) | 敢改地图：入口 / 不变量 / 代码地图（工程变更已落地） |
-| [bom-process-die-effective-period-design.md](engineering-change/bom-process-die-effective-period-design.md) | BOM / 冲压工艺 / 模具有效期（设计）：现网改造 |
+| [bom-process-die-effective-period-design.md](engineering-change/design-change/bom-process-die-effective-period-design.md) | BOM / 冲压工艺 / 模具有效期（已落地）：三块按月命中；核价与引擎已接账期。LLM、零件用在哪仍读整份 snapshot |
 | [part-number-revision-design.md](engineering-change/part-number-revision-design.md) | 领域契约 §4.6–4.7、§8–§10；状态以同目录 README 为准；样表 `samples/` |
 | [material-change/](engineering-change/material-change/README.md) | 材料变更（已落地）：同号切材料、不影响互换性；挂在工程变更下与设计变更并列 |
 | [t28-2025-07-import-bundle-test-design.md](engineering-change/t28-2025-07-import-bundle-test-design.md) | 测试：青岛 T28 · 五种改法一本即可上传 |

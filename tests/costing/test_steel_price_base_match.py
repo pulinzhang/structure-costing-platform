@@ -15,6 +15,8 @@ from app.services.costing.steel_price.calc.steps.enrich_base_price import (
     select_winning_base_records,
 )
 
+_MILL_IDS = {"邯钢": 1, "马钢": 2, "唐钢": 3, "山钢": 4}
+
 
 def _row(
     *,
@@ -29,6 +31,7 @@ def _row(
         id=row_id,
         grade=grade,
         steel_mill=mill,
+        steel_mill_id=_MILL_IDS[mill],
         thick=thick,
         width=width,
         base_price=price,
