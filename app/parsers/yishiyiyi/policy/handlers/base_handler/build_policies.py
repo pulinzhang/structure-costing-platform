@@ -2,8 +2,6 @@
 
 from __future__ import annotations
 
-from typing import Any
-
 from openpyxl.worksheet.worksheet import Worksheet
 
 from app.common.steel_grade_category import (
@@ -19,6 +17,7 @@ from app.parsers.yishiyiyi.policy.models.policy import (
     POLICY_TYPE_WIDTH,
     ParsedPolicy,
 )
+from app.parsers.yishiyiyi.policy.models.policy_block import PolicyBlock
 
 from .build_items import ItemBuilder
 from .locate_blocks import BlockLocator
@@ -57,7 +56,7 @@ class PolicyBuilder:
         self,
         sheet: Worksheet,
         steel_mill: str,
-        block: dict[str, Any],
+        block: PolicyBlock,
     ) -> list[ParsedPolicy]:
         """给定块描述，构建 ParsedPolicy 列表。"""
         policy_type = block.get("policy_type", POLICY_TYPE_THICKNESS)
@@ -71,7 +70,7 @@ class PolicyBuilder:
         self,
         sheet: Worksheet,
         steel_mill: str,
-        block: dict[str, Any],
+        block: PolicyBlock,
     ) -> list[ParsedPolicy]:
         """厚度块：每个大类一条 CATEGORY 政策（冷轧钢 / 镀锌钢 / 酸洗钢）。"""
         grade_col = block.get("grade_col")
@@ -147,7 +146,7 @@ class PolicyBuilder:
         self,
         sheet: Worksheet,
         steel_mill: str,
-        block: dict[str, Any],
+        block: PolicyBlock,
     ) -> list[ParsedPolicy]:
         """非厚度块遗留路径（本期应无调用）。"""
         grade_col = block.get("grade_col")

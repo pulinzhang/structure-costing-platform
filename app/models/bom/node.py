@@ -17,8 +17,8 @@ Excel 对照（材料清单典型列）：
        | 材料 | 料厚 | 厂家 | 重量 | 检具 | 备注
 """
 
+from datetime import date
 from decimal import Decimal
-from typing import Any
 
 from sqlalchemy import (
     Boolean,
@@ -100,12 +100,12 @@ class BomSnapshot(AuditUserMixin, Base):
         nullable=True,
         comment="编制部门。来自 Excel 头「编制部门」，例：技术中心",
     )
-    doc_date: Mapped[Any | None] = mapped_column(
+    doc_date: Mapped[date | None] = mapped_column(
         Date,
         nullable=True,
         comment="编制日期。来自 Excel 头「编制日期」",
     )
-    revision_date: Mapped[Any | None] = mapped_column(
+    revision_date: Mapped[date | None] = mapped_column(
         Date,
         nullable=True,
         comment="修订日期。来自 Excel 头「修订日期」",
@@ -215,7 +215,7 @@ class BomNode(AuditUserMixin, Base):
         nullable=True,
         comment="父节点 ID（外键 → bom_nodes.id）。L0 供货总成为 NULL；删父节点时级联删子树",
     )
-    level: Mapped[Any] = mapped_column(
+    level: Mapped[int] = mapped_column(
         SmallInteger,
         nullable=False,
         comment="树层级。0=供货总成，1=一级子件，2=二级子件（对应 Excel 三级列组）",

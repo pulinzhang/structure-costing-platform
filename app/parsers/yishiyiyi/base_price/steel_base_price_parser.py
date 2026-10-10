@@ -6,6 +6,7 @@
 
 from __future__ import annotations
 
+from collections.abc import Sequence
 from decimal import Decimal
 from typing import Any
 
@@ -18,7 +19,11 @@ from app.parsers.yishiyiyi.base_price.layout import (
     find_spec_column,
 )
 from app.parsers.yishiyiyi.base_price.mill_sheet import extract_grade_mill_map
-from app.parsers.yishiyiyi.base_price.models import ParsedContext, ParseResult
+from app.parsers.yishiyiyi.base_price.models import (
+    BasePriceRecord,
+    ParsedContext,
+    ParseResult,
+)
 from app.parsers.yishiyiyi.base_price.xls_compat import open_workbook
 
 _DATA_START_ROW = 6
@@ -148,11 +153,11 @@ def _append_data_rows(
 
 
 def _map_row_to_records(
-    row: tuple[Any, ...],
+    row: Sequence[object],
     context: ParsedContext,
     excel_row_num: int,
     processing_fee: Decimal,
-) -> tuple[list[dict[str, Any]], int]:
+) -> tuple[list[BasePriceRecord], int]:
     def safe_get(index: int) -> str:
         return cell_text(row[index]) if len(row) > index else ""
 
@@ -162,7 +167,7 @@ def _map_row_to_records(
     if not steel_type or not grade:
         return [], 0
     thick, width = parse_spec(spec_str) if spec_str else (None, None)
-    records: list[dict[str, Any]] = []
+    records: list[BasePriceRecord] = []
     missing_mills = 0
     for config in context.base_configs:
         price = cell_decimal(row[config.price_col]) if len(row) > config.price_col else None
@@ -214,7 +219,7 @@ def _maybe_swap_mill_and_price(
     *,
     mill_col: int,
     price_col: int,
-    row: tuple[Any, ...],
+    row: Sequence[object],
 ) -> tuple[str, Decimal | None]:
     """表头写钢厂|价格、单元格却价格|钢厂时对调。"""
     if not _looks_like_numeric_mill(mill):
@@ -230,7 +235,7 @@ def _resolve_mill(
     location: str,
     grade: str,
     mill_col: int | None,
-    row: tuple[Any, ...],
+    row: Sequence[object],
     context: ParsedContext,
 ) -> str:
     if mill_col is not None:

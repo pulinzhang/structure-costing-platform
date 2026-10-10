@@ -55,6 +55,7 @@ class CostingEngineRunStep(Base):
         Integer, nullable=True, comment="可选业务日志 ID"
     )
     message: Mapped[str | None] = mapped_column(Text, nullable=True, comment="步骤说明/错误")
+    # 步骤指标随当次运行变化，没有固定字段。
     metrics_json: Mapped[dict[str, Any] | None] = mapped_column(
         JSON, nullable=True, comment="步骤指标"
     )

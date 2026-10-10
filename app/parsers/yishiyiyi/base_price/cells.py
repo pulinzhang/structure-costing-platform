@@ -4,19 +4,18 @@ from __future__ import annotations
 
 import re
 from decimal import Decimal
-from typing import Any
 
 _EMPTY_NUMBERS = ("-", "/", "#N/A", "#VALUE!", "None", "待商务发布")
 _SPEC_RE = re.compile(r"([\d.]*[\d]+)\*(\d+)")
 
 
-def cell_text(value: Any) -> str:
+def cell_text(value: object) -> str:
     if value is None:
         return ""
     return str(value).strip()
 
 
-def cell_decimal(value: Any) -> Decimal | None:
+def cell_decimal(value: object) -> Decimal | None:
     if value is None:
         return None
     if isinstance(value, Decimal):

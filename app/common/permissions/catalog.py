@@ -5,7 +5,7 @@ from __future__ import annotations
 import json
 from functools import lru_cache
 from pathlib import Path
-from typing import Any, TypedDict
+from typing import NotRequired, TypedDict
 
 _CATALOG_PATH = Path(__file__).with_name("catalog.json")
 
@@ -28,7 +28,67 @@ class CatalogFilterOption(TypedDict):
     breadcrumb: str
 
 
-def _walk_codes(nodes: list[dict[str, Any]], out: set[str]) -> None:
+class PermissionCatalogNode(TypedDict):
+    """catalog.json 里的一个节点。children 可以不写。"""
+
+    code: str
+    label: str
+    type: str
+    children: NotRequired[list[PermissionCatalogNode]]
+
+
+class PermissionDrawerNode(TypedDict):
+    """授权树节点。在目录节点上补了 mandatory。"""
+
+    code: str
+    label: str
+    type: str
+    mandatory: bool
+    children: list[PermissionDrawerNode]
+
+
+class PermissionCatalog(TypedDict):
+    version: int
+    tree: list[PermissionCatalogNode]
+    defaults: list[str]
+    mandatory: list[str]
+    all_codes: frozenset[str]
+
+
+def _require_str(value: object, field_name: str) -> str:
+    if isinstance(value, str) and value:
+        return value
+    raise ValueError(f"catalog.json 节点缺少 {field_name}")
+
+
+def _parse_catalog_node(raw: object) -> PermissionCatalogNode:
+    if not isinstance(raw, dict):
+        raise ValueError("catalog.json 节点不是对象")
+    children_raw = raw.get("children", [])
+    if not isinstance(children_raw, list):
+        raise ValueError("catalog.json children 不是数组")
+    node: PermissionCatalogNode = {
+        "code": _require_str(raw.get("code"), "code"),
+        "label": _require_str(raw.get("label"), "label"),
+        "type": _require_str(raw.get("type"), "type"),
+    }
+    if children_raw:
+        node["children"] = [_parse_catalog_node(child) for child in children_raw]
+    return node
+
+
+def _parse_str_list(raw: object, field_name: str) -> list[str]:
+    if not isinstance(raw, list):
+        raise ValueError(f"catalog.json {field_name} 不是数组")
+    values: list[str] = []
+    for item in raw:
+        if not isinstance(item, str):
+            raise ValueError(f"catalog.json {field_name} 含非字符串")
+        values.append(item)
+    return values
+
+
+def _walk_codes(nodes: list[PermissionCatalogNode], out: set[str]) -> None:
     for node in nodes:
         code = node.get("code")
         if code:
@@ -38,32 +98,39 @@ def _walk_codes(nodes: list[dict[str, Any]], out: set[str]) -> None:
             _walk_codes(children, out)
 
 
-def _mark_mandatory(nodes: list[dict[str, Any]], mandatory: set[str]) -> list[dict[str, Any]]:
+def _mark_mandatory(
+    nodes: list[PermissionCatalogNode], mandatory: set[str]
+) -> list[PermissionDrawerNode]:
     """返回带 mandatory 标记的树副本，供授权抽屉灰显。"""
-    result: list[dict[str, Any]] = []
+    result: list[PermissionDrawerNode] = []
     for node in nodes:
-        item = {
-            "code": node["code"],
-            "label": node.get("label") or node["code"],
-            "type": node.get("type") or "menu",
-            "mandatory": node["code"] in mandatory,
-        }
         children = node.get("children") or []
-        if children:
-            item["children"] = _mark_mandatory(children, mandatory)
-        else:
-            item["children"] = []
-        result.append(item)
+        result.append(
+            {
+                "code": node["code"],
+                "label": node.get("label") or node["code"],
+                "type": node.get("type") or "menu",
+                "mandatory": node["code"] in mandatory,
+                "children": _mark_mandatory(children, mandatory) if children else [],
+            }
+        )
     return result
 
 
 @lru_cache(maxsize=1)
-def load_catalog() -> dict[str, Any]:
+def load_catalog() -> PermissionCatalog:
     """加载并校验 catalog.json（进程内缓存）。"""
-    raw = json.loads(_CATALOG_PATH.read_text(encoding="utf-8"))
-    tree = raw.get("tree") or []
-    defaults = list(raw.get("defaults") or [])
-    mandatory = list(raw.get("mandatory") or [])
+    payload: object = json.loads(_CATALOG_PATH.read_text(encoding="utf-8"))
+    if not isinstance(payload, dict):
+        raise ValueError("catalog.json 不是对象")
+    tree_raw = payload.get("tree") or []
+    if not isinstance(tree_raw, list):
+        raise ValueError("catalog.json tree 不是数组")
+    tree = [_parse_catalog_node(node) for node in tree_raw]
+    defaults = _parse_str_list(payload.get("defaults") or [], "defaults")
+    mandatory = _parse_str_list(payload.get("mandatory") or [], "mandatory")
+    version_raw = payload.get("version", 1)
+    version = version_raw if isinstance(version_raw, int) else 1
 
     all_codes: set[str] = set()
     _walk_codes(tree, all_codes)
@@ -71,8 +138,8 @@ def load_catalog() -> dict[str, Any]:
     if not all_codes:
         raise ValueError("catalog.json tree 为空")
 
-    unknown_defaults = [c for c in defaults if c not in all_codes]
-    unknown_mandatory = [c for c in mandatory if c not in all_codes]
+    unknown_defaults = [code for code in defaults if code not in all_codes]
+    unknown_mandatory = [code for code in mandatory if code not in all_codes]
     if unknown_defaults:
         raise ValueError(f"catalog.json defaults 含未知 code: {unknown_defaults}")
     if unknown_mandatory:
@@ -82,8 +149,8 @@ def load_catalog() -> dict[str, Any]:
         if code not in defaults:
             defaults.append(code)
 
-    result = {
-        "version": raw.get("version", 1),
+    result: PermissionCatalog = {
+        "version": version,
         "tree": tree,
         "defaults": defaults,
         "mandatory": mandatory,
@@ -110,7 +177,7 @@ def _assert_codes_match_catalog(catalog_codes: frozenset[str]) -> None:
         raise ValueError("权限码不同步: " + "; ".join(parts))
 
 
-def get_tree() -> list[dict[str, Any]]:
+def get_tree() -> list[PermissionDrawerNode]:
     """授权树（含 mandatory 标记）。"""
     data = load_catalog()
     return _mark_mandatory(data["tree"], set(data["mandatory"]))
@@ -132,11 +199,11 @@ def is_valid_code(code: str) -> bool:
     return code in get_all_codes()
 
 
-def _index_audit_labels(nodes: list[dict[str, Any]]) -> dict[str, PermissionAuditLabel]:
+def _index_audit_labels(nodes: list[PermissionCatalogNode]) -> dict[str, PermissionAuditLabel]:
     """把 catalog 树压成 op 码 → 面包屑。"""
     out: dict[str, PermissionAuditLabel] = {}
 
-    def walk(items: list[dict[str, Any]], ancestors: list[tuple[str, str, str]]) -> None:
+    def walk(items: list[PermissionCatalogNode], ancestors: list[tuple[str, str, str]]) -> None:
         for node in items:
             code = str(node.get("code") or "")
             if not code:
@@ -185,7 +252,7 @@ def list_catalog_filter_options() -> tuple[list[CatalogFilterOption], list[Catal
     menus: list[CatalogFilterOption] = []
     operations: list[CatalogFilterOption] = []
 
-    def walk(items: list[dict[str, Any]], ancestors: list[tuple[str, str, str]]) -> None:
+    def walk(items: list[PermissionCatalogNode], ancestors: list[tuple[str, str, str]]) -> None:
         for node in items:
             code = str(node.get("code") or "")
             if not code:

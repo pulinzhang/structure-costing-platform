@@ -3,7 +3,8 @@
 from __future__ import annotations
 
 from decimal import Decimal
-from typing import Any
+
+from openpyxl.worksheet.worksheet import Worksheet
 
 from app.common.workbook_reject import NO_DATA_ROWS, invalid_amount
 
@@ -38,7 +39,7 @@ from .cells import (
 from .types import PackagingTransportFeeParsedRow, PackagingTransportFeeParseResult
 
 
-def find_flat_header(sheet: Any) -> tuple[int, dict[str, int]] | None:
+def find_flat_header(sheet: Worksheet) -> tuple[int, dict[str, int]] | None:
     aliases: dict[str, set[str]] = {
         H_PART_NUMBER: {"零件号", "料号", "part_number"},
         H_PART_NAME: {"产品", "零件名称", "产品名称", "part_name"},
@@ -88,7 +89,7 @@ def find_flat_header(sheet: Any) -> tuple[int, dict[str, int]] | None:
 
 
 def parse_flat_sheet(
-    sheet: Any, header_row: int, columns: dict[str, int]
+    sheet: Worksheet, header_row: int, columns: dict[str, int]
 ) -> PackagingTransportFeeParseResult:
     rows: list[PackagingTransportFeeParsedRow] = []
     errors: list[str] = []

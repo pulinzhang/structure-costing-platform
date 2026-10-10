@@ -28,6 +28,8 @@ JSON 业务接口必须 `response_model=ApiResponse[T]` 且 `-> ApiResponse[T]`�
 
 签名禁止 `Any`、`dict[str, Any]`、`list[Any]`、业务 `**kwargs: Any`。函数体内可接第三方/`json.loads`，离开前必须收窄。
 
+启动守卫：`python -X utf8 -m scripts.check_explicit_any`。存量记在 `scripts/explicit_any_baseline.txt`，新增即失败。
+
 | 位置 | 用 | 不用 |
 |------|----|------|
 | HTTP 入/出 | DTO / VO / `PageResult` | `Any` |

@@ -10,7 +10,6 @@ from __future__ import annotations
 import re
 from dataclasses import dataclass
 from decimal import Decimal, InvalidOperation
-from typing import Any
 
 from app.common.bom.welding_standard_process import (
     resolve_standard_process_name,
@@ -44,7 +43,7 @@ class WeldingProcessBreakdownParseResult:
     normalized_text: str = ""
 
 
-def _to_decimal(value: Any) -> Decimal | None:
+def _to_decimal(value: object) -> Decimal | None:
     if value is None or value == "":
         return None
     try:

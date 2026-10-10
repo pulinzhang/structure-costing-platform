@@ -4,7 +4,6 @@ BOM 包装运输费 VO
 
 from datetime import datetime
 from decimal import Decimal
-from typing import Any
 
 from pydantic import BaseModel, ConfigDict, field_serializer
 
@@ -13,11 +12,11 @@ from app.common.timezone import datetime_to_iso
 from app.schemas.common.batch_result import BatchAuditCountsVO, BatchDeleteCountsVO
 
 
-def _money_str(value: Any) -> str:
+def _money_str(value: object) -> str:
     return format_money(value if value is not None else Decimal("0"), Q4, 4)
 
 
-def _optional_money_str(value: Any) -> str | None:
+def _optional_money_str(value: object) -> str | None:
     if value is None:
         return None
     return format_money(value, Q4, 4)

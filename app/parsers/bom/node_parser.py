@@ -7,7 +7,8 @@ BOM 树节点解析
 from __future__ import annotations
 
 from decimal import Decimal
-from typing import Any
+
+from openpyxl.worksheet.worksheet import Worksheet
 
 from app.common.workbook_reject import format_workbook_reject
 from app.exceptions.base import BusinessException
@@ -57,7 +58,7 @@ def infer_node_role(
     return "buy"
 
 
-def parse_bom_nodes(ws: Any) -> tuple[list[BomParsedNode], dict[int, int], dict[int, int]]:
+def parse_bom_nodes(ws: Worksheet) -> tuple[list[BomParsedNode], dict[int, int], dict[int, int]]:
     """
     解析树节点，并建立「Excel 行 → 节点」归属，供图示锚点匹配。
 
@@ -256,7 +257,7 @@ def parse_bom_nodes(ws: Any) -> tuple[list[BomParsedNode], dict[int, int], dict[
     return nodes, row_l0, row_part_sketch
 
 
-def _find_header_row(ws: Any) -> int:
+def _find_header_row(ws: Worksheet) -> int:
     """找到表头行（含「总成」与「一级」）。"""
     header_row = 4
     for row in range(1, min(15, ws.max_row + 1)):

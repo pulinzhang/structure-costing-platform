@@ -12,9 +12,9 @@ import re
 from dataclasses import dataclass
 from decimal import Decimal, InvalidOperation
 from io import BytesIO
-from typing import Any
 
 from openpyxl import load_workbook
+from openpyxl.worksheet.worksheet import Worksheet
 
 from app.common.money import Q3, quantize_money
 from app.common.workbook_reject import (
@@ -51,7 +51,7 @@ class TonnagePriceParseResult:
     errors: list[str]
 
 
-def _cell_text(value: Any) -> str:
+def _cell_text(value: object) -> str:
     if value is None:
         return ""
     if isinstance(value, float) and value.is_integer():
@@ -71,7 +71,7 @@ def _parse_tonnage(name: str) -> int | None:
     return tonnage if tonnage > 0 else None
 
 
-def _parse_price(value: Any) -> Decimal | None:
+def _parse_price(value: object) -> Decimal | None:
     if value is None or value == "":
         return None
     try:
@@ -91,7 +91,7 @@ def _parse_price(value: Any) -> Decimal | None:
     return _round3(number)
 
 
-def _find_header_row(sheet: Any) -> tuple[int, dict[str, int]] | None:
+def _find_header_row(sheet: Worksheet) -> tuple[int, dict[str, int]] | None:
     """定位表头行，返回 (行号, 列名→列号)。"""
     aliases = {
         HEADER_NAME: {

@@ -11,10 +11,9 @@
   改了这种文件，要在引用它的 HTML 或 import 上把 ``?v=`` 加一。
 """
 
-from typing import Any
-
-from starlette.middleware.base import BaseHTTPMiddleware
+from starlette.middleware.base import BaseHTTPMiddleware, RequestResponseEndpoint
 from starlette.requests import Request
+from starlette.responses import Response
 
 _NO_CACHE = "no-cache, must-revalidate"
 _VERSIONED_ASSET = "public, max-age=31536000, immutable"
@@ -33,7 +32,7 @@ def frontend_cache_control(path: str, version: str | None) -> str | None:
 
 
 class FrontendCacheMiddleware(BaseHTTPMiddleware):
-    async def dispatch(self, request: Request, call_next: Any) -> Any:
+    async def dispatch(self, request: Request, call_next: RequestResponseEndpoint) -> Response:
         response = await call_next(request)
         header = frontend_cache_control(request.url.path, request.query_params.get("v"))
         if header is not None:

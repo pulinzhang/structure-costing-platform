@@ -4,7 +4,9 @@
 没有匹配的处理器 → DefaultSheetHandler。
 """
 
-from typing import Any
+from app.parsers.yishiyiyi.policy.handlers.base_handler.base_handler import (
+    BaseSheetHandler,
+)
 
 from .angang_handler import AngangSheetHandler
 from .anshen_handler import AnshenSheetHandler
@@ -16,7 +18,7 @@ from .tanggang_handler import TanggangSheetHandler
 from .vama_handler import VamaSheetHandler
 
 
-def find_handler(sheet_name: str) -> Any:
+def find_handler(sheet_name: str) -> BaseSheetHandler:
     """根据 sheet 名字找到合适的处理器（大小写不敏感）。"""
     sheet_lower = sheet_name.lower()
     for handler_cls, keywords in _HANDLERS:
@@ -26,7 +28,7 @@ def find_handler(sheet_name: str) -> Any:
 
 
 # (处理器类, 匹配关键字列表)
-_HANDLERS: list[tuple[type, tuple[str, ...]]] = [
+_HANDLERS: list[tuple[type[BaseSheetHandler], tuple[str, ...]]] = [
     # 唐钢：冷轧/镀锌按钢种+宽度分段加价，厚度分档独立处理
     (TanggangSheetHandler, ("唐钢",)),
     # 马钢（新）：sheet 名精确为"马钢(新)"，必须放在"马钢"之前

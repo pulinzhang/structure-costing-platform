@@ -36,6 +36,7 @@ class CostingEngineRun(AuditUserMixin, Base):
         String(64), nullable=True, comment="父 AsyncTask ID"
     )
 
+    # 当次运行的门禁、计划和摘要，字段随运行变化，没有一个固定形状。
     gate_json: Mapped[dict[str, Any] | None] = mapped_column(
         JSON, nullable=True, comment="Phase1 门禁快照"
     )

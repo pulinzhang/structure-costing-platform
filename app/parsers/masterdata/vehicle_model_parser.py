@@ -8,9 +8,9 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 from io import BytesIO
-from typing import Any
 
 from openpyxl import load_workbook
+from openpyxl.worksheet.worksheet import Worksheet
 
 from app.common.period import is_calendar_month
 
@@ -45,7 +45,7 @@ class VehicleModelParseResult:
     errors: list[str]
 
 
-def _cell_text(value: Any) -> str:
+def _cell_text(value: object) -> str:
     if value is None:
         return ""
     if isinstance(value, float) and value.is_integer():
@@ -53,7 +53,7 @@ def _cell_text(value: Any) -> str:
     return str(value).strip()
 
 
-def _parse_int(value: Any) -> int | None:
+def _parse_int(value: object) -> int | None:
     if value is None or value == "":
         return None
     if isinstance(value, bool):
@@ -70,7 +70,7 @@ def _parse_int(value: Any) -> int | None:
     return None
 
 
-def _find_header_row(sheet: Any) -> tuple[int, dict[str, int]] | None:
+def _find_header_row(sheet: Worksheet) -> tuple[int, dict[str, int]] | None:
     aliases = {
         HEADER_LOCATION: {HEADER_LOCATION},
         HEADER_VEHICLE_MODEL: {HEADER_VEHICLE_MODEL, "项目"},

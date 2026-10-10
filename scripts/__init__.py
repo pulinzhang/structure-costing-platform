@@ -15,6 +15,7 @@
 - ``check_route_path_params``：守卫 Router 整数路径必须 ``/{id:int}``（见 api-type-safety §6）
 - ``check_model_config``：守卫 Pydantic ``model_config`` 必须 ``ConfigDict``（见 api-type-safety §7）
 - ``check_unused_code``：守卫未使用函数与参数；排除路由注入、路径参数和框架回调
+- ``check_explicit_any``：守卫签名和类型声明不得新增 ``Any``（存量见基线）
 
 不放：一次性 SQLite ALTER、临时冒烟/联调脚本（新库走 ``create_all``）。
 
@@ -30,4 +31,5 @@
     python -X utf8 -m scripts.check_route_path_params
     python -X utf8 -m scripts.check_model_config
     python -X utf8 -m scripts.check_unused_code
+    python -X utf8 -m scripts.check_explicit_any
 """

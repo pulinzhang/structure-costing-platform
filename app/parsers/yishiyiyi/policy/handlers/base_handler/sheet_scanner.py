@@ -10,6 +10,7 @@
 所有方法签名均为 (sheet: Worksheet, ...) → 纯数据，不含业务语义。
 """
 
+from decimal import Decimal
 from typing import Any
 
 from openpyxl.worksheet.worksheet import Worksheet
@@ -255,10 +256,8 @@ class SheetScanner:
         sheet: Worksheet,
         header_row: int,
         label_row: int,
-    ) -> Any | None:
+    ) -> Decimal | None:
         """在 header_row 附近（向上 3 行）查找 `基准厚度 X.X`。"""
-        from decimal import Decimal
-
         scan_end = self.col_max(sheet)
         for r in range(max(1, label_row - 3), header_row + 1):
             for c in range(1, scan_end + 1):

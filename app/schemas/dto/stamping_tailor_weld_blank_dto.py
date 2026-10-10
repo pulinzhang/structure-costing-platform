@@ -16,7 +16,7 @@ from pydantic import BaseModel, Field, field_validator, model_validator
 from app.common.money import Q2, Q4, optional_quantize_money
 
 
-def _strip(value: Any) -> Any:
+def _strip(value: object) -> object:
     if value is None:
         return None
     if isinstance(value, str):
@@ -55,17 +55,18 @@ class StampingTailorWeldBlankItemDTO(BaseModel):
         mode="before",
     )
     @classmethod
-    def strip_strings(cls, value: Any) -> Any:
+    # 非字符串要原样交给后面的校验，收成字符串会改掉现在的报错。
+    def strip_strings(cls, value: object) -> Any:
         return _strip(value)
 
     @field_validator("thickness", "part_weight", mode="before")
     @classmethod
-    def coerce_physical(cls, value: Any) -> Decimal | None:
+    def coerce_physical(cls, value: object) -> Decimal | None:
         return optional_quantize_money(value, Q4)
 
     @field_validator("sheet_length", "sheet_width", mode="before")
     @classmethod
-    def coerce_sheet_dim(cls, value: Any) -> Decimal | None:
+    def coerce_sheet_dim(cls, value: object) -> Decimal | None:
         return optional_quantize_money(value, Q2)
 
 
@@ -97,17 +98,18 @@ class StampingTailorWeldBlankUpdateDTO(BaseModel):
         mode="before",
     )
     @classmethod
-    def strip_strings(cls, value: Any) -> Any:
+    # 非字符串要原样交给后面的校验，收成字符串会改掉现在的报错。
+    def strip_strings(cls, value: object) -> Any:
         return _strip(value)
 
     @field_validator("thickness", "part_weight", mode="before")
     @classmethod
-    def coerce_physical(cls, value: Any) -> Decimal | None:
+    def coerce_physical(cls, value: object) -> Decimal | None:
         return optional_quantize_money(value, Q4)
 
     @field_validator("sheet_length", "sheet_width", mode="before")
     @classmethod
-    def coerce_sheet_dim(cls, value: Any) -> Decimal | None:
+    def coerce_sheet_dim(cls, value: object) -> Decimal | None:
         return optional_quantize_money(value, Q2)
 
 

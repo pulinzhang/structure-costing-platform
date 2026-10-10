@@ -50,6 +50,7 @@ class CostingEngineL0ScopeVO(BaseModel):
 
 
 class CostingEnginePlanVO(BaseModel):
+    # 钢材计划随当次运行变化，没有固定字段。
     steel: dict[str, Any] = Field(default_factory=dict)
     part_cost_scopes: list[CostingEnginePartCostScopeVO] = Field(default_factory=list)
     l0_scopes: list[CostingEngineL0ScopeVO] = Field(default_factory=list)
@@ -64,6 +65,7 @@ class CostingEngineGatesVO(BaseModel):
 class CostingEngineReadyVO(BaseModel):
     """GET /ready 契约。"""
 
+    # 当次运行的输入，字段不固定。
     input: dict[str, Any]
     gates: CostingEngineGatesVO
     plan: CostingEnginePlanVO
@@ -78,6 +80,7 @@ class CostingEngineRunStepVO(DurationSecondsMixin):
     child_task_id: str | None = None
     child_log_id: int | None = None
     message: str | None = None
+    # 步骤指标随当次运行变化，没有固定字段。
     metrics_json: dict[str, Any] | None = None
     started_at: datetime | None = None
     finished_at: datetime | None = None
@@ -94,6 +97,7 @@ class CostingEngineRunVO(DurationSecondsMixin):
     month: int
     status: str
     task_id: str | None = None
+    # 门禁、计划和摘要随当次运行变化，没有固定字段。
     gate_json: dict[str, Any] | None = None
     plan_json: dict[str, Any] | None = None
     summary_json: dict[str, Any] | None = None

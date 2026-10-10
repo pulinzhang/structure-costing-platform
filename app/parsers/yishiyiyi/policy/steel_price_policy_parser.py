@@ -37,6 +37,7 @@ from app.utils.logging_config import get_logger
 
 from .handlers.registry import find_handler
 from .models.parse_result import SteelPricePolicyParseResult
+from .models.policy import ParsedPolicy
 
 # progress_callback(progress: int, msg: str) — 可选进度回调
 ProgressCallback = Callable[[int, str], None]
@@ -162,7 +163,7 @@ def parse_steel_price_policy_sheet(
     sheet_name: str,
     warnings: list[str],
     excel_filename: str | None = None,
-) -> Any:
+) -> list[ParsedPolicy]:
     """解析一张 Sheet，返回 ParsedPolicy 列表。
 
     设计要点：

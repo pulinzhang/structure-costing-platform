@@ -16,13 +16,14 @@
 """
 
 from decimal import Decimal
-from typing import Any
 
 from openpyxl.worksheet.worksheet import Worksheet
 
 from app.parsers.yishiyiyi.policy.handlers.base_handler.base_handler import (
     BaseSheetHandler,
 )
+from app.parsers.yishiyiyi.policy.models.policy import ParsedPolicy
+from app.parsers.yishiyiyi.policy.models.policy_block import PolicyBlock
 
 from ..value_parser import _to_int_price
 from .constants import parse_thickness_label
@@ -31,15 +32,15 @@ from .constants import parse_thickness_label
 class AnshenSheetHandler(BaseSheetHandler):
     """鞍神 Sheet 处理器（厚度-宽度组合加价）。"""
 
-    def parse(self, _sheet: Worksheet, _steel_mill: str, warnings: list[Any]) -> list[Any]:
+    def parse(self, _sheet: Worksheet, _steel_mill: str, warnings: list[str]) -> list[ParsedPolicy]:
         """鞍神 THICKNESS_WIDTH 本期不导入。"""
         warnings.append("鞍神 THICKNESS_WIDTH 政策本期不导入，已跳过")
         return []
 
-    def find_thickness_blocks(self, _sheet: Worksheet, _steel_mill: str) -> list[dict[str, Any]]:
+    def find_thickness_blocks(self, _sheet: Worksheet, _steel_mill: str) -> list[PolicyBlock]:
         return []
 
-    def find_width_blocks(self, sheet: Worksheet, _steel_mill: str) -> list[dict[str, Any]]:
+    def find_width_blocks(self, sheet: Worksheet, _steel_mill: str) -> list[PolicyBlock]:
         """定位鞍神规格加价表格。
 
         表格结构（从 Row 5 开始）:
@@ -49,7 +50,7 @@ class AnshenSheetHandler(BaseSheetHandler):
 
         只有一个宽度范围块。
         """
-        blocks: list[dict[str, Any]] = []
+        blocks: list[PolicyBlock] = []
         max_row = self.row_max(sheet)
 
         # 找"鞍神规格加价"关键字所在行
@@ -104,7 +105,7 @@ class AnshenSheetHandler(BaseSheetHandler):
         # 数据列应该是 B 列（第2列）
         price_col = 2  # B 列
 
-        block: dict[str, Any] = {
+        block: PolicyBlock = {
             "category_name": "冷轧钢",
             "policy_type": "THICKNESS_WIDTH",
             "grade_col": 1,
@@ -122,11 +123,11 @@ class AnshenSheetHandler(BaseSheetHandler):
         sheet: Worksheet,
         steel_mill: str,
         policy_type: str,
-    ) -> list[Any]:
+    ) -> list[ParsedPolicy]:
         """鞍神定制：所有政策走专用解析。"""
         if policy_type == "THICKNESS_WIDTH":
             blocks = self.find_width_blocks(sheet, steel_mill)
-            policies: list[Any] = []
+            policies: list[ParsedPolicy] = []
             for block in blocks:
                 policies.extend(self._parse_anshen_block(sheet, steel_mill, block))
             return policies
@@ -136,8 +137,8 @@ class AnshenSheetHandler(BaseSheetHandler):
         self,
         sheet: Worksheet,
         steel_mill: str,
-        block: dict[str, Any],
-    ) -> list[Any]:
+        block: PolicyBlock,
+    ) -> list[ParsedPolicy]:
         """解析鞍神宽度块：每行厚度范围生成一条政策。
 
         鞍神不分钢种，同一宽度范围内按厚度范围分行。
@@ -158,7 +159,7 @@ class AnshenSheetHandler(BaseSheetHandler):
         header_row = block["header_row"]
         width_boundary = self.text(sheet, header_row, 2) or "750＜W≤1250"
 
-        policies: list[Any] = []
+        policies: list[ParsedPolicy] = []
 
         for r in range(data_start, data_end + 1):
             thickness_label = self.text(sheet, r, 1)
@@ -220,7 +221,7 @@ class AnshenSheetHandler(BaseSheetHandler):
 
         return policies
 
-    def _parse_width_boundary(self, boundary: str) -> tuple[Any, ...]:
+    def _parse_width_boundary(self, boundary: str) -> tuple[float | None, str, float | None, str]:
         """解析宽度边界字符串，返回 (min, min_op, max, max_op)。
 
         支持格式：

@@ -3,7 +3,6 @@
 from __future__ import annotations
 
 from decimal import Decimal, InvalidOperation
-from typing import Any
 
 from app.common.money import Q4, quantize_money
 
@@ -55,7 +54,7 @@ PROD_COL = {
 }
 
 
-def cell_text(value: Any) -> str:
+def cell_text(value: object) -> str:
     if value is None:
         return ""
     if isinstance(value, float) and value.is_integer():
@@ -67,7 +66,7 @@ def normalize_header(text: str) -> str:
     return text.replace("\n", "").replace(" ", "").replace("（", "(").replace("）", ")").strip()
 
 
-def parse_money(value: Any, *, allow_empty: bool = False) -> Decimal | None:
+def parse_money(value: object, *, allow_empty: bool = False) -> Decimal | None:
     if value is None or value == "":
         return Decimal("0") if allow_empty else None
     try:
@@ -87,7 +86,7 @@ def parse_money(value: Any, *, allow_empty: bool = False) -> Decimal | None:
     return quantize_money(number, Q4)
 
 
-def parse_int(value: Any) -> int | None:
+def parse_int(value: object) -> int | None:
     if value is None or value == "":
         return None
     try:

@@ -39,6 +39,7 @@ def bom_node_order_key(
     )
 
 
+# case() 的类型存根固定是 Case[Any]。写成 type[BomNode] 之后，返回值对不上 ColumnElement[object]，不能靠 cast 抹平。
 def bom_node_sql_order(node: Any) -> tuple[ColumnElement[object], ...]:
     """与 list_by_snapshot 同一套：seq_no 槽 → level → L0 零件号 → excel_row。"""
     seq_no = node.seq_no

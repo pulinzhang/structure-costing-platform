@@ -6,18 +6,25 @@
 from __future__ import annotations
 
 import re
-from typing import Any
+from typing import TypedDict
 
 from openpyxl.worksheet.worksheet import Worksheet
 
 from app.parsers.yishiyiyi.policy.boundary_parser import _parse_boundary_thickness
 from app.parsers.yishiyiyi.policy.handlers.constants import GRADE_LABELS
+from app.parsers.yishiyiyi.policy.models.policy_block import PolicyBlock
 
 from .policy_assembler import PolicyAssembler
 from .sheet_scanner import SheetScanner
 
 _PURE_NUM_RE = re.compile(r"^\s*(-?\d+(?:\.\d+)?)\s*$")
 _MAX_LABEL_RE = re.compile(r"^最大\s*(\d+(?:\.\d+)?)?\s*$")
+
+
+class TitleCell(TypedDict):
+    row: int
+    col: int
+    text: str
 
 
 class ThicknessBlockFinder:
@@ -35,7 +42,7 @@ class ThicknessBlockFinder:
         self,
         sheet: Worksheet,
         steel_mill: str,
-    ) -> list[dict[str, Any]]:
+    ) -> list[PolicyBlock]:
         """默认厚度块扫描：按三步逻辑找块。
 
         第一步：找到所有含「厚度加减价-基准厚度」或「厚度加减价」的单元格
@@ -43,11 +50,11 @@ class ThicknessBlockFinder:
         第三步：从单元格左边第一列的下一行取出钢种；钢种单元格为空时块结束
         """
         del steel_mill  # 扫描不依赖钢厂；签名与调用方对齐
-        blocks: list[dict[str, Any]] = []
+        blocks: list[PolicyBlock] = []
         max_row = self.scanner.row_max(sheet)
         max_col = self.scanner.col_max(sheet)
 
-        title_cells: list[dict[str, Any]] = []
+        title_cells: list[TitleCell] = []
         for row in range(1, max_row + 1):
             for col in range(1, max_col + 1):
                 text = self.scanner.text(sheet, row, col)
@@ -84,7 +91,7 @@ class ThicknessBlockFinder:
 
             base_thickness = self.scanner.infer_base_thickness(sheet, header_row, title_row)
 
-            block = {
+            block: PolicyBlock = {
                 "category_name": "冷轧钢",
                 "policy_type": "THICKNESS",
                 "grade_col": grade_col,

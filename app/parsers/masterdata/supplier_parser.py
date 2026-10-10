@@ -8,9 +8,9 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 from io import BytesIO
-from typing import Any
 
 from openpyxl import load_workbook
+from openpyxl.worksheet.worksheet import Worksheet
 
 HEADER_ABBREVIATION = "缩写"
 HEADER_FULL_NAME = "全称"
@@ -40,7 +40,7 @@ class SupplierParseResult:
     errors: list[str]
 
 
-def _cell_text(value: Any) -> str:
+def _cell_text(value: object) -> str:
     if value is None:
         return ""
     if isinstance(value, float) and value.is_integer():
@@ -67,7 +67,7 @@ def _split_aliases(raw: str) -> list[str]:
     return result
 
 
-def _find_header_row(sheet: Any) -> tuple[int, dict[str, int]] | None:
+def _find_header_row(sheet: Worksheet) -> tuple[int, dict[str, int]] | None:
     aliases = {
         HEADER_ABBREVIATION: {HEADER_ABBREVIATION},
         HEADER_FULL_NAME: {HEADER_FULL_NAME, "工商名称", "全称"},

@@ -16,14 +16,13 @@
 }
 """
 
-from typing import Any
-
 from openpyxl.worksheet.worksheet import Worksheet
 
 from app.parsers.yishiyiyi.policy.boundary_parser import _Boundary
 from app.parsers.yishiyiyi.policy.handlers.constants import BLANK_LIMIT
 from app.parsers.yishiyiyi.policy.models.ladder_item import ParsedLadderItem
 from app.parsers.yishiyiyi.policy.models.policy import ParsedPolicy
+from app.parsers.yishiyiyi.policy.models.policy_block import PolicyBlock
 
 from .policy_assembler import PolicyAssembler
 from .sheet_scanner import SheetScanner
@@ -56,11 +55,11 @@ class BaseSheetHandler:
     # 子类钩子
     # ------------------------------------------------------------------ #
 
-    def find_thickness_blocks(self, _sheet: Worksheet, _steel_mill: str) -> list[dict[str, Any]]:
+    def find_thickness_blocks(self, _sheet: Worksheet, _steel_mill: str) -> list[PolicyBlock]:
         """返回本 Sheet 所有厚度块描述。默认空，子类覆写。"""
         return []
 
-    def find_width_blocks(self, _sheet: Worksheet, _steel_mill: str) -> list[dict[str, Any]]:
+    def find_width_blocks(self, _sheet: Worksheet, _steel_mill: str) -> list[PolicyBlock]:
         """返回本 Sheet 所有宽度块描述。默认空，子类覆写。"""
         return []
 
@@ -72,7 +71,7 @@ class BaseSheetHandler:
         self,
         sheet: Worksheet,
         steel_mill: str,
-    ) -> list[dict[str, Any]]:
+    ) -> list[PolicyBlock]:
         return self._thickness_finder.find_default_blocks(sheet, steel_mill)
 
     # ------------------------------------------------------------------ #
@@ -101,7 +100,7 @@ class BaseSheetHandler:
         sheet: Worksheet,
         steel_mill: str,
         policy_type: str,
-        block: dict[str, Any],
+        block: PolicyBlock,
     ) -> list[ParsedPolicy]:
         del policy_type
         return self.assembler.build_policies_from_block(sheet, steel_mill, block)
@@ -132,7 +131,7 @@ class BaseSheetHandler:
         sheet: Worksheet,
         label_row: int,
         block_end: int,
-    ) -> dict[str, Any] | None:
+    ) -> PolicyBlock | None:
         return self.assembler.locate_thickness_block(sheet, label_row, block_end)
 
     def locate_width_block(
@@ -147,7 +146,7 @@ class BaseSheetHandler:
         category: str = "冷轧钢",
         header_row_offset: int = 1,
         scan_cols: list[int] | None = None,
-    ) -> dict[str, Any] | None:
+    ) -> PolicyBlock | None:
         return self.assembler.locate_width_block(
             sheet,
             title_row,
@@ -223,7 +222,7 @@ class BaseSheetHandler:
     def category_from_grade_name(self, grade: str) -> str:
         return self.assembler.category_from_grade_name(grade)
 
-    def infer_block_category(self, sheet: Worksheet, block: dict[str, Any]) -> str:
+    def infer_block_category(self, sheet: Worksheet, block: PolicyBlock) -> str:
         return self.assembler.infer_block_category(sheet, block)
 
     def _collect_boundaries(
@@ -242,7 +241,7 @@ class BaseSheetHandler:
         boundaries: dict[int, _Boundary],
         policy_type: str = "THICKNESS",
         sort_order: int = 0,
-    ) -> tuple[list[ParsedLadderItem], Any]:
+    ) -> tuple[list[ParsedLadderItem], None]:
         return self.assembler.build_items_for_row(
             sheet, r, price_cols, boundaries, policy_type, sort_order
         )

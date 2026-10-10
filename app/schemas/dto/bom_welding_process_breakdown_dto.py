@@ -5,7 +5,7 @@ BOM 焊接工艺拆解 DTO
 from dataclasses import dataclass
 from datetime import datetime
 from decimal import Decimal
-from typing import Any, TypedDict
+from typing import TypedDict
 
 from pydantic import BaseModel, Field, field_validator
 
@@ -64,7 +64,7 @@ class BomWeldingProcessBreakdownLineUpdateDTO(BaseModel):
 
     @field_validator("process_qty", "process_qty_secondary", mode="before")
     @classmethod
-    def _coerce_decimal(cls, value: Any) -> Decimal | None:
+    def _coerce_decimal(cls, value: object) -> Decimal | None:
         if value is None or value == "":
             return None
         return value if isinstance(value, Decimal) else Decimal(str(value).strip())

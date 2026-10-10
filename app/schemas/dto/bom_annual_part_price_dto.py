@@ -3,7 +3,6 @@ BOM 年度零件价 DTO - 内部传输/请求参数
 """
 
 from decimal import Decimal
-from typing import Any
 
 from pydantic import BaseModel, Field, field_validator
 
@@ -15,12 +14,12 @@ from app.common.period import (
 from app.parsers.bom.annual_part_price_parser import parse_conversion_factor
 
 
-def quantize_unit_price(value: Any) -> Decimal:
+def quantize_unit_price(value: object) -> Decimal:
     """解析并量化为 4 位小数 Decimal（禁止以 float 作为业务类型）。"""
     return quantize_money(value, Q4)
 
 
-def normalize_supply_type(value: Any) -> str:
+def normalize_supply_type(value: object) -> str:
     """原供货类型：原文入库，仅做去空白。"""
     if value is None:
         raise ValueError("原供货类型不能为空")
@@ -58,22 +57,22 @@ class BomAnnualPartPriceCreate(BaseModel):
 
     @field_validator("supply_type", mode="before")
     @classmethod
-    def _coerce_supply_type(cls, value: Any) -> str:
+    def _coerce_supply_type(cls, value: object) -> str:
         return normalize_supply_type(value)
 
     @field_validator("purchase_unit_price", mode="before")
     @classmethod
-    def _coerce_purchase_unit_price(cls, value: Any) -> Decimal | None:
+    def _coerce_purchase_unit_price(cls, value: object) -> Decimal | None:
         return optional_quantize_money(value, Q4)
 
     @field_validator("conversion_factor", mode="before")
     @classmethod
-    def _coerce_conversion_factor(cls, value: Any) -> Decimal:
+    def _coerce_conversion_factor(cls, value: object) -> Decimal:
         return parse_conversion_factor(value)
 
     @field_validator("unit_price", mode="before")
     @classmethod
-    def _coerce_unit_price(cls, value: Any) -> Decimal:
+    def _coerce_unit_price(cls, value: object) -> Decimal:
         return quantize_unit_price(value)
 
 
@@ -100,26 +99,26 @@ class BomAnnualPartPriceUpdate(BaseModel):
 
     @field_validator("supply_type", mode="before")
     @classmethod
-    def _coerce_supply_type(cls, value: Any) -> str | None:
+    def _coerce_supply_type(cls, value: object) -> str | None:
         if value is None or (isinstance(value, str) and not value.strip()):
             return None
         return normalize_supply_type(value)
 
     @field_validator("purchase_unit_price", mode="before")
     @classmethod
-    def _coerce_purchase_unit_price(cls, value: Any) -> Decimal | None:
+    def _coerce_purchase_unit_price(cls, value: object) -> Decimal | None:
         return optional_quantize_money(value, Q4)
 
     @field_validator("conversion_factor", mode="before")
     @classmethod
-    def _coerce_conversion_factor(cls, value: Any) -> Decimal | None:
+    def _coerce_conversion_factor(cls, value: object) -> Decimal | None:
         if value is None or (isinstance(value, str) and not str(value).strip()):
             return None
         return parse_conversion_factor(value)
 
     @field_validator("unit_price", mode="before")
     @classmethod
-    def _coerce_unit_price(cls, value: Any) -> Decimal:
+    def _coerce_unit_price(cls, value: object) -> Decimal:
         return quantize_unit_price(value)
 
 

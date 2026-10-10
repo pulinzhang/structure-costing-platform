@@ -4,7 +4,6 @@
 
 from datetime import datetime
 from decimal import Decimal
-from typing import Any
 
 from pydantic import BaseModel, ConfigDict, Field, field_serializer
 
@@ -66,7 +65,7 @@ class StampingPartResponse(BaseModel):
     updated_at: datetime | None = None
 
     @field_serializer("created_at", "updated_at")
-    def serialize_datetime(self, value: Any) -> Any:
+    def serialize_datetime(self, value: datetime | None) -> str | None:
         return datetime_to_iso(value)
 
     @field_serializer("thickness", "part_weight")
@@ -210,7 +209,7 @@ class StampingPartWithProcessesResponse(BaseModel):
     material_changes: list[StampingPartMaterialChangeResponse] = []
 
     @field_serializer("created_at", "updated_at")
-    def serialize_datetime(self, value: Any) -> Any:
+    def serialize_datetime(self, value: datetime | None) -> str | None:
         return datetime_to_iso(value)
 
     @field_serializer("thickness", "part_weight")

@@ -3,7 +3,6 @@ BOM 包装运输费 DTO
 """
 
 from decimal import Decimal
-from typing import Any
 
 from pydantic import BaseModel, Field, field_validator
 
@@ -14,7 +13,7 @@ from app.common.period import (
 )
 
 
-def quantize_fee(value: Any) -> Decimal:
+def quantize_fee(value: object) -> Decimal:
     """解析并量化为 4 位小数 Decimal。"""
     return quantize_money(value, Q4)
 
@@ -56,7 +55,7 @@ class BomPackagingTransportFeeCreate(BaseModel):
         mode="before",
     )
     @classmethod
-    def _coerce_optional_money(cls, value: Any) -> Decimal | None:
+    def _coerce_optional_money(cls, value: object) -> Decimal | None:
         if value is None or value == "":
             return None
         return quantize_fee(value)
@@ -70,7 +69,7 @@ class BomPackagingTransportFeeCreate(BaseModel):
         mode="before",
     )
     @classmethod
-    def _coerce_required_money(cls, value: Any) -> Decimal:
+    def _coerce_required_money(cls, value: object) -> Decimal:
         if value is None or value == "":
             return quantize_fee(Decimal("0"))
         return quantize_fee(value)
@@ -109,7 +108,7 @@ class BomPackagingTransportFeeUpdate(BaseModel):
         mode="before",
     )
     @classmethod
-    def _coerce_optional_money(cls, value: Any) -> Decimal | None:
+    def _coerce_optional_money(cls, value: object) -> Decimal | None:
         if value is None or value == "":
             return None
         return quantize_fee(value)
@@ -123,7 +122,7 @@ class BomPackagingTransportFeeUpdate(BaseModel):
         mode="before",
     )
     @classmethod
-    def _coerce_required_money(cls, value: Any) -> Decimal:
+    def _coerce_required_money(cls, value: object) -> Decimal:
         if value is None or value == "":
             return quantize_fee(Decimal("0"))
         return quantize_fee(value)

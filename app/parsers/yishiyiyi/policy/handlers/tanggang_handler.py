@@ -12,7 +12,6 @@
 """
 
 from decimal import Decimal
-from typing import Any
 
 from openpyxl.worksheet.worksheet import Worksheet
 
@@ -20,6 +19,8 @@ from app.parsers.yishiyiyi.policy.boundary_parser import _Boundary
 from app.parsers.yishiyiyi.policy.handlers.base_handler.base_handler import (
     BaseSheetHandler,
 )
+from app.parsers.yishiyiyi.policy.models.policy import ParsedPolicy
+from app.parsers.yishiyiyi.policy.models.policy_block import PolicyBlock
 
 from .constants import GRADE_LABELS, parse_thickness_label
 
@@ -27,7 +28,7 @@ from .constants import GRADE_LABELS, parse_thickness_label
 class TanggangSheetHandler(BaseSheetHandler):
     """唐钢 Sheet 处理器。"""
 
-    def find_thickness_blocks(self, sheet: Worksheet, steel_mill: str) -> list[dict[str, Any]]:
+    def find_thickness_blocks(self, sheet: Worksheet, steel_mill: str) -> list[PolicyBlock]:
         return self.find_default_thickness_blocks(sheet, steel_mill)
 
     # ------------------------------------------------------------------ #
@@ -38,8 +39,8 @@ class TanggangSheetHandler(BaseSheetHandler):
         self,
         sheet: Worksheet,
         steel_mill: str,
-        block: dict[str, Any],
-    ) -> list[Any]:
+        block: PolicyBlock,
+    ) -> list[ParsedPolicy]:
         """唐钢宽度块解析：逐行构建政策。
 
         - 钢种行（DC01、DC03、"DC04及以上"）：grade_type = GRADE
@@ -63,7 +64,7 @@ class TanggangSheetHandler(BaseSheetHandler):
             return []
 
         sorted_price_cols = sorted(price_cols)
-        policies: list[Any] = []
+        policies: list[ParsedPolicy] = []
 
         for r in range(data_start, data_end + 1):
             grade_raw = self.text_or_none(sheet, r, 1)
@@ -114,7 +115,7 @@ class TanggangSheetHandler(BaseSheetHandler):
         sheet: Worksheet,
         steel_mill: str,
         policy_type: str,
-    ) -> list[Any]:
+    ) -> list[ParsedPolicy]:
         """唐钢定制：WIDTH 政策走专用解析。"""
         if policy_type == "WIDTH":
             blocks = self.find_width_blocks(sheet, steel_mill)
@@ -141,7 +142,7 @@ class TanggangSheetHandler(BaseSheetHandler):
         category: str = "冷轧钢",
         header_row_offset: int = 1,
         scan_cols: list[int] | None = None,
-    ) -> dict[str, Any] | None:
+    ) -> PolicyBlock | None:
         """唐钢专用：允许纯数字列头（如 1000mm），不走 _parse_boundary 过滤。"""
         header_row = title_row + header_row_offset
         if header_row > block_end:
@@ -170,8 +171,8 @@ class TanggangSheetHandler(BaseSheetHandler):
             "grade_blacklist": GRADE_LABELS,
         }
 
-    def find_width_blocks(self, sheet: Worksheet, _steel_mill: str) -> list[dict[str, Any]]:
-        blocks: list[dict[str, Any]] = []
+    def find_width_blocks(self, sheet: Worksheet, _steel_mill: str) -> list[PolicyBlock]:
+        blocks: list[PolicyBlock] = []
         max_row, max_col = self.row_max(sheet), self.col_max(sheet)
 
         w_title_rows: list[int] = []

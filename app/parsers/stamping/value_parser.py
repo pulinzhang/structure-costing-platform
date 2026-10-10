@@ -7,10 +7,9 @@
 import contextlib
 import re
 from decimal import Decimal, InvalidOperation
-from typing import Any
 
 
-def parse_decimal(value: Any) -> Decimal | None:
+def parse_decimal(value: object) -> Decimal | None:
     """解析数值，处理 / ~ 等特殊字符"""
     if value is None:
         return None
@@ -38,7 +37,7 @@ def parse_decimal(value: Any) -> Decimal | None:
         return None
 
 
-def parse_int(value: Any) -> int | None:
+def parse_int(value: object) -> int | None:
     """解析整数，处理带字母后缀的格式如 600T"""
     if value is None:
         return None

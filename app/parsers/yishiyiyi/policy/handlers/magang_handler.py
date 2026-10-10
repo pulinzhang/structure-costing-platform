@@ -4,13 +4,12 @@
 对外仍从此文件导入 MagangSheetHandler。
 """
 
-from typing import Any
-
 from openpyxl.worksheet.worksheet import Worksheet
 
 from app.parsers.yishiyiyi.policy.handlers.base_handler.base_handler import (
     BaseSheetHandler,
 )
+from app.parsers.yishiyiyi.policy.models.policy import ParsedPolicy
 
 from .magang_thickness import parse_thickness_fixed
 
@@ -23,10 +22,10 @@ class MagangSheetHandler(BaseSheetHandler):
         sheet: Worksheet,
         steel_mill: str,
         _warnings: list[str],
-    ) -> list[Any]:
-        policies: list[Any] = []
+    ) -> list[ParsedPolicy]:
+        policies: list[ParsedPolicy] = []
         policies.extend(self._parse_thickness_fixed(sheet, steel_mill))
         return policies
 
-    def _parse_thickness_fixed(self, sheet: Worksheet, steel_mill: str) -> list[Any]:
+    def _parse_thickness_fixed(self, sheet: Worksheet, steel_mill: str) -> list[ParsedPolicy]:
         return parse_thickness_fixed(self, sheet, steel_mill)

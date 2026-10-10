@@ -3,7 +3,8 @@
 from __future__ import annotations
 
 from decimal import Decimal
-from typing import Any
+
+from openpyxl.worksheet.worksheet import Worksheet
 
 from app.common.workbook_reject import NO_DATA_ROWS, invalid_amount
 
@@ -19,7 +20,7 @@ from .cells import (
 from .types import PackagingTransportFeeParsedRow, PackagingTransportFeeParseResult
 
 
-def looks_like_production_header(sheet: Any, row_idx: int) -> bool:
+def looks_like_production_header(sheet: Worksheet, row_idx: int) -> bool:
     texts = [
         normalize_header(cell_text(sheet.cell(row_idx, c).value))
         for c in range(1, min(28, (sheet.max_column or 1) + 1))
@@ -34,7 +35,7 @@ def looks_like_production_header(sheet: Any, row_idx: int) -> bool:
     return has_part and has_total and "单价" not in joined
 
 
-def parse_production_sheet(sheet: Any, header_row: int) -> PackagingTransportFeeParseResult:
+def parse_production_sheet(sheet: Worksheet, header_row: int) -> PackagingTransportFeeParseResult:
     rows: list[PackagingTransportFeeParsedRow] = []
     errors: list[str] = []
     seen: set[str] = set()

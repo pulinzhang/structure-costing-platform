@@ -9,7 +9,6 @@
 from __future__ import annotations
 
 from decimal import Decimal
-from typing import Any
 
 from app.common.money import Q4, quantize_money
 
@@ -69,7 +68,7 @@ def convert_qty_to_unit(
     raise ValueError(f"单位无法换算：{from_unit or '空'} → {to_unit or '空'}")
 
 
-def resolve_raw_billing_qty(line: Any) -> tuple[Decimal, str, str]:
+def resolve_raw_billing_qty(line: object) -> tuple[Decimal, str, str]:
     """
     取计费原始用量（未换算到单价单位）。
 
@@ -87,7 +86,7 @@ def resolve_raw_billing_qty(line: Any) -> tuple[Decimal, str, str]:
 
 
 def resolve_billing_qty_for_price(
-    line: Any,
+    line: object,
     *,
     price_unit: str | None,
 ) -> tuple[Decimal, str, str]:

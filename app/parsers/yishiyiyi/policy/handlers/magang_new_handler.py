@@ -10,13 +10,12 @@
     其它 → 冷轧钢 (默认)
 """
 
-from typing import Any
-
 from openpyxl.worksheet.worksheet import Worksheet
 
 from app.parsers.yishiyiyi.policy.handlers.base_handler.base_handler import (
     BaseSheetHandler,
 )
+from app.parsers.yishiyiyi.policy.models.policy_block import PolicyBlock
 
 # 马钢右侧宽度块
 _W_GRADE_COL = 15
@@ -47,11 +46,11 @@ class MagangNewSheetHandler(BaseSheetHandler):
                 return r
         return None
 
-    def find_thickness_blocks(self, sheet: Worksheet, steel_mill: str) -> list[dict[str, Any]]:
+    def find_thickness_blocks(self, sheet: Worksheet, steel_mill: str) -> list[PolicyBlock]:
         return self.find_default_thickness_blocks(sheet, steel_mill)
 
-    def find_width_blocks(self, sheet: Worksheet, _steel_mill: str) -> list[dict[str, Any]]:
-        blocks: list[dict[str, Any]] = []
+    def find_width_blocks(self, sheet: Worksheet, _steel_mill: str) -> list[PolicyBlock]:
+        blocks: list[PolicyBlock] = []
         max_row, max_col = self.row_max(sheet), self.col_max(sheet)
 
         if max_col < _W_START_COL:

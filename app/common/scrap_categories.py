@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from typing import Annotated, Any
+from typing import Annotated
 
 from pydantic import BeforeValidator
 
@@ -36,7 +36,7 @@ def require_scrap_category(raw: str | None) -> str:
         raise BusinessException(str(exc)) from exc
 
 
-def _coerce_scrap_category(value: Any) -> str:
+def _coerce_scrap_category(value: object) -> str:
     if value is None:
         return parse_scrap_category(None)
     return parse_scrap_category(str(value))

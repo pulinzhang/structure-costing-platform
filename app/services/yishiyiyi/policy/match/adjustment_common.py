@@ -9,7 +9,7 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 from decimal import Decimal
-from typing import Any, Protocol, runtime_checkable
+from typing import Protocol, runtime_checkable
 
 from app.models.yishiyiyi import SteelPriceLadderItem, SteelPricePolicy
 
@@ -62,7 +62,7 @@ def category_aliases(category_name: str) -> frozenset[str]:
     return frozenset({name, f"{name}钢"})
 
 
-def to_decimal(value: Any) -> Decimal | None:
+def to_decimal(value: object) -> Decimal | None:
     if value is None:
         return None
     text = str(value).strip()
@@ -266,7 +266,7 @@ def match_items(
 
 
 def apply_hit(
-    row: Any,
+    row: object,
     hit: PolicyHit,
     *,
     prefix: str,

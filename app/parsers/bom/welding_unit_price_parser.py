@@ -12,9 +12,9 @@ from __future__ import annotations
 from dataclasses import dataclass
 from decimal import Decimal, InvalidOperation
 from io import BytesIO
-from typing import Any
 
 from openpyxl import load_workbook
+from openpyxl.worksheet.worksheet import Worksheet
 
 from app.common.bom.welding_standard_process import validate_welding_unit_price_catalog
 from app.common.money import Q4, quantize_money
@@ -51,7 +51,7 @@ class WeldingUnitPriceParseResult:
     errors: list[str]
 
 
-def _cell_text(value: Any) -> str:
+def _cell_text(value: object) -> str:
     if value is None:
         return ""
     if isinstance(value, float) and value.is_integer():
@@ -63,7 +63,7 @@ def _round4(value: Decimal) -> Decimal:
     return quantize_money(value, Q4)
 
 
-def _parse_unit_price(value: Any) -> Decimal | None:
+def _parse_unit_price(value: object) -> Decimal | None:
     if value is None or value == "":
         return None
     try:
@@ -83,7 +83,7 @@ def _parse_unit_price(value: Any) -> Decimal | None:
     return _round4(number)
 
 
-def _find_header_row(sheet: Any) -> tuple[int, dict[str, int]] | None:
+def _find_header_row(sheet: Worksheet) -> tuple[int, dict[str, int]] | None:
     """定位表头行，返回 (行号, 列名→列号)。"""
     aliases = {
         HEADER_NAME: {HEADER_NAME, "名称", "项目", "费用项目", "操作项目"},

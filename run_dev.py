@@ -80,6 +80,8 @@ if __name__ == "__main__":
     )
     # 路由 current_user、路径参数、中间件 dispatch、Settings.Config 不计入未使用代码
     run_step(["scripts.check_unused_code"], "未使用代码检查")
+    # 签名不许新增 Any；存量见 scripts/explicit_any_baseline.txt
+    run_step(["scripts.check_explicit_any"], "Any 签名检查")
     # 2. 运行 Mypy 静态类型检查
     run_step(["mypy", "app/"], "Mypy 静态类型检查")
 

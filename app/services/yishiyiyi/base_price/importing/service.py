@@ -18,6 +18,7 @@ from app.common.audit import audit_create
 from app.common.period import previous_month
 from app.common.steel_grade_category import as_canonical_category
 from app.exceptions import BusinessException
+from app.parsers.yishiyiyi.base_price.models import BasePriceRecord
 from app.parsers.yishiyiyi.base_price.steel_base_price_parser import (
     parse_base_price_excel,
 )
@@ -151,7 +152,7 @@ def _raise_if_processing_fee_rejected(errors: list[str]) -> None:
         raise BusinessException("；".join(fee_errors))
 
 
-def _assert_steel_mills_not_numeric(records: list[dict[str, object]]) -> None:
+def _assert_steel_mills_not_numeric(records: list[BasePriceRecord]) -> None:
     """导入小锁：任一钢厂为数字则整批拒绝，避免列错位脏数据入库。"""
     bad_samples: list[str] = []
     for record in records:
@@ -170,13 +171,13 @@ def _assert_steel_mills_not_numeric(records: list[dict[str, object]]) -> None:
     )
 
 
-def _base_price_mill_place(record: dict[str, object]) -> str:
+def _base_price_mill_place(record: BasePriceRecord) -> str:
     """拒绝句里的位置：基准价 Excel 行。解析行始终带行号。"""
     return f"基准价，Excel 第{record['excel_row']}行"
 
 
 def _base_price_write_from_record(
-    record: dict[str, object],
+    record: BasePriceRecord,
     *,
     year: int,
     month: int,
@@ -186,10 +187,10 @@ def _base_price_write_from_record(
     steel_mill_id: int,
     canonical_steel_mill: str,
 ) -> SteelBasePriceWrite:
-    thick = record.get("thick")
-    width = record.get("width")
-    base_price = record["base_price"]
-    processing_fee = record.get("processing_fee")
+    thick: object = record["thick"]
+    width: object = record["width"]
+    base_price: object = record["base_price"]
+    processing_fee: object = record["processing_fee"]
     if not isinstance(base_price, Decimal):
         base_price = Decimal(str(base_price))
     if processing_fee is None:
@@ -200,10 +201,12 @@ def _base_price_write_from_record(
         thick = Decimal(str(thick))
     if width is not None and not isinstance(width, Decimal):
         width = Decimal(str(width))
-    excel_row_raw = record["excel_row"]
-    excel_col_raw = record.get("excel_col")
+    excel_row_raw: object = record["excel_row"]
+    excel_col_raw: object = record["excel_col"]
     excel_row = int(str(excel_row_raw)) if excel_row_raw is not None else 0
     excel_col = int(str(excel_col_raw)) if excel_col_raw is not None else None
+    spec_raw: object = record["spec"]
+    remark_raw = record.get("remark")
     return SteelBasePriceWrite(
         year=year,
         month=month,
@@ -220,9 +223,9 @@ def _base_price_write_from_record(
         excel_row=excel_row,
         steel_mill_id=steel_mill_id,
         canonical_steel_mill=canonical_steel_mill,
-        spec=str(record["spec"]) if record.get("spec") is not None else None,
+        spec=str(spec_raw) if spec_raw is not None else None,
         excel_col=excel_col,
-        remark=str(record["remark"]) if record.get("remark") is not None else None,
+        remark=str(remark_raw) if remark_raw is not None else None,
         created_by=created_by,
         updated_by=updated_by,
     )

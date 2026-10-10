@@ -3,7 +3,6 @@
 from __future__ import annotations
 
 from decimal import ROUND_HALF_UP, Decimal, InvalidOperation
-from typing import Any
 
 from app.common.money import (
     Q2,
@@ -23,7 +22,7 @@ _DIGITS_TO_QUANT = {
 }
 
 
-def to_decimal(value: Any) -> Decimal | None:
+def to_decimal(value: object) -> Decimal | None:
     if value is None or value == "":
         return None
     try:
@@ -73,7 +72,7 @@ def join_slash_ton_prices(values: list[Decimal | None]) -> str | None:
     return "/".join(labels)
 
 
-def format_number(value: Any, digits: int | None = None) -> Decimal | str:
+def format_number(value: object, digits: int | None = None) -> Decimal | str:
     """Excel 单元格 / 溯源文本用：保持 Decimal，空则空串。"""
     if value is None:
         return ""
@@ -106,7 +105,7 @@ def format_excel_cell_trace(
     return " · ".join(p for p in parts if p)
 
 
-def format_steel_price_excel_trace(steel: Any) -> str:
+def format_steel_price_excel_trace(steel: object) -> str:
     """
     钢材联动价全部 Excel 溯源（基价/厚度/宽度/锌层），不含 ID。
     供人工打开对应文件定位单元格核对。
@@ -136,7 +135,7 @@ def format_steel_price_excel_trace(steel: Any) -> str:
     return "\n".join(lines)
 
 
-def format_scrap_price_trace(scrap: Any) -> str:
+def format_scrap_price_trace(scrap: object) -> str:
     """废料月度价人可读定位键（基地·年月·净价）。"""
     if scrap is None:
         return ""
@@ -163,7 +162,7 @@ def format_scrap_price_trace(scrap: Any) -> str:
     return " · ".join(str(p) for p in parts if p not in ("", None))
 
 
-def format_process_fee_trace(fee: Any) -> str:
+def format_process_fee_trace(fee: object) -> str:
     """加工费溯源：工艺确认表文件名 + 各工序人可读依据。"""
     if fee is None:
         return ""
@@ -195,7 +194,7 @@ def format_process_fee_trace(fee: Any) -> str:
     return "\n".join(lines)
 
 
-def part_excel_row_col(row: Any) -> str:
+def part_excel_row_col(row: object) -> str:
     """零件工艺表行列：R6C2。"""
     excel_row = getattr(row, "excel_row", None)
     excel_col = getattr(row, "excel_part_col", None)

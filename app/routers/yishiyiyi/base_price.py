@@ -56,7 +56,7 @@ _async_task_service = AsyncTaskService()
 
 @router.get(
     "",
-    response_model=ApiResponse[list[SteelBasePriceResponse]],
+    response_model=ApiResponse[PageResult[SteelBasePriceResponse]],
     summary="分页查询基准价格列表",
 )
 def list_base_prices(
@@ -65,7 +65,7 @@ def list_base_prices(
     current_user: UserVO = Depends(
         require_any_perm(Perm.BASE_PRICE_DOWNLOAD_VIEW, Perm.BASE_PRICE_UPLOAD_VIEW)
     ),
-) -> ApiResponse[list[SteelBasePriceResponse]]:
+) -> ApiResponse[PageResult[SteelBasePriceResponse]]:
     """
     分页查询基准价格列表。
     """
@@ -103,7 +103,7 @@ def export_preview(
     query: SteelBasePriceExportPreviewQuery = Depends(),
     db: Session = Depends(get_db),
     current_user: UserVO = Depends(require_perm(Perm.BASE_PRICE_DOWNLOAD_VIEW)),
-) -> ApiResponse[PageResult[SteelBasePriceExportRow] | list[SteelBasePriceExportRow]]:
+) -> ApiResponse[PageResult[SteelBasePriceExportRow]] | ApiResponse[list[SteelBasePriceExportRow]]:
     """导出预览。筛选：年度、月份、基地、钢厂、分类、牌号。"""
     page_size = query.size or DEFAULT_EXPORT_PAGE_SIZE
     records, total = _steel_base_price_service.list_for_export(
