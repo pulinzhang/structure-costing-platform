@@ -41,6 +41,11 @@ from app.services.llm.usage.runner import UsageHelpRunner
         ("2856最新价", "analysis"),
         ("2025年，T13J项目采购对象的费用是多少", "usage_help"),
         ("采购对象还有多少没确认外发", "analysis"),
+        ("如何把界面变为白色的", "usage_help"),
+        ("如何切换主题", "usage_help"),
+        ("如何退出系统", "usage_help"),
+        ("退出登录", "usage_help"),
+        ("账号设置在哪", "usage_help"),
     ],
 )
 def test_detect_query_mode(question: str, expected_mode: str) -> None:
@@ -84,6 +89,13 @@ def test_detect_query_mode(question: str, expected_mode: str) -> None:
         ("这个月核价用旧号还是新号", "faq_ec_costing_effect_month"),
         ("旧零件过期了还能不能出协议", "faq_ec_costing_effect_month"),
         ("增加零件进采购对象后厂家要不要自己填", "faq_ec_costing_effect_month"),
+        ("如何把界面变为白色的", "user_menu_theme"),
+        ("如何切换主题", "user_menu_theme"),
+        ("怎么把界面变成白色", "user_menu_theme"),
+        ("如何退出系统", "user_menu_logout"),
+        ("退出登录", "user_menu_logout"),
+        ("怎么登录", "start"),
+        ("账号设置在哪", "user_menu_account"),
     ],
 )
 def test_detect_help_topic(question: str, expected_topic: str) -> None:
@@ -119,6 +131,9 @@ def test_load_corpus_has_p1a_sections() -> None:
         "engineering_change_knowledge",
         "faq_ec_costing_effect_month",
         "faq_ec_tree_vs_procurement",
+        "user_menu_theme",
+        "user_menu_logout",
+        "user_menu_account",
     ):
         assert required in chunk_ids
 
@@ -130,6 +145,25 @@ def test_steel_mill_help_stays_on_masterdata() -> None:
     assert chunks[0].chunk_id == "masterdata"
     assert "缩写是页面上的字" in chunks[0].text
     assert "山钢(新)" in chunks[0].text
+
+
+def test_retrieve_user_menu_chunks() -> None:
+    load_corpus_chunks.cache_clear()
+    theme = retrieve_chunks("如何把界面变为白色的", primary_topic="user_menu_theme", top_k=1)
+    assert theme
+    assert theme[0].chunk_id == "user_menu_theme"
+    assert "浅色界面" in theme[0].text
+    assert "白底" in theme[0].text
+
+    logout = retrieve_chunks("如何退出系统", primary_topic="user_menu_logout", top_k=1)
+    assert logout
+    assert logout[0].chunk_id == "user_menu_logout"
+    assert "退出登录" in logout[0].text
+
+    account = retrieve_chunks("账号设置在哪", primary_topic="user_menu_account", top_k=1)
+    assert account
+    assert account[0].chunk_id == "user_menu_account"
+    assert "个人资料" in account[0].text
 
 
 def test_retrieve_engine_chunk() -> None:
