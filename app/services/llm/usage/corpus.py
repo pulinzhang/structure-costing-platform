@@ -171,6 +171,76 @@ def _faq_chunks(faq_text: str) -> list[CorpusChunk]:
     return chunks
 
 
+def _user_menu_chunks(help_html: str) -> list[CorpusChunk]:
+    """右上角用户菜单：只抽 help.html FAQ，禁止另写一份。"""
+    theme_heading = "怎么把界面变成白色？怎么切换主题？"
+    theme_faq = _extract_faq_qa(help_html, theme_heading)
+    if not theme_faq:
+        raise ValueError("help.html 缺少浅色界面 FAQ")
+    logout_heading = "怎么退出系统？"
+    logout_faq = _extract_faq_qa(help_html, logout_heading)
+    if not logout_faq:
+        raise ValueError("help.html 缺少退出登录 FAQ")
+    account_heading = "账号设置在哪？"
+    account_faq = _extract_faq_qa(help_html, account_heading)
+    if not account_faq:
+        raise ValueError("help.html 缺少账号设置 FAQ")
+    return [
+        CorpusChunk(
+            chunk_id="user_menu_theme",
+            title="怎么把界面变成白色",
+            text=theme_faq,
+            source_page="help.html",
+            anchor="settings",
+            keywords=(
+                "浅色界面",
+                "切换主题",
+                "换主题",
+                "界面主题",
+                "变为白色",
+                "变成白色",
+                "换成白色",
+                "改成白色",
+                "白色界面",
+                "白底",
+                "变成浅色",
+                "换成浅色",
+                "改为浅色",
+                "变为浅色",
+                "界面浅色",
+                "深色界面",
+                "换回深色",
+                "换成深色",
+                "主题",
+            ),
+        ),
+        CorpusChunk(
+            chunk_id="user_menu_logout",
+            title="怎么退出系统",
+            text=logout_faq,
+            source_page="help.html",
+            anchor="settings",
+            keywords=(
+                "退出登录",
+                "退出系统",
+                "怎么退出",
+                "如何退出",
+                "登出",
+                "注销",
+                "退出",
+            ),
+        ),
+        CorpusChunk(
+            chunk_id="user_menu_account",
+            title="账号设置在哪",
+            text=account_faq,
+            source_page="help.html",
+            anchor="settings",
+            keywords=("账号设置", "个人资料", "登录密码"),
+        ),
+    ]
+
+
 def _extra_faq_chunks(help_html: str) -> list[CorpusChunk]:
     """P1a 高频 FAQ：无独立 help 章节时补短答。工程变更采购件 FAQ 只抽 help.html，禁止另写。"""
     tree_heading = "为什么新版本采购对象有 17 个，而变更单只有 5 条？"
@@ -597,5 +667,6 @@ def load_corpus_chunks() -> tuple[CorpusChunk, ...]:
     faq_text = _extract_section(help_html, "faq")
     chunks.extend(_faq_chunks(faq_text))
     chunks.extend(_extra_faq_chunks(help_html))
+    chunks.extend(_user_menu_chunks(help_html))
 
     return tuple(chunk for chunk in chunks if chunk.text.strip())
