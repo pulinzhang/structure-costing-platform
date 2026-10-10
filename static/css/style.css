@@ -383,6 +383,98 @@ textarea:-webkit-autofill:active {
     opacity: 1;
 }
 
+/* 浅色弹出菜单对齐官网 flyout。字在 span 上，色 #010101。
+   一级：<576 14px，≥576 16px，≥768 17px，≥992 18px，字重 500。
+   二、三级：16px，字重 400。悬停仍是红底白字。 */
+html[data-theme="light"] .sidebar-nav-link,
+html[data-theme="light"] .submenu-link,
+html[data-theme="light"] .submenu-nested .submenu-link,
+html[data-theme="light"] .sidebar-nav-link > span,
+html[data-theme="light"] .submenu-link > span,
+html[data-theme="light"] .submenu-nested .submenu-link > span {
+    color: #010101;
+}
+
+html[data-theme="light"] .sidebar-nav-link > span {
+    font-size: 14px;
+    font-weight: 500;
+    line-height: 20px;
+}
+
+html[data-theme="light"] .submenu-link > span,
+html[data-theme="light"] .submenu-nested .submenu-link > span {
+    font-size: 16px;
+    font-weight: 400;
+    line-height: 18px;
+}
+
+@media (min-width: 576px) {
+    html[data-theme="light"] .sidebar-nav-link > span {
+        font-size: 16px;
+        line-height: 22px;
+    }
+}
+
+@media (min-width: 768px) {
+    html[data-theme="light"] .sidebar-nav-link > span {
+        font-size: 17px;
+        line-height: 22px;
+    }
+}
+
+@media (min-width: 992px) {
+    html[data-theme="light"] .sidebar-nav-link > span {
+        font-size: 18px;
+        line-height: 22px;
+    }
+}
+
+html[data-theme="light"] .sidebar-nav-link:hover,
+html[data-theme="light"] .sidebar-nav-link.active:hover,
+html[data-theme="light"] .submenu-link:hover,
+html[data-theme="light"] .submenu-link.active:hover,
+html[data-theme="light"] .sidebar-nav-link:hover > span,
+html[data-theme="light"] .sidebar-nav-link.active:hover > span,
+html[data-theme="light"] .submenu-link:hover > span,
+html[data-theme="light"] .submenu-link.active:hover > span {
+    color: rgb(var(--text-on-brand));
+    background: rgb(var(--brabus-red));
+}
+
+html[data-theme="light"] .sidebar-nav-link:hover > span,
+html[data-theme="light"] .sidebar-nav-link.active:hover > span,
+html[data-theme="light"] .submenu-link:hover > span,
+html[data-theme="light"] .submenu-link.active:hover > span {
+    background: transparent;
+}
+
+/* 浅色选中项：黑底白字。字在 span 上，必须单独写白。#sidebar 提高优先级，避免被 .submenu-nested 的字色盖住。 */
+html[data-theme="light"] #sidebar a.sidebar-brand.active,
+html[data-theme="light"] #sidebar a.sidebar-nav-link.active,
+html[data-theme="light"] #sidebar a.submenu-link.active {
+    background-color: #010101;
+    color: #fff;
+}
+
+html[data-theme="light"] #sidebar a.sidebar-brand.active h1,
+html[data-theme="light"] #sidebar a.sidebar-brand.active > span,
+html[data-theme="light"] #sidebar a.sidebar-nav-link.active > span,
+html[data-theme="light"] #sidebar a.submenu-link.active > span {
+    color: #fff;
+}
+
+html[data-theme="light"] #sidebar a.sidebar-nav-link.active:hover,
+html[data-theme="light"] #sidebar a.submenu-link.active:hover {
+    background-color: rgb(var(--brabus-red));
+    color: #fff;
+}
+
+html[data-theme="light"] #sidebar a.sidebar-nav-link.active:hover > span,
+html[data-theme="light"] #sidebar a.submenu-link.active:hover > span {
+    color: #fff;
+    background-color: transparent;
+}
+
 /* 6. 页脚版本号刻度 */
 .sidebar-footer {
     display: flex;
@@ -519,6 +611,96 @@ textarea:-webkit-autofill:active {
     font-size: 0.875rem;
     font-weight: 600;
     color: rgb(var(--text-main));
+}
+
+/* 浅色路径对齐官网 flyout：字 #010101、字重 500。
+   <576 14px；≥576 16px；≥768 17px；≥992 18px / 行高 22px。 */
+html[data-theme="light"] .breadcrumb-brand-badge {
+    color: #010101;
+    font-size: 14px;
+}
+
+html[data-theme="light"] .breadcrumb-list {
+    flex-wrap: nowrap;
+    min-width: 0;
+}
+
+html[data-theme="light"] .breadcrumb-list > li:not(.breadcrumb-item.active) {
+    flex-shrink: 0;
+}
+
+html[data-theme="light"] .breadcrumb-sep,
+html[data-theme="light"] .breadcrumb-item,
+html[data-theme="light"] .breadcrumb-item > span,
+html[data-theme="light"] .breadcrumb-item a,
+html[data-theme="light"] .breadcrumb-item.active {
+    font-size: 14px;
+    font-weight: 500;
+    letter-spacing: 0.02em;
+    line-height: 20px;
+}
+
+html[data-theme="light"] .breadcrumb-item,
+html[data-theme="light"] .breadcrumb-item > span,
+html[data-theme="light"] .breadcrumb-item a,
+html[data-theme="light"] .breadcrumb-item.active,
+html[data-theme="light"] .breadcrumb-item.active > span {
+    color: #010101;
+}
+
+html[data-theme="light"] .breadcrumb-sep {
+    color: rgb(var(--brabus-red));
+    font-weight: 400;
+}
+
+html[data-theme="light"] .breadcrumb-item a:hover,
+html[data-theme="light"] .breadcrumb-item > span:hover {
+    color: #010101;
+}
+
+html[data-theme="light"] .breadcrumb-item.active {
+    display: block;
+    flex: 1 1 auto;
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+@media (min-width: 576px) {
+    html[data-theme="light"] .breadcrumb-sep,
+    html[data-theme="light"] .breadcrumb-item,
+    html[data-theme="light"] .breadcrumb-item > span,
+    html[data-theme="light"] .breadcrumb-item a,
+    html[data-theme="light"] .breadcrumb-item.active,
+    html[data-theme="light"] .breadcrumb-item.active > span {
+        font-size: 16px;
+        line-height: 22px;
+    }
+}
+
+@media (min-width: 768px) {
+    html[data-theme="light"] .breadcrumb-sep,
+    html[data-theme="light"] .breadcrumb-item,
+    html[data-theme="light"] .breadcrumb-item > span,
+    html[data-theme="light"] .breadcrumb-item a,
+    html[data-theme="light"] .breadcrumb-item.active,
+    html[data-theme="light"] .breadcrumb-item.active > span {
+        font-size: 17px;
+        line-height: 22px;
+    }
+}
+
+@media (min-width: 992px) {
+    html[data-theme="light"] .breadcrumb-sep,
+    html[data-theme="light"] .breadcrumb-item,
+    html[data-theme="light"] .breadcrumb-item > span,
+    html[data-theme="light"] .breadcrumb-item a,
+    html[data-theme="light"] .breadcrumb-item.active,
+    html[data-theme="light"] .breadcrumb-item.active > span {
+        font-size: 18px;
+        line-height: 22px;
+    }
 }
 
 /* ====== Toast ====== */

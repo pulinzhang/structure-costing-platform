@@ -207,7 +207,9 @@ function highlightMenu(pageName) {
     });
 
     // 3. 查找匹配的链接（支持多级菜单）
-    const activeLink = sidebar.querySelector(`a[data-page="${pageName}"]`);
+    const activeLink = sidebar.querySelector(
+        `a.sidebar-nav-link[data-page="${pageName}"], a.submenu-link[data-page="${pageName}"]`
+    );
 
     if (activeLink) {
         activeLink.classList.add('active');
@@ -253,9 +255,9 @@ function renderBreadcrumb(pageName, meta) {
         const sep = '<li class="breadcrumb-sep" aria-hidden="true">//</li>';
 
         if (isLast) {
-            return `${sep}<li class="breadcrumb-item active" aria-current="page" id="breadcrumbItem">${esc(label)}</li>`;
+            return `${sep}<li class="breadcrumb-item active" aria-current="page" id="breadcrumbItem"><span>${esc(label)}</span></li>`;
         }
-        return `${sep}<li class="breadcrumb-item">${esc(label)}</li>`;
+        return `${sep}<li class="breadcrumb-item"><span>${esc(label)}</span></li>`;
     }).join('');
 
     list.innerHTML = brand + trail;
