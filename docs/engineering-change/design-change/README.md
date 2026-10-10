@@ -128,6 +128,7 @@ flowchart TB
 | `EC_AFTER_ASSEMBLY_BUSY` | 这个变更后总成正在导入，请等这次完成 | 等这次导入结束 |
 | `EC_AFTER_ASSEMBLY_IMPORTED` | 这个变更后总成已经导入成功 | 到设计变更列表删掉这一本后再上传 |
 | `EC_NOT_INSTALL_SIGNAL` | 此件不装必须用量 0 且备注含「此件不装」 | 用量和备注两格都要写对 |
+| `EC_PROCESS_SUPPLIER_FULL_NAME` | 冲压承制公司请写成供应商档案里的全称，简称不行 | 确认表「冲压承制公司」改成档案全称后再传 |
 | `EC_PROCESS_MISSING_NEW` | 冲压工艺确认表少了这个新零件号 | 材料清单换了号或新加了冲压件，确认表也要写出这一号 |
 | `EC_PROCESS_EXTRA_NEW` | 冲压工艺确认表多了材料清单没有的号 | 删多余工艺行，或把这个号补进材料清单 |
 | `EC_PROCESS_SHARED_OLD` | 这个旧号还装在别的总成上，不能按改图停掉 | 左右总成共用件：先改另一侧或走增加零件。只在旧号当月仍有工艺时 |
