@@ -11,7 +11,7 @@ from app.common.audit import (
     audit_create,
     audit_update,
 )
-from app.common.permissions.checks import require_permission
+from app.common.permissions.checks import require_admin, require_permission
 from app.common.permissions.codes import Perm
 from app.config import settings
 from app.exceptions.base import BusinessException, NotFoundException
@@ -59,6 +59,8 @@ def _user_patch_from_dto(
             patch["avatar"] = dto.avatar
         if "is_active" in fields_set and dto.is_active is not None:
             patch["is_active"] = dto.is_active
+        if "is_admin" in fields_set and dto.is_admin is not None:
+            patch["is_admin"] = dto.is_admin
     return patch
 
 
@@ -114,6 +116,25 @@ class UserService:
             raise NotFoundException("用户不存在")
         return self._to_vo(db, user)
 
+    def _admin_flag_changed(
+        self,
+        db: Session,
+        existing: User,
+        dto: UserUpdateDTO,
+        current_user: UserVO,
+    ) -> bool:
+        """管理员标记有变化时返回 True。仅管理员可改，且不能取消最后一个。"""
+        if "is_admin" not in dto.model_fields_set or dto.is_admin is None:
+            return False
+        if dto.is_admin == existing.is_admin:
+            return False
+        require_admin(current_user, "仅管理员可设置管理员")
+        if existing.is_admin and not dto.is_admin:
+            admin_count = sum(1 for user in self.repository.list_all(db) if user.is_admin)
+            if admin_count <= 1:
+                raise BusinessException("不能取消最后一个管理员")
+        return True
+
     def create(
         self,
         db: Session,
@@ -121,6 +142,8 @@ class UserService:
         current_user: UserVO,
     ) -> UserVO:
         require_permission(current_user, Perm.SETTINGS_USERS_CREATE)
+        if dto.is_admin:
+            require_admin(current_user, "仅管理员可设置管理员")
         if self.repository.get_by_username(db, dto.username):
             raise BusinessException(f"账号已存在: {dto.username}")
 
@@ -134,7 +157,7 @@ class UserService:
             department=dto.department,
             avatar=dto.avatar or DEFAULT_AVATAR,
             is_active=dto.is_active,
-            is_admin=False,
+            is_admin=dto.is_admin,
             created_by=audit["created_by"],
             updated_by=audit["updated_by"],
         )
@@ -162,6 +185,11 @@ class UserService:
         require_permission(current_user, Perm.SETTINGS_USERS_UPDATE)
         if not dto.model_fields_set:
             return self.get_by_id(db, user_id)
+        existing = self.repository.get_by_id(db, user_id)
+        if not existing:
+            raise NotFoundException("用户不存在")
+        was_admin = existing.is_admin
+        admin_changed = self._admin_flag_changed(db, existing, dto, current_user)
         user = self.repository.update(
             db,
             user_id,
@@ -169,9 +197,16 @@ class UserService:
         )
         if not user:
             raise NotFoundException("用户不存在")
+        if (
+            admin_changed
+            and was_admin
+            and dto.is_admin is False
+            and not self.permission_service.perm_repo.list_codes(db, user_id)
+        ):
+            self.permission_service.assign_defaults(db, user_id, commit=False)
         db.commit()
         db.refresh(user)
-        if "is_active" in dto.model_fields_set and dto.is_active is False:
+        if admin_changed or ("is_active" in dto.model_fields_set and dto.is_active is False):
             from app.services.settings.users.auth import AuthService
 
             AuthService().revoke_all_sessions(token_db, user.id)

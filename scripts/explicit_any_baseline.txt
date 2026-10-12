@@ -64,4 +64,4 @@ app/schemas/vo/costing_engine_vo.py:CostingEngineRunVO.gate_json 1
 app/schemas/vo/costing_engine_vo.py:CostingEngineRunVO.plan_json 1
 app/schemas/vo/costing_engine_vo.py:CostingEngineRunVO.summary_json 1
 app/utils/response.py:ApiResponse.fail 1
-app/utils/response.py:ApiResponse.list_ 1
+app/utils/response.py:ApiResponse.list_ 3

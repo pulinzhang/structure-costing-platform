@@ -1,9 +1,6 @@
-from typing import TYPE_CHECKING, Any, Generic, TypeVar
+from typing import Any, Generic, TypeVar
 
 from pydantic import BaseModel
-
-if TYPE_CHECKING:
-    from app.schemas.common.page_result import PageResult
 
 T = TypeVar("T")
 
@@ -86,14 +83,14 @@ class ApiResponse(BaseModel, Generic[T]):
     @classmethod
     def list_(
         cls,
-        items: list[T],
+        items: list[Any],
         total: int,
         page: int = 1,
         page_size: int = 20,
         message: str = "查询成功",
         # 各列表的筛选项不一样，没有统一形状。
         filters: Any = None,
-    ) -> "ApiResponse[PageResult[T]]":
+    ) -> "ApiResponse[Any]":
         """分页列表响应"""
         from app.schemas.common.page_result import PageResult
 
@@ -101,7 +98,7 @@ class ApiResponse(BaseModel, Generic[T]):
         page_size = max(page_size, 1)
         total_pages = (total + page_size - 1) // page_size if total > 0 else 0
 
-        page_result: PageResult[T] = PageResult(
+        page_result: PageResult[Any] = PageResult(
             items=items,
             total=total,
             page=page,
@@ -111,4 +108,4 @@ class ApiResponse(BaseModel, Generic[T]):
             has_prev=page > 1,
             filters=filters,
         )
-        return ApiResponse[PageResult[T]](code=200, success=True, message=message, data=page_result)
+        return ApiResponse[Any](code=200, success=True, message=message, data=page_result)
