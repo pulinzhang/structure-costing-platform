@@ -8,15 +8,21 @@ from decimal import Decimal
 from typing import TypedDict
 
 from app.common.money import Q4, optional_format_money
+from app.common.period import format_period
 from app.services.costing.assembly_cost.codes import PURCHASED_ASSEMBLY_NOTE
 
 MISSING_PART_LIMIT = 12
 CONFLICT_LIMIT = 30
+NO_SUBJECTS = "没有要核价的供货总成或分总成。"
 
 _MISSING_HINT_LABEL = {
     "missing": "缺价",
     "multi_supplier_unit_cost": "价冲突",
 }
+
+
+def format_no_bom(location: str, vehicle_model: str, year: int, month: int) -> str:
+    return f"{location} {vehicle_model} 在 {format_period(year, month)}没有有效期内的材料清单"
 
 
 class CardTracePayload(TypedDict):
@@ -104,7 +110,7 @@ def operator_write_error(exc: BaseException, *, part_number: str) -> str:
     if is_unique and "part_number" in clause:
         return f"{part_number} 零件号冲突，未保存"
     if is_unique and "source_node_id" in clause:
-        return f"{part_number} BOM 节点已有卡，未保存"
+        return f"{part_number} 已经有一张核价，未保存"
     if is_unique:
         return f"{part_number} 写入冲突，未保存"
     return f"{part_number} 计算失败，未保存"

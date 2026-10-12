@@ -365,7 +365,7 @@ def test_sibling_gates_skip_when_period_filtered() -> None:
     )
     snapshot = check_bom_snapshot(empty, "青岛", 2026, 7)
     assert snapshot.ok is False
-    assert "L0" in snapshot.message
+    assert "供货总成" in snapshot.message
 
 
 def test_run_orchestrator_does_not_submit_nested_async_task() -> None:

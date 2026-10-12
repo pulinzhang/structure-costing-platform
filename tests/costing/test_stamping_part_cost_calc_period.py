@@ -104,7 +104,7 @@ def test_prep_empty_as_of_month_raises(
     )
     deps.part_repo.list_with_processes.return_value = []
 
-    with pytest.raises(BusinessException, match="2026 年 07 月没有有效期内的冲压零件"):
+    with pytest.raises(BusinessException, match="2026年07月没有有效期内的冲压零件"):
         prepare_calc_run(
             MagicMock(),
             deps,

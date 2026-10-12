@@ -17,6 +17,7 @@ from app.services.masterdata.vehicle_model.service import VehicleModelService
 from app.services.stamping.die_fee.calc.constants import APPROVED_SCOPE_MESSAGE
 from app.services.stamping.die_fee.calc.orchestrator.deps import DieFeeCalcDeps
 from app.services.stamping.die_fee.calc.orchestrator.identity import parts_for_identity
+from app.services.stamping.die_fee.calc.orchestrator.messages import format_prep_opening
 from app.services.stamping.die_fee.calc.orchestrator.progress import ProgressNotifier
 from app.services.stamping.die_fee.rules.fee_math import ZERO
 
@@ -53,14 +54,7 @@ def prepare_calc_run(
     )
     started_at = now()
     version_filter = dto.version
-    version_bit = f"version={version_filter}" if version_filter else ""
-    detail_lines = [
-        (
-            f"开始计算 year={dto.year} location={location} "
-            f"vehicle={vehicle_model} supplier=全部工厂"
-            + (f" {version_bit}" if version_bit else "")
-        )
-    ]
+    detail_lines = [format_prep_opening(dto.year, location, vehicle_model, version_filter)]
     progress.report(8, "加载模具布点...")
     parts = deps.die_repo.list_with_processes(
         db,

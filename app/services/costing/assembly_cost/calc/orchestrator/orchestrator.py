@@ -15,6 +15,7 @@ import logging
 
 from sqlalchemy.orm import Session
 
+from app.common.operator_copy import operator_failure_text
 from app.schemas.dto.assembly_cost_dto import AssemblyCostCalcDTO
 from app.schemas.vo.assembly_cost_vo import (
     AssemblyCostCalcReadyVO,
@@ -108,7 +109,7 @@ class AssemblyCostCalcOrchestrator:
             return
         try:
             self._deps.calc_log_service.mark_log_failed(
-                db, log_id=log_id, detail_text=f"计算失败: {exc}"
+                db, log_id=log_id, detail_text=operator_failure_text(exc)
             )
         except Exception:
             logger.exception("释放成品核价计算锁失败: log_id=%s", log_id)

@@ -85,7 +85,7 @@ class ThicknessAdjustmentMatcher:
             True 表示命中；False 表示未命中。该厂本期无厚度块时不写提示消息。
         """
         if not (row.category_name or "").strip():
-            row.add_message("牌号未分类，无法匹配厚度加减价政策")
+            row.add_message("这个牌号还没分类，对不上厚度加减价")
             return False
 
         policy = find_best_thickness_policy(row, policies)

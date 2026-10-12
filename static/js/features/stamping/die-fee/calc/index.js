@@ -3,7 +3,7 @@ import { opsIconButtonHtml } from '../../../../ui/hud-table.js?v=3';
 import {
     dieFeeCalcTemplate,
     CALC_HISTORY_COLSPAN,
-} from './template.js?v=20';
+} from './template.js?v=21';
 import {
     DEFAULT_PAGE_SIZE,
     bindPagination,
@@ -415,7 +415,7 @@ async function openProcessDrawer(logId) {
             <div class="px-5 py-3 border-b border-line-subtle text-[10px] text-ink-dim shrink-0">
                 <div>${esc(formatTimingLine(log, formatDateTime) || '-')}</div>
                 <div class="mt-1">
-                入库 ${fmtInt(log.success_count)} · 跳过 ${fmtInt(log.skipped_no_die_count)}
+                写入 ${fmtInt(log.success_count)} 件 · 跳过 ${fmtInt(log.skipped_no_die_count)} 件
                 ${String(log.detail_text || '').includes('有尺寸但无模具编号')
                     ? ' · <span class="text-warn">有长宽高无模具号（仅提示）</span>'
                     : ''}

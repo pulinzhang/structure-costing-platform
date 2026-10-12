@@ -24,6 +24,10 @@ from app.services.costing.stamping_part_cost.calc.orchestrator.batch_engine impo
     BatchCalcOutcome,
 )
 from app.services.costing.stamping_part_cost.calc.orchestrator.deps import PartCostCalcDeps
+from app.services.costing.stamping_part_cost.calc.orchestrator.messages import (
+    format_failed_part,
+    format_persist_summary,
+)
 from app.services.costing.stamping_part_cost.calc.orchestrator.prep import CalcPrepContext
 from app.services.costing.stamping_part_cost.calc.orchestrator.progress import ProgressNotifier
 
@@ -42,7 +46,7 @@ def persist_calc_result(
     calc_batch_id: str | None,
     progress: ProgressNotifier,
 ) -> StampingPartCostCalcResultVO:
-    progress.report(92, "写入核算结果...")
+    progress.report(92, "正在写入零件价格…")
     if batch.upsert_rows:
         deps.cost_repo.bulk_upsert(db, batch.upsert_rows)
 
@@ -55,11 +59,14 @@ def persist_calc_result(
 
     detail_lines = list(ctx.detail_lines)
     detail_lines.append(
-        f"成功 {batch.success_count}，失败 {len(batch.failed_items)}，"
-        f"跳过已审 {batch.skipped_approved_count}"
+        format_persist_summary(
+            batch.success_count,
+            len(batch.failed_items),
+            batch.skipped_approved_count,
+        )
     )
     for item in batch.failed_items[:20]:
-        detail_lines.append(f"失败 {item.part_number}: {item.reason}")
+        detail_lines.append(format_failed_part(item.part_number, item.reason))
 
     finished_at = now()
     result = StampingPartCostCalcResultVO(

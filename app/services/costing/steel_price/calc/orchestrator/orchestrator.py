@@ -16,6 +16,7 @@ from datetime import datetime
 from sqlalchemy.orm import Session
 
 from app.common.audit import display_name
+from app.common.operator_copy import operator_failure_text
 from app.exceptions.base import BusinessException
 from app.models.costing import SteelPriceCalcLog
 from app.schemas.common.deleted_count import DeletedCountVO
@@ -216,11 +217,12 @@ class SteelPriceCalcOrchestrator:
             )
 
         def on_crash(worker_db: Session, error: BaseException) -> None:
+            text = operator_failure_text(error)
             self.mark_log_failed(
                 worker_db,
                 log_id=log_id,
-                message=str(error),
-                detail_text=f"计算异常: {error}",
+                message=text,
+                detail_text=text,
             )
 
         async_task_service.submit_session_worker(
@@ -228,6 +230,6 @@ class SteelPriceCalcOrchestrator:
             start_message="后台开始计算...",
             work=work,
             on_crash=on_crash,
-            crash_message=lambda error: f"计算异常: {error}",
+            crash_message=operator_failure_text,
         )
         return AsyncTaskAcceptedVO(task_id=task.task_id)

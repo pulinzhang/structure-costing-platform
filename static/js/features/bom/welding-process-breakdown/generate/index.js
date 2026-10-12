@@ -7,7 +7,7 @@ import { DRAWER_CLOSE, DRAWER_SHELL, DRAWER_BACKDROP } from '../../../../ui/clas
 import { opsIconButtonHtml } from '../../../../ui/hud-table.js?v=3';
 import {
     weldingProcessBreakdownGenerateTemplate,
-} from './template.js?v=16';
+} from './template.js?v=17';
 import {
     DEFAULT_PAGE_SIZE,
     bindPagination,
@@ -454,9 +454,8 @@ function showProcessDrawer(log) {
             </div>
         </div>
         <div class="px-5 py-3 border-b border-line-subtle text-[10px] text-ink-dim space-y-1 shrink-0">
-            <div>批次 <span class="font-mono text-ink-muted">${esc(log.calc_batch_id || '-')}</span></div>
             <div>${esc(formatTimingLine(log, formatDateTime) || '-')}</div>
-            <div>汇总：拆解 ${fmtInt(log.node_count)} · 明细 ${fmtInt(log.line_count)}</div>
+            <div>拆出 ${fmtInt(log.node_count)} 个零件，${fmtInt(log.line_count)} 条工艺</div>
         </div>
         <div class="flex-1 overflow-y-auto overscroll-contain p-5">
             <pre class="text-[11px] leading-5 font-mono text-ink-muted whitespace-pre-wrap break-words bg-app-main border border-app-elevated p-4">${esc(log.detail_text || '（无过程文本）')}</pre>
@@ -623,7 +622,7 @@ function startPolling(taskId) {
                 const result = data?.result || {};
                 showToast(
                     result.message
-                        || `拆解完成：拆解记录 ${fmtInt(result.node_count)} · 明细 ${fmtInt(result.line_count)}`,
+                        || `拆完了：${fmtInt(result.node_count)} 个零件，${fmtInt(result.line_count)} 条工艺`,
                     'success',
                 );
                 genState.activeTaskId = null;

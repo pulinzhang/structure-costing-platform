@@ -14,6 +14,7 @@ from __future__ import annotations
 from sqlalchemy.orm import Session
 
 from app.common.audit import display_name
+from app.common.operator_copy import operator_failure_text
 from app.exceptions.base import BusinessException
 from app.schemas.common.deleted_count import DeletedCountVO
 from app.schemas.dto.stamping_die_fee_dto import StampingDieFeeCalcDTO
@@ -191,11 +192,11 @@ class StampingDieFeeCalcOrchestrator:
             return outcome_from_calc_status(
                 result.status,
                 failed_message=(
-                    f"计算失败：入库 {result.success_count}，跳过 {result.skipped_no_die_count}"
+                    f"计算失败：写入 {result.success_count} 件，跳过 {result.skipped_no_die_count} 件"
                 ),
                 completed_message=(
-                    f"计算{label}：入库 {result.success_count}，"
-                    f"跳过 {result.skipped_no_die_count}"
+                    f"计算{label}：写入 {result.success_count} 件，"
+                    f"跳过 {result.skipped_no_die_count} 件"
                 ),
                 result=result.model_dump(),
             )
@@ -204,7 +205,7 @@ class StampingDieFeeCalcOrchestrator:
             self.mark_log_failed(
                 worker_db,
                 log_id=log_id,
-                detail_text=f"计算失败: {error}",
+                detail_text=operator_failure_text(error),
             )
 
         async_task_service.submit_session_worker(
@@ -212,5 +213,6 @@ class StampingDieFeeCalcOrchestrator:
             start_message="后台开始计算...",
             work=work,
             on_crash=on_crash,
+            crash_message=operator_failure_text,
         )
         return AsyncTaskAcceptedVO(task_id=task.task_id)

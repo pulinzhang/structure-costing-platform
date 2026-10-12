@@ -87,7 +87,7 @@ def test_prep_levels_zero_skips_l1() -> None:
 
 def test_prep_empty_after_filter_raises() -> None:
     nodes = [_node(node_id=2, level=1, part_number="B")]
-    with pytest.raises(BusinessException, match="未找到焊接工艺拆解节点"):
+    with pytest.raises(BusinessException, match="没有可算的零件"):
         prepare_calc_run(
             MagicMock(),
             _deps(nodes),
@@ -102,7 +102,7 @@ def test_prep_empty_after_filter_raises() -> None:
 
 
 def test_prep_missing_breakdown_raises() -> None:
-    with pytest.raises(BusinessException, match="尚未生成焊接工艺拆解"):
+    with pytest.raises(BusinessException, match="还没有焊接工艺拆解"):
         prepare_calc_run(
             MagicMock(),
             _deps([], exists=False),
@@ -208,13 +208,13 @@ def test_staff_report_speaks_plain_language() -> None:
             ]
         )
     )
-    assert "L0  501012176AA  中支撑" in text
+    assert "供货总成  501012176AA  中支撑" in text
     assert "Excel「芜湖_T13J_材料清单.xlsx」" in text
     assert "第 128 行" in text
     assert "第 256 行" in text
     assert "上传材料清单" in text
-    assert "焊信原文：电泳黑漆：0.098m2" in text
-    assert "L1  502007710AA-1  左后尾灯安装板分总成" in text
+    assert "焊接信息：电泳黑漆：0.098m2" in text
+    assert "分总成  502007710AA-1  左后尾灯安装板分总成" in text
     assert "凸焊:：2" in text
     assert "连续冒号" in text
     assert "电泳" in text

@@ -89,7 +89,7 @@ def test_operator_write_error_does_not_use_insert_column_list() -> None:
         "[SQL: INSERT INTO costing_assembly_costs (year, part_number, source_node_id)]"
     )
     message = operator_write_error(Exception(raw), part_number="551001137AA")
-    assert "BOM 节点" in message
+    assert "已经有一张核价" in message
     assert "零件号冲突" not in message
 
 

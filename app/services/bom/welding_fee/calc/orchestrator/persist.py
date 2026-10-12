@@ -17,6 +17,7 @@ from app.services.bom.welding_fee.calc.calc_log import (
 )
 from app.services.bom.welding_fee.calc.orchestrator.batch_engine import BatchCalcOutcome
 from app.services.bom.welding_fee.calc.orchestrator.deps import WeldingFeeCalcDeps
+from app.services.bom.welding_fee.calc.orchestrator.messages import format_persist_summary
 from app.services.bom.welding_fee.calc.orchestrator.prep import CalcPrepContext
 from app.services.bom.welding_fee.calc.orchestrator.progress import ProgressNotifier
 from app.services.bom.welding_fee.calc.staff_report import format_failed_staff_section
@@ -35,7 +36,7 @@ def persist_calc_result(
     calc_batch_id: str | None,
     progress: ProgressNotifier,
 ) -> BomWeldingFeeCalcResultVO:
-    progress.report(92, "写入焊接费结果...")
+    progress.report(92, "正在写入焊接费…")
     created_count = 0
     updated_count = 0
     if batch.upsert_rows:
@@ -52,9 +53,13 @@ def persist_calc_result(
 
     detail_lines = list(ctx.detail_lines)
     detail_lines.append(
-        f"新增 {created_count}，更新 {updated_count}，"
-        f"失败 {batch.failed_count}，缺单价明细 {batch.missing_price_total}，"
-        f"跳过已审 {batch.skipped_approved_count}"
+        format_persist_summary(
+            created_count,
+            updated_count,
+            batch.failed_count,
+            batch.missing_price_total,
+            batch.skipped_approved_count,
+        )
     )
     staff_lines = format_failed_staff_section(batch.failed_notes)
     if staff_lines:

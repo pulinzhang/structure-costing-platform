@@ -20,6 +20,11 @@ from app.services.costing.steel_price.calc.models import (
     MaterialThicknessRow,
     SteelPriceCalcRequest,
 )
+from app.services.costing.steel_price.calc.orchestrator.messages import (
+    format_base_location_mismatch,
+    format_missing_grade,
+    format_unclassified,
+)
 from app.services.masterdata.steel_grade_category.service import (
     SteelGradeCategoryService,
 )
@@ -107,9 +112,7 @@ class BasePriceEnricher:
                     location=location,
                     grade=material_grade,
                     reason="unclassified",
-                    detail=(
-                        f"[{location}] {material_grade} " "未分类，无法按冷轧/镀锌/酸洗匹配基价"
-                    ),
+                    detail=format_unclassified(location, material_grade),
                 ):
                     no_base_count += 1
                 continue
@@ -125,9 +128,7 @@ class BasePriceEnricher:
                     location=location,
                     grade=material_grade,
                     reason="missing_grade",
-                    detail=(
-                        f"[{location}] {material_grade} " f"大类={category_name} 基价表无该牌号"
-                    ),
+                    detail=format_missing_grade(location, material_grade, category_name),
                 ):
                     no_base_count += 1
                 continue
@@ -141,9 +142,8 @@ class BasePriceEnricher:
                         location=location,
                         grade=material_grade,
                         reason=f"location:{base.id}",
-                        detail=(
-                            f"[{location}] {material_grade} "
-                            f"基价基地不一致(base={base_location}, id={base.id})"
+                        detail=format_base_location_mismatch(
+                            location, material_grade, base_location
                         ),
                     ):
                         no_base_count += 1

@@ -229,7 +229,7 @@ def test_generate_and_regenerate_keeps_confirm(db: Session) -> None:
     assert logs[0].status == "success"
     assert logs[0].object_count == 1
     assert "采购对象" in logs[0].detail_text
-    assert "退化供货件亚类" in logs[0].detail_text
+    assert "其中" in logs[0].detail_text
     assert "已按毛坯供货" not in logs[0].detail_text
 
 

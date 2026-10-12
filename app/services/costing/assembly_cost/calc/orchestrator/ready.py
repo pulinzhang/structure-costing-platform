@@ -22,6 +22,7 @@ from app.schemas.vo.assembly_cost_vo import AssemblyCostCalcReadyVO
 from app.services.bom.bom.period import BomPeriodService
 from app.services.bom.procurement_object.classify import SECTION_OBJECT, classify_nodes
 from app.services.costing.assembly_cost.calc.orchestrator.deps import AssemblyCalcDeps
+from app.services.costing.assembly_cost.calc.process_log import NO_SUBJECTS, format_no_bom
 from app.services.costing.stamping_part_cost.calc.constants import ALL_SUPPLIERS_LOCK
 from app.services.masterdata.vehicle_model.service import VehicleModelService
 
@@ -142,10 +143,10 @@ def collect_calc_ready(
     message = None
     if not orm_nodes:
         ready = False
-        message = f"{location}/{vehicle_model} 在 {year} 年 {month:02d} 月没有有效期内的 BOM 树"
+        message = format_no_bom(location, vehicle_model, year, month)
     elif subject_count == 0:
         ready = False
-        message = "无核价主体（装配∪树根）"
+        message = NO_SUBJECTS
     elif not stamping_ok:
         ready = False
         message = stamping_message
@@ -337,7 +338,7 @@ def _welding_coverage(
     if latest.status in {"processing", "failed"}:
         return WeldingCoverage(
             False,
-            f"焊接费最新日志为 {latest.status}，请先完成焊接费计算",
+            f"焊接费最近一次是{'还在计算' if latest.status == 'processing' else '失败'}，请先把焊接费算完。",
             fee_count,
             level_counts,
             breakdown_complete,
@@ -345,7 +346,7 @@ def _welding_coverage(
     if missing_weld_info:
         return WeldingCoverage(
             False,
-            "有焊信的节点尚未全部进入拆解，请先生成焊接工艺拆解",
+            "材料清单上写了焊接信息的零件还没拆完，请先做焊接工艺拆解。",
             fee_count,
             level_counts,
             False,
@@ -354,9 +355,8 @@ def _welding_coverage(
         return WeldingCoverage(
             False,
             (
-                f"拆解节点没有对应的焊接费行"
-                f"（当前树拆解 {len(breakdowns)} 条，对齐 {fee_count} 条），"
-                "请先完成焊接费计算"
+                f"还有零件拆过了，但没算出焊接费（拆了 {len(breakdowns)} 个，算出 {fee_count} 个）。"
+                "请先完成焊接费计算。"
             ),
             fee_count,
             level_counts,

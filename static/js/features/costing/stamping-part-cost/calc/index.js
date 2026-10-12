@@ -481,6 +481,18 @@ async function openProcessDrawer(logId) {
     }
 }
 
+function formatPartCostSummary(log) {
+    const success = Number(log.success_count) || 0;
+    const failed = Number(log.failed_count) || 0;
+    const skipped = Number(log.skipped_approved_count) || 0;
+    const parts = [`要算 ${fmtInt(log.total_parts)} 个零件`];
+    if (success) parts.push(`算完 ${fmtInt(success)} 个`);
+    if (failed) parts.push(`没算上 ${fmtInt(failed)} 个`);
+    if (!success && !failed) parts.push('没有写入');
+    if (skipped) parts.push(`已审没重算 ${fmtInt(skipped)} 个`);
+    return parts.join('，');
+}
+
 function showProcessDrawer(log) {
     closeProcessDrawer();
     const status = STATUS_META[log.status] || STATUS_META.failed;
@@ -509,9 +521,8 @@ function showProcessDrawer(log) {
             </div>
         </div>
         <div class="px-5 py-3 border-b border-line-subtle text-[10px] text-ink-dim space-y-1 shrink-0">
-            <div>批次<span class="font-mono text-ink-muted">${esc(log.calc_batch_id || '-')}</span></div>
             <div>${esc(formatTimingLine(log, formatDateTime) || '-')}</div>
-            <div>汇总：零件 ${fmtInt(log.total_parts)} · 成功 ${fmtInt(log.success_count)} · 失败 ${fmtInt(log.failed_count)} · 跳过 ${fmtInt(log.skipped_approved_count)}</div>
+            <div>${esc(formatPartCostSummary(log))}</div>
         </div>
         <div class="flex-1 overflow-y-auto overscroll-contain p-5">
             <pre class="text-[11px] leading-5 font-mono text-ink-muted whitespace-pre-wrap break-words bg-app-main border border-app-elevated p-4">${esc(log.detail_text || '（无过程文本）')}

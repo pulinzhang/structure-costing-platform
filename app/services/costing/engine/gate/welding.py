@@ -31,7 +31,7 @@ def check_welding_unit_price(
     if not discovery.l0_scopes:
         return make_skipped(
             code="welding_unit_price",
-            message="无含 L0 的 BOM，跳过焊接单价与焊接加工费检查",
+            message="没有供货总成，焊接单价先不查。",
             location=location,
             year=year,
             month=month,

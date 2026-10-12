@@ -4,6 +4,11 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 
+from app.services.bom.welding_fee.calc.orchestrator.messages import (
+    format_persist_summary,
+    level_label,
+)
+
 
 @dataclass(slots=True, frozen=True)
 class FailedNodeNote:
@@ -81,12 +86,12 @@ def excel_reimport_advice(note: FailedNodeNote) -> str:
 
 def format_failed_node_block(note: FailedNodeNote) -> str:
     name = (note.part_name or "").strip() or "（无名称）"
-    weld = (note.weld_info_raw or "").strip() or "（无焊信原文）"
+    weld = (note.weld_info_raw or "").strip() or "（没写焊接信息）"
     lines = [
-        f"L{int(note.level)}  {note.part_number}  {name}",
+        f"{level_label(note.level)}  {note.part_number}  {name}",
         f"来源：{_excel_location(note)}",
         f"原因：{human_failed_reason(note.calc_message)}",
-        f"焊信原文：{weld}",
+        f"焊接信息：{weld}",
     ]
     no_lines = (note.calc_message or "").startswith("无焊接工艺明细")
     empty_weld = not (note.weld_info_raw or "").strip()
@@ -117,15 +122,21 @@ def calc_finish_toast(
     updated_count: int,
     failed_count: int,
     missing_price_count: int,
+    skipped_approved_count: int = 0,
 ) -> str:
     label = {"success": "成功", "partial": "部分成功", "failed": "失败"}.get(biz_status, biz_status)
-    text = (
-        f"计算{label}：新增 {created_count}，更新 {updated_count}，"
-        f"失败 {failed_count}，缺单价 {missing_price_count}"
+    summary = format_persist_summary(
+        created_count,
+        updated_count,
+        failed_count,
+        missing_price_count,
+        skipped_approved_count,
+        point_at_reasons=False,
     )
+    text = f"计算{label}：{summary}"
     if failed_count:
         return (
-            f"{text}。失败零件写了 Excel 文件名和第几行，"
-            "请改材料清单原表后重新导入，再拆解、再计算。"
+            f"{text}没算上的写了 Excel 文件名和第几行，"
+            "请改材料清单后重新导入，再拆一次，再计算。"
         )
     return text

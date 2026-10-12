@@ -14,6 +14,7 @@ from __future__ import annotations
 from sqlalchemy.orm import Session
 
 from app.common.audit import display_name
+from app.common.operator_copy import operator_failure_text
 from app.models.stamping import StampingProcessFeeCalcLog
 from app.schemas.common.deleted_count import DeletedCountVO
 from app.schemas.dto.stamping_process_fee_dto import StampingProcessFeeCalcDTO
@@ -205,7 +206,7 @@ class StampingProcessFeeCalcOrchestrator:
             self.mark_log_failed(
                 worker_db,
                 log_id=log_id,
-                detail_text=f"计算失败: {error}",
+                detail_text=operator_failure_text(error),
             )
 
         async_task_service.submit_session_worker(
@@ -213,5 +214,6 @@ class StampingProcessFeeCalcOrchestrator:
             start_message="后台开始计算...",
             work=work,
             on_crash=on_crash,
+            crash_message=operator_failure_text,
         )
         return AsyncTaskAcceptedVO(task_id=task.task_id)
