@@ -3,6 +3,7 @@
  */
 
 import { UPLOAD_DROPZONE, UPLOAD_INPUT, UPLOAD_LABEL, HUD_LED } from '../../../../ui/classes.js?v=14';
+import { recentUploadsCardHtml } from '../../../../ui/recent-uploads.js?v=3';
 import {
     uploadBrowseButtonHtml,
     uploadFileHintHtml,
@@ -58,7 +59,7 @@ export function procurementObjectSupplierUploadTemplate() {
                                         </select>
                                     </div>
                                 </div>
-                                <p class="ml-6 mt-1.5 text-[11px] text-ink-dim">先在这个基地、项目和版本下生成采购对象。只改第一页黄色的「供应商」列。填法看右边说明。</p>
+                                <p class="ml-6 mt-1.5 text-[11px] text-ink-dim">先生成采购对象，再只改第一页「供应商」列。</p>
                                 <div id="poSupplierUploadQaBanner"
                                      class="ml-6 mt-2 hidden text-[11px] text-brand-hud bg-brand-hud/10 border border-brand/30 px-3 py-2 leading-relaxed"></div>
                             </div>
@@ -78,7 +79,7 @@ export function procurementObjectSupplierUploadTemplate() {
                                             ${uploadFileHintHtml('poSupplierUploadHint')}
                                             <input type="file" id="poSupplierUploadFileInput" class="hidden" accept=".xlsx">
                                             ${uploadBrowseButtonHtml('poSupplierUploadSelectFileBtn')}
-                                            <p class="text-[10px] text-ink-dim mt-5 mb-0">只收 .xlsx。只改第一页供应商列。</p>
+                                            <p class="text-[10px] text-ink-dim mt-5 mb-0">只收 .xlsx</p>
                                         </div>
                                         <div id="poSupplierUploadProgressPanel" class="hidden text-left w-full">
                                             <div class="flex items-center gap-2 min-w-0 mb-3">
@@ -110,12 +111,12 @@ export function procurementObjectSupplierUploadTemplate() {
                         <span class="${HUD_LED}"></span>
                         <h5 class="text-[11px] font-bold text-ink-muted mb-0 tracking-widest uppercase">格式说明</h5>
                     </div>
-                    <div class="p-4 space-y-3 text-xs text-ink-dim">
-                        <p>只改第一页「供应商」这一列。内部号是给您对照 ERP 用的，上传时不看。同一个零件号只占一行。供应商留空，就是清掉原来的供应商。填简称、别名或 ERP 编号都可以，保存时会换成工商全称。</p>
-                        <p>名单里没有的供应商，请先到 <a href="#/supplier-list" class="text-brand-hud hover:text-brand-active">供应商列表</a> 补上。这一页不能新建供应商。</p>
-                        <p>材料检查没通过的零件也可以上传，上传后仍是待审核。已经审核过的行不会改。自制件不要填供应商。</p>
+                    <div class="p-4 space-y-2 text-[11px] text-ink-muted leading-relaxed">
+                        <p>留空即清掉供应商。已审核的行不会改。</p>
+                        <p class="mb-0">名单里没有的，先到 <a href="#/supplier-list" class="text-brand-hud hover:text-brand-active">供应商列表</a> 补上。</p>
                     </div>
                 </div>
+                ${recentUploadsCardHtml('poSupplierRecentUploads')}
             </div>
         </div>
     `;

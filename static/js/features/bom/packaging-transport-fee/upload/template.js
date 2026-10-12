@@ -4,6 +4,7 @@
  */
 
 import { UPLOAD_DROPZONE, UPLOAD_INPUT, UPLOAD_LABEL, HUD_LED } from '../../../../ui/classes.js?v=14';
+import { recentUploadsCardHtml } from '../../../../ui/recent-uploads.js?v=3';
 import {
     uploadBrowseButtonHtml,
     uploadFileHintHtml,
@@ -58,7 +59,7 @@ export function pkgTransportFeeUploadTemplate() {
                                     </div>
                                 </div>
                                 <p id="pkgTransportFeeUploadScopeHint" class="ml-6 mt-1.5 text-[11px] text-ink-dim">
-                                    先选基地，再填年度。项目只列出这一年还有效、并且已经有材料清单的代号。同一条按基地、年度、项目、零件号区分，不能重复。
+                                    先选基地和年度。项目只列出这一年还有材料清单的。
                                 </p>
                                 <div id="pkgTransportFeeUploadNoBomBanner" class="hidden ml-6 mt-2 text-[10px] text-warn bg-app-hud px-2.5 py-1.5 border-l-2 border-warn/40">
                                     尚未上传材料清单，或当前账号无对应清单数据。请先在「上传材料清单」导入后再上传包装运输费。
@@ -87,7 +88,7 @@ export function pkgTransportFeeUploadTemplate() {
                                             ${uploadFileHintHtml('pkgTransportFeeUploadHint')}
                                             <input type="file" id="pkgTransportFeeUploadFileInput" class="hidden" accept=".xlsx">
                                             ${uploadBrowseButtonHtml('pkgTransportFeeUploadSelectFileBtn')}
-                                            <p class="text-[10px] text-ink-faint mt-4 mb-0">只收 .xlsx。费用请填算好的数，不要留公式。</p>
+                                            <p class="text-[10px] text-ink-faint mt-4 mb-0">只收 .xlsx</p>
                                         </div>
                                         <div id="pkgTransportFeeUploadProgressPanel" class="hidden text-left w-full">
                                             <div class="flex items-center gap-2 mb-3">
@@ -122,47 +123,12 @@ export function pkgTransportFeeUploadTemplate() {
                             <h5 class="text-[11px] font-bold text-ink-muted mb-0 tracking-widest uppercase">格式说明</h5>
                         </div>
                     </div>
-                    <div class="p-4 space-y-4">
-                        <div>
-                            <h6 class="text-[10px] uppercase tracking-wider text-ink-dim mb-2">两种表都能传</h6>
-                            <ul class="list-disc list-inside text-xs text-ink-dim space-y-1.5">
-                                <li>车间原来的表：要有「料号」「包装类型」「包装运输费合计」。</li>
-                                <li>本页下载的模板：表头只有一行。</li>
-                            </ul>
-                        </div>
-                        <div>
-                            <h6 class="text-[10px] uppercase tracking-wider text-ink-dim mb-2">算价看哪一列</h6>
-                            <ul class="list-disc list-inside text-xs text-ink-dim space-y-1.5">
-                                <li>只认「包装运输费合计」。</li>
-                                <li>分项可以填：单件包装费、单件运输费、维护费、其它费用。</li>
-                            </ul>
-                        </div>
-                        <div>
-                            <h6 class="text-[10px] uppercase tracking-wider text-ink-dim mb-2">再传一份时</h6>
-                            <ul class="list-disc list-inside text-xs text-ink-dim space-y-1.5">
-                                <li>同一个零件再传会更新。已经审核过的跳过，不改。</li>
-                                <li>格子里如果是公式，请先算出数再传。系统不会帮你重算。</li>
-                            </ul>
-                        </div>
+                    <div class="p-4">
+                        <p class="text-[11px] text-ink-muted leading-relaxed mb-0">只认「包装运输费合计」。同一零件再传会更新，已审核的跳过。</p>
                     </div>
                 </div>
 
-                <div class="bg-app-surface border border-line">
-                    <div class="px-4 py-3 border-b border-line-subtle flex items-center justify-between">
-                        <div class="flex items-center gap-2">
-                            <span class="${HUD_LED}"></span>
-                            <h5 class="text-[11px] font-bold text-ink-muted mb-0 tracking-widest uppercase">最近上传</h5>
-                        </div>
-                    </div>
-                    <div class="p-4" id="pkgTransportFeeRecentUploads">
-                        <div class="text-center py-5">
-                            <div class="w-8 h-8 bg-app-surface border border-line flex items-center justify-center mx-auto mb-2.5">
-                                <svg class="w-4 h-4 text-ink-faint" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10"></path></svg>
-                            </div>
-                            <p class="text-[10px] text-ink-faint">暂无上传记录</p>
-                        </div>
-                    </div>
-                </div>
+                ${recentUploadsCardHtml('pkgTransportFeeRecentUploads')}
             </div>
         </div>
     `;

@@ -10,6 +10,7 @@ import {
     uploadSubmitButtonHtml,
     uploadTemplateButtonHtml,
 } from '../../../../ui/upload-actions.js?v=2';
+import { recentUploadsCardHtml } from '../../../../ui/recent-uploads.js?v=3';
 
 export function supplierUploadTemplate() {
     return `
@@ -60,27 +61,12 @@ export function supplierUploadTemplate() {
                         <span class="w-1 h-3 bg-brand-hud"></span>
                         <h5 class="text-[11px] font-semibold text-ink-muted mb-0 tracking-wider">要点</h5>
                     </div>
-                    <div class="p-4 space-y-4">
-                        <div>
-                            <h6 class="text-[10px] tracking-wider text-ink-faint mb-2">列</h6>
-                            <ul class="list-disc list-inside text-xs text-ink-dim space-y-1.5">
-                                <li><span class="text-ink-muted">缩写</span>：页面上显示的短名</li>
-                                <li><span class="text-ink-muted">全称</span>：与执照一致，系统按全称认出这家供应商</li>
-                                <li><span class="text-ink-muted">对外代码</span>：给外部系统用，工艺表不显示这一列</li>
-                                <li><span class="text-ink-muted">别名</span>：可以空着，用来认表头里写法不一样的名字</li>
-                            </ul>
-                        </div>
-                        <div>
-                            <h6 class="text-[10px] tracking-wider text-ink-faint mb-2">规则</h6>
-                            <ul class="list-disc list-inside text-xs text-ink-dim space-y-1.5">
-                                <li>已有全称则跳过，不覆盖</li>
-                                <li>有一行不对，这一整份都不写入</li>
-                                <li>要改是否启用或别名，到供应商列表里点开这一行</li>
-                            </ul>
-                        </div>
+                    <div class="p-4 space-y-3">
+                        <p class="text-xs text-ink-dim leading-relaxed mb-0">按全称认出供应商。已有全称则跳过。有一行不对，整份不写入。</p>
                         <a href="#/supplier-list" class="block text-[11px] text-brand-hud hover:text-brand-active">打开供应商列表 →</a>
                     </div>
                 </div>
+                ${recentUploadsCardHtml('supplierRecentUploads', 'bg-app-hud border border-line-hud')}
             </div>
         </div>
     `;

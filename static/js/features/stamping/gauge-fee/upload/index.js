@@ -2,9 +2,12 @@
  * 冲压检具费同步上传
  */
 
-import { gaugeFeeUploadTemplate } from './template.js?v=17';
+import { gaugeFeeUploadTemplate } from './template.js?v=20';
 import { setDropzoneDragActive } from '../../../../ui/upload-dropzone.js?v=3';
 import { bindSyncUploadProgress } from '../../../../ui/sync-upload-progress.js?v=4';
+import { bindRecentUploads } from '../../../../ui/recent-uploads.js?v=3';
+
+const recentUploads = bindRecentUploads('gfuRecentUploads');
 
 const API_BASE = '/api/stamping/gauge-fees';
 
@@ -31,6 +34,7 @@ const GaugeFeeUploadPage = {
         this.bindEvents();
         this.hideProgress();
         this.clearSelectedFile(false);
+        recentUploads.paint();
         this.loadFilters();
     },
 
@@ -241,6 +245,11 @@ const GaugeFeeUploadPage = {
             const res = await HttpClient.post(`${API_BASE}/upload`, formData, { skipToast: true });
             const msg = res.message || res.data?.message || '导入成功';
             this.showDoneOnPanel(msg);
+            recentUploads.remember({
+                fileName: this.selectedFile?.name,
+                scopeLabel: `${location} · ${vehicleModel}`,
+                summary: `${res.data?.imported_count ?? 0} 条`,
+            });
             this.clearSelectedFile(true);
         } catch (err) {
             this.failOnPanel(err.message || '导入失败');

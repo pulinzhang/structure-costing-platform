@@ -3,6 +3,7 @@
  */
 
 import { UPLOAD_DROPZONE, UPLOAD_INPUT, HUD_LED } from '../../../../ui/classes.js?v=14';
+import { recentUploadsCardHtml } from '../../../../ui/recent-uploads.js?v=3';
 import {
     uploadBrowseButtonHtml,
     uploadFileHintHtml,
@@ -50,7 +51,7 @@ export function gaugeFeeUploadTemplate() {
                                     <select id="gfuVehicle" name="vehicle_model" required class="${UPLOAD_INPUT} hud-filter w-full max-w-[280px]">
                                         <option value="">请先选择基地</option>
                                     </select>
-                                    <p class="mt-2 text-[10px] text-ink-faint">先选基地和项目才能下载。模板里的零件来自已经上传的模具布点。</p>
+                                    <p class="mt-2 text-[10px] text-ink-faint">模板零件来自模具布点。</p>
                                 </div>
                             </div>
                             <div class="h-px bg-app-surface mx-6 mb-4"></div>
@@ -99,17 +100,17 @@ export function gaugeFeeUploadTemplate() {
                     </form>
                 </div>
             </div>
-            <div class="bg-app-surface border border-line">
-                <div class="px-4 py-3 border-b border-line-subtle flex items-center gap-2">
-                    <span class="${HUD_LED}"></span>
-                    <h5 class="text-[11px] font-bold text-ink-muted mb-0 tracking-widest uppercase">说明</h5>
+            <div class="space-y-3">
+                <div class="bg-app-surface border border-line">
+                    <div class="px-4 py-3 border-b border-line-subtle flex items-center gap-2">
+                        <span class="${HUD_LED}"></span>
+                        <h5 class="text-[11px] font-bold text-ink-muted mb-0 tracking-widest uppercase">说明</h5>
+                    </div>
+                    <div class="p-4 text-[11px] text-ink-muted leading-relaxed">
+                        <p class="mb-0">零件来自模具布点。再传会整份换成新表。零件号必须已在布点里。</p>
+                    </div>
                 </div>
-                <div class="p-4 space-y-3 text-[11px] text-ink-muted leading-relaxed">
-                    <p class="text-warn">模板里的零件来自这个基地、这个项目的模具布点。还没有模具布点，就先去上传模具布点，这里先不用维护检具费。</p>
-                    <p>检具费（万元）和项目分摊数量（万台）必填，不能空，也不能是负数。模板里先写成 0.8 万、10 万台、生效。</p>
-                    <p>再上传会把这个基地、这个项目整份换成新表。这里不算每年分摊多少，也不算进零件价格。</p>
-                    <p>表里的零件号必须已经在模具布点里，否则这一整份都不收。</p>
-                </div>
+                ${recentUploadsCardHtml('gfuRecentUploads')}
             </div>
         </div>
     `;

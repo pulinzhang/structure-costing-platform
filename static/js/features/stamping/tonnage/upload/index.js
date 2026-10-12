@@ -3,9 +3,12 @@
  * 同步导入：基地 + 年度必选，仅 .xlsx
  */
 
-import { tonnageUploadTemplate } from './template.js?v=19';
+import { tonnageUploadTemplate } from './template.js?v=22';
 import { can } from '../../../../core/permissions.js?v=10';
 import { bindSyncUploadProgress } from '../../../../ui/sync-upload-progress.js?v=4';
+import { bindRecentUploads } from '../../../../ui/recent-uploads.js?v=3';
+
+const recentUploads = bindRecentUploads('tonnageRecentUploads');
 
 const API_BASE = '/api/stamping/tonnage-price';
 const MAX_FILE_SIZE = 5 * 1024 * 1024;
@@ -33,6 +36,7 @@ const TonnageUploadPage = {
         this.bindEvents();
         this.hideProgress();
         this.clearSelectedFile(false);
+        recentUploads.paint();
         this.loadLocationOptions();
     },
 
@@ -289,6 +293,11 @@ const TonnageUploadPage = {
                 || data.message
                 || `导入成功：新增 ${data.created_count ?? 0}，更新 ${data.updated_count ?? 0}`;
             this.showDoneOnPanel(msg);
+            recentUploads.remember({
+                fileName: this.selectedFile?.name,
+                scopeLabel: `${location} · ${yearRaw}年`,
+                summary: `新增 ${data.created_count ?? 0} / 更新 ${data.updated_count ?? 0}`,
+            });
             this.clearSelectedFile(true);
         } catch (err) {
             this.failOnPanel(err.message || '导入失败');

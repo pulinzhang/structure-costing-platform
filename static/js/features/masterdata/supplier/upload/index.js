@@ -2,8 +2,11 @@
  * 供应商上传页 — 同步导入
  */
 
-import { supplierUploadTemplate } from './template.js?v=13';
+import { supplierUploadTemplate } from './template.js?v=16';
 import { bindSyncUploadProgress } from '../../../../ui/sync-upload-progress.js?v=4';
+import { bindRecentUploads } from '../../../../ui/recent-uploads.js?v=3';
+
+const recentUploads = bindRecentUploads('supplierRecentUploads');
 
 const API_BASE = '/api/masterdata/suppliers';
 const MAX_FILE_SIZE = 5 * 1024 * 1024;
@@ -31,6 +34,7 @@ const SupplierUploadPage = {
         this.bindEvents();
         this.hideProgress();
         this.clearSelectedFile(false);
+        recentUploads.paint();
     },
 
     applyPermissionUi() {
@@ -220,6 +224,11 @@ const SupplierUploadPage = {
                 || `导入成功：新增 ${data.created_count ?? 0}，跳过 ${data.skipped_count ?? 0}`;
             const hasSkip = (data.skipped_count ?? 0) > 0;
             this.showDoneOnPanel(msg, { hasSkip });
+            recentUploads.remember({
+                fileName: this.selectedFile?.name,
+                scopeLabel: '供应商名册',
+                summary: `新增 ${data.created_count ?? 0} / 跳过 ${data.skipped_count ?? 0}`,
+            });
             this.clearSelectedFile(true);
         } catch (err) {
             this.failOnPanel(err.message || '导入失败');

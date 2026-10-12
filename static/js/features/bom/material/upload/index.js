@@ -3,10 +3,13 @@
  * 与冲压工艺上传同一模式：task_id + 进度轮询
  */
 
-import { bomUploadTemplate } from './template.js?v=20';
+import { bomUploadTemplate } from './template.js?v=23';
 import { copyElementText } from '../../../../ui/copy-text.js?v=3';
 import { uploadSubmitLabelHtml } from '../../../../ui/upload-actions.js?v=2';
 import { paintUploadProgressIcon } from '../../../../ui/sync-upload-progress.js?v=5';
+import { bindRecentUploads } from '../../../../ui/recent-uploads.js?v=3';
+
+const recentUploads = bindRecentUploads('bomRecentUploads');
 import { can } from '../../../../core/permissions.js?v=8';
 import {
     SOP_INTRO,
@@ -26,6 +29,7 @@ const BomUploadPage = {
     pollInFlight: false,
     activeTaskId: null,
     activeFileName: null,
+    activeScopeLabel: null,
 
     init() {
         this.stopPolling();
@@ -39,11 +43,12 @@ const BomUploadPage = {
             slot.innerHTML = sopBannerHtml();
         }
         this.loadScopeOptions();
+        recentUploads.paint();
 
         if (this.isUploading && this.activeTaskId) {
             this.setUploading(true);
             this.showProgress(0, '正在恢复任务进度...');
-            this.startPolling(this.activeTaskId, this.activeFileName);
+            this.startPolling(this.activeTaskId, this.activeFileName, this.activeScopeLabel);
             return;
         }
 
@@ -429,10 +434,11 @@ const BomUploadPage = {
         return response.data;
     },
 
-    startPolling(taskId, fileName) {
+    startPolling(taskId, fileName, scopeLabel) {
         this.stopPolling();
         this.activeTaskId = taskId;
         this.activeFileName = fileName;
+        if (scopeLabel) this.activeScopeLabel = scopeLabel;
 
         const tick = async () => {
             if (this.pollInFlight) return;
@@ -449,6 +455,12 @@ const BomUploadPage = {
                     this.stopPolling();
                     const result = data?.result || {};
                     const nodeCount = result.node_count ?? '-';
+                    const summary = nodeCount === '-' ? '' : `${nodeCount} 条`;
+                    recentUploads.remember({
+                        fileName,
+                        scopeLabel: scopeLabel || this.activeScopeLabel || '',
+                        summary,
+                    });
                     showToast(msg || `导入成功：${nodeCount} 条`, 'success');
                     this.clearActiveTask();
                     this.setUploading(false);
@@ -524,7 +536,7 @@ const BomUploadPage = {
             if (!taskId) {
                 throw new Error('导入没有开始。');
             }
-            this.startPolling(taskId, fileName);
+            this.startPolling(taskId, fileName, `${location} · ${vehicleModel}`);
         } catch (error) {
             this.stopPolling();
             this.showError(error.message || '提交失败');

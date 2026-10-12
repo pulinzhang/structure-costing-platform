@@ -3,8 +3,11 @@
  * 下载模板：基地 + 项目 + 年度；导入：基地 + 年度
  */
 
-import { annualPartPriceUploadTemplate } from './template.js?v=27';
+import { annualPartPriceUploadTemplate } from './template.js?v=30';
 import { bindSyncUploadProgress } from '../../../../ui/sync-upload-progress.js?v=4';
+import { bindRecentUploads } from '../../../../ui/recent-uploads.js?v=3';
+
+const recentUploads = bindRecentUploads('annualPartPriceRecentUploads');
 
 const API_BASE = '/api/bom/annual-part-price';
 const CASCADE_API = '/api/bom/filters/cascade';
@@ -39,6 +42,7 @@ const AnnualPartPriceUploadPage = {
         this.bindEvents();
         this.hideProgress();
         this.clearSelectedFile(false);
+        recentUploads.paint();
         this.loadCascadeFilters();
     },
 
@@ -379,6 +383,14 @@ const AnnualPartPriceUploadPage = {
                 msg = `导入完成：新增 ${created} 条，更新 ${updated} 条；另有 ${skippedApproved} 条已审核未覆盖。`;
             }
             this.showDoneOnPanel(msg, { hasSkip: skippedApproved > 0 });
+            const summary = skippedApproved
+                ? `新增 ${created} / 更新 ${updated} / 已审核跳过 ${skippedApproved}`
+                : `新增 ${created} / 更新 ${updated}`;
+            recentUploads.remember({
+                fileName: this.selectedFile?.name,
+                scopeLabel: `${location} · ${yearRaw}年`,
+                summary,
+            });
             this.clearSelectedFile(true);
         } catch (err) {
             this.failOnPanel(err.message || '导入失败');

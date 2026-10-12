@@ -4,6 +4,7 @@
  */
 
 import { UPLOAD_DROPZONE, UPLOAD_INPUT, UPLOAD_LABEL, HUD_LED } from '../../../../ui/classes.js?v=14';
+import { recentUploadsCardHtml } from '../../../../ui/recent-uploads.js?v=3';
 import {
     uploadBrowseButtonHtml,
     uploadFileHintHtml,
@@ -59,7 +60,7 @@ export function tonnageUploadTemplate() {
                                                class="${UPLOAD_INPUT} w-full">
                                     </div>
                                 </div>
-                                <p class="ml-6 mt-1.5 text-[11px] text-ink-dim">导入时必须指定基地与年度，写入该基地该年的冲次单价</p>
+                                <p class="ml-6 mt-1.5 text-[11px] text-ink-dim">写入所选基地和年度。</p>
                             </div>
 
                             <div class="h-px bg-app-surface mx-6 mb-4"></div>
@@ -132,47 +133,11 @@ export function tonnageUploadTemplate() {
                             <h5 class="text-[11px] font-bold text-ink-muted mb-0 tracking-widest uppercase">格式说明</h5>
                         </div>
                     </div>
-                    <div class="p-4 space-y-4">
-                        <div>
-                            <h6 class="text-[10px] uppercase tracking-wider text-ink-dim mb-2">三列怎么填</h6>
-                            <ul class="list-disc list-inside text-xs text-ink-dim space-y-1.5">
-                                <li><span class="text-ink-muted">名称</span>填吨位，比如 400T。</li>
-                                <li><span class="text-ink-muted">单位</span>固定写「次」。</li>
-                                <li><span class="text-ink-muted">单价</span>是每冲一次多少钱，保留三位小数。</li>
-                            </ul>
-                        </div>
-                        <div>
-                            <h6 class="text-[10px] uppercase tracking-wider text-ink-dim mb-2">示例</h6>
-                            <div class="overflow-hidden border border-line">
-                                <table class="w-full">
-                                    <thead>
-                                        <tr class="bg-app-deep border-b border-line">
-                                            <th class="px-2 py-1.5 text-left text-[10px] font-semibold text-ink-dim">名称</th>
-                                            <th class="px-2 py-1.5 text-left text-[10px] font-semibold text-ink-dim">单位</th>
-                                            <th class="px-2 py-1.5 text-right text-[10px] font-semibold text-ink-dim">单价</th>
-                                        </tr>
-                                    </thead>
-                                    <tbody class="divide-y divide-line-subtle">
-                                        <tr><td class="px-2 py-1.5 text-[11px] text-ink-muted">400T</td><td class="px-2 py-1.5 text-[11px] text-ink-muted">次</td><td class="px-2 py-1.5 text-[11px] text-right font-mono tabular-nums text-ink-muted">0.564</td></tr>
-                                        <tr><td class="px-2 py-1.5 text-[11px] text-ink-muted">500T</td><td class="px-2 py-1.5 text-[11px] text-ink-muted">次</td><td class="px-2 py-1.5 text-[11px] text-right font-mono tabular-nums text-ink-muted">0.622</td></tr>
-                                        <tr><td class="px-2 py-1.5 text-[11px] text-ink-muted">630T</td><td class="px-2 py-1.5 text-[11px] text-ink-muted">次</td><td class="px-2 py-1.5 text-[11px] text-right font-mono tabular-nums text-ink-muted">0.713</td></tr>
-                                        <tr><td class="px-2 py-1.5 text-[11px] text-ink-muted">800T</td><td class="px-2 py-1.5 text-[11px] text-ink-muted">次</td><td class="px-2 py-1.5 text-[11px] text-right font-mono tabular-nums text-ink-muted">1.026</td></tr>
-                                        <tr><td class="px-2 py-1.5 text-[11px] text-ink-muted">1000T</td><td class="px-2 py-1.5 text-[11px] text-ink-muted">次</td><td class="px-2 py-1.5 text-[11px] text-right font-mono tabular-nums text-ink-muted">1.283</td></tr>
-                                        <tr><td class="px-2 py-1.5 text-[11px] text-ink-muted">1200T</td><td class="px-2 py-1.5 text-[11px] text-ink-muted">次</td><td class="px-2 py-1.5 text-[11px] text-right font-mono tabular-nums text-ink-muted">1.539</td></tr>
-                                    </tbody>
-                                </table>
-                            </div>
-                        </div>
-                        <div>
-                            <h6 class="text-[10px] uppercase tracking-wider text-ink-dim mb-2">再传一份时</h6>
-                            <ul class="list-disc list-inside text-xs text-ink-dim space-y-1.5">
-                                <li>同一个基地、同一年、同一个吨位，再传会更新单价。没有的会新增。</li>
-                                <li>基地和年度以本页选择为准。表里只要名称、单位、单价。</li>
-                                <li>只收 .xlsx。</li>
-                            </ul>
-                        </div>
+                    <div class="p-4">
+                        <p class="text-[11px] text-ink-muted leading-relaxed mb-0">同一基地、同一年、同一吨位，再传会更新单价。基地和年度以本页选择为准。</p>
                     </div>
                 </div>
+                ${recentUploadsCardHtml('tonnageRecentUploads')}
             </div>
         </div>
     `;

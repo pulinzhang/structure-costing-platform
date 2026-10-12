@@ -7,6 +7,7 @@
  */
 
 import { UPLOAD_DROPZONE, HUD_LED } from '../../../../ui/classes.js?v=14';
+import { recentUploadsCardHtml } from '../../../../ui/recent-uploads.js?v=3';
 import {
     uploadBrowseButtonHtml,
     uploadFileHintHtml,
@@ -120,39 +121,13 @@ export function uploadTemplate() {
                             <h5 class="text-[11px] font-bold text-ink-muted mb-0 tracking-widest">填写说明</h5>
                         </div>
                     </div>
-                    <div class="p-4 space-y-3 text-[11px] text-ink-muted leading-relaxed">
-                        <p class="text-warn">这一页导入第一次投产，选好文件就能传。项目和冲压工厂从表头读取，基地按项目档案带出。</p>
-                        <p>项目没登记、已停用、这个月还不能做，或者同一个项目代号挂在两个基地上，这一整份都退回。保存时用档案里的项目代号。</p>
-                        <p>表头里的冲压厂必须已经在 <a href="#/supplier-list" class="text-brand-hud hover:text-brand-active">供应商列表</a> 里。没有这家厂，请先手工增加或上传，再传这份工艺文件。</p>
-                        <p>已经投产后再传：表里已有的零件会更新，没写到的不删。出现新零件号，这一整份都退回。换零件号请走设计变更。</p>
-                        <p>这个范围内已经算过冲压加工费的零件，不能删。不必先有模具布点。</p>
-                        <p>模具编号可以空着。冲压厂如果要算模具费，再另外上传模具布点。</p>
-                        <p><span class="text-ink-muted">是否利废</span>只看本表「料片式样」。写成「利用××废料」（例如利用侧围废料），或格子里写「利废」（写成「利费」也算），就是利用件。材料按成品净重乘废料月度价来算，不按新钢板的价。写「要利废」是这件会产出废料给别人用，不是利用件。方料、卷料、条料只表示料片形状，和利废无关。</p>
-                        <p><span class="text-ink-muted">废料副产品</span>：长、宽、可制件数、料片式样都空着，但要有零件净重。这是家模带出来的小件，材料按废料净重算，不算冲压费。不要只空长和宽、其它格子还填着。</p>
-                        <p>利废和废料副产品只看这张工艺表。和模具布点写得不一样时，以这张表为准。</p>
-                        <p>同一个零件的工序号不能重复，比如不能有两个 OP30。重复了这一整份都不收，并标出是哪一行。</p>
-                        <p>普通件必须填写零件名称、材质和料厚。这三格有空的，这一整份都退回，并标出是哪一行。</p>
-                        <p>拼焊件：零件号那一格上下合成一格，每一小片的长和宽分开填。下载的模板里有普通件和拼焊的例子。</p>
+                    <div class="p-4 space-y-2 text-[11px] text-ink-muted leading-relaxed">
+                        <p>第一次投产直接传。项目和冲压厂从表头读取，冲压厂须已在供应商列表。</p>
+                        <p>已经投产后再传，只更新已有零件。出现新零件号，整份退回。</p>
                     </div>
                 </div>
 
-                <!-- 最近上传记录 -->
-                <div class="bg-app-surface border border-line">
-                    <div class="px-4 py-3 border-b border-line-subtle flex items-center justify-between">
-                        <div class="flex items-center gap-2">
-                            <span class="${HUD_LED}"></span>
-                            <h5 class="text-[11px] font-bold text-ink-muted mb-0 tracking-widest uppercase">最近上传</h5>
-                        </div>
-                    </div>
-                    <div class="p-4" id="recentUploads">
-                        <div class="text-center py-5">
-                            <div class="w-8 h-8 bg-app-surface border border-line flex items-center justify-center mx-auto mb-2.5">
-                                <svg class="w-4 h-4 text-ink-faint" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10"></path></svg>
-                            </div>
-                            <p class="text-[10px] text-ink-faint">暂无上传记录</p>
-                        </div>
-                    </div>
-                </div>
+                ${recentUploadsCardHtml('recentUploads')}
             </div>
         </div>
     `;

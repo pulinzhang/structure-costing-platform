@@ -1,13 +1,13 @@
-import { policyUploadTemplate } from './template.js?v=13';
+import { policyUploadTemplate } from './template.js?v=15';
 import { uploadSubmitLabelHtml } from '../../../../ui/upload-actions.js?v=2';
 import { paintUploadProgressIcon } from '../../../../ui/sync-upload-progress.js?v=5';
+import { bindRecentUploads } from '../../../../ui/recent-uploads.js?v=3';
 
-const MAX_RECENT_UPLOADS = 8;
 const POLL_INTERVAL_MS = 2000;
+const recentUploads = bindRecentUploads('recentPolicyUploads');
 
 const PolicyUploadPage = {
     selectedFile: null,
-    recentUploads: [],
     pollTimer: null,
     pollInFlight: false,
     isUploading: false,
@@ -20,7 +20,7 @@ const PolicyUploadPage = {
         this.stopPolling();
         this.applyPermissionUi();
         this.bindEvents();
-        this.renderRecentUploads();
+        recentUploads.paint();
 
         // 离开页面后再次进入：若任务仍在跑，恢复进度面板与轮询
         if (this.isUploading && this.activeTaskId) {
@@ -180,56 +180,7 @@ const PolicyUploadPage = {
         if (monthInput) monthInput.value = '';
     },
 
-    addRecentUpload(fileName, year, month, summary) {
-        const now = new Date();
-        const timeLabel = now.toLocaleTimeString('zh-CN', {
-            hour: '2-digit',
-            minute: '2-digit',
-            second: '2-digit',
-        });
-        this.recentUploads.unshift({
-            fileName,
-            periodLabel: fmtPeriod(year, month),
-            timeLabel,
-            summary: summary || '',
-        });
-        if (this.recentUploads.length > MAX_RECENT_UPLOADS) {
-            this.recentUploads = this.recentUploads.slice(0, MAX_RECENT_UPLOADS);
-        }
-        this.renderRecentUploads();
-    },
 
-    renderRecentUploads() {
-        const container = document.getElementById('recentPolicyUploads');
-        if (!container) return;
-
-        if (this.recentUploads.length === 0) {
-            container.innerHTML = `
-                <div class="text-center py-6">
-                    <div class="w-8 h-8 bg-app-elevated flex items-center justify-center mx-auto mb-2.5">
-                        <svg class="w-4 h-4 text-ink-dim" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10"></path></svg>
-                    </div>
-                    <p class="text-[11px] text-ink-dim">暂无导入记录</p>
-                </div>
-            `;
-            return;
-        }
-
-        container.innerHTML = `
-            <div class="space-y-2">
-                ${this.recentUploads.map((item) => `
-                    <div class="flex items-start gap-2.5 p-2.5 bg-app-main border border-line">
-                        <span class="text-ok shrink-0 mt-0.5">${window.svgIcon('file-earmark-excel', 'w-4 h-4')}</span>
-                        <div class="min-w-0 flex-1">
-                            <p class="text-[11px] text-ink truncate" title="${esc(item.fileName)}">${esc(item.fileName)}</p>
-                            <p class="text-[10px] text-ink-dim mt-0.5">${esc(item.periodLabel)} · ${esc(item.timeLabel)}</p>
-                            ${item.summary ? `<p class="text-[10px] text-ink-muted mt-0.5">${esc(item.summary)}</p>` : ''}
-                        </div>
-                    </div>
-                `).join('')}
-            </div>
-        `;
-    },
 
     showProgress(progress = 0, msg = '正在导入。') {
         const idle = document.getElementById('policyDropIdle');
@@ -386,7 +337,11 @@ const PolicyUploadPage = {
                     const doneMsg = `导入完成：新增 ${created} 条，更新 ${updated} 条，跳过 ${skipped} 条，共 ${total} 条`;
                     this.updateProgress(100, doneMsg, 'completed');
                     showToast(doneMsg, 'success');
-                    this.addRecentUpload(fileName, year, month, summary);
+                    recentUploads.remember({
+                        fileName,
+                        scopeLabel: fmtPeriod(year, month),
+                        summary,
+                    });
                     this.clearActiveTask();
                     this.setUploading(false);
                     this.clearSelectedFile();

@@ -3,11 +3,13 @@
  * 基准价格上传 — 异步 task_id + 进度轮询
  */
 
-import { basePriceUploadTemplate } from './template.js?v=59';
+import { basePriceUploadTemplate } from './template.js?v=61';
 import { uploadSubmitLabelHtml } from '../../../../ui/upload-actions.js?v=2';
 import { paintUploadProgressIcon } from '../../../../ui/sync-upload-progress.js?v=5';
+import { bindRecentUploads } from '../../../../ui/recent-uploads.js?v=3';
 
 const POLL_INTERVAL_MS = 2000;
+const recentUploads = bindRecentUploads('recentBasePriceUploads');
 
 const BasePriceUploadPage = {
     selectedFile: null,
@@ -15,16 +17,25 @@ const BasePriceUploadPage = {
     pollInFlight: false,
     isUploading: false,
     activeTaskId: null,
+    activeFileName: null,
+    activeYear: null,
+    activeMonth: null,
 
     init() {
         this.stopPolling();
         this.applyPermissionUi();
         this.bindEvents();
+        recentUploads.paint();
 
         if (this.isUploading && this.activeTaskId) {
             this.setUploading(true);
             this.showProgress(0, '正在恢复任务进度...');
-            this.startPolling(this.activeTaskId);
+            this.startPolling(
+                this.activeTaskId,
+                this.activeFileName,
+                this.activeYear,
+                this.activeMonth,
+            );
             return;
         }
 
@@ -170,6 +181,8 @@ const BasePriceUploadPage = {
         if (monthInput) monthInput.value = '';
     },
 
+
+
     showProgress(progress = 0, msg = '正在导入。') {
         const idle = document.getElementById('basePriceDropIdle');
         const panel = document.getElementById('basePriceProgressPanel');
@@ -296,9 +309,12 @@ const BasePriceUploadPage = {
         return response.data;
     },
 
-    startPolling(taskId) {
+    startPolling(taskId, fileName, year, month) {
         this.stopPolling();
         this.activeTaskId = taskId;
+        this.activeFileName = fileName || null;
+        this.activeYear = year || null;
+        this.activeMonth = month || null;
 
         const tick = async () => {
             if (this.pollInFlight) return;
@@ -320,8 +336,17 @@ const BasePriceUploadPage = {
                     const widthWarnings = Array.isArray(result.width_warnings)
                         ? result.width_warnings
                         : [];
+                    const summary = `新增 ${created} / 更新 ${updated} / 共 ${total}`;
                     const doneMsg = `导入完成：新增 ${created} 条，更新 ${updated} 条，共 ${total} 条`;
+                    recentUploads.remember({
+                        fileName,
+                        scopeLabel: fmtPeriod(year, month),
+                        summary,
+                    });
                     this.activeTaskId = null;
+                    this.activeFileName = null;
+                    this.activeYear = null;
+                    this.activeMonth = null;
                     this.setUploading(false);
                     this.clearSelectedFile();
                     if (widthWarnings.length) {
@@ -344,6 +369,9 @@ const BasePriceUploadPage = {
                 if (status === 'failed') {
                     this.stopPolling();
                     this.activeTaskId = null;
+                    this.activeFileName = null;
+                    this.activeYear = null;
+                    this.activeMonth = null;
                     this.setUploading(false);
                     document.getElementById('basePriceUploadZone')?.classList.remove('pointer-events-none');
                     return;
@@ -352,6 +380,9 @@ const BasePriceUploadPage = {
                 this.stopPolling();
                 this.failOnPanel(error.message || '查询进度失败');
                 this.activeTaskId = null;
+                this.activeFileName = null;
+                this.activeYear = null;
+                this.activeMonth = null;
                 this.setUploading(false);
             } finally {
                 this.pollInFlight = false;
@@ -387,6 +418,7 @@ const BasePriceUploadPage = {
             return;
         }
 
+        const fileName = this.selectedFile.name;
         const formData = new FormData();
         formData.append('file', this.selectedFile);
 
@@ -400,7 +432,7 @@ const BasePriceUploadPage = {
             if (!taskId) {
                 throw new Error('导入没有开始。');
             }
-            this.startPolling(taskId);
+            this.startPolling(taskId, fileName, year, month);
         } catch (error) {
             this.stopPolling();
             this.failOnPanel(error.message || '提交失败');
