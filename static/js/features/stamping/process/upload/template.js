@@ -90,6 +90,8 @@ export function uploadTemplate() {
                                             <p id="stampingProgressMsg" class="text-[11px] text-ink-muted leading-relaxed mb-0 whitespace-pre-wrap break-words max-h-48 overflow-y-auto">正在导入。</p>
                                             <a id="stampingGradeAction" href="#/steel-grade-category"
                                                class="hidden mt-3 inline-flex items-center gap-1 text-[11px] text-brand-hud hover:text-brand-active">打开牌号分类</a>
+                                            <a id="stampingSupplierAction" href="#/supplier-list"
+                                               class="hidden mt-3 inline-flex items-center gap-1 text-[11px] text-brand-hud hover:text-brand-active">打开供应商列表</a>
                                         </div>
                                     </div>
 
@@ -120,7 +122,8 @@ export function uploadTemplate() {
                     </div>
                     <div class="p-4 space-y-3 text-[11px] text-ink-muted leading-relaxed">
                         <p class="text-warn">这一页导入第一次投产，选好文件就能传。项目和冲压工厂从表头读取，基地按项目档案带出。</p>
-                        <p>项目没登记、已停用、这个月还不能做，或者同一个项目代号挂在两个基地上，这一整份都退回。保存时用档案里的项目代号和供应商全称。</p>
+                        <p>项目没登记、已停用、这个月还不能做，或者同一个项目代号挂在两个基地上，这一整份都退回。保存时用档案里的项目代号。</p>
+                        <p>表头里的冲压厂必须已经在 <a href="#/supplier-list" class="text-brand-hud hover:text-brand-active">供应商列表</a> 里。没有这家厂，请先手工增加或上传，再传这份工艺文件。</p>
                         <p>已经投产后再传：表里已有的零件会更新，没写到的不删。出现新零件号，这一整份都退回。换零件号请走设计变更。</p>
                         <p>这个范围内已经算过冲压加工费的零件，不能删。不必先有模具布点。</p>
                         <p>模具编号可以空着。冲压厂如果要算模具费，再另外上传模具布点。</p>

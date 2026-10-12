@@ -3,7 +3,7 @@
  * 冲压工艺上传 — 异步 task_id + 进度轮询
  */
 
-import { uploadTemplate } from './template.js?v=31';
+import { uploadTemplate } from './template.js?v=32';
 import { uploadSubmitLabelHtml } from '../../../../ui/upload-actions.js?v=2';
 import { paintUploadProgressIcon } from '../../../../ui/sync-upload-progress.js?v=5';
 import {
@@ -326,18 +326,27 @@ export const UploadPage = {
         const msgEl = document.getElementById('stampingProgressMsg');
         const titleEl = document.getElementById('stampingProgressTitle');
 
+        const raw = msg || '';
+        const isMissingGrade = status === 'failed' && raw.includes('牌号分类');
+        const isMissingSupplier = status === 'failed' && (
+            raw.includes('没有该供应商') || raw.includes('供应商已禁用')
+        );
+        const shown = isMissingSupplier
+            ? raw.replace(/（#\/supplier-list）/g, '').trim()
+            : raw;
         if (bar) bar.style.width = `${pct}%`;
         if (percentEl) percentEl.textContent = `${pct}%`;
-        if (msgEl) msgEl.textContent = msg || '';
-        const actionEl = document.getElementById('stampingGradeAction');
-        const isMissingGrade = status === 'failed' && (msg || '').includes('牌号分类');
-        if (actionEl) actionEl.classList.toggle('hidden', !isMissingGrade);
+        if (msgEl) msgEl.textContent = shown;
+        const gradeEl = document.getElementById('stampingGradeAction');
+        const supplierEl = document.getElementById('stampingSupplierAction');
+        if (gradeEl) gradeEl.classList.toggle('hidden', !isMissingGrade);
+        if (supplierEl) supplierEl.classList.toggle('hidden', !isMissingSupplier);
 
         if (titleEl) {
             if (status === 'completed') {
                 titleEl.textContent = '解析成功';
                 titleEl.className = 'text-xs font-medium text-ok truncate mb-0';
-            } else if (isMissingGrade) {
+            } else if (isMissingGrade || isMissingSupplier) {
                 titleEl.textContent = '未导入';
                 titleEl.className = 'text-xs font-medium text-danger truncate mb-0';
             } else if (status === 'failed') {

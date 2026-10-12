@@ -37,7 +37,7 @@ const LLM_BOOT_URL = './llm-assistant/boot.js?v=71';
 // 页面按路由再加载。版本号留在 import() 地址上，和以前的静态 import 一样用来破缓存。
 const pageLoaders = {
     dashboard: () => import('./features/dashboard/index.js?v=27'),
-    'stamping-upload': () => import('./features/stamping/process/upload/index.js?v=79'),
+    'stamping-upload': () => import('./features/stamping/process/upload/index.js?v=80'),
     'stamping-parts': () => import('./features/stamping/process/parts/index.js?v=90'),
     'stamping-die-upload': () => import('./features/stamping/die/upload/index.js?v=33'),
     'stamping-die-list': () => import('./features/stamping/die/list/index.js?v=43'),
@@ -64,10 +64,10 @@ const pageLoaders = {
     'steel-grade-category': () => import('./features/masterdata/steel-grade-category/index.js?v=29'),
     'steel-mill': () => import('./features/masterdata/steel-mill/index.js?v=2'),
     'winning-thickness-download': () => import('./features/yishiyiyi/winning-thickness/list/index.js?v=33'),
-    'scrap-price': () => import('./features/yishiyiyi/scrap-price/index.js?v=33'),
+    'scrap-price': () => import('./features/yishiyiyi/scrap-price/index.js?v=34'),
     'bom-structure': () => import('./features/bom/material/structure/index.js?v=20'),
     'bom-where-used': () => import('./features/bom/material/where-used/index.js?v=25'),
-    'bom-viz': () => import('./features/bom/material/viz/index.js?v=41'),
+    'bom-viz': () => import('./features/bom/material/viz/index.js?v=44'),
     'bom-upload': () => import('./features/bom/material/upload/index.js?v=35'),
     'bom-material': () => import('./features/bom/material/list/index.js?v=26'),
     'bom-welding-unit-price-upload': () => import('./features/bom/welding-unit-price/upload/index.js?v=31'),

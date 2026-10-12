@@ -1043,9 +1043,9 @@ const BomVizPage = {
                     src
                         ? `
                     <button type="button" id="bomVizKnowledgeSketch"
-                            class="w-full h-56 bg-app-deep border overflow-hidden hover:border-line transition-colors p-0"
+                            class="mx-auto flex w-fit max-w-full items-center justify-center bg-app-deep border overflow-hidden hover:border-line transition-colors p-0"
                             style="border-color:${categoryInk(category.token, 0.45)}">
-                        <img src="${esc(src)}" alt="${esc(fullName)}" class="w-full h-full object-fill" loading="lazy" draggable="false">
+                        <img src="${esc(src)}" alt="${esc(fullName)}" class="block max-h-40 max-w-[200px] w-auto h-auto object-contain" loading="lazy" draggable="false">
                     </button>
                     <p class="text-[10px] text-ink-faint -mt-3">点击在新窗口打开图纸</p>
                 `
