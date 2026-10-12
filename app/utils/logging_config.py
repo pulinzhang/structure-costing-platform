@@ -5,6 +5,7 @@
 
 import logging
 import sys
+from contextlib import suppress
 from logging.handlers import RotatingFileHandler
 
 from app.bootstrap.frontend import HEALTH_PATH
@@ -102,7 +103,11 @@ class LoggerConfig:
         class SafeRotatingFileHandler(RotatingFileHandler):
             def emit(self, record: logging.LogRecord) -> None:
                 try:
-                    super().emit(record)
+                    if self.shouldRollover(record):
+                        # Windows 上旧日志仍被占用时，继续写当前文件，不把轮转失败打成请求异常。
+                        with suppress(PermissionError):
+                            self.doRollover()
+                    logging.FileHandler.emit(self, record)
                     self.flush()
                 except Exception:
                     pass  # 静默忽略日志写入错误，避免干扰主流程

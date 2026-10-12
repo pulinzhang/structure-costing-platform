@@ -5,7 +5,11 @@
 生效期：订单目录名优先（如 25年9月订单10月 → 2025-10），其次文件名括号；
 双月如 6月和7月（仅文件名）各导一次。同月多份优先文件名含「厚度加减价」者。
 
-用法::
+页面测试（登录后从加减价导入页选文件）::
+
+    python -X utf8 tests/frontend/2026-10-12/import_policy_thickness_samples.py
+
+直接写库仍可用::
 
     python -X utf8 -m scripts.import_policy_thickness_samples
     python -X utf8 -m scripts.import_policy_thickness_samples --dry-run
