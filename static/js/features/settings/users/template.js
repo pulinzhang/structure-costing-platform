@@ -176,6 +176,11 @@ export function usersTemplate() {
                             <option value="false">停用</option>
                         </select>
                     </div>
+                    <label class="flex items-center justify-between gap-2.5 h-8 px-3 bg-app-hud border border-line text-xs text-ink cursor-pointer">
+                        <span>管理员</span>
+                        <input type="checkbox" id="editIsAdmin" class="brabus-switch"
+                               role="switch" aria-label="是否管理员">
+                    </label>
                 </form>
             </div>
 

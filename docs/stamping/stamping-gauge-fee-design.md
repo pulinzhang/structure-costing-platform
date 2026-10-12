@@ -79,4 +79,4 @@
 
 ## 5. 工程变更
 
-改图换号时，若旧号有 `effective` 档，工程变更管线调本切片 Service **抄到新号**；回滚调本切片 **按 id 删新行**。旧号行不动。实现在 `gauge_fee/engineering/change.py`（Service 只转发）。本切片 **不** import `engineering_change`。规则见 [part-number-revision-design.md](../engineering-change/part-number-revision-design.md) §4.3.1。
+改图换号时，若旧号有 `effective` 档，工程变更管线调本切片 Service **抄到新号**；回滚调本切片 **按 id 删新行**。旧号行不动。实现在 `gauge_fee/engineering/change.py`（Service 只转发）。本切片 **不** import `engineering_change`。规则见 [part-number-revision-design.md](../engineering-change/design-change/part-number-revision-design.md) §4.3.1。

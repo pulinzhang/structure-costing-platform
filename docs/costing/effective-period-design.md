@@ -3,7 +3,7 @@
 > 状态：**已否决（不做）**  
 > 决定：2026-09-23。年度协议价保持一年一行。年中改价仍走现网：反审后覆盖。不给一口价、焊接单价、包装运输费、吨位价加起止月。  
 > 下文是否决前的分段方案，仅作存档。若再有人提「8 月改价不能覆盖 1–7 月」，先读本节，不要按下文改表。  
-> BOM / 冲压工艺 / 模具行上的生失效是另一篇，已经落地，见 [bom-process-die-effective-period-design.md](../engineering-change/bom-process-die-effective-period-design.md)。不要跟着本文一起停。
+> BOM / 冲压工艺 / 模具行上的生失效是另一篇，已经落地，见 [bom-process-die-effective-period-design.md](../engineering-change/design-change/bom-process-die-effective-period-design.md)。不要跟着本文一起停。
 
 ---
 

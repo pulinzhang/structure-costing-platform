@@ -204,12 +204,9 @@ Router → EngineeringChangeUploadService.start_upload
 
 | 文档 | 说明 |
 |------|------|
-| [part-number-revision-design.md](part-number-revision-design.md) | 领域契约（样表即规格、§4 写入、§8 产品）；**落地状态以本节为准** |
+| [part-number-revision-design.md](part-number-revision-design.md) | 领域契约（下载模板即规格、§4 写入、§8 产品）；**落地状态以本节为准** |
 | [bom-process-die-effective-period-design.md](bom-process-die-effective-period-design.md) | 交货总成 / 工艺 / 布点生失效（已落地） |
-| [t28-2025-07-import-bundle-test-design.md](t28-2025-07-import-bundle-test-design.md) | 青岛 T28 下载模板怎么填（上传页生成，样表目录不存放副本） |
-| [t13j-2026-05-import-bundle-test-design.md](t13j-2026-05-import-bundle-test-design.md) | 芜湖 T13J · 2026-05 测试样本（对照一本 + 五份夹具）。样表目录只留这一套 |
-| [samples/t13j-2026-05-import-bundle.xlsx](samples/t13j-2026-05-import-bundle.xlsx) | 芜湖 T13J 对照一本：五种填法，生效 2026年05月 |
-| [samples/t13j-2026-05-stop.xlsx](samples/t13j-2026-05-stop.xlsx) 等五份 | T13J 单种改法夹具 |
-| [samples/build_t13j_2026_05_import_bundles.py](samples/build_t13j_2026_05_import_bundles.py) | 写出 T13J 对照一本 + 五种改法各一份 |
+| [t28-2025-07-import-bundle-test-design.md](t28-2025-07-import-bundle-test-design.md) | 青岛 T28 下载模板怎么填。运行时生成，仓库不存 xlsx，也不再拆五份夹具 |
+| [材料变更样表](../material-change/samples/README.md) | 仓库里仅有的工程变更 xlsx：芜湖 T13J 材料变更 2026-06、2026-07。不是设计变更合册 |
 
 一口价年内分段已否决，见 [effective-period-design.md](../../costing/effective-period-design.md)。本目录的生失效不要跟着停。

@@ -95,7 +95,7 @@ const pageLoaders = {
     'supplier-upload': () => import('./features/masterdata/supplier/upload/index.js?v=18'),
     'supplier-list': () => import('./features/masterdata/supplier/list/index.js?v=29'),
     settings: () => import('./features/settings/system/index.js?v=38'),
-    'settings-users': () => import('./features/settings/users/index.js?v=33'),
+    'settings-users': () => import('./features/settings/users/index.js?v=35'),
     'settings-logs': () => import('./features/settings/logs/index.js?v=28'),
     'settings-profile': () => import('./features/settings/profile/index.js?v=18'),
 };

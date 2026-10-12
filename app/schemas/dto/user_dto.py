@@ -33,6 +33,7 @@ class UserPatchPayload(TypedDict, total=False):
     department: str | None
     avatar: str | None
     is_active: bool
+    is_admin: bool
     password_hash: str
     updated_by: str
 
@@ -48,6 +49,7 @@ class UserCreateDTO(BaseModel):
     department: str | None = Field(None, max_length=50, description="部门")
     avatar: str | None = Field(None, max_length=255, description="头像路径/URL")
     is_active: bool = Field(True, description="启用状态")
+    is_admin: bool = Field(False, description="是否管理员")
 
 
 class UserUpdateDTO(BaseModel):
@@ -59,6 +61,7 @@ class UserUpdateDTO(BaseModel):
     department: str | None = Field(None, max_length=50, description="部门")
     avatar: str | None = Field(None, max_length=255, description="头像路径/URL")
     is_active: bool | None = Field(None, description="启用状态")
+    is_admin: bool | None = Field(None, description="是否管理员")
 
 
 class UserSelfUpdateDTO(BaseModel):

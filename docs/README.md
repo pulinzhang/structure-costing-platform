@@ -4,7 +4,7 @@
 English: **Structural Parts Automated Costing Platform** / short **Costing Platform**.  
 核价对象：总成、分总成、冲压件。AI 只解释、不算价。领域词「冲压件」仍指自制叶子，不要当成产品名。
 
-平台规范放在本目录根下。领域设计按垂直切片分文件夹，与 `app/` / `static/js/features/` 对齐。工程变更跨切片，单独放 [engineering-change/](engineering-change/README.md)。
+平台规范放在本目录根下。领域设计按垂直切片分文件夹，与 `app/` / `static/js/features/` 对齐。工程变更跨切片，单独放 [engineering-change/design-change/](engineering-change/design-change/README.md)。
 
 ## 平台（根）
 
@@ -90,11 +90,11 @@ English: **Structural Parts Automated Costing Platform** / short **Costing Platf
 
 | 文档 | 状态 |
 |------|------|
-| [README.md](engineering-change/README.md) | 敢改地图：入口 / 不变量 / 代码地图（工程变更已落地） |
+| [README.md](engineering-change/design-change/README.md) | 敢改地图：入口 / 不变量 / 代码地图（设计变更已落地） |
 | [bom-process-die-effective-period-design.md](engineering-change/design-change/bom-process-die-effective-period-design.md) | BOM / 冲压工艺 / 模具有效期（已落地）：三块按月命中；核价与引擎已接账期。LLM、零件用在哪仍读整份 snapshot |
-| [part-number-revision-design.md](engineering-change/part-number-revision-design.md) | 领域契约 §4.6–4.7、§8–§10；状态以同目录 README 为准；样表 `samples/` |
+| [part-number-revision-design.md](engineering-change/design-change/part-number-revision-design.md) | 领域契约 §4.6–4.7、§8–§10；状态以同目录 README 为准。规格是上传页下载的青岛 T28 模板，仓库不另存 xlsx |
 | [material-change/](engineering-change/material-change/README.md) | 材料变更（已落地）：同号切材料、不影响互换性；挂在工程变更下与设计变更并列 |
-| [t28-2025-07-import-bundle-test-design.md](engineering-change/t28-2025-07-import-bundle-test-design.md) | 测试：青岛 T28 · 五种改法一本即可上传 |
+| [t28-2025-07-import-bundle-test-design.md](engineering-change/design-change/t28-2025-07-import-bundle-test-design.md) | 测试：青岛 T28 下载模板，五种改法一本即可上传。材料变更样表在 `material-change/samples/` |
 
 ## 异步任务 `async-task/`
 

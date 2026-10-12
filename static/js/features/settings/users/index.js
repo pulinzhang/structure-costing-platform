@@ -8,7 +8,7 @@
  * - 删除确认  →deleteDrawer
  */
 
-import { usersTemplate, renderTableRows } from './template.js?v=23';
+import { usersTemplate, renderTableRows } from './template.js?v=24';
 import {
     DEFAULT_PAGE_SIZE,
     bindPagination,
@@ -16,6 +16,7 @@ import {
 } from '../../../ui/page-size.js?v=11';
 import { bindFilterBar } from '../../../ui/filter-bar.js?v=6';
 import { setSearchBusy } from '../../../ui/search-busy.js?v=4';
+import { getUserSession } from '../../login/index.js?v=22';
 
 /** @type {{ paint: () => void, setOpen: (isOpen: boolean) => void, unbind: () => void } | null} */
 let filterBar = null;
@@ -315,6 +316,14 @@ function bindDeleteDrawerEvents() {
 }
 
 
+function paintAdminSwitch(checked) {
+    const input = document.getElementById('editIsAdmin');
+    if (!input) return;
+    const session = getUserSession();
+    input.checked = checked === true;
+    input.disabled = session?.is_admin !== true;
+}
+
 function openAddDrawer() {
     const title = document.getElementById('editDrawerTitle');
     const userId = document.getElementById('editUserId');
@@ -337,6 +346,7 @@ function openAddDrawer() {
 
     const isActiveSelect = document.getElementById('editIsActive');
     if (isActiveSelect) isActiveSelect.value = 'true';
+    paintAdminSwitch(false);
 
     openDrawer('editDrawer', 'editDrawerBackdrop');
     if (usernameInput) setTimeout(() => usernameInput.focus(), DRAWER_ANIMATION_MS);
@@ -375,6 +385,7 @@ function openEditDrawer(record) {
     if (emailInput) emailInput.value = record.email || '';
     if (phoneInput) phoneInput.value = record.phone || '';
     if (isActiveSelect) isActiveSelect.value = record.is_active === false ? 'false' : 'true';
+    paintAdminSwitch(record.is_admin === true);
 
     openDrawer('editDrawer', 'editDrawerBackdrop');
     if (realNameInput) setTimeout(() => realNameInput.focus(), DRAWER_ANIMATION_MS);
@@ -418,6 +429,7 @@ async function saveUser() {
     const email = emptyToNull(document.getElementById('editEmail')?.value);
     const phone = emptyToNull(document.getElementById('editPhone')?.value);
     const isActive = document.getElementById('editIsActive')?.value === 'true';
+    const isAdmin = document.getElementById('editIsAdmin')?.checked === true;
 
     try {
         if (userId) {
@@ -427,6 +439,7 @@ async function saveUser() {
                 phone,
                 department,
                 is_active: isActive,
+                is_admin: isAdmin,
             });
             showToast('更新成功', 'success');
         } else {
@@ -446,6 +459,7 @@ async function saveUser() {
                 phone,
                 department,
                 is_active: isActive,
+                is_admin: isAdmin,
             });
             showToast('创建成功', 'success');
         }
@@ -559,7 +573,7 @@ function renderPermissionTree(nodes, checked, depth = 0) {
             <div class="grant-node" data-code="${esc(code)}" data-mandatory="${isMandatory ? '1' : '0'}">
                 <label class="flex items-center gap-2 py-1.5 hover:bg-ink/[0.02] cursor-pointer ${isMandatory ? 'opacity-70' : ''}"
                        style="padding-left:${pad}px">
-                    <input type="checkbox" class="grant-check brabus-switch" role="switch"
+                    <input type="checkbox" class="grant-check brabus-check"
                            data-code="${esc(code)}"
                            ${isChecked ? 'checked' : ''}
                            ${isMandatory ? 'disabled' : ''}>

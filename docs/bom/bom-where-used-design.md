@@ -4,7 +4,7 @@
 > 切片：**`bom`**。只读现网 `bom_snapshots` / `bom_nodes`。  
 > 对人展示（菜单 / 页标题 / 面包屑）：**零件用在哪**。内部：`where_used`。侧栏禁止写「反查」「内爆」「where-used」。  
 > 和 **产品结构** 成对：那边从总成往下看，这边输入零件号看用在哪些总成、哪些项目。  
-> 工程变更影响分析可引用本页，切点作业见 [part-number-revision-design.md](../engineering-change/part-number-revision-design.md)。BOM 按月 as_of 见 [bom-process-die-effective-period-design.md](../engineering-change/bom-process-die-effective-period-design.md)，**第一期不接**。  
+> 工程变更影响分析可引用本页，切点作业见 [part-number-revision-design.md](../engineering-change/design-change/part-number-revision-design.md)。BOM 按月 as_of 见 [bom-process-die-effective-period-design.md](../engineering-change/design-change/bom-process-die-effective-period-design.md)，**第一期不接**。  
 > 硬约束：分层见 [architecture.md](../architecture.md)；权限流程见 [permission-design.md](../permission-design.md)。
 
 ---

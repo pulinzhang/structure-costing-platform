@@ -1,7 +1,7 @@
 # 焊接费 — 设计说明
 
 > **状态：已上线。** 表 `bom_welding_fees` + `level`；公式与层级无关。财务读 `level=0`。  
-> **计算入参（已落地）：** `#/bom-welding-fee-calc` 只要年 + 基地 + 项目；跟拆解列表；join 节点后按 **L0 树根** 年交集。不要版本、不要 snapshot、不选层级（一次算全部层）。见 [有效期 §6.3](../engineering-change/bom-process-die-effective-period-design.md)。  
+> **计算入参（已落地）：** `#/bom-welding-fee-calc` 只要年 + 基地 + 项目；跟拆解列表；join 节点后按 **L0 树根** 年交集。不要版本、不要 snapshot、不选层级（一次算全部层）。见 [有效期 §6.3](../engineering-change/design-change/bom-process-die-effective-period-design.md)。  
 > **口径（写死）：** snapshot **只约束拆解生成**（SOP 那一包）。**焊接费计算和列表一样认树根，不认 SOP 头。** 禁止把费计算 / 列表筛选 / 批量删除绑到 `bom_snapshots.bom_version`。  
 > **计算 ≠ 列表筛：** 计算 = 年 + 基地 + 项目，收 **全部** 树根年交集命中的树（不传版本）。列表可选版本 = **某一个** 树根字（`EC-*` 或 SOP 树上的 `D/09`），不是 snapshot 头、不是「整包」。  
 > 切片：**`bom`**。只读焊接工艺拆解与焊接单价。  
@@ -152,7 +152,7 @@ year, location, vehicle_model
 
 API 仍可传 `levels`（核价引擎补算可用 `[0]`），计算页不传。
 
-取哪些拆解行（必须依赖 [拆解列表](welding-process-breakdown-design.md)，见 [有效期 §6.3](../engineering-change/bom-process-die-effective-period-design.md)）：
+取哪些拆解行（必须依赖 [拆解列表](welding-process-breakdown-design.md)，见 [有效期 §6.3](../engineering-change/design-change/bom-process-die-effective-period-design.md)）：
 
 ```text
 location + vehicle_model 的拆解行（不按 bom_version 过滤）
@@ -238,7 +238,7 @@ static/js/features/bom/welding-fee/{calc,list}/
 | 文档 | 关系 |
 |------|------|
 | [welding-process-breakdown-design.md](welding-process-breakdown-design.md) | `level` 与过程量的上游；取期靠 `source_node_id` |
-| [bom-process-die-effective-period-design.md](../engineering-change/bom-process-die-effective-period-design.md) | 计算入参与 L0 树根年交集 §6.3 |
+| [bom-process-die-effective-period-design.md](../engineering-change/design-change/bom-process-die-effective-period-design.md) | 计算入参与 L0 树根年交集 §6.3 |
 | [assembly-costing-design.md](../costing/assembly-costing-design.md) | 成品账只读 **level=0** |
 | [l1-assembly-costing-design.md](../costing/l1-assembly-costing-design.md) | 应成本工艺费读 **level=1** |
 | [costing-engine-design.md](../costing/costing-engine-design.md) | 补算默认 `levels=[0]` |

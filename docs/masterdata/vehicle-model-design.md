@@ -483,7 +483,7 @@ VehicleModelVO
 
 材料清单：必选项目（P6），门禁 `require_registered` + 基地 `require_enabled`，再 `assert_matches_selected`。第一次导入每个节点的开始月、结束月照抄项目档案；项目已结束也照抄结束月，不改成墙钟月。
 
-按月计算、年度计算与引擎：身份问项目期（月度 `require_introducible(账期年, 月)`；年度 `require_overlaps_year(账期年)`）。取件按零件 / 布点 / BOM 节点有效期与计点命中，见 [bom-process-die-effective-period-design.md](../engineering-change/bom-process-die-effective-period-design.md) §4.4～§4.7、§5.4、§6。**不要**用项目期当取件 WHERE；**不要**级联改对象四列。
+按月计算、年度计算与引擎：身份问项目期（月度 `require_introducible(账期年, 月)`；年度 `require_overlaps_year(账期年)`）。取件按零件 / 布点 / BOM 节点有效期与计点命中，见 [bom-process-die-effective-period-design.md](../engineering-change/design-change/bom-process-die-effective-period-design.md) §4.4～§4.7、§5.4、§6。**不要**用项目期当取件 WHERE；**不要**级联改对象四列。
 
 模具单价 / 检具费：`require_enabled` + `require_registered`。
 
