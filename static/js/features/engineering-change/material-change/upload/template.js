@@ -3,6 +3,7 @@
  */
 
 import { UPLOAD_DROPZONE, UPLOAD_INPUT, HUD_LED } from '../../../../ui/classes.js?v=14';
+import { recentUploadsCardHtml } from '../../../../ui/recent-uploads.js?v=3';
 import {
     uploadBrowseButtonHtml,
     uploadFileHintHtml,
@@ -41,7 +42,7 @@ export function materialChangeUploadTemplate() {
                                             <option value="">请先选择采购基地</option>
                                         </select>
                                     </div>
-                                    <p class="mt-2 text-[10px] text-ink-faint">必选。下载模板前也要先选好。表里的举例会按这里的基地、项目和生效年月来写，并且要和「工程变更单（材质）」上的项目一致。</p>
+                                    <p class="mt-2 text-[10px] text-ink-faint">须和变更单上的项目一致。</p>
                                 </div>
                             </div>
                             <div class="h-px bg-app-surface mx-6 mb-4"></div>
@@ -57,7 +58,7 @@ export function materialChangeUploadTemplate() {
                                         <select id="ecmUploadYear" name="effective_year" required class="${UPLOAD_INPUT} hud-filter w-[140px]"></select>
                                         <select id="ecmUploadMonth" name="effective_month" required class="${UPLOAD_INPUT} hud-filter w-[120px]"></select>
                                     </div>
-                                    <p class="mt-2 text-[10px] text-ink-faint">表里写成「2026年6月」或「2026年06月」都可以，也可以是日期。须和这里选的年月一致。</p>
+                                    <p class="mt-2 text-[10px] text-ink-faint">须和这里选的年月一致。</p>
                                 </div>
                             </div>
                             <div class="h-px bg-app-surface mx-6 mb-4"></div>
@@ -75,7 +76,7 @@ export function materialChangeUploadTemplate() {
                                             ${uploadFileHintHtml('ecmUploadHint')}
                                             <input type="file" id="ecmUploadFileInput" class="hidden" accept=".xlsx">
                                             ${uploadBrowseButtonHtml('ecmUploadSelectFileBtn')}
-                                            <p class="text-[10px] text-ink-faint mt-4 mb-0">只收 .xlsx · 最大 50MB · 必须恰好两张表 · 料厚填数字，最多两位小数</p>
+                                            <p class="text-[10px] text-ink-faint mt-4 mb-0">只收 .xlsx · 最大 50MB</p>
                                         </div>
                                         <div id="ecmProgressPanel" class="hidden text-left w-full">
                                             <div class="flex items-center justify-between gap-3 mb-3">
@@ -117,19 +118,12 @@ export function materialChangeUploadTemplate() {
                         <span class="${HUD_LED}"></span>
                         <h5 class="text-[11px] font-bold text-ink-muted mb-0 tracking-widest uppercase">说明</h5>
                     </div>
-                    <div class="p-4 space-y-3 text-[11px] text-ink-muted leading-relaxed">
-                        <p>先选好基地和项目再下载模板。模板里有两行举例，零件号、名称、冲压工厂、材料和料厚都要换成这个项目正在用的，不要原样上传。</p>
-                        <p>只收表「工程变更单（材质）」。有一行不对，这一整份都不收。格子不要留空，也不要多打空格。</p>
-                        <p>变更前的材料和料厚，必须是系统里这个月正在用的。还要再改，请换一个更晚的月份另传一份。</p>
-                        <p>工艺表上的材料不会改。要撤销，到材料变更列表里删掉这一整份。</p>
+                    <div class="p-4 space-y-2 text-[11px] text-ink-muted leading-relaxed">
+                        <p>变更前必须是这个月正在用的材料和料厚。有一行不对，整份不收。</p>
+                        <p>要撤销，到材料变更列表删掉这一整份。</p>
                     </div>
                 </div>
-                <div class="bg-app-surface border border-line">
-                    <div class="px-4 py-3 border-b border-line-subtle">
-                        <h5 class="text-[11px] font-bold text-ink-muted mb-0 tracking-widest uppercase">最近上传</h5>
-                    </div>
-                    <div class="p-4" id="ecmRecentUploads"></div>
-                </div>
+                ${recentUploadsCardHtml('ecmRecentUploads')}
             </div>
         </div>
     `;

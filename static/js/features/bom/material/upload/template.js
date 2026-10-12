@@ -4,6 +4,7 @@
  */
 
 import { UPLOAD_DROPZONE, UPLOAD_INPUT, HUD_LED } from '../../../../ui/classes.js?v=14';
+import { recentUploadsCardHtml } from '../../../../ui/recent-uploads.js?v=3';
 import {
     uploadBrowseButtonHtml,
     uploadFileHintHtml,
@@ -41,7 +42,7 @@ export function bomUploadTemplate() {
                                             class="${UPLOAD_INPUT} hud-filter w-full max-w-[280px]">
                                         <option value="">请选择采购基地</option>
                                     </select>
-                                    <p class="mt-1.5 text-[11px] text-ink-dim">核价按基地匹配钢价，导入时必须指定基地</p>
+                                    <p class="mt-1.5 text-[11px] text-ink-dim">必选。钢价按这个基地匹配。</p>
                                 </div>
                             </div>
 
@@ -61,7 +62,7 @@ export function bomUploadTemplate() {
                                             class="${UPLOAD_INPUT} hud-filter w-full max-w-[280px]">
                                         <option value="">请先选择采购基地</option>
                                     </select>
-                                    <p class="mt-1.5 text-[11px] text-ink-dim">必选已登记的项目，已结束的也可以。文件里的项目代号必须和所选一致。</p>
+                                    <p class="mt-1.5 text-[11px] text-ink-dim">文件里的项目代号必须和所选一致。</p>
                                 </div>
                             </div>
 
@@ -169,35 +170,11 @@ export function bomUploadTemplate() {
                             <h5 class="text-[11px] font-bold text-ink-muted mb-0 tracking-widest uppercase">导入说明</h5>
                         </div>
                     </div>
-                    <div class="p-4 space-y-4">
-                        <div>
-                            <h6 class="text-[10px] uppercase tracking-wider text-ink-dim mb-2">传什么</h6>
-                            <ul class="list-disc list-inside text-xs text-ink-dim space-y-1.5">
-                                <li>车身件材料清单，.xlsx 或 .xls。</li>
-                                <li>要写出总成、一级零件、二级零件。</li>
-                                <li>项目和版本从表头读取。</li>
-                            </ul>
-                        </div>
-                        <div>
-                            <h6 class="text-[10px] uppercase tracking-wider text-ink-dim mb-2">再传一份时</h6>
-                            <ul class="list-disc list-inside text-xs text-ink-dim space-y-1.5">
-                                <li>第一次投产，按项目的开始和结束时间保存。已经投产后再传，只更新表里写到的总成。</li>
-                                <li>表里出现新零件号，这一整份都不收。换零件号请走设计变更。</li>
-                                <li>表里没写到的总成会留下，不会整份删掉重来。</li>
-                                <li>填了内部号的，一个零件号只能对应一个内部号，一个内部号也只能对应一个零件号。</li>
-                                <li>同一个分总成挂在不同总成下面时，焊接信息和下面二级零件每台车用几个，必须一样。</li>
-                            </ul>
-                        </div>
-                        <div>
-                            <h6 class="text-[10px] uppercase tracking-wider text-ink-dim mb-2">系统怎么认</h6>
-                            <ul class="list-disc list-inside text-xs text-ink-dim space-y-1.5">
-                                <li>板料（料厚写成 T=…）按自制件。</li>
-                                <li>标准件（如 M6）按外购件。</li>
-                                <li>胶的用量如果是毫米，按耗材。</li>
-                            </ul>
-                        </div>
+                    <div class="p-4">
+                        <p class="text-[11px] text-ink-muted leading-relaxed mb-0">项目和版本从表头读取。已经投产后再传，只更新写到的总成。出现新零件号，整份不收。</p>
                     </div>
                 </div>
+                ${recentUploadsCardHtml('bomRecentUploads')}
             </div>
         </div>
     `;

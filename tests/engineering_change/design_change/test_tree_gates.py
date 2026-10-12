@@ -9,10 +9,13 @@ import pytest
 
 from app.common.engineering_change_gates import (
     CHANGE_TYPE_ADD_PART,
+    CHANGE_TYPE_ADD_SUBASSEMBLY,
     CHANGE_TYPE_NOT_INSTALL,
     CHANGE_TYPE_REVISE,
     CHANGE_TYPE_STOP,
     EC_ADD_ALREADY_ON_TREE,
+    EC_ADD_LEVEL1_LEAF,
+    EC_ADD_LEVEL1_NUMBER,
     EC_ASSEMBLY_SKETCH_REQUIRED,
     EC_INTERNAL_REQUIRED,
     EC_NOT_INSTALL_CHILDREN,
@@ -299,6 +302,87 @@ def test_add_new_letter_version_is_not_inferred_as_revise() -> None:
             sketch_bytes=_PNG,
         ),
         _file(level=1, parent_index=0, part_number="501006875AB"),
+    ]
+    validate_change_tree_gates(change_order, old_nodes, sliced)
+
+
+def test_add_l2_requires_parent_level1_new_number() -> None:
+    change_order = _change_order(
+        change_type=CHANGE_TYPE_ADD_PART,
+        part_level=PART_LEVEL_L2,
+        after_part="501005123AA",
+    )
+    old_nodes = [
+        _old(node_id=1, parent_id=None, level=0, part_number="501007029AA"),
+        _old(node_id=2, parent_id=1, level=1, part_number="501004437AA"),
+        _old(node_id=3, parent_id=2, level=2, part_number="501007904AA"),
+    ]
+    sliced = [
+        _file(
+            level=0,
+            parent_index=None,
+            part_number="501007029AB",
+            internal_number="ACA613",
+            sketch_bytes=_PNG,
+        ),
+        _file(level=1, parent_index=0, part_number="501004437AA"),
+        _file(level=2, parent_index=1, part_number="501005123AA"),
+    ]
+    with pytest.raises(BusinessException) as exc:
+        validate_change_tree_gates(change_order, old_nodes, sliced)
+    assert str(exc.value).startswith(EC_ADD_LEVEL1_NUMBER)
+
+
+def test_add_l2_rejects_level1_without_existing_level2() -> None:
+    change_order = _change_order(
+        change_type=CHANGE_TYPE_ADD_PART,
+        part_level=PART_LEVEL_L2,
+        after_part="501005123AA",
+    )
+    old_nodes = [
+        _old(node_id=1, parent_id=None, level=0, part_number="501007029AA"),
+        _old(node_id=2, parent_id=1, level=1, part_number="501004437AA"),
+        _old(node_id=3, parent_id=1, level=1, part_number="501007031AA"),
+    ]
+    sliced = [
+        _file(
+            level=0,
+            parent_index=None,
+            part_number="501007029AB",
+            internal_number="ACA613",
+            sketch_bytes=_PNG,
+        ),
+        _file(level=1, parent_index=0, part_number="501004437AB"),
+        _file(level=2, parent_index=1, part_number="501005123AA"),
+    ]
+    with pytest.raises(BusinessException) as exc:
+        validate_change_tree_gates(change_order, old_nodes, sliced)
+    assert str(exc.value).startswith(EC_ADD_LEVEL1_LEAF)
+    assert "501004437AA" in str(exc.value)
+
+
+def test_add_l2_accepts_parent_level1_new_number() -> None:
+    change_order = _change_order(
+        change_type=CHANGE_TYPE_ADD_PART,
+        part_level=PART_LEVEL_L2,
+        after_part="501005123AA",
+    )
+    old_nodes = [
+        _old(node_id=1, parent_id=None, level=0, part_number="501007029AA"),
+        _old(node_id=2, parent_id=1, level=1, part_number="501004437AA"),
+        _old(node_id=3, parent_id=2, level=2, part_number="501007904AA"),
+        _old(node_id=4, parent_id=1, level=1, part_number="501007031AA"),
+    ]
+    sliced = [
+        _file(
+            level=0,
+            parent_index=None,
+            part_number="501007029AB",
+            internal_number="ACA613",
+            sketch_bytes=_PNG,
+        ),
+        _file(level=1, parent_index=0, part_number="501004437AB"),
+        _file(level=2, parent_index=1, part_number="501005123AA"),
     ]
     validate_change_tree_gates(change_order, old_nodes, sliced)
 
@@ -659,4 +743,154 @@ def test_template_copies_process_sketch_onto_bom_l1() -> None:
     )
     assert target.sketch_bytes
     assert target.sketch_bytes[:8] == b"\x89PNG\r\n\x1a\n"
+    for node in parsed.nodes:
+        if "螺母" in (node.part_name or "") and not node.sketch_bytes:
+            node.sketch_bytes = _PNG
     validate_identity_gates([], parsed.nodes)
+
+
+_OLD = "501004437AA"
+_SUB = "501004437AA-1"
+_ADDED = "501005123AA"
+
+
+def _demote_orders() -> list[ChangeOrderRowParsed]:
+    return [
+        _change_order(
+            change_type=CHANGE_TYPE_NOT_INSTALL,
+            part_level=PART_LEVEL_L1,
+            before_part=_OLD,
+        ),
+        _change_order(
+            change_type=CHANGE_TYPE_ADD_SUBASSEMBLY,
+            part_level=PART_LEVEL_L1,
+            after_part=_SUB,
+        ),
+        _change_order(
+            change_type=CHANGE_TYPE_ADD_PART,
+            part_level=PART_LEVEL_L2,
+            after_part=_ADDED,
+        ),
+    ]
+
+
+def _demote_old_tree() -> list[SimpleNamespace]:
+    return [
+        _old(node_id=1, parent_id=None, level=0, part_number="501007029AA"),
+        _old(node_id=2, parent_id=1, level=1, part_number=_OLD, internal_number="ACA392002"),
+        _old(node_id=3, parent_id=1, level=1, part_number="501007031AA"),
+        _old(node_id=4, parent_id=1, level=1, part_number="501005057AA"),
+        _old(node_id=5, parent_id=4, level=2, part_number="501007904AA"),
+        _old(node_id=6, parent_id=4, level=2, part_number="501007905AA"),
+    ]
+
+
+def _demote_file(*, with_survivor: bool = True, with_stop: bool = True) -> list[BomParsedNode]:
+    nodes = [
+        _file(
+            level=0,
+            parent_index=None,
+            part_number="501007029AB",
+            internal_number="ACA614",
+            sketch_bytes=_PNG,
+        ),
+    ]
+    if with_stop:
+        nodes.append(
+            _file(
+                level=1,
+                parent_index=0,
+                part_number=_OLD,
+                qty=Decimal("0"),
+                remark=NOT_INSTALL_REMARK,
+                internal_number="ACA611009",
+                source_row=9,
+            )
+        )
+    sub_index = len(nodes)
+    nodes.append(
+        _file(
+            level=1,
+            parent_index=0,
+            part_number=_SUB,
+            internal_number="ACA613005",
+            source_row=10,
+        )
+    )
+    nodes.append(
+        _file(
+            level=2,
+            parent_index=sub_index,
+            part_number=_ADDED,
+            sketch_bytes=_PNG,
+            source_row=10,
+        )
+    )
+    if with_survivor:
+        nodes.append(
+            _file(
+                level=2,
+                parent_index=sub_index,
+                part_number=_OLD,
+                internal_number="ACA392002",
+                source_row=11,
+            )
+        )
+    return nodes
+
+
+def test_each_change_type_accepts_on_its_own() -> None:
+    orders = _demote_orders()
+    old_nodes = _demote_old_tree()
+    sliced = _demote_file()
+    for order in orders:
+        validate_change_tree_gates(order, old_nodes, sliced)
+    validate_identity_gates(old_nodes, sliced)
+    orders = _demote_orders()
+    old_nodes = _demote_old_tree()
+    sliced = _demote_file(with_survivor=False)
+    for order in orders:
+        validate_change_tree_gates(order, old_nodes, sliced)
+
+
+def test_not_install_still_requires_qty_zero_row() -> None:
+    orders = _demote_orders()
+    with pytest.raises(BusinessException) as exc:
+        validate_change_tree_gates(orders[0], _demote_old_tree(), _demote_file(with_stop=False))
+    assert str(exc.value).startswith(EC_NOT_INSTALL_SIGNAL)
+
+
+def test_new_subassembly_accepts_without_not_install_row() -> None:
+    orders = _demote_orders()[1:]
+    old_nodes = _demote_old_tree()
+    sliced = _demote_file()
+    for order in orders:
+        validate_change_tree_gates(order, old_nodes, sliced)
+
+
+def test_classic_leaf_not_install_still_accepts() -> None:
+    change_order = _change_order(
+        change_type=CHANGE_TYPE_NOT_INSTALL,
+        before_part=_OLD,
+    )
+    old_nodes = [
+        _old(node_id=1, parent_id=None, level=0, part_number="501007029AA"),
+        _old(node_id=2, parent_id=1, level=1, part_number=_OLD),
+    ]
+    sliced = [
+        _file(
+            level=0,
+            parent_index=None,
+            part_number="501007029AB",
+            internal_number="ACA614",
+            sketch_bytes=_PNG,
+        ),
+        _file(
+            level=1,
+            parent_index=0,
+            part_number=_OLD,
+            qty=Decimal("0"),
+            remark=NOT_INSTALL_REMARK,
+        ),
+    ]
+    validate_change_tree_gates(change_order, old_nodes, sliced)

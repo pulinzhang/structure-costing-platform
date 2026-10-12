@@ -68,6 +68,27 @@ class BomNodeRepository:
             .first()
         )
 
+    def list_l0_by_scope_version(
+        self,
+        db: Session,
+        *,
+        location: str,
+        vehicle_model: str,
+        bom_version: str,
+    ) -> list[BomNode]:
+        """该基地、项目下，树根版本字等于给定版本的 L0。"""
+        return (
+            db.query(BomNode)
+            .filter(
+                BomNode.level == 0,
+                BomNode.location == location,
+                BomNode.vehicle_model == vehicle_model,
+                BomNode.bom_version == bom_version,
+            )
+            .order_by(*_BOM_NODE_ORDER)
+            .all()
+        )
+
     def list_l0(self, db: Session, snapshot_id: int) -> list[BomNode]:
         return (
             db.query(BomNode)

@@ -6,7 +6,7 @@
   <title>帮助 · 操作说明 · 核价平台</title>
   <link rel="icon" type="image/x-icon" href="/static/assets/favicon.ico">
   <link href="/static/css/fonts.css?v=1" rel="stylesheet">
-  <link rel="stylesheet" href="helper.css?v=33">
+  <link rel="stylesheet" href="helper.css?v=36">
 </head>
 <body>
   <table class="print-sheet">
@@ -189,7 +189,7 @@
           </li>
           <li>
             <strong>冲压加工费</strong>
-            <span>按年 + 基地 + 项目计算。没有结果时，自动核价引擎会一并计算。</span>
+            <span>按年 + 基地 + 项目计算。没有结果时，自动核价引擎会一并计算。算完到「冲压加工费列表」核对。拼焊费不在计算里，在该行「编辑」的「其它费用」录入，见<a href="#faq">操作问答</a>。</span>
           </li>
           <li>
             <strong>冲压模具费</strong>
@@ -469,7 +469,7 @@
             </li>
             <li>
               <strong>变更单一行一种改法</strong>
-              类型只准四句：完成停止 / 改图 / 增加零件 / 此件不装。零件层级只准：总成 / 一级 / 二级。同一本可多行；同一总成多场景须连续行并合并变更前/后总成格。
+              类型只准五句：完成停止 / 改图 / 增加零件 / 此件不装 / 增加分总成。零件层级只准：总成 / 一级 / 二级。同一本可多行；同一总成多场景须连续行并合并变更前/后总成格。增加分总成用来把原来的一级叶子变成新的一级分总成。
             </li>
             <li>
               <strong>新旧号以表格为准</strong>
@@ -504,6 +504,7 @@
           </ul>
           <div class="callout">
             删除前确认：状态不是「进行中」；后面没有还没撤销的变更；相关采购对象未审（或已反审）。否则会提示不能删这次。原件到「文件溯源」下载。
+            八种填法（含模板没画的二级）见<a href="knowledge.html#change-scenes">知识库 · 八种填法</a>。
             概念与按月取树规则见<a href="knowledge.html#engineering-change">知识库 · 工程变更</a>；01 月走账见<a href="example.html">样例</a>（芜湖 T13J）。
           </div>
         </div>
@@ -678,6 +679,10 @@
           <li>
             <strong>账号设置在哪？</strong>
             <span>点屏幕右上角自己的头像，菜单里的「账号设置」就是个人资料。侧栏「设置 → 个人资料」是同一页。可以改姓名、部门、邮箱、电话、头像；改登录密码要先填原来的密码。</span>
+          </li>
+          <li>
+            <strong>拼焊费在哪里录入？</strong>
+            <span>拼焊费是拼焊件在冲压加工费里按年手工填的「其它费用」，不是焊接工程的焊接费，也不是工序费。打开「冲压工程 → 冲压加工费 → 冲压加工费列表」，在该零件操作列点「编辑」录入，可正可负。确认单价等于系统计算加上其它费用。没填不能审核。普通件的其它费用可以留空，按 0。</span>
           </li>
           <li>
             <strong>看不到某个菜单？</strong>

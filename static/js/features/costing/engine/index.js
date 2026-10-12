@@ -13,6 +13,7 @@ import {
     formatTimingLine,
 } from '../../../domain/duration.js?v=3';
 import { opsIconButtonHtml } from '../../../ui/hud-table.js?v=3';
+import { copyPlainText } from '../../../ui/copy-text.js?v=3';
 
 const READY_API = '/api/costing/engine/ready';
 const RUNS_API = '/api/costing/engine/runs';
@@ -653,16 +654,12 @@ function gateReasonBody(item) {
 
 async function copyVisibleText(text, button) {
     if (!text) return;
-    try {
-        await navigator.clipboard.writeText(text);
-        if (!button) return;
-        button.title = '已复制';
-        window.setTimeout(() => {
-            if (button.isConnected) button.title = '复制原因';
-        }, 1600);
-    } catch (_) {
-        /* 划选正文仍可复制 */
-    }
+    const copied = await copyPlainText(text);
+    if (!copied || !button) return;
+    button.title = '已复制';
+    window.setTimeout(() => {
+        if (button.isConnected) button.title = '复制原因';
+    }, 1600);
 }
 
 function renderReady(ready) {

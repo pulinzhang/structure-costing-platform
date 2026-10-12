@@ -5,6 +5,7 @@ from __future__ import annotations
 from types import SimpleNamespace
 
 from app.common.engineering_change_gates import (
+    CHANGE_TYPE_ADD_PART,
     CHANGE_TYPE_NOT_INSTALL,
     CHANGE_TYPE_REVISE,
     PART_LEVEL_L1,
@@ -124,6 +125,92 @@ def test_revise_l1_does_not_map_unrelated_branch() -> None:
     assert mapping["501006875AA"] == "501006875AB"
     assert "501005123AA-1" not in mapping
     assert "501005123AA" not in mapping
+
+
+def test_add_l2_maps_parent_level1_and_leaves_sibling_level2() -> None:
+    spec = BomChangePlantSpec(
+        change_type=CHANGE_TYPE_ADD_PART,
+        before_assembly_part_number="501007029AA",
+        after_assembly_part_number="501007029AB",
+        assembly_name="中通道左后纵梁总成",
+        part_level=PART_LEVEL_L2,
+        before_part_number=None,
+        after_part_number="501005123AA",
+        part_name="流水槽上加强梁本体",
+    )
+    old_nodes = [
+        _node(node_id=1, parent_id=None, level=0, part_number="501007029AA"),
+        _node(node_id=2, parent_id=1, level=1, part_number="501007031AA"),
+        _node(node_id=3, parent_id=1, level=1, part_number="501004437AA"),
+        _node(node_id=4, parent_id=3, level=2, part_number="501007904AA"),
+        _node(node_id=5, parent_id=1, level=1, part_number="501005057AA"),
+    ]
+    parsed_nodes = [
+        BomParsedNode(
+            level=0,
+            parent_index=None,
+            part_number="501007029AB",
+            sort_no=0,
+            source_row=9,
+        ),
+        BomParsedNode(
+            level=1,
+            parent_index=0,
+            part_number="501004437AB",
+            sort_no=1,
+            source_row=9,
+        ),
+        BomParsedNode(
+            level=2,
+            parent_index=1,
+            part_number="501005123AA",
+            sort_no=2,
+            source_row=9,
+        ),
+    ]
+    mapping = build_number_map(spec, old_nodes, parsed_nodes)
+    assert mapping["501007029AA"] == "501007029AB"
+    assert mapping["501004437AA"] == "501004437AB"
+    assert "501007031AA" not in mapping
+    assert "501005057AA" not in mapping
+    assert "501007904AA" not in mapping
+    assert "501005123AA" not in mapping
+
+
+def test_add_l1_does_not_rename_same_stem() -> None:
+    spec = BomChangePlantSpec(
+        change_type=CHANGE_TYPE_ADD_PART,
+        before_assembly_part_number="501006873AA",
+        after_assembly_part_number="501006873AB",
+        assembly_name="流水槽加强梁总成",
+        part_level=PART_LEVEL_L1,
+        before_part_number=None,
+        after_part_number="501006875AB",
+        part_name="雨刮电机安装支架",
+    )
+    old_nodes = [
+        _node(node_id=1, parent_id=None, level=0, part_number="501006873AA"),
+        _node(node_id=2, parent_id=1, level=1, part_number="501006875AA"),
+    ]
+    parsed_nodes = [
+        BomParsedNode(
+            level=0,
+            parent_index=None,
+            part_number="501006873AB",
+            sort_no=0,
+            source_row=8,
+        ),
+        BomParsedNode(
+            level=1,
+            parent_index=0,
+            part_number="501006875AB",
+            sort_no=1,
+            source_row=8,
+        ),
+    ]
+    mapping = build_number_map(spec, old_nodes, parsed_nodes)
+    assert mapping["501006873AA"] == "501006873AB"
+    assert "501006875AA" not in mapping
 
 
 def test_revise_plus_not_install_maps_both_specs() -> None:

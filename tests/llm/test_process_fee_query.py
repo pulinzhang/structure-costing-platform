@@ -7,6 +7,7 @@ from unittest.mock import MagicMock
 import pytest
 
 from app.database import DatabaseConfig
+from app.schemas.llm.analysis_query import AnalysisQuery, TimeRange
 from app.services.llm.analysis.runner import AnalysisRunner
 from app.services.llm.query.parser.pipeline import QueryParser
 
@@ -35,6 +36,31 @@ def test_query_parser_stamping_process_fee_subject() -> None:
     assert "drilldown" in query.analyses
 
 
+def test_query_parser_tailor_weld_fee_is_process_fee() -> None:
+    parser = QueryParser()
+    db = MagicMock()
+    parser._aligner._scope_repo.list_locations = MagicMock(return_value=["芜湖", "青岛"])
+    parser._aligner._scope_repo.location_alias_map = MagicMock(
+        return_value={"青岛": "青岛", "芜湖": "芜湖"}
+    )
+    parser._aligner._scope_repo.list_vehicle_models = MagicMock(return_value=["T28"])
+    parser._aligner._scope_repo.list_bom_versions = MagicMock(return_value=["V3"])
+    parser._aligner._scope_repo.list_part_numbers_matching = MagicMock(return_value=["551001690AA"])
+    parser._extractor.extract = MagicMock(
+        return_value={
+            "time_range": {"start": "2026-10", "end": "2026-10"},
+            "filters": {"part_number": "551001690AA"},
+            "compare_locations": [],
+        }
+    )
+
+    query = parser.parse(db, user_question="551001690AA的拼焊费")
+    assert query.query_mode == "analysis"
+    assert query.subject == "stamping_process_fee"
+    assert query.part_number() == "551001690AA"
+    assert "drilldown" in query.analyses
+
+
 @pytest.mark.integration
 def test_stamping_process_fee_lookup_8024() -> None:
     db = DatabaseConfig.get_session_factory()()
@@ -57,5 +83,29 @@ def test_stamping_process_fee_lookup_8024() -> None:
         assert drill.get("part_number") == "502008024AA"
         assert drill.get("final_processing_fee") == "1.508"
         assert drill.get("year") == 2026
+    finally:
+        db.close()
+
+
+@pytest.mark.integration
+def test_tailor_weld_fee_uses_other_fee_outside_window_year() -> None:
+    db = DatabaseConfig.get_session_factory()()
+    try:
+        query = AnalysisQuery(
+            time_range=TimeRange(start="2026-10", end="2026-10"),
+            filters={"part_number": "551001690AA"},
+            subject="stamping_process_fee",
+            analyses=["drilldown"],
+            user_question="551001690AA的拼焊费",
+        )
+        run = AnalysisRunner().run(db, query)
+        assert run.has_data
+        drill = run.result
+        assert drill.get("kind") == "drilldown"
+        assert drill.get("year") == 2025
+        assert drill.get("other_fee") == "6.975"
+        assert drill.get("is_tailor_welded") is True
+        assert drill.get("outside_query_window") is True
+        assert drill.get("location") == "青岛"
     finally:
         db.close()

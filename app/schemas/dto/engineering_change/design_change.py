@@ -20,6 +20,6 @@ class EngineeringChangeOrderQueryDTO(BaseModel):
     )
     effective_month: int | None = Field(None, ge=MONTH_MIN, le=MONTH_MAX, description="生效月")
     status: str | None = Field(None, description="pending/success/failed/rolled_back")
-    change_type: str | None = Field(None, description="变更类型四句之一")
+    change_type: str | None = Field(None, description="变更类型五句之一")
     page: int = Field(1, ge=1, description="页码从 1")
     size: int = Field(20, ge=1, le=200, description="每页条数")

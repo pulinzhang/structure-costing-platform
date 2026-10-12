@@ -4,8 +4,11 @@ import { HUD_LED } from '../../../../ui/classes.js?v=14';
  * 同步导入：基地 + 年度必选，仅 .xlsx
  */
 
-import { weldingUnitPriceUploadTemplate } from './template.js?v=20';
+import { weldingUnitPriceUploadTemplate } from './template.js?v=23';
 import { bindSyncUploadProgress } from '../../../../ui/sync-upload-progress.js?v=4';
+import { bindRecentUploads } from '../../../../ui/recent-uploads.js?v=3';
+
+const recentUploads = bindRecentUploads('weldingUnitPriceRecentUploads');
 
 const API_BASE = '/api/bom/welding-unit-price';
 const MAX_FILE_SIZE = 5 * 1024 * 1024;
@@ -36,6 +39,7 @@ const WeldingUnitPriceUploadPage = {
         this.hideProgress();
         this.clearResult();
         this.clearSelectedFile(false);
+        recentUploads.paint();
         this.loadStandardCatalog();
         this.loadLocationOptions();
     },
@@ -410,6 +414,11 @@ const WeldingUnitPriceUploadPage = {
             if (warnings.length) {
                 this.showResult('warning', msg, warnings);
             }
+            recentUploads.remember({
+                fileName: this.selectedFile?.name,
+                scopeLabel: `${location} · ${yearRaw}年`,
+                summary: `新增 ${data.created_count ?? 0} / 更新 ${data.updated_count ?? 0}`,
+            });
             this.clearSelectedFile(true);
         } catch (err) {
             this.failOnPanel(err.message || '导入失败');

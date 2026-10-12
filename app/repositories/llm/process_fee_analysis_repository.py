@@ -21,6 +21,7 @@ class ProcessFeeRow:
     version: str
     part_number: str
     part_name: str | None
+    is_tailor_welded: bool
     processing_fee: Decimal | None
     other_fee: Decimal | None
     final_processing_fee: Decimal | None
@@ -75,6 +76,7 @@ class ProcessFeeAnalysisRepository:
                 version=str(row.version),
                 part_number=str(row.part_number),
                 part_name=row.part_name,
+                is_tailor_welded=bool(row.is_tailor_welded),
                 processing_fee=(
                     Decimal(str(row.processing_fee)) if row.processing_fee is not None else None
                 ),

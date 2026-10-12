@@ -9,6 +9,7 @@ from decimal import Decimal
 from sqlalchemy.orm import Session
 
 from app.common.bom.node_order import bom_node_order_from
+from app.common.period import format_period
 from app.exceptions.base import BusinessException
 from app.models.costing import StampingPartCost
 from app.repositories.bom.procurement_object_repository import BomProcurementObjectRepository
@@ -24,7 +25,9 @@ from app.services.costing.assembly_cost.calc.orchestrator.progress import Progre
 from app.services.costing.assembly_cost.calc.orchestrator.ready import assert_calc_ready
 from app.services.costing.assembly_cost.calc.process_log import (
     CONFLICT_LIMIT,
+    NO_SUBJECTS,
     ProcessLogBuilder,
+    format_no_bom,
 )
 from app.services.costing.assembly_cost.calc.rollup import (
     RollupBomNode,
@@ -110,7 +113,7 @@ def prepare_calc_run(
         vehicle_model=vehicle_model,
     )
 
-    progress.report(5, "加载 BOM…")
+    progress.report(5, "正在读取材料清单…")
     orm_nodes = BomPeriodService().list_as_of_trees(
         db,
         location=location,
@@ -119,9 +122,7 @@ def prepare_calc_run(
         as_of_month=month,
     )
     if not orm_nodes:
-        raise BusinessException(
-            f"{location}/{vehicle_model} 在 {year} 年 {month:02d} 月没有有效期内的 BOM 树"
-        )
+        raise BusinessException(format_no_bom(location, vehicle_model, year, month))
 
     nodes = [
         RollupBomNode(
@@ -184,7 +185,7 @@ def prepare_calc_run(
         key=bom_node_order_from,
     )
     if not subjects:
-        raise BusinessException("无核价主体（装配∪树根∪采购对象）")
+        raise BusinessException(NO_SUBJECTS)
     seq_label_by_node_id = calc_card_seq_labels(
         orm_nodes,
         procurement_objects,
@@ -312,20 +313,28 @@ def _record_prep(
     packaging_count: int,
 ) -> None:
     by_level = Counter(node.level for node in subjects)
-    level_text = "、".join(f"L{level} {count}" for level, count in sorted(by_level.items()))
+    level_bits: list[str] = []
+    if by_level.get(0):
+        level_bits.append(f"供货总成 {by_level[0]} 个")
+    if by_level.get(1):
+        level_bits.append(f"分总成 {by_level[1]} 个")
+    deeper = sum(count for level, count in by_level.items() if int(level) >= 2)
+    if deeper:
+        level_bits.append(f"更下层 {deeper} 个")
+    who = f"（{'、'.join(level_bits)}）" if level_bits else ""
     log_builder.line(
-        f"{year}-{month:02d}  {location}/{vehicle_model}  "
-        f"BOM {node_count}  卡 {len(subjects)}（{level_text or '无'}）"
+        f"开始计算：{format_period(year, month)}，{location}，{vehicle_model}。"
+        f"材料清单 {node_count} 行，要核价的零件 {len(subjects)} 个{who}。"
     )
     log_builder.line(
-        f"冲压价 {stamping_count}  年度价 {annual_count}  "
-        f"焊接费 {welding_count}  包装 {packaging_count}"
+        f"用到的价格：冲压价 {stamping_count} 条，年度零件价 {annual_count} 条，"
+        f"焊接费 {welding_count} 条，包装运输费 {packaging_count} 条。"
     )
     if procurement_missing:
-        log_builder.line("本趟无采购对象列表头（应列入为空时正常）")
+        log_builder.line("这个项目还没有采购对象清单。应列入为空时，这样是正常的。")
     if conflicted:
         shown = sorted(conflicted)[:CONFLICT_LIMIT]
-        extra = f" 等{len(conflicted)}个" if len(conflicted) > len(shown) else ""
-        log_builder.warn("冲压价冲突: " + "、".join(shown) + extra)
+        extra = f" 等 {len(conflicted)} 个" if len(conflicted) > len(shown) else ""
+        log_builder.warn("冲压价有冲突：" + "、".join(shown) + extra)
     elif stamping_count == 0:
         log_builder.warn("本月无冲压价")

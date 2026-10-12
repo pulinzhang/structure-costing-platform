@@ -7,6 +7,7 @@ from collections.abc import Sequence
 
 from app.common.engineering_change_gates import (
     CHANGE_TYPE_ADD_PART,
+    CHANGE_TYPE_ADD_SUBASSEMBLY,
     CHANGE_TYPE_NOT_INSTALL,
     CHANGE_TYPE_REVISE,
     CHANGE_TYPE_STOP,
@@ -354,6 +355,26 @@ def _validate_columns_by_type(change_order: ChangeOrderRowParsed) -> None:
                 f"{EC_ADD_VS_REVISE}：{row}增加零件把新零件号"
                 f"{quoted(change_order.after_part_number)}写成了变更后总成。"
                 "应加在原来的总成上。"
+            )
+        return
+
+    if change_type == CHANGE_TYPE_ADD_SUBASSEMBLY:
+        if change_order.part_level != PART_LEVEL_L1:
+            raise BusinessException(
+                f"{EC_CHANGE_ORDER_COLUMNS}：{row}增加分总成的零件层级应写「一级」，"
+                f"现在是{quoted(change_order.part_level)}。"
+            )
+        if change_order.before_part_number:
+            raise BusinessException(
+                f"{EC_CHANGE_ORDER_COLUMNS}：{row}增加分总成变更前零件应空，"
+                f"现在是{quoted(change_order.before_part_number)}。"
+            )
+        if not change_order.after_part_number:
+            raise BusinessException(f"{EC_CHANGE_ORDER_COLUMNS}：{row}增加分总成必须填变更后零件。")
+        if change_order.after_part_number == change_order.after_assembly_part_number:
+            raise BusinessException(
+                f"{EC_ADD_VS_REVISE}：{row}增加分总成把新分总成号"
+                f"{quoted(change_order.after_part_number)}写成了变更后总成。"
             )
         return
 

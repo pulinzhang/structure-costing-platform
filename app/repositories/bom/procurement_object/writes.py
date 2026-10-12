@@ -173,6 +173,26 @@ class BomProcurementObjectWrites:
         db.flush()
         return int(count)
 
+    def delete_objects_by_source_node_ids(
+        self,
+        db: Session,
+        *,
+        list_id: int,
+        source_node_ids: list[int],
+    ) -> int:
+        if not source_node_ids:
+            return 0
+        count = (
+            db.query(BomProcurementObject)
+            .filter(
+                BomProcurementObject.list_id == list_id,
+                BomProcurementObject.source_node_id.in_(source_node_ids),
+            )
+            .delete(synchronize_session=False)
+        )
+        db.flush()
+        return int(count)
+
     def delete_pending_objects_by_ids(self, db: Session, object_ids: list[int]) -> int:
         if not object_ids:
             return 0

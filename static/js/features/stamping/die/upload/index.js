@@ -1,10 +1,11 @@
-import { dieUploadTemplate } from './template.js?v=25';
+import { dieUploadTemplate } from './template.js?v=27';
 import { uploadSubmitLabelHtml } from '../../../../ui/upload-actions.js?v=2';
 import { paintUploadProgressIcon } from '../../../../ui/sync-upload-progress.js?v=5';
 import {
     setDropzoneDragActive,
     setDropzoneFileSelected,
 } from '../../../../ui/upload-dropzone.js?v=3';
+import { bindRecentUploads } from '../../../../ui/recent-uploads.js?v=3';
 import {
     SOP_INTRO,
     loadProjectPeriod,
@@ -12,11 +13,10 @@ import {
     sopBannerHtml,
 } from '../../../common/period-ui.js?v=9';
 
-const MAX_RECENT_UPLOADS = 8;
 const POLL_INTERVAL_MS = 2000;
+const recentUploads = bindRecentUploads('dieRecentUploads');
 
 export const DieUploadPage = {
-    recentUploads: [],
     pollTimer: null,
     pollInFlight: false,
     isUploading: false,
@@ -29,7 +29,7 @@ export const DieUploadPage = {
         this.stopPolling();
         this.applyPermissionUi();
         this.bindEvents();
-        this.renderRecentUploads();
+        recentUploads.paint();
         const slot = document.getElementById('sopBannerSlot');
         if (slot && !document.getElementById('sopBanner')) {
             slot.innerHTML = sopBannerHtml();
@@ -257,35 +257,7 @@ export const DieUploadPage = {
         if (submitBtn) submitBtn.disabled = true;
     },
 
-    addRecentUpload(fileName, scopeLabel, summary) {
-        const timeLabel = new Date().toLocaleTimeString('zh-CN', {
-            hour: '2-digit',
-            minute: '2-digit',
-            second: '2-digit',
-        });
-        this.recentUploads.unshift({ fileName, scopeLabel, timeLabel, summary: summary || '' });
-        this.recentUploads = this.recentUploads.slice(0, MAX_RECENT_UPLOADS);
-        this.renderRecentUploads();
-    },
 
-    renderRecentUploads() {
-        const container = document.getElementById('dieRecentUploads');
-        if (!container) return;
-        if (this.recentUploads.length === 0) {
-            container.innerHTML = '<p class="text-[10px] text-ink-faint text-center py-5">暂无上传记录</p>';
-            return;
-        }
-        container.innerHTML = this.recentUploads.map((item) => `
-            <div class="flex items-start gap-2.5 p-2.5 bg-app-main border border-line mb-2 last:mb-0">
-                <span class="text-ok shrink-0 mt-0.5">${svgIcon('file-earmark-excel')}</span>
-                <div class="min-w-0 flex-1">
-                    <p class="text-[11px] text-ink truncate">${esc(item.fileName)}</p>
-                    <p class="text-[10px] text-ink-dim mt-0.5">${esc(item.scopeLabel)} · ${esc(item.timeLabel)}</p>
-                    ${item.summary ? `<p class="text-[10px] text-ink-muted mt-0.5">${esc(item.summary)}</p>` : ''}
-                </div>
-            </div>
-        `).join('');
-    },
 
     showProgress(progress = 0, msg = '正在导入。') {
         document.getElementById('dieDropIdle')?.classList.add('hidden');
@@ -408,7 +380,7 @@ export const DieUploadPage = {
                     const result = data?.result || {};
                     const summary = `${result.parts_count || 0} 零件 / ${result.processes_count || 0} 工序`;
                     showToast(data?.msg || `上传成功: ${summary}`, 'success');
-                    this.addRecentUpload(fileName, scopeLabel, summary);
+                    recentUploads.remember({ fileName, scopeLabel, summary });
                     this.activeTaskId = null;
                     this.setUploading(false);
                     this.clearSelectedFile();

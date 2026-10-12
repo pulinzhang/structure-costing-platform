@@ -10,6 +10,7 @@ import {
     uploadSubmitButtonHtml,
     uploadTemplateButtonHtml,
 } from '../../../../ui/upload-actions.js?v=2';
+import { recentUploadsCardHtml } from '../../../../ui/recent-uploads.js?v=3';
 
 export function vehicleModelUploadTemplate() {
     return `
@@ -60,28 +61,12 @@ export function vehicleModelUploadTemplate() {
                         <span class="w-1 h-3 bg-brand-hud"></span>
                         <h5 class="text-[11px] font-semibold text-ink-muted mb-0 tracking-wider">要点</h5>
                     </div>
-                    <div class="p-4 space-y-4">
-                        <div>
-                            <h6 class="text-[10px] tracking-wider text-ink-faint mb-2">怎么填</h6>
-                            <ul class="list-disc list-inside text-xs text-ink-dim space-y-1.5">
-                                <li><span class="text-ink-muted">基地</span>填已经启用的基地名，别名也可以。</li>
-                                <li><span class="text-ink-muted">项目代号</span>保存时会变成大写。</li>
-                                <li><span class="text-ink-muted">生效年、生效月</span>必填。</li>
-                                <li><span class="text-ink-muted">失效年、失效月</span>要么都填，要么都空着。</li>
-                                <li><span class="text-ink-muted">当前供货台数</span>空着就当 0。</li>
-                            </ul>
-                        </div>
-                        <div>
-                            <h6 class="text-[10px] tracking-wider text-ink-faint mb-2">再传一份时</h6>
-                            <ul class="list-disc list-inside text-xs text-ink-dim space-y-1.5">
-                                <li>这个基地下这个项目已经有了，就跳过，不覆盖。</li>
-                                <li>有一行不对，这一整份都不写入。</li>
-                                <li>要改时间或台数，到项目列表里点开这一行。</li>
-                            </ul>
-                        </div>
+                    <div class="p-4 space-y-3">
+                        <p class="text-xs text-ink-dim leading-relaxed mb-0">这个基地下这个项目已有则跳过。有一行不对，整份不写入。</p>
                         <a href="#/vehicle-model-list" class="block text-[11px] text-brand-hud hover:text-brand-active">打开项目列表 →</a>
                     </div>
                 </div>
+                ${recentUploadsCardHtml('vmRecentUploads', 'bg-app-hud border border-line-hud')}
             </div>
         </div>
     `;

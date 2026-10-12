@@ -54,6 +54,13 @@ from app.services.bom.welding_process_breakdown.generate.log import (
     STATUS_SUCCESS,
     BomWeldingProcessBreakdownGenerateLogService,
 )
+from app.services.bom.welding_process_breakdown.generate.messages import (
+    format_bom_scope,
+    format_cleared,
+    format_finished,
+    format_leaf_without_weld,
+    format_scope,
+)
 from app.services.bom.welding_process_breakdown.process_log import ProcessLogBuilder
 from app.services.bom.welding_process_breakdown.rollup import apply_rollup_flags
 from app.services.masterdata.vehicle_model.service import VehicleModelService
@@ -156,12 +163,7 @@ class BomWeldingProcessBreakdownGenerateService:
             if progress_callback:
                 progress_callback(progress, msg)
 
-        process_log.section("范围")
-        process_log.line(
-            f"基地={location} 项目={vehicle_model} 版本={bom_version}"
-            + (f" 顾客={customer_name_filter}" if customer_name_filter else "")
-        )
-        report(5, "解析 BOM 快照...")
+        report(5, "正在读取材料清单…")
 
         try:
             snapshot = self._resolve_snapshot(
@@ -172,8 +174,10 @@ class BomWeldingProcessBreakdownGenerateService:
                 customer_name_filter=customer_name_filter,
             )
 
-            process_log.line(f"snapshot_id={snapshot.id} 顾客={snapshot.customer_name or '—'}")
-            report(12, "检查已审核数据...")
+            process_log.line(
+                format_scope(location, vehicle_model, bom_version, snapshot.customer_name)
+            )
+            report(12, "正在检查有没有已审核的拆解…")
 
             approved_count = self.repository.count_by_snapshot_and_statuses(
                 db,
@@ -182,7 +186,7 @@ class BomWeldingProcessBreakdownGenerateService:
             )
             if approved_count > 0:
                 raise BusinessException(
-                    f"该范围已有 {approved_count} 条已审核拆解，请先反审核后再重新生成"
+                    f"这个版本已有 {approved_count} 条审核过的拆解，请先反审核，再重新拆"
                 )
 
             bom_nodes = self.node_repository.list_by_snapshot(db, snapshot.id)
@@ -215,24 +219,23 @@ class BomWeldingProcessBreakdownGenerateService:
                 and not children_map.get(node.id)
                 and not (node.weld_info or "").strip()
             )
-            process_log.line(f"BOM 节点 {len(bom_nodes)}，含焊接原文 {len(weld_candidates)}")
-            process_log.line(
-                f"L0 无子件且无焊信 {l0_leaf_without_weld} 件（不落拆解；有处理费须补焊信）"
-            )
+            process_log.line(format_bom_scope(len(bom_nodes), len(weld_candidates)))
+            leaf_line = format_leaf_without_weld(l0_leaf_without_weld)
+            if leaf_line:
+                process_log.line(leaf_line)
             audit_fields = audit_create(current_user)
 
-            report(20, "清理未审核旧拆解...")
-            process_log.section("清理")
+            report(20, "正在清掉上次没审核的拆解…")
             deleted = self.repository.delete_unaudited_by_snapshot_id(db, snapshot.id)
-            process_log.line(f"删除未审核旧数据：{deleted} 条主表")
+            process_log.line("")
+            process_log.line(format_cleared(deleted))
 
             created_nodes: list[BomWeldingProcessBreakdownNode] = []
             line_count = 0
             source_to_breakdown: dict[int, BomWeldingProcessBreakdownNode] = {}
             total = max(len(weld_candidates), 1)
 
-            process_log.section("拆解")
-            report(25, f"开始拆解 {len(weld_candidates)} 个节点...")
+            report(25, f"开始拆 {len(weld_candidates)} 个零件…")
 
             for index, bom_node in enumerate(weld_candidates):
                 weld_raw = (bom_node.weld_info or "").strip()
@@ -254,18 +257,17 @@ class BomWeldingProcessBreakdownGenerateService:
                     pct = 25 + int(60 * (index + 1) / total)
                     report(
                         min(pct, 85),
-                        f"已拆解 {index + 1}/{total} · 明细 {line_count}",
+                        f"已拆 {index + 1}/{total} 个零件，工艺 {line_count} 条",
                     )
 
-            report(88, "计算 rollup 标记...")
-            process_log.line("应用父子 rollup 标记")
+            report(88, "正在收尾…")
             apply_rollup_flags(created_nodes, source_to_breakdown, children_map)
             db.flush()
             db.commit()
 
             finished = now()
-            message = f"已生成焊接工艺拆解：主表 {len(created_nodes)} 条，" f"明细 {line_count} 条"
-            process_log.section("结果")
+            message = format_finished(len(created_nodes), line_count)
+            process_log.line("")
             process_log.line(message)
 
             result = BomWeldingProcessBreakdownGenerateResultVO(
@@ -487,7 +489,7 @@ class BomWeldingProcessBreakdownGenerateService:
         )
         if not snapshot:
             raise NotFoundException(
-                f"未找到 BOM：基地={location} 项目={vehicle_model} 版本={bom_version}"
+                f"没有找到材料清单：{location}，{vehicle_model}，版本 {bom_version}"
             )
         if customer_name_filter and (snapshot.customer_name or "") != customer_name_filter:
             raise BusinessException(

@@ -7,6 +7,10 @@ from typing import TYPE_CHECKING
 from sqlalchemy.orm import Session
 
 from app.common.audit import display_name
+from app.common.operator_copy import (
+    OPERATOR_BREAKDOWN_INTERRUPTED,
+    operator_failure_text,
+)
 from app.exceptions.base import BusinessException
 from app.schemas.dto.bom_welding_process_breakdown_dto import (
     BomWeldingProcessBreakdownGenerateDTO,
@@ -103,11 +107,12 @@ def start_generate(
         )
 
     def on_crash(worker_db: Session, error: BaseException) -> None:
+        text = operator_failure_text(error, interrupted=OPERATOR_BREAKDOWN_INTERRUPTED)
         svc.mark_generate_log_failed(
             worker_db,
             log_id=log_id,
-            message=str(error),
-            detail_text=f"拆解异常: {error}",
+            message=text,
+            detail_text=text,
         )
 
     async_task_service.submit_session_worker(
@@ -115,6 +120,8 @@ def start_generate(
         start_message="后台开始拆解...",
         work=work,
         on_crash=on_crash,
-        crash_message=lambda error: f"拆解异常: {error}",
+        crash_message=lambda error: operator_failure_text(
+            error, interrupted=OPERATOR_BREAKDOWN_INTERRUPTED
+        ),
     )
     return AsyncTaskAcceptedVO(task_id=task.task_id)

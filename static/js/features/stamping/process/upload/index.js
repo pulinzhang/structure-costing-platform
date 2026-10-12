@@ -3,20 +3,20 @@
  * 冲压工艺上传 — 异步 task_id + 进度轮询
  */
 
-import { uploadTemplate } from './template.js?v=31';
+import { uploadTemplate } from './template.js?v=34';
 import { uploadSubmitLabelHtml } from '../../../../ui/upload-actions.js?v=2';
 import { paintUploadProgressIcon } from '../../../../ui/sync-upload-progress.js?v=5';
 import {
     setDropzoneDragActive,
     setDropzoneFileSelected,
 } from '../../../../ui/upload-dropzone.js?v=3';
+import { bindRecentUploads } from '../../../../ui/recent-uploads.js?v=3';
 import { SOP_INTRO, sopBannerHtml } from '../../../common/period-ui.js?v=9';
 
-const MAX_RECENT_UPLOADS = 8;
 const POLL_INTERVAL_MS = 2000;
+const recentUploads = bindRecentUploads('recentUploads');
 
 export const UploadPage = {
-    recentUploads: [],
     pollTimer: null,
     pollInFlight: false,
     isUploading: false,
@@ -27,7 +27,7 @@ export const UploadPage = {
         this.stopPolling();
         this.applyPermissionUi();
         this.bindEvents();
-        this.renderRecentUploads();
+        recentUploads.paint();
         const slot = document.getElementById('sopBannerSlot');
         if (slot && !document.getElementById('sopBanner')) {
             slot.innerHTML = sopBannerHtml();
@@ -245,57 +245,6 @@ export const UploadPage = {
         this.updateSubmitEnabled();
     },
 
-    addRecentUpload(fileName, location, summary) {
-        const now = new Date();
-        const timeLabel = now.toLocaleTimeString('zh-CN', {
-            hour: '2-digit',
-            minute: '2-digit',
-            second: '2-digit',
-        });
-        this.recentUploads.unshift({
-            fileName,
-            location,
-            timeLabel,
-            summary: summary || '',
-        });
-        if (this.recentUploads.length > MAX_RECENT_UPLOADS) {
-            this.recentUploads = this.recentUploads.slice(0, MAX_RECENT_UPLOADS);
-        }
-        this.renderRecentUploads();
-    },
-
-    renderRecentUploads() {
-        const container = document.getElementById('recentUploads');
-        if (!container) return;
-
-        if (this.recentUploads.length === 0) {
-            container.innerHTML = `
-                <div class="text-center py-5">
-                    <div class="w-8 h-8 bg-app-surface border border-line flex items-center justify-center mx-auto mb-2.5">
-                        <svg class="w-4 h-4 text-ink-faint" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10"></path></svg>
-                    </div>
-                    <p class="text-[10px] text-ink-faint">暂无上传记录</p>
-                </div>
-            `;
-            return;
-        }
-
-        container.innerHTML = `
-            <div class="space-y-2">
-                ${this.recentUploads.map((item) => `
-                    <div class="flex items-start gap-2.5 p-2.5 bg-app-main border border-line">
-                        <span class="text-ok shrink-0 mt-0.5">${svgIcon('file-earmark-excel')}</span>
-                        <div class="min-w-0 flex-1">
-                            <p class="text-[11px] text-ink truncate" title="${esc(item.fileName)}">${esc(item.fileName)}</p>
-                            <p class="text-[10px] text-ink-dim mt-0.5">${esc(item.location)} · ${esc(item.timeLabel)}</p>
-                            ${item.summary ? `<p class="text-[10px] text-ink-muted mt-0.5">${esc(item.summary)}</p>` : ''}
-                        </div>
-                    </div>
-                `).join('')}
-            </div>
-        `;
-    },
-
     showProgress(progress = 0, msg = '正在导入。') {
         const idle = document.getElementById('stampingDropIdle');
         const panel = document.getElementById('stampingProgressPanel');
@@ -326,18 +275,27 @@ export const UploadPage = {
         const msgEl = document.getElementById('stampingProgressMsg');
         const titleEl = document.getElementById('stampingProgressTitle');
 
+        const raw = msg || '';
+        const isMissingGrade = status === 'failed' && raw.includes('牌号分类');
+        const isMissingSupplier = status === 'failed' && (
+            raw.includes('没有该供应商') || raw.includes('供应商已禁用')
+        );
+        const shown = isMissingSupplier
+            ? raw.replace(/（#\/supplier-list）/g, '').trim()
+            : raw;
         if (bar) bar.style.width = `${pct}%`;
         if (percentEl) percentEl.textContent = `${pct}%`;
-        if (msgEl) msgEl.textContent = msg || '';
-        const actionEl = document.getElementById('stampingGradeAction');
-        const isMissingGrade = status === 'failed' && (msg || '').includes('牌号分类');
-        if (actionEl) actionEl.classList.toggle('hidden', !isMissingGrade);
+        if (msgEl) msgEl.textContent = shown;
+        const gradeEl = document.getElementById('stampingGradeAction');
+        const supplierEl = document.getElementById('stampingSupplierAction');
+        if (gradeEl) gradeEl.classList.toggle('hidden', !isMissingGrade);
+        if (supplierEl) supplierEl.classList.toggle('hidden', !isMissingSupplier);
 
         if (titleEl) {
             if (status === 'completed') {
                 titleEl.textContent = '解析成功';
                 titleEl.className = 'text-xs font-medium text-ok truncate mb-0';
-            } else if (isMissingGrade) {
+            } else if (isMissingGrade || isMissingSupplier) {
                 titleEl.textContent = '未导入';
                 titleEl.className = 'text-xs font-medium text-danger truncate mb-0';
             } else if (status === 'failed') {
@@ -450,7 +408,7 @@ export const UploadPage = {
                         .filter(Boolean)
                         .join(' · ') || '—';
                     showToast(msg || `上传成功: ${parts} 个零件, ${processes} 道工序`, 'success');
-                    this.addRecentUpload(fileName, scopeLabel, summary);
+                    recentUploads.remember({ fileName, scopeLabel, summary });
                     this.clearActiveTask();
                     this.setUploading(false);
                     this.clearSelectedFile();

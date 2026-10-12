@@ -4,6 +4,7 @@
  */
 
 import { UPLOAD_DROPZONE, UPLOAD_INPUT, UPLOAD_LABEL, HUD_LED } from '../../../../ui/classes.js?v=14';
+import { recentUploadsCardHtml } from '../../../../ui/recent-uploads.js?v=3';
 import {
     uploadBrowseButtonHtml,
     uploadFileHintHtml,
@@ -59,7 +60,7 @@ export function weldingUnitPriceUploadTemplate() {
                                                class="${UPLOAD_INPUT} w-full">
                                     </div>
                                 </div>
-                                <p class="ml-6 mt-1.5 text-[11px] text-ink-dim">导入时必须指定基地与年度，写入该基地该年的焊接单价</p>
+                                <p class="ml-6 mt-1.5 text-[11px] text-ink-dim">写入所选基地和年度。</p>
                             </div>
 
                             <div class="h-px bg-app-surface mx-6 mb-4"></div>
@@ -154,24 +155,13 @@ export function weldingUnitPriceUploadTemplate() {
                             <h5 class="text-[11px] font-bold text-ink-muted mb-0 tracking-widest uppercase">格式说明</h5>
                         </div>
                     </div>
-                    <div class="p-4 space-y-4">
-                        <div>
-                            <h6 class="text-[10px] uppercase tracking-wider text-ink-dim mb-2">四列怎么填</h6>
-                            <ul class="list-disc list-inside text-xs text-ink-dim space-y-1.5">
-                                <li><span class="text-ink-muted">名称</span>必须和下方目录一字不差。</li>
-                                <li><span class="text-ink-muted">单位</span>也必须和目录一样，只能是：个、CM、MM、平方。</li>
-                                <li><span class="text-ink-muted">费用</span>是工费单价，单位是元，保留四位小数。</li>
-                                <li><span class="text-ink-muted">备注</span>可以空着。</li>
-                            </ul>
-                        </div>
+                    <div class="p-4 space-y-3">
+                        <p class="text-[11px] text-ink-muted leading-relaxed mb-0">名称和单位须与下方目录一致，否则整份不收。同一基地、同一年、同一名称，再传会更新。</p>
                         <div>
                             <div class="flex items-center justify-between gap-2 mb-2">
                                 <h6 class="text-[10px] uppercase tracking-wider text-ink-dim mb-0">标准工艺目录</h6>
                                 <span id="weldingUnitPriceCatalogCount" class="text-[10px] font-mono text-ink-faint">—</span>
                             </div>
-                            <p class="text-[10px] text-ink-dim mb-2 leading-relaxed">
-                                名称写错一个字（比如写成「拆边」），这一整份都不收。模板里另外有一张同名的表，可以对照。
-                            </p>
                             <div class="overflow-hidden border border-line max-h-[320px] overflow-y-auto">
                                 <table class="w-full">
                                     <thead class="sticky top-0">
@@ -188,17 +178,9 @@ export function weldingUnitPriceUploadTemplate() {
                                 </table>
                             </div>
                         </div>
-                        <div>
-                            <h6 class="text-[10px] uppercase tracking-wider text-ink-dim mb-2">再传一份时</h6>
-                            <ul class="list-disc list-inside text-xs text-ink-dim space-y-1.5">
-                                <li>同一个基地、同一年、同一个名称，再传会更新费用、单位和备注。没有的会新增。</li>
-                                <li>基地和年度以本页选择为准。表里只要名称、单位、费用、备注。</li>
-                                <li>名称不在目录里，或者单位和目录对不上，这一整份都不收。</li>
-                                <li>只收 .xlsx。</li>
-                            </ul>
-                        </div>
                     </div>
                 </div>
+                ${recentUploadsCardHtml('weldingUnitPriceRecentUploads')}
             </div>
         </div>
     `;

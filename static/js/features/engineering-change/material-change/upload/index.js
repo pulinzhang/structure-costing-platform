@@ -2,7 +2,8 @@
  * 材料变更上传页
  */
 
-import { materialChangeUploadTemplate } from './template.js?v=10';
+import { materialChangeUploadTemplate } from './template.js?v=12';
+import { copyElementText } from '../../../../ui/copy-text.js?v=3';
 import { uploadSubmitLabelHtml } from '../../../../ui/upload-actions.js?v=2';
 import { can } from '../../../../core/permissions.js?v=8';
 import {
@@ -10,9 +11,10 @@ import {
     setDropzoneFileSelected,
 } from '../../../../ui/upload-dropzone.js?v=3';
 import { fillAsOfSelects } from '../../../common/period-ui.js?v=7';
+import { bindRecentUploads } from '../../../../ui/recent-uploads.js?v=3';
 
 const POLL_INTERVAL_MS = 2000;
-const MAX_RECENT_UPLOADS = 8;
+const recentUploads = bindRecentUploads('ecmRecentUploads');
 const API = '/api/engineering-change/material';
 
 const MaterialChangeUploadPage = {
@@ -23,7 +25,6 @@ const MaterialChangeUploadPage = {
     activeTaskId: null,
     activeFileName: null,
     activeScope: null,
-    recentUploads: [],
     canUpload: true,
 
     init() {
@@ -31,7 +32,7 @@ const MaterialChangeUploadPage = {
         this.applyPermissionUi();
         this.bindEvents();
         this.hideError();
-        this.renderRecentUploads();
+        recentUploads.paint();
         this.fillPeriodSelects();
         this.loadScopeOptions();
         if (this.isUploading && this.activeTaskId) {
@@ -102,7 +103,12 @@ const MaterialChangeUploadPage = {
             event.preventDefault();
             this.handleSubmit();
         });
-        document.getElementById('ecmUploadErrorCopyBtn')?.addEventListener('click', () => this.copyErrorText());
+        document.getElementById('ecmUploadErrorCopyBtn')?.addEventListener('click', (event) => {
+            copyElementText(
+                document.getElementById('ecmUploadErrorBody'),
+                event.currentTarget,
+            );
+        });
         document.getElementById('ecmUploadErrorCloseBtn')?.addEventListener('click', () => this.hideError());
     },
 
@@ -199,27 +205,7 @@ const MaterialChangeUploadPage = {
         if (submitBtn) submitBtn.disabled = true;
     },
 
-    addRecentUpload(fileName, scopeLabel, summary) {
-        const timeLabel = new Date().toLocaleTimeString('zh-CN', { hour: '2-digit', minute: '2-digit', second: '2-digit' });
-        this.recentUploads.unshift({ fileName, scopeLabel, timeLabel, summary: summary || '' });
-        this.recentUploads = this.recentUploads.slice(0, MAX_RECENT_UPLOADS);
-        this.renderRecentUploads();
-    },
 
-    renderRecentUploads() {
-        const container = document.getElementById('ecmRecentUploads');
-        if (!container) return;
-        if (this.recentUploads.length === 0) {
-            container.innerHTML = '<p class="text-[10px] text-ink-faint text-center py-5">暂无上传记录</p>';
-            return;
-        }
-        container.innerHTML = this.recentUploads.map((item) => `
-            <div class="mb-2 last:mb-0">
-                <p class="text-[11px] text-ink truncate">${esc(item.fileName)}</p>
-                <p class="text-[10px] text-ink-dim">${esc(item.scopeLabel)} · ${esc(item.timeLabel)}</p>
-            </div>
-        `).join('');
-    },
 
     failOnPanel(message) {
         const text = String(message || '操作失败').trim() || '操作失败';
@@ -232,28 +218,21 @@ const MaterialChangeUploadPage = {
     hideError() {
         document.getElementById('ecmUploadErrorPanel')?.classList.add('hidden');
         const body = document.getElementById('ecmUploadErrorBody');
-        if (body) {
-            body.textContent = '';
-            body.dataset.raw = '';
-        }
+        const copyBtn = document.getElementById('ecmUploadErrorCopyBtn');
+        if (body) body.textContent = '';
+        if (copyBtn) copyBtn.textContent = '复制';
     },
 
     showError(message) {
         const panel = document.getElementById('ecmUploadErrorPanel');
         const body = document.getElementById('ecmUploadErrorBody');
+        const copyBtn = document.getElementById('ecmUploadErrorCopyBtn');
         const text = String(message || '导入失败').trim() || '导入失败';
         if (!panel || !body) return;
         body.textContent = text;
-        body.dataset.raw = text;
+        if (copyBtn) copyBtn.textContent = '复制';
         panel.classList.remove('hidden');
         showToast(text, 'error');
-    },
-
-    async copyErrorText() {
-        const body = document.getElementById('ecmUploadErrorBody');
-        const text = body?.dataset?.raw || body?.textContent || '';
-        if (!text) return;
-        await navigator.clipboard.writeText(text);
     },
 
     showProgress(progress = 0, msg = '正在导入。') {
@@ -382,7 +361,11 @@ const MaterialChangeUploadPage = {
                     const result = data?.result || {};
                     const count = Array.isArray(result.order_ids) ? result.order_ids.length : 0;
                     showToast(data?.msg || `材料变更成功，改了 ${count} 个零件。`, 'success');
-                    this.addRecentUpload(fileName, scopeLabel, `${count} 个零件`);
+                    recentUploads.remember({
+                        fileName,
+                        scopeLabel,
+                        summary: `${count} 个零件`,
+                    });
                     this.activeTaskId = null;
                     this.setUploading(false);
                     this.clearSelectedFile();

@@ -184,7 +184,7 @@ class PartCostCalculator:
                 return StampingPartCostFailedItemVO(
                     part_number=part.part_number,
                     part_name=part.part_name,
-                    reason=f"未匹配到钢材联动价（材质={material}, 料厚={thickness}）",
+                    reason=f"没对上钢材联动价：材质 {material}，料厚 {thickness}",
                 )
             steel_ton_price = Decimal(str(steel.final_price_per_ton))
             steel_price_id = steel.id

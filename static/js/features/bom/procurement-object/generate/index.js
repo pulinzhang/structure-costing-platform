@@ -6,7 +6,7 @@ import { DRAWER_CLOSE, DRAWER_SHELL, DRAWER_BACKDROP } from '../../../../ui/clas
 import { opsIconButtonHtml } from '../../../../ui/hud-table.js?v=3';
 import {
     procurementObjectGenerateTemplate,
-} from './template.js?v=16';
+} from './template.js?v=17';
 import {
     DEFAULT_PAGE_SIZE,
     bindPagination,
@@ -17,7 +17,7 @@ import {
     formatDurationSeconds,
     formatTimingLine,
 } from '../../../../domain/duration.js?v=3';
-import { loadSnapshotCascade } from '../snapshot-cascade.js?v=5';
+import { loadSnapshotCascade } from '../snapshot-cascade.js?v=7';
 
 const API_BASE = '/api/bom/procurement-objects';
 const GENERATE_API = `${API_BASE}/generate`;
@@ -118,13 +118,47 @@ function resetFilters() {
     loadCascadeFilters().then(() => loadPrepStats());
 }
 
+let cascadeTicket = 0;
+
 function loadCascadeFilters() {
+    const ticket = ++cascadeTicket;
     return loadSnapshotCascade({
         state: genState,
         locationId: 'poGenLocation',
         modelId: 'poGenModel',
         versionId: 'poGenVersion',
+    }).then(() => {
+        if (ticket !== cascadeTicket) return undefined;
+        return appendChangeVersions(ticket);
     });
+}
+
+async function appendChangeVersions(ticket) {
+    const location = genState.location || val('poGenLocation');
+    const vehicleModel = genState.vehicleModel || val('poGenModel');
+    if (!location || !vehicleModel) return;
+    try {
+        const res = await HttpClient.get('/api/bom/filters/cascade', {
+            params: { location, vehicle_model: vehicleModel },
+        });
+        if (ticket !== cascadeTicket) return;
+        if ((genState.location || val('poGenLocation')) !== location) return;
+        if ((genState.vehicleModel || val('poGenModel')) !== vehicleModel) return;
+        const select = document.getElementById('poGenVersion');
+        if (!select) return;
+        const present = new Set([...select.options].map((option) => option.value).filter(Boolean));
+        const extra = (res.data && res.data.bom_versions) || [];
+        extra.forEach((version) => {
+            if (present.has(version)) return;
+            const option = document.createElement('option');
+            option.value = version;
+            option.textContent = version;
+            select.appendChild(option);
+            present.add(version);
+        });
+    } catch (error) {
+        console.error('加载变更版本失败', error);
+    }
 }
 
 async function loadPrepStats() {

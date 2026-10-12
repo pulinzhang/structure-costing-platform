@@ -2,8 +2,11 @@
  * 项目上传页 — 同步导入，页面不选基地
  */
 
-import { vehicleModelUploadTemplate } from './template.js?v=13';
+import { vehicleModelUploadTemplate } from './template.js?v=16';
 import { bindSyncUploadProgress } from '../../../../ui/sync-upload-progress.js?v=4';
+import { bindRecentUploads } from '../../../../ui/recent-uploads.js?v=3';
+
+const recentUploads = bindRecentUploads('vmRecentUploads');
 
 const API_BASE = '/api/masterdata/vehicle-models';
 const MAX_FILE_SIZE = 5 * 1024 * 1024;
@@ -31,6 +34,7 @@ const VehicleModelUploadPage = {
         this.bindEvents();
         this.hideProgress();
         this.clearSelectedFile(false);
+        recentUploads.paint();
     },
 
     applyPermissionUi() {
@@ -220,6 +224,11 @@ const VehicleModelUploadPage = {
                 || `导入成功：新增 ${data.created_count ?? 0}，跳过 ${data.skipped_count ?? 0}`;
             const hasSkip = (data.skipped_count ?? 0) > 0;
             this.showDoneOnPanel(msg, { hasSkip });
+            recentUploads.remember({
+                fileName: this.selectedFile?.name,
+                scopeLabel: '项目名册',
+                summary: `新增 ${data.created_count ?? 0} / 跳过 ${data.skipped_count ?? 0}`,
+            });
             this.clearSelectedFile(true);
         } catch (err) {
             this.failOnPanel(err.message || '导入失败');

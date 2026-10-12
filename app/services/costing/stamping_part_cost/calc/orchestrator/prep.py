@@ -14,11 +14,16 @@ from app.models.stamping import StampingPart
 from app.models.yishiyiyi import StampingScrapPrice
 from app.schemas.dto.stamping_part_cost_dto import StampingPartCostCalcDTO
 from app.schemas.vo.stamping_part_cost_vo import StampingPartCostCalcReadyVO
-from app.services.costing.stamping_part_cost.calc.constants import (
-    ALL_SUPPLIERS_LOCK,
-    FORMULA_VERSION,
-)
 from app.services.costing.stamping_part_cost.calc.orchestrator.deps import PartCostCalcDeps
+from app.services.costing.stamping_part_cost.calc.orchestrator.messages import (
+    format_missing_scrap,
+    format_no_parts,
+    format_parts_matched,
+    format_prep_opening,
+    format_rates,
+    format_ready,
+    format_scrap_price,
+)
 from app.services.costing.stamping_part_cost.calc.orchestrator.progress import ProgressNotifier
 from app.services.costing.stamping_part_cost.calc.orchestrator.rates import (
     PartCostCalcRates,
@@ -56,16 +61,11 @@ def prepare_calc_run(
     rates = load_part_cost_calc_rates(deps.settings_service, db)
     started_at = now()
     detail_lines = [
-        f"开始计算 year={dto.year} month={dto.month} location={location} "
-        f"supplier={ALL_SUPPLIERS_LOCK} vehicle_model={vehicle_model} "
-        f"density={rates.density} loss_rate={rates.loss_rate} "
-        f"recovery={rates.recovery_rate} finance={rates.finance_rate} "
-        f"management={rates.management_rate} "
-        f"warehouse_packaging={rates.warehouse_packaging_rate} "
-        f"pretax_profit={rates.pretax_profit_rate} formula={FORMULA_VERSION}"
+        format_prep_opening(dto.year, dto.month, location, vehicle_model),
+        format_rates(rates),
     ]
 
-    progress.report(5, "校验前置数据...")
+    progress.report(5, "正在核对要用的价格…")
     ready = collect_calc_ready(
         db,
         deps,
@@ -75,26 +75,27 @@ def prepare_calc_run(
         vehicle_model=vehicle_model,
     )
     if not ready.can_calculate:
-        raise BusinessException(
-            "前置数据未齐：须同时具备钢材联动价、废料月度价、加工费结果与匹配零件"
-        )
+        raise BusinessException("还不能算：钢材联动价、废料月度价、加工费和冲压零件要同时有。")
     detail_lines.append(
-        f"就绪：零件 {ready.part_count}，钢材价 {ready.steel_price_count}，"
-        f"废料价 {ready.scrap_price_count}，加工费 {ready.process_fee_count}，"
-        f"模具费 {ready.die_fee_count}，检具费 {ready.gauge_fee_count}"
+        format_ready(
+            ready.part_count,
+            ready.steel_price_count,
+            ready.scrap_price_count,
+            ready.process_fee_count,
+            ready.die_fee_count,
+            ready.gauge_fee_count,
+        )
     )
 
     scrap = deps.price_resolver.find_scrap_price(
         db, location=location, year=dto.year, month=dto.month
     )
     if scrap is None:
-        raise BusinessException(f"基地「{location}」{dto.year}-{dto.month:02d} 无废料月度销售价")
+        raise BusinessException(format_missing_scrap(location, dto.year, dto.month))
     scrap_ton_price = Decimal(str(scrap.net_price))
-    detail_lines.append(
-        f"废料净价 {scrap_ton_price} 元/吨 (id={scrap.id}, location={scrap.location})"
-    )
+    detail_lines.append(format_scrap_price(scrap_ton_price))
 
-    progress.report(10, "加载冲压零件...")
+    progress.report(10, "正在读取冲压零件…")
     parts = deps.part_repo.list_with_processes(
         db,
         location=location,
@@ -103,11 +104,8 @@ def prepare_calc_run(
         as_of_month=dto.month,
     )
     if not parts:
-        raise BusinessException(
-            f"基地「{location}」项目「{vehicle_model}」在 {dto.year} 年 {dto.month:02d} 月"
-            "没有有效期内的冲压零件"
-        )
-    detail_lines.append(f"匹配零件 {len(parts)} 件")
+        raise BusinessException(format_no_parts(location, vehicle_model, dto.year, dto.month))
+    detail_lines.append(format_parts_matched(len(parts)))
     material_rows = StampingPartService().list_materials_as_of(
         db,
         location=location,

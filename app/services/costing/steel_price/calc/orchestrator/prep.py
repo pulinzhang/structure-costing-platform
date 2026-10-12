@@ -11,6 +11,7 @@ from app.services.costing.steel_price.calc.models import (
     SteelPriceCalcRequest,
     SteelPriceCalcResult,
 )
+from app.services.costing.steel_price.calc.orchestrator.messages import format_prep_opening
 from app.services.costing.steel_price.calc.orchestrator.progress import ProgressNotifier
 from app.services.costing.steel_price.calc.process_log import ProcessLogBuilder
 
@@ -52,12 +53,8 @@ def prepare_calc_run(
         started_at=started.isoformat(timespec="seconds"),
     )
 
-    progress.report(1, "计算任务已启动")
-    log_builder.section("计算开始")
-    log_builder.line(f"批次号: {batch_id}")
-    log_builder.line(f"核价期: {request.year}-{request.month:02d}")
-    log_builder.line(f"生产基地: {location or '-'}")
-    log_builder.line(f"开始时间: {result.started_at}")
+    progress.report(1, "正在计算…")
+    log_builder.line(format_prep_opening(request.year, request.month, location))
 
     return CalcPrepContext(
         request=request,

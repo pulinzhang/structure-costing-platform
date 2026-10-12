@@ -54,6 +54,19 @@ def is_stamping_costing_question(question: str) -> bool:
     )
 
 
+def asks_tailor_weld_fee(question: str) -> bool:
+    """拼焊费是冲压加工费行上的其它费用，不是焊接费。"""
+    return "拼焊费" in (question or "")
+
+
+def asks_tailor_weld_fee_help(question: str) -> bool:
+    """在哪录、什么是：使用帮助。带零件号问金额仍走查数。"""
+    if not asks_tailor_weld_fee(question):
+        return False
+    # 「怎么 / 在哪 / 在那里」已在使用帮助的问法词里，这里只补定义和「录入」。
+    return any(word in question for word in ("录入", "填写", "什么是", "是什么"))
+
+
 def is_welding_fee_question(question: str) -> bool:
     if "焊接单价" in question:
         return False
@@ -592,6 +605,8 @@ def resolve_subject(
     ):
         return "stamping_tonnage"
 
+    if asks_tailor_weld_fee(question) and not asks_tailor_weld_fee_help(question):
+        return "stamping_process_fee"
     if "焊接" not in question and (
         "冲压加工费" in question or ("冲压" in question and "加工费" in question)
     ):

@@ -6,10 +6,13 @@ from collections.abc import Sequence
 
 from app.common.engineering_change_gates import (
     CHANGE_TYPE_ADD_PART,
+    CHANGE_TYPE_ADD_SUBASSEMBLY,
     CHANGE_TYPE_NOT_INSTALL,
     CHANGE_TYPE_REVISE,
     CHANGE_TYPE_STOP,
     EC_ADD_ALREADY_ON_TREE,
+    EC_ADD_LEVEL1_LEAF,
+    EC_ADD_LEVEL1_NUMBER,
     EC_ASSEMBLY_SKETCH_REQUIRED,
     EC_CHANGE_ORDER_COLUMNS,
     EC_INTERNAL_REQUIRED,
@@ -31,6 +34,7 @@ from app.exceptions.base import BusinessException
 from app.models.bom import BomNode
 from app.parsers.bom.bom_parser import BomParsedNode
 from app.parsers.engineering_change.design_change.change_order_parser import ChangeOrderRowParsed
+from app.services.bom.bom.change_tree_plant.number_map import level1_renumber_for_added_part
 from app.services.bom.bom.rules.internal_number_uniqueness import (
     validate_internal_number_uniqueness,
 )
@@ -41,7 +45,7 @@ def validate_change_tree_gates(
     old_nodes: Sequence[BomNode],
     sliced_nodes: list[BomParsedNode],
 ) -> None:
-    """一种改法：旧树有该件、清单写出该层、卸件双信号。完成停止不进。"""
+    """一种改法自己看自己。完成停止不进。此件不装和增加分总成不互相核对。"""
     if change_order.change_type == CHANGE_TYPE_STOP:
         return
     file_l0 = [node for node in sliced_nodes if int(node.level) == 0]
@@ -60,6 +64,9 @@ def validate_change_tree_gates(
         return
     if change_order.change_type == CHANGE_TYPE_ADD_PART:
         _validate_add_part(change_order, old_nodes, sliced_nodes)
+        return
+    if change_order.change_type == CHANGE_TYPE_ADD_SUBASSEMBLY:
+        _validate_add_subassembly(change_order, old_nodes, sliced_nodes)
 
 
 def validate_identity_gates(
@@ -67,7 +74,7 @@ def validate_identity_gates(
     sliced_nodes: list[BomParsedNode],
 ) -> None:
     """交货总成、分总成内部号；总成图（合并总成一张即可）；一二级单件图示；本张清单一物一码。"""
-    validate_internal_number_uniqueness(sliced_nodes)
+    validate_internal_number_uniqueness(_nodes_for_uniqueness(sliced_nodes))
     l0_groups: dict[str, list[BomParsedNode]] = {}
     for node in sliced_nodes:
         if int(node.level) != 0:
@@ -91,8 +98,9 @@ def validate_identity_gates(
             raise BusinessException(
                 f"{EC_INTERNAL_REQUIRED}：分总成 {quoted(node.part_number)} 必须有内部号。"
             )
+    old_numbers = {(node.part_number or "").strip() for node in old_nodes}
     for node in sliced_nodes:
-        if not _needs_part_sketch(sliced_nodes, node):
+        if not _needs_part_sketch(sliced_nodes, node, old_numbers):
             continue
         if node.sketch_bytes:
             continue
@@ -172,13 +180,7 @@ def _validate_not_install(
 ) -> None:
     old_part = _require_old_part(change_order, old_nodes)
     number = (change_order.before_part_number or "").strip()
-    file_part = _find_file_part(sliced_nodes, number)
-    if file_part is None:
-        raise BusinessException(
-            f"{EC_NOT_INSTALL_SIGNAL}：材料清单没有 {quoted(number)}。"
-            f"此件不装必须用量 0 且备注含「{NOT_INSTALL_REMARK}」。"
-        )
-    if not is_not_install_row(file_part.qty, file_part.remark, part_number=number):
+    if not _has_not_install_signal(sliced_nodes, number):
         raise BusinessException(
             f"{EC_NOT_INSTALL_SIGNAL}：材料清单里 {quoted(number)} "
             f"必须用量 0 且备注含「{NOT_INSTALL_REMARK}」。"
@@ -188,17 +190,38 @@ def _validate_not_install(
         return
     for child in descendants:
         child_number = (child.part_number or "").strip()
-        file_child = _find_file_part(sliced_nodes, child_number)
-        if file_child is None:
+        if not _has_not_install_signal(sliced_nodes, child_number):
             raise BusinessException(
                 f"{EC_NOT_INSTALL_CHILDREN}：{quoted(child_number)} 是不装件的下级，"
                 f"材料清单也要用量 0 且备注含「{NOT_INSTALL_REMARK}」。"
             )
-        if not is_not_install_row(file_child.qty, file_child.remark, part_number=child_number):
-            raise BusinessException(
-                f"{EC_NOT_INSTALL_CHILDREN}：{quoted(child_number)} 是不装件的下级，"
-                f"材料清单也要用量 0 且备注含「{NOT_INSTALL_REMARK}」。"
-            )
+
+
+def _validate_add_subassembly(
+    change_order: ChangeOrderRowParsed,
+    old_nodes: Sequence[BomNode],
+    sliced_nodes: Sequence[BomParsedNode],
+) -> None:
+    """新的一级分总成。下面有几颗零件，材料清单写几颗，不和此件不装对账。"""
+    after_number = (change_order.after_part_number or "").strip()
+    old_numbers = {(node.part_number or "").strip() for node in old_nodes}
+    if after_number in old_numbers:
+        raise BusinessException(
+            f"{EC_ADD_ALREADY_ON_TREE}：{quoted(after_number)} 已在变更前总成上，不能当增加分总成。"
+        )
+    file_part = _find_file_part(sliced_nodes, after_number)
+    if file_part is None or int(file_part.level) != 1:
+        raise BusinessException(
+            f"{EC_REVISE_FILE_CHAIN}：材料清单没有 {quoted(after_number)}，或层级不是一级。"
+        )
+    if file_part.qty is None or file_part.qty <= 0:
+        raise BusinessException(
+            f"{EC_QTY_CHANGED}：分总成 {quoted(after_number)} 用量必须大于 0，现在是 {file_part.qty}。"
+        )
+    if not (file_part.internal_number or "").strip():
+        raise BusinessException(
+            f"{EC_INTERNAL_REQUIRED}：分总成 {quoted(after_number)} 必须有内部号。"
+        )
 
 
 def _validate_add_part(
@@ -227,6 +250,61 @@ def _validate_add_part(
         raise BusinessException(
             f"{EC_NOT_INSTALL_SIGNAL}：增加零件 {quoted(after_number)} 不要写「{NOT_INSTALL_REMARK}」。"
         )
+    if expected_level != 2:
+        return
+    parent = _parent_node(sliced_nodes, file_part)
+    if parent is None or int(parent.level) != 1:
+        raise BusinessException(
+            f"{EC_ADD_LEVEL1_NUMBER}：材料清单里 {quoted(after_number)} 的上级要是一级。"
+        )
+    parent_number = (parent.part_number or "").strip()
+    pair = level1_renumber_for_added_part(old_nodes, sliced_nodes, after_number)
+    old_number = pair[0] if pair is not None else parent_number
+    old_level1 = _find_old_level1(old_nodes, old_number)
+    if old_level1 is None:
+        return
+    has_level2 = any(int(node.level) == 2 and node.parent_id == old_level1.id for node in old_nodes)
+    if not has_level2:
+        raise BusinessException(
+            f"{EC_ADD_LEVEL1_LEAF}：{quoted(old_level1.part_number)} 下面没有二级，不能在它下面加零件。"
+        )
+    if pair is None:
+        raise BusinessException(
+            f"{EC_ADD_LEVEL1_NUMBER}：材料清单里 {quoted(after_number)} 的上级一级要写成新号。"
+        )
+
+
+def _find_old_level1(old_nodes: Sequence[BomNode], part_number: str) -> BomNode | None:
+    return next(
+        (
+            node
+            for node in old_nodes
+            if int(node.level) == 1 and (node.part_number or "").strip() == part_number
+        ),
+        None,
+    )
+
+
+def _parent_node(
+    nodes: Sequence[BomParsedNode],
+    node: BomParsedNode,
+) -> BomParsedNode | None:
+    if node.parent_index is None:
+        return None
+    index = node.parent_index
+    if index < 0 or index >= len(nodes):
+        return None
+    return nodes[index]
+
+
+def _has_not_install_signal(nodes: Sequence[BomParsedNode], part_number: str) -> bool:
+    """此件不装只认用量 0 且备注含这句话的那一行。同一号另外出现，不归这行管。"""
+    for node in nodes:
+        if int(node.level) == 0 or (node.part_number or "").strip() != part_number:
+            continue
+        if is_not_install_row(node.qty, node.remark, part_number=part_number):
+            return True
+    return False
 
 
 def _require_old_part(change_order: ChangeOrderRowParsed, old_nodes: Sequence[BomNode]) -> BomNode:
@@ -274,7 +352,7 @@ def _file_chain_up(nodes: list[BomParsedNode], start: BomParsedNode) -> list[Bom
     return chain
 
 
-def _find_file_part(nodes: list[BomParsedNode], part_number: str) -> BomParsedNode | None:
+def _find_file_part(nodes: Sequence[BomParsedNode], part_number: str) -> BomParsedNode | None:
     target = (part_number or "").strip()
     if not target:
         return None
@@ -297,14 +375,30 @@ def _old_descendants(old_nodes: Sequence[BomNode], parent_id: int) -> list[BomNo
     return found
 
 
-def _needs_part_sketch(nodes: list[BomParsedNode], node: BomParsedNode) -> bool:
-    """一级叶子或二级需要单件图示；分总成图归下级；此件不装不要求。"""
+def _needs_part_sketch(
+    nodes: list[BomParsedNode],
+    node: BomParsedNode,
+    old_numbers: set[str] | None = None,
+) -> bool:
+    """一级叶子或二级需要单件图示。分总成、此件不装行、变更前总成上已有的原号，不要求新图。"""
     level = int(node.level)
     if level not in {1, 2}:
         return False
     if level == 1 and _file_has_children(nodes, node):
         return False
-    return not is_not_install_row(node.qty, node.remark, part_number=node.part_number)
+    if is_not_install_row(node.qty, node.remark, part_number=node.part_number):
+        return False
+    number = (node.part_number or "").strip()
+    return number not in (old_numbers or set())
+
+
+def _nodes_for_uniqueness(nodes: list[BomParsedNode]) -> list[BomParsedNode]:
+    """此件不装那一行不参加一物一码。"""
+    return [
+        node
+        for node in nodes
+        if not is_not_install_row(node.qty, node.remark, part_number=node.part_number)
+    ]
 
 
 def _file_has_children(nodes: list[BomParsedNode], parent: BomParsedNode) -> bool:

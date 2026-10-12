@@ -9,6 +9,7 @@ from __future__ import annotations
 from sqlalchemy.orm import Session
 
 from app.common.audit import display_name
+from app.common.operator_copy import operator_failure_text
 from app.models.costing import StampingPartCostCalcLog
 from app.repositories.costing.stamping_part_cost.stamping_part_cost_repository import (
     PartCostListFilters,
@@ -185,7 +186,7 @@ class StampingPartCostService:
             self.mark_log_failed(
                 worker_db,
                 log_id=log_id,
-                detail_text=f"计算失败: {error}",
+                detail_text=operator_failure_text(error),
             )
 
         async_task_service.submit_session_worker(
@@ -193,6 +194,7 @@ class StampingPartCostService:
             start_message="后台开始计算...",
             work=work,
             on_crash=on_crash,
+            crash_message=operator_failure_text,
         )
         return AsyncTaskAcceptedVO(task_id=task.task_id)
 

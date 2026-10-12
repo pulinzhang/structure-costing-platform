@@ -3,6 +3,7 @@
  */
 
 import { UPLOAD_DROPZONE, UPLOAD_INPUT, HUD_LED } from '../../../../ui/classes.js?v=14';
+import { recentUploadsCardHtml } from '../../../../ui/recent-uploads.js?v=3';
 import {
     uploadBrowseButtonHtml,
     uploadFileHintHtml,
@@ -41,7 +42,7 @@ export function engineeringChangeUploadTemplate() {
                                             <option value="">请先选择采购基地</option>
                                         </select>
                                     </div>
-                                    <p class="mt-2 text-[10px] text-ink-faint">必选。用基地找到投产清单。这个月这个项目必须还在做，并且和设计变更单上的项目一致。</p>
+                                    <p class="mt-2 text-[10px] text-ink-faint">须和变更单上的项目一致。</p>
                                 </div>
                             </div>
                             <div class="h-px bg-app-surface mx-6 mb-4"></div>
@@ -59,7 +60,7 @@ export function engineeringChangeUploadTemplate() {
                                         <select id="ecUploadMonth" name="effective_month" required
                                                 class="${UPLOAD_INPUT} hud-filter w-[120px]"></select>
                                     </div>
-                                    <p class="mt-2 text-[10px] text-ink-faint">须和设计变更单上的生效年月一致。从这个月起用新零件号，上个月仍按变更前的总成结账。</p>
+                                    <p class="mt-2 text-[10px] text-ink-faint">须和变更单上的生效年月一致。</p>
                                 </div>
                             </div>
                             <div class="h-px bg-app-surface mx-6 mb-4"></div>
@@ -93,7 +94,7 @@ export function engineeringChangeUploadTemplate() {
                                             </div>
                                             <input type="file" id="ecUploadFileInput" class="hidden" accept=".xlsx,.xls">
                                             ${uploadBrowseButtonHtml('ecUploadSelectFileBtn')}
-                                            <p class="text-[10px] text-ink-faint mt-4 mb-0">.xlsx / .xls<span class="mx-2 text-ink-faint">|</span>最大 50MB · 须含设计变更单、材料清单、工艺确认表</p>
+                                            <p class="text-[10px] text-ink-faint mt-4 mb-0">.xlsx / .xls<span class="mx-2 text-ink-faint">|</span>最大 50MB</p>
                                         </div>
                                         <div id="ecProgressPanel" class="hidden text-left w-full">
                                             <div class="flex items-center justify-between gap-3 mb-3">
@@ -154,31 +155,12 @@ export function engineeringChangeUploadTemplate() {
                             <h5 class="text-[11px] font-bold text-ink-muted mb-0 tracking-widest uppercase">说明</h5>
                         </div>
                     </div>
-                    <div class="p-4 space-y-3 text-[11px] text-ink-muted leading-relaxed">
-                        <p>先选好基地和项目，再下载模板。模板里的项目和生效年月跟上面选的一样。五种改法是例子，零件号要改成这个项目自己的。</p>
-                        <p>设计变更单每一行写一种改法：完成停止、改图、增加零件、此件不装。可以多行，也可以只写一行。</p>
-                        <p>上面选的基地、项目、生效年月，必须和表里写的一样。</p>
-                        <p>必须有三张表：设计变更单、车身件材料清单、冲压工艺确认表。不要「零件汇总」。已经有模具布点的，会按变更单建到新零件号上，简图从工艺确认表抄过去。</p>
-                        <p>表里只写改了什么。系统按整份材料清单启用新总成。要看采购件，到列表里选这次变更后的版本。</p>
-                        <p class="text-warn">改图之后，不要再在材料清单、工艺、模具布点这三页整份覆盖。换零件号只在本页上传。</p>
+                    <div class="p-4 space-y-2 text-[11px] text-ink-muted leading-relaxed">
+                        <p>须有设计变更单、材料清单、冲压工艺确认表。</p>
+                        <p class="text-warn mb-0">改图之后，换零件号只在本页上传。</p>
                     </div>
                 </div>
-                <div class="bg-app-surface border border-line">
-                    <div class="px-4 py-3 border-b border-line-subtle flex items-center justify-between">
-                        <div class="flex items-center gap-2">
-                            <span class="${HUD_LED}"></span>
-                            <h5 class="text-[11px] font-bold text-ink-muted mb-0 tracking-widest uppercase">最近上传</h5>
-                        </div>
-                    </div>
-                    <div class="p-4" id="ecRecentUploads">
-                        <div class="text-center py-5">
-                            <div class="w-8 h-8 bg-app-surface border border-line flex items-center justify-center mx-auto mb-2.5">
-                                <svg class="w-4 h-4 text-ink-faint" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10"></path></svg>
-                            </div>
-                            <p class="text-[10px] text-ink-faint">暂无上传记录</p>
-                        </div>
-                    </div>
-                </div>
+                ${recentUploadsCardHtml('ecRecentUploads')}
             </div>
         </div>
     `;

@@ -372,10 +372,26 @@ function formatPriceFieldOnFocus(input) {
     input.value = n;
 }
 
+/** 有字的备注保持可见；清空后仍只在悬停或聚焦时显现 */
+function syncRemarkVisibility(input) {
+    const wrap = input.parentElement;
+    if (!wrap) return;
+    const filled = Boolean(input.value.trim());
+    wrap.classList.toggle('opacity-100', filled);
+    wrap.classList.toggle('opacity-0', !filled);
+    wrap.classList.toggle('group-hover:opacity-100', !filled);
+    wrap.classList.toggle('group-focus-within:opacity-100', !filled);
+    wrap.classList.toggle('focus-within:opacity-100', !filled);
+}
+
 function bindRowInputEvents() {
     const tbody = document.getElementById('scrapPriceTableBody');
     if (!tbody) return;
     tbody.querySelectorAll('tr[data-location]').forEach((rowEl) => {
+        const remarkInput = rowEl.querySelector('.scrap-remark');
+        if (remarkInput) {
+            remarkInput.addEventListener('input', () => syncRemarkVisibility(remarkInput));
+        }
         rowEl.querySelectorAll('.scrap-market, .scrap-deduction').forEach((input) => {
             input.addEventListener('beforeinput', (e) => {
                 if (e.inputType === 'insertText' && e.data && /[^\d.]/.test(e.data)) {

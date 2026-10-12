@@ -2,9 +2,12 @@
  * 采购对象批量上传供应商
  */
 
-import { procurementObjectSupplierUploadTemplate } from './template.js?v=19';
+import { procurementObjectSupplierUploadTemplate } from './template.js?v=22';
 import { bindSyncUploadProgress } from '../../../../ui/sync-upload-progress.js?v=4';
 import { loadSnapshotCascade } from '../snapshot-cascade.js?v=5';
+import { bindRecentUploads } from '../../../../ui/recent-uploads.js?v=3';
+
+const recentUploads = bindRecentUploads('poSupplierRecentUploads');
 
 const API_BASE = '/api/bom/procurement-objects';
 const MAX_FILE_SIZE = 5 * 1024 * 1024;
@@ -276,6 +279,11 @@ async function submitUpload() {
             lines.push(...skipped);
         }
         showDoneOnPanel(lines.join('\n'), { hasSkip: skipped.length > 0 });
+        recentUploads.remember({
+            fileName: uploadState.selectedFile?.name,
+            scopeLabel: `${scope.location} · ${scope.vehicle_model} · ${scope.bom_version}`,
+            summary: `更新 ${data.updated_count ?? 0} / 清空 ${data.cleared_count ?? 0}`,
+        });
         clearSelectedFile();
     } catch (error) {
         failOnPanel(error.message || '上传失败');
@@ -293,6 +301,7 @@ function init() {
     applyPermissionUi();
     bindEvents();
     hideProgress();
+    recentUploads.paint();
     loadCascade();
 }
 

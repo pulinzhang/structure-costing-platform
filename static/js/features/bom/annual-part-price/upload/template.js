@@ -4,6 +4,7 @@
  */
 
 import { UPLOAD_DROPZONE, UPLOAD_INPUT, UPLOAD_LABEL, HUD_LED } from '../../../../ui/classes.js?v=14';
+import { recentUploadsCardHtml } from '../../../../ui/recent-uploads.js?v=3';
 import {
     uploadBrowseButtonHtml,
     uploadFileHintHtml,
@@ -70,7 +71,7 @@ export function annualPartPriceUploadTemplate() {
                                                class="${UPLOAD_INPUT} w-full">
                                     </div>
                                 </div>
-                                <p class="ml-6 mt-1.5 text-[11px] text-ink-dim">先选基地、项目和年度再下载。第二页是填写说明，不用删。换算看右边说明：1 个采购单位等于多少个核价单位。</p>
+                                <p class="ml-6 mt-1.5 text-[11px] text-ink-dim">先选基地、项目和年度再下载。</p>
                             </div>
 
                             <div class="h-px bg-app-surface mx-6 mb-4"></div>
@@ -145,29 +146,11 @@ export function annualPartPriceUploadTemplate() {
                             <h5 class="text-[11px] font-bold text-ink-muted mb-0 tracking-widest uppercase">格式说明</h5>
                         </div>
                     </div>
-                    <div class="p-4 space-y-4">
-                        <div>
-                            <h6 class="text-[10px] uppercase tracking-wider text-ink-dim mb-2">怎么填</h6>
-                            <ul class="list-disc list-inside text-xs text-ink-dim space-y-1.5">
-                                <li><span class="text-ink-muted">零件号</span>必填。模板会带出这个项目要外购的零件，包括还没进工艺的板料和二级标准件。</li>
-                                <li>零件名称、规格、供应商、备注可以空着。规格不参与算价。</li>
-                                <li>单位跟材料清单。单价是用来核价的，模板里先写成 0。</li>
-                                <li>采购单位先和单位写成一样。采购单价先空着。转换系数先写 1。</li>
-                                <li>换算：1 个采购单位等于多少个核价单位。默认是 1，可以写小数。1 英寸等于 25.4 毫米就写 25.4，1 打等于 12 个就写 12。核价单价等于采购单价除以这个数。不要写成 1/12。</li>
-                                <li>原供货类型模板会写成「标准件」「胶块」或「沿用」，上传时可以改。</li>
-                            </ul>
-                        </div>
-                        <div>
-                            <h6 class="text-[10px] uppercase tracking-wider text-ink-dim mb-2">再传一份时</h6>
-                            <ul class="list-disc list-inside text-xs text-ink-dim space-y-1.5">
-                                <li>下载前先选基地、项目、年度。这个项目要已经有材料清单。</li>
-                                <li>同一个基地、同一年、同一个零件号，再传会更新。没有的会新增。只收 .xlsx。</li>
-                                <li>基地和年度以本页选择为准。</li>
-                                <li>已经审核过的不会被盖掉，所以可能显示更新了 0 条。要改价，先到列表里取消审核。</li>
-                            </ul>
-                        </div>
+                    <div class="p-4">
+                        <p class="text-[11px] text-ink-muted leading-relaxed mb-0">同一基地、同一年、同一零件号，再传会更新。已审核的不会被盖掉。</p>
                     </div>
                 </div>
+                ${recentUploadsCardHtml('annualPartPriceRecentUploads')}
             </div>
         </div>
     `;

@@ -5,7 +5,11 @@
 同生效月多份时优先正式稿（非副本 / 非自动保存 / 非 (1)）。
 仅价格列月份：附页钢厂 + 上月 (基地,牌号) 承接。
 
-用法::
+页面测试（登录后从基准价格导入页选文件）::
+
+    python -X utf8 tests/frontend/2026-10-12/import_base_price_samples.py
+
+直接写库仍可用::
 
     python -X utf8 -m scripts.import_base_price_samples
     python -X utf8 -m scripts.import_base_price_samples --dry-run

@@ -92,7 +92,7 @@ export function dieFeeCalcTemplate() {
                                     <th class="py-2 px-2 font-normal whitespace-nowrap">版本</th>
                                     <th class="py-2 px-2 font-normal text-center whitespace-nowrap">状态</th>
                                     <th class="py-2 px-2 font-normal text-right whitespace-nowrap">布点</th>
-                                    <th class="py-2 px-2 font-normal text-right whitespace-nowrap">入库</th>
+                                    <th class="py-2 px-2 font-normal text-right whitespace-nowrap">写入</th>
                                     <th class="py-2 px-2 font-normal text-right whitespace-nowrap">跳过</th>
                                     <th class="py-2 px-2 font-normal text-right whitespace-nowrap">操作</th>
                                 </tr>

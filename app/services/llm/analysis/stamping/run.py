@@ -54,6 +54,7 @@ from app.services.llm.analysis.stamping.tonnage import (
     build_tonnage_price_summary,
 )
 from app.services.llm.comparison_basis import resolve_comparability
+from app.services.llm.query.parser.subjects import asks_tailor_weld_fee
 
 
 class StampingAnalysis:
@@ -215,24 +216,47 @@ class StampingAnalysis:
         """对齐「冲压加工费列表」#/stamping-process-fee。"""
         tr = query.time_range
         part_token = query.part_number() or ""
+        location = query.location()
+        vehicle_model = query.vehicle_model()
+        version = query.bom_version()
+        part_number = part_token or None
         rows = self._process_fee_repo.query_rows(
             db,
-            location=query.location(),
-            vehicle_model=query.vehicle_model(),
-            version=query.bom_version(),
+            location=location,
+            vehicle_model=vehicle_model,
+            version=version,
             start_year=tr.start_year,
             end_year=tr.end_year,
-            part_number=part_token or None,
+            part_number=part_number,
         )
+        outside_query_window = False
+        if part_token and not rows and asks_tailor_weld_fee(query.user_question):
+            rows = self._process_fee_repo.query_rows(
+                db,
+                location=location,
+                vehicle_model=vehicle_model,
+                version=version,
+                part_number=part_number,
+            )
+            outside_query_window = bool(rows)
         head = (
             self._process_fee_repo.pick_best_row(rows, part_token=part_token)
             if part_token
             else None
         )
+        if outside_query_window:
+            data_message = (
+                f"查询窗口{tr.start_year}年没有该件冲压加工费，"
+                f"下面是库里其它年份的 {len(rows)} 行；拼焊费看其它费用"
+            )
+        elif rows:
+            data_message = f"冲压加工费行={len(rows)}"
+        else:
+            data_message = "当前范围无冲压加工费数据"
         out = AnalysisRunResult(
             comparability=resolve_comparability(query.comparison_basis),
             has_data=bool(rows),
-            data_message=(f"冲压加工费行={len(rows)}" if rows else "当前范围无冲压加工费数据"),
+            data_message=data_message,
         )
         parts_result: dict[str, AnalysisResultLeafPayload] = {}
 
@@ -244,6 +268,8 @@ class StampingAnalysis:
                 rows,
                 part_token=part_token,
                 head=head,
+                outside_query_window=outside_query_window,
+                query_window_year=tr.end_year,
             )
 
         out.result = compose_result(parts_result, default_kind="summary")
@@ -253,6 +279,8 @@ class StampingAnalysis:
                 "part_number": row.part_number,
                 "part_name": row.part_name,
                 "location": row.location,
+                "is_tailor_welded": row.is_tailor_welded,
+                "other_fee": (f"{row.other_fee:.3f}" if row.other_fee is not None else None),
                 "final_processing_fee": (
                     f"{row.final_processing_fee:.3f}"
                     if row.final_processing_fee is not None

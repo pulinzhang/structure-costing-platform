@@ -182,7 +182,7 @@ def test_normal_part_still_requires_steel_price() -> None:
         pretax_profit_rate=Decimal("0.02"),
     )
     assert isinstance(result, StampingPartCostFailedItemVO)
-    assert "未匹配到钢材联动价" in result.reason
+    assert "没对上钢材联动价" in result.reason
 
 
 def test_part_snapshot_writes_offal_onto_monthly_result() -> None:

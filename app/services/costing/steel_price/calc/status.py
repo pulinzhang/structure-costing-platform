@@ -43,13 +43,6 @@ def resolve_batch_status(result: SteelPriceCalcResult, rows: list[CalcRow]) -> s
     return STATUS_SUCCESS
 
 
-def summarize_match_status(rows: list[CalcRow]) -> dict[str, int]:
-    stats: dict[str, int] = {}
-    for row in rows:
-        stats[row.match_status] = stats.get(row.match_status, 0) + 1
-    return dict(sorted(stats.items()))
-
-
 class ThicknessOutcomeSummary(TypedDict):
     hit: int
     skip: int

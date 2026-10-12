@@ -229,7 +229,7 @@ def test_generate_and_regenerate_keeps_confirm(db: Session) -> None:
     assert logs[0].status == "success"
     assert logs[0].object_count == 1
     assert "采购对象" in logs[0].detail_text
-    assert "退化供货件亚类" in logs[0].detail_text
+    assert "其中" in logs[0].detail_text
     assert "已按毛坯供货" not in logs[0].detail_text
 
 
@@ -1060,3 +1060,139 @@ def test_optional_bom_version_filters_climbed_l0_only(db: Session) -> None:
     )
     assert sop_total == 0
     assert header.bom_version == "V3"
+
+
+def test_generate_change_version_includes_new_subassembly(db: Session) -> None:
+    """生成页选变更版本时，只把该版本树上的新分总成列入，投产行保留。"""
+    _seed_tree(db)
+    service = BomProcurementObjectService()
+    service.generate(db, _scope(), current_user=SYSTEM_USER)
+    snapshot = BomSnapshotRepository().get_by_unique_key(db, "芜湖", "T13J", "V3")
+    assert snapshot is not None
+    node_repo = BomNodeRepository()
+    root = node_repo.create(
+        db,
+        BomNodeWrite(
+            snapshot_id=snapshot.id,
+            level=0,
+            part_number="L0-EC",
+            node_role="supply",
+            location="芜湖",
+            vehicle_model="T13J",
+            bom_version="EC-202507",
+            effective_year=2025,
+            effective_month=7,
+            created_by="tester",
+            updated_by="tester",
+            sort_no=2,
+            is_supply_unit=True,
+            excel_filename="ec.xlsx",
+            excel_row=30,
+            internal_number="ACA-EC",
+        ),
+    )
+    sub = node_repo.create(
+        db,
+        BomNodeWrite(
+            snapshot_id=snapshot.id,
+            parent_id=root.id,
+            level=1,
+            part_number="L1-SUB",
+            node_role="make",
+            location="芜湖",
+            vehicle_model="T13J",
+            bom_version="EC-202507",
+            effective_year=2025,
+            effective_month=7,
+            created_by="tester",
+            updated_by="tester",
+            sort_no=1,
+            part_name="分总成",
+            internal_number="ACA-SUB",
+            excel_filename="ec.xlsx",
+            excel_row=31,
+        ),
+    )
+    node_repo.create(
+        db,
+        BomNodeWrite(
+            snapshot_id=snapshot.id,
+            parent_id=sub.id,
+            level=2,
+            part_number="L2-LEAF",
+            node_role="make",
+            location="芜湖",
+            vehicle_model="T13J",
+            bom_version="EC-202507",
+            effective_year=2025,
+            effective_month=7,
+            created_by="tester",
+            updated_by="tester",
+            sort_no=1,
+            part_name="叶子",
+            excel_filename="ec.xlsx",
+            excel_row=32,
+        ),
+    )
+    db.commit()
+
+    blocked = service.prep_stats(
+        db,
+        BomProcurementObjectPrepQuery(
+            location="芜湖",
+            vehicle_model="T13J",
+            bom_version="V3",
+        ),
+    )
+    assert blocked.ready is False
+    assert "设变后请走工程变更重传" in (blocked.message or "")
+
+    with pytest.raises(BusinessException, match="设变后请走工程变更重传"):
+        service.generate(db, _scope(), current_user=SYSTEM_USER)
+
+    prep = service.prep_stats(
+        db,
+        BomProcurementObjectPrepQuery(
+            location="芜湖",
+            vehicle_model="T13J",
+            bom_version="EC-202507",
+        ),
+    )
+    assert prep.ready is True
+    assert prep.object_count == 1
+
+    result = service.generate(
+        db,
+        BomProcurementObjectGenerateDTO(
+            location="芜湖",
+            vehicle_model="T13J",
+            bom_version="EC-202507",
+        ),
+        current_user=SYSTEM_USER,
+    )
+    assert result.object_count == 1
+
+    items, total, _filters = service.paginate(
+        db,
+        BomProcurementObjectQuery(
+            location="芜湖",
+            vehicle_model="T13J",
+            bom_version="EC-202507",
+            size=50,
+        ),
+    )
+    assert total == 1
+    assert items[0].part_number == "L1-SUB"
+    assert items[0].object_kind == "l1_subassembly"
+
+    sop_items, sop_total, _filters = service.paginate(
+        db,
+        BomProcurementObjectQuery(
+            location="芜湖",
+            vehicle_model="T13J",
+            bom_version="V3",
+            size=50,
+        ),
+    )
+    assert sop_total >= 1
+    assert any(item.part_number == "L1-STAMP" for item in sop_items)

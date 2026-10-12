@@ -14,6 +14,12 @@ from app.schemas.vo.user_vo import UserVO
 from app.services.stamping.die_fee.calc.constants import ALL_SUPPLIERS_LOCK, STATUS_SUCCESS
 from app.services.stamping.die_fee.calc.orchestrator.batch_engine import BatchCalcOutcome
 from app.services.stamping.die_fee.calc.orchestrator.deps import DieFeeCalcDeps
+from app.services.stamping.die_fee.calc.orchestrator.messages import (
+    format_all_skipped_hint,
+    format_calc_finished_log,
+    format_layout_scope,
+    format_persist_summary,
+)
 from app.services.stamping.die_fee.calc.orchestrator.missing_die_number import (
     format_missing_die_number_section,
 )
@@ -48,17 +54,10 @@ def persist_calc_result(
         deps.fee_repo.insert_with_items(db, payload)
 
     detail_lines = list(ctx.detail_lines)
-    detail_lines.append(
-        f"布点（本批落库范围）{len(ctx.persist_parts)} 件，共模扫描 {len(ctx.parts)} 件"
-    )
-    detail_lines.append(
-        f"入库 {batch.success_count}，跳过（无模具信息或系统费≤0）{batch.skipped_no_die_count}"
-    )
+    detail_lines.append(format_layout_scope(len(ctx.persist_parts), len(ctx.parts)))
+    detail_lines.append(format_persist_summary(batch.success_count, batch.skipped_no_die_count))
     if batch.success_count == 0 and batch.skipped_no_die_count:
-        detail_lines.append(
-            "全部未入库：布点工序没有有效预估重量，也无法按共模继承外形。"
-            "请确认上传的是含模具尺寸/重量的布点清单，而不是工艺确认表"
-        )
+        detail_lines.append(format_all_skipped_hint())
     hint_section = format_missing_die_number_section(batch.missing_die_number_hints)
     if hint_section:
         detail_lines.append(hint_section)
@@ -100,11 +99,12 @@ def persist_calc_result(
     db.commit()
     progress.report(100, "计算完成")
     logger.info(
-        "年度模具费计算完成: year=%s location=%s vehicle=%s success=%s skipped=%s",
-        dto.year,
-        dto.location,
-        dto.vehicle_model,
-        result.success_count,
-        result.skipped_no_die_count,
+        format_calc_finished_log(
+            dto.year,
+            dto.location,
+            dto.vehicle_model,
+            result.success_count,
+            result.skipped_no_die_count,
+        )
     )
     return result

@@ -139,8 +139,8 @@ def test_missing_grade_is_reported_once_per_grade(monkeypatch) -> None:
     assert rows == []
     assert count == 2
     assert details == [
-        "[芜湖] DC04 大类=冷轧 基价表无该牌号",
-        "[芜湖] DC03 大类=冷轧 基价表无该牌号",
+        "芜湖 的 DC04（冷轧）在基价表里没有这个牌号。",
+        "芜湖 的 DC03（冷轧）在基价表里没有这个牌号。",
     ]
 
 

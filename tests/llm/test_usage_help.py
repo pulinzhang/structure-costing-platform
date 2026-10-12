@@ -46,6 +46,10 @@ from app.services.llm.usage.runner import UsageHelpRunner
         ("如何退出系统", "usage_help"),
         ("退出登录", "usage_help"),
         ("账号设置在哪", "usage_help"),
+        ("拼焊费在那里录入", "usage_help"),
+        ("拼焊费在哪里录入", "usage_help"),
+        ("什么是拼焊费", "usage_help"),
+        ("551001690AA的拼焊费", "analysis"),
     ],
 )
 def test_detect_query_mode(question: str, expected_mode: str) -> None:
@@ -96,6 +100,10 @@ def test_detect_query_mode(question: str, expected_mode: str) -> None:
         ("退出登录", "user_menu_logout"),
         ("怎么登录", "start"),
         ("账号设置在哪", "user_menu_account"),
+        ("拼焊费在那里录入", "faq_tailor_weld_fee"),
+        ("拼焊费在哪里录入", "faq_tailor_weld_fee"),
+        ("拼焊费怎么录入", "faq_tailor_weld_fee"),
+        ("什么是拼焊费", "faq_tailor_weld_fee"),
     ],
 )
 def test_detect_help_topic(question: str, expected_topic: str) -> None:
@@ -134,6 +142,7 @@ def test_load_corpus_has_p1a_sections() -> None:
         "user_menu_theme",
         "user_menu_logout",
         "user_menu_account",
+        "faq_tailor_weld_fee",
     ):
         assert required in chunk_ids
 
@@ -164,6 +173,17 @@ def test_retrieve_user_menu_chunks() -> None:
     assert account
     assert account[0].chunk_id == "user_menu_account"
     assert "个人资料" in account[0].text
+
+
+def test_retrieve_tailor_weld_fee_chunk() -> None:
+    load_corpus_chunks.cache_clear()
+    chunks = retrieve_chunks("拼焊费在那里录入", primary_topic="faq_tailor_weld_fee", top_k=1)
+    assert chunks
+    assert chunks[0].chunk_id == "faq_tailor_weld_fee"
+    assert "冲压加工费列表" in chunks[0].text
+    assert "编辑" in chunks[0].text
+    assert "其它费用" in chunks[0].text
+    assert "焊接费" in chunks[0].text
 
 
 def test_retrieve_engine_chunk() -> None:

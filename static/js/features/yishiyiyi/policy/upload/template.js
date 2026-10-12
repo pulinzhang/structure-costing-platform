@@ -17,6 +17,7 @@ import {
     uploadSubmitButtonHtml,
     uploadTemplateButtonHtml,
 } from '../../../../ui/upload-actions.js?v=2';
+import { recentUploadsCardHtml } from '../../../../ui/recent-uploads.js?v=3';
 
 export function policyUploadTemplate() {
     return `
@@ -110,33 +111,11 @@ export function policyUploadTemplate() {
                         <h5 class="text-xs font-semibold text-ink-dim mb-0">导入说明</h5>
                     </div>
                     <div class="p-5">
-                        <h6 class="${UPLOAD_LABEL} mb-2.5">传什么</h6>
-                        <ul class="list-disc list-inside text-xs text-ink-dim space-y-1.5 mb-4">
-                            <li>钢厂的价格政策。马钢、宝钢、首钢、鞍钢都能认，唐钢、邯钢、VAMA、山钢、涟钢也可以。</li>
-                            <li>数据从第一行开始写，中间不要空行。</li>
-                        </ul>
-                        <h6 class="${UPLOAD_LABEL} mb-2.5">再传一份时</h6>
-                        <ul class="list-disc list-inside text-xs text-ink-dim space-y-1.5">
-                            <li>同一年、同一个月、同一家钢厂、同一个钢种、同一种类型、同一个牌号、同一个基准厚度，再传会盖掉原来的。没有的会新增。</li>
-                        </ul>
+                        <p class="text-xs text-ink-dim leading-relaxed mb-0">同一年、月、钢厂、钢种、类型、牌号和基准厚度，再传会盖掉原来的。</p>
                     </div>
                 </div>
 
-                <!-- 最近导入记录 -->
-                <div class="bg-app-surface border border-line">
-                    <div class="px-5 py-3 border-b border-line-subtle flex items-center gap-2.5">
-                        <svg class="w-3.5 h-3.5 text-ink-dim" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
-                        <h5 class="text-xs font-semibold text-ink-dim mb-0">最近导入</h5>
-                    </div>
-                    <div class="p-5" id="recentPolicyUploads">
-                        <div class="text-center py-6">
-                            <div class="w-8 h-8 bg-app-elevated flex items-center justify-center mx-auto mb-2.5">
-                                <svg class="w-4 h-4 text-ink-dim" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10"></path></svg>
-                            </div>
-                            <p class="text-[11px] text-ink-dim">暂无导入记录</p>
-                        </div>
-                    </div>
-                </div>
+                ${recentUploadsCardHtml('recentPolicyUploads')}
             </div>
         </div>
     `;

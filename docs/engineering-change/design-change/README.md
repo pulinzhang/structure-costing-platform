@@ -27,7 +27,7 @@
 
 ### 为什么图变了必须换零件号？
 
-奇瑞（客户方）设计图改了，它就是另一件存货，不是同一件改个字。一个交货总成只要碰上五种场景之一（总成改图 / 一级改图 / 二级改图 / 此件不装 / 增加零件），**总成图必然变了，交货总成零件号必然换**；完成停止没有新图、没有新号。核价按月各算各的；未来 ERP 入库、出库、库存按两个物料号办。所以是 **旧号到期、新号启用**，禁止在旧节点上改档案。新号以工程变更单为准（写成 AB 用 AB，写成 AC 用 AC），系统不推算末两位。出入库主键是 **零件号**。内部号是厂内 ERP 物料码：总成 / 分总成必填，给人建档联查，不是出入库主键。总成必须有图。细则见 [part-number-revision-design.md](part-number-revision-design.md) §1、§3。
+奇瑞（客户方）设计图改了，它就是另一件存货，不是同一件改个字。一个交货总成只要碰上会换号的一种（末级改图 / 此件不装 / 增加零件 / 增加分总成），**总成图必然变了，交货总成零件号必然换**；完成停止没有新图、没有新号。没有单独的总成改图。改图只发生在末级，层级写一级或二级。此件不装、增加零件的层级写一级或二级都行；写在二级时，上级一级也要换成新号，旁边没动的二级仍是原号。下载模板先画五种改法：完成停止、末级改图（一级）、末级改图（二级）、此件不装（一级）、增加零件（一级）。此件不装二级规则收、模板不画。增加零件二级模板不画；这个一级下面原来已经有二级才收，一颗都没有就拒收。增加分总成单独一句：新的一级分总成，下面有几颗写几颗，不和此件不装互相核对。见 [scenes/08-叶子一级变分总成.png](scenes/08-叶子一级变分总成.png)。核价按月各算各的；未来 ERP 入库、出库、库存按两个物料号办。所以是 **旧号到期、新号启用**，禁止在旧节点上改档案。新号以工程变更单为准（写成 AB 用 AB，写成 AC 用 AC），系统不推算末两位。出入库主键是 **零件号**。内部号是厂内 ERP 物料码：总成 / 分总成必填，给人建档联查，不是出入库主键。总成必须有图。细则见 [part-number-revision-design.md](part-number-revision-design.md) §1、§3。分镜在 [scenes/](scenes/)，总览见 [八种填法.png](八种填法.png)。
 
 ### 为什么用时间轴（`as_of_month`）而不是快照？
 
@@ -35,7 +35,7 @@
 
 ### 为什么同号换材料不塞进改图？
 
-同号换材料不在设计变更四句里。见 [材料变更设计](../material-change/README.md)。改图换号抄的是旧号投产 `material`，另把该零件已有材料变更历史抄到新零件。同号换材料仍走材料变更。不在本文改工艺那一格。
+同号换材料不在设计变更五句里。见 [材料变更设计](../material-change/README.md)。改图换号抄的是旧号投产 `material`，另把该零件已有材料变更历史抄到新零件。同号换材料仍走材料变更。不在本文改工艺那一格。
 
 ### 为什么新旧号只认工程变更单，不收口到字母进一位？
 
@@ -139,7 +139,7 @@ flowchart TB
 | `EC_PROJECT_MISMATCH` | 一本只能一个项目号 | 对照上传页、工程变更单、材料清单项目代号、确认表标题里的项目 |
 | `EC_PROCUREMENT_LIST_REQUIRED` | 还没有采购对象清单头 | 先到焊接工程生成；完成停止也不例外 |
 | `EC_BOM_PROCESS_VERSION_MISMATCH` | 两张表版本不是同一个字 | 材料清单第 2 行与确认表表头必须写成一样 |
-| `EC_CHANGE_ORDER_*` | 变更单行数、类型、填法、同一个总成写了多次 | 类型只准四句：完成停止、改图、增加零件、此件不装；一个总成改了好几处请把总成格子上下合并 |
+| `EC_CHANGE_ORDER_*` | 变更单行数、类型、填法、同一个总成写了多次 | 类型只准五句：完成停止、改图、增加零件、此件不装、增加分总成；一个总成改了好几处请把总成格子上下合并 |
 | `EC_ROLLBACK_BLOCKED` | 不能删本次 | 其后还有未回滚变更，或采购对象已审未反审 |
 | `EC_GATE_FULL_GENERATE` | 禁止整包 generate | 已有设变树（或失效 L0）；请走工程变更重传 |
 | `EC_GATE_ENGINE_BREAKDOWN` | 引擎拆解补算被同一把钥匙拦住 | 引擎已调 generate；`FULL_GENERATE` 映射为此文案。查是否工程变更未抄齐拆解 |
@@ -204,9 +204,9 @@ Router → EngineeringChangeUploadService.start_upload
 
 | 文档 | 说明 |
 |------|------|
-| [part-number-revision-design.md](part-number-revision-design.md) | 领域契约（下载模板即规格、§4 写入、§8 产品）；**落地状态以本节为准** |
+| [part-number-revision-design.md](part-number-revision-design.md) | 领域契约（下载模板怎么填见 §0，§4 写入、§8 产品）；**落地状态以本节为准** |
 | [bom-process-die-effective-period-design.md](bom-process-die-effective-period-design.md) | 交货总成 / 工艺 / 布点生失效（已落地） |
-| [t28-2025-07-import-bundle-test-design.md](t28-2025-07-import-bundle-test-design.md) | 青岛 T28 下载模板怎么填。运行时生成，仓库不存 xlsx，也不再拆五份夹具 |
+| [t28-2025-07-import-bundle-test-design.md](t28-2025-07-import-bundle-test-design.md) | 青岛 T28 真号走查。不是上传页下载的 `EX-*` 模板 |
 | [材料变更样表](../material-change/samples/README.md) | 仓库里仅有的工程变更 xlsx：芜湖 T13J 材料变更 2026-06、2026-07。不是设计变更合册 |
 
 一口价年内分段已否决，见 [effective-period-design.md](../../costing/effective-period-design.md)。本目录的生失效不要跟着停。

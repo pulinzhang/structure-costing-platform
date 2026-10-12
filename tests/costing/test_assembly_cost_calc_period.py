@@ -112,7 +112,7 @@ def test_prep_empty_as_of_month_raises(
     bom_cls.return_value.list_as_of_trees.return_value = []
     deps = MagicMock()
 
-    with pytest.raises(BusinessException, match="2026 年 07 月没有有效期内的 BOM 树"):
+    with pytest.raises(BusinessException, match="2026年07月没有有效期内的材料清单"):
         prepare_calc_run(MagicMock(), deps, _dto(), ProgressNotifier())
 
 
@@ -158,4 +158,4 @@ def test_collect_calc_ready_uses_as_of_trees() -> None:
     assert kwargs["as_of_month"] == 7
     assert vo.ready is False
     assert vo.bom_version is None
-    assert "没有有效期内的 BOM 树" in (vo.message or "")
+    assert "没有有效期内的材料清单" in (vo.message or "")

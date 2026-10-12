@@ -13,7 +13,7 @@ export function l0WeldingFeeCalcTemplate() {
 
             <div class="flex flex-col items-stretch gap-1 pb-2 border-b border-line-subtle sm:flex-row sm:items-center sm:justify-between">
                 <h1 class="hidden sm:block text-xs font-bold text-ink tracking-wider">焊接费计算</h1>
-                <p class="text-[10px] text-ink-faint">公式与层级无关：有辅助量用辅助量，否则用过程量；长度 mm↔cm，面积 平方≡m2</p>
+                <p class="text-[10px] text-ink-faint">有辅助量就按辅助量算，没有就按过程量。长度的毫米和厘米要换算；面积里的「平方」就是平方米。</p>
             </div>
 
             <div class="flex items-center justify-between py-2.5 border-y border-app-surface">
@@ -32,7 +32,7 @@ export function l0WeldingFeeCalcTemplate() {
             <div class="flex flex-col items-stretch gap-3 border-b border-line-subtle py-2.5 sm:flex-row sm:items-center sm:justify-between">
                 <div class="flex items-center gap-4 flex-wrap sm:gap-8">
                     <div>
-                        <span class="text-[9px] text-ink-dim block">供货总成</span>
+                        <span class="text-[9px] text-ink-dim block">零件</span>
                         <span id="l0wfCntL0" class="text-xs font-mono font-bold text-ink">- <span class="text-[9px] font-normal text-ink-faint">条</span></span>
                     </div>
                     <div class="w-px h-5 bg-app-surface"></div>
@@ -46,8 +46,8 @@ export function l0WeldingFeeCalcTemplate() {
                         <span id="l0wfCntProcessLines" class="text-xs font-mono font-bold text-ink">- <span class="text-[9px] font-normal text-ink-faint">行</span></span>
                     </div>
                     <div class="w-px h-5 bg-app-surface"></div>
-                    <div title="工艺数是 0 的供货总成">
-                        <span class="text-[9px] text-ink-dim block">无工艺的供货总成</span>
+                    <div title="拆完之后一条工艺都没有的零件">
+                        <span class="text-[9px] text-ink-dim block">没拆出工艺</span>
                         <span id="l0wfCntZeroProcess" class="text-xs font-mono font-bold text-ink">- <span class="text-[9px] font-normal text-ink-faint">条</span></span>
                     </div>
                 </div>
@@ -109,9 +109,8 @@ export function l0WeldingFeeCalcTemplate() {
                                     <th class="py-2 px-2 font-normal whitespace-nowrap">年度</th>
                                     <th class="py-2 px-2 font-normal whitespace-nowrap">基地</th>
                                     <th class="py-2 px-2 font-normal whitespace-nowrap">项目</th>
-                                    <th class="py-2 px-2 font-normal whitespace-nowrap">版本</th>
                                     <th class="py-2 px-2 font-normal text-center whitespace-nowrap">状态</th>
-                                    <th class="py-2 px-2 font-normal text-right whitespace-nowrap">成品</th>
+                                    <th class="py-2 px-2 font-normal text-right whitespace-nowrap">零件</th>
                                     <th class="py-2 px-2 font-normal text-right whitespace-nowrap">新增</th>
                                     <th class="py-2 px-2 font-normal text-right whitespace-nowrap">更新</th>
                                     <th class="py-2 px-2 font-normal text-right whitespace-nowrap">失败</th>
@@ -122,7 +121,7 @@ export function l0WeldingFeeCalcTemplate() {
                             </thead>
                             <tbody id="l0wfCalcHistoryBody" class="text-[10px] divide-y divide-line-subtle">
                                 <tr>
-                                    <td colspan="16" class="py-8 text-center text-ink-faint">加载中..</td>
+                                    <td colspan="15" class="py-8 text-center text-ink-faint">加载中..</td>
                                 </tr>
                             </tbody>
                         </table>

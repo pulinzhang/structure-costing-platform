@@ -41,7 +41,7 @@ class EngineeringChangeOrder(AuditUserMixin, Base):
     effective_period_text: Mapped[str] = mapped_column(
         String(30), nullable=False, comment="生效年月原文，如 2025年07月"
     )
-    change_type: Mapped[str] = mapped_column(String(20), nullable=False, comment="变更类型四句之一")
+    change_type: Mapped[str] = mapped_column(String(20), nullable=False, comment="变更类型五句之一")
     before_assembly_part_number: Mapped[str] = mapped_column(
         String(50), nullable=False, comment="变更前总成"
     )

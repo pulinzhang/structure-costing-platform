@@ -33,7 +33,7 @@ export function weldingProcessBreakdownGenerateTemplate() {
             <div class="flex flex-col items-stretch gap-3 border-b border-line-subtle py-2.5 sm:flex-row sm:items-center sm:justify-between">
                 <div class="flex items-center gap-4 flex-wrap sm:gap-8">
                     <div>
-                        <span class="text-[9px] text-ink-dim block">焊接原文</span>
+                        <span class="text-[9px] text-ink-dim block">焊接信息</span>
                         <span id="cntWeldNodes" class="text-xs font-mono font-bold text-ink">- <span class="text-[9px] font-normal text-ink-faint">条</span></span>
                     </div>
                     <div class="w-px h-5 bg-app-surface"></div>
@@ -76,7 +76,7 @@ export function weldingProcessBreakdownGenerateTemplate() {
             </div>
 
             <div id="dataReadyErrorBanner" class="hidden text-[10px] text-warn bg-app-hud px-2.5 py-1.5 border-l-2 border-warn/40">
-                提示：先选基地、项目、版本。材料清单里要有焊接原文，并且还没有已审核的拆解。
+                提示：先选基地、项目、版本。材料清单里要有焊接信息，并且还没有已审核的拆解。
             </div>
 
             <div class="pt-2">
@@ -106,8 +106,8 @@ export function weldingProcessBreakdownGenerateTemplate() {
                                     <th class="py-2 px-2 font-normal whitespace-nowrap">项目</th>
                                     <th class="py-2 px-2 font-normal whitespace-nowrap">版本</th>
                                     <th class="py-2 px-2 font-normal text-center whitespace-nowrap">状态</th>
-                                    <th class="py-2 px-2 font-normal text-right whitespace-nowrap">拆解</th>
-                                    <th class="py-2 px-2 font-normal text-right whitespace-nowrap">明细</th>
+                                    <th class="py-2 px-2 font-normal text-right whitespace-nowrap">零件</th>
+                                    <th class="py-2 px-2 font-normal text-right whitespace-nowrap">工艺</th>
                                     <th class="py-2 px-2 font-normal text-right whitespace-nowrap">操作</th>
                                 </tr>
                             </thead>

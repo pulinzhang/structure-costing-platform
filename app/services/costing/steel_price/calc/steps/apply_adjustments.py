@@ -88,7 +88,7 @@ class AdjustmentApplier:
             archive.category_name if archive is not None else None
         )
         if not category_name:
-            row.add_message("牌号未分类，无法匹配厚度加减价政策")
+            row.add_message("这个牌号还没分类，对不上厚度加减价")
             return
         row.category_name = category_name
         self.thickness_matcher.apply(row, policies)

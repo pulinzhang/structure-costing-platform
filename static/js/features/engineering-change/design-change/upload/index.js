@@ -2,7 +2,8 @@
  * 工程变更上传页 — 异步 task_id + 拖拽区原位进度（对齐布点 / 工艺上传）
  */
 
-import { engineeringChangeUploadTemplate } from './template.js?v=26';
+import { engineeringChangeUploadTemplate } from './template.js?v=28';
+import { copyElementText } from '../../../../ui/copy-text.js?v=3';
 import { uploadSubmitLabelHtml } from '../../../../ui/upload-actions.js?v=2';
 import { paintUploadProgressIcon } from '../../../../ui/sync-upload-progress.js?v=5';
 import { can } from '../../../../core/permissions.js?v=8';
@@ -11,9 +12,10 @@ import {
     setDropzoneFileSelected,
 } from '../../../../ui/upload-dropzone.js?v=3';
 import { fillAsOfSelects } from '../../../common/period-ui.js?v=7';
+import { bindRecentUploads } from '../../../../ui/recent-uploads.js?v=3';
 
 const POLL_INTERVAL_MS = 2000;
-const MAX_RECENT_UPLOADS = 8;
+const recentUploads = bindRecentUploads('ecRecentUploads');
 const API = '/api/engineering-change';
 
 const EngineeringChangeUploadPage = {
@@ -24,7 +26,6 @@ const EngineeringChangeUploadPage = {
     activeTaskId: null,
     activeFileName: null,
     activeScope: null,
-    recentUploads: [],
     canUpload: true,
 
     init() {
@@ -32,7 +33,7 @@ const EngineeringChangeUploadPage = {
         this.applyPermissionUi();
         this.bindEvents();
         this.hideError();
-        this.renderRecentUploads();
+        recentUploads.paint();
         this.fillPeriodSelects();
         this.loadScopeOptions();
         if (this.isUploading && this.activeTaskId) {
@@ -108,7 +109,12 @@ const EngineeringChangeUploadPage = {
             event.preventDefault();
             this.handleSubmit();
         });
-        document.getElementById('ecUploadErrorCopyBtn')?.addEventListener('click', () => this.copyErrorText());
+        document.getElementById('ecUploadErrorCopyBtn')?.addEventListener('click', (event) => {
+            copyElementText(
+                document.getElementById('ecUploadErrorBody'),
+                event.currentTarget,
+            );
+        });
         document.getElementById('ecUploadErrorCloseBtn')?.addEventListener('click', () => this.hideError());
     },
 
@@ -224,42 +230,7 @@ const EngineeringChangeUploadPage = {
         if (submitBtn) submitBtn.disabled = true;
     },
 
-    addRecentUpload(fileName, scopeLabel, summary) {
-        const timeLabel = new Date().toLocaleTimeString('zh-CN', {
-            hour: '2-digit',
-            minute: '2-digit',
-            second: '2-digit',
-        });
-        this.recentUploads.unshift({ fileName, scopeLabel, timeLabel, summary: summary || '' });
-        this.recentUploads = this.recentUploads.slice(0, MAX_RECENT_UPLOADS);
-        this.renderRecentUploads();
-    },
 
-    renderRecentUploads() {
-        const container = document.getElementById('ecRecentUploads');
-        if (!container) return;
-        if (this.recentUploads.length === 0) {
-            container.innerHTML = `
-                <div class="text-center py-5">
-                    <div class="w-8 h-8 bg-app-surface border border-line flex items-center justify-center mx-auto mb-2.5">
-                        <svg class="w-4 h-4 text-ink-faint" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10"></path></svg>
-                    </div>
-                    <p class="text-[10px] text-ink-faint">暂无上传记录</p>
-                </div>
-            `;
-            return;
-        }
-        container.innerHTML = this.recentUploads.map((item) => `
-            <div class="flex items-start gap-2.5 p-2.5 bg-app-main border border-line mb-2 last:mb-0">
-                <span class="text-ok shrink-0 mt-0.5">${svgIcon('file-earmark-excel')}</span>
-                <div class="min-w-0 flex-1">
-                    <p class="text-[11px] text-ink truncate">${esc(item.fileName)}</p>
-                    <p class="text-[10px] text-ink-dim mt-0.5">${esc(item.scopeLabel)} · ${esc(item.timeLabel)}</p>
-                    ${item.summary ? `<p class="text-[10px] text-ink-muted mt-0.5">${esc(item.summary)}</p>` : ''}
-                </div>
-            </div>
-        `).join('');
-    },
 
     failOnPanel(message) {
         const text = String(message || '操作失败').trim() || '操作失败';
@@ -274,10 +245,7 @@ const EngineeringChangeUploadPage = {
         const body = document.getElementById('ecUploadErrorBody');
         const copyBtn = document.getElementById('ecUploadErrorCopyBtn');
         panel?.classList.add('hidden');
-        if (body) {
-            body.textContent = '';
-            body.dataset.raw = '';
-        }
+        if (body) body.textContent = '';
         if (copyBtn) copyBtn.textContent = '复制';
     },
 
@@ -288,31 +256,10 @@ const EngineeringChangeUploadPage = {
         const text = String(message || '导入失败').trim() || '导入失败';
         if (!panel || !body) return;
         body.textContent = text;
-        body.dataset.raw = text;
         if (copyBtn) copyBtn.textContent = '复制';
         panel.classList.remove('hidden');
         panel.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
         showToast(text, 'error');
-    },
-
-    async copyErrorText() {
-        const body = document.getElementById('ecUploadErrorBody');
-        const copyBtn = document.getElementById('ecUploadErrorCopyBtn');
-        const text = body?.dataset?.raw || body?.textContent || '';
-        if (!text) return;
-        try {
-            await navigator.clipboard.writeText(text);
-            if (copyBtn) copyBtn.textContent = '已复制';
-            setTimeout(() => {
-                if (copyBtn && copyBtn.textContent === '已复制') copyBtn.textContent = '复制';
-            }, 1600);
-        } catch (_) {
-            const range = document.createRange();
-            range.selectNodeContents(body);
-            const selection = window.getSelection();
-            selection.removeAllRanges();
-            selection.addRange(range);
-        }
     },
 
     showProgress(progress = 0, msg = '正在导入。') {
@@ -459,7 +406,7 @@ const EngineeringChangeUploadPage = {
                         : 0;
                     const summary = `${changeOrderCount} 个总成`;
                     showToast(data?.msg || `设计变更上传成功：${summary}`, 'success');
-                    this.addRecentUpload(fileName, scopeLabel, summary);
+                    recentUploads.remember({ fileName, scopeLabel, summary });
                     this.activeTaskId = null;
                     this.setUploading(false);
                     this.clearSelectedFile();

@@ -21,6 +21,7 @@ import {
 import { applyPanelWidth, bindPanelResize } from './panel-size.js?v=2';
 import { pollTask } from './task/poller.js';
 import { panelClass, shellHtml } from './template.js?v=19';
+import { copyPlainText } from '../ui/copy-text.js?v=3';
 
 /** @typedef {'closed'|'panel'|'maximized'|'docked'} AssistantMode */
 
@@ -127,34 +128,8 @@ export function createShell(options) {
     });
 
     async function copyQuestionText(text) {
-        try {
-            if (navigator.clipboard?.writeText) {
-                await navigator.clipboard.writeText(text);
-            } else {
-                copyWithTextarea(text);
-            }
-            window.showToast?.('已复制', 'success');
-        } catch (_error) {
-            try {
-                copyWithTextarea(text);
-                window.showToast?.('已复制', 'success');
-            } catch (_fallbackError) {
-                window.showToast?.('复制失败', 'error');
-            }
-        }
-    }
-
-    function copyWithTextarea(text) {
-        const area = document.createElement('textarea');
-        area.value = text;
-        area.setAttribute('readonly', '');
-        area.style.position = 'fixed';
-        area.style.left = '-9999px';
-        document.body.appendChild(area);
-        area.select();
-        const copied = document.execCommand('copy');
-        area.remove();
-        if (!copied) throw new Error('copy failed');
+        const copied = await copyPlainText(text);
+        window.showToast?.(copied ? '已复制' : '复制失败', copied ? 'success' : 'error');
     }
 
     function storageKey() {

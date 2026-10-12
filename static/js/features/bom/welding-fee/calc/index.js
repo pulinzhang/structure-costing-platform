@@ -7,7 +7,7 @@ import { DRAWER_CLOSE, DRAWER_SHELL, DRAWER_BACKDROP } from '../../../../ui/clas
 import { opsIconButtonHtml } from '../../../../ui/hud-table.js?v=3';
 import {
     l0WeldingFeeCalcTemplate,
-} from './template.js?v=23';
+} from './template.js?v=24';
 import {
     DEFAULT_PAGE_SIZE,
     bindPagination,
@@ -288,7 +288,7 @@ function setCountHtml(id, count, unit) {
 async function loadCalcHistory(page = calcState.history.page) {
     const body = document.getElementById('l0wfCalcHistoryBody');
     if (!body) return;
-    body.innerHTML = `<tr><td colspan="16" class="py-8 text-center text-ink-faint">加载中..</td></tr>`;
+        body.innerHTML = `<tr><td colspan="15" class="py-8 text-center text-ink-faint">加载中..</td></tr>`;
 
     try {
         const res = await HttpClient.get(CALC_LOGS_API, {
@@ -311,7 +311,7 @@ async function loadCalcHistory(page = calcState.history.page) {
             );
     } catch (error) {
         console.error('加载计算历史失败:', error);
-        body.innerHTML = `<tr><td colspan="16" class="py-8 text-center text-danger">加载失败</td></tr>`;
+        body.innerHTML = `<tr><td colspan="15" class="py-8 text-center text-danger">加载失败</td></tr>`;
     }
 }
 
@@ -330,7 +330,7 @@ function renderHistoryRows(items) {
     const body = document.getElementById('l0wfCalcHistoryBody');
     if (!body) return;
     if (!items.length) {
-        body.innerHTML = `<tr><td colspan="16" class="py-8 text-center text-ink-faint">暂无计算记录</td></tr>`;
+        body.innerHTML = `<tr><td colspan="15" class="py-8 text-center text-ink-faint">暂无计算记录</td></tr>`;
         return;
     }
 
@@ -368,7 +368,6 @@ function renderHistoryRows(items) {
                 <td class="py-2 px-2 font-mono text-ink-muted whitespace-nowrap">${esc(fmtYear(item.year))}</td>
                 <td class="py-2 px-2 text-ink-muted whitespace-nowrap">${esc(item.location || '-')}</td>
                 <td class="py-2 px-2 text-ink-muted whitespace-nowrap">${esc(item.vehicle_model || '-')}</td>
-                <td class="py-2 px-2 text-ink-muted whitespace-nowrap">${esc(item.bom_version || '-')}</td>
                 <td class="py-2 px-2 text-center text-[9px] ${status.className}">${status.label}</td>
                 <td class="py-2 px-2 font-mono text-right tabular-nums text-ink-dim">${fmtInt(item.l0_count)}</td>
                 <td class="py-2 px-2 font-mono text-right tabular-nums text-ink-dim">${fmtInt(item.created_count)}</td>
@@ -449,10 +448,33 @@ async function openProcessDrawer(logId) {
     }
 }
 
+function formatCalcScope(log) {
+    const parts = [fmtYear(log.year) || '-', log.location || '-', log.vehicle_model || '-'];
+    const version = String(log.bom_version || '').trim();
+    if (version) parts.push(`版本 ${version}`);
+    return parts.join(' · ');
+}
+
+function formatCalcSummary(log) {
+    const created = Number(log.created_count) || 0;
+    const updated = Number(log.updated_count) || 0;
+    const failed = Number(log.failed_count) || 0;
+    const missing = Number(log.missing_price_count) || 0;
+    const skipped = Number(log.skipped_approved_count) || 0;
+    const parts = [`要算 ${fmtInt(log.l0_count)} 个零件`];
+    if (created) parts.push(`新写入 ${fmtInt(created)} 条`);
+    if (updated) parts.push(`重算 ${fmtInt(updated)} 条`);
+    if (!created && !updated) parts.push('没有写入');
+    if (failed) parts.push(`没算上 ${fmtInt(failed)} 条`);
+    if (missing) parts.push(`对不上单价 ${fmtInt(missing)} 条`);
+    if (skipped) parts.push(`已审没重算 ${fmtInt(skipped)} 条`);
+    return parts.join('，');
+}
+
 function showProcessDrawer(log) {
     closeProcessDrawer();
     const status = STATUS_META[log.status] || STATUS_META.failed;
-    const scope = `${log.year || '-'} · ${log.location || '-'} · ${log.vehicle_model || '-'} · ${log.bom_version || '-'}`;
+    const scope = formatCalcScope(log);
     const backdrop = document.createElement('div');
     backdrop.id = 'l0wfCalcProcessBackdrop';
     backdrop.className = DRAWER_BACKDROP;
@@ -478,9 +500,8 @@ function showProcessDrawer(log) {
             </div>
         </div>
         <div class="px-5 py-3 border-b border-line-subtle text-[10px] text-ink-dim space-y-1 shrink-0">
-            <div>批次 <span class="font-mono text-ink-muted">${esc(log.calc_batch_id || '-')}</span></div>
             <div>${esc(formatTimingLine(log, formatDateTime) || '-')}</div>
-            <div>汇总：供货总成 ${fmtInt(log.l0_count)} · 新增 ${fmtInt(log.created_count)} · 更新 ${fmtInt(log.updated_count)} · 失败 ${fmtInt(log.failed_count)} · 缺单价 ${fmtInt(log.missing_price_count)} · 跳过已审 ${fmtInt(log.skipped_approved_count)}</div>
+            <div>${esc(formatCalcSummary(log))}</div>
         </div>
         <div class="flex-1 overflow-y-auto overscroll-contain p-5">
             <pre class="text-[11px] leading-5 font-mono text-ink-muted whitespace-pre-wrap break-words bg-app-main border border-app-elevated p-4">${esc(log.detail_text || '（无过程文本）')}</pre>
@@ -618,7 +639,7 @@ function startPolling(taskId) {
                 const bizStatus = result.status || 'success';
                 showToast(
                     data?.msg
-                    || `计算${STATUS_META[bizStatus]?.label || '完成'}：新增 ${fmtInt(result.created_count)}，更新 ${fmtInt(result.updated_count)}，失败 ${fmtInt(result.failed_count)}，缺单价 ${fmtInt(result.missing_price_count)}`,
+                    || `计算${STATUS_META[bizStatus]?.label || '完成'}：${formatCalcSummary(result)}`,
                     bizStatus === 'failed' ? 'error' : bizStatus === 'partial' ? 'warning' : 'success',
                 );
                 calcState.activeTaskId = null;

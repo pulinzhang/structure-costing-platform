@@ -33,8 +33,8 @@ def check_bom_snapshot(
         return make_item(
             code="bom_snapshot",
             ok=False,
-            missing=["该月没有有效期内的 L0 树"],
-            message="该月没有有效期内的 L0 树，已跳过焊接费与总成核价",
+            missing=["这个月没有还有效的供货总成"],
+            message="这个月没有还有效的供货总成，焊接费和总成核价先跳过。",
             location=location,
             year=year,
             month=month,
@@ -44,7 +44,7 @@ def check_bom_snapshot(
         code="bom_snapshot",
         ok=True,
         missing=[],
-        message=f"含 L0 的 BOM {len(labels)} 版：" + "、".join(labels[:8]),
+        message=f"有供货总成的材料清单 {len(labels)} 版：" + "、".join(labels[:8]),
         location=location,
         year=year,
         month=month,
@@ -67,7 +67,7 @@ def check_annual_part_price(
     if not discovery.l0_scopes:
         return make_skipped(
             code="annual_part_price",
-            message="无含 L0 的 BOM，跳过年度零件价检查",
+            message="没有供货总成，年度零件价先不查。",
             location=location,
             year=year,
             month=month,
@@ -115,7 +115,7 @@ def check_packaging_transport(
     if not discovery.l0_scopes:
         return make_skipped(
             code="packaging_transport",
-            message="无含 L0 的 BOM，跳过包装运输费检查",
+            message="没有供货总成，包装运输费先不查。",
             location=location,
             year=year,
             month=month,

@@ -15,6 +15,7 @@ import {
     uploadSubmitButtonHtml,
     uploadTemplateButtonHtml,
 } from '../../../../ui/upload-actions.js?v=2';
+import { recentUploadsCardHtml } from '../../../../ui/recent-uploads.js?v=3';
 
 export function basePriceUploadTemplate() {
     return `
@@ -109,27 +110,11 @@ export function basePriceUploadTemplate() {
                         <h5 class="text-xs font-semibold text-ink-dim mb-0">导入说明</h5>
                     </div>
                     <div class="p-5">
-                        <h6 class="${UPLOAD_LABEL} mb-2.5">传什么</h6>
-                        <ul class="list-disc list-inside text-xs text-ink-dim space-y-1.5 mb-4">
-                            <li>钢厂发布的价格表，里面有中标钢厂和到厂原卷价格。</li>
-                            <li>价格是元/吨，不含税。</li>
-                        </ul>
-                        <h6 class="${UPLOAD_LABEL} mb-2.5">表长什么样</h6>
-                        <ul class="list-disc list-inside text-xs text-ink-dim space-y-1.5 mb-4">
-                            <li>表头在第 4 到第 5 行，数据从第 6 行开始。</li>
-                            <li>要有钢种、牌号、参考规格，以及各基地的中标钢厂和到厂价格。</li>
-                            <li>每个基地的价格后面，必须有一列标题里带「加工费」。每个牌号都要填数字，单位是元/吨。</li>
-                            <li>没有加工费这一列，或者格子是空的、不是数字，这一整份都不收。不会改去读旁边的价格，也不会自动填一个加工费。</li>
-                            <li>单价加上加工费，跟上个月同一基地、同一规格比，涨跌超过系统里设的范围（默认上下 300 元/吨），这一整份都不收。</li>
-                            <li>加工费超过系统里设的上限，这一整份都不收。</li>
-                        </ul>
-                        <h6 class="${UPLOAD_LABEL} mb-2.5">再传一份时</h6>
-                        <ul class="list-disc list-inside text-xs text-ink-dim space-y-1.5 mb-4">
-                            <li>同一年、同一个月、同一个基地、同一家钢厂、同一个牌号、同一厚度和宽度，再传会盖掉原来的。没有的会新增。</li>
-                            <li>只导入已经启用的采购基地。表里其它基地的列会跳过。</li>
-                        </ul>
+                        <p class="text-xs text-ink-dim leading-relaxed mb-0">同一年、月、基地、钢厂、牌号和规格，再传会盖掉原来的。只导入已启用的采购基地。</p>
                     </div>
                 </div>
+
+                ${recentUploadsCardHtml('recentBasePriceUploads')}
             </div>
         </div>
     `;

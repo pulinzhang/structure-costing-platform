@@ -43,6 +43,8 @@ def is_drilldown_focused(question: str, part_number: str | None) -> bool:
     """单件核价/价格详情：只要明细，不要仪表盘式总览。"""
     if not part_number:
         return False
+    if "拼焊费" in question:
+        return True
     focus_phrases = (
         "价格详情",
         "核价详情",

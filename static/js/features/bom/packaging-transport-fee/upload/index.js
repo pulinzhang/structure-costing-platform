@@ -3,8 +3,9 @@
  * 同步导入：基地 + 年度 + 项目必选；基地/项目取自材料清单（BOM）
  */
 
-import { pkgTransportFeeUploadTemplate } from './template.js?v=19';
+import { pkgTransportFeeUploadTemplate } from './template.js?v=21';
 import { bindSyncUploadProgress } from '../../../../ui/sync-upload-progress.js?v=4';
+import { bindRecentUploads } from '../../../../ui/recent-uploads.js?v=3';
 
 const API_BASE = '/api/bom/packaging-transport-fee';
 const CASCADE_API = '/api/bom/filters/cascade';
@@ -20,7 +21,7 @@ const uploadProgress = bindSyncUploadProgress({
     msgId: 'pkgTransportFeeUploadProgressMsg',
     runningTitle: '正在导入包装运输费...',
 });
-const MAX_RECENT_UPLOADS = 8;
+const recentUploads = bindRecentUploads('pkgTransportFeeRecentUploads');
 
 const PkgTransportFeeUploadPage = {
     selectedFile: null,
@@ -29,7 +30,6 @@ const PkgTransportFeeUploadPage = {
     hasBomOptions: false,
     locations: [],
     vehicleModels: [],
-    recentUploads: [],
 
     init() {
         this.selectedFile = null;
@@ -41,7 +41,7 @@ const PkgTransportFeeUploadPage = {
         this.bindEvents();
         this.hideProgress();
         this.clearSelectedFile(false);
-        this.renderRecentUploads();
+        recentUploads.paint();
         this.loadCascadeFilters();
     },
 
@@ -316,56 +316,7 @@ const PkgTransportFeeUploadPage = {
         this.refreshSubmitState();
     },
 
-    addRecentUpload(fileName, location, year, vehicleModel, summary) {
-        const now = new Date();
-        const timeLabel = now.toLocaleTimeString('zh-CN', {
-            hour: '2-digit',
-            minute: '2-digit',
-            second: '2-digit',
-        });
-        this.recentUploads.unshift({
-            fileName,
-            scopeLabel: `${location} · ${year} · ${vehicleModel}`,
-            timeLabel,
-            summary: summary || '',
-        });
-        if (this.recentUploads.length > MAX_RECENT_UPLOADS) {
-            this.recentUploads = this.recentUploads.slice(0, MAX_RECENT_UPLOADS);
-        }
-        this.renderRecentUploads();
-    },
 
-    renderRecentUploads() {
-        const container = document.getElementById('pkgTransportFeeRecentUploads');
-        if (!container) return;
-
-        if (this.recentUploads.length === 0) {
-            container.innerHTML = `
-                <div class="text-center py-5">
-                    <div class="w-8 h-8 bg-app-surface border border-line flex items-center justify-center mx-auto mb-2.5">
-                        <svg class="w-4 h-4 text-ink-faint" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10"></path></svg>
-                    </div>
-                    <p class="text-[10px] text-ink-faint">暂无上传记录</p>
-                </div>
-            `;
-            return;
-        }
-
-        container.innerHTML = `
-            <div class="space-y-2">
-                ${this.recentUploads.map((item) => `
-                    <div class="flex items-start gap-2.5 p-2.5 bg-app-main border border-line">
-                        <span class="text-ok shrink-0 mt-0.5">${window.svgIcon('file-earmark-excel', 'w-4 h-4')}</span>
-                        <div class="min-w-0 flex-1">
-                            <p class="text-[11px] text-ink truncate" title="${esc(item.fileName)}">${esc(item.fileName)}</p>
-                            <p class="text-[10px] text-ink-dim mt-0.5">${esc(item.scopeLabel)} · ${esc(item.timeLabel)}</p>
-                            ${item.summary ? `<p class="text-[10px] text-ink-muted mt-0.5">${esc(item.summary)}</p>` : ''}
-                        </div>
-                    </div>
-                `).join('')}
-            </div>
-        `;
-    },
 
     reset() {
         if (this.isUploading) {
@@ -493,13 +444,11 @@ const PkgTransportFeeUploadPage = {
             const summary = `新增 ${data.created_count ?? 0}，更新 ${data.updated_count ?? 0}`
                 + (skippedApproved ? `，跳过已审 ${skippedApproved}` : '');
             const msg = res.message || data.message || `导入成功：${summary}`;
-            this.addRecentUpload(
-                this.selectedFile.name,
-                location,
-                yearRaw,
-                vehicleModel,
+            recentUploads.remember({
+                fileName: this.selectedFile.name,
+                scopeLabel: `${location} · ${yearRaw} · ${vehicleModel}`,
                 summary,
-            );
+            });
             this.showDoneOnPanel(msg, { hasSkip: skippedApproved > 0 });
             this.clearSelectedFile(true);
         } catch (err) {

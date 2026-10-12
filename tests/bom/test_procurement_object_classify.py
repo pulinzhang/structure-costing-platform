@@ -352,6 +352,6 @@ def test_generate_log_lists_degenerate_subtype_counts() -> None:
         object_l1_subassembly_count=53,
         object_l1_stamping_count=80,
     )
-    assert "退化供货件亚类：特殊工艺 6 / 冲压毛坯 8" in text
-    assert "冲压毛坯 8 件（可发货；无焊信则不编处理费）" in text
+    assert "其中 特殊工艺 6 个，冲压毛坯 8 个。" in text
+    assert "冲压毛坯 8 个可以发货。材料清单上没写焊接信息的，不算处理费。" in text
     assert "已按毛坯供货" not in text
