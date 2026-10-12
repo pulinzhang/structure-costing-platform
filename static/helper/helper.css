@@ -1247,18 +1247,54 @@ figure.shot figcaption {
   .ec-dont, .ec-triple { grid-template-columns: 1fr; }
 }
 
-/* 设计变更八种填法：纸面图，不用图片。红线只标「这次写出的新号」。 */
+/* 设计变更八种填法。共同规则只说一次，每张只画这一层要填的格子。 */
 .scn-lead {
-  margin: 0 0 18px;
+  margin: 0 0 16px;
   font-size: 16px;
   line-height: 1.6;
   color: var(--color__text);
+}
+.scn-rule {
+  display: grid;
+  grid-template-columns: 1fr 1.35fr;
+  gap: 12px;
+  margin: 0 0 16px;
+}
+.scn-rule article {
+  margin: 0;
+  padding: 16px 18px 18px;
+  border: 1px solid var(--color__border);
+  background: var(--elevated);
+}
+.scn-rule article.is-change {
+  background: #fff;
+  border-color: var(--color__border--strong);
+  border-top: 3px solid var(--red);
+}
+.scn-rule span {
+  display: block;
+  font-size: 12px;
+  color: var(--muted);
+}
+.scn-rule strong {
+  display: block;
+  margin-top: 6px;
+  font-size: 22px;
+  font-weight: 500;
+  letter-spacing: -0.03em;
+  line-height: 1.2;
+}
+.scn-rule p {
+  margin: 6px 0 0;
+  font-size: 14px;
+  line-height: 1.5;
+  color: var(--muted);
 }
 .scn-key {
   display: flex;
   flex-wrap: wrap;
   gap: 8px 22px;
-  margin: 0 0 8px;
+  margin: 0 0 4px;
   padding: 0;
 }
 .scn-key span {
@@ -1279,103 +1315,106 @@ figure.shot figcaption {
   border-color: var(--color__border--strong);
   border-top: 3px solid var(--red);
 }
-.scn-key i.is-from { border-color: var(--color__border--strong); }
-.scn-key i.is-empty { border-style: dashed; }
 .scn-key i.is-void {
   border-color: var(--red);
   background: var(--red-soft);
 }
+.scn-group {
+  margin: 36px 0 0;
+  font-size: 18px;
+  font-weight: 500;
+  letter-spacing: -0.02em;
+  color: var(--color__text);
+}
+.scn-group span {
+  margin-left: 10px;
+  font-size: 14px;
+  font-weight: 400;
+  letter-spacing: 0;
+  color: var(--muted);
+}
 
 .scn {
-  margin: 28px 0 0;
+  margin: 16px 0 0;
   scroll-margin-top: 24px;
 }
 .scn-head {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: baseline;
-  gap: 10px 18px;
-  padding: 22px 0 16px;
-  border-top: 1px solid var(--color__border--strong);
+  display: grid;
+  grid-template-columns: 2.4em minmax(0, 1fr);
+  gap: 2px 12px;
+  align-items: start;
+  padding: 16px 0 12px;
 }
 .scn-index {
+  padding-top: 5px;
   font-size: 13px;
   font-weight: 500;
-  letter-spacing: 0.16em;
+  letter-spacing: 0.04em;
   color: var(--red);
 }
-.scn-head h4 {
-  flex: 1 1 12em;
+.scn-title h4 {
   margin: 0;
-  font-size: 26px;
+  font-size: 22px;
   font-weight: 500;
-  letter-spacing: -0.03em;
-  line-height: 1.2;
+  letter-spacing: -0.02em;
+  line-height: 1.25;
   color: var(--color__text);
 }
-.scn-pills {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 6px;
-  margin-left: auto;
-}
-.scn-pill {
-  padding: 3px 8px;
-  border: 1px solid var(--color__border);
-  font-size: 12px;
-  line-height: 1.4;
-  color: var(--color__text);
-  background: #fff;
-}
-.scn-pill.is-gap {
-  color: var(--red);
-  border-color: var(--red);
-}
-
-.scn-panels {
-  display: grid;
-  grid-template-columns: minmax(0, 0.92fr) minmax(0, 1.08fr);
-  border: 1px solid var(--color__border);
-  background: var(--elevated);
-}
-.scn-panel {
-  margin: 0;
-  padding: 22px 22px 26px;
-}
-.scn-panel + .scn-panel { border-left: 1px solid var(--color__border); }
-.scn-kicker {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  margin-bottom: 18px;
-  font-size: 15px;
-  font-weight: 500;
+.scn-title p {
+  margin: 4px 0 0;
+  font-size: 16px;
+  line-height: 1.5;
   color: var(--color__text);
 }
-.scn-kicker i {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  width: 22px;
-  height: 22px;
-  background: var(--color__background--inverted);
-  color: var(--color__text--inverted);
+.scn-gap {
+  margin-left: 10px;
   font-style: normal;
   font-size: 12px;
   font-weight: 500;
-  flex: 0 0 auto;
+  letter-spacing: 0;
+  color: var(--red);
+  vertical-align: 2px;
 }
-.scn-kicker.is-still { color: var(--muted); }
-.scn-kicker.is-still i {
-  background: transparent;
-  color: var(--muted);
+
+.scn-stage {
   border: 1px solid var(--color__border);
+  background: var(--elevated);
+  padding: 22px 20px 28px;
 }
-.scn-note {
-  margin: 16px 0 0;
-  font-size: 14px;
-  line-height: 1.55;
+.scn-asm {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  justify-content: center;
+  gap: 8px;
+  width: min(100%, 280px);
+  margin: 0 auto 20px;
+  padding-bottom: 14px;
+  border-bottom: 1px solid var(--color__border);
+  font-size: 13px;
   color: var(--muted);
+}
+.scn-asm b {
+  font-size: 18px;
+  font-weight: 400;
+  letter-spacing: -0.03em;
+  color: var(--muted);
+}
+.scn-asm b.is-new {
+  font-weight: 500;
+  color: var(--color__text);
+  box-shadow: inset 0 -3px 0 var(--red);
+}
+.scn-asm .go {
+  font-size: 16px;
+  color: var(--muted);
+}
+.scn-aside {
+  margin: 16px auto 0;
+  max-width: 420px;
+  text-align: center;
+  font-size: 15px;
+  color: var(--color__text);
 }
 
 .scn-swap,
@@ -1431,27 +1470,22 @@ figure.shot figcaption {
 }
 .tok.is-phrase { max-width: 260px; flex-basis: 200px; }
 .tok.is-phrase strong { font-size: 22px; letter-spacing: -0.02em; }
+.tok em {
+  display: block;
+  margin-top: 6px;
+  font-style: normal;
+  font-size: 12px;
+  line-height: 1.35;
+  color: var(--muted);
+}
 .tok-void {
   border-color: var(--red);
   background: var(--red-soft);
 }
-.tok-void .tok-cap { color: var(--red); }
-.tok-void strong {
-  color: var(--red);
-  font-weight: 500;
-  text-decoration: line-through;
-  text-decoration-thickness: 2px;
-}
-.tok-void::after {
-  content: "×";
-  position: absolute;
-  top: 6px;
-  right: 8px;
-  font-size: 18px;
-  font-weight: 500;
-  line-height: 1;
-  color: var(--red);
-}
+.tok-void .tok-cap,
+.tok-void strong,
+.tok-void em { color: var(--red); }
+.tok-void strong { font-weight: 500; }
 
 .scn-arrow {
   position: relative;
@@ -1484,50 +1518,37 @@ figure.shot figcaption {
 .scn-drop {
   display: block;
   width: 1px;
-  height: 16px;
+  height: 14px;
   background: var(--color__border--strong);
+}
+.scn-bar {
+  display: block;
+  width: 50%;
+  height: 1px;
+  background: var(--color__border--strong);
+  flex: 0 0 auto;
 }
 .scn-fork {
   display: grid;
   grid-template-columns: 1fr 1fr;
   gap: 0;
   width: 100%;
-  padding-top: 16px;
+  padding-top: 0;
 }
 .scn-arm {
-  position: relative;
   display: flex;
-  justify-content: center;
-  padding: 0 10px;
-}
-.scn-arm::before,
-.scn-arm::after {
-  content: "";
-  position: absolute;
-  background: var(--color__border--strong);
+  flex-direction: column;
+  align-items: center;
+  padding: 0 12px;
 }
 .scn-arm::before {
-  top: -16px;
-  left: 50%;
+  content: "";
+  display: block;
   width: 1px;
   height: 16px;
+  background: var(--color__border--strong);
 }
-.scn-arm:first-child::after {
-  top: -16px;
-  left: 50%;
-  width: 50%;
-  height: 1px;
-}
-.scn-arm:last-child::after {
-  top: -16px;
-  left: 0;
-  width: 50%;
-  height: 1px;
-}
-.scn-arm.is-calm::before,
-.scn-arm.is-calm::after { background: var(--color__border); }
-.scn-arm:has(.tok-void)::before,
-.scn-arm:has(.tok-void)::after { background: var(--red); }
+.scn-arm::after { content: none; }
 .scn-arm .tok {
   width: 100%;
   max-width: 200px;
@@ -1548,13 +1569,9 @@ figure.shot figcaption {
 .scn-foot a:hover { color: var(--red-hover); }
 
 @media (max-width: 860px) {
-  .scn-head h4 { font-size: 22px; }
-  .scn-pills { margin-left: 0; width: 100%; }
-  .scn-panels { grid-template-columns: 1fr; }
-  .scn-panel + .scn-panel {
-    border-left: 0;
-    border-top: 1px solid var(--color__border);
-  }
+  .scn-rule { grid-template-columns: 1fr; }
+  .scn-title h4 { font-size: 20px; }
+  .scn-gap { display: inline-block; margin: 4px 0 0; }
   .tok strong { font-size: 22px; }
 }
 

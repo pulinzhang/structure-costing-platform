@@ -6,7 +6,7 @@
   <title>知识库 · 核价方案 · 核价平台</title>
   <link rel="icon" type="image/x-icon" href="/static/assets/favicon.ico">
   <link href="/static/css/fonts.css?v=1" rel="stylesheet">
-  <link rel="stylesheet" href="helper.css?v=34">
+  <link rel="stylesheet" href="helper.css?v=36">
 </head>
 <body>
   <table class="print-sheet">
@@ -488,7 +488,7 @@
         <div class="grid-2">
           <div class="mini">
             <h4>换号原因</h4>
-            <p>图变更即为另一物料。交货总成发生改图、此件不装、增加零件或增加分总成时，总成图变了，交货总成号随之更换。完成停止没有新图，变更后总成空着。仓库按零件号管理；系统照抄变更单上已写出的号，不自动顺延零件号。八种填法见下面的图。</p>
+            <p>工程变更的理论依据是一物一码（一物料一编码）：图变更即为另一物料，另一物料必须另给一码。完成停止没有新图，变更后总成空着。仓库按零件号管理，系统照抄变更单上已经写出的号，不自己顺延。怎么填见<a href="#change-scenes">八种填法</a>。</p>
           </div>
           <div class="mini">
             <h4>为什么用生效月</h4>
@@ -541,428 +541,242 @@
         </ul>
 
         <h3 id="change-scenes">八种填法</h3>
-        <p class="scn-lead">
-          由易到难，一张一种填法。完成停止不换总成号。
-          其余每一种，都是因为此件不装、增加零件、增加分总成或末级改图，总成图变了，所以要先换总成号。
-          图上的 AA、AB 只是前后号：变更单写成什么就用什么，系统不自己顺延。
-          下载模板画了其中六张。此件不装二级、增加零件二级模板没画，规则仍收。
-          增加零件写在二级时，这个一级下面原来必须已经有二级，一颗都没有就整份不收。
-        </p>
+        <p class="scn-lead">先看这一行写在哪一层，再对上变更单里的那句话。完成停止不换总成号。其余总成号都要另给，变更单写成什么就用什么。</p>
         <div class="scn-key" aria-label="图例">
-          <span><i class="is-new"></i>这次写出的新号</span>
-          <span><i class="is-from"></i>变更前的号</span>
-          <span><i class="is-keep"></i>原号，旁边没动</span>
-          <span><i class="is-empty"></i>格子空着</span>
-          <span><i class="is-void"></i>这颗不装，号仍是原号</span>
+          <span><i class="is-new"></i>红顶，这次新写的号</span>
+          <span><i class="is-keep"></i>灰字，旁边的原号，不动</span>
+          <span><i class="is-void"></i>红字「不装」，号还在</span>
         </div>
+        <p class="scn-group">总成 <span>不换号</span></p>
 
         <article class="scn" id="scn-01">
           <header class="scn-head">
             <span class="scn-index">01</span>
-            <h4>完成停止</h4>
-            <div class="scn-pills">
-              <span class="scn-pill">变更类型：完成停止</span>
-              <span class="scn-pill">零件层级：总成</span>
-              <span class="scn-pill">模板里有</span>
+            <div class="scn-title">
+              <h4>完成停止</h4>
+              <p>整个总成不再交。</p>
             </div>
           </header>
-          <div class="scn-panels">
-            <section class="scn-panel">
-              <div class="scn-kicker is-still"><i>1</i><span>总成号不换</span></div>
-              <div class="scn-swap">
-                <div class="tok tok-from">
-                  <span class="tok-cap">变更前总成</span>
-                  <strong>AA</strong>
-                </div>
-                <div class="scn-arrow is-still" aria-hidden="true"></div>
-                <div class="tok tok-empty">
-                  <span class="tok-cap">变更后总成</span>
-                  <strong>空着</strong>
-                </div>
+          <div class="scn-stage">
+            <div class="scn-swap">
+              <div class="tok tok-from">
+                <span class="tok-cap">变更前总成</span>
+                <strong>AA</strong>
               </div>
-            </section>
-            <section class="scn-panel">
-              <div class="scn-kicker"><i>2</i><span>材料清单不写这个总成</span></div>
-              <div class="scn-solo">
-                <div class="tok tok-empty is-phrase">
-                  <span class="tok-cap">材料清单</span>
-                  <strong>不写这个总成</strong>
-                </div>
+              <div class="scn-arrow is-still" aria-hidden="true"></div>
+              <div class="tok tok-empty">
+                <span class="tok-cap">变更后总成</span>
+                <strong>空着</strong>
               </div>
-              <p class="scn-note">整个总成不再交。</p>
-            </section>
+            </div>
+            <p class="scn-aside">材料清单不写这个总成</p>
           </div>
-          <footer class="scn-foot"><a href="#scn-02">下一张 · 此件不装 · 一级</a></footer>
         </article>
+
+        <p class="scn-group">一级 <span>总成号另给。只填这一层</span></p>
 
         <article class="scn" id="scn-02">
           <header class="scn-head">
             <span class="scn-index">02</span>
-            <h4>此件不装 · 一级</h4>
-            <div class="scn-pills">
-              <span class="scn-pill">变更类型：此件不装</span>
-              <span class="scn-pill">零件层级：一级</span>
-              <span class="scn-pill">模板里有</span>
+            <div class="scn-title">
+              <h4>此件不装</h4>
+              <p>号不动。用量写 0，备注写「此件不装」。</p>
             </div>
           </header>
-          <div class="scn-panels">
-            <section class="scn-panel">
-              <div class="scn-kicker"><i>1</i><span>先换总成号</span></div>
-              <div class="scn-swap">
-                <div class="tok tok-from">
-                  <span class="tok-cap">变更前总成</span>
-                  <strong>AA</strong>
-                </div>
-                <div class="scn-arrow" aria-hidden="true"></div>
-                <div class="tok tok-new">
-                  <span class="tok-cap">变更后总成</span>
-                  <strong>AB</strong>
-                </div>
+          <div class="scn-stage">
+            <div class="scn-swap">
+              <div class="tok tok-from">
+                <span class="tok-cap">变更前零件</span>
+                <strong>原号</strong>
+                <em>用量 0 · 备注「此件不装」</em>
               </div>
-              <p class="scn-note">总成图变了，是因为下面这件事。</p>
-            </section>
-            <section class="scn-panel">
-              <div class="scn-kicker"><i>2</i><span>这颗零件号不动</span></div>
-              <div class="scn-swap">
-                <div class="tok tok-keep">
-                  <span class="tok-cap">这颗零件</span>
-                  <strong>原号</strong>
-                </div>
-                <div class="tok tok-empty">
-                  <span class="tok-cap">变更后零件</span>
-                  <strong>空着</strong>
-                </div>
+              <div class="tok tok-empty">
+                <span class="tok-cap">变更后零件</span>
+                <strong>空着</strong>
               </div>
-              <p class="scn-note">用量写 0，备注写「此件不装」。</p>
-            </section>
+            </div>
           </div>
-          <footer class="scn-foot"><a href="#scn-03">下一张 · 此件不装 · 二级</a></footer>
         </article>
 
         <article class="scn" id="scn-03">
           <header class="scn-head">
             <span class="scn-index">03</span>
-            <h4>此件不装 · 二级</h4>
-            <div class="scn-pills">
-              <span class="scn-pill">变更类型：此件不装</span>
-              <span class="scn-pill">零件层级：二级</span>
-              <span class="scn-pill is-gap">模板没画，规则收</span>
+            <div class="scn-title">
+              <h4>增加零件</h4>
+              <p>新号不要写成总成号。</p>
             </div>
           </header>
-          <div class="scn-panels">
-            <section class="scn-panel">
-              <div class="scn-kicker"><i>1</i><span>先换总成号</span></div>
-              <div class="scn-swap">
-                <div class="tok tok-from">
-                  <span class="tok-cap">变更前总成</span>
-                  <strong>AA</strong>
-                </div>
-                <div class="scn-arrow" aria-hidden="true"></div>
-                <div class="tok tok-new">
-                  <span class="tok-cap">变更后总成</span>
-                  <strong>AB</strong>
-                </div>
+          <div class="scn-stage">
+            <div class="scn-solo">
+              <div class="tok tok-new">
+                <span class="tok-cap">挂在总成下面</span>
+                <strong>新号</strong>
+                <em>不要写成总成号</em>
               </div>
-              <p class="scn-note">总成图变了，是因为下面这件事。</p>
-            </section>
-            <section class="scn-panel">
-              <div class="scn-kicker"><i>2</i><span>二级这颗号不动</span></div>
-              <div class="scn-tree">
-                <div class="tok tok-new">
-                  <span class="tok-cap">总成</span>
-                  <strong>AB</strong>
-                </div>
-                <i class="scn-drop" aria-hidden="true"></i>
-                <div class="tok tok-new">
-                  <span class="tok-cap">一级</span>
-                  <strong>一级新号</strong>
-                </div>
-                <div class="scn-fork">
-                  <div class="scn-arm">
-                    <div class="tok tok-void">
-                      <span class="tok-cap">这颗二级</span>
-                      <strong>原号</strong>
-                    </div>
-                  </div>
-                  <div class="scn-arm is-calm">
-                    <div class="tok tok-keep">
-                      <span class="tok-cap">别的二级</span>
-                      <strong>原号</strong>
-                    </div>
-                  </div>
-                </div>
-              </div>
-              <p class="scn-note">这颗用量写 0。旁边的二级还是原号。</p>
-            </section>
+            </div>
           </div>
-          <footer class="scn-foot"><a href="#scn-04">下一张 · 增加一级</a></footer>
         </article>
 
         <article class="scn" id="scn-04">
           <header class="scn-head">
             <span class="scn-index">04</span>
-            <h4>增加一级</h4>
-            <div class="scn-pills">
-              <span class="scn-pill">变更类型：增加零件</span>
-              <span class="scn-pill">零件层级：一级</span>
-              <span class="scn-pill">模板里有</span>
+            <div class="scn-title">
+              <h4>改图</h4>
+              <p>旧号写成新号。</p>
             </div>
           </header>
-          <div class="scn-panels">
-            <section class="scn-panel">
-              <div class="scn-kicker"><i>1</i><span>先换总成号</span></div>
-              <div class="scn-swap">
-                <div class="tok tok-from">
-                  <span class="tok-cap">变更前总成</span>
-                  <strong>AA</strong>
-                </div>
-                <div class="scn-arrow" aria-hidden="true"></div>
-                <div class="tok tok-new">
-                  <span class="tok-cap">变更后总成</span>
-                  <strong>AB</strong>
-                </div>
+          <div class="scn-stage">
+            <div class="scn-swap">
+              <div class="tok tok-from">
+                <span class="tok-cap">变更前零件</span>
+                <strong>旧号</strong>
               </div>
-              <p class="scn-note">总成图变了，是因为下面这件事。</p>
-            </section>
-            <section class="scn-panel">
-              <div class="scn-kicker"><i>2</i><span>在总成下面加一颗</span></div>
-              <div class="scn-tree">
-                <div class="tok tok-new">
-                  <span class="tok-cap">总成</span>
-                  <strong>AB</strong>
-                </div>
-                <i class="scn-drop" aria-hidden="true"></i>
-                <div class="tok tok-new">
-                  <span class="tok-cap">一级 · 新零件</span>
-                  <strong>新号</strong>
-                </div>
+              <div class="scn-arrow" aria-hidden="true"></div>
+              <div class="tok tok-new">
+                <span class="tok-cap">变更后零件</span>
+                <strong>新号</strong>
               </div>
-              <p class="scn-note">新零件号不要写成总成号。</p>
-            </section>
+            </div>
           </div>
-          <footer class="scn-foot"><a href="#scn-05">下一张 · 增加二级</a></footer>
         </article>
 
         <article class="scn" id="scn-05">
           <header class="scn-head">
             <span class="scn-index">05</span>
-            <h4>增加二级</h4>
-            <div class="scn-pills">
-              <span class="scn-pill">变更类型：增加零件</span>
-              <span class="scn-pill">零件层级：二级</span>
-              <span class="scn-pill is-gap">模板没画，规则收</span>
+            <div class="scn-title">
+              <h4>增加分总成</h4>
+              <p>原来的一级上面加一颗，变成新分总成。原来那颗若停用，另填此件不装。</p>
             </div>
           </header>
-          <div class="scn-panels">
-            <section class="scn-panel">
-              <div class="scn-kicker"><i>1</i><span>先换总成号</span></div>
-              <div class="scn-swap">
-                <div class="tok tok-from">
-                  <span class="tok-cap">变更前总成</span>
-                  <strong>AA</strong>
-                </div>
-                <div class="scn-arrow" aria-hidden="true"></div>
-                <div class="tok tok-new">
-                  <span class="tok-cap">变更后总成</span>
-                  <strong>AB</strong>
-                </div>
+          <div class="scn-stage">
+            <div class="scn-tree">
+              <div class="tok tok-new">
+                <span class="tok-cap">新分总成</span>
+                <strong>新号</strong>
               </div>
-              <p class="scn-note">总成图变了，是因为下面这件事。</p>
-            </section>
-            <section class="scn-panel">
-              <div class="scn-kicker"><i>2</i><span>在一级件下面加一颗</span></div>
-              <div class="scn-tree">
-                <div class="tok tok-new">
-                  <span class="tok-cap">总成</span>
-                  <strong>AB</strong>
-                </div>
-                <i class="scn-drop" aria-hidden="true"></i>
-                <div class="tok tok-new">
-                  <span class="tok-cap">一级</span>
-                  <strong>一级新号</strong>
-                </div>
-                <div class="scn-fork">
-                  <div class="scn-arm">
-                    <div class="tok tok-new">
-                      <span class="tok-cap">新加的二级</span>
-                      <strong>这颗新号 +</strong>
-                    </div>
+              <i class="scn-drop" aria-hidden="true"></i>
+              <i class="scn-bar" aria-hidden="true"></i>
+              <div class="scn-fork">
+                <div class="scn-arm is-calm">
+                  <div class="tok tok-keep">
+                    <span class="tok-cap">原来的一级</span>
+                    <strong>原号</strong>
                   </div>
-                  <div class="scn-arm is-calm">
-                    <div class="tok tok-keep">
-                      <span class="tok-cap">原来的二级</span>
-                      <strong>原号</strong>
-                    </div>
+                </div>
+                <div class="scn-arm">
+                  <div class="tok tok-new">
+                    <span class="tok-cap">新加上去的</span>
+                    <strong>新号</strong>
                   </div>
                 </div>
               </div>
-              <p class="scn-note">一级换成新号。旁边的二级还是原号。</p>
-            </section>
+            </div>
           </div>
-          <footer class="scn-foot"><a href="#scn-06">下一张 · 末级改图 · 一级</a></footer>
         </article>
+
+        <p class="scn-group">二级 <span>和上面同一件事。一级换成新号，旁边的原号不动</span></p>
 
         <article class="scn" id="scn-06">
           <header class="scn-head">
             <span class="scn-index">06</span>
-            <h4>末级改图 · 一级</h4>
-            <div class="scn-pills">
-              <span class="scn-pill">变更类型：改图</span>
-              <span class="scn-pill">零件层级：一级</span>
-              <span class="scn-pill">模板里有</span>
+            <div class="scn-title">
+              <h4>此件不装 <em class="scn-gap">模板没画</em></h4>
+              <p>这颗号不动，用量写 0。一级换成新号。</p>
             </div>
           </header>
-          <div class="scn-panels">
-            <section class="scn-panel">
-              <div class="scn-kicker"><i>1</i><span>先换总成号</span></div>
-              <div class="scn-swap">
-                <div class="tok tok-from">
-                  <span class="tok-cap">变更前总成</span>
-                  <strong>AA</strong>
+          <div class="scn-stage">
+            <div class="scn-tree">
+              <div class="tok tok-new">
+                <span class="tok-cap">一级</span>
+                <strong>换成新号</strong>
+              </div>
+              <i class="scn-drop" aria-hidden="true"></i>
+              <i class="scn-bar" aria-hidden="true"></i>
+              <div class="scn-fork">
+                <div class="scn-arm">
+                  <div class="tok tok-void">
+                    <span class="tok-cap">这颗二级</span>
+                    <strong>不装</strong>
+                    <em>号不动 · 用量 0</em>
+                  </div>
                 </div>
-                <div class="scn-arrow" aria-hidden="true"></div>
-                <div class="tok tok-new">
-                  <span class="tok-cap">变更后总成</span>
-                  <strong>AB</strong>
+                <div class="scn-arm is-calm">
+                  <div class="tok tok-keep">
+                    <span class="tok-cap">旁边的二级</span>
+                    <strong>原号</strong>
+                  </div>
                 </div>
               </div>
-              <p class="scn-note">总成图变了，是因为下面这件事。</p>
-            </section>
-            <section class="scn-panel">
-              <div class="scn-kicker"><i>2</i><span>这颗末级换成新号</span></div>
-              <div class="scn-swap">
-                <div class="tok tok-from">
-                  <span class="tok-cap">变更前零件 · 末级</span>
-                  <strong>旧号</strong>
-                </div>
-                <div class="scn-arrow" aria-hidden="true"></div>
-                <div class="tok tok-new">
-                  <span class="tok-cap">变更后零件 · 末级</span>
-                  <strong>新号</strong>
-                </div>
-              </div>
-              <p class="scn-note">变更前零件写旧号，变更后零件写新号。</p>
-            </section>
+            </div>
           </div>
-          <footer class="scn-foot"><a href="#scn-07">下一张 · 末级改图 · 二级</a></footer>
         </article>
 
         <article class="scn" id="scn-07">
           <header class="scn-head">
             <span class="scn-index">07</span>
-            <h4>末级改图 · 二级</h4>
-            <div class="scn-pills">
-              <span class="scn-pill">变更类型：改图</span>
-              <span class="scn-pill">零件层级：二级</span>
-              <span class="scn-pill">模板里有</span>
+            <div class="scn-title">
+              <h4>增加零件 <em class="scn-gap">模板没画</em></h4>
+              <p>加一颗新的。这个一级原来要已经有二级，否则整份不收。</p>
             </div>
           </header>
-          <div class="scn-panels">
-            <section class="scn-panel">
-              <div class="scn-kicker"><i>1</i><span>先换总成号</span></div>
-              <div class="scn-swap">
-                <div class="tok tok-from">
-                  <span class="tok-cap">变更前总成</span>
-                  <strong>AA</strong>
-                </div>
-                <div class="scn-arrow" aria-hidden="true"></div>
-                <div class="tok tok-new">
-                  <span class="tok-cap">变更后总成</span>
-                  <strong>AB</strong>
-                </div>
+          <div class="scn-stage">
+            <div class="scn-tree">
+              <div class="tok tok-new">
+                <span class="tok-cap">一级</span>
+                <strong>换成新号</strong>
               </div>
-              <p class="scn-note">总成图变了，是因为下面这件事。</p>
-            </section>
-            <section class="scn-panel">
-              <div class="scn-kicker"><i>2</i><span>从总成写到这颗末级</span></div>
-              <div class="scn-tree">
-                <div class="tok tok-new">
-                  <span class="tok-cap">总成</span>
-                  <strong>AB</strong>
-                </div>
-                <i class="scn-drop" aria-hidden="true"></i>
-                <div class="tok tok-new">
-                  <span class="tok-cap">分总成</span>
-                  <strong>上级新号</strong>
-                </div>
-                <div class="scn-fork">
-                  <div class="scn-arm">
-                    <div class="tok tok-new">
-                      <span class="tok-cap">这颗末级</span>
-                      <strong>这颗新号</strong>
-                    </div>
+              <i class="scn-drop" aria-hidden="true"></i>
+              <i class="scn-bar" aria-hidden="true"></i>
+              <div class="scn-fork">
+                <div class="scn-arm">
+                  <div class="tok tok-new">
+                    <span class="tok-cap">新加的二级</span>
+                    <strong>新号</strong>
                   </div>
-                  <div class="scn-arm is-calm">
-                    <div class="tok tok-keep">
-                      <span class="tok-cap">其它二级</span>
-                      <strong>原号</strong>
-                    </div>
+                </div>
+                <div class="scn-arm is-calm">
+                  <div class="tok tok-keep">
+                    <span class="tok-cap">原来的二级</span>
+                    <strong>原号</strong>
                   </div>
                 </div>
               </div>
-              <p class="scn-note">分总成换成新号。旁边的二级还是原号。</p>
-            </section>
+            </div>
           </div>
-          <footer class="scn-foot"><a href="#scn-08">下一张 · 叶子一级变分总成</a></footer>
         </article>
 
         <article class="scn" id="scn-08">
           <header class="scn-head">
             <span class="scn-index">08</span>
-            <h4>叶子一级变分总成</h4>
-            <div class="scn-pills">
-              <span class="scn-pill">变更类型：增加分总成</span>
-              <span class="scn-pill">零件层级：一级</span>
-              <span class="scn-pill">模板里有</span>
+            <div class="scn-title">
+              <h4>改图</h4>
+              <p>这颗和分总成一起换成新号。旁边仍是原号。</p>
             </div>
           </header>
-          <div class="scn-panels">
-            <section class="scn-panel">
-              <div class="scn-kicker"><i>1</i><span>先换总成号</span></div>
-              <div class="scn-swap">
-                <div class="tok tok-from">
-                  <span class="tok-cap">变更前总成</span>
-                  <strong>AA</strong>
-                </div>
-                <div class="scn-arrow" aria-hidden="true"></div>
-                <div class="tok tok-new">
-                  <span class="tok-cap">变更后总成</span>
-                  <strong>AB</strong>
-                </div>
+          <div class="scn-stage">
+            <div class="scn-tree">
+              <div class="tok tok-new">
+                <span class="tok-cap">分总成</span>
+                <strong>换成新号</strong>
               </div>
-              <p class="scn-note">总成图变了，是因为下面这件事。</p>
-            </section>
-            <section class="scn-panel">
-              <div class="scn-kicker"><i>2</i><span>上面加一颗，变成新分总成</span></div>
-              <div class="scn-tree">
-                <div class="tok tok-new">
-                  <span class="tok-cap">总成</span>
-                  <strong>AB</strong>
-                </div>
-                <i class="scn-drop" aria-hidden="true"></i>
-                <div class="tok tok-new">
-                  <span class="tok-cap">新分总成</span>
-                  <strong>新号</strong>
-                </div>
-                <div class="scn-fork">
-                  <div class="scn-arm is-calm">
-                    <div class="tok tok-keep">
-                      <span class="tok-cap">原来的一级</span>
-                      <strong>原号</strong>
-                    </div>
+              <i class="scn-drop" aria-hidden="true"></i>
+              <i class="scn-bar" aria-hidden="true"></i>
+              <div class="scn-fork">
+                <div class="scn-arm">
+                  <div class="tok tok-new">
+                    <span class="tok-cap">这颗末级</span>
+                    <strong>新号</strong>
                   </div>
-                  <div class="scn-arm">
-                    <div class="tok tok-new">
-                      <span class="tok-cap">新加上去的</span>
-                      <strong>新号</strong>
-                    </div>
+                </div>
+                <div class="scn-arm is-calm">
+                  <div class="tok tok-keep">
+                    <span class="tok-cap">其它二级</span>
+                    <strong>原号</strong>
                   </div>
                 </div>
               </div>
-              <p class="scn-note">新分总成下面有几颗写几颗。原来的位置若停用，仍按此件不装，两边不核对。</p>
-            </section>
+            </div>
           </div>
-          <footer class="scn-foot"><span>八张看完</span></footer>
         </article>
 
         <div class="callout">
