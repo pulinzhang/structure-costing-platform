@@ -4,6 +4,7 @@
  */
 
 import { bomUploadTemplate } from './template.js?v=20';
+import { copyElementText } from '../../../../ui/copy-text.js?v=3';
 import { uploadSubmitLabelHtml } from '../../../../ui/upload-actions.js?v=2';
 import { paintUploadProgressIcon } from '../../../../ui/sync-upload-progress.js?v=5';
 import { can } from '../../../../core/permissions.js?v=8';
@@ -169,7 +170,9 @@ const BomUploadPage = {
         document.getElementById('bomUploadVehicleModel')?.addEventListener('change', () => {
             this.refreshSopBanner();
         });
-        errorCopyBtn?.addEventListener('click', () => this.copyErrorText());
+        errorCopyBtn?.addEventListener('click', () => {
+            copyElementText(document.getElementById('bomUploadErrorBody'), errorCopyBtn);
+        });
         errorCloseBtn?.addEventListener('click', () => this.hideError());
 
         zone?.addEventListener('click', (event) => {
@@ -346,10 +349,7 @@ const BomUploadPage = {
         const body = document.getElementById('bomUploadErrorBody');
         const copyBtn = document.getElementById('bomUploadErrorCopyBtn');
         if (panel) panel.classList.add('hidden');
-        if (body) {
-            body.textContent = '';
-            body.dataset.raw = '';
-        }
+        if (body) body.textContent = '';
         if (copyBtn) copyBtn.textContent = '复制';
     },
 
@@ -360,30 +360,9 @@ const BomUploadPage = {
         const text = String(message || '导入失败').trim() || '导入失败';
         if (!panel || !body) return;
         body.textContent = text;
-        body.dataset.raw = text;
         if (copyBtn) copyBtn.textContent = '复制';
         panel.classList.remove('hidden');
         panel.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
-    },
-
-    async copyErrorText() {
-        const body = document.getElementById('bomUploadErrorBody');
-        const copyBtn = document.getElementById('bomUploadErrorCopyBtn');
-        const text = body?.dataset?.raw || body?.textContent || '';
-        if (!text) return;
-        try {
-            await navigator.clipboard.writeText(text);
-            if (copyBtn) copyBtn.textContent = '已复制';
-            setTimeout(() => {
-                if (copyBtn && copyBtn.textContent === '已复制') copyBtn.textContent = '复制';
-            }, 1600);
-        } catch (_) {
-            const range = document.createRange();
-            range.selectNodeContents(body);
-            const selection = window.getSelection();
-            selection.removeAllRanges();
-            selection.addRange(range);
-        }
     },
 
     updateSubmitEnabled() {

@@ -3,6 +3,7 @@
  */
 
 import { engineeringChangeUploadTemplate } from './template.js?v=26';
+import { copyElementText } from '../../../../ui/copy-text.js?v=3';
 import { uploadSubmitLabelHtml } from '../../../../ui/upload-actions.js?v=2';
 import { paintUploadProgressIcon } from '../../../../ui/sync-upload-progress.js?v=5';
 import { can } from '../../../../core/permissions.js?v=8';
@@ -108,7 +109,12 @@ const EngineeringChangeUploadPage = {
             event.preventDefault();
             this.handleSubmit();
         });
-        document.getElementById('ecUploadErrorCopyBtn')?.addEventListener('click', () => this.copyErrorText());
+        document.getElementById('ecUploadErrorCopyBtn')?.addEventListener('click', (event) => {
+            copyElementText(
+                document.getElementById('ecUploadErrorBody'),
+                event.currentTarget,
+            );
+        });
         document.getElementById('ecUploadErrorCloseBtn')?.addEventListener('click', () => this.hideError());
     },
 
@@ -274,10 +280,7 @@ const EngineeringChangeUploadPage = {
         const body = document.getElementById('ecUploadErrorBody');
         const copyBtn = document.getElementById('ecUploadErrorCopyBtn');
         panel?.classList.add('hidden');
-        if (body) {
-            body.textContent = '';
-            body.dataset.raw = '';
-        }
+        if (body) body.textContent = '';
         if (copyBtn) copyBtn.textContent = '复制';
     },
 
@@ -288,31 +291,10 @@ const EngineeringChangeUploadPage = {
         const text = String(message || '导入失败').trim() || '导入失败';
         if (!panel || !body) return;
         body.textContent = text;
-        body.dataset.raw = text;
         if (copyBtn) copyBtn.textContent = '复制';
         panel.classList.remove('hidden');
         panel.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
         showToast(text, 'error');
-    },
-
-    async copyErrorText() {
-        const body = document.getElementById('ecUploadErrorBody');
-        const copyBtn = document.getElementById('ecUploadErrorCopyBtn');
-        const text = body?.dataset?.raw || body?.textContent || '';
-        if (!text) return;
-        try {
-            await navigator.clipboard.writeText(text);
-            if (copyBtn) copyBtn.textContent = '已复制';
-            setTimeout(() => {
-                if (copyBtn && copyBtn.textContent === '已复制') copyBtn.textContent = '复制';
-            }, 1600);
-        } catch (_) {
-            const range = document.createRange();
-            range.selectNodeContents(body);
-            const selection = window.getSelection();
-            selection.removeAllRanges();
-            selection.addRange(range);
-        }
     },
 
     showProgress(progress = 0, msg = '正在导入。') {

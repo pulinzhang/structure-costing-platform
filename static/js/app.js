@@ -17,7 +17,7 @@
  */
 
 import { installConfirmDialog } from './ui/confirm-dialog.js?v=6';
-import { installDeleteErrorDialog } from './ui/error-dialog.js?v=13';
+import { installDeleteErrorDialog } from './ui/error-dialog.js?v=16';
 import { bindCurrentRowOnOps } from './ui/table-row.js?v=3';
 import { installRecordLists } from './ui/record-list.js?v=7';
 import { bindHudSelects, closeHudSelectMenu } from './ui/hud-select.js?v=1';
@@ -32,7 +32,7 @@ import {
 } from './core/permissions.js?v=15';
 import { pageLoadingHtml, pageNoticeHtml } from './ui/page-loading.js?v=1';
 
-const LLM_BOOT_URL = './llm-assistant/boot.js?v=69';
+const LLM_BOOT_URL = './llm-assistant/boot.js?v=71';
 
 // 页面按路由再加载。版本号留在 import() 地址上，和以前的静态 import 一样用来破缓存。
 const pageLoaders = {
@@ -68,7 +68,7 @@ const pageLoaders = {
     'bom-structure': () => import('./features/bom/material/structure/index.js?v=20'),
     'bom-where-used': () => import('./features/bom/material/where-used/index.js?v=25'),
     'bom-viz': () => import('./features/bom/material/viz/index.js?v=41'),
-    'bom-upload': () => import('./features/bom/material/upload/index.js?v=32'),
+    'bom-upload': () => import('./features/bom/material/upload/index.js?v=35'),
     'bom-material': () => import('./features/bom/material/list/index.js?v=26'),
     'bom-welding-unit-price-upload': () => import('./features/bom/welding-unit-price/upload/index.js?v=31'),
     'bom-welding-unit-price': () => import('./features/bom/welding-unit-price/list/index.js?v=41'),
@@ -83,11 +83,11 @@ const pageLoaders = {
     'bom-welding-process-breakdown-list': () => import('./features/bom/welding-process-breakdown/list/index.js?v=69'),
     'bom-welding-fee-calc': () => import('./features/bom/welding-fee/calc/index.js?v=30'),
     'bom-welding-fee-list': () => import('./features/bom/welding-fee/list/index.js?v=39'),
-    'engineering-change-upload': () => import('./features/engineering-change/design-change/upload/index.js?v=32'),
+    'engineering-change-upload': () => import('./features/engineering-change/design-change/upload/index.js?v=35'),
     'engineering-change-order-list': () => import('./features/engineering-change/design-change/list/index.js?v=46'),
-    'engineering-change-material-upload': () => import('./features/engineering-change/material-change/upload/index.js?v=13'),
+    'engineering-change-material-upload': () => import('./features/engineering-change/material-change/upload/index.js?v=16'),
     'engineering-change-material-list': () => import('./features/engineering-change/material-change/list/index.js?v=12'),
-    costing: () => import('./features/costing/engine/index.js?v=56'),
+    costing: () => import('./features/costing/engine/index.js?v=58'),
     'file-trace': () => import('./features/file-trace/index.js?v=31'),
     location: () => import('./features/masterdata/location/index.js?v=25'),
     'vehicle-model-upload': () => import('./features/masterdata/vehicle-model/upload/index.js?v=17'),

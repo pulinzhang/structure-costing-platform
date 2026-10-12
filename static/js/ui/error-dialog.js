@@ -4,12 +4,12 @@
  * 引用明细是无框列表，路径能对上侧栏时给出跳转。
  */
 
+import { copyPlainText } from './copy-text.js?v=3';
 import { pageMeta } from '../features/index.js?v=56';
 
 const DEFAULT_MESSAGE = '操作失败';
 const COPY_IDLE = '复制这段文字';
 const COPY_DONE = '已复制';
-const COPY_SELECTED = '已选中';
 const FOOT_LINE = '以上数据仍在使用，不能删除。';
 
 const PAGE_BY_CRUMB = new Map();
@@ -320,23 +320,14 @@ export function bindErrorDialog(prefix) {
 
     async function copyText() {
         if (!text) return;
-        try {
-            await navigator.clipboard.writeText(text);
-            setCopyLabel(COPY_DONE);
-            window.setTimeout(() => {
-                if (copyLabel && copyLabel.isConnected && copyLabel.textContent === COPY_DONE) {
-                    setCopyLabel(COPY_IDLE);
-                }
-            }, 1600);
-        } catch (_error) {
-            if (!body) return;
-            const range = document.createRange();
-            range.selectNodeContents(body);
-            const selection = window.getSelection();
-            selection?.removeAllRanges();
-            selection?.addRange(range);
-            setCopyLabel(COPY_SELECTED);
-        }
+        const copied = await copyPlainText(text);
+        if (!copied) return;
+        setCopyLabel(COPY_DONE);
+        window.setTimeout(() => {
+            if (copyLabel && copyLabel.isConnected && copyLabel.textContent === COPY_DONE) {
+                setCopyLabel(COPY_IDLE);
+            }
+        }, 1600);
     }
 
     closeBtn?.addEventListener('click', close);

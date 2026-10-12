@@ -3,6 +3,7 @@
  */
 
 import { materialChangeUploadTemplate } from './template.js?v=10';
+import { copyElementText } from '../../../../ui/copy-text.js?v=3';
 import { uploadSubmitLabelHtml } from '../../../../ui/upload-actions.js?v=2';
 import { can } from '../../../../core/permissions.js?v=8';
 import {
@@ -102,7 +103,12 @@ const MaterialChangeUploadPage = {
             event.preventDefault();
             this.handleSubmit();
         });
-        document.getElementById('ecmUploadErrorCopyBtn')?.addEventListener('click', () => this.copyErrorText());
+        document.getElementById('ecmUploadErrorCopyBtn')?.addEventListener('click', (event) => {
+            copyElementText(
+                document.getElementById('ecmUploadErrorBody'),
+                event.currentTarget,
+            );
+        });
         document.getElementById('ecmUploadErrorCloseBtn')?.addEventListener('click', () => this.hideError());
     },
 
@@ -232,28 +238,21 @@ const MaterialChangeUploadPage = {
     hideError() {
         document.getElementById('ecmUploadErrorPanel')?.classList.add('hidden');
         const body = document.getElementById('ecmUploadErrorBody');
-        if (body) {
-            body.textContent = '';
-            body.dataset.raw = '';
-        }
+        const copyBtn = document.getElementById('ecmUploadErrorCopyBtn');
+        if (body) body.textContent = '';
+        if (copyBtn) copyBtn.textContent = '复制';
     },
 
     showError(message) {
         const panel = document.getElementById('ecmUploadErrorPanel');
         const body = document.getElementById('ecmUploadErrorBody');
+        const copyBtn = document.getElementById('ecmUploadErrorCopyBtn');
         const text = String(message || '导入失败').trim() || '导入失败';
         if (!panel || !body) return;
         body.textContent = text;
-        body.dataset.raw = text;
+        if (copyBtn) copyBtn.textContent = '复制';
         panel.classList.remove('hidden');
         showToast(text, 'error');
-    },
-
-    async copyErrorText() {
-        const body = document.getElementById('ecmUploadErrorBody');
-        const text = body?.dataset?.raw || body?.textContent || '';
-        if (!text) return;
-        await navigator.clipboard.writeText(text);
     },
 
     showProgress(progress = 0, msg = '正在导入。') {
