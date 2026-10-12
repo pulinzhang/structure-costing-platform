@@ -93,7 +93,7 @@ app/parsers/stamping/     # 仅上传类切片有 Parser
 ❌ 同层互相 import 成环
 ```
 
-`engineering_change`（工程变更）是 **完全独立** 的下游切片：自有菜单/API/表/前端；通过调用 `bom` / `stamping` / `masterdata` 等 **Service** 完成跨域写入。**bom/stamping/costing 不得 import 它**；三条整包门禁文案进 `app/common/engineering_change_gates.py`。细则见 [工程变更设计 §4.7](engineering-change/part-number-revision-design.md)。
+`engineering_change`（工程变更）是 **完全独立** 的下游切片：自有菜单/API/表/前端；通过调用 `bom` / `stamping` / `masterdata` 等 **Service** 完成跨域写入。**bom/stamping/costing 不得 import 它**；三条整包门禁文案进 `app/common/engineering_change_gates.py`。细则见 [工程变更设计 §4.7](engineering-change/design-change/part-number-revision-design.md)。
 
 优先序：上游稳定查询 API → 只读上游 Repository（批量/导出/热路径）→ 真正无归属的算法再进 `common/`。
 
@@ -334,7 +334,7 @@ ApiResponse[AsyncTaskAcceptedVO]
 | **masterdata** | [基地](masterdata/location-design.md)（已落地）· [项目](masterdata/vehicle-model-design.md)（本切片已落地；下游改读另做）· [供应商](masterdata/supplier-design.md)（第一期 + 第二期已落地：采购对象可空指定、工艺/采购对象 `RESTRICT`、一览改主键/删除）· [牌号分类](masterdata/steel-grade-category-design.md)（已落地：手工档案，下游只读）· [钢厂](masterdata/steel-mill-design.md)（已落地：导入写 `steel_mill_id`，对不上整本退回） |
 | **stamping** | [产品质量先期策划（APQP）先布点后工艺](stamping/stamping-apqp-die-before-process-design.md) · [工艺确认表](stamping/stamping-process-confirmation-design.md) · [模具布点](stamping/stamping-die-management-design.md) · [模具单价](stamping/stamping-die-unit-price-design.md) · [检具费档案](stamping/stamping-gauge-fee-design.md) · [年度模具费（不含检具）](stamping/stamping-die-fee-design.md) |
 | **bom** | [年度零件价](bom/bom-annual-part-prices-design.md) · [焊接工艺拆解](bom/welding-process-breakdown-design.md) · [焊接费](bom/welding-fee-design.md) · [采购对象清单](bom/bom-procurement-objects-design.md) · [指定供应商](bom/bom-procurement-object-supplier-design.md) · [批量上传供应商](bom/bom-procurement-object-supplier-upload-design.md) |
-| **engineering-change** | [目录](engineering-change/README.md) · [有效期（已落地）](engineering-change/bom-process-die-effective-period-design.md) · [工程变更切片+权限+契约（设计）](engineering-change/part-number-revision-design.md) · [T28 对照/拆测](engineering-change/t28-2025-07-import-bundle-test-design.md) |
+| **engineering-change** | [目录](engineering-change/design-change/README.md) · [有效期（已落地）](engineering-change/design-change/bom-process-die-effective-period-design.md) · [工程变更切片+权限+契约](engineering-change/design-change/part-number-revision-design.md) · [T28 下载模板](engineering-change/design-change/t28-2025-07-import-bundle-test-design.md) · [材料变更样表](engineering-change/material-change/samples/README.md) |
 | **yishiyiyi** | [分类级厚度政策](yishiyiyi/thickness-policy-category-level-design.md) |
 | **costing** | [核价引擎](costing/costing-engine-design.md) · [总成核价](costing/assembly-costing-design.md) · [L0 成品核价（冻结）](costing/l0-assembly-costing-design.md) · [采购价格协议](costing/procurement-contract-report-design.md) · [协议价生效期（已否决）](costing/effective-period-design.md) · [暂估正式（已否决）](costing/provisional-final-settlement-design.md) · [锚点送货（已否决）](costing/anchor-true-up-design.md) |
 | **async_task** | [异步任务](async-task/async-task-design.md) |

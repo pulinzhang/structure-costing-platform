@@ -20,7 +20,7 @@
 |---|---|---|
 | R1 | 入口三参数 | 仅 `location`（基地）、`year`、`month` |
 | R2 | 上传/配置缺失 → 硬停 | 见 §5.1；含 **基准价**；覆盖不全视为缺失。缺工艺 / 缺 BOM 为黄灯，不挡另一条路径 |
-| R3 | 年度计算所得缺失 → 自动补算 | 加工费、模具费、采购对象清单、焊接工艺拆解、焊接费。缺则引擎同进程调 generate/calculate；`snapshot_blocks_full_generate` 拦住时映射引擎门禁文案，走 [工程变更](../engineering-change/part-number-revision-design.md)。**检具费永不进年度补算**（上传档案；零件价缺档记 0） |
+| R3 | 年度计算所得缺失 → 自动补算 | 加工费、模具费、采购对象清单、焊接工艺拆解、焊接费。缺则引擎同进程调 generate/calculate；`snapshot_blocks_full_generate` 拦住时映射引擎门禁文案，走 [工程变更](../engineering-change/design-change/part-number-revision-design.md)。**检具费永不进年度补算**（上传档案；零件价缺档记 0） |
 | R4 | 同项目多 BOM 版本的树，只要该月有效就进总成核价 | 总成按项目算一次，不要按版本拆多趟；焊接年度补算仍可按 L0Scope |
 | R5 | 不改公式 | 复用现有 Orchestrator；月度核对导出只导出不算价 |
 | R6 | 前端单通道异步 | 一次 `task_id` + 与现网同形的进度 VO |
@@ -132,7 +132,7 @@ CostingEngineService                 ← 编排唯一入口
 | 结果 | 触发粒度 | 依赖（须已过 5.1） |
 |---|---|---|
 | 冲压加工费 | 每个 **已有冲压工艺** 的 `vehicle_model`（工厂空则覆盖该车各厂） | 工艺 + 冲次单价；无工艺的项目不列入、不补算 |
-| 冲压模具费 | 每个 **该年与布点年交集有件** 且在发现名单内的 `vehicle_model` | 布点 + 模具单价；无布点不列入。`year+location+vehicle` 下已有任意模具费行 → 跳过；**0 条** → `will_auto_calc`。不做布点↔费用逐件对齐（系统费 ≤ 0 本就不落库）。改图换号时若旧号已有结果，由工程变更抄到新号（见 [part-number-revision §4.3.2](../engineering-change/part-number-revision-design.md)），勿指望本跳过逻辑给新号补行 |
+| 冲压模具费 | 每个 **该年与布点年交集有件** 且在发现名单内的 `vehicle_model` | 布点 + 模具单价；无布点不列入。`year+location+vehicle` 下已有任意模具费行 → 跳过；**0 条** → `will_auto_calc`。不做布点↔费用逐件对齐（系统费 ≤ 0 本就不落库）。改图换号时若旧号已有结果，由工程变更抄到新号（见 [part-number-revision §4.3.2](../engineering-change/design-change/part-number-revision-design.md)），勿指望本跳过逻辑给新号补行 |
 | 采购对象清单 | 每个 L0Scope | BOM；齐则跳过。缺 → 引擎同进程调 generate（门禁在 generate 内） |
 | 焊接工艺拆解 | 每个 L0Scope（该年与节点有效期有交集） | BOM + 焊接单价等；无该月命中 L0 则无 L0Scope，不判焊接费。年交集已齐则跳过。缺拆解 → 引擎同进程调 generate（门禁在 generate 内）。不可整包时硬停走工程变更 |
 | 成品 L0 焊接费 | 每个 L0Scope | 拆解结果；覆盖检查按 **L0 树根年交集** 收子树，不用 L1/L2 本行期 |
@@ -144,7 +144,7 @@ CostingEngineService                 ← 编排唯一入口
 - 补算失败 → 仅阻断依赖它的下游单元，记入 step  
 - `annual_die_fee`：缺当年模具费时引擎同进程调 `StampingDieFeeCalcOrchestrator.calculate`。失败 → 该项目记入 `failed_vehicles`，跳过零件价（与加工费相同）。零件价 lookup 缺档仍计 0，不改公式。
 - `annual_procurement_object`：缺清单时引擎同进程调 `BomProcurementObjectGenerateService.generate`（与生成页同一把钥匙）。可整包 → 生成；不可整包 → `EC_GATE_ENGINE_PROCUREMENT`。工程变更上传应已插齐本树对象行。
-- `annual_welding_breakdown`：缺拆解时引擎 **同进程** 调 `BomWeldingProcessBreakdownGenerateService.generate`（与拆解页同一把钥匙 `snapshot_blocks_full_generate`）。可整包 → 生成；不可整包 → generate 抛 `EC_GATE_FULL_GENERATE`，runner 映射为 `EC_GATE_ENGINE_BREAKDOWN`。**禁止**在 runner 写死一律失败（会掐死从未工程变更的项目）。工程变更上传应已抄齐新树拆解；缺则重传，不要用整包 generate 顶。见 [工程变更 §4.6](../engineering-change/part-number-revision-design.md)。  
+- `annual_welding_breakdown`：缺拆解时引擎 **同进程** 调 `BomWeldingProcessBreakdownGenerateService.generate`（与拆解页同一把钥匙 `snapshot_blocks_full_generate`）。可整包 → 生成；不可整包 → generate 抛 `EC_GATE_FULL_GENERATE`，runner 映射为 `EC_GATE_ENGINE_BREAKDOWN`。**禁止**在 runner 写死一律失败（会掐死从未工程变更的项目）。工程变更上传应已抄齐新树拆解；缺则重传，不要用整包 generate 顶。见 [工程变更 §4.6](../engineering-change/design-change/part-number-revision-design.md)。  
 
 ### 5.3 硬停 → 功能页快速跳转（必做）
 

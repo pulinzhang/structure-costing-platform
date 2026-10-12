@@ -44,7 +44,7 @@
 | 本文 | 扫树上 **有焊接原文** 的节点，落过程量、映射标准工艺、打 rollup | 不乘单价、不按年存结果、不落生失效、不独立改期 |
 | 焊接费 | 对该节点拆解行 × 年单价（`level` 抄自拆解）；入参年+基地+项目，按 L0 树根取期 | 不编工艺、不靠版本/snapshot、不再扫树认人 |
 
-拆解 **没有计算年字段**（不是年账）。同一 `(location, vehicle_model, bom_version)` 共用一份拆解。换年只换单价表，不必为每一年再拆一份。**生失效只在 `bom_nodes` 上**，拆解用 `source_node_id` 取，见 [有效期 §6](../engineering-change/bom-process-die-effective-period-design.md)。
+拆解 **没有计算年字段**（不是年账）。同一 `(location, vehicle_model, bom_version)` 共用一份拆解。换年只换单价表，不必为每一年再拆一份。**生失效只在 `bom_nodes` 上**，拆解用 `source_node_id` 取，见 [有效期 §6](../engineering-change/design-change/bom-process-die-effective-period-design.md)。
 
 ---
 
@@ -182,7 +182,7 @@ start_generate
 
 现网 generate 扫 **整份 snapshot**：有已审 409，无已审则删未审再全林。Parser / UNIQUE **不改**。
 
-**工程变更写入后**才收窄本页「开始生成」：该 snapshot 一旦有已失效树根、**或** 存在生效月不是项目 SOP 开始月的树根 → 拒绝（即使没有已审）。与采购对象同一把钥匙 `snapshot_blocks_full_generate`。设变后的总成没有拆解走 [工程变更](../engineering-change/part-number-revision-design.md) 重传，本页不提供「只补该树」。工程变更写入前本页保持整包 generate。
+**工程变更写入后**才收窄本页「开始生成」：该 snapshot 一旦有已失效树根、**或** 存在生效月不是项目 SOP 开始月的树根 → 拒绝（即使没有已审）。与采购对象同一把钥匙 `snapshot_blocks_full_generate`。设变后的总成没有拆解走 [工程变更](../engineering-change/design-change/part-number-revision-design.md) 重传，本页不提供「只补该树」。工程变更写入前本页保持整包 generate。
 
 工程变更同一事务：按新旧 BOM 节点对照，把旧树 **已有拆解结果** 抄到新树再插一套（主表身份对齐新节点；`weld_info_raw` / 解析态 / 过程量等与 **全部明细行**——可多行——从旧结果照抄）。**禁止**按新节点 `weld_info` 重新自动拆（保留手工改量）。不删旧树拆解。无旧拆解可对的新节点不插。行上 `bom_version` **抄新树根字**，不抄 snapshot 头。核价引擎缺拆解时 **仍调** 本页同进程 `generate`（找包仍用 SOP 头）；若本钥匙拦住，由引擎映射为 `EC_GATE_ENGINE_BREAKDOWN`（工程变更 §4.6 门禁之 3）——不是「引擎从不调 generate」。工程变更上传是长任务，不走本页。
 
@@ -226,7 +226,7 @@ Parser  仅 generate / 改量映射 经 Service 调用
 
 下游：Ln 焊接费、核价引擎年度补算拆解、应成本读 L1 行。本切片 **不** 依赖 costing。
 
-核价引擎：该 L0Scope 还没有拆解时同进程自动 `generate` 一次（门禁在 generate 内）。年交集已齐则跳过；不可整包时引擎报 `EC_GATE_ENGINE_BREAKDOWN`，见 [工程变更 §4.6](../engineering-change/part-number-revision-design.md)。
+核价引擎：该 L0Scope 还没有拆解时同进程自动 `generate` 一次（门禁在 generate 内）。年交集已齐则跳过；不可整包时引擎报 `EC_GATE_ENGINE_BREAKDOWN`，见 [工程变更 §4.6](../engineering-change/design-change/part-number-revision-design.md)。
 
 ---
 
@@ -246,11 +246,11 @@ Parser  仅 generate / 改量映射 经 Service 调用
 | 文档 | 关系 |
 |------|------|
 | [welding-fee-design.md](welding-fee-design.md) | 按拆解 `level` 计费；一表 `bom_welding_fees`；按 L0 树根年交集取件 |
-| [bom-process-die-effective-period-design.md](../engineering-change/bom-process-die-effective-period-design.md) | 生失效只在 `bom_nodes`；拆解用 `source_node_id` 取 |
+| [bom-process-die-effective-period-design.md](../engineering-change/design-change/bom-process-die-effective-period-design.md) | 生失效只在 `bom_nodes`；拆解用 `source_node_id` 取 |
 | [assembly-costing-design.md](../costing/assembly-costing-design.md) | 成品账读焊接费 **level=0** |
 | [l1-assembly-costing-design.md](../costing/l1-assembly-costing-design.md) | 应成本工艺量来自 L1 拆解行 |
 | [costing-engine-design.md](../costing/costing-engine-design.md) | 年度步骤可补算拆解；引擎调 generate，门禁在 `snapshot_blocks_full_generate` |
-| [part-number-revision-design.md](../engineering-change/part-number-revision-design.md) | 工程变更从旧树拆解结果抄到新树（主表+全部明细，禁止按焊信重拆）；行上 `bom_version` 抄树根 |
+| [part-number-revision-design.md](../engineering-change/design-change/part-number-revision-design.md) | 工程变更从旧树拆解结果抄到新树（主表+全部明细，禁止按焊信重拆）；行上 `bom_version` 抄树根 |
 | [bom-procurement-objects-design.md](bom-procurement-objects-design.md) | 认人不读拆解 |
 
 ---

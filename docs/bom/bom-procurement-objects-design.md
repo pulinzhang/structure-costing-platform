@@ -20,7 +20,7 @@
 > 取件对齐：[procurement-contract-report-design.md](../costing/procurement-contract-report-design.md) §0.1 / §2（基地+项目；**必须爬到树根**；版本可选=树根版本字，不是 snapshot 键）。  
 > 基地：[location-design.md](../masterdata/location-design.md)。项目：[vehicle-model-design.md](../masterdata/vehicle-model-design.md)。  
 > 样本：`excel_sample/T13J项目车身件材料清单 (1).xlsx`（T13J · D/09）。  
-> 树根有效期见 [bom-process-die-effective-period-design.md](../engineering-change/bom-process-die-effective-period-design.md)。**有效期只认所属 L0 树根四列**；对象行 **不落** 生失效；禁止用 source 节点自身四列、项目期、清单头当对象时段（与焊接拆解同一纪律：join 取期，不抄）。**列表是档案台账**：默认包含已过期，不按年+月裁；生失效一列 = 所属树根。**核价 / 签约 / 引擎**仍按账期月命中树根。设变增量带出见 §14、[工程变更](../engineering-change/part-number-revision-design.md) §4.4。  
+> 树根有效期见 [bom-process-die-effective-period-design.md](../engineering-change/design-change/bom-process-die-effective-period-design.md)。**有效期只认所属 L0 树根四列**；对象行 **不落** 生失效；禁止用 source 节点自身四列、项目期、清单头当对象时段（与焊接拆解同一纪律：join 取期，不抄）。**列表是档案台账**：默认包含已过期，不按年+月裁；生失效一列 = 所属树根。**核价 / 签约 / 引擎**仍按账期月命中树根。设变增量带出见 §14、[工程变更](../engineering-change/design-change/part-number-revision-design.md) §4.4。  
 > 硬约束：分层与切片见 [architecture.md](../architecture.md)；引用保护见宪法 **§4.3**。
 
 **对人展示 vs 内部码。** 页面、生成摘要、Excel 单元格用中文（退化供货件、分总成、冲压件、标准件/胶等）。库字段、API、分类函数仍用 `l0_degenerate` / `other_leaf` 等码。Excel **工作表名**不能含 `/`，标准件分区表名用「标准件及胶等」。
@@ -342,7 +342,7 @@ bom_procurement_object_generate_logs  一次「开始生成」一条终态日志
 
 **已审核锁定：** 该 snapshot 下只要有一行 `audit_status=approved`，禁止再生成覆盖（`BusinessException` `code=409`）。须先 **批量反审核**。不要把已审行悄悄跳过再抽一半。
 
-**设变门禁：** 该 snapshot 一旦有已失效树根、或树根生效月 ≠ 项目 SOP 开始月 → `snapshot_blocks_full_generate` → 409。缺对象 / 新树对象 **只走** [工程变更](../engineering-change/part-number-revision-design.md) §4.4 插行，**禁止**在生成页做增量。
+**设变门禁：** 该 snapshot 一旦有已失效树根、或树根生效月 ≠ 项目 SOP 开始月 → `snapshot_blocks_full_generate` → 409。缺对象 / 新树对象 **只走** [工程变更](../engineering-change/design-change/part-number-revision-design.md) §4.4 插行，**禁止**在生成页做增量。
 
 一期 BOM 节点量级 **同步生成**（无异步任务、无 processing 锁）。生成页有进度条是前端等待 HTTP，不是后台 worker。
 
@@ -589,8 +589,8 @@ HUD：**采购对象**是霓虹强调格；标准件/胶等、待审、已审为
 | [bom-procurement-object-supplier-upload-design.md](bom-procurement-object-supplier-upload-design.md) | 按清单范围 Excel 批改对方（已落地） |
 | [assembly-costing-design.md](../costing/assembly-costing-design.md) | 下游应成本；集合以本清单为准 |
 | [procurement-contract-report-design.md](../costing/procurement-contract-report-design.md) | 签约横表（已落地）；只读本清单 + 应成本 |
-| [bom-process-die-effective-period-design.md](../engineering-change/bom-process-die-effective-period-design.md) | 树根生失效；本清单有效期 **只认 L0 树根**；列表 join 展示、过期筛相对墙钟；核价仍按账期月 |
-| [part-number-revision-design.md](../engineering-change/part-number-revision-design.md) | 设变增量带出（§14） |
+| [bom-process-die-effective-period-design.md](../engineering-change/design-change/bom-process-die-effective-period-design.md) | 树根生失效；本清单有效期 **只认 L0 树根**；列表 join 展示、过期筛相对墙钟；核价仍按账期月 |
+| [part-number-revision-design.md](../engineering-change/design-change/part-number-revision-design.md) | 设变增量带出（§14） |
 | `static/js/features/costing/stamping-part-cost/calc/` | 生成页 UI 对照 |
 | `static/js/features/costing/stamping-part-cost/list/` | 列表页 UI 对照 |
 
@@ -665,7 +665,7 @@ prep-stats 是读：不强制 `require_enabled`（禁用基地仍可看「将列
 
 现网实现要点：列表 / 详情 / 确认回写 VO 经 `mapping.rows_to_vos` / `row_to_vo`，树根四列来自 `map_l0_periods`（`(snapshot_id, l0_part_number)` → L0）。列表 / 导出 / HUD 共用 `ProcurementObjectScopeFilters`（工厂 `object_scope_filters`；列表与导出经 `mapping.scope_from_query` 从 Query 组 scope——列表 `locations`=expand，导出 `location`=精确）。查询侧 `_apply_object_filters(scope)` 一条路径。`include_expired=false` 时 `as_of_when_excluding_expired` → 墙钟本月，join L0 + `period_hit_clause`。导出同筛，Excel「生失效」列走同一棵树根 map。
 
-分类规则、一 snapshot 一份清单、`(list_id, source_node_id)` 唯一键：**不改**。作业入口见 [工程变更](../engineering-change/part-number-revision-design.md) §4.4；树根改造见 [有效期](../engineering-change/bom-process-die-effective-period-design.md)。
+分类规则、一 snapshot 一份清单、`(list_id, source_node_id)` 唯一键：**不改**。作业入口见 [工程变更](../engineering-change/design-change/part-number-revision-design.md) §4.4；树根改造见 [有效期](../engineering-change/design-change/bom-process-die-effective-period-design.md)。
 
 ### 14.1 列表是档案，不是月账
 
@@ -701,7 +701,7 @@ HUD 把 AA/AB 并排计数是档案全貌，不要写成「本月待审」。计
 | 已审 | 有一行已审 → 409 | 不挡；旧已审行不动 |
 | 日志 | `bom_procurement_object_generate_logs` | 不写冒充整单覆盖的生成日志；件数记在变更单 |
 
-「开始生成」按 §8.4 整 snapshot 删头重写。该 snapshot 一旦有已失效树根、或树根生效月不是项目 SOP 开始月 → `snapshot_blocks_full_generate` → 409（即使没有已审）。**禁止**在生成页选 `EC-*`、禁止「只补该月」。缺对象 → 工程变更重传。种树与插行同一事务，不走本页 `generate`。SOP 纠错改期请在种树前做；种树后改期走结构页 L0。见 [工程变更 §4.6](../engineering-change/part-number-revision-design.md)。
+「开始生成」按 §8.4 整 snapshot 删头重写。该 snapshot 一旦有已失效树根、或树根生效月不是项目 SOP 开始月 → `snapshot_blocks_full_generate` → 409（即使没有已审）。**禁止**在生成页选 `EC-*`、禁止「只补该月」。缺对象 → 工程变更重传。种树与插行同一事务，不走本页 `generate`。SOP 纠错改期请在种树前做；种树后改期走结构页 L0。见 [工程变更 §4.6](../engineering-change/design-change/part-number-revision-design.md)。
 
 ### 14.3 从被替换旧树抄确认
 

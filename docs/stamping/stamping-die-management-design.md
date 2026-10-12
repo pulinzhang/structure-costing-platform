@@ -4,7 +4,7 @@
 > 样本：`excel_sample/T13J/副本②T13J项目冲压模具布点工艺清单-2024-01-22.xlsx`（Sheet「零件汇总」）。  
 > 业务列 A～AC；模板可在套数后插入「模具编号」列。AD 及以后（责任人、模具款、检具款等）一律忽略。检具费档案另表，见 [stamping-gauge-fee-design.md](stamping-gauge-fee-design.md)，**不读布点 AD+ 检具款列**。  
 > **导入顺序**：先布点后工艺、编号出自布点或缺号按 `DP-40-{项目}-流水` 补、布点不认供应商，见 [stamping-apqp-die-before-process-design.md](stamping-apqp-die-before-process-design.md)。  
-> 有效期现网改造（布点零件行生失效、停整项目覆盖）见 [bom-process-die-effective-period-design.md](../engineering-change/bom-process-die-effective-period-design.md)。  
+> 有效期现网改造（布点零件行生失效、停整项目覆盖）见 [bom-process-die-effective-period-design.md](../engineering-change/design-change/bom-process-die-effective-period-design.md)。  
 > **冲压模具费**是本表直接下一跳：`stamping_die_fees.source_die_part_id` → `stamping_die_parts.id`（`RESTRICT`）。有模具费则不能删布点，文案「仍被冲压模具费引用，请先删除对应模具费后再删」。各序 `source_die_process_id` 不加 FK（再导会删插工序）。金额在 [stamping-die-fee-design.md](stamping-die-fee-design.md)；引擎补算见 [costing-engine-design.md](../costing/costing-engine-design.md) §5.2。  
 > 关联：现网冲压工艺导入（`app/parsers/stamping/`、`part/upload/cost_ratio_resolver.py`）、成品间接费 I7/I8 预留（[assembly-costing-design.md](../costing/assembly-costing-design.md)）。  
 > 硬约束：分层与切片见 [architecture.md](../architecture.md)。

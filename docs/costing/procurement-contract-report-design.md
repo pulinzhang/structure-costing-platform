@@ -5,7 +5,7 @@
 > **「版本」三义（勿混）：** ① snapshot 头 SOP 字 → 只给材料清单/生成找头；② 爬到的 L0.`bom_version` → 列表浏览筛；③ 本页取件 WHERE **永不**用版本。与[采购对象清单](../bom/bom-procurement-objects-design.md)文首词典同形。  
 > 切片：**`costing`**（下游组合）。  
 > 集合与供应商：[bom-procurement-objects-design.md](../bom/bom-procurement-objects-design.md)、[bom-procurement-object-supplier-design.md](../bom/bom-procurement-object-supplier-design.md)。  
-> 树根有效期 / **爬到树根**：[bom-process-die-effective-period-design.md](../engineering-change/bom-process-die-effective-period-design.md)；`nodes_in_as_of_trees`：[period_trees](../../app/repositories/bom/period_trees.py)；总成取件同形：[assembly-costing-design.md](assembly-costing-design.md)。设变：[part-number-revision-design.md](../engineering-change/part-number-revision-design.md)。  
+> 树根有效期 / **爬到树根**：[bom-process-die-effective-period-design.md](../engineering-change/design-change/bom-process-die-effective-period-design.md)；`nodes_in_as_of_trees`：[period_trees](../../app/repositories/bom/period_trees.py)；总成取件同形：[assembly-costing-design.md](assembly-costing-design.md)。设变：[part-number-revision-design.md](../engineering-change/design-change/part-number-revision-design.md)。  
 > 金额：采购对象抄一览采购视图 **总成本**（`total_amount`）；总成抄一览财务视图 **总费用**（`grand_total`）。  
 > 硬约束：[architecture.md](../architecture.md)。评审已否决第二套委外核价表（P16）；本文不是那张表。  
 > 总成核价 P15（有子件树根不做报价对比）仍然成立：那是一览页。本页用与一览相同的双按钮切视图，切到 **总成** 才对二级出树根价目，不改清单列入、不改核价卡。

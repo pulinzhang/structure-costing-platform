@@ -1,7 +1,7 @@
 # 工程变更 — 设计说明
 
 > 新切片：投产之后的日常设变。使用方：采购、商务核价。入口 `app/services/engineering_change/`（指挥家 `upload/orchestrator`：prepare → pipeline → persist）。地图见 [README.md](README.md)。  
-> **规格就是上传页下载的这一本**：运行时 `build_engineering_change_template`（青岛 T28，生效 2026年07月）。落盘样表只留芜湖 T13J · 2026年05月：[t13j-2026-05-import-bundle.xlsx](samples/t13j-2026-05-import-bundle.xlsx)。怎么填、写几行、用什么列，打开样表看；本文只写样表上看不见的系统行为。  
+> **规格就是上传页下载的这一本**：运行时 `build_engineering_change_template`（青岛 T28，生效 2026年07月）。仓库不另存设计变更 xlsx。2025 年的 T28、T13J 副本已删除。材料变更另有两本落盘样表：[2026-06](../material-change/samples/t13j-2026-06-material-change.xlsx)、[2026-07](../material-change/samples/t13j-2026-07-material-change.xlsx)。怎么填、写几行、用什么列，打开下载模板看；本文只写模板上看不见的系统行为。  
 > 前提：[有效期](bom-process-die-effective-period-design.md)。关联：[项目](../../masterdata/vehicle-model-design.md)、[材料清单 / 采购对象](../../bom/bom-procurement-objects-design.md)、[采购价格协议](../../costing/procurement-contract-report-design.md)、[冲压工艺确认表](../../stamping/stamping-process-confirmation-design.md)、[模具布点](../../stamping/stamping-die-management-design.md)、[总成月核价](../../costing/assembly-costing-design.md)、[月度引擎](../../costing/costing-engine-design.md)。
 
 **规则（样表已经示范的，不再展开）：**
@@ -22,9 +22,9 @@
 
 ---
 
-## 0. 打开样表就能看见的
+## 0. 打开下载模板就能看见的
 
-青岛 / 奇瑞 / T28 / 投产清单 `D/00` / 生效年月 **2025年07月** / 工艺承制海众。材料清单、工艺确认表头版本都是 `EC-202507`；snapshot 头仍 `D/00`。
+青岛 / 奇瑞 / T28 / 投产清单 `D/00` / 生效年月 **2026年07月** / 工艺承制海众。材料清单、工艺确认表头版本都是 `EC-202607`；snapshot 头仍 `D/00`。
 
 | 工作表 | 从哪来 | 样表里有什么 |
 |--------|--------|--------------|
@@ -113,7 +113,7 @@ BOM、冲压工艺确认、模具布点同一套：**旧的到期，不是删掉
 
 导入后总成是完整的：没写在表里的零件从变更前总成带过来。改图二级种的是整条链换号后的新树（`144AB` → `122AB-1` → `122AB`），不是只换最深一层。
 
-| 材料清单序号 | 2025年06月 | 2025年07月 |
+| 材料清单序号 | 2026年06月 | 2026年07月 |
 |--------------|------------|------------|
 | 1 流水槽 | 873AA（含 875AA） | 873AB（含 875AB；123 等没改的零件仍在） |
 | 2 后围 | 897AA（左右胶块都装） | 897AB（左胶块此件不装，右胶块仍装） |
