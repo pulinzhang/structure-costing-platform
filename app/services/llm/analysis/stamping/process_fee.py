@@ -52,6 +52,8 @@ def build_process_fee_drilldown(
     *,
     part_token: str,
     head: ProcessFeeRow | None = None,
+    outside_query_window: bool = False,
+    query_window_year: int | None = None,
 ) -> DrilldownPayload:
     if not rows:
         return {
@@ -72,6 +74,7 @@ def build_process_fee_drilldown(
             "version": row.version,
             "part_number": row.part_number,
             "part_name": row.part_name,
+            "is_tailor_welded": row.is_tailor_welded,
             "processing_fee": _fee_str(row.processing_fee),
             "other_fee": _fee_str(row.other_fee),
             "final_processing_fee": _fee_str(row.final_processing_fee),
@@ -80,12 +83,13 @@ def build_process_fee_drilldown(
         }
         for row in rows
     ]
-    return {
+    payload: DrilldownPayload = {
         "kind": "drilldown",
         "found": True,
         "query_token": part_token,
         "part_number": best.part_number,
         "part_name": best.part_name,
+        "is_tailor_welded": best.is_tailor_welded,
         "year": best.year,
         "location": best.location,
         "stamping_supplier": best.stamping_supplier,
@@ -98,3 +102,7 @@ def build_process_fee_drilldown(
         "audit_status": best.audit_status,
         "items": items,
     }
+    if outside_query_window:
+        payload["outside_query_window"] = True
+        payload["query_window_year"] = query_window_year
+    return payload

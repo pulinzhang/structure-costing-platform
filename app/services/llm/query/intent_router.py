@@ -6,6 +6,7 @@ from app.schemas.llm.analysis_query import QueryMode
 from app.services.llm.query.parser.subjects import (
     asks_ec_effect_month_help,
     asks_ec_tree_vs_procurement_help,
+    asks_tailor_weld_fee_help,
     is_engineering_change_data_question,
     is_missing_supplier_list_question,
     is_procurement_object_fee_confusion,
@@ -130,6 +131,7 @@ _USAGE_HOW_SIGNALS: tuple[str, ...] = (
     "在哪",
     "哪里",
     "哪儿",
+    "在那里",
 )
 
 _USAGE_TOPIC_SIGNALS: tuple[str, ...] = (
@@ -270,6 +272,15 @@ _HELP_TOPIC_RULES: tuple[tuple[str, tuple[str, ...]], ...] = (
         ),
     ),
     ("user_menu_account", ("账号设置", "个人资料", "登录密码")),
+    (
+        "faq_tailor_weld_fee",
+        (
+            "拼焊费",
+            "拼焊费在",
+            "拼焊费怎么",
+            "录入拼焊费",
+        ),
+    ),
     ("engine", ("引擎", "自动核价", "检查就绪", "启动核价", "启动")),
     (
         "calc_run",
@@ -409,6 +420,10 @@ def detect_query_mode(question: str) -> QueryMode:
 
     # 采购对象清单不管价；「费用/价格是多少」先澄清入口，禁止冒充有金额
     if is_procurement_object_fee_confusion(text):
+        return "usage_help"
+
+    # 「拼焊费在哪 / 什么是拼焊费」是操作说明。零件号问金额仍走查数。
+    if asks_tailor_weld_fee_help(text):
         return "usage_help"
 
     # 设变哪个月用新号 / 旧号还能签：概念帮助，不要当变更单查数

@@ -254,7 +254,24 @@ def _extra_faq_chunks(help_html: str) -> list[CorpusChunk]:
     add_part_heading = "增加零件进入采购对象后，厂家是否须自行填写？"
     add_part_faq = _extract_faq_qa(help_html, add_part_heading)
     effect_faq = f"{effect_faq} {add_part_faq}".strip()
+    tailor_heading = "拼焊费在哪里录入？"
+    tailor_faq = _extract_faq_qa(help_html, tailor_heading)
+    if not tailor_faq:
+        raise ValueError("help.html 缺少拼焊费录入 FAQ")
     return [
+        CorpusChunk(
+            chunk_id="faq_tailor_weld_fee",
+            title="拼焊费在哪里录入",
+            text=tailor_faq,
+            source_page="help.html",
+            anchor="faq",
+            keywords=(
+                "拼焊费",
+                "拼焊费在",
+                "拼焊费怎么",
+                "录入拼焊费",
+            ),
+        ),
         CorpusChunk(
             chunk_id="faq_procurement_fee",
             title="采购对象的费用在哪看",
@@ -538,7 +555,14 @@ def load_corpus_chunks() -> tuple[CorpusChunk, ...]:
             text=_extract_section(help_html, "stamping"),
             source_page="help.html",
             anchor="stamping",
-            keywords=("冲压工程", "冲压工艺", "冲次单价", "冲压加工费", "模具", "检具"),
+            keywords=(
+                "冲压工程",
+                "冲压工艺",
+                "冲次单价",
+                "冲压加工费",
+                "模具",
+                "检具",
+            ),
         ),
         CorpusChunk(
             chunk_id="welding",
