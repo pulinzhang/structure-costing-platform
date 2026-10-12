@@ -13,6 +13,8 @@ from app.common.engineering_change_gates import (
     CHANGE_TYPE_REVISE,
     CHANGE_TYPE_STOP,
     EC_ADD_ALREADY_ON_TREE,
+    EC_ADD_LEVEL1_LEAF,
+    EC_ADD_LEVEL1_NUMBER,
     EC_ASSEMBLY_SKETCH_REQUIRED,
     EC_INTERNAL_REQUIRED,
     EC_NOT_INSTALL_CHILDREN,
@@ -299,6 +301,87 @@ def test_add_new_letter_version_is_not_inferred_as_revise() -> None:
             sketch_bytes=_PNG,
         ),
         _file(level=1, parent_index=0, part_number="501006875AB"),
+    ]
+    validate_change_tree_gates(change_order, old_nodes, sliced)
+
+
+def test_add_l2_requires_parent_level1_new_number() -> None:
+    change_order = _change_order(
+        change_type=CHANGE_TYPE_ADD_PART,
+        part_level=PART_LEVEL_L2,
+        after_part="501005123AA",
+    )
+    old_nodes = [
+        _old(node_id=1, parent_id=None, level=0, part_number="501007029AA"),
+        _old(node_id=2, parent_id=1, level=1, part_number="501004437AA"),
+        _old(node_id=3, parent_id=2, level=2, part_number="501007904AA"),
+    ]
+    sliced = [
+        _file(
+            level=0,
+            parent_index=None,
+            part_number="501007029AB",
+            internal_number="ACA613",
+            sketch_bytes=_PNG,
+        ),
+        _file(level=1, parent_index=0, part_number="501004437AA"),
+        _file(level=2, parent_index=1, part_number="501005123AA"),
+    ]
+    with pytest.raises(BusinessException) as exc:
+        validate_change_tree_gates(change_order, old_nodes, sliced)
+    assert str(exc.value).startswith(EC_ADD_LEVEL1_NUMBER)
+
+
+def test_add_l2_rejects_level1_without_existing_level2() -> None:
+    change_order = _change_order(
+        change_type=CHANGE_TYPE_ADD_PART,
+        part_level=PART_LEVEL_L2,
+        after_part="501005123AA",
+    )
+    old_nodes = [
+        _old(node_id=1, parent_id=None, level=0, part_number="501007029AA"),
+        _old(node_id=2, parent_id=1, level=1, part_number="501004437AA"),
+        _old(node_id=3, parent_id=1, level=1, part_number="501007031AA"),
+    ]
+    sliced = [
+        _file(
+            level=0,
+            parent_index=None,
+            part_number="501007029AB",
+            internal_number="ACA613",
+            sketch_bytes=_PNG,
+        ),
+        _file(level=1, parent_index=0, part_number="501004437AB"),
+        _file(level=2, parent_index=1, part_number="501005123AA"),
+    ]
+    with pytest.raises(BusinessException) as exc:
+        validate_change_tree_gates(change_order, old_nodes, sliced)
+    assert str(exc.value).startswith(EC_ADD_LEVEL1_LEAF)
+    assert "501004437AA" in str(exc.value)
+
+
+def test_add_l2_accepts_parent_level1_new_number() -> None:
+    change_order = _change_order(
+        change_type=CHANGE_TYPE_ADD_PART,
+        part_level=PART_LEVEL_L2,
+        after_part="501005123AA",
+    )
+    old_nodes = [
+        _old(node_id=1, parent_id=None, level=0, part_number="501007029AA"),
+        _old(node_id=2, parent_id=1, level=1, part_number="501004437AA"),
+        _old(node_id=3, parent_id=2, level=2, part_number="501007904AA"),
+        _old(node_id=4, parent_id=1, level=1, part_number="501007031AA"),
+    ]
+    sliced = [
+        _file(
+            level=0,
+            parent_index=None,
+            part_number="501007029AB",
+            internal_number="ACA613",
+            sketch_bytes=_PNG,
+        ),
+        _file(level=1, parent_index=0, part_number="501004437AB"),
+        _file(level=2, parent_index=1, part_number="501005123AA"),
     ]
     validate_change_tree_gates(change_order, old_nodes, sliced)
 

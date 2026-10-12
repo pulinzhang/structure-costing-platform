@@ -2,9 +2,11 @@
 
 from __future__ import annotations
 
+import re
 from collections.abc import Sequence
 
 from app.common.engineering_change_gates import (
+    CHANGE_TYPE_ADD_PART,
     CHANGE_TYPE_NOT_INSTALL,
     CHANGE_TYPE_REVISE,
     PART_LEVEL_ASSEMBLY,
@@ -12,6 +14,8 @@ from app.common.engineering_change_gates import (
 from app.models.bom import BomNode
 from app.parsers.bom.bom_parser import BomParsedNode
 from app.services.bom.bom.change_tree_plant.types import BomChangePlantSpec
+
+_VERSIONED_PART = re.compile(r"^(?P<body>\d+)(?P<version>[A-Z]{2})(?P<tail>-\d+)?$")
 
 
 def build_number_map(
@@ -44,10 +48,76 @@ def _apply_spec(
                 spec.before_part_number,
                 spec.after_part_number,
             )
+    elif spec.change_type == CHANGE_TYPE_ADD_PART and spec.after_part_number:
+        pair = level1_renumber_for_added_part(old_nodes, parsed_nodes, spec.after_part_number)
+        if pair is not None:
+            old_number, file_number = pair
+            mapping.setdefault(old_number, file_number)
     elif spec.change_type == CHANGE_TYPE_NOT_INSTALL and spec.before_part_number:
         mapping[spec.before_part_number] = None
         if spec.after_assembly_part_number:
             mapping[spec.before_assembly_part_number] = spec.after_assembly_part_number
+
+
+def level1_renumber_for_added_part(
+    old_nodes: Sequence[BomNode],
+    parsed_nodes: Sequence[BomParsedNode],
+    after_part_number: str,
+) -> tuple[str, str] | None:
+    """增加二级：材料清单写出的上级一级新号，对应旧树上同一零件的原号。
+
+    新号以材料清单为准，不把 AA 加成 AB。一级增加、或对不上唯一的旧一级，返回 None。
+    同一上级下的其它二级不进这张对照。
+    """
+    after_number = (after_part_number or "").strip()
+    file_part = next(
+        (
+            node
+            for node in reversed(parsed_nodes)
+            if (node.part_number or "").strip() == after_number
+        ),
+        None,
+    )
+    if file_part is None or int(file_part.level) != 2 or file_part.parent_index is None:
+        return None
+    if file_part.parent_index < 0 or file_part.parent_index >= len(parsed_nodes):
+        return None
+    file_parent = parsed_nodes[file_part.parent_index]
+    if int(file_parent.level) != 1:
+        return None
+    file_number = (file_parent.part_number or "").strip()
+    file_key = _version_key(file_number)
+    if file_key is None:
+        return None
+    file_body, file_version = file_key
+    matches = [
+        (node.part_number or "").strip()
+        for node in old_nodes
+        if int(node.level) == 1
+        and _is_same_part_new_version(node.part_number, file_body, file_version)
+    ]
+    if len(matches) != 1:
+        return None
+    return matches[0], file_number
+
+
+def _is_same_part_new_version(
+    old_part_number: str | None,
+    file_body: str,
+    file_version: str,
+) -> bool:
+    old_key = _version_key(old_part_number or "")
+    if old_key is None:
+        return False
+    old_body, old_version = old_key
+    return old_body == file_body and old_version != file_version
+
+
+def _version_key(part_number: str) -> tuple[str, str] | None:
+    match = _VERSIONED_PART.fullmatch(part_number.strip())
+    if match is None:
+        return None
+    return match.group("body") + (match.group("tail") or ""), match.group("version")
 
 
 def _map_revise_ancestor_chain(

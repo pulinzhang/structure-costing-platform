@@ -208,6 +208,8 @@ EC_PART_NOT_ON_TREE = "变更前零件不在这个总成上，或层级填错了
 EC_REVISE_FILE_CHAIN = "改图时材料清单要把换号后的零件一直写到总成"
 EC_NOT_INSTALL_CHILDREN = "中间层此件不装时，下级必须同样标记"
 EC_ADD_ALREADY_ON_TREE = "变更后零件已在变更前总成上"
+EC_ADD_LEVEL1_NUMBER = "增加二级时，上级一级也要换成新号"
+EC_ADD_LEVEL1_LEAF = "增加二级时，这个一级下面原来要有二级"
 
 # --- 变更类型（对人可见） ---
 CHANGE_TYPE_STOP = "完成停止"

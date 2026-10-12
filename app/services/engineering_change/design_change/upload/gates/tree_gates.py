@@ -10,6 +10,8 @@ from app.common.engineering_change_gates import (
     CHANGE_TYPE_REVISE,
     CHANGE_TYPE_STOP,
     EC_ADD_ALREADY_ON_TREE,
+    EC_ADD_LEVEL1_LEAF,
+    EC_ADD_LEVEL1_NUMBER,
     EC_ASSEMBLY_SKETCH_REQUIRED,
     EC_CHANGE_ORDER_COLUMNS,
     EC_INTERNAL_REQUIRED,
@@ -31,6 +33,7 @@ from app.exceptions.base import BusinessException
 from app.models.bom import BomNode
 from app.parsers.bom.bom_parser import BomParsedNode
 from app.parsers.engineering_change.design_change.change_order_parser import ChangeOrderRowParsed
+from app.services.bom.bom.change_tree_plant.number_map import level1_renumber_for_added_part
 from app.services.bom.bom.rules.internal_number_uniqueness import (
     validate_internal_number_uniqueness,
 )
@@ -227,6 +230,32 @@ def _validate_add_part(
         raise BusinessException(
             f"{EC_NOT_INSTALL_SIGNAL}：增加零件 {quoted(after_number)} 不要写「{NOT_INSTALL_REMARK}」。"
         )
+    if expected_level != 2:
+        return
+    pair = level1_renumber_for_added_part(old_nodes, sliced_nodes, after_number)
+    if pair is None:
+        raise BusinessException(
+            f"{EC_ADD_LEVEL1_NUMBER}：材料清单里 {quoted(after_number)} 的上级一级要写成新号。"
+        )
+    old_number = pair[0]
+    if not _old_level1_has_level2(old_nodes, old_number):
+        raise BusinessException(
+            f"{EC_ADD_LEVEL1_LEAF}：{quoted(old_number)} 下面没有二级，不能在它下面加零件。"
+        )
+
+
+def _old_level1_has_level2(old_nodes: Sequence[BomNode], old_number: str) -> bool:
+    parent = next(
+        (
+            node
+            for node in old_nodes
+            if int(node.level) == 1 and (node.part_number or "").strip() == old_number
+        ),
+        None,
+    )
+    if parent is None:
+        return False
+    return any(int(node.level) == 2 and node.parent_id == parent.id for node in old_nodes)
 
 
 def _require_old_part(change_order: ChangeOrderRowParsed, old_nodes: Sequence[BomNode]) -> BomNode:

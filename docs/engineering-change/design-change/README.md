@@ -27,7 +27,7 @@
 
 ### 为什么图变了必须换零件号？
 
-奇瑞（客户方）设计图改了，它就是另一件存货，不是同一件改个字。一个交货总成只要碰上五种场景之一（总成改图 / 一级改图 / 二级改图 / 此件不装 / 增加零件），**总成图必然变了，交货总成零件号必然换**；完成停止没有新图、没有新号。核价按月各算各的；未来 ERP 入库、出库、库存按两个物料号办。所以是 **旧号到期、新号启用**，禁止在旧节点上改档案。新号以工程变更单为准（写成 AB 用 AB，写成 AC 用 AC），系统不推算末两位。出入库主键是 **零件号**。内部号是厂内 ERP 物料码：总成 / 分总成必填，给人建档联查，不是出入库主键。总成必须有图。细则见 [part-number-revision-design.md](part-number-revision-design.md) §1、§3。
+奇瑞（客户方）设计图改了，它就是另一件存货，不是同一件改个字。一个交货总成只要碰上会换号的一种（末级改图 / 此件不装 / 增加零件），**总成图必然变了，交货总成零件号必然换**；完成停止没有新图、没有新号。没有单独的总成改图。改图只发生在末级，层级写一级或二级。此件不装、增加零件的层级写一级或二级都行；写在二级时，上级一级也要换成新号，旁边没动的二级仍是原号。下载模板只画了五行：完成停止、末级改图（一级）、末级改图（二级）、此件不装（一级）、增加零件（一级）。此件不装二级规则收、模板不画。增加零件二级模板不画；这个一级下面原来已经有二级才收，一颗都没有就拒收。核价按月各算各的；未来 ERP 入库、出库、库存按两个物料号办。所以是 **旧号到期、新号启用**，禁止在旧节点上改档案。新号以工程变更单为准（写成 AB 用 AB，写成 AC 用 AC），系统不推算末两位。出入库主键是 **零件号**。内部号是厂内 ERP 物料码：总成 / 分总成必填，给人建档联查，不是出入库主键。总成必须有图。细则见 [part-number-revision-design.md](part-number-revision-design.md) §1、§3。场景图在 [scenes/](scenes/)。
 
 ### 为什么用时间轴（`as_of_month`）而不是快照？
 
@@ -204,9 +204,9 @@ Router → EngineeringChangeUploadService.start_upload
 
 | 文档 | 说明 |
 |------|------|
-| [part-number-revision-design.md](part-number-revision-design.md) | 领域契约（下载模板即规格、§4 写入、§8 产品）；**落地状态以本节为准** |
+| [part-number-revision-design.md](part-number-revision-design.md) | 领域契约（下载模板怎么填见 §0，§4 写入、§8 产品）；**落地状态以本节为准** |
 | [bom-process-die-effective-period-design.md](bom-process-die-effective-period-design.md) | 交货总成 / 工艺 / 布点生失效（已落地） |
-| [t28-2025-07-import-bundle-test-design.md](t28-2025-07-import-bundle-test-design.md) | 青岛 T28 下载模板怎么填。运行时生成，仓库不存 xlsx，也不再拆五份夹具 |
+| [t28-2025-07-import-bundle-test-design.md](t28-2025-07-import-bundle-test-design.md) | 青岛 T28 真号走查。不是上传页下载的 `EX-*` 模板 |
 | [材料变更样表](../material-change/samples/README.md) | 仓库里仅有的工程变更 xlsx：芜湖 T13J 材料变更 2026-06、2026-07。不是设计变更合册 |
 
 一口价年内分段已否决，见 [effective-period-design.md](../../costing/effective-period-design.md)。本目录的生失效不要跟着停。
