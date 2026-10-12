@@ -10,6 +10,7 @@
 
 from __future__ import annotations
 
+import sqlite3
 from pathlib import Path
 
 from openpyxl import load_workbook
@@ -195,6 +196,58 @@ def clear_existing_books(page: Page) -> None:
             raise SystemExit(f"清不掉 {version}")
 
 
+def material_sections(text: str) -> tuple[str, str]:
+    header, separator, body = text.partition("材料变更")
+    if not separator:
+        raise SystemExit("抽屉没有材料变更")
+    return header, body
+
+
+def assert_two_cuts(page: Page) -> None:
+    """版本号不在零件抽屉。两刀看生效月和牌号，工艺材料仍是投产字。"""
+    header, body = material_sections(drawer_text(page))
+    if "2026年06月" not in body or "2026年07月" not in body or "DC03" not in body:
+        raise SystemExit(f"抽屉两刀不在\n{body[:400]}")
+    if "2025年01月" not in header or "DC01" not in header:
+        raise SystemExit(f"工艺材料或生失效被改了\n{header[:400]}")
+    print("抽屉两刀在，工艺仍是 DC01 / 2025年01月")
+
+
+def assert_drawer_cleared(page: Page) -> None:
+    header, body = material_sections(drawer_text(page))
+    if "暂无材料变更" not in body or "2026年06月" in body or "DC03" in body:
+        raise SystemExit(f"回滚后抽屉没清空\n{body[:400]}")
+    if "2025年01月" not in header or "DC01" not in header:
+        raise SystemExit("回滚后工艺材料或生失效变了")
+    print("两本回滚后抽屉已空，工艺仍是 DC01 / 2025年01月")
+
+
+def success_books() -> dict[str, tuple[int, Path]]:
+    connection = sqlite3.connect("file:data/stamping_costing.db?mode=ro", uri=True)
+    found: dict[str, tuple[int, Path]] = {}
+    for version, log_id, relpath in connection.execute(
+        "select l.change_version, l.id, f.stored_relpath "
+        "from engineering_change_material_upload_logs l "
+        "join upload_files f on f.id = l.upload_file_id "
+        "where l.status = 'success' and l.change_version in ('MAT-202606', 'MAT-202607')"
+    ):
+        found[str(version)] = (int(log_id), Path("uploads") / str(relpath))
+    connection.close()
+    return found
+
+
+def download_status(page: Page, log_id: int) -> int:
+    token = page.evaluate(
+        "() => { const raw = localStorage.getItem('brabus_user'); "
+        "return raw ? (JSON.parse(raw).token || '') : ''; }"
+    )
+    response = page.request.get(
+        f"{BASE}/api/engineering-change/material/uploads/{log_id}/file",
+        headers={"Authorization": f"Bearer {token}"},
+    )
+    return response.status
+
+
 def drawer_text(page: Page) -> str:
     page.goto(
         f"{BASE}/app#/stamping-parts?location=%E8%8A%9C%E6%B9%96&vehicle_model=T13J&part_number=403014115AA",
@@ -354,28 +407,42 @@ def main() -> None:
         expect_error(page, SAMPLE_07, 2026, 7, "这个版本已经传过了", "重复上传 MAT-202607")
         purge_failed(page)
 
+        books = success_books()
+        if set(books) != {"MAT-202606", "MAT-202607"}:
+            raise SystemExit(f"成功头不齐: {sorted(books)}")
+        for version, (_log_id, path) in books.items():
+            if not path.is_file():
+                raise SystemExit(f"{version} 原件不在盘上")
+
         blocked = rollback_version(page, "MAT-202606")
         print("06 在 07 还在时:", blocked.splitlines()[0][:120])
         if "更晚" not in blocked:
             raise SystemExit("06 被错误回滚了")
 
-        drawer = drawer_text(page)
-        if "MAT-202606" not in drawer or "MAT-202607" not in drawer:
-            raise SystemExit("抽屉两刀不在")
-        if "2025年01月" not in drawer or "DC01" not in drawer.split("材料变更")[0]:
-            raise SystemExit("工艺材料或生失效被改了")
-        print("抽屉两刀在，工艺仍是 DC01 / 2025年01月")
+        assert_two_cuts(page)
 
         july_rollback = rollback_version(page, "MAT-202607")
         print("07 回滚:", july_rollback.splitlines()[0][:200])
         if july_rollback != "ok":
             raise SystemExit("07 回滚失败")
+        june_status = download_status(page, books["MAT-202606"][0])
+        july_status = download_status(page, books["MAT-202607"][0])
+        print(f"只回滚 07 后下载: 06={june_status} 07={july_status}")
+        if june_status != 200 or july_status != 404:
+            raise SystemExit("只回滚 07 时，06 应能下载，07 应 404")
+
         if rollback_version(page, "MAT-202606") != "ok":
             raise SystemExit("06 回滚失败")
-        drawer = drawer_text(page)
-        if "暂无材料变更" not in drawer or "MAT-2026" in drawer:
-            raise SystemExit("回滚后抽屉没清空")
-        print("两本回滚后抽屉已空")
+        both_status = {
+            version: download_status(page, log_id) for version, (log_id, _path) in books.items()
+        }
+        print(f"两本回滚后下载: {both_status}")
+        if any(status != 404 for status in both_status.values()):
+            raise SystemExit("两本回滚后原件还能下载")
+        for version, (_log_id, path) in books.items():
+            if not path.is_file():
+                raise SystemExit(f"{version} 回滚后盘上文件没了")
+        assert_drawer_cleared(page)
         browser.close()
 
     if CASE_DIR.is_dir():
