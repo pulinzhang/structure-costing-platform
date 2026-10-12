@@ -9,6 +9,7 @@ from openpyxl import load_workbook
 
 from app.common.engineering_change_gates import (
     CHANGE_TYPE_ADD_PART,
+    CHANGE_TYPE_ADD_SUBASSEMBLY,
     CHANGE_TYPE_NOT_INSTALL,
     CHANGE_TYPE_REVISE,
     CHANGE_TYPE_STOP,
@@ -120,7 +121,7 @@ def test_template_change_order_examples_and_parses_as_book() -> None:
     change_order = workbook["设计变更单"]
     types = [change_order.cell(row, 6).value for row in range(5, 5 + len(CHANGE_ORDER_SAMPLES))]
     assert types == [sample.change_type for sample in CHANGE_ORDER_SAMPLES]
-    assert change_order.cell(4 + len(CHANGE_ORDER_SAMPLES), 6).value == CHANGE_TYPE_ADD_PART
+    assert change_order.cell(4 + len(CHANGE_ORDER_SAMPLES), 6).value == CHANGE_TYPE_ADD_SUBASSEMBLY
     process = workbook["冲压工艺确认表"]
     process_numbers: list[str] = []
     excel_row = 7
@@ -144,14 +145,22 @@ def test_template_change_order_examples_and_parses_as_book() -> None:
         f"B5:B{last_row}",
     }
     assert "C5:C9" not in merged
+    assert "C10:C12" not in merged
+    assert "D10:D12" not in merged
     assert [row.before_assembly_part_number for row in rows] == [
         sample.before_assembly for sample in CHANGE_ORDER_SAMPLES
     ]
-    assert len({row.before_assembly_part_number for row in rows}) == len(rows)
+    before_counts: dict[str, int] = {}
+    for number in (row.before_assembly_part_number for row in rows):
+        before_counts[number] = before_counts.get(number, 0) + 1
+    assert all(count == 1 for count in before_counts.values())
     after_numbers = [
         row.after_assembly_part_number for row in rows if row.after_assembly_part_number
     ]
-    assert len(after_numbers) == len(set(after_numbers))
+    after_counts: dict[str, int] = {}
+    for number in after_numbers:
+        after_counts[number] = after_counts.get(number, 0) + 1
+    assert all(count == 1 for count in after_counts.values())
 
 
 def test_scope_template_follows_selected_project() -> None:
@@ -736,11 +745,11 @@ def test_scenario_template_parses_and_passes_gates(scenario) -> None:
     assert "A5:A5" not in merged
     assert "B5:B5" not in merged
     rows = parse_change_order_sheet(content)
-    assert len(rows) == 1
-    sample = scenario.book.change_orders[0]
-    assert rows[0].change_type == sample.change_type
-    assert rows[0].before_assembly_part_number == sample.before_assembly
-    assert rows[0].after_assembly_part_number == sample.after_assembly
+    assert len(rows) == len(scenario.book.change_orders)
+    for parsed, sample in zip(rows, scenario.book.change_orders, strict=True):
+        assert parsed.change_type == sample.change_type
+        assert parsed.before_assembly_part_number == sample.before_assembly
+        assert parsed.after_assembly_part_number == sample.after_assembly
     validate_change_order_rows(
         rows,
         page_vehicle_model="T28",

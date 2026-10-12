@@ -592,6 +592,8 @@ def load_corpus_chunks() -> tuple[CorpusChunk, ...]:
                 "设计变更",
                 "材料变更",
                 "工程变更单（材质）",
+                "增加分总成",
+                "八种填法",
             ),
         ),
         CorpusChunk(
@@ -676,6 +678,11 @@ def load_corpus_chunks() -> tuple[CorpusChunk, ...]:
                 "切点",
                 "树坑",
                 "换树",
+                "八种填法",
+                "增加分总成",
+                "末级改图",
+                "叶子一级",
+                "模板没画",
             ),
         ),
         CorpusChunk(

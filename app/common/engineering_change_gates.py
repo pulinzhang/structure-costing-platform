@@ -83,7 +83,7 @@ def snapshot_blocks_full_generate(
 
 # --- 工程变更校验拒收 ---
 EC_CHANGE_ORDER_ROW_COUNT = "设计变更单至少一行"
-EC_CHANGE_ORDER_TYPE_INVALID = "变更类型只准四句：完成停止、改图、增加零件、此件不装"
+EC_CHANGE_ORDER_TYPE_INVALID = "变更类型只准五句：完成停止、改图、增加零件、此件不装、增加分总成"
 EC_CHANGE_ORDER_COLUMNS = "设计变更单这一行填法不对"
 EC_CHANGE_ORDER_ASSEMBLY_REPEAT = "同一个总成写了多次"
 EC_EFFECTIVE_MISMATCH = "生效年月与上传页不一致"
@@ -216,6 +216,7 @@ CHANGE_TYPE_STOP = "完成停止"
 CHANGE_TYPE_REVISE = "改图"
 CHANGE_TYPE_ADD_PART = "增加零件"
 CHANGE_TYPE_NOT_INSTALL = "此件不装"
+CHANGE_TYPE_ADD_SUBASSEMBLY = "增加分总成"
 
 CHANGE_TYPES = frozenset(
     {
@@ -223,6 +224,7 @@ CHANGE_TYPES = frozenset(
         CHANGE_TYPE_REVISE,
         CHANGE_TYPE_ADD_PART,
         CHANGE_TYPE_NOT_INSTALL,
+        CHANGE_TYPE_ADD_SUBASSEMBLY,
     }
 )
 

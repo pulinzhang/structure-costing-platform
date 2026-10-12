@@ -1,4 +1,4 @@
-"""设计变更导入模板：一套五种改法举例。抬头随所选基地和项目变，零件号是占位。"""
+"""设计变更导入模板。五种改法各一个总成。增加分总成单独一个总成，下面有几颗零件就写几颗。"""
 
 from __future__ import annotations
 
@@ -16,6 +16,7 @@ from openpyxl.worksheet.worksheet import Worksheet
 
 from app.common.engineering_change_gates import (
     CHANGE_TYPE_ADD_PART,
+    CHANGE_TYPE_ADD_SUBASSEMBLY,
     CHANGE_TYPE_NOT_INSTALL,
     CHANGE_TYPE_REVISE,
     CHANGE_TYPE_STOP,
@@ -44,6 +45,11 @@ HEADER_DATE = "2026-07-01"
 DOC_NO = "EC-T28-202607"
 SLASH = "/"
 ADD_PART_NUMBER = "EX-ADD-1AB"
+LEAF_BEFORE = "EX-LEAF-AA"
+LEAF_AFTER = "EX-LEAF-AB"
+LEAF_SUB = "EX-LEAF-SUB-AA-1"
+LEAF_ADD = "EX-LEAF-ADD-1AA"
+LEAF_NUT = "EX-LEAF-NUT-1"
 _ASSEMBLY_CHANGE_ORDER_COLS = (3, 4, 5)
 
 
@@ -111,6 +117,10 @@ class BomSample:
     remark: str | None
     is_not_assembled: bool = False
     is_added_part: bool = False
+    blank_assembly: bool = False
+    blank_l1: bool = False
+    part_sketch: bool = False
+    group_part_number: str = ""
 
 
 @dataclass(frozen=True, slots=True)
@@ -240,6 +250,16 @@ CHANGE_ORDER_SAMPLES = (
         ADD_PART_NUMBER,
         "示例零件（增加零件）",
     ),
+    ChangeOrderSample(
+        CHANGE_TYPE_ADD_SUBASSEMBLY,
+        LEAF_BEFORE,
+        LEAF_AFTER,
+        "示例总成（增加分总成）",
+        PART_LEVEL_L1,
+        None,
+        LEAF_SUB,
+        "示例分总成",
+    ),
 )
 
 BOM_SAMPLES = (
@@ -329,6 +349,55 @@ BOM_SAMPLES = (
         remark=None,
         is_added_part=True,
     ),
+    BomSample(
+        seq_no=5,
+        internal_number="EX615",
+        part_number=LEAF_AFTER,
+        part_name="示例总成（增加分总成）",
+        weld_info="焊点：1",
+        l1_internal="EX615N01",
+        l1_part_number=LEAF_SUB,
+        l1_part_name="示例分总成",
+        l1_qty="1",
+        l1_weld=SLASH,
+        l2_internal="EX615002",
+        l2_part_number=LEAF_ADD,
+        l2_part_name="示例零件（新冲压件）",
+        l2_qty="1",
+        material="DC01",
+        thickness_text="T=1.0",
+        part_weight=0.1,
+        gauge_developed=SLASH,
+        remark=None,
+        is_added_part=True,
+        part_sketch=True,
+    ),
+    BomSample(
+        seq_no=5,
+        internal_number="",
+        part_number="",
+        part_name="",
+        weld_info="",
+        l1_internal="",
+        l1_part_number="",
+        l1_part_name="",
+        l1_qty="",
+        l1_weld="",
+        l2_internal="EX615003",
+        l2_part_number=LEAF_NUT,
+        l2_part_name="示例螺母",
+        l2_qty="2",
+        material=SLASH,
+        thickness_text=SLASH,
+        part_weight=0.01,
+        gauge_developed=SLASH,
+        remark=None,
+        is_added_part=True,
+        blank_assembly=True,
+        blank_l1=True,
+        part_sketch=True,
+        group_part_number=LEAF_AFTER,
+    ),
 )
 
 PROCESS_SAMPLES = (
@@ -380,6 +449,22 @@ PROCESS_SAMPLES = (
         250,
         "钢板模",
     ),
+    ProcessSample(
+        LEAF_ADD,
+        "示例零件（新冲压件）",
+        "DC01",
+        1.0,
+        0.1,
+        100,
+        80,
+        1,
+        "卷料",
+        "OP10",
+        "PRG",
+        1,
+        250,
+        "钢板模",
+    ),
 )
 
 
@@ -388,19 +473,28 @@ def _fill_note(meta: TemplateMeta, change_type: str | None = None) -> str:
     if change_type:
         opening = f"{meta.location} {meta.vehicle_model} 一种改法举例：{change_type}。"
     else:
-        opening = f"{meta.location} {meta.vehicle_model} 五种改法举例，一行一个交货总成。"
+        opening = (
+            f"{meta.location} {meta.vehicle_model} 五种改法举例，一行一个交货总成。"
+            f"{CHANGE_TYPE_ADD_SUBASSEMBLY}单独一个总成，下面有几颗零件就写几颗。"
+        )
     return (
         opening + "零件号是例子，请改成这个项目自己的零件号后再上传。"
         f"基地 {meta.location}，项目 {meta.vehicle_model}，顾客 {meta.customer_name}，"
         f"生效 {meta.period_label}，投产清单版本 {meta.bom_version_label}。"
-        f"五行：{CHANGE_TYPE_STOP} / 一级{CHANGE_TYPE_REVISE} / 二级{CHANGE_TYPE_REVISE} / "
-        f"{CHANGE_TYPE_NOT_INSTALL} / {CHANGE_TYPE_ADD_PART}。"
+        f"五种改法：{CHANGE_TYPE_STOP} / {CHANGE_TYPE_REVISE} / {CHANGE_TYPE_ADD_PART} / "
+        f"{CHANGE_TYPE_NOT_INSTALL} / {CHANGE_TYPE_ADD_SUBASSEMBLY}。"
+        f"{CHANGE_TYPE_REVISE}按末级所在层级写一级或二级，各举一行。"
         "同一个总成改了好几处，请把变更前总成、变更后总成格子上下合并；完成停止不用填变更后总成。"
         "先写原来的交货总成，再写变更类型和这一次动到的零件。"
         "材料清单只写变化的行；改图二级写出整条链。没变的零件不要抄。"
         f"{CHANGE_TYPE_STOP}：变更后总成空，材料清单不写这个总成。"
         f"{CHANGE_TYPE_NOT_INSTALL}：变更后零件空；用量 0、备注含「{CHANGE_TYPE_NOT_INSTALL}」。"
         f"{CHANGE_TYPE_ADD_PART}：加在原来的总成上；变更前零件空、变更后零件写新号。"
+        f"{CHANGE_TYPE_ADD_SUBASSEMBLY}：变更后零件是新的一级分总成号。"
+        "材料清单里这个一级下面有几颗就写几颗，冲压件、螺母都可以。"
+        f"{CHANGE_TYPE_NOT_INSTALL}另写一行，两边不核对。"
+        "已经有二级的一级下面再加零件，上级一级换成新版本，旁边的二级仍是原号。"
+        "一级下面原来没有二级，不能直接增加零件。"
         "材料清单和确认表项目号、版本都要对齐（版本写成同一个字）；"
         "先到焊接工程生成采购对象；生效月须在项目有效期内。细节看「设计变更填写说明」。"
     )
@@ -416,19 +510,28 @@ def _scenario_note(sample: ChangeOrderSample) -> str:
     return _fill_note(DEFAULT_META, sample.change_type)
 
 
+def _part_numbers_on_bom(samples: tuple[BomSample, ...]) -> set[str]:
+    numbers: set[str] = set()
+    for sample in samples:
+        for number in (sample.part_number, sample.l1_part_number, sample.l2_part_number):
+            if number and number != SLASH:
+                numbers.add(number)
+    return numbers
+
+
 def _book_for_change_order(sample: ChangeOrderSample) -> TemplateBook:
     after_assembly = sample.after_assembly
     bom = (
-        tuple(item for item in BOM_SAMPLES if item.part_number == after_assembly)
+        tuple(
+            item
+            for item in BOM_SAMPLES
+            if (item.group_part_number or item.part_number) == after_assembly
+        )
         if after_assembly
         else ()
     )
-    after_part = sample.after_part
-    process = (
-        tuple(item for item in PROCESS_SAMPLES if item.part_number == after_part)
-        if after_part
-        else ()
-    )
+    bom_numbers = _part_numbers_on_bom(bom)
+    process = tuple(item for item in PROCESS_SAMPLES if item.part_number in bom_numbers)
     return TemplateBook(
         change_orders=(sample,),
         bom=bom,
@@ -444,6 +547,7 @@ SCENARIO_FILENAMES = (
     "example-rev-l2.xlsx",
     "example-not-install.xlsx",
     "example-add-part.xlsx",
+    "example-add-subassembly.xlsx",
 )
 
 SCENARIO_SAMPLES = tuple(
@@ -459,7 +563,7 @@ _ASSEMBLY_SKETCH_PNG = (
 
 
 def example_book(meta: TemplateMeta) -> TemplateBook:
-    """按所选基地、项目写五种改法举例。零件号与不传 book 时是同一套。"""
+    """按所选基地、项目写整本举例。零件号与不传 book 时是同一套。"""
     return TemplateBook(
         change_orders=CHANGE_ORDER_SAMPLES,
         bom=BOM_SAMPLES,
@@ -518,7 +622,7 @@ def build_engineering_change_template(
         _embed_assembly_sketches(bom_sheet, samples.bom, png_path)
         _embed_part_sketches(
             bom_sheet,
-            _l1_part_sketch_rows(samples.bom),
+            _part_sketch_rows(samples.bom),
             png_path,
             file_prefix="bom_l1",
             anchor_column="P",
@@ -547,7 +651,7 @@ def _write_change_order(
     sheet["A2"].font = Font(name="微软雅黑", size=9, color="666666")
     sheet["A2"].alignment = Alignment(wrap_text=True, vertical="center")
     sheet.merge_cells("A2:J2")
-    sheet.row_dimensions[2].height = 150
+    sheet.row_dimensions[2].height = 210
     for col, header in enumerate(CHANGE_ORDER_HEADERS, start=1):
         cell = sheet.cell(4, col, header)
         cell.font = head
@@ -576,7 +680,7 @@ def _write_change_order(
             if col in {6, 7, 8, 9, 10}:
                 if sample.change_type == CHANGE_TYPE_NOT_INSTALL:
                     cell.fill = _NOT_ASSEMBLED_FILL
-                if sample.change_type == CHANGE_TYPE_ADD_PART:
+                if sample.change_type in {CHANGE_TYPE_ADD_PART, CHANGE_TYPE_ADD_SUBASSEMBLY}:
                     cell.fill = _ADD_PART_FILL
         sheet.row_dimensions[excel_row].height = 28
     last_change_order_row = 4 + len(change_orders)
@@ -606,6 +710,10 @@ def _write_ec_fill_instructions(sheet: Worksheet, meta: TemplateMeta) -> None:
         "先自洽：确认表上的零件号、变更单上的变更后零件，都必须写在材料清单里。"
         "对不上时系统一次列出缺哪些号，请改表后再传。",
         "变更生效月必须在该项目有效期内。早于项目开始或晚于项目结束，整单不能导入。完成停止同样。",
+        "增加分总成：变更后零件写新的一级分总成号，层级写一级。材料清单这个一级下面有几颗零件就写几颗，"
+        "冲压件、螺母都可以。样表这个总成下面是一颗冲压件和一颗螺母。"
+        "此件不装仍按原来的停用另写，不和增加分总成写在一起核对。"
+        "增加零件时，上级一级下面原来没有二级，整份不收。",
     )
     sheet.merge_cells("A1:F1")
     for index, line in enumerate(lines, start=2):
@@ -648,17 +756,19 @@ def _write_bom_row(sheet: Worksheet, row: int, sample: BomSample) -> None:
         if fill is not None:
             cell.fill = fill
     sheet.row_dimensions[row].height = 22
-    sheet.cell(row, 1, sample.seq_no)
-    sheet.cell(row, 2, sample.internal_number)
-    sheet.cell(row, 3, sample.part_number)
-    sheet.cell(row, 4, sample.part_name)
-    sheet.cell(row, 6, 1)
-    sheet.cell(row, 7, sample.weld_info)
-    sheet.cell(row, 8, sample.l1_internal)
-    sheet.cell(row, 9, sample.l1_part_number)
-    sheet.cell(row, 10, sample.l1_part_name)
-    sheet.cell(row, 11, sample.l1_qty)
-    sheet.cell(row, 12, sample.l1_weld)
+    if not sample.blank_assembly:
+        sheet.cell(row, 1, sample.seq_no)
+        sheet.cell(row, 2, sample.internal_number)
+        sheet.cell(row, 3, sample.part_number)
+        sheet.cell(row, 4, sample.part_name)
+        sheet.cell(row, 6, 1)
+        sheet.cell(row, 7, sample.weld_info)
+    if not sample.blank_l1:
+        sheet.cell(row, 8, sample.l1_internal)
+        sheet.cell(row, 9, sample.l1_part_number)
+        sheet.cell(row, 10, sample.l1_part_name)
+        sheet.cell(row, 11, sample.l1_qty)
+        sheet.cell(row, 12, sample.l1_weld)
     sheet.cell(row, 13, sample.l2_internal)
     sheet.cell(row, 14, sample.l2_part_number)
     sheet.cell(row, 15, sample.l2_part_name)
@@ -668,6 +778,16 @@ def _write_bom_row(sheet: Worksheet, row: int, sample: BomSample) -> None:
     sheet.cell(row, 21, sample.part_weight)
     sheet.cell(row, 22, sample.gauge_developed)
     sheet.cell(row, 23, sample.remark)
+
+
+def _part_sketch_rows(samples: tuple[BomSample, ...]) -> list[int]:
+    """一级叶子贴 P 列。新分总成那一行已经写了二级，单件图示要单独点名。"""
+    rows = _l1_part_sketch_rows(samples)
+    for offset, sample in enumerate(samples):
+        excel_row = 5 + offset
+        if sample.part_sketch and excel_row not in rows:
+            rows.append(excel_row)
+    return rows
 
 
 def _l1_part_sketch_rows(samples: tuple[BomSample, ...]) -> list[int]:
@@ -687,7 +807,7 @@ def _embed_assembly_sketches(
 ) -> None:
     seen: set[str] = set()
     for offset, sample in enumerate(samples):
-        if sample.part_number in seen:
+        if not sample.part_number or sample.part_number in seen:
             continue
         seen.add(sample.part_number)
         copy_path = png_path.parent / f"assembly_{offset}.png"

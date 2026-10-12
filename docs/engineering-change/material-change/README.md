@@ -27,7 +27,7 @@
 | 5 | [05-engine-display-revise.md](05-engine-display-revise.md) | 零件详情带回历史。改图把冲压历史抄到新零件 | 3 |
 | — | [06-test.md](06-test.md) | 成功两本 + 负例清单（随 2–3 刀测） | 2 |
 
-禁止给设计变更四句加第五句。禁止把叠出的材料写回 `stamping_parts.material`。禁止改 `app/common`。禁止改零件价 `grade ==` 与核价引擎。
+禁止把材料变更写成设计变更的一种。禁止把叠出的材料写回 `stamping_parts.material`。禁止改 `app/common`。禁止改零件价 `grade ==` 与核价引擎。
 
 ---
 

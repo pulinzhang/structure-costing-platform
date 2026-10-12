@@ -43,6 +43,34 @@ export function resolveBomNodeShortCode(partNumber, { level, nodeRole } = {}) {
 }
 
 /**
+ * 与产品结构可视化零件号一致：
+ * - 分总成 → 末四位 + 字母尾 + -N（502007710AA-1 → 7710AA-1）
+ * - 供货总成 / 冲压件 → 数字末四位
+ * - 其余 → 完整零件号
+ */
+export function resolveStructurePartLabel(partNumber, {
+    level,
+    nodeRole,
+    objectKind,
+    childCount,
+    partName,
+} = {}) {
+    const full = String(partNumber || '').trim();
+    if (!full) return null;
+    const isSupply = Number(level) === 0 || nodeRole === 'supply';
+    const isSubAssembly = !isSupply && (
+        objectKind === 'l1_subassembly'
+        || nodeRole === 'structure'
+        || Number(childCount) > 0
+        || /分总成/.test(String(partName || ''))
+    );
+    if (isSubAssembly) return shortWeldPartNumber(full) || full;
+    const isStamping = objectKind === 'l1_stamping' || nodeRole === 'make';
+    if (isSupply || isStamping) return shortPartNumber(full) || full;
+    return full;
+}
+
+/**
  * 短代码列：只显示短码。
  * @param {string|null|undefined} partNumber
  * @param {string|null} [shortCode] 覆盖默认末四位

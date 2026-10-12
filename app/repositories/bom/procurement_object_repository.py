@@ -258,6 +258,17 @@ class BomProcurementObjectRepository:
     def delete_pending_objects_by_list_id(self, db: Session, list_id: int) -> int:
         return self._writes.delete_pending_objects_by_list_id(db, list_id)
 
+    def delete_objects_by_source_node_ids(
+        self,
+        db: Session,
+        *,
+        list_id: int,
+        source_node_ids: list[int],
+    ) -> int:
+        return self._writes.delete_objects_by_source_node_ids(
+            db, list_id=list_id, source_node_ids=source_node_ids
+        )
+
     def delete_pending_objects_by_ids(self, db: Session, object_ids: list[int]) -> int:
         return self._writes.delete_pending_objects_by_ids(db, object_ids)
 

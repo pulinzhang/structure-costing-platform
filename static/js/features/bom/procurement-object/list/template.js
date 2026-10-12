@@ -9,7 +9,7 @@ import { hudKpiCardHtml } from '../../../../ui/hud-kpi.js?v=1';
 
 import { moreMenuItemHtml, moreMenuShellHtml } from '../../../../ui/more-menu.js?v=7';
 import { AUDIT_LABELS, CONFIRM_LABELS, KIND_LABELS, SECTION_LABELS } from '../labels.js?v=4';
-import { partShortCodeCellHtml, partNumberNameCellHtml } from '../../../../domain/part-identity.js?v=5';
+import { partShortCodeCellHtml, partNumberNameCellHtml, resolveStructurePartLabel } from '../../../../domain/part-identity.js?v=7';
 import { fmtPeriodRange, hasClosedPeriod } from '../../../common/period-ui.js?v=5';
 
 export function procurementObjectListTemplate() {
@@ -103,13 +103,13 @@ export function procurementObjectListTemplate() {
                 ${hudTableHtml({
                     prefix: 'po',
                     bodyClass: 'font-mono text-[11px]',
-                    minWidth: '1560px',
+                    minWidth: '1608px',
                     colgroupHtml: `
                             <col style="width:3px">
                             <col style="width:88px">
                             <col style="width:72px">
                             <col style="width:140px">
-                            <col style="width:72px">
+                            <col style="width:120px">
                             <col style="width:140px">
                             <col style="width:96px">
                             <col style="width:88px">
@@ -325,7 +325,13 @@ export function renderProcurementObjectRows(records) {
             ${excelTd}
             ${l0Td}
             <td class="px-2 py-2 overflow-hidden whitespace-nowrap">
-                ${partShortCodeCellHtml(row.part_number)}
+                ${partShortCodeCellHtml(row.part_number, resolveStructurePartLabel(row.part_number, {
+                    level: row.level,
+                    nodeRole: row.node_role,
+                    objectKind: row.object_kind,
+                    childCount: row.child_count,
+                    partName: row.part_name,
+                }))}
             </td>
             <td class="px-2 py-2 overflow-hidden">
                 ${partNumberNameCellHtml(

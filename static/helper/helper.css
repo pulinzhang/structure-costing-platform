@@ -1247,6 +1247,317 @@ figure.shot figcaption {
   .ec-dont, .ec-triple { grid-template-columns: 1fr; }
 }
 
+/* 设计变更八种填法：纸面图，不用图片。红线只标「这次写出的新号」。 */
+.scn-lead {
+  margin: 0 0 18px;
+  font-size: 16px;
+  line-height: 1.6;
+  color: var(--color__text);
+}
+.scn-key {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px 22px;
+  margin: 0 0 8px;
+  padding: 0;
+}
+.scn-key span {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 13px;
+  color: var(--muted);
+}
+.scn-key i {
+  width: 22px;
+  height: 14px;
+  border: 1px solid var(--color__border);
+  background: #fff;
+  font-style: normal;
+}
+.scn-key i.is-new {
+  border-color: var(--color__border--strong);
+  border-top: 3px solid var(--red);
+}
+.scn-key i.is-from { border-color: var(--color__border--strong); }
+.scn-key i.is-empty { border-style: dashed; }
+.scn-key i.is-void {
+  border-color: var(--red);
+  background: var(--red-soft);
+}
+
+.scn {
+  margin: 28px 0 0;
+  scroll-margin-top: 24px;
+}
+.scn-head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 10px 18px;
+  padding: 22px 0 16px;
+  border-top: 1px solid var(--color__border--strong);
+}
+.scn-index {
+  font-size: 13px;
+  font-weight: 500;
+  letter-spacing: 0.16em;
+  color: var(--red);
+}
+.scn-head h4 {
+  flex: 1 1 12em;
+  margin: 0;
+  font-size: 26px;
+  font-weight: 500;
+  letter-spacing: -0.03em;
+  line-height: 1.2;
+  color: var(--color__text);
+}
+.scn-pills {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-left: auto;
+}
+.scn-pill {
+  padding: 3px 8px;
+  border: 1px solid var(--color__border);
+  font-size: 12px;
+  line-height: 1.4;
+  color: var(--color__text);
+  background: #fff;
+}
+.scn-pill.is-gap {
+  color: var(--red);
+  border-color: var(--red);
+}
+
+.scn-panels {
+  display: grid;
+  grid-template-columns: minmax(0, 0.92fr) minmax(0, 1.08fr);
+  border: 1px solid var(--color__border);
+  background: var(--elevated);
+}
+.scn-panel {
+  margin: 0;
+  padding: 22px 22px 26px;
+}
+.scn-panel + .scn-panel { border-left: 1px solid var(--color__border); }
+.scn-kicker {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 18px;
+  font-size: 15px;
+  font-weight: 500;
+  color: var(--color__text);
+}
+.scn-kicker i {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 22px;
+  height: 22px;
+  background: var(--color__background--inverted);
+  color: var(--color__text--inverted);
+  font-style: normal;
+  font-size: 12px;
+  font-weight: 500;
+  flex: 0 0 auto;
+}
+.scn-kicker.is-still { color: var(--muted); }
+.scn-kicker.is-still i {
+  background: transparent;
+  color: var(--muted);
+  border: 1px solid var(--color__border);
+}
+.scn-note {
+  margin: 16px 0 0;
+  font-size: 14px;
+  line-height: 1.55;
+  color: var(--muted);
+}
+
+.scn-swap,
+.scn-solo {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 16px;
+  flex-wrap: wrap;
+}
+.scn-solo { min-height: 96px; }
+
+.tok {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  flex: 1 1 132px;
+  max-width: 210px;
+  min-height: 96px;
+  padding: 14px 16px 16px;
+  border: 1px solid var(--color__border);
+  background: #fff;
+  text-align: center;
+}
+.tok-cap {
+  font-size: 12px;
+  line-height: 1.35;
+  color: var(--muted);
+}
+.tok strong {
+  display: block;
+  margin-top: 6px;
+  font-size: 26px;
+  font-weight: 500;
+  letter-spacing: -0.03em;
+  line-height: 1.15;
+  color: var(--color__text);
+}
+.tok-from { border-color: var(--color__border--strong); }
+.tok-new {
+  border-color: var(--color__border--strong);
+  border-top: 3px solid var(--red);
+}
+.tok-keep strong {
+  color: var(--muted);
+  font-weight: 400;
+}
+.tok-empty { border-style: dashed; }
+.tok-empty strong {
+  color: var(--muted);
+  font-weight: 400;
+}
+.tok.is-phrase { max-width: 260px; flex-basis: 200px; }
+.tok.is-phrase strong { font-size: 22px; letter-spacing: -0.02em; }
+.tok-void {
+  border-color: var(--red);
+  background: var(--red-soft);
+}
+.tok-void .tok-cap { color: var(--red); }
+.tok-void strong {
+  color: var(--red);
+  font-weight: 500;
+  text-decoration: line-through;
+  text-decoration-thickness: 2px;
+}
+.tok-void::after {
+  content: "×";
+  position: absolute;
+  top: 6px;
+  right: 8px;
+  font-size: 18px;
+  font-weight: 500;
+  line-height: 1;
+  color: var(--red);
+}
+
+.scn-arrow {
+  position: relative;
+  flex: 0 0 36px;
+  height: 2px;
+  margin-right: 8px;
+  background: var(--color__border--strong);
+}
+.scn-arrow::after {
+  content: "";
+  position: absolute;
+  right: -7px;
+  top: 50%;
+  transform: translateY(-50%);
+  border-style: solid;
+  border-width: 6px 0 6px 8px;
+  border-color: transparent transparent transparent var(--color__border--strong);
+}
+.scn-arrow.is-still { background: var(--color__border); }
+.scn-arrow.is-still::after { border-left-color: var(--color__border); }
+
+.scn-tree {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  width: min(100%, 460px);
+  margin: 0 auto;
+}
+.scn-tree > .tok { flex: 0 0 auto; width: min(100%, 200px); }
+.scn-drop {
+  display: block;
+  width: 1px;
+  height: 16px;
+  background: var(--color__border--strong);
+}
+.scn-fork {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0;
+  width: 100%;
+  padding-top: 16px;
+}
+.scn-arm {
+  position: relative;
+  display: flex;
+  justify-content: center;
+  padding: 0 10px;
+}
+.scn-arm::before,
+.scn-arm::after {
+  content: "";
+  position: absolute;
+  background: var(--color__border--strong);
+}
+.scn-arm::before {
+  top: -16px;
+  left: 50%;
+  width: 1px;
+  height: 16px;
+}
+.scn-arm:first-child::after {
+  top: -16px;
+  left: 50%;
+  width: 50%;
+  height: 1px;
+}
+.scn-arm:last-child::after {
+  top: -16px;
+  left: 0;
+  width: 50%;
+  height: 1px;
+}
+.scn-arm.is-calm::before,
+.scn-arm.is-calm::after { background: var(--color__border); }
+.scn-arm:has(.tok-void)::before,
+.scn-arm:has(.tok-void)::after { background: var(--red); }
+.scn-arm .tok {
+  width: 100%;
+  max-width: 200px;
+  min-height: 84px;
+}
+.scn-arm .tok strong { font-size: 22px; }
+
+.scn-foot {
+  display: flex;
+  justify-content: flex-end;
+  padding: 10px 0 0;
+}
+.scn-foot a,
+.scn-foot span {
+  font-size: 13px;
+  color: var(--muted);
+}
+.scn-foot a:hover { color: var(--red-hover); }
+
+@media (max-width: 860px) {
+  .scn-head h4 { font-size: 22px; }
+  .scn-pills { margin-left: 0; width: 100%; }
+  .scn-panels { grid-template-columns: 1fr; }
+  .scn-panel + .scn-panel {
+    border-left: 0;
+    border-top: 1px solid var(--color__border);
+  }
+  .tok strong { font-size: 22px; }
+}
+
 /* 打印：页眉 / 页脚 / 页码走 @page 边距盒（与分析报告、总成计算过程同口径）。 */
 @media print {
   @page {
@@ -1463,4 +1774,38 @@ figure.shot figcaption {
   .tree .amt { color: var(--text) !important; }
   .footer { color: var(--dim) !important; border-top: 0.5pt solid var(--border); }
   a { color: var(--text) !important; text-decoration: none !important; }
+  .scn { break-inside: avoid; page-break-inside: avoid; }
+  .scn-panels,
+  .tok,
+  .scn-pill,
+  .scn-key i {
+    background: #fff !important;
+    border: 0.5pt solid #666666 !important;
+  }
+  .scn-panels { background: #f5f5f5 !important; }
+  .tok { background: #fff !important; }
+  .tok-new { border-top: 2.5pt solid #b70826 !important; }
+  .tok-void,
+  .scn-key i.is-void {
+    background: #f8e8eb !important;
+    border-color: #b70826 !important;
+  }
+  .tok-void strong,
+  .tok-void .tok-cap,
+  .tok-void::after,
+  .scn-index,
+  .scn-pill.is-gap { color: #b70826 !important; }
+  .scn-kicker i {
+    background: #010101 !important;
+    color: #fff !important;
+  }
+  .scn-kicker.is-still i {
+    background: #fff !important;
+    color: #666666 !important;
+  }
+  .scn-note,
+  .scn-foot a,
+  .scn-foot span,
+  .tok-keep strong,
+  .tok-empty strong { color: #666666 !important; }
 }

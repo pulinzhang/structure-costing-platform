@@ -209,6 +209,20 @@ SCENES = (
         "分总成换成新号。旁边的二级还是原号。",
         "revise_l2",
         "模板里有",
+        "叶子一级变分总成",
+    ),
+    Scene(
+        "08-叶子一级变分总成.png",
+        "叶子一级变分总成",
+        "增加分总成",
+        "一级",
+        ORANGE,
+        ORANGE_SOFT,
+        True,
+        "上面加一颗，变成新分总成",
+        "新分总成下面有几颗写几颗。原来的位置若停用，仍按此件不装，两边不核对。",
+        "leaf_subassembly",
+        "模板里有",
         "",
     ),
 )
@@ -314,6 +328,16 @@ def draw_revise_l2(draw: ImageDraw.ImageDraw, area: tuple[int, int, int, int]) -
     token(draw, (1060, 888, 1460, 998), "其它二级", "原号", GRAY, GRAY_SOFT)
 
 
+def draw_leaf_subassembly(draw: ImageDraw.ImageDraw, area: tuple[int, int, int, int]) -> None:
+    token(draw, (760, 632, 1160, 728), "总成", "AB", GREEN, GREEN_SOFT)
+    vline(draw, 960, 728, 744, ORANGE)
+    token(draw, (760, 744, 1160, 840), "新分总成", "新号", ORANGE, ORANGE_SOFT)
+    draw.line([(960, 840), (960, 868), (660, 868), (660, 888)], fill=ROSE, width=6)
+    draw.line([(960, 868), (1260, 868), (1260, 888)], fill=ORANGE, width=6)
+    token(draw, (460, 888, 860, 998), "原来的一级", "原号", ROSE, ROSE_SOFT)
+    token(draw, (1060, 888, 1460, 998), "新加上去的", "新号", ORANGE, ORANGE_SOFT)
+
+
 def draw_stop_detail(draw: ImageDraw.ImageDraw, area: tuple[int, int, int, int]) -> None:
     token(draw, (660, 700, 1260, 960), "材料清单", "不写这个总成", GRAY, GRAY_SOFT)
 
@@ -336,12 +360,13 @@ def draw_scene(scene: Scene, index: int) -> Path:
         "add_l2": draw_add_l2,
         "revise_l1": draw_revise_l1,
         "revise_l2": draw_revise_l2,
+        "leaf_subassembly": draw_leaf_subassembly,
     }
     drawers[scene.kind](draw, area)
     if scene.next_title:
         text(draw, (1864, 1140), f"下一张：{scene.next_title}", font(22), MUTED, "rm")
     else:
-        text(draw, (1864, 1140), "七张看完", font(22), MUTED, "rm")
+        text(draw, (1864, 1140), "八张看完", font(22), MUTED, "rm")
     OUT_DIR.mkdir(exist_ok=True)
     dest = OUT_DIR / scene.filename
     temporary = dest.with_suffix(".png.tmp")

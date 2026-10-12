@@ -211,7 +211,11 @@ def prepare_engineering_change_run(
             )
         item.sliced_bom_nodes = slice_bom_nodes_for_l0(parsed_bom.nodes, after_number)
         old_nodes = bom_service.list_subtree_nodes(db, root_id=item.before_root_id)
-        validate_change_tree_gates(item.change_order, old_nodes, item.sliced_bom_nodes)
+        validate_change_tree_gates(
+            item.change_order,
+            old_nodes,
+            item.sliced_bom_nodes,
+        )
         validate_identity_gates(old_nodes, item.sliced_bom_nodes)
 
     report_progress(on_progress, 20, "校验工艺门禁")
