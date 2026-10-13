@@ -41,6 +41,20 @@ function Invoke-Git {
     }
 }
 
+function Invoke-GitBestEffort {
+    param(
+        [Parameter(Mandatory = $true)]
+        [string[]]$GitArgs
+    )
+    Write-Host ("    git " + ($GitArgs -join " ")) -ForegroundColor DarkGray
+    $saved = $ErrorActionPreference
+    $ErrorActionPreference = "Continue"
+    & git @GitArgs 2>&1 | Out-Null
+    $exitCode = $LASTEXITCODE
+    $ErrorActionPreference = $saved
+    return $exitCode
+}
+
 function Get-CurrentBranch {
     $name = & git rev-parse --abbrev-ref HEAD
     if ($LASTEXITCODE -ne 0) {
@@ -87,11 +101,11 @@ Write-Step "merge $FeatureBranch into $MasterBranch (temporary worktree)"
 $worktreePath = Join-Path $env:TEMP "stamping-costing-platform-master-merge"
 if (Test-Path $worktreePath) {
     Write-Host "    removing leftover worktree $worktreePath" -ForegroundColor DarkGray
-    & git worktree remove --force $worktreePath 2>$null
+    Invoke-GitBestEffort -GitArgs @("worktree", "remove", "--force", $worktreePath) | Out-Null
     if (Test-Path $worktreePath) {
         Remove-Item -Recurse -Force $worktreePath
     }
-    & git worktree prune
+    Invoke-GitBestEffort -GitArgs @("worktree", "prune") | Out-Null
 }
 
 Invoke-Git worktree add $worktreePath $MasterBranch
@@ -130,8 +144,8 @@ try {
     }
     if (-not $mergeFailed -and (Test-Path $worktreePath)) {
         Write-Step "remove temporary worktree"
-        & git -C $repoRoot worktree remove --force $worktreePath
-        if ($LASTEXITCODE -ne 0) {
+        $removeExit = Invoke-GitBestEffort -GitArgs @("-C", $repoRoot, "worktree", "remove", "--force", $worktreePath)
+        if ($removeExit -ne 0) {
             Write-Host "[WARN] worktree remove failed, prune leftover: git worktree prune" -ForegroundColor Yellow
         } else {
             Write-Ok "worktree removed"
