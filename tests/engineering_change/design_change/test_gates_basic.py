@@ -2,10 +2,12 @@
 
 from __future__ import annotations
 
+from datetime import datetime
 from io import BytesIO
 
 import pytest
 from openpyxl import load_workbook
+from openpyxl.utils.datetime import from_excel
 
 from app.common.engineering_change_gates import (
     CHANGE_TYPE_ADD_PART,
@@ -180,7 +182,11 @@ def test_scope_template_follows_selected_project() -> None:
     workbook = load_workbook(BytesIO(content), data_only=True)
     change_order = workbook["设计变更单"]
     assert change_order["A5"].value == "DEMO"
-    assert change_order["B5"].value == "2026年10月"
+    period_cell = change_order["B5"]
+    assert isinstance(period_cell.value, int | float)
+    assert period_cell._style is not None
+    assert int(period_cell._style.numFmtId) == 57
+    assert from_excel(period_cell.value) == datetime(2026, 10, 1)
     assert change_order["C5"].value == "EX-STOP-AA"
     bom = workbook["车身件材料清单"]
     assert bom["A3"].value == "项目代号：  DEMO"
@@ -626,6 +632,40 @@ def test_before_part_missing_and_after_part_already_on_tree() -> None:
     assert str(exc.value).startswith(EC_ADD_ALREADY_ON_TREE)
 
 
+def test_after_part_on_another_level_belongs_to_that_row() -> None:
+    from types import SimpleNamespace
+
+    from app.parsers.engineering_change.design_change.change_order_parser import (
+        ChangeOrderRowParsed,
+    )
+    from app.services.engineering_change.design_change.upload.gates.validate import (
+        validate_change_order_before_after,
+    )
+
+    change_order = ChangeOrderRowParsed(
+        project_code="T28",
+        effective_period_text="2025年07月",
+        change_type=CHANGE_TYPE_ADD_PART,
+        before_assembly_part_number="501007029AA",
+        after_assembly_part_number="501007029AB",
+        assembly_name="中通道左后纵梁总成",
+        part_level="二级",
+        before_part_number=None,
+        after_part_number="501004437AA",
+        part_name=None,
+        excel_row=11,
+    )
+    old_nodes = [
+        SimpleNamespace(part_number="501007029AA", level=0),
+        SimpleNamespace(part_number="501004437AA", level=1),
+    ]
+    validate_change_order_before_after(
+        change_order,
+        old_nodes=old_nodes,
+        after_assembly=None,
+    )
+
+
 def test_template_bom_l0_has_assembly_sketch() -> None:
     from app.parsers.bom.bom_parser import parse_bom_excel
     from app.parsers.engineering_change.design_change.sheet_extract import SHEET_BOM
@@ -764,6 +804,44 @@ def test_scenario_template_parses_and_passes_gates(scenario) -> None:
         if (part.part_number or "").strip()
     }
     assert numbers == {item.part_number for item in scenario.book.process}
+
+
+def test_excel_serial_reads_as_year_month() -> None:
+    from app.parsers.engineering_change.design_change.change_order_parser import (
+        ChangeOrderRowParsed,
+    )
+    from app.services.engineering_change.design_change.upload.gates.validate import (
+        parse_effective_period_text,
+        validate_change_order_project,
+    )
+
+    assert parse_effective_period_text("45839") == (2025, 7)
+    assert parse_effective_period_text("45839.0") == (2025, 7)
+    assert parse_effective_period_text("2026年7月") == (2026, 7)
+    with pytest.raises(BusinessException) as exc:
+        parse_effective_period_text("12")
+    assert "12" in str(exc.value)
+    change_order = ChangeOrderRowParsed(
+        project_code="T28",
+        effective_period_text="45839",
+        change_type=CHANGE_TYPE_REVISE,
+        before_assembly_part_number="501006873AA",
+        after_assembly_part_number="501006873AB",
+        assembly_name="流水槽加强梁总成",
+        part_level="一级",
+        before_part_number="501006875AA",
+        after_part_number="501006875AB",
+        part_name="雨刮电机安装支架Ⅰ",
+        excel_row=5,
+    )
+    year, month = validate_change_order_project(
+        [change_order],
+        page_vehicle_model="T28",
+        page_effective_year=2025,
+        page_effective_month=7,
+    )
+    assert (year, month) == (2025, 7)
+    assert change_order.effective_period_text == "2025年07月"
 
 
 def test_change_type_revise_constant() -> None:

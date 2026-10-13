@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import re
 from collections.abc import Sequence
+from datetime import datetime, timedelta
 
 from app.common.engineering_change_gates import (
     CHANGE_TYPE_ADD_PART,
@@ -34,6 +35,8 @@ from app.common.engineering_change_gates import (
     quoted,
 )
 from app.common.period import (
+    EFFECTIVE_YEAR_MAX,
+    EFFECTIVE_YEAR_MIN,
     MONTH_MAX,
     MONTH_MIN,
     format_period,
@@ -45,17 +48,37 @@ from app.exceptions.base import BusinessException
 from app.models.bom import BomNode
 from app.parsers.bom.bom_parser import BomParsedNode
 from app.parsers.engineering_change.design_change.change_order_parser import ChangeOrderRowParsed
+from app.services.bom.bom.change_tree_plant.number_map import part_installed_at_level
 
 _PERIOD_TEXT_RE = re.compile(r"^(\d{4})\s*年\s*(\d{1,2})\s*月$")
+_EXCEL_SERIAL_RE = re.compile(r"^\d+(?:\.\d+)?$")
+_EXCEL_EPOCH = datetime(1899, 12, 30)
+_EXCEL_SERIAL_MAX = 2958465
 
 
 def _row(change_order: ChangeOrderRowParsed) -> str:
     return f"设计变更单第 {change_order.excel_row} 行"
 
 
+def _period_text_from_excel_serial(raw: str) -> str | None:
+    """Excel 日期序列号（如 45839）→「2025年07月」。中文日期格式在表格里显示为年月，读出来是这个数。"""
+    if not _EXCEL_SERIAL_RE.fullmatch(raw):
+        return None
+    number = float(raw)
+    if number <= 0 or number > _EXCEL_SERIAL_MAX:
+        return None
+    converted = _EXCEL_EPOCH + timedelta(days=number)
+    if converted.year < EFFECTIVE_YEAR_MIN or converted.year > EFFECTIVE_YEAR_MAX:
+        return None
+    return format_period(converted.year, converted.month)
+
+
 def parse_effective_period_text(text: str) -> tuple[int, int]:
-    """解析变更单「2026年07月」→ (2026, 7)。"""
+    """解析变更单「2026年07月」或 Excel 日期序列号 → (2026, 7)。"""
     raw = (text or "").strip()
+    as_period = _period_text_from_excel_serial(raw)
+    if as_period is not None:
+        raw = as_period
     match = _PERIOD_TEXT_RE.match(raw)
     if not match:
         raise BusinessException(
@@ -112,7 +135,9 @@ def validate_change_order_project(
                 f"上传页是{quoted(page_vehicle_model)}。请改成同一个后再传。"
             )
         projects.add(file_project)
-        periods.add(parse_effective_period_text(change_order.effective_period_text))
+        year_month = parse_effective_period_text(change_order.effective_period_text)
+        change_order.effective_period_text = format_period(*year_month)
+        periods.add(year_month)
     if len(projects) != 1:
         raise BusinessException(
             f"{EC_PROJECT_MISMATCH}。设计变更单项目写成了 {listed(projects)}。"
@@ -283,10 +308,11 @@ def validate_change_order_before_after(
             )
     if not after_part:
         return
-    old_numbers = {(node.part_number or "").strip() for node in old_nodes}
-    if after_part in old_numbers:
+    if expected_level is not None and part_installed_at_level(
+        old_nodes, after_part, expected_level
+    ):
         raise BusinessException(
-            f"{EC_ADD_ALREADY_ON_TREE}：{quoted(after_part)} 已在变更前总成上。"
+            f"{EC_ADD_ALREADY_ON_TREE}：{quoted(after_part)} 已是变更前总成上的{change_order.part_level}。"
         )
     if after_part_as_l0 is not None:
         raise BusinessException(

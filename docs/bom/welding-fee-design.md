@@ -228,7 +228,7 @@ static/js/features/bom/welding-fee/{calc,list}/
 | level 用整数，不 enumerated 死 0/1/2 | 为 L7 再开表 |
 | 财务读 0、采购读 1 | 把子层金额加进父层 |
 | 有拆解才有焊接费行 | 在本切片扫 BOM 认外发 |
-| 现网一年一次 | 本期改月（另文） |
+| 现网一年一次，年账不加月 | 列表可选月、抄费走 [焊信变更](../engineering-change/weld-info-change/README.md)；这种节点实时算，不写回年账 |
 | 计算入参年+基地+项目；按 L0 树根年交集 | 计算页选版本 / 选 snapshot；拆解表加四列；按 L1 本行期取件 |
 
 ---
@@ -243,6 +243,7 @@ static/js/features/bom/welding-fee/{calc,list}/
 | [l1-assembly-costing-design.md](../costing/l1-assembly-costing-design.md) | 应成本工艺费读 **level=1** |
 | [costing-engine-design.md](../costing/costing-engine-design.md) | 补算默认 `levels=[0]` |
 | [effective-period-design.md](../costing/effective-period-design.md) | 已否决。不要为结果加 `month` |
+| [焊信变更](../engineering-change/weld-info-change/README.md) | 设计定稿，未落地。`bom_welding_process_change_info` 是节点上的新焊信或停止焊信。抄费时这种节点实时算，年账仍是 SOP |
 | `app/services/bom/welding_fee/` | 现网实现 |
 
 ---
@@ -262,3 +263,4 @@ static/js/features/bom/welding-fee/{calc,list}/
 | 2026-09-18 | 取件改为以 L0 树根年交集为准；禁止用 L1/L2 本行生失效筛期。 |
 | 2026-09-20 | `source_breakdown_node_id` 挂拆解 `RESTRICT`；删/重生成拆解时 Toast「仍被焊接费引用…」。 |
 | 2026-09-20 | **口径写死：** snapshot 只约束拆解生成（SOP 那一包）；焊接费计算和列表一样认树根，不认 SOP 头。 |
+| 2026-10-13 | 焊信变更另文：年账仍不加月。抄费时，命中 `bom_welding_process_change_info` 的节点按新焊信或停止实时算，不写回年账、不写明细。 |

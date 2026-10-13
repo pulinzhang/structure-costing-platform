@@ -3,13 +3,15 @@
 from __future__ import annotations
 
 import re
-from collections.abc import Sequence
+from collections.abc import Iterable, Sequence
 
 from app.common.engineering_change_gates import (
     CHANGE_TYPE_ADD_PART,
+    CHANGE_TYPE_ADD_SUBASSEMBLY,
     CHANGE_TYPE_NOT_INSTALL,
     CHANGE_TYPE_REVISE,
     PART_LEVEL_ASSEMBLY,
+    has_not_install_marks,
 )
 from app.models.bom import BomNode
 from app.parsers.bom.bom_parser import BomParsedNode
@@ -24,11 +26,15 @@ def build_number_map(
     parsed_nodes: list[BomParsedNode],
     extra_specs: Sequence[BomChangePlantSpec] = (),
 ) -> dict[str, str | None]:
+    specs = (spec, *extra_specs)
+    subassembly_numbers = subassembly_part_numbers(
+        (item.change_type, item.after_part_number) for item in specs
+    )
     mapping: dict[str, str | None] = {
         spec.before_assembly_part_number: spec.after_assembly_part_number
     }
-    for item in (spec, *extra_specs):
-        _apply_spec(mapping, item, old_nodes, parsed_nodes)
+    for item in specs:
+        _apply_spec(mapping, item, old_nodes, parsed_nodes, subassembly_numbers)
     return mapping
 
 
@@ -37,6 +43,7 @@ def _apply_spec(
     spec: BomChangePlantSpec,
     old_nodes: list[BomNode],
     parsed_nodes: list[BomParsedNode],
+    subassembly_numbers: set[str],
 ) -> None:
     if spec.change_type == CHANGE_TYPE_REVISE:
         if spec.part_level != PART_LEVEL_ASSEMBLY and spec.before_part_number:
@@ -49,7 +56,12 @@ def _apply_spec(
                 spec.after_part_number,
             )
     elif spec.change_type == CHANGE_TYPE_ADD_PART and spec.after_part_number:
-        pair = level1_renumber_for_added_part(old_nodes, parsed_nodes, spec.after_part_number)
+        pair = level1_renumber_for_added_part(
+            old_nodes,
+            parsed_nodes,
+            spec.after_part_number,
+            subassembly_numbers=subassembly_numbers,
+        )
         if pair is not None:
             old_number, file_number = pair
             mapping.setdefault(old_number, file_number)
@@ -59,26 +71,117 @@ def _apply_spec(
             mapping[spec.before_assembly_part_number] = spec.after_assembly_part_number
 
 
+def part_installed_at_level(
+    nodes: Sequence[BomNode],
+    part_number: str,
+    bom_level: int,
+) -> bool:
+    """本行层级上是否已有这个零件号。同一号装在别的层级，归那一行。"""
+    number = (part_number or "").strip()
+    if not number:
+        return False
+    for node in nodes:
+        if (node.part_number or "").strip() == number and int(node.level) == bom_level:
+            return True
+    return False
+
+
+def subassembly_part_numbers(specs: Iterable[tuple[str, str | None]]) -> set[str]:
+    """增加分总成写出的变更后零件号。"""
+    return {
+        number
+        for change_type, after_part_number in specs
+        if change_type == CHANGE_TYPE_ADD_SUBASSEMBLY
+        and (number := (after_part_number or "").strip())
+    }
+
+
+def added_part_rows(
+    parsed_nodes: Sequence[BomParsedNode],
+    old_nodes: Sequence[BomNode],
+    subassembly_numbers: set[str] | None = None,
+) -> dict[str, BomParsedNode]:
+    """每个零件号只留增加零件那一行。"""
+    rows: dict[str, BomParsedNode] = {}
+    for node in parsed_nodes:
+        number = (node.part_number or "").strip()
+        if int(node.level) == 0 or not number or number in rows:
+            continue
+        row = added_part_row(parsed_nodes, number, old_nodes, subassembly_numbers)
+        if row is not None:
+            rows[number] = row
+    return rows
+
+
+def added_part_row(
+    parsed_nodes: Sequence[BomParsedNode],
+    part_number: str,
+    old_nodes: Sequence[BomNode],
+    subassembly_numbers: set[str] | None = None,
+) -> BomParsedNode | None:
+    """增加零件这一行。此件不装、新分总成下面的行不算。上级对得上旧一级换号的优先。"""
+    return _chosen_added_part(parsed_nodes, part_number, old_nodes, subassembly_numbers)
+
+
 def level1_renumber_for_added_part(
     old_nodes: Sequence[BomNode],
     parsed_nodes: Sequence[BomParsedNode],
     after_part_number: str,
+    subassembly_numbers: set[str] | None = None,
 ) -> tuple[str, str] | None:
-    """增加二级：材料清单写出的上级一级新号，对应旧树上同一零件的原号。
+    """增加二级：材料清单里增加零件那一行的上级一级新号，对应旧树上的原号。
 
-    新号以材料清单为准，不把 AA 加成 AB。一级增加、或对不上唯一的旧一级，返回 None。
-    同一上级下的其它二级不进这张对照。
+    新号以材料清单为准，不把 AA 加成 AB。对不上唯一的旧一级，返回 None。
     """
-    after_number = (after_part_number or "").strip()
-    file_part = next(
-        (
-            node
-            for node in reversed(parsed_nodes)
-            if (node.part_number or "").strip() == after_number
-        ),
-        None,
+    file_part = added_part_row(
+        parsed_nodes,
+        after_part_number,
+        old_nodes,
+        subassembly_numbers,
     )
-    if file_part is None or int(file_part.level) != 2 or file_part.parent_index is None:
+    if file_part is None:
+        return None
+    return parent_level1_renumber(parsed_nodes, file_part, old_nodes)
+
+
+def _chosen_added_part(
+    parsed_nodes: Sequence[BomParsedNode],
+    part_number: str,
+    old_nodes: Sequence[BomNode],
+    subassembly_numbers: set[str] | None,
+) -> BomParsedNode | None:
+    target = (part_number or "").strip()
+    blocked = subassembly_numbers or set()
+    version_hit: BomParsedNode | None = None
+    version_pair: tuple[str, str] | None = None
+    other: BomParsedNode | None = None
+    for node in parsed_nodes:
+        if int(node.level) == 0 or (node.part_number or "").strip() != target:
+            continue
+        if has_not_install_marks(node.qty, node.remark):
+            continue
+        if hangs_under_level1(parsed_nodes, node, blocked):
+            continue
+        pair = parent_level1_renumber(parsed_nodes, node, old_nodes)
+        if pair is None:
+            other = node
+            continue
+        if version_hit is not None and pair != version_pair:
+            return None
+        version_hit = node
+        version_pair = pair
+    if version_hit is not None:
+        return version_hit
+    return other
+
+
+def parent_level1_renumber(
+    parsed_nodes: Sequence[BomParsedNode],
+    file_part: BomParsedNode,
+    old_nodes: Sequence[BomNode],
+) -> tuple[str, str] | None:
+    """二级行的上级一级是旧一级换了版本时，返回 (旧号, 材料清单上的新号)。"""
+    if int(file_part.level) != 2 or file_part.parent_index is None:
         return None
     if file_part.parent_index < 0 or file_part.parent_index >= len(parsed_nodes):
         return None
@@ -99,6 +202,20 @@ def level1_renumber_for_added_part(
     if len(matches) != 1:
         return None
     return matches[0], file_number
+
+
+def hangs_under_level1(
+    parsed_nodes: Sequence[BomParsedNode],
+    node: BomParsedNode,
+    part_numbers: set[str],
+) -> bool:
+    current = node
+    while current.parent_index is not None:
+        parent = parsed_nodes[current.parent_index]
+        if int(parent.level) == 1 and (parent.part_number or "").strip() in part_numbers:
+            return True
+        current = parent
+    return False
 
 
 def _is_same_part_new_version(

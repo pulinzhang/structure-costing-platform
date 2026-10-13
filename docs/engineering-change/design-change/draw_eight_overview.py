@@ -269,7 +269,7 @@ TILES = (
     Tile("02", "此件不装", "号不动，用量写 0", ROSE, "skip1"),
     Tile("03", "增加零件", "新号不要写成总成号", ORANGE, "add1"),
     Tile("04", "改图", "旧号写成新号", GREEN, "rev1"),
-    Tile("05", "增加分总成", "下面有几颗写几颗", ORANGE, "leaf"),
+    Tile("05", "增加分总成", "一套：至少两颗二级", ORANGE, "leaf"),
     Tile("06", "此件不装", "一级换新号，这颗不装", ROSE, "skip2", True),
     Tile("07", "增加零件", "原来要已有二级才收", ORANGE, "add2", True),
     Tile("08", "改图", "分总成和这颗一起换号", GREEN, "rev2"),
@@ -303,17 +303,15 @@ def draw_scene(draw: ImageDraw.ImageDraw, kind: str, cx: float, cy: float) -> No
         "skip2": "一级新号",
         "add2": "一级新号",
         "rev2": "分总成新号",
-        "leaf": "新分总成",
+        "leaf": "一级新号",
     }[kind]
-    left_label = {"skip2": "不装", "add2": "新号", "rev2": "新号", "leaf": "原号"}[kind]
-    right_label = {"skip2": "原号", "add2": "原号", "rev2": "原号", "leaf": "新号"}[kind]
+    left_label = {"skip2": "不装", "add2": "新号", "rev2": "新号", "leaf": "二级"}[kind]
+    right_label = {"skip2": "原号", "add2": "原号", "rev2": "原号", "leaf": "二级"}[kind]
     parent_accent = ORANGE if kind == "leaf" else GREEN
     parent_soft = ORANGE_SOFT if kind == "leaf" else GREEN_SOFT
     if kind == "skip2":
         left_accent, left_soft, left_mood = ROSE, ROSE_SOFT, "sleep"
-    elif kind == "leaf":
-        left_accent, left_soft, left_mood = GRAY, GRAY_SOFT, None
-    elif kind == "add2":
+    elif kind == "leaf" or kind == "add2":
         left_accent, left_soft, left_mood = ORANGE, ORANGE_SOFT, "smile"
     else:
         left_accent, left_soft, left_mood = GREEN, GREEN_SOFT, "smile"

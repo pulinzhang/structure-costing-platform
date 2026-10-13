@@ -1,17 +1,21 @@
-"""设计变更导入模板。五种改法各一个总成。增加分总成单独一个总成，下面有几颗零件就写几颗。"""
+"""设计变更导入模板。五种改法各一个总成。增加分总成是一套一级节点，下面至少两颗二级。"""
 
 from __future__ import annotations
 
+import re
 from copy import copy
 from dataclasses import dataclass
+from datetime import datetime
 from io import BytesIO
 from pathlib import Path
 from tempfile import TemporaryDirectory
-from typing import cast
+from typing import Protocol, cast
 
 from openpyxl import Workbook, load_workbook
+from openpyxl.cell.cell import Cell
 from openpyxl.drawing.image import Image as ExcelImage
 from openpyxl.styles import Alignment, Border, Font, PatternFill, Side
+from openpyxl.styles.cell_style import StyleArray
 from openpyxl.worksheet.worksheet import Worksheet
 
 from app.common.engineering_change_gates import (
@@ -38,6 +42,10 @@ LOCATION = "青岛"
 VEHICLE_MODEL = "T28"
 CUSTOMER_NAME = "奇瑞公司"
 PERIOD_LABEL = "2026年07月"
+_PERIOD_LABEL_RE = re.compile(r"^(\d{4})年(\d{1,2})月$")
+# Excel 中文区域内置格式 yyyy"年"m"月"。打开显示「2026年7月」，文件里存的是日期序列号。
+_EXCEL_YEAR_MONTH_FORMAT_ID = 57
+_EXCEL_EPOCH = datetime(1899, 12, 30)
 CHANGE_VERSION = "EC-202607"
 STAMPING_SUPPLIER = "烟台海众汽车零部件有限公司"
 BOM_VERSION_LABEL = "D/00"
@@ -475,7 +483,7 @@ def _fill_note(meta: TemplateMeta, change_type: str | None = None) -> str:
     else:
         opening = (
             f"{meta.location} {meta.vehicle_model} 五种改法举例，一行一个交货总成。"
-            f"{CHANGE_TYPE_ADD_SUBASSEMBLY}单独一个总成，下面有几颗零件就写几颗。"
+            f"{CHANGE_TYPE_ADD_SUBASSEMBLY}是一套一级节点，下面至少两颗二级。"
         )
     return (
         opening + "零件号是例子，请改成这个项目自己的零件号后再上传。"
@@ -490,9 +498,10 @@ def _fill_note(meta: TemplateMeta, change_type: str | None = None) -> str:
         f"{CHANGE_TYPE_STOP}：变更后总成空，材料清单不写这个总成。"
         f"{CHANGE_TYPE_NOT_INSTALL}：变更后零件空；用量 0、备注含「{CHANGE_TYPE_NOT_INSTALL}」。"
         f"{CHANGE_TYPE_ADD_PART}：加在原来的总成上；变更前零件空、变更后零件写新号。"
-        f"{CHANGE_TYPE_ADD_SUBASSEMBLY}：变更后零件是新的一级分总成号。"
-        "材料清单里这个一级下面有几颗就写几颗，冲压件、螺母都可以。"
-        f"{CHANGE_TYPE_NOT_INSTALL}另写一行，两边不核对。"
+        f"{CHANGE_TYPE_ADD_SUBASSEMBLY}：增加一套一级节点。变更后零件是新的一级分总成号。"
+        "一套同时有这一级，和它下面的二级；二级至少两颗。只有一颗二级，整份不收。"
+        "样表这一级下面是一颗冲压件和一颗螺母。"
+        f"{CHANGE_TYPE_NOT_INSTALL}另写一行，不和这一套核对。"
         "已经有二级的一级下面再加零件，上级一级换成新版本，旁边的二级仍是原号。"
         "一级下面原来没有二级，不能直接增加零件。"
         "材料清单和确认表项目号、版本都要对齐（版本写成同一个字）；"
@@ -677,6 +686,8 @@ def _write_change_order(
             cell.font = label
             cell.border = _THIN
             cell.alignment = _CENTER
+            if col == 2:
+                _write_effective_period(cell, meta.period_label)
             if col in {6, 7, 8, 9, 10}:
                 if sample.change_type == CHANGE_TYPE_NOT_INSTALL:
                     cell.fill = _NOT_ASSEMBLED_FILL
@@ -692,6 +703,24 @@ def _write_change_order(
     for col, width in enumerate(widths, start=1):
         sheet.column_dimensions[chr(64 + col)].width = width
     sheet.freeze_panes = "A5"
+
+
+class _CellStyleHolder(Protocol):
+    _style: StyleArray | None
+
+
+def _write_effective_period(cell: Cell, period_label: str) -> None:
+    """生效年月写成 Excel 日期，格式为中文年月。"""
+    match = _PERIOD_LABEL_RE.match(period_label.strip())
+    if match is None:
+        return
+    year = int(match.group(1))
+    month = int(match.group(2))
+    cell.value = (datetime(year, month, 1) - _EXCEL_EPOCH).days
+    holder = cast(_CellStyleHolder, cell)
+    if holder._style is None:
+        holder._style = StyleArray()
+    holder._style.numFmtId = _EXCEL_YEAR_MONTH_FORMAT_ID
 
 
 def _write_ec_fill_instructions(sheet: Worksheet, meta: TemplateMeta) -> None:
@@ -710,9 +739,10 @@ def _write_ec_fill_instructions(sheet: Worksheet, meta: TemplateMeta) -> None:
         "先自洽：确认表上的零件号、变更单上的变更后零件，都必须写在材料清单里。"
         "对不上时系统一次列出缺哪些号，请改表后再传。",
         "变更生效月必须在该项目有效期内。早于项目开始或晚于项目结束，整单不能导入。完成停止同样。",
-        "增加分总成：变更后零件写新的一级分总成号，层级写一级。材料清单这个一级下面有几颗零件就写几颗，"
-        "冲压件、螺母都可以。样表这个总成下面是一颗冲压件和一颗螺母。"
-        "此件不装仍按原来的停用另写，不和增加分总成写在一起核对。"
+        "增加分总成：增加一套一级节点。变更后零件写新的一级分总成号，层级写一级。"
+        "一套同时有这一级，和它下面的二级；二级至少两颗。只有一颗二级，整份不收。"
+        "样表这一级下面是一颗冲压件和一颗螺母。"
+        "此件不装仍按原来的停用另写，不和这一套核对。"
         "增加零件时，上级一级下面原来没有二级，整份不收。",
     )
     sheet.merge_cells("A1:F1")

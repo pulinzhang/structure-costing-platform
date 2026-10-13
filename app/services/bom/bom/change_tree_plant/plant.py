@@ -19,7 +19,9 @@ from app.common.engineering_change_gates import (
     EC_NOT_INSTALL_SIGNAL,
     EC_QTY_CHANGED,
     NOT_INSTALL_REMARK,
+    PART_LEVEL_TO_BOM_LEVEL,
     is_not_install_row,
+    quoted,
     require_bom_header_version,
 )
 from app.exceptions.base import BusinessException
@@ -32,7 +34,13 @@ from app.services.bom.bom.change_tree_plant.copy import (
     excel_row_for_added_part,
     internal_from_file,
 )
-from app.services.bom.bom.change_tree_plant.number_map import build_number_map
+from app.services.bom.bom.change_tree_plant.number_map import (
+    added_part_rows,
+    build_number_map,
+    hangs_under_level1,
+    part_installed_at_level,
+    subassembly_part_numbers,
+)
 from app.services.bom.bom.change_tree_plant.sketches import copied_sketch_url
 from app.services.bom.bom.change_tree_plant.types import BomChangePlantResult, BomChangePlantSpec
 
@@ -113,8 +121,11 @@ def plant_change_tree(
     )
     has_not_install = any(item.change_type == CHANGE_TYPE_NOT_INSTALL for item in all_specs)
     number_map = build_number_map(spec, old_nodes, parsed_nodes, extra_specs)
-    file_by_deepest = {node.part_number: node for node in parsed_nodes if node.level != 0}
-    subassembly_children = _subassembly_child_rows(all_specs, parsed_nodes)
+    subassembly_numbers = subassembly_part_numbers(
+        (item.change_type, item.after_part_number) for item in all_specs
+    )
+    file_rows = added_part_rows(parsed_nodes, old_nodes, subassembly_numbers)
+    subassembly_children = _subassembly_child_rows(parsed_nodes, subassembly_numbers)
     placed_under_new = {(node.part_number or "").strip() for node in subassembly_children}
     _assert_add_and_not_install(all_specs, old_nodes, parsed_nodes)
 
@@ -132,7 +143,7 @@ def plant_change_tree(
         old_l0=old_l0,
         old_children=old_children,
         number_map=number_map,
-        file_by_deepest=file_by_deepest,
+        file_rows=file_rows,
         has_add_part=has_add_part,
         new_l0_id=new_l0_id,
         id_remap=id_remap,
@@ -142,7 +153,7 @@ def plant_change_tree(
         session,
         all_specs=all_specs,
         parsed_nodes=parsed_nodes,
-        file_by_deepest=file_by_deepest,
+        file_rows=file_rows,
         number_map=number_map,
         new_l0_id=new_l0_id,
         id_remap=id_remap,
@@ -164,14 +175,18 @@ def _assert_add_and_not_install(
     old_nodes: list[BomNode],
     parsed_nodes: list[BomParsedNode],
 ) -> None:
-    old_numbers = {(node.part_number or "").strip() for node in old_nodes}
     for item in all_specs:
+        bom_level = PART_LEVEL_TO_BOM_LEVEL.get(item.part_level)
+        after_number = (item.after_part_number or "").strip()
         if (
             item.change_type in {CHANGE_TYPE_ADD_PART, CHANGE_TYPE_ADD_SUBASSEMBLY}
-            and item.after_part_number
-            and item.after_part_number.strip() in old_numbers
+            and after_number
+            and bom_level is not None
+            and part_installed_at_level(old_nodes, after_number, bom_level)
         ):
-            raise BusinessException(EC_ADD_ALREADY_ON_TREE)
+            raise BusinessException(
+                f"{EC_ADD_ALREADY_ON_TREE}：{quoted(after_number)} 已是变更前总成上的{item.part_level}。"
+            )
         if item.change_type == CHANGE_TYPE_NOT_INSTALL and item.before_part_number:
             before_number = item.before_part_number.strip()
             if not _has_not_install_mark(parsed_nodes, before_number):
@@ -233,7 +248,7 @@ def _copy_old_children(
     old_l0: BomNode,
     old_children: dict[int | None, list[BomNode]],
     number_map: dict[str, str | None],
-    file_by_deepest: dict[str, BomParsedNode],
+    file_rows: dict[str, BomParsedNode],
     has_add_part: bool,
     new_l0_id: int,
     id_remap: dict[int, int],
@@ -251,7 +266,7 @@ def _copy_old_children(
         # 清单把这个号写在新分总成下面时，旧位置不另抄一份。
         if part_number in placed_under_new and new_number == part_number:
             continue
-        file_row = file_by_deepest.get(new_number) or file_by_deepest.get(old_node.part_number)
+        file_row = file_rows.get(new_number) or file_rows.get(part_number)
         fields = copied_child_fields(
             old_node=old_node,
             file_row=file_row,
@@ -310,7 +325,7 @@ def _insert_added_parts(
     *,
     all_specs: Sequence[BomChangePlantSpec],
     parsed_nodes: list[BomParsedNode],
-    file_by_deepest: dict[str, BomParsedNode],
+    file_rows: dict[str, BomParsedNode],
     number_map: dict[str, str | None],
     new_l0_id: int,
     id_remap: dict[int, int],
@@ -318,19 +333,21 @@ def _insert_added_parts(
     subassembly_children: list[BomParsedNode],
 ) -> None:
     planted = session.bom_service.list_subtree_nodes(session.db, root_id=new_l0_id)
-    new_tree_numbers = {node.part_number for node in planted}
+    copied_numbers = {node.part_number for node in planted}
     excel_row_by_part = {node.part_number: node.excel_row for node in planted}
     inserted_ids: dict[str, int] = {}
     pending_adds: list[tuple[int, BomChangePlantSpec, BomParsedNode, str]] = []
     for item in all_specs:
-        after_part_number = item.after_part_number
+        after_part_number = (item.after_part_number or "").strip()
         if (
             item.change_type not in {CHANGE_TYPE_ADD_PART, CHANGE_TYPE_ADD_SUBASSEMBLY}
             or not after_part_number
-            or after_part_number in new_tree_numbers
+            or after_part_number in copied_numbers
         ):
             continue
-        add_row = file_by_deepest.get(after_part_number)
+        add_row = file_rows.get(after_part_number)
+        if item.change_type == CHANGE_TYPE_ADD_PART and add_row is None:
+            continue
         if add_row is None:
             raise BusinessException(EC_BOM_NEW_ROOT)
         pending_adds.append((add_row.source_row or 0, item, add_row, after_part_number))
@@ -354,6 +371,9 @@ def _insert_added_parts(
             parsed_nodes=parsed_nodes,
             excel_row_by_part=excel_row_by_part,
         )
+        if add_excel_row is None:
+            add_excel_row = add_row.source_row
+        old_same = _old_node_by_number(old_by_id, after_part_number)
         sort_no = add_row.sort_no or 0
         new_id = _insert_node(
             session,
@@ -374,7 +394,9 @@ def _insert_added_parts(
             gauge_developed=add_row.gauge_developed,
             weld_info=add_row.weld_info,
             remark=add_row.remark,
-            internal_number=add_row.internal_number,
+            internal_number=internal_from_file(
+                add_row, old_same.internal_number if old_same is not None else None
+            ),
             sort_no=sort_no,
             seq_no=None,
             excel_row=add_excel_row,
@@ -384,19 +406,19 @@ def _insert_added_parts(
                 bom_version=session.bom_version,
                 part_number=after_part_number,
                 file_row=add_row,
-                old_sketch_url=None,
+                old_sketch_url=old_same.sketch_url if old_same is not None else None,
+                copy_old_sketch=old_same is not None,
             ),
         )
         inserted_ids[after_part_number] = new_id
-        new_tree_numbers.add(after_part_number)
         excel_row_by_part[after_part_number] = add_excel_row
+        _claim_old_level1(id_remap, old_by_id, after_part_number, new_id)
     _insert_subassembly_children(
         session,
         parsed_nodes=parsed_nodes,
         old_by_id=old_by_id,
         inserted_ids=inserted_ids,
         id_remap=id_remap,
-        new_tree_numbers=new_tree_numbers,
         subassembly_children=subassembly_children,
     )
 
@@ -408,13 +430,12 @@ def _insert_subassembly_children(
     old_by_id: dict[int, BomNode],
     inserted_ids: dict[str, int],
     id_remap: dict[int, int],
-    new_tree_numbers: set[str],
     subassembly_children: list[BomParsedNode],
 ) -> None:
     """新分总成下面，材料清单写了几颗就插几颗。"""
     for file_row in subassembly_children:
         number = (file_row.part_number or "").strip()
-        if number in new_tree_numbers:
+        if not number:
             continue
         parent_index = file_row.parent_index
         if parent_index is None:
@@ -465,24 +486,34 @@ def _insert_subassembly_children(
                 copy_old_sketch=old_node is not None,
             ),
         )
-        if old_node is not None and int(old_node.level) == 1:
-            id_remap[old_node.id] = new_id
-        inserted_ids[number] = new_id
-        new_tree_numbers.add(number)
+        _claim_old_level1(id_remap, old_by_id, number, new_id)
+        inserted_ids.setdefault(number, new_id)
+
+
+def _claim_old_level1(
+    id_remap: dict[int, int],
+    old_by_id: dict[int, BomNode],
+    part_number: str,
+    new_id: int,
+) -> None:
+    """旧一级还没落到新树上时，第一处新位置认下它。"""
+    old_node = _old_node_by_number(old_by_id, part_number)
+    if old_node is None or int(old_node.level) != 1 or old_node.id in id_remap:
+        return
+    id_remap[old_node.id] = new_id
 
 
 def _subassembly_child_rows(
-    specs: Sequence[BomChangePlantSpec],
     parsed_nodes: list[BomParsedNode],
+    subassembly_numbers: set[str],
 ) -> list[BomParsedNode]:
     """新分总成下面用量大于 0 的零件行。"""
-    subassembly_numbers = _subassembly_numbers(specs)
     rows = [
         node
         for node in parsed_nodes
         if int(node.level) >= 2
         and (node.part_number or "").strip()
-        and _hangs_under_subassembly(parsed_nodes, node, subassembly_numbers)
+        and hangs_under_level1(parsed_nodes, node, subassembly_numbers)
         and node.qty is not None
         and Decimal(str(node.qty)) > 0
         and NOT_INSTALL_REMARK not in (node.remark or "")
@@ -490,29 +521,6 @@ def _subassembly_child_rows(
     ]
     rows.sort(key=lambda node: (int(node.level), node.source_row or 0))
     return rows
-
-
-def _subassembly_numbers(specs: Sequence[BomChangePlantSpec]) -> set[str]:
-    return {
-        (item.after_part_number or "").strip()
-        for item in specs
-        if item.change_type == CHANGE_TYPE_ADD_SUBASSEMBLY
-        and (item.after_part_number or "").strip()
-    }
-
-
-def _hangs_under_subassembly(
-    parsed_nodes: list[BomParsedNode],
-    node: BomParsedNode,
-    subassembly_numbers: set[str],
-) -> bool:
-    current = node
-    while current.parent_index is not None:
-        parent = parsed_nodes[current.parent_index]
-        if int(parent.level) == 1 and (parent.part_number or "").strip() in subassembly_numbers:
-            return True
-        current = parent
-    return False
 
 
 def _has_not_install_mark(parsed_nodes: list[BomParsedNode], part_number: str) -> bool:

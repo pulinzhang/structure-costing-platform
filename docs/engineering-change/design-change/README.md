@@ -1,6 +1,6 @@
 # 工程变更
 
-跨切片能力（BOM / 冲压 / 核价）。本文只写**设计变更**：侧栏二级分组「设计变更」→ 上传 / 列表；代码在 `app/services/engineering_change/design_change/`。接口是 `/api/engineering-change`。材料变更不在本文，见 [材料变更设计](../material-change/README.md)。
+跨切片能力（BOM / 冲压 / 核价）。本文只写**设计变更**：侧栏二级分组「设计变更」→ 上传 / 列表；代码在 `app/services/engineering_change/design_change/`。接口是 `/api/engineering-change`。材料变更不在本文，见 [材料变更设计](../material-change/README.md)。焊信变更不在本文，见 [焊信变更设计](../weld-info-change/README.md)。
 
 有效期与核价按月见 [bom-process-die-effective-period-design.md](bom-process-die-effective-period-design.md)。设计变更门禁从严：一本一个项目号；材料清单与确认表版本必须同一字；生效月须在项目期内；必须先有 SOP 采购对象清单头；版本与清单头不得凑合。
 
@@ -27,7 +27,7 @@
 
 ### 为什么图变了必须换零件号？
 
-奇瑞（客户方）设计图改了，它就是另一件存货，不是同一件改个字。一个交货总成只要碰上会换号的一种（末级改图 / 此件不装 / 增加零件 / 增加分总成），**总成图必然变了，交货总成零件号必然换**；完成停止没有新图、没有新号。没有单独的总成改图。改图只发生在末级，层级写一级或二级。此件不装、增加零件的层级写一级或二级都行；写在二级时，上级一级也要换成新号，旁边没动的二级仍是原号。下载模板先画五种改法：完成停止、末级改图（一级）、末级改图（二级）、此件不装（一级）、增加零件（一级）。此件不装二级规则收、模板不画。增加零件二级模板不画；这个一级下面原来已经有二级才收，一颗都没有就拒收。增加分总成单独一句：新的一级分总成，下面有几颗写几颗，不和此件不装互相核对。见 [scenes/08-叶子一级变分总成.png](scenes/08-叶子一级变分总成.png)。核价按月各算各的；未来 ERP 入库、出库、库存按两个物料号办。所以是 **旧号到期、新号启用**，禁止在旧节点上改档案。新号以工程变更单为准（写成 AB 用 AB，写成 AC 用 AC），系统不推算末两位。出入库主键是 **零件号**。内部号是厂内 ERP 物料码：总成 / 分总成必填，给人建档联查，不是出入库主键。总成必须有图。细则见 [part-number-revision-design.md](part-number-revision-design.md) §1、§3。分镜在 [scenes/](scenes/)，总览见 [八种填法.png](八种填法.png)。
+奇瑞（客户方）设计图改了，它就是另一件存货，不是同一件改个字。一个交货总成只要碰上会换号的一种（末级改图 / 此件不装 / 增加零件 / 增加分总成），**总成图必然变了，交货总成零件号必然换**；完成停止没有新图、没有新号。没有单独的总成改图。改图只发生在末级，层级写一级或二级。此件不装、增加零件的层级写一级或二级都行；写在二级时，上级一级也要换成新号，旁边没动的二级仍是原号。下载模板先画五种改法：完成停止、末级改图（一级）、末级改图（二级）、此件不装（一级）、增加零件（一级）。此件不装二级规则收、模板不画。增加零件二级模板不画；这个一级下面原来已经有二级才收，一颗都没有就拒收。增加分总成单独一句：增加一套一级节点，这一级下面至少两颗二级；只有一颗二级，整份拒收。见 [scenes/08-增加分总成.png](scenes/08-增加分总成.png)。核价按月各算各的；未来 ERP 入库、出库、库存按两个物料号办。所以是 **旧号到期、新号启用**，禁止在旧节点上改档案。新号以工程变更单为准（写成 AB 用 AB，写成 AC 用 AC），系统不推算末两位。出入库主键是 **零件号**。内部号是厂内 ERP 物料码：总成 / 分总成必填，给人建档联查，不是出入库主键。总成必须有图。细则见 [part-number-revision-design.md](part-number-revision-design.md) §1、§3。分镜在 [scenes/](scenes/)，总览见 [八种填法.png](八种填法.png)。
 
 ### 为什么用时间轴（`as_of_month`）而不是快照？
 
@@ -36,6 +36,10 @@
 ### 为什么同号换材料不塞进改图？
 
 同号换材料不在设计变更五句里。见 [材料变更设计](../material-change/README.md)。改图换号抄的是旧号投产 `material`，另把该零件已有材料变更历史抄到新零件。同号换材料仍走材料变更。不在本文改工艺那一格。
+
+### 为什么焊信变化不塞进改图？
+
+停电泳、改焊信通常不换零件号，树也还在供货。见 [焊信变更设计](../weld-info-change/README.md)。种新树仍只抄 SOP 拆解，不抄 `bom_welding_process_change_info`，也不按新焊信重拆。
 
 ### 为什么新旧号只认工程变更单，不收口到字母进一位？
 
@@ -129,7 +133,7 @@ flowchart TB
 | `EC_AFTER_ASSEMBLY_IMPORTED` | 这个变更后总成已经导入成功 | 到设计变更列表删掉这一本后再上传 |
 | `EC_NOT_INSTALL_SIGNAL` | 此件不装必须用量 0 且备注含「此件不装」 | 用量和备注两格都要写对 |
 | `EC_PROCESS_SUPPLIER_FULL_NAME` | 冲压承制公司请写成供应商档案里的全称，简称不行 | 确认表「冲压承制公司」改成档案全称后再传 |
-| `EC_PROCESS_MISSING_NEW` | 冲压工艺确认表少了这个新零件号 | 材料清单换了号或新加了冲压件，确认表也要写出这一号 |
+| `EC_PROCESS_MISSING_NEW` | 冲压工艺确认表少了这个新零件号 | 本项目冲压工艺和变更前总成上都还没有的冲压新号，确认表才要写出。已经有的不用再填 |
 | `EC_PROCESS_EXTRA_NEW` | 冲压工艺确认表多了材料清单没有的号 | 删多余工艺行，或把这个号补进材料清单 |
 | `EC_PROCESS_SHARED_OLD` | 这个旧号还装在别的总成上，不能按改图停掉 | 左右总成共用件：先改另一侧或走增加零件。只在旧号当月仍有工艺时 |
 | `EC_QTY_CHANGED` | 用量与变更前总成不一致 | 本树没有增加零件时不能改用量；有增加零件已是新总成，不拒 |
@@ -139,6 +143,7 @@ flowchart TB
 | `EC_PROJECT_MISMATCH` | 一本只能一个项目号 | 对照上传页、工程变更单、材料清单项目代号、确认表标题里的项目 |
 | `EC_PROCUREMENT_LIST_REQUIRED` | 还没有采购对象清单头 | 先到焊接工程生成；完成停止也不例外 |
 | `EC_BOM_PROCESS_VERSION_MISMATCH` | 两张表版本不是同一个字 | 材料清单第 2 行与确认表表头必须写成一样 |
+| `EC_ADD_SUBASSEMBLY_SET` | 增加分总成必须是一套：一级下面至少两颗二级 | 材料清单这一级下面写出至少两颗用量大于 0 的二级。只有一颗二级不收 |
 | `EC_CHANGE_ORDER_*` | 变更单行数、类型、填法、同一个总成写了多次 | 类型只准五句：完成停止、改图、增加零件、此件不装、增加分总成；一个总成改了好几处请把总成格子上下合并 |
 | `EC_ROLLBACK_BLOCKED` | 不能删本次 | 其后还有未回滚变更，或采购对象已审未反审 |
 | `EC_GATE_FULL_GENERATE` | 禁止整包 generate | 已有设变树（或失效 L0）；请走工程变更重传 |
@@ -208,5 +213,6 @@ Router → EngineeringChangeUploadService.start_upload
 | [bom-process-die-effective-period-design.md](bom-process-die-effective-period-design.md) | 交货总成 / 工艺 / 布点生失效（已落地） |
 | [t28-2025-07-import-bundle-test-design.md](t28-2025-07-import-bundle-test-design.md) | 青岛 T28 真号走查。不是上传页下载的 `EX-*` 模板 |
 | [材料变更样表](../material-change/samples/README.md) | 仓库里仅有的工程变更 xlsx：芜湖 T13J 材料变更 2026-06、2026-07。不是设计变更合册 |
+| [焊信变更](../weld-info-change/README.md) | 同号改节点焊信（设计定稿，未落地）。`bom_welding_process_change_info`：手工新焊信或停止焊信；抄费时实时算 |
 
 一口价年内分段已否决，见 [effective-period-design.md](../../costing/effective-period-design.md)。本目录的生失效不要跟着停。

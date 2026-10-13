@@ -270,6 +270,120 @@ def test_process_supplier_full_name_passes(supplier_db: Session) -> None:
     )
 
 
+def test_add_part_already_in_project_skips_process_sheet() -> None:
+    from decimal import Decimal
+    from types import SimpleNamespace
+
+    from app.common.engineering_change_gates import EC_PROCESS_MISSING_NEW
+    from app.services.engineering_change.design_change.upload.gates.process_gates import (
+        ProcessGateItem,
+        validate_process_hard_gates,
+    )
+
+    def _leaf(part_number: str) -> BomParsedNode:
+        return BomParsedNode(
+            level=2,
+            parent_index=0,
+            part_number=part_number,
+            part_name="中通道后纵梁本体II",
+            material="HC220Y",
+            thickness_mm=Decimal("0.7"),
+            sort_no=1,
+            source_row=12,
+            node_role="make",
+        )
+
+    l0 = BomParsedNode(
+        level=0,
+        parent_index=None,
+        part_number="501007029AB",
+        part_name="总成",
+        sort_no=0,
+        source_row=9,
+    )
+
+    class _Bom:
+        def list_subtree_nodes(self, db: object, *, root_id: int) -> list[SimpleNamespace]:
+            _ = db, root_id
+            return [
+                SimpleNamespace(part_number="501007029AA"),
+                SimpleNamespace(part_number="501004437AA"),
+            ]
+
+    class _Stamping:
+        def list_parts_as_of_for_engineering_change(
+            self, *args: object, **kwargs: object
+        ) -> list[SimpleNamespace]:
+            _ = args, kwargs
+            return [SimpleNamespace(part_number="501009532AA")]
+
+    on_old_tree = ProcessGateItem(
+        change_order=_change_order(
+            change_type=CHANGE_TYPE_ADD_PART,
+            part_level=PART_LEVEL_L2,
+            after_part="501004437AA",
+        ),
+        before_root_id=1,
+        sliced_nodes=[l0, _leaf("501004437AA")],
+    )
+    validate_process_hard_gates(
+        None,  # type: ignore[arg-type]
+        items=[on_old_tree],
+        location="青岛",
+        vehicle_model="T28",
+        effective_year=2025,
+        effective_month=7,
+        process_part_numbers=set(),
+        bom_service=_Bom(),  # type: ignore[arg-type]
+        stamping_service=_Stamping(),  # type: ignore[arg-type]
+    )
+
+    already_in_stamping = ProcessGateItem(
+        change_order=_change_order(
+            change_type=CHANGE_TYPE_ADD_PART,
+            part_level=PART_LEVEL_L1,
+            after_part="501009532AA",
+        ),
+        before_root_id=1,
+        sliced_nodes=[l0, _leaf("501009532AA")],
+    )
+    validate_process_hard_gates(
+        None,  # type: ignore[arg-type]
+        items=[already_in_stamping],
+        location="青岛",
+        vehicle_model="T28",
+        effective_year=2025,
+        effective_month=7,
+        process_part_numbers=set(),
+        bom_service=_Bom(),  # type: ignore[arg-type]
+        stamping_service=_Stamping(),  # type: ignore[arg-type]
+    )
+
+    brand_new = ProcessGateItem(
+        change_order=_change_order(
+            change_type=CHANGE_TYPE_ADD_PART,
+            part_level=PART_LEVEL_L2,
+            after_part="501005123AA",
+        ),
+        before_root_id=1,
+        sliced_nodes=[l0, _leaf("501005123AA")],
+    )
+    with pytest.raises(BusinessException) as caught:
+        validate_process_hard_gates(
+            None,  # type: ignore[arg-type]
+            items=[brand_new],
+            location="青岛",
+            vehicle_model="T28",
+            effective_year=2025,
+            effective_month=7,
+            process_part_numbers=set(),
+            bom_service=_Bom(),  # type: ignore[arg-type]
+            stamping_service=_Stamping(),  # type: ignore[arg-type]
+        )
+    assert str(caught.value).startswith(EC_PROCESS_MISSING_NEW)
+    assert "501005123AA" in str(caught.value)
+
+
 def test_process_supplier_unknown_rejected(supplier_db: Session) -> None:
     with pytest.raises(BusinessException) as caught:
         require_process_supplier_full_name(

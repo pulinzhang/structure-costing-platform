@@ -13,6 +13,7 @@ from app.common.engineering_change_gates import (
     EC_ADD_ALREADY_ON_TREE,
     EC_ADD_LEVEL1_LEAF,
     EC_ADD_LEVEL1_NUMBER,
+    EC_ADD_SUBASSEMBLY_SET,
     EC_ASSEMBLY_SKETCH_REQUIRED,
     EC_CHANGE_ORDER_COLUMNS,
     EC_INTERNAL_REQUIRED,
@@ -34,7 +35,11 @@ from app.exceptions.base import BusinessException
 from app.models.bom import BomNode
 from app.parsers.bom.bom_parser import BomParsedNode
 from app.parsers.engineering_change.design_change.change_order_parser import ChangeOrderRowParsed
-from app.services.bom.bom.change_tree_plant.number_map import level1_renumber_for_added_part
+from app.services.bom.bom.change_tree_plant.number_map import (
+    added_part_row,
+    parent_level1_renumber,
+    part_installed_at_level,
+)
 from app.services.bom.bom.rules.internal_number_uniqueness import (
     validate_internal_number_uniqueness,
 )
@@ -202,12 +207,15 @@ def _validate_add_subassembly(
     old_nodes: Sequence[BomNode],
     sliced_nodes: Sequence[BomParsedNode],
 ) -> None:
-    """新的一级分总成。下面有几颗零件，材料清单写几颗，不和此件不装对账。"""
+    """增加一套一级节点：这一级，再加至少两颗二级。只有一颗二级不收。"""
     after_number = (change_order.after_part_number or "").strip()
-    old_numbers = {(node.part_number or "").strip() for node in old_nodes}
-    if after_number in old_numbers:
+    if part_installed_at_level(
+        old_nodes,
+        after_number,
+        PART_LEVEL_TO_BOM_LEVEL[PART_LEVEL_L1],
+    ):
         raise BusinessException(
-            f"{EC_ADD_ALREADY_ON_TREE}：{quoted(after_number)} 已在变更前总成上，不能当增加分总成。"
+            f"{EC_ADD_ALREADY_ON_TREE}：{quoted(after_number)} 已是变更前总成上的一级，不能当增加分总成。"
         )
     file_part = _find_file_part(sliced_nodes, after_number)
     if file_part is None or int(file_part.level) != 1:
@@ -222,6 +230,12 @@ def _validate_add_subassembly(
         raise BusinessException(
             f"{EC_INTERNAL_REQUIRED}：分总成 {quoted(after_number)} 必须有内部号。"
         )
+    level2_count = len(_installed_level2_children(sliced_nodes, file_part))
+    if level2_count < 2:
+        raise BusinessException(
+            f"{EC_ADD_SUBASSEMBLY_SET}：{quoted(after_number)} 下面现在是 {level2_count} 颗二级。"
+            "一套要同时有这一级，和至少两颗二级。"
+        )
 
 
 def _validate_add_part(
@@ -230,13 +244,13 @@ def _validate_add_part(
     sliced_nodes: list[BomParsedNode],
 ) -> None:
     after_number = (change_order.after_part_number or "").strip()
-    old_numbers = {(node.part_number or "").strip() for node in old_nodes}
-    if after_number in old_numbers:
-        raise BusinessException(
-            f"{EC_ADD_ALREADY_ON_TREE}：{quoted(after_number)} 已在变更前总成上，不能当增加零件。"
-        )
     expected_level = PART_LEVEL_TO_BOM_LEVEL[change_order.part_level]
-    file_part = _find_file_part(sliced_nodes, after_number)
+    if part_installed_at_level(old_nodes, after_number, expected_level):
+        raise BusinessException(
+            f"{EC_ADD_ALREADY_ON_TREE}：{quoted(after_number)} 已是变更前总成上的{change_order.part_level}，"
+            "不能当增加零件。"
+        )
+    file_part = added_part_row(sliced_nodes, after_number, old_nodes)
     if file_part is None or int(file_part.level) != expected_level:
         raise BusinessException(
             f"{EC_REVISE_FILE_CHAIN}：材料清单没有 {quoted(after_number)}，"
@@ -258,7 +272,7 @@ def _validate_add_part(
             f"{EC_ADD_LEVEL1_NUMBER}：材料清单里 {quoted(after_number)} 的上级要是一级。"
         )
     parent_number = (parent.part_number or "").strip()
-    pair = level1_renumber_for_added_part(old_nodes, sliced_nodes, after_number)
+    pair = parent_level1_renumber(sliced_nodes, file_part, old_nodes)
     old_number = pair[0] if pair is not None else parent_number
     old_level1 = _find_old_level1(old_nodes, old_number)
     if old_level1 is None:
@@ -283,6 +297,29 @@ def _find_old_level1(old_nodes: Sequence[BomNode], part_number: str) -> BomNode 
         ),
         None,
     )
+
+
+def _installed_level2_children(
+    nodes: Sequence[BomParsedNode],
+    parent: BomParsedNode,
+) -> list[BomParsedNode]:
+    """这一级下面实际装上的二级。用量 0、此件不装、空号不计入一套。"""
+    parent_index = next((index for index, node in enumerate(nodes) if node is parent), None)
+    if parent_index is None:
+        return []
+    children: list[BomParsedNode] = []
+    for node in nodes:
+        if int(node.level) != 2 or node.parent_index != parent_index:
+            continue
+        number = (node.part_number or "").strip()
+        if not number or number == "/":
+            continue
+        if node.qty is None or node.qty <= 0:
+            continue
+        if NOT_INSTALL_REMARK in (node.remark or ""):
+            continue
+        children.append(node)
+    return children
 
 
 def _parent_node(
