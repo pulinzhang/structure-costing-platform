@@ -2,16 +2,20 @@
 
 from __future__ import annotations
 
+import re
 from copy import copy
 from dataclasses import dataclass
+from datetime import datetime
 from io import BytesIO
 from pathlib import Path
 from tempfile import TemporaryDirectory
-from typing import cast
+from typing import Protocol, cast
 
 from openpyxl import Workbook, load_workbook
+from openpyxl.cell.cell import Cell
 from openpyxl.drawing.image import Image as ExcelImage
 from openpyxl.styles import Alignment, Border, Font, PatternFill, Side
+from openpyxl.styles.cell_style import StyleArray
 from openpyxl.worksheet.worksheet import Worksheet
 
 from app.common.engineering_change_gates import (
@@ -38,6 +42,10 @@ LOCATION = "青岛"
 VEHICLE_MODEL = "T28"
 CUSTOMER_NAME = "奇瑞公司"
 PERIOD_LABEL = "2026年07月"
+_PERIOD_LABEL_RE = re.compile(r"^(\d{4})年(\d{1,2})月$")
+# Excel 中文区域内置格式 yyyy"年"m"月"。打开显示「2026年7月」，文件里存的是日期序列号。
+_EXCEL_YEAR_MONTH_FORMAT_ID = 57
+_EXCEL_EPOCH = datetime(1899, 12, 30)
 CHANGE_VERSION = "EC-202607"
 STAMPING_SUPPLIER = "烟台海众汽车零部件有限公司"
 BOM_VERSION_LABEL = "D/00"
@@ -677,6 +685,8 @@ def _write_change_order(
             cell.font = label
             cell.border = _THIN
             cell.alignment = _CENTER
+            if col == 2:
+                _write_effective_period(cell, meta.period_label)
             if col in {6, 7, 8, 9, 10}:
                 if sample.change_type == CHANGE_TYPE_NOT_INSTALL:
                     cell.fill = _NOT_ASSEMBLED_FILL
@@ -692,6 +702,24 @@ def _write_change_order(
     for col, width in enumerate(widths, start=1):
         sheet.column_dimensions[chr(64 + col)].width = width
     sheet.freeze_panes = "A5"
+
+
+class _CellStyleHolder(Protocol):
+    _style: StyleArray | None
+
+
+def _write_effective_period(cell: Cell, period_label: str) -> None:
+    """生效年月写成 Excel 日期，格式为中文年月。"""
+    match = _PERIOD_LABEL_RE.match(period_label.strip())
+    if match is None:
+        return
+    year = int(match.group(1))
+    month = int(match.group(2))
+    cell.value = (datetime(year, month, 1) - _EXCEL_EPOCH).days
+    holder = cast(_CellStyleHolder, cell)
+    if holder._style is None:
+        holder._style = StyleArray()
+    holder._style.numFmtId = _EXCEL_YEAR_MONTH_FORMAT_ID
 
 
 def _write_ec_fill_instructions(sheet: Worksheet, meta: TemplateMeta) -> None:
