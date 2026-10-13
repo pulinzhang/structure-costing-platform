@@ -209,18 +209,18 @@ SCENES = (
         "分总成换成新号。旁边的二级还是原号。",
         "revise_l2",
         "模板里有",
-        "叶子一级变分总成",
+        "增加分总成",
     ),
     Scene(
-        "08-叶子一级变分总成.png",
-        "叶子一级变分总成",
+        "08-增加分总成.png",
+        "增加分总成",
         "增加分总成",
         "一级",
         ORANGE,
         ORANGE_SOFT,
         True,
-        "上面加一颗，变成新分总成",
-        "新分总成下面有几颗写几颗。原来的位置若停用，仍按此件不装，两边不核对。",
+        "增加一套一级节点",
+        "这一级，再加至少两颗二级。只有一颗二级，不收。",
         "leaf_subassembly",
         "模板里有",
         "",
@@ -329,13 +329,14 @@ def draw_revise_l2(draw: ImageDraw.ImageDraw, area: tuple[int, int, int, int]) -
 
 
 def draw_leaf_subassembly(draw: ImageDraw.ImageDraw, area: tuple[int, int, int, int]) -> None:
-    token(draw, (760, 632, 1160, 728), "总成", "AB", GREEN, GREEN_SOFT)
+    """青岛 T28 样例：501007029AB → 一级 501004437AA-1 → 两颗二级。"""
+    token(draw, (700, 632, 1220, 728), "总成", "501007029AB", GREEN, GREEN_SOFT)
     vline(draw, 960, 728, 744, ORANGE)
-    token(draw, (760, 744, 1160, 840), "新分总成", "新号", ORANGE, ORANGE_SOFT)
-    draw.line([(960, 840), (960, 868), (660, 868), (660, 888)], fill=ROSE, width=6)
-    draw.line([(960, 868), (1260, 868), (1260, 888)], fill=ORANGE, width=6)
-    token(draw, (460, 888, 860, 998), "原来的一级", "原号", ROSE, ROSE_SOFT)
-    token(draw, (1060, 888, 1460, 998), "新加上去的", "新号", ORANGE, ORANGE_SOFT)
+    token(draw, (700, 744, 1220, 840), "一级 · 分总成", "501004437AA-1", ORANGE, ORANGE_SOFT)
+    draw.line([(960, 840), (960, 868), (560, 868), (560, 888)], fill=ORANGE, width=6)
+    draw.line([(960, 868), (1360, 868), (1360, 888)], fill=ORANGE, width=6)
+    token(draw, (300, 888, 820, 998), "二级 · 新零件", "501005123AA", ORANGE, ORANGE_SOFT)
+    token(draw, (1100, 888, 1620, 998), "二级 · 原零件", "501004437AA", ORANGE, ORANGE_SOFT)
 
 
 def draw_stop_detail(draw: ImageDraw.ImageDraw, area: tuple[int, int, int, int]) -> None:

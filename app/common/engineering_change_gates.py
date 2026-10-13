@@ -210,6 +210,7 @@ EC_NOT_INSTALL_CHILDREN = "中间层此件不装时，下级必须同样标记"
 EC_ADD_ALREADY_ON_TREE = "变更后零件已在变更前总成上"
 EC_ADD_LEVEL1_NUMBER = "增加二级时，上级一级也要换成新号"
 EC_ADD_LEVEL1_LEAF = "增加二级时，这个一级下面原来要有二级"
+EC_ADD_SUBASSEMBLY_SET = "增加分总成必须是一套：一级下面至少两颗二级"
 
 # --- 变更类型（对人可见） ---
 CHANGE_TYPE_STOP = "完成停止"
@@ -239,7 +240,20 @@ PART_LEVEL_TO_BOM_LEVEL = {
     PART_LEVEL_L2: 2,
 }
 
+
 NOT_INSTALL_REMARK = "此件不装"
+
+
+def _not_install_flags(qty: object | None, remark: str | None) -> tuple[bool, bool]:
+    has_zero = qty is not None and Decimal(str(qty)) == 0
+    has_signal = NOT_INSTALL_REMARK in (remark or "")
+    return has_zero, has_signal
+
+
+def has_not_install_marks(qty: object | None, remark: str | None) -> bool:
+    """用量是 0，且备注写了「此件不装」。只写一边的，这里不算。"""
+    has_zero, has_signal = _not_install_flags(qty, remark)
+    return has_zero and has_signal
 
 
 def is_not_install_row(
@@ -254,8 +268,7 @@ def is_not_install_row(
     设计部 Excel 习惯用量写 0 表示「本总成不再装」；仅 0 也可能是漏填。
     备注固定句防呆，避免把「暂定 0」误删出树。
     """
-    has_zero = qty is not None and Decimal(str(qty)) == 0
-    has_signal = NOT_INSTALL_REMARK in (remark or "")
+    has_zero, has_signal = _not_install_flags(qty, remark)
     if has_zero and has_signal:
         return True
     who = f"{quoted(part_number)}，" if part_number else ""

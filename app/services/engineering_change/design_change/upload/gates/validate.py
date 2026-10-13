@@ -48,6 +48,7 @@ from app.exceptions.base import BusinessException
 from app.models.bom import BomNode
 from app.parsers.bom.bom_parser import BomParsedNode
 from app.parsers.engineering_change.design_change.change_order_parser import ChangeOrderRowParsed
+from app.services.bom.bom.change_tree_plant.number_map import part_installed_at_level
 
 _PERIOD_TEXT_RE = re.compile(r"^(\d{4})\s*年\s*(\d{1,2})\s*月$")
 _EXCEL_SERIAL_RE = re.compile(r"^\d+(?:\.\d+)?$")
@@ -307,10 +308,11 @@ def validate_change_order_before_after(
             )
     if not after_part:
         return
-    old_numbers = {(node.part_number or "").strip() for node in old_nodes}
-    if after_part in old_numbers:
+    if expected_level is not None and part_installed_at_level(
+        old_nodes, after_part, expected_level
+    ):
         raise BusinessException(
-            f"{EC_ADD_ALREADY_ON_TREE}：{quoted(after_part)} 已在变更前总成上。"
+            f"{EC_ADD_ALREADY_ON_TREE}：{quoted(after_part)} 已是变更前总成上的{change_order.part_level}。"
         )
     if after_part_as_l0 is not None:
         raise BusinessException(

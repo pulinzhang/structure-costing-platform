@@ -632,6 +632,40 @@ def test_before_part_missing_and_after_part_already_on_tree() -> None:
     assert str(exc.value).startswith(EC_ADD_ALREADY_ON_TREE)
 
 
+def test_after_part_on_another_level_belongs_to_that_row() -> None:
+    from types import SimpleNamespace
+
+    from app.parsers.engineering_change.design_change.change_order_parser import (
+        ChangeOrderRowParsed,
+    )
+    from app.services.engineering_change.design_change.upload.gates.validate import (
+        validate_change_order_before_after,
+    )
+
+    change_order = ChangeOrderRowParsed(
+        project_code="T28",
+        effective_period_text="2025年07月",
+        change_type=CHANGE_TYPE_ADD_PART,
+        before_assembly_part_number="501007029AA",
+        after_assembly_part_number="501007029AB",
+        assembly_name="中通道左后纵梁总成",
+        part_level="二级",
+        before_part_number=None,
+        after_part_number="501004437AA",
+        part_name=None,
+        excel_row=11,
+    )
+    old_nodes = [
+        SimpleNamespace(part_number="501007029AA", level=0),
+        SimpleNamespace(part_number="501004437AA", level=1),
+    ]
+    validate_change_order_before_after(
+        change_order,
+        old_nodes=old_nodes,
+        after_assembly=None,
+    )
+
+
 def test_template_bom_l0_has_assembly_sketch() -> None:
     from app.parsers.bom.bom_parser import parse_bom_excel
     from app.parsers.engineering_change.design_change.sheet_extract import SHEET_BOM

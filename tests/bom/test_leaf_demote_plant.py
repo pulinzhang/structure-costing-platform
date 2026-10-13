@@ -1,4 +1,4 @@
-"""叶子一级变成一级分总成：种树挂到新分总成下，不往已导入的库再传。"""
+"""增加一套一级节点：种树把这一级和它下面至少两颗二级挂上，不往已导入的库再传。"""
 
 from __future__ import annotations
 
@@ -173,8 +173,8 @@ def test_plant_leaf_demote_hangs_old_number_under_new_subassembly(memory_db: Ses
     ]
     assert [order.change_type for order in orders] == [
         CHANGE_TYPE_NOT_INSTALL,
-        CHANGE_TYPE_ADD_SUBASSEMBLY,
         CHANGE_TYPE_ADD_PART,
+        CHANGE_TYPE_ADD_SUBASSEMBLY,
     ]
     sliced = slice_bom_nodes_for_l0(
         parse_bom_excel(raw, sheet_name=SHEET_BOM).nodes,
@@ -247,25 +247,26 @@ def test_plant_leaf_demote_hangs_old_number_under_new_subassembly(memory_db: Ses
     by_number = {node.part_number: node for node in planted}
     assert by_number[_AFTER].level == 0
     assert _OLD not in {node.part_number for node in planted if int(node.level) == 1}
+    renamed = by_number["501005057AB"]
+    assert int(renamed.level) == 1
+    assert renamed.parent_id == result.new_l0_id
+    assert "501005057AA" not in by_number
+    added_under_renamed = next(
+        node for node in planted if node.part_number == _OLD and node.parent_id == renamed.id
+    )
+    assert int(added_under_renamed.level) == 2
+    assert added_under_renamed.internal_number == "ACA392002"
+    assert added_under_renamed.qty == Decimal("1")
+    assert result.source_id_remap[old_leaf.id] == added_under_renamed.id
     subassembly = by_number[_SUB]
     assert int(subassembly.level) == 1
     assert subassembly.parent_id == result.new_l0_id
     assert subassembly.internal_number == "ACA613005"
-    old_as_level2 = by_number[_OLD]
-    assert int(old_as_level2.level) == 2
-    assert old_as_level2.parent_id == subassembly.id
-    assert old_as_level2.internal_number == "ACA392002"
-    assert old_as_level2.excel_row == 11
-    assert old_as_level2.qty == Decimal("1")
-    assert old_as_level2.sketch_url == "sketches/old-437.png"
-    assert result.source_id_remap[old_leaf.id] == old_as_level2.id
-    added = by_number[_ADDED]
-    assert int(added.level) == 2
-    assert added.parent_id == subassembly.id
+    under_subassembly = [node for node in planted if node.parent_id == subassembly.id]
+    assert {node.part_number for node in under_subassembly} == {_ADDED, _OLD}
     assert by_number["501007031AA"].parent_id == result.new_l0_id
-    assert by_number["501005057AA"].parent_id == result.new_l0_id
-    assert by_number["501007904AA"].parent_id == by_number["501005057AA"].id
-    assert by_number["501007905AA"].parent_id == by_number["501005057AA"].id
+    assert by_number["501007904AA"].parent_id == renamed.id
+    assert by_number["501007905AA"].parent_id == renamed.id
 
 
 def test_classic_not_install_still_omits_the_part(memory_db: Session) -> None:

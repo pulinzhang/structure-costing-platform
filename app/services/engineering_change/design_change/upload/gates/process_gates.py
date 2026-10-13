@@ -28,6 +28,10 @@ from app.parsers.engineering_change.design_change.change_order_parser import Cha
 from app.parsers.engineering_change.design_change.sheet_extract import SHEET_PROCESS
 from app.parsers.stamping.models.parse_result import ParserResult
 from app.parsers.stamping.stamping_parser import parse_stamping_excel
+from app.services.bom.bom.change_tree_plant.number_map import (
+    added_part_row,
+    subassembly_part_numbers,
+)
 from app.services.bom.bom.engineering import BomEngineeringService
 from app.services.masterdata.supplier.service import SupplierService
 from app.services.stamping.part.engineering.design_change.service import StampingDesignChangeService
@@ -109,6 +113,9 @@ def validate_process_hard_gates(
 
     allowed_new: set[str] = set()
     revise_old_to_new: dict[str, str] = {}
+    subassembly_numbers = subassembly_part_numbers(
+        (item.change_order.change_type, item.change_order.after_part_number) for item in items
+    )
     for item in items:
         if item.change_order.change_type == CHANGE_TYPE_STOP:
             continue
@@ -153,15 +160,13 @@ def validate_process_hard_gates(
             and item.change_order.after_part_number
         ):
             required = item.change_order.after_part_number.strip()
-            add_row = next(
-                (node for node in reversed(nodes) if (node.part_number or "").strip() == required),
-                None,
-            )
-            if (
-                required
-                and add_row is not None
-                and _parsed_needs_process(nodes, add_row)
-                and required not in process_numbers
+            add_row = added_part_row(nodes, required, old_nodes, subassembly_numbers)
+            if _add_part_missing_from_process(
+                required=required,
+                needs_process=add_row is not None and _parsed_needs_process(nodes, add_row),
+                process_numbers=process_numbers,
+                as_of_numbers=as_of_numbers,
+                old_tree_numbers=old_tree_numbers,
             ):
                 raise BusinessException(
                     f"{EC_PROCESS_MISSING_NEW}：{quoted(required)}。"
@@ -176,6 +181,20 @@ def validate_process_hard_gates(
             "冲压工艺确认表只写这次换号或新加的冲压件。请删掉多出来的号，或把这些号写进材料清单后再传。"
         )
     return revise_old_to_new
+
+
+def _add_part_missing_from_process(
+    *,
+    required: str,
+    needs_process: bool,
+    process_numbers: set[str],
+    as_of_numbers: set[str],
+    old_tree_numbers: set[str],
+) -> bool:
+    """本项目冲压工艺里已有，或变更前总成上已有，确认表不用再写。"""
+    if not required or not needs_process or required in process_numbers:
+        return False
+    return required not in as_of_numbers and required not in old_tree_numbers
 
 
 def _parsed_needs_process(nodes: list[BomParsedNode], add_row: BomParsedNode) -> bool:
