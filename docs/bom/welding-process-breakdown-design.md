@@ -251,7 +251,7 @@ Parser  仅 generate / 改量映射 经 Service 调用
 | [l1-assembly-costing-design.md](../costing/l1-assembly-costing-design.md) | 应成本工艺量来自 L1 拆解行 |
 | [costing-engine-design.md](../costing/costing-engine-design.md) | 年度步骤可补算拆解；引擎调 generate，门禁在 `snapshot_blocks_full_generate` |
 | [part-number-revision-design.md](../engineering-change/design-change/part-number-revision-design.md) | 工程变更从旧树拆解结果抄到新树（主表+全部明细，禁止按焊信重拆）；行上 `bom_version` 抄树根 |
-| [焊信变更](../engineering-change/weld-info-change/README.md) | 设计定稿，未落地。`bom_welding_process_change_info` 挂在节点上，与明细无关；有记录则禁止删该节点 |
+| [`bom_welding_process_change_info`](../engineering-change/weld-info-change/bom-welding-process-change-info-design.md) | 设计定稿，未落地。挂在节点上，与明细无关；有记录则禁止删该节点。列表每一行操作列进入 |
 | [bom-procurement-objects-design.md](bom-procurement-objects-design.md) | 认人不读拆解 |
 
 ---
