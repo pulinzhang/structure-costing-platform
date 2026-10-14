@@ -5,7 +5,7 @@
  * 顶部摘要与表单同源渲染，避免展示/编辑数据冲突
  */
 
-import { BTN_SOLID } from '../../../ui/classes.js?v=14';
+import { BTN_SOLID } from '../../../ui/classes.js?v=15';
 import { updateUserSession } from '../../login/index.js';
 import { profileLoadingTemplate, profileTemplate } from './template.js?v=6';
 

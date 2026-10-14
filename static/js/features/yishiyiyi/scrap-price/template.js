@@ -4,7 +4,7 @@
  * DOM ID / 字段 / 事件契约保持不变
  */
 
-import { DRAWER_BACKDROP, BTN_GHOST, BTN_SOLID } from '../../../ui/classes.js?v=14';
+import { DRAWER_BACKDROP, BTN_GHOST, BTN_SOLID } from '../../../ui/classes.js?v=15';
 
 import { moreMenuItemHtml, moreMenuShellHtml } from '../../../ui/more-menu.js?v=7';
 
@@ -160,9 +160,9 @@ export function scrapPriceTemplate() {
                     <thead>
                         <tr class="border-b border-app-surface">
                             <th class="pb-3 pr-2 text-left text-[10px] font-medium text-ink-faint tracking-[0.16em] sm:pb-4 sm:pr-6">基地</th>
-                            <th class="pb-3 px-1 text-right text-[10px] font-medium text-ink-faint tracking-[0.16em] sm:pb-4 sm:px-4">大盘价</th>
-                            <th class="pb-3 px-1 text-right text-[10px] font-medium text-ink-faint tracking-[0.16em] sm:pb-4 sm:px-4">扣费</th>
-                            <th class="pb-3 px-1 text-right text-[10px] font-medium text-ink-dim tracking-[0.16em] sm:pb-4 sm:px-4">净价</th>
+                            <th class="record-aux pb-3 px-1 text-right text-[10px] font-medium text-ink-faint tracking-[0.16em] sm:pb-4 sm:px-4">大盘价</th>
+                            <th class="record-aux pb-3 px-1 text-right text-[10px] font-medium text-ink-faint tracking-[0.16em] sm:pb-4 sm:px-4">扣费</th>
+                            <th class="record-focus pb-3 px-1 text-right text-[10px] font-medium text-ink-dim tracking-[0.16em] sm:pb-4 sm:px-4">净价</th>
                             <th class="hidden pb-4 pl-6 text-left text-[10px] font-medium text-ink-faint tracking-[0.16em] sm:table-cell"></th>
                         </tr>
                     </thead>

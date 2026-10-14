@@ -3,7 +3,7 @@
  * 系统设置 — 卡片网格布局
  */
 
-import { BTN_SOLID } from '../../../ui/classes.js?v=14';
+import { BTN_SOLID } from '../../../ui/classes.js?v=15';
 
 function fieldLabel(text, tip) {
     const tipHtml = tip

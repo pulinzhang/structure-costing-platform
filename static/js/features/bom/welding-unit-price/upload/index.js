@@ -1,4 +1,4 @@
-import { HUD_LED } from '../../../../ui/classes.js?v=14';
+import { HUD_LED } from '../../../../ui/classes.js?v=15';
 /**
  * 焊接单价上传页
  * 同步导入：基地 + 年度必选，仅 .xlsx

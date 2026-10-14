@@ -3,7 +3,7 @@
  * 个人资料 + 安全设置（两张独立卡片，操作物理隔离）
  */
 
-import { HUD_LED, BTN_SOLID } from '../../../ui/classes.js?v=14';
+import { HUD_LED, BTN_SOLID } from '../../../ui/classes.js?v=15';
 
 export function profileLoadingTemplate() {
     return `

@@ -2,7 +2,7 @@
  * 牌号分类档案 — HUD 密表 + 抽屉增改
  */
 
-import { HUD_SHELL, DRAWER_BACKDROP, DRAWER_SHELL, HUD_BAND, OPS_TH, BTN_HUD_CREATE, HUD_FILTER, BTN_GHOST, BTN_SOLID, BTN_SOLID_DANGER } from '../../../ui/classes.js?v=14';
+import { HUD_SHELL, DRAWER_BACKDROP, DRAWER_SHELL, HUD_BAND, OPS_TH, BTN_HUD_CREATE, HUD_FILTER, BTN_GHOST, BTN_SOLID, BTN_SOLID_DANGER } from '../../../ui/classes.js?v=15';
 import { hudTableHtml, hudRowHtml, opsIconButtonHtml } from '../../../ui/hud-table.js?v=3';
 
 import { moreMenuItemHtml, moreMenuShellHtml } from '../../../ui/more-menu.js?v=7';
@@ -81,7 +81,7 @@ export function steelGradeCategoryTemplate() {
                             <col style="width: 88px;">`,
                     headHtml: `
                                 <th class="p-0" aria-hidden="true"></th>
-                                <th class="px-2 py-2 text-left text-[9px] font-medium tracking-[0.08em] text-ink-faint">牌号</th>
+                                <th class="record-key px-2 py-2 text-left text-[9px] font-medium tracking-[0.08em] text-ink-faint">牌号</th>
                                 <th class="px-2 py-2 text-left text-[9px] font-medium tracking-[0.06em] text-ink-faint">大类</th>
                                 <th class="px-2 py-2 text-left text-[9px] font-medium tracking-[0.06em] text-ink-faint">备注</th>
                                 <th class="px-2 py-2 text-left text-[9px] font-medium tracking-[0.06em] text-ink-faint">更新</th>

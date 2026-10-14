@@ -2,7 +2,7 @@
  * BOM 焊接费列表模板 — HUD 密表
  */
 
-import { filterSelect, filterInput, HUD_SHELL, DRAWER_CLOSE, DRAWER_BACKDROP, DRAWER_SHELL, HUD_BAND, BTN_GHOST, TH_ROW, OPS_TH, HUD_LED, BTN_SOLID } from '../../../../ui/classes.js?v=14';
+import { filterSelect, filterInput, HUD_SHELL, DRAWER_CLOSE, DRAWER_BACKDROP, DRAWER_SHELL, HUD_BAND, BTN_GHOST, TH_ROW, OPS_TH, HUD_LED, BTN_SOLID } from '../../../../ui/classes.js?v=15';
 import { filterBarHtml } from '../../../../ui/filter-bar.js?v=6';
 import { hudTableHtml, hudRowHtml, opsIconButtonHtml } from '../../../../ui/hud-table.js?v=3';
 import { hudKpiCardHtml, paintHudKpiAlert } from '../../../../ui/hud-kpi.js?v=1';
@@ -139,15 +139,15 @@ export function l0WeldingFeeListTemplate() {
                                 <th class="px-2 py-2 text-left text-[9px] font-medium tracking-[0.08em] text-ink-faint">基地 / 年</th>
                                 <th class="px-2 py-2 text-left text-[9px] font-medium tracking-[0.08em] text-ink-faint">项目 / 版本</th>
                                 <th class="px-2 py-2 text-center text-[9px] font-medium tracking-[0.06em] text-ink-faint">层级</th>
-                                <th class="px-2 py-2 text-left text-[9px] font-medium tracking-[0.08em] text-ink-muted">短代码</th>
+                                <th class="record-key px-2 py-2 text-left text-[9px] font-medium tracking-[0.08em] text-ink-muted">短代码</th>
                                 <th class="px-2 py-2 text-left text-[9px] font-medium tracking-[0.08em] text-ink-faint">零件</th>
                                 <th class="px-2 py-2 text-left text-[9px] font-medium tracking-[0.08em] text-ink-faint">焊接信息原文</th>
                                 <th class="px-2 py-2 text-right text-[9px] font-medium tracking-[0.06em] text-ink-faint">工艺数</th>
                                 <th class="px-2 py-2 text-right text-[9px] font-medium tracking-[0.06em] text-ink-faint">命中</th>
                                 <th class="px-2 py-2 text-right text-[9px] font-medium tracking-[0.06em] text-ink-faint">缺单价</th>
-                                <th class="px-2 py-2 text-right text-[9px] font-medium tracking-[0.06em] text-ink-faint">系统计算</th>
-                                <th class="px-2 py-2 text-right text-[9px] font-medium tracking-[0.06em] text-ink-faint">其它费用</th>
-                                <th class="px-2 py-2 text-right text-[9px] font-semibold tracking-[0.06em] text-brand-hud/90 bg-brand-hud/10">确认单价</th>
+                                <th class="record-aux px-2 py-2 text-right text-[9px] font-medium tracking-[0.06em] text-ink-faint">系统计算</th>
+                                <th class="record-aux px-2 py-2 text-right text-[9px] font-medium tracking-[0.06em] text-ink-faint">其它费用</th>
+                                <th class="record-focus px-2 py-2 text-right text-[9px] font-semibold tracking-[0.06em] text-brand-hud/90 bg-brand-hud/10">确认单价</th>
                                 <th class="px-1 py-2 text-center text-[9px] font-medium tracking-[0.06em] text-ink-faint">计算</th>
                                 <th class="px-1 py-2 text-center text-[9px] font-medium tracking-[0.06em] text-ink-faint">审核</th>
                                 <th class="${OPS_TH}" aria-label="操作"></th>`,
@@ -519,11 +519,11 @@ export function renderFeeDetailItems(items) {
         <table class="w-full border-collapse">
             <thead>
                 <tr class="${TH_ROW}">
-                    <th class="px-3 py-2 text-left text-[9px] font-medium tracking-[0.08em] text-ink-faint">标准工艺</th>
+                    <th class="record-key px-3 py-2 text-left text-[9px] font-medium tracking-[0.08em] text-ink-faint">标准工艺</th>
                     <th class="px-3 py-2 text-right text-[9px] font-medium tracking-[0.06em] text-ink-faint">过程量</th>
-                    <th class="px-3 py-2 text-right text-[9px] font-medium tracking-[0.06em] text-ink-faint">单价</th>
+                    <th class="record-aux px-3 py-2 text-right text-[9px] font-medium tracking-[0.06em] text-ink-faint">单价</th>
                     <th class="px-3 py-2 text-left text-[9px] font-medium tracking-[0.08em] text-ink-faint">单位</th>
-                    <th class="px-3 py-2 text-right text-[9px] font-medium tracking-[0.06em] text-ink-faint">行费</th>
+                    <th class="record-focus px-3 py-2 text-right text-[9px] font-medium tracking-[0.06em] text-ink-faint">行费</th>
                     <th class="px-3 py-2 text-center text-[9px] font-medium tracking-[0.06em] text-ink-faint">匹配</th>
                 </tr>
             </thead>

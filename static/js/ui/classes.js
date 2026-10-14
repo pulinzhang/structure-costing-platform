@@ -136,11 +136,12 @@ export const TH_TEXT =
 export const TH_NUM =
     `${TH_CELL} text-right font-medium tracking-[0.06em] text-ink-faint`;
 
+/** 手机卡片角色。窄屏只认表头上的这些类，调用方决定哪一列是标题、规格、价格、明细、溯源。 */
 export const TH_KEY =
-    `${TH_CELL} text-left font-medium tracking-[0.08em] text-ink-muted`;
+    `${TH_CELL} record-key text-left font-medium tracking-[0.08em] text-ink-muted`;
 
 export const TH_FOCUS =
-    `${TH_CELL} text-right font-semibold tracking-[0.06em] text-brand-hud/90 bg-brand-hud/10`;
+    `${TH_CELL} record-focus text-right font-semibold tracking-[0.06em] text-brand-hud/90 bg-brand-hud/10`;
 
 export const OPS_TH =
     'p-0 w-9 sticky right-0 z-[3] bg-app-hud';

@@ -3,7 +3,7 @@
  * 管理者看板 — 本期产出 / 待办决策 / 核价闭环就绪
  */
 
-import { filterSelect, BTN_GHOST } from '../../ui/classes.js?v=14';
+import { filterSelect, BTN_GHOST } from '../../ui/classes.js?v=15';
 import { filterBarHtml } from '../../ui/filter-bar.js?v=6';
 import { hudKpiCardHtml } from '../../ui/hud-kpi.js?v=1';
 

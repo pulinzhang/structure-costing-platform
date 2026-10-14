@@ -39,7 +39,7 @@
 
 ### 为什么焊信变化不塞进改图？
 
-停电泳、改焊信通常不换零件号，树也还在供货。见 [焊信变更设计](../weld-info-change/README.md)。种新树仍只抄 SOP 拆解，不抄 `bom_welding_process_change_info`，也不按新焊信重拆。
+停电泳、改焊信通常不换零件号，树也还在供货。记录见 [`bom_welding_process_change_info`](../weld-info-change/bom-welding-process-change-info-design.md)。种新树仍只抄 SOP 拆解，不抄这张表，也不按新焊信重拆。
 
 ### 为什么新旧号只认工程变更单，不收口到字母进一位？
 
@@ -213,6 +213,6 @@ Router → EngineeringChangeUploadService.start_upload
 | [bom-process-die-effective-period-design.md](bom-process-die-effective-period-design.md) | 交货总成 / 工艺 / 布点生失效（已落地） |
 | [t28-2025-07-import-bundle-test-design.md](t28-2025-07-import-bundle-test-design.md) | 青岛 T28 真号走查。不是上传页下载的 `EX-*` 模板 |
 | [材料变更样表](../material-change/samples/README.md) | 仓库里仅有的工程变更 xlsx：芜湖 T13J 材料变更 2026-06、2026-07。不是设计变更合册 |
-| [焊信变更](../weld-info-change/README.md) | 同号改节点焊信（设计定稿，未落地）。`bom_welding_process_change_info`：手工新焊信或停止焊信；抄费时实时算 |
+| [焊信变更](../weld-info-change/README.md) | 同号改节点焊信（设计定稿，未落地）。记录表 [`bom_welding_process_change_info`](../weld-info-change/bom-welding-process-change-info-design.md)；抄数见 [抄焊接费](../weld-info-change/welding-fee-resolve-design.md) |
 
 一口价年内分段已否决，见 [effective-period-design.md](../../costing/effective-period-design.md)。本目录的生失效不要跟着停。

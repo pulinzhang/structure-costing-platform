@@ -2,7 +2,7 @@
  * 冲压模具费列表—对齐冲压加工费列表：HUD + 胶囊筛选 + 查看/编辑抽屉 + 批量审核/反审核/删除 + Excel 导出
  */
 
-import { filterSelect, filterInput, HUD_SHELL, DRAWER_CLOSE, DRAWER_SHELL, DRAWER_BACKDROP, HUD_BAND, BTN_GHOST, OPS_TH, TH_KEY, TH_TEXT, TH_NUM, TH_FOCUS, HUD_LED, BTN_SOLID } from '../../../../ui/classes.js?v=14';
+import { filterSelect, filterInput, HUD_SHELL, DRAWER_CLOSE, DRAWER_SHELL, DRAWER_BACKDROP, HUD_BAND, BTN_GHOST, OPS_TH, TH_KEY, TH_TEXT, TH_NUM, TH_FOCUS, HUD_LED, BTN_SOLID } from '../../../../ui/classes.js?v=15';
 import { filterBarHtml } from '../../../../ui/filter-bar.js?v=6';
 import { hudTableHtml, hudRowHtml, opsIconButtonHtml } from '../../../../ui/hud-table.js?v=3';
 import { hudKpiCardHtml, paintHudKpiAlert } from '../../../../ui/hud-kpi.js?v=1';
@@ -110,10 +110,10 @@ export function dieFeeListTemplate() {
                                 <th class="${TH_KEY} whitespace-nowrap">短代码</th>
                                 <th class="${TH_TEXT} whitespace-nowrap">零件</th>
                                 <th class="${TH_TEXT} whitespace-nowrap border-r border-line-hud">生产方式</th>
-                                <th class="${TH_NUM} whitespace-nowrap">单价</th>
+                                <th class="${TH_NUM} record-aux whitespace-nowrap">单价</th>
                                 <th class="${TH_NUM} whitespace-nowrap">分摊万台</th>
-                                <th class="${TH_NUM} whitespace-nowrap">系统模具费</th>
-                                <th class="${TH_NUM} whitespace-nowrap border-r border-line-hud">调整金额</th>
+                                <th class="${TH_NUM} record-aux whitespace-nowrap">系统模具费</th>
+                                <th class="${TH_NUM} record-aux whitespace-nowrap border-r border-line-hud">调整金额</th>
                                 <th class="${TH_FOCUS} whitespace-nowrap">最终模具费</th>
                                 <th class="${TH_TEXT} whitespace-nowrap">材质</th>
                                 <th class="${TH_NUM} whitespace-nowrap">料厚</th>

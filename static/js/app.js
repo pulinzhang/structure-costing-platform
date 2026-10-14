@@ -19,7 +19,7 @@
 import { installConfirmDialog } from './ui/confirm-dialog.js?v=6';
 import { installDeleteErrorDialog } from './ui/error-dialog.js?v=16';
 import { bindCurrentRowOnOps } from './ui/table-row.js?v=3';
-import { installRecordLists } from './ui/record-list.js?v=7';
+import { installRecordLists } from './ui/record-list.js?v=11';
 import { bindHudSelects, closeHudSelectMenu } from './ui/hud-select.js?v=1';
 import { pageMeta } from './features/index.js?v=56';
 
@@ -65,9 +65,9 @@ const pageLoaders = {
     'steel-mill': () => import('./features/masterdata/steel-mill/index.js?v=2'),
     'winning-thickness-download': () => import('./features/yishiyiyi/winning-thickness/list/index.js?v=33'),
     'scrap-price': () => import('./features/yishiyiyi/scrap-price/index.js?v=34'),
-    'bom-structure': () => import('./features/bom/material/structure/index.js?v=20'),
+    'bom-structure': () => import('./features/bom/material/structure/index.js?v=21'),
     'bom-where-used': () => import('./features/bom/material/where-used/index.js?v=25'),
-    'bom-viz': () => import('./features/bom/material/viz/index.js?v=44'),
+    'bom-viz': () => import('./features/bom/material/viz/index.js?v=46'),
     'bom-upload': () => import('./features/bom/material/upload/index.js?v=39'),
     'bom-material': () => import('./features/bom/material/list/index.js?v=26'),
     'bom-welding-unit-price-upload': () => import('./features/bom/welding-unit-price/upload/index.js?v=35'),

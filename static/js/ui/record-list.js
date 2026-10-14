@@ -25,11 +25,23 @@ function isChromeCell(cell) {
     return !cell.querySelector('button, a, input, img, select, textarea');
 }
 
+const RECORD_ROLES = ['focus', 'key', 'spec', 'aux', 'trace'];
+
+/** 表头上的 record-* 原样抄到单元格。未声明的列在手机上就是普通字段。 */
+function applyRole(cell, head) {
+    const hidden = cell.classList.contains('record-list-omit') || cell.classList.contains('record-list-chrome');
+    const role = !hidden && head
+        ? RECORD_ROLES.find((name) => head.classList.contains(`record-${name}`)) || ''
+        : '';
+    RECORD_ROLES.forEach((name) => cell.classList.toggle(`record-${name}`, name === role));
+}
+
 function stampCell(cell, label, omit, chrome) {
     cell.classList.toggle('record-list-omit', omit);
     cell.classList.toggle('record-list-chrome', chrome && !omit);
     if (omit || chrome) {
         cell.removeAttribute('data-label');
+        applyRole(cell);
         return;
     }
     if (label) cell.setAttribute('data-label', label);
@@ -134,6 +146,7 @@ function stampTable(table) {
                 stampCell(cell, '', false, false);
                 cell.classList.remove('record-list-omit', 'record-list-chrome');
                 cell.removeAttribute('data-label');
+                applyRole(cell);
             });
             return;
         }
@@ -153,6 +166,7 @@ function stampTable(table) {
             const label = labels[col] || '';
             const chrome = !omit && !label && isChromeCell(cell);
             stampCell(cell, label, omit, chrome);
+            applyRole(cell, heads[col]);
         });
     });
 }
