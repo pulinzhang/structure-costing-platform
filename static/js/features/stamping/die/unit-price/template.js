@@ -2,7 +2,7 @@
  * 冲压模具单价档案 — HUD 密表 + 抽屉增改
  */
 
-import { HUD_SHELL, DRAWER_BACKDROP, DRAWER_SHELL, HUD_BAND, OPS_TH, filterSelect, BTN_GHOST, FILTER_LABEL, HUD_FILTER, BTN_SOLID_DANGER, BTN_HUD_CREATE, BTN_SOLID } from '../../../../ui/classes.js?v=14';
+import { HUD_SHELL, DRAWER_BACKDROP, DRAWER_SHELL, HUD_BAND, OPS_TH, filterSelect, BTN_GHOST, FILTER_LABEL, HUD_FILTER, BTN_SOLID_DANGER, BTN_HUD_CREATE, BTN_SOLID } from '../../../../ui/classes.js?v=15';
 import { filterBarHtml } from '../../../../ui/filter-bar.js?v=6';
 import { hudTableHtml, hudRowHtml, opsIconButtonHtml } from '../../../../ui/hud-table.js?v=3';
 
@@ -73,8 +73,8 @@ export function dieUnitPriceTemplate() {
                                 <th class="p-0" aria-hidden="true"></th>
                                 <th class="px-2 py-2 text-left text-[9px] font-medium tracking-[0.08em] text-ink-faint">基地</th>
                                 <th class="px-2 py-2 text-left text-[9px] font-medium tracking-[0.08em] text-ink-faint">项目</th>
-                                <th class="px-2 py-2 text-right text-[9px] font-medium tracking-[0.06em] text-ink-faint">钢板模（万/吨）</th>
-                                <th class="px-2 py-2 text-right text-[9px] font-semibold tracking-[0.06em] text-brand-hud/90 bg-brand-hud/10">级进模（万/吨）</th>
+                                <th class="record-aux px-2 py-2 text-right text-[9px] font-medium tracking-[0.06em] text-ink-faint">钢板模（万/吨）</th>
+                                <th class="record-focus px-2 py-2 text-right text-[9px] font-semibold tracking-[0.06em] text-brand-hud/90 bg-brand-hud/10">级进模（万/吨）</th>
                                 <th class="px-2 py-2 text-right text-[9px] font-medium tracking-[0.06em] text-ink-faint">分摊（万台）</th>
                                 <th class="px-1 py-2 text-center text-[9px] font-medium tracking-[0.06em] text-ink-faint">状态</th>
                                 <th class="px-2 py-2 text-left text-[9px] font-medium tracking-[0.06em] text-ink-faint">更新</th>

@@ -3,7 +3,7 @@
  * 仅上传：基地必选 + Excel 拖拽，无列表/删除/树
  */
 
-import { UPLOAD_DROPZONE, UPLOAD_INPUT, HUD_LED } from '../../../../ui/classes.js?v=14';
+import { UPLOAD_DROPZONE, UPLOAD_INPUT, HUD_LED } from '../../../../ui/classes.js?v=15';
 import { recentUploadsCardHtml } from '../../../../ui/recent-uploads.js?v=3';
 import {
     uploadBrowseButtonHtml,

@@ -3,7 +3,7 @@
  * 基地 + 年度 + 项目必选；支持生产样例表或平台扁平模板
  */
 
-import { UPLOAD_DROPZONE, UPLOAD_INPUT, UPLOAD_LABEL, HUD_LED } from '../../../../ui/classes.js?v=14';
+import { UPLOAD_DROPZONE, UPLOAD_INPUT, UPLOAD_LABEL, HUD_LED } from '../../../../ui/classes.js?v=15';
 import { recentUploadsCardHtml } from '../../../../ui/recent-uploads.js?v=3';
 import {
     uploadBrowseButtonHtml,

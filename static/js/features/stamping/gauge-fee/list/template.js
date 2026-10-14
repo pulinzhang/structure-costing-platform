@@ -3,7 +3,7 @@
  * 布局对齐零件列表：HUD + 胶囊筛选（默认收起）
  */
 
-import { filterSelect, filterInput, HUD_SHELL, DRAWER_SHELL, DRAWER_BACKDROP, HUD_FILTER, FILTER_LABEL, BTN_GHOST, HUD_BAND, OPS_TH, BTN_SOLID, BTN_SOLID_DANGER } from '../../../../ui/classes.js?v=14';
+import { filterSelect, filterInput, HUD_SHELL, DRAWER_SHELL, DRAWER_BACKDROP, HUD_FILTER, FILTER_LABEL, BTN_GHOST, HUD_BAND, OPS_TH, BTN_SOLID, BTN_SOLID_DANGER } from '../../../../ui/classes.js?v=15';
 import { filterBarHtml } from '../../../../ui/filter-bar.js?v=6';
 import { hudTableHtml, hudRowHtml, opsIconButtonHtml } from '../../../../ui/hud-table.js?v=3';
 import { hudKpiCardHtml } from '../../../../ui/hud-kpi.js?v=1';
@@ -111,9 +111,9 @@ export function gaugeFeeListTemplate() {
                                 <th class="p-0" aria-hidden="true"></th>
                                 <th class="px-2 py-2 text-left text-[9px] font-medium tracking-[0.08em] text-ink-faint">基地</th>
                                 <th class="px-2 py-2 text-left text-[9px] font-medium tracking-[0.08em] text-ink-faint">项目</th>
-                                <th class="px-2 py-2 text-left text-[9px] font-medium tracking-[0.08em] text-ink-muted">短代码</th>
+                                <th class="record-key px-2 py-2 text-left text-[9px] font-medium tracking-[0.08em] text-ink-muted">短代码</th>
                                 <th class="px-2 py-2 text-left text-[9px] font-medium tracking-[0.08em] text-ink-faint">零件</th>
-                                <th class="px-2 py-2 text-right text-[9px] font-semibold tracking-[0.06em] text-brand-hud/90 bg-brand-hud/10">检具费（万）</th>
+                                <th class="record-focus px-2 py-2 text-right text-[9px] font-semibold tracking-[0.06em] text-brand-hud/90 bg-brand-hud/10">检具费（万）</th>
                                 <th class="px-2 py-2 text-right text-[9px] font-medium tracking-[0.06em] text-ink-faint">分摊（万台）</th>
                                 <th class="px-1 py-2 text-center text-[9px] font-medium tracking-[0.06em] text-ink-faint">状态</th>
                                 <th class="${OPS_TH}" aria-label="操作"></th>`,

@@ -4,7 +4,7 @@
  * HUD：总成本为靶心；冲压件 / 成本构成 / 审核进度为辅卡
  */
 
-import { HUD_SHELL, BTN_GHOST, filterSelect, filterInput, DRAWER_CLOSE, DRAWER_SHELL, DRAWER_BACKDROP, TH_KEY, TH_TEXT, TH_NUM, TH_FOCUS, HUD_BAND, OPS_TH, HUD_LED, BTN_SOLID } from '../../../../ui/classes.js?v=14';
+import { HUD_SHELL, BTN_GHOST, filterSelect, filterInput, DRAWER_CLOSE, DRAWER_SHELL, DRAWER_BACKDROP, TH_KEY, TH_TEXT, TH_NUM, TH_FOCUS, HUD_BAND, OPS_TH, HUD_LED, BTN_SOLID } from '../../../../ui/classes.js?v=15';
 import { filterBarHtml } from '../../../../ui/filter-bar.js?v=6';
 import { hudTableHtml, hudRowHtml, opsIconButtonHtml } from '../../../../ui/hud-table.js?v=3';
 import { hudKpiCardHtml } from '../../../../ui/hud-kpi.js?v=1';
@@ -146,31 +146,31 @@ export function partCostListTemplate() {
                                 <th class="cost-mass-col hidden ${TH_NUM}" title="零件净量">净量</th>
                                 <th class="cost-mass-col hidden ${TH_NUM}" title="废料重量 O = 材料消耗−净量">废料</th>
                                 <th class="cost-mass-col hidden ${TH_NUM}">利用率</th>
-                                <th class="${TH_NUM}" title="钢材吨价；P=吨价/1000 为 kg">
+                                <th class="${TH_NUM} record-aux" title="钢材吨价；P=吨价/1000 为 kg">
                                     <button type="button" id="costToggleMassCols"
                                             class="inline-flex items-center justify-center w-3.5 h-3.5 mr-0.5 align-middle border border-line-hud text-ink-faint hover:text-brand-hud hover:border-brand-hud/40 transition-colors"
                                             title="展开材料量（消耗 / 净量 / 废料 / 利用率）">+</button>
                                     钢材吨价
                                 </th>
-                                <th class="${TH_NUM}" title="废料吨价；Q=吨价/1000 为 kg">废料吨价</th>
-                                <th class="cost-breakdown-col hidden ${TH_NUM}" title="①钢材采购（含损耗）">①采购</th>
-                                <th class="cost-breakdown-col hidden ${TH_NUM}" title="②损耗废料扣除（回收率）">②损耗扣</th>
-                                <th class="cost-breakdown-col hidden ${TH_NUM}" title="③边角废料扣除（回收率）">③边角扣</th>
-                                <th class="cost-breakdown-col hidden ${TH_NUM}" title="废料扣除合计 ②+③">废料扣合计</th>
-                                <th class="${TH_NUM}" title="R = ①−②−③">
+                                <th class="${TH_NUM} record-aux" title="废料吨价；Q=吨价/1000 为 kg">废料吨价</th>
+                                <th class="cost-breakdown-col hidden ${TH_NUM} record-aux" title="①钢材采购（含损耗）">①采购</th>
+                                <th class="cost-breakdown-col hidden ${TH_NUM} record-aux" title="②损耗废料扣除（回收率）">②损耗扣</th>
+                                <th class="cost-breakdown-col hidden ${TH_NUM} record-aux" title="③边角废料扣除（回收率）">③边角扣</th>
+                                <th class="cost-breakdown-col hidden ${TH_NUM} record-aux" title="废料扣除合计 ②+③">废料扣合计</th>
+                                <th class="${TH_NUM} record-aux" title="R = ①−②−③">
                                     <button type="button" id="costToggleBreakdownCols"
                                             class="inline-flex items-center justify-center w-3.5 h-3.5 mr-0.5 align-middle border border-line-hud text-ink-faint hover:text-brand-hud hover:border-brand-hud/40 transition-colors"
                                             title="展开成本分项（①采购 / ②损耗扣 / ③边角扣 / 废料扣合计）">+</button>
                                     原材料R
                                 </th>
-                                <th class="${TH_NUM}">加工费</th>
-                                <th class="${TH_NUM}" title="年度模具费最终价（元/件）；无档案为 0">模具费</th>
-                                <th class="${TH_NUM}" title="检具费（万元）÷ 分摊万台 = 元/件；无档案为 0">检具费</th>
-                                <th class="${TH_NUM}" title="直接成本 = R + 加工费 + 模具费 + 检具费">直接成本</th>
-                                <th class="cost-fee-col hidden ${TH_NUM}" title="直接成本 × 仓储+包装管理费用率">仓储包装</th>
-                                <th class="cost-fee-col hidden ${TH_NUM}" title="直接成本 × 管理费率">管理费</th>
-                                <th class="cost-fee-col hidden ${TH_NUM}" title="直接成本 × 财务费率">财务费</th>
-                                <th class="cost-fee-col hidden ${TH_NUM}" title="直接成本 × 税前利润率">税前利润</th>
+                                <th class="${TH_NUM} record-aux">加工费</th>
+                                <th class="${TH_NUM} record-aux" title="年度模具费最终价（元/件）；无档案为 0">模具费</th>
+                                <th class="${TH_NUM} record-aux" title="检具费（万元）÷ 分摊万台 = 元/件；无档案为 0">检具费</th>
+                                <th class="${TH_NUM} record-aux" title="直接成本 = R + 加工费 + 模具费 + 检具费">直接成本</th>
+                                <th class="cost-fee-col hidden ${TH_NUM} record-aux" title="直接成本 × 仓储+包装管理费用率">仓储包装</th>
+                                <th class="cost-fee-col hidden ${TH_NUM} record-aux" title="直接成本 × 管理费率">管理费</th>
+                                <th class="cost-fee-col hidden ${TH_NUM} record-aux" title="直接成本 × 财务费率">财务费</th>
+                                <th class="cost-fee-col hidden ${TH_NUM} record-aux" title="直接成本 × 税前利润率">税前利润</th>
                                 <th class="${TH_FOCUS}" title="单件成本 = 直接成本 + 仓储包装 + 管理费 + 财务费 + 税前利润">
                                     <button type="button" id="costToggleFeeCols"
                                             class="inline-flex items-center justify-center w-3.5 h-3.5 mr-0.5 align-middle border border-brand-hud/30 text-brand-hud hover:text-brand-hud hover:border-brand-hud/60 transition-colors"

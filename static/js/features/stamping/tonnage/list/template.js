@@ -4,7 +4,7 @@
  * 数据来自上传，无「新增」入口；批量操作范围 = 上传条件（基地 + 年度）
  */
 
-import { HUD_SHELL, DRAWER_CLOSE, DRAWER_SHELL, DRAWER_BACKDROP, HUD_BAND, OPS_TH, BTN_GHOST, filterSelect, HUD_LED, BTN_SOLID, BTN_SOLID_DANGER } from '../../../../ui/classes.js?v=14';
+import { HUD_SHELL, DRAWER_CLOSE, DRAWER_SHELL, DRAWER_BACKDROP, HUD_BAND, OPS_TH, BTN_GHOST, filterSelect, HUD_LED, BTN_SOLID, BTN_SOLID_DANGER } from '../../../../ui/classes.js?v=15';
 import { filterBarHtml } from '../../../../ui/filter-bar.js?v=6';
 import { hudTableHtml, hudRowHtml, opsIconButtonHtml } from '../../../../ui/hud-table.js?v=3';
 import { hudKpiCardHtml } from '../../../../ui/hud-kpi.js?v=1';
@@ -98,8 +98,8 @@ export function tonnagePriceTemplate() {
                                 <th class="p-0"></th>
                                 <th class="px-2 py-2 text-left text-[9px] font-medium tracking-[0.08em] text-ink-faint">基地</th>
                                 <th class="px-2 py-2 text-left text-[9px] font-medium tracking-[0.08em] text-ink-faint">年份</th>
-                                <th class="px-2 py-2 text-right text-[9px] font-medium tracking-[0.06em] text-ink-faint">压机吨位 (T)</th>
-                                <th class="px-2 py-2 text-right text-[9px] font-semibold tracking-[0.06em] text-brand-hud/90 bg-brand-hud/10">单冲次价格</th>
+                                <th class="record-key px-2 py-2 text-right text-[9px] font-medium tracking-[0.06em] text-ink-faint">压机吨位 (T)</th>
+                                <th class="record-focus px-2 py-2 text-right text-[9px] font-semibold tracking-[0.06em] text-brand-hud/90 bg-brand-hud/10">单冲次价格</th>
                                 <th class="px-2 py-2 text-center text-[9px] font-medium tracking-[0.06em] text-ink-faint">审核</th>
                                 <th class="px-2 py-2 text-left text-[9px] font-normal tracking-[0.08em] text-ink-faint">创建人</th>
                                 <th class="px-2 py-2 text-left text-[9px] font-normal tracking-[0.08em] text-ink-faint">创建时间</th>

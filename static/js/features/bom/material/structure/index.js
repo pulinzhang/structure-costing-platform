@@ -652,7 +652,7 @@ const BomStructurePage = {
         // 短号视觉主角；完整零件号降为次要标注
         const partNumberBlock = shortNo
             ? `
-                <p class="text-2xl font-mono font-semibold tabular-nums text-ink tracking-[0.14em] hud-kpi-num-glow mb-0.5">
+                <p class="text-2xl font-mono font-semibold tabular-nums text-ink tracking-[0.14em] mb-0.5">
                     ${esc(shortNo)}
                 </p>
                 ${

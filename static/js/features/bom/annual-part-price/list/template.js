@@ -6,7 +6,7 @@
  * 单价一律按十进制字符串处理（不经 Number/parseFloat）。
  */
 
-import { filterSelect, filterInput, HUD_SHELL, DRAWER_CLOSE, DRAWER_SHELL, DRAWER_BACKDROP, HUD_BAND, OPS_TH, BTN_GHOST, HUD_LED, BTN_SOLID, BTN_SOLID_DANGER, HUD_FILTER } from '../../../../ui/classes.js?v=14';
+import { filterSelect, filterInput, HUD_SHELL, DRAWER_CLOSE, DRAWER_SHELL, DRAWER_BACKDROP, HUD_BAND, OPS_TH, BTN_GHOST, HUD_LED, BTN_SOLID, BTN_SOLID_DANGER, HUD_FILTER } from '../../../../ui/classes.js?v=15';
 import { filterBarHtml } from '../../../../ui/filter-bar.js?v=6';
 import { hudTableHtml, hudRowHtml, opsIconButtonHtml } from '../../../../ui/hud-table.js?v=3';
 import { hudKpiCardHtml } from '../../../../ui/hud-kpi.js?v=1';
@@ -138,14 +138,14 @@ export function annualPartPriceTemplate() {
                                 <th class="p-0"></th>
                                 <th class="px-2 py-2 text-left text-[9px] font-medium tracking-[0.08em] text-ink-faint">基地</th>
                                 <th class="px-2 py-2 text-left text-[9px] font-medium tracking-[0.08em] text-ink-faint">年份</th>
-                                <th class="px-2 py-2 text-left text-[9px] font-medium tracking-[0.08em] text-ink-muted">短代码</th>
+                                <th class="record-key px-2 py-2 text-left text-[9px] font-medium tracking-[0.08em] text-ink-muted">短代码</th>
                                 <th class="px-2 py-2 text-left text-[9px] font-medium tracking-[0.08em] text-ink-faint">零件</th>
-                                <th class="px-2 py-2 text-left text-[9px] font-medium tracking-[0.08em] text-ink-faint">规格</th>
+                                <th class="record-spec px-2 py-2 text-left text-[9px] font-medium tracking-[0.08em] text-ink-faint">规格</th>
                                 <th class="px-2 py-2 text-left text-[9px] font-medium tracking-[0.08em] text-ink-faint">采购单位</th>
-                                <th class="px-2 py-2 text-right text-[9px] font-medium tracking-[0.06em] text-ink-faint">采购单价</th>
+                                <th class="record-aux px-2 py-2 text-right text-[9px] font-medium tracking-[0.06em] text-ink-faint">采购单价</th>
                                 <th class="px-2 py-2 text-right text-[9px] font-medium tracking-[0.06em] text-ink-faint" title="1采购单位=N核价单位；可小数如25.4；核价单价=采购单价÷N">转换系数</th>
                                 <th class="px-2 py-2 text-left text-[9px] font-medium tracking-[0.08em] text-ink-faint">单位</th>
-                                <th class="px-2 py-2 text-right text-[9px] font-semibold tracking-[0.06em] text-brand-hud/90 bg-brand-hud/10"
+                                <th class="record-focus px-2 py-2 text-right text-[9px] font-semibold tracking-[0.06em] text-brand-hud/90 bg-brand-hud/10"
                                     title="核价单价；≥0；填 0 表示成品核价不计入该件">单价</th>
                                 <th class="px-2 py-2 text-left text-[9px] font-medium tracking-[0.08em] text-ink-faint">原供货类型</th>
                                 <th class="px-2 py-2 text-left text-[9px] font-medium tracking-[0.08em] text-ink-faint">供应商</th>

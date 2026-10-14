@@ -3,7 +3,7 @@
  * 基地 + 年度必选；四列 Excel（名称 / 单位 / 费用 / 备注）；同步导入
  */
 
-import { UPLOAD_DROPZONE, UPLOAD_INPUT, UPLOAD_LABEL, HUD_LED } from '../../../../ui/classes.js?v=14';
+import { UPLOAD_DROPZONE, UPLOAD_INPUT, UPLOAD_LABEL, HUD_LED } from '../../../../ui/classes.js?v=15';
 import { recentUploadsCardHtml } from '../../../../ui/recent-uploads.js?v=3';
 import {
     uploadBrowseButtonHtml,

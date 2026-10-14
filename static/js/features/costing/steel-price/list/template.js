@@ -3,7 +3,7 @@
  * 钢材价格计算结果浏览 —Brabus Carbon & Precision Dark
  */
 
-import { filterSelect, filterInput, HUD_SHELL, DRAWER_CLOSE, DRAWER_SHELL, DRAWER_BACKDROP, HUD_BAND, OPS_TH, TH_KEY, TH_TEXT, TH_NUM, TH_FOCUS, BTN_GHOST, HUD_LED, BTN_SOLID, BTN_SOLID_DANGER } from '../../../../ui/classes.js?v=14';
+import { filterSelect, filterInput, HUD_SHELL, DRAWER_CLOSE, DRAWER_SHELL, DRAWER_BACKDROP, HUD_BAND, OPS_TH, TH_KEY, TH_TEXT, TH_NUM, TH_FOCUS, BTN_GHOST, HUD_LED, BTN_SOLID, BTN_SOLID_DANGER } from '../../../../ui/classes.js?v=15';
 import { filterBarHtml } from '../../../../ui/filter-bar.js?v=6';
 import { hudTableHtml, hudRowHtml, opsIconButtonHtml } from '../../../../ui/hud-table.js?v=3';
 import { hudKpiCardHtml } from '../../../../ui/hud-kpi.js?v=1';
@@ -101,14 +101,14 @@ export function steelPriceListTemplate() {
                                 <th class="${TH_KEY} whitespace-nowrap">牌号</th>
                                 <th class="${TH_NUM} whitespace-nowrap">厚度</th>
                                 <th class="${TH_NUM} whitespace-nowrap border-r border-line-hud">宽度</th>
-                                <th class="${TH_NUM} whitespace-nowrap">基础价</th>
-                                <th class="${TH_NUM} whitespace-nowrap">厚度加价</th>
-                                <th class="${TH_NUM} whitespace-nowrap">宽度加价</th>
-                                <th class="${TH_NUM} whitespace-nowrap border-r border-line-hud">加工费</th>
+                                <th class="${TH_NUM} record-aux whitespace-nowrap">基础价</th>
+                                <th class="${TH_NUM} record-aux whitespace-nowrap">厚度加价</th>
+                                <th class="${TH_NUM} record-aux whitespace-nowrap">宽度加价</th>
+                                <th class="${TH_NUM} record-aux whitespace-nowrap border-r border-line-hud">加工费</th>
                                 <th class="${TH_FOCUS} whitespace-nowrap">最终价/吨</th>
-                                <th class="${TH_TEXT} whitespace-nowrap">基价溯源</th>
-                                <th class="${TH_TEXT} whitespace-nowrap">厚度溯源</th>
-                                <th class="${TH_TEXT} whitespace-nowrap">宽度溯源</th>
+                                <th class="${TH_TEXT} record-trace whitespace-nowrap">基价溯源</th>
+                                <th class="${TH_TEXT} record-trace whitespace-nowrap">厚度溯源</th>
+                                <th class="${TH_TEXT} record-trace whitespace-nowrap">宽度溯源</th>
                                 <th class="${TH_TEXT} whitespace-nowrap">匹配</th>
                                 <th class="${TH_TEXT} whitespace-nowrap">审核</th>
                                 <th class="${TH_TEXT} whitespace-nowrap">创建人</th>

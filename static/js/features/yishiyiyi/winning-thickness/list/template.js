@@ -3,7 +3,7 @@
  * 必填基地/年/月；中标基价叠厚度加减价后外发
  */
 
-import { filterSelect, filterInputWithDatalist, HUD_LED, BTN_GHOST, DRAWER_BACKDROP } from '../../../../ui/classes.js?v=14';
+import { filterSelect, filterInputWithDatalist, HUD_LED, BTN_GHOST, DRAWER_BACKDROP } from '../../../../ui/classes.js?v=15';
 import { filterBarHtml } from '../../../../ui/filter-bar.js?v=6';
 import {
     DEFAULT_PREVIEW_PAGE_SIZE,
@@ -64,15 +64,15 @@ export function winningThicknessDownloadTemplate() {
                                 <thead>
                                     <tr class="border-b border-app-surface">
                                         <th class="px-3 py-2 text-left text-[9px] font-semibold font-medium tracking-[0.08em] text-ink-faint whitespace-nowrap">基地/钢种</th>
-                                        <th class="px-3 py-2 text-left text-[9px] font-semibold font-medium tracking-[0.08em] text-ink-faint whitespace-nowrap">牌号</th>
+                                        <th class="record-key px-3 py-2 text-left text-[9px] font-semibold font-medium tracking-[0.08em] text-ink-faint whitespace-nowrap">牌号</th>
                                         <th class="px-3 py-2 text-left text-[9px] font-semibold font-medium tracking-[0.08em] text-ink-faint whitespace-nowrap">钢厂</th>
-                                        <th class="px-3 py-2 text-left text-[9px] font-semibold font-medium tracking-[0.08em] text-ink-faint whitespace-nowrap">厚度范围</th>
-                                        <th class="px-3 py-2 text-right text-[9px] font-semibold font-medium tracking-[0.08em] text-ink-faint whitespace-nowrap">基准价</th>
-                                        <th class="px-3 py-2 text-right text-[9px] font-semibold font-medium tracking-[0.08em] text-ink-faint whitespace-nowrap">加减价</th>
-                                        <th class="px-3 py-2 text-right text-[9px] font-semibold font-medium tracking-[0.08em] text-ink-faint whitespace-nowrap">加工费</th>
-                                        <th class="px-3 py-2 text-right text-[9px] font-semibold font-medium tracking-[0.08em] text-ink-faint whitespace-nowrap">最终价</th>
-                                        <th class="px-3 py-2 text-left text-[9px] font-semibold font-medium tracking-[0.08em] text-ink-faint whitespace-nowrap">基价溯源</th>
-                                        <th class="px-3 py-2 text-left text-[9px] font-semibold font-medium tracking-[0.08em] text-ink-faint whitespace-nowrap">厚度溯源</th>
+                                        <th class="record-spec px-3 py-2 text-left text-[9px] font-semibold font-medium tracking-[0.08em] text-ink-faint whitespace-nowrap">厚度范围</th>
+                                        <th class="record-aux px-3 py-2 text-right text-[9px] font-semibold font-medium tracking-[0.08em] text-ink-faint whitespace-nowrap">基准价</th>
+                                        <th class="record-aux px-3 py-2 text-right text-[9px] font-semibold font-medium tracking-[0.08em] text-ink-faint whitespace-nowrap">加减价</th>
+                                        <th class="record-aux px-3 py-2 text-right text-[9px] font-semibold font-medium tracking-[0.08em] text-ink-faint whitespace-nowrap">加工费</th>
+                                        <th class="record-focus px-3 py-2 text-right text-[9px] font-semibold font-medium tracking-[0.08em] text-ink-faint whitespace-nowrap">最终价</th>
+                                        <th class="record-trace px-3 py-2 text-left text-[9px] font-semibold font-medium tracking-[0.08em] text-ink-faint whitespace-nowrap">基价溯源</th>
+                                        <th class="record-trace px-3 py-2 text-left text-[9px] font-semibold font-medium tracking-[0.08em] text-ink-faint whitespace-nowrap">厚度溯源</th>
                                     </tr>
                                 </thead>
                                 <tbody id="winningThicknessPreviewBody" class="divide-y divide-line-subtle">

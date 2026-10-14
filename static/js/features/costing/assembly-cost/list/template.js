@@ -2,7 +2,7 @@
  * 总成核价列表 — Brabus Carbon & Precision Dark（对齐冲压零件价格列表 HUD）
  */
 
-import { filterSelect, filterInput, HUD_SHELL, DRAWER_CLOSE, DRAWER_SHELL, DRAWER_BACKDROP, HUD_BAND, BTN_GHOST, TH_ROW, OPS_TH, HUD_LED, BTN_SOLID } from '../../../../ui/classes.js?v=14';
+import { filterSelect, filterInput, HUD_SHELL, DRAWER_CLOSE, DRAWER_SHELL, DRAWER_BACKDROP, HUD_BAND, BTN_GHOST, TH_ROW, TH_KEY, TH_NUM, TH_FOCUS, OPS_TH, HUD_LED, BTN_SOLID } from '../../../../ui/classes.js?v=15';
 import { filterBarHtml } from '../../../../ui/filter-bar.js?v=6';
 import { hudTableHtml, hudRowHtml, opsIconButtonHtml } from '../../../../ui/hud-table.js?v=3';
 import { hudKpiCardHtml } from '../../../../ui/hud-kpi.js?v=1';
@@ -15,7 +15,81 @@ import {
     resolveBomNodeShortCode,
 } from '../../../../domain/part-identity.js?v=5';
 
+function lacTh(label, extra = '') {
+    const extraClass = extra ? ` ${extra}` : '';
+    return `<th class="px-2 py-2 text-[9px] font-medium tracking-[0.06em] text-ink-faint${extraClass}">${label}</th>`;
+}
+
+function lacTableSpec(view) {
+    const identity = `
+                <th class="${TH_KEY}">短代码</th>
+                ${lacTh('零件', 'text-left tracking-[0.08em] text-ink-dim')}`;
+    const aux = (label, extra = '') => `<th class="${TH_NUM} record-aux${extra ? ` ${extra}` : ''}">${label}</th>`;
+    const ops = `<th class="${OPS_TH}" aria-label="操作"></th>`;
+    if (view === 'procurement') {
+        return {
+            minWidth: '1180px',
+            colgroup: `
+                            <col style="width:3px">
+                            <col style="width:96px">
+                            <col style="width:72px">
+                            <col style="width:140px">
+                            <col style="width:100px">
+                            <col style="width:88px">
+                            <col style="width:88px">
+                            <col style="width:100px">
+                            <col style="width:52px">
+                            <col style="width:52px">
+                            <col style="width:52px">
+                            <col style="width:44px">`,
+            cells: `
+                                <th class="p-0"></th>
+                                ${lacTh('年月/基地', 'text-left tracking-[0.08em]')}
+                                ${identity}
+                                ${lacTh('对象/层', 'text-left tracking-[0.08em]')}
+                                ${aux('材料成本')}
+                                ${aux('焊接费/电泳黑漆等', 'leading-tight')}
+                                <th class="${TH_FOCUS}">总成本</th>
+                                ${lacTh('确认', 'text-center')}
+                                ${lacTh('核算', 'text-center')}
+                                ${lacTh('审核', 'text-center')}
+                                ${ops}`,
+        };
+    }
+    return {
+        minWidth: '1252px',
+        colgroup: `
+                            <col style="width:3px">
+                            <col style="width:96px">
+                            <col style="width:72px">
+                            <col style="width:140px">
+                            <col style="width:100px">
+                            <col style="width:88px">
+                            <col style="width:72px">
+                            <col style="width:88px">
+                            <col style="width:80px">
+                            <col style="width:100px">
+                            <col style="width:52px">
+                            <col style="width:52px">
+                            <col style="width:44px">`,
+        cells: `
+                                <th class="p-0"></th>
+                                ${lacTh('年月/基地', 'text-left tracking-[0.08em]')}
+                                ${identity}
+                                ${lacTh('项目/版本', 'text-left tracking-[0.08em]')}
+                                ${aux('材料')}
+                                ${aux('焊接费')}
+                                ${lacTh('月总账', 'text-right text-ink-dim')}
+                                ${aux('间接')}
+                                <th class="${TH_FOCUS}">总费用</th>
+                                ${lacTh('核算', 'text-center')}
+                                ${lacTh('审核', 'text-center')}
+                                ${ops}`,
+    };
+}
+
 export function assemblyCostListTemplate() {
+    const financeHead = lacTableSpec('finance');
     return `
         <div class="space-y-2 w-full max-w-full">
             <div class="${HUD_SHELL}">
@@ -124,35 +198,9 @@ export function assemblyCostListTemplate() {
                     tableId: 'lacDataTable',
                     colgroupId: 'lacColgroup',
                     theadId: 'lacTableHead',
-                    minWidth: '1252px',
-                    colgroupHtml: `
-                            <col style="width:3px">
-                            <col style="width:96px">
-                            <col style="width:72px">
-                            <col style="width:140px">
-                            <col style="width:100px">
-                            <col style="width:88px">
-                            <col style="width:72px">
-                            <col style="width:88px">
-                            <col style="width:80px">
-                            <col style="width:100px">
-                            <col style="width:52px">
-                            <col style="width:52px">
-                            <col style="width:44px">`,
-                    headHtml: `
-                                <th class="p-0"></th>
-                                <th class="px-2 py-2 text-left text-[9px] font-medium tracking-[0.08em] text-ink-faint">年月/基地</th>
-                                <th class="px-2 py-2 text-left text-[9px] font-medium tracking-[0.08em] text-ink-muted">短代码</th>
-                                <th class="px-2 py-2 text-left text-[9px] font-medium tracking-[0.08em] text-ink-dim">零件</th>
-                                <th class="px-2 py-2 text-left text-[9px] font-medium tracking-[0.08em] text-ink-faint">项目/版本</th>
-                                <th class="px-2 py-2 text-right text-[9px] font-medium tracking-[0.06em] text-ink-faint">材料</th>
-                                <th class="px-2 py-2 text-right text-[9px] font-medium tracking-[0.06em] text-ink-faint">焊接费</th>
-                                <th class="px-2 py-2 text-right text-[9px] font-medium tracking-[0.06em] text-ink-dim">月总账</th>
-                                <th class="px-2 py-2 text-right text-[9px] font-medium tracking-[0.06em] text-ink-faint">间接</th>
-                                <th class="px-2 py-2 text-right text-[9px] font-semibold tracking-[0.06em] text-brand-hud/90 bg-brand-hud/10">总费用</th>
-                                <th class="px-1 py-2 text-center text-[9px] font-medium tracking-[0.06em] text-ink-faint">核算</th>
-                                <th class="px-1 py-2 text-center text-[9px] font-medium tracking-[0.06em] text-ink-faint">审核</th>
-                                <th class="${OPS_TH}" aria-label="操作"></th>`,
+                    minWidth: financeHead.minWidth,
+                    colgroupHtml: financeHead.colgroup,
+                    headHtml: financeHead.cells,
                     empty: { title: '暂无总成核价数据', hint: '请先完成总成核价计算，或调整筛选条件' },
                     loading: true,
                 })}
@@ -309,78 +357,12 @@ export function renderLacRows(records, view = 'finance') {
 export function updateLacTableHead(view = 'finance') {
     const head = document.getElementById('lacTableHead');
     if (!head) return;
+    const spec = lacTableSpec(view === 'procurement' ? 'procurement' : 'finance');
     const table = document.getElementById('lacDataTable');
     const colgroup = document.getElementById('lacColgroup');
-    const th = (label, extra = '') =>
-        `<th class="px-2 py-2 text-[9px] font-medium tracking-[0.06em] text-ink-faint ${extra}">${label}</th>`;
-    const identityHeads = `
-                ${th('短代码', 'text-left tracking-[0.08em] text-ink-muted')}
-                ${th('零件', 'text-left tracking-[0.08em] text-ink-dim')}`;
-    if (view === 'procurement') {
-        if (table) table.style.minWidth = '1180px';
-        if (colgroup) {
-            colgroup.innerHTML = `
-                            <col style="width:3px">
-                            <col style="width:96px">
-                            <col style="width:72px">
-                            <col style="width:140px">
-                            <col style="width:100px">
-                            <col style="width:88px">
-                            <col style="width:88px">
-                            <col style="width:100px">
-                            <col style="width:52px">
-                            <col style="width:52px">
-                            <col style="width:52px">
-                            <col style="width:44px">`;
-        }
-        head.innerHTML = `
-            <tr class="${TH_ROW}">
-                <th class="p-0"></th>
-                ${th('年月/基地', 'text-left tracking-[0.08em]')}
-                ${identityHeads}
-                ${th('对象/层', 'text-left tracking-[0.08em]')}
-                ${th('材料成本', 'text-right')}
-                ${th('焊接费/电泳黑漆等', 'text-right leading-tight')}
-                <th class="px-2 py-2 text-right text-[9px] font-semibold tracking-[0.06em] text-brand-hud/90 bg-brand-hud/10">总成本</th>
-                ${th('确认', 'text-center')}
-                ${th('核算', 'text-center')}
-                ${th('审核', 'text-center')}
-                <th class="${OPS_TH}" aria-label="操作"></th>
-            </tr>`;
-        return;
-    }
-    if (table) table.style.minWidth = '1252px';
-    if (colgroup) {
-        colgroup.innerHTML = `
-                            <col style="width:3px">
-                            <col style="width:96px">
-                            <col style="width:72px">
-                            <col style="width:140px">
-                            <col style="width:100px">
-                            <col style="width:88px">
-                            <col style="width:72px">
-                            <col style="width:88px">
-                            <col style="width:80px">
-                            <col style="width:100px">
-                            <col style="width:52px">
-                            <col style="width:52px">
-                            <col style="width:44px">`;
-    }
-    head.innerHTML = `
-            <tr class="${TH_ROW}">
-                <th class="p-0"></th>
-                ${th('年月/基地', 'text-left tracking-[0.08em]')}
-                ${identityHeads}
-                ${th('项目/版本', 'text-left tracking-[0.08em]')}
-                ${th('材料', 'text-right')}
-                ${th('焊接费', 'text-right')}
-                ${th('月总账', 'text-right text-ink-dim')}
-                ${th('间接', 'text-right')}
-                <th class="px-2 py-2 text-right text-[9px] font-semibold tracking-[0.06em] text-brand-hud/90 bg-brand-hud/10">总费用</th>
-                ${th('核算', 'text-center')}
-                ${th('审核', 'text-center')}
-                <th class="${OPS_TH}" aria-label="操作"></th>
-            </tr>`;
+    if (table) table.style.minWidth = spec.minWidth;
+    if (colgroup) colgroup.innerHTML = spec.colgroup;
+    head.innerHTML = `<tr class="${TH_ROW}">${spec.cells}</tr>`;
 }
 
 export function updateLacHud(total, summary) {

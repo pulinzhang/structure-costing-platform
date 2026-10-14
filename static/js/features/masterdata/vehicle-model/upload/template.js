@@ -2,7 +2,7 @@
  * 项目上传 — 基地写在 Excel 列里；同步写入
  */
 
-import { UPLOAD_DROPZONE } from '../../../../ui/classes.js?v=14';
+import { UPLOAD_DROPZONE } from '../../../../ui/classes.js?v=15';
 import {
     uploadBrowseButtonHtml,
     uploadFileHintHtml,

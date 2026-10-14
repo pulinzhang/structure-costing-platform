@@ -2,7 +2,7 @@
  * 文件溯源 — HUD 密表 + 筛选 + 详情抽屉
  */
 
-import { HUD_SHELL, OPS_TH, DRAWER_BACKDROP, BTN_GHOST, filterSelect, filterInput } from '../../ui/classes.js?v=14';
+import { HUD_SHELL, OPS_TH, DRAWER_BACKDROP, BTN_GHOST, filterSelect, filterInput } from '../../ui/classes.js?v=15';
 import { filterBarHtml } from '../../ui/filter-bar.js?v=6';
 import { hudTableHtml, hudRowHtml, opsIconButtonHtml } from '../../ui/hud-table.js?v=3';
 

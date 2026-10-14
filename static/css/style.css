@@ -864,8 +864,8 @@ td.record-list-carry {
     table.record-list tbody {
         display: flex;
         flex-direction: column;
-        gap: 0.5rem;
-        padding: 0.55rem 0.45rem 0.75rem;
+        gap: 0.85rem;
+        padding: 0.75rem 0.55rem 1rem;
         counter-reset: record-card;
     }
 
@@ -873,18 +873,20 @@ td.record-list-carry {
         display: grid;
         grid-template-columns: 1fr 1fr;
         column-gap: 0.85rem;
-        row-gap: 0.45rem;
-        border: 1px solid rgb(var(--border-hud));
-        border-left: 2px solid rgb(var(--brabus-red) / 0.72);
+        row-gap: 0.55rem;
+        border: 1px solid rgb(var(--border-color));
+        border-left: 2px solid rgb(var(--hud-red) / 0.85);
         background: rgb(var(--bg-main));
-        padding: 0.7rem 0.75rem 0.55rem 0.8rem;
-        box-shadow: inset 0 1px 0 rgb(var(--hairline) / 0.06);
+        padding: 0.95rem 0.9rem 0.8rem 1rem;
+        box-shadow:
+            inset 0 1px 0 rgb(var(--hairline) / 0.14),
+            0 14px 36px rgb(var(--overlay) / 0.55);
     }
 
     table.record-list tr:not(.record-list-span) {
         position: relative;
         counter-increment: record-card;
-        padding-top: 1.35rem;
+        padding-top: 1.55rem;
     }
 
     table.record-list tr:not(.record-list-span)::after {
@@ -1024,6 +1026,97 @@ td.record-list-carry {
     table.record-list td:not([data-label]):has(.record-list-value :is(button, a)) .record-list-value {
         justify-content: flex-end;
         width: 100%;
+    }
+
+    table.record-list td.record-key,
+    table.record-list td.record-spec,
+    table.record-list td.record-focus,
+    table.record-list td.record-trace {
+        grid-column: 1 / -1;
+    }
+
+    table.record-list td.record-key {
+        order: -3;
+    }
+
+    table.record-list td.record-key .record-list-value,
+    table.record-list td.record-key .record-list-value :is(span, div) {
+        font-size: 18px;
+        font-weight: 800;
+        line-height: 1.25;
+        letter-spacing: 0.01em;
+        color: rgb(var(--text-main));
+    }
+
+    table.record-list td.record-spec {
+        order: -2;
+    }
+
+    table.record-list td.record-spec .record-list-value,
+    table.record-list td.record-spec .record-list-value :is(span, div) {
+        font-size: 16px;
+        font-weight: 700;
+        line-height: 1.3;
+        color: rgb(var(--text-main));
+    }
+
+    table.record-list td.record-focus {
+        order: -1;
+        padding: 0.5rem 0.65rem;
+        background: rgb(var(--hud-red) / 0.14) !important;
+    }
+
+    table.record-list td.record-focus .record-list-value {
+        color: rgb(var(--hud-red));
+        font-size: 24px;
+        font-weight: 800;
+        line-height: 1.1;
+        font-variant-numeric: tabular-nums;
+        text-shadow: 0 0 12px rgb(var(--hud-red) / 0.7), 0 0 25px rgb(var(--hud-red) / 0.3);
+    }
+
+    table.record-list td.record-aux .record-list-value {
+        display: inline-block;
+        width: auto;
+        max-width: 100%;
+        padding: 0.12rem 0.4rem;
+        background: rgb(var(--bg-elevated) / 0.85);
+        color: rgb(var(--text-muted));
+        font-size: 12px;
+        font-weight: 500;
+        line-height: 1.3;
+        font-variant-numeric: tabular-nums;
+    }
+
+    table.record-list td.record-trace .record-list-value {
+        display: block;
+        width: 100%;
+        max-width: none;
+        padding: 0.35rem 0.45rem;
+        background: transparent;
+        border: 1px solid rgb(var(--border-color));
+        color: rgb(var(--text-muted));
+        font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+        font-size: 10px;
+        font-weight: 400;
+        line-height: 1.45;
+        letter-spacing: 0;
+    }
+
+    table.record-list td.record-trace .truncate {
+        max-width: none;
+        font: inherit;
+        color: inherit;
+        background: transparent;
+    }
+
+    .grid > .hud-kpi-card-glow {
+        grid-column: 1 / -1;
+        order: -1;
+    }
+
+    .hud-kpi-card-glow .hud-kpi-num-glow {
+        font-size: 34px;
     }
 
     .filter-capsules > span.text-ink-muted {
@@ -1514,24 +1607,43 @@ td.record-list-carry {
     }
 
     html[data-theme="light"] table.record-list tbody {
-        gap: 0.75rem;
-        padding: 0.75rem;
+        gap: 1rem;
+        padding: 0.85rem 0.7rem 1.1rem;
     }
 
     html[data-theme="light"] table.record-list tr {
         border-radius: 8px;
-        padding: 1rem;
-        box-shadow: none;
+        padding: 1.15rem 1.05rem 1rem;
+        border-color: rgb(var(--border-color));
+        box-shadow: var(--shadow-hud);
     }
 
     html[data-theme="light"] table.record-list tr:not(.record-list-span) {
-        padding-top: 1.55rem;
+        padding-top: 1.7rem;
     }
 
     html[data-theme="light"] table.record-list tr.record-list-span,
     html[data-theme="light"] table.record-list tr.record-list-section {
         border-radius: 0;
         padding: 0.2rem 0.1rem 0;
+        box-shadow: none;
+    }
+
+    html[data-theme="light"] table.record-list td.record-focus {
+        background: rgb(var(--hud-red) / 0.06) !important;
+    }
+
+    html[data-theme="light"] table.record-list td.record-focus .record-list-value {
+        text-shadow: none;
+    }
+
+    html[data-theme="light"] table.record-list td.record-trace .record-list-value {
+        background: transparent;
+        border-color: rgb(var(--border-subtle));
+    }
+
+    html[data-theme="light"] table.record-list td.record-aux .record-list-value {
+        background: rgb(var(--bg-elevated));
     }
 
     html[data-theme="light"] table.record-list tr.record-list-section::before {

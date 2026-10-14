@@ -3,7 +3,7 @@
  */
 
 import { paginationBarHtml } from '../../../ui/page-size.js?v=11';
-import { BTN_GHOST, filterSelect, filterInput } from '../../../ui/classes.js?v=14';
+import { BTN_GHOST, filterSelect, filterInput } from '../../../ui/classes.js?v=15';
 import { filterBarHtml } from '../../../ui/filter-bar.js?v=6';
 
 export function logsTemplate() {

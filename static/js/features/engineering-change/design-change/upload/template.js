@@ -2,7 +2,7 @@
  * 工程变更上传 — 与冲压布点 / 工艺上传同一套舱体。
  */
 
-import { UPLOAD_DROPZONE, UPLOAD_INPUT, HUD_LED } from '../../../../ui/classes.js?v=14';
+import { UPLOAD_DROPZONE, UPLOAD_INPUT, HUD_LED } from '../../../../ui/classes.js?v=15';
 import { recentUploadsCardHtml } from '../../../../ui/recent-uploads.js?v=3';
 import {
     uploadBrowseButtonHtml,

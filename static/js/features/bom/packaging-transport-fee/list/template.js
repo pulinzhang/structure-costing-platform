@@ -3,7 +3,7 @@
  * 批量操作范围 = 基地 + 年度 + 项目
  */
 
-import { filterSelect, filterInput, HUD_SHELL, DRAWER_SHELL, DRAWER_BACKDROP, HUD_BAND, OPS_TH, BTN_GHOST, BTN_SOLID, BTN_SOLID_DANGER } from '../../../../ui/classes.js?v=14';
+import { filterSelect, filterInput, HUD_SHELL, DRAWER_SHELL, DRAWER_BACKDROP, HUD_BAND, OPS_TH, BTN_GHOST, BTN_SOLID, BTN_SOLID_DANGER } from '../../../../ui/classes.js?v=15';
 import { filterBarHtml } from '../../../../ui/filter-bar.js?v=6';
 import { hudTableHtml, hudRowHtml, opsIconButtonHtml } from '../../../../ui/hud-table.js?v=3';
 import { hudKpiCardHtml } from '../../../../ui/hud-kpi.js?v=1';
@@ -106,14 +106,14 @@ export function pkgTransportFeeTemplate() {
                                 <th class="px-2 py-2 text-left text-[9px] font-medium tracking-[0.08em] text-ink-faint">基地</th>
                                 <th class="px-2 py-2 text-left text-[9px] font-medium tracking-[0.08em] text-ink-faint">年份</th>
                                 <th class="px-2 py-2 text-left text-[9px] font-medium tracking-[0.08em] text-ink-faint">项目</th>
-                                <th class="px-2 py-2 text-left text-[9px] font-medium tracking-[0.08em] text-ink-muted">短代码</th>
+                                <th class="record-key px-2 py-2 text-left text-[9px] font-medium tracking-[0.08em] text-ink-muted">短代码</th>
                                 <th class="px-2 py-2 text-left text-[9px] font-medium tracking-[0.08em] text-ink-faint">零件</th>
                                 <th class="px-2 py-2 text-left text-[9px] font-medium tracking-[0.08em] text-ink-faint">包装类型</th>
-                                <th class="px-2 py-2 text-right text-[9px] font-medium tracking-[0.06em] text-ink-faint">包装费</th>
-                                <th class="px-2 py-2 text-right text-[9px] font-medium tracking-[0.06em] text-ink-faint">运输费</th>
-                                <th class="px-2 py-2 text-right text-[9px] font-medium tracking-[0.06em] text-ink-faint">维护费</th>
-                                <th class="px-2 py-2 text-right text-[9px] font-medium tracking-[0.06em] text-ink-faint">其它</th>
-                                <th class="px-2 py-2 text-right text-[9px] font-semibold tracking-[0.06em] text-brand-hud/90 bg-brand-hud/10">合计</th>
+                                <th class="record-aux px-2 py-2 text-right text-[9px] font-medium tracking-[0.06em] text-ink-faint">包装费</th>
+                                <th class="record-aux px-2 py-2 text-right text-[9px] font-medium tracking-[0.06em] text-ink-faint">运输费</th>
+                                <th class="record-aux px-2 py-2 text-right text-[9px] font-medium tracking-[0.06em] text-ink-faint">维护费</th>
+                                <th class="record-aux px-2 py-2 text-right text-[9px] font-medium tracking-[0.06em] text-ink-faint">其它</th>
+                                <th class="record-focus px-2 py-2 text-right text-[9px] font-semibold tracking-[0.06em] text-brand-hud/90 bg-brand-hud/10">合计</th>
                                 <th class="px-2 py-2 text-center text-[9px] font-medium tracking-[0.06em] text-ink-faint">审核</th>
                                 <th class="px-2 py-2 text-left text-[9px] font-normal tracking-[0.08em] text-ink-faint">创建人</th>
                                 <th class="${OPS_TH}" aria-label="操作"></th>`,

@@ -4,7 +4,7 @@
  * 用于测试部门核对数据，主子表联合查询Excel
  */
 
-import { filterSelect, filterInputWithDatalist, HUD_LED, BTN_GHOST, DRAWER_BACKDROP } from '../../../../ui/classes.js?v=14';
+import { filterSelect, filterInputWithDatalist, HUD_LED, BTN_GHOST, DRAWER_BACKDROP } from '../../../../ui/classes.js?v=15';
 import { filterBarHtml } from '../../../../ui/filter-bar.js?v=6';
 import {
     DEFAULT_PREVIEW_PAGE_SIZE,
@@ -89,7 +89,7 @@ export function policyDownloadTemplate() {
                                         <th class="px-3 py-2 text-left text-[9px] font-semibold font-medium tracking-[0.08em] text-ink-faint whitespace-nowrap">钢种大类</th>
                                         <th class="px-3 py-2 text-left text-[9px] font-semibold font-medium tracking-[0.08em] text-ink-faint whitespace-nowrap">政策类型</th>
                                         <th class="px-3 py-2 text-left text-[9px] font-semibold font-medium tracking-[0.08em] text-ink-faint whitespace-nowrap">牌号类型</th>
-                                        <th class="px-3 py-2 text-left text-[9px] font-semibold font-medium tracking-[0.08em] text-ink-faint whitespace-nowrap">牌号/范围</th>
+                                        <th class="record-key px-3 py-2 text-left text-[9px] font-semibold font-medium tracking-[0.08em] text-ink-faint whitespace-nowrap">牌号/范围</th>
                                         <th class="px-3 py-2 text-right text-[9px] font-semibold font-medium tracking-[0.08em] text-ink-faint whitespace-nowrap">基准厚度</th>
                                         <!-- 子表字段 -->
                                         <th class="px-3 py-2 text-left text-[9px] font-semibold font-medium tracking-[0.08em] text-ink-faint whitespace-nowrap">明细ID</th>
@@ -97,7 +97,7 @@ export function policyDownloadTemplate() {
                                         <th class="px-3 py-2 text-left text-[9px] font-semibold font-medium tracking-[0.08em] text-ink-faint whitespace-nowrap">厚度条件</th>
                                         <th class="px-3 py-2 text-left text-[9px] font-semibold font-medium tracking-[0.08em] text-ink-faint whitespace-nowrap">宽度条件</th>
                                         <th class="px-3 py-2 text-left text-[9px] font-semibold font-medium tracking-[0.08em] text-ink-faint whitespace-nowrap">锌层条件</th>
-                                        <th class="px-3 py-2 text-right text-[9px] font-semibold font-medium tracking-[0.08em] text-ink-faint whitespace-nowrap">加减价</th>
+                                        <th class="record-focus px-3 py-2 text-right text-[9px] font-semibold font-medium tracking-[0.08em] text-ink-faint whitespace-nowrap">加减价</th>
                                         <th class="px-3 py-2 text-center text-[9px] font-semibold font-medium tracking-[0.08em] text-ink-faint whitespace-nowrap">基准</th>
                                         <th class="px-3 py-2 text-right text-[9px] font-semibold font-medium tracking-[0.08em] text-ink-faint whitespace-nowrap">排序</th>
                                         <!-- 追溯字段 -->

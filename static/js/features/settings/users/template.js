@@ -6,7 +6,7 @@
  */
 
 import { paginationBarHtml } from '../../../ui/page-size.js?v=11';
-import { DRAWER_SHELL, DRAWER_BACKDROP, HUD_FILTER, BTN_GHOST, BTN_HUD_CREATE, BTN_SOLID, BTN_SOLID_DANGER, filterInput, filterSelect } from '../../../ui/classes.js?v=14';
+import { DRAWER_SHELL, DRAWER_BACKDROP, HUD_FILTER, BTN_GHOST, BTN_HUD_CREATE, BTN_SOLID, BTN_SOLID_DANGER, filterInput, filterSelect } from '../../../ui/classes.js?v=15';
 import { filterBarHtml } from '../../../ui/filter-bar.js?v=6';
 import { opsIconButtonHtml } from '../../../ui/hud-table.js?v=3';
 
