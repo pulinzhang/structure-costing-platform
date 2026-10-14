@@ -67,7 +67,7 @@ const pageLoaders = {
     'scrap-price': () => import('./features/yishiyiyi/scrap-price/index.js?v=34'),
     'bom-structure': () => import('./features/bom/material/structure/index.js?v=20'),
     'bom-where-used': () => import('./features/bom/material/where-used/index.js?v=25'),
-    'bom-viz': () => import('./features/bom/material/viz/index.js?v=44'),
+    'bom-viz': () => import('./features/bom/material/viz/index.js?v=46'),
     'bom-upload': () => import('./features/bom/material/upload/index.js?v=39'),
     'bom-material': () => import('./features/bom/material/list/index.js?v=26'),
     'bom-welding-unit-price-upload': () => import('./features/bom/welding-unit-price/upload/index.js?v=35'),

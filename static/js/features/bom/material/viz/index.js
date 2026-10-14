@@ -17,10 +17,10 @@ const LAYOUT = {
     levelGapY: 56,
     siblingGapX: 28,
     node: {
-        0: { w: 168, h: 168, img: 88 },
-        1: { w: 148, h: 156, img: 72 },
-        2: { w: 128, h: 78, img: 0 },
-        deep: { w: 120, h: 74, img: 0 },
+        0: { w: 168, h: 196, img: 88 },
+        1: { w: 148, h: 172, img: 72 },
+        2: { w: 128, h: 100, img: 0 },
+        deep: { w: 120, h: 100, img: 0 },
     },
 };
 
@@ -721,11 +721,11 @@ const BomVizPage = {
 
                 const imgBlock =
                     p.showImage && src
-                        ? `<div class="flex items-center justify-center mb-1" style="height:${p.imgSize}px">
+                        ? `<div class="flex shrink-0 items-center justify-center mb-1" style="height:${p.imgSize}px">
                                <img src="${esc(src)}" alt="" class="max-h-full max-w-full object-contain" draggable="false" loading="lazy">
                            </div>`
                         : p.depth <= 1 && !src
-                          ? `<div class="flex items-center justify-center mb-1 text-[9px] text-ink-faint" style="height:${Math.max(p.imgSize, 28)}px">暂无图</div>`
+                          ? `<div class="flex shrink-0 items-center justify-center mb-1 text-[9px] text-ink-faint" style="height:${Math.max(p.imgSize, 28)}px">暂无图</div>`
                           : '';
 
                 return `
@@ -738,11 +738,11 @@ const BomVizPage = {
                               border-color:${categoryInk(token, 0.55)};
 ">
                     ${imgBlock}
-                    <p class="${shortSize} font-mono font-semibold tabular-nums tracking-[0.06em] text-ink leading-tight text-center break-all px-0.5
+                    <p class="${shortSize} shrink-0 font-mono font-semibold tabular-nums tracking-[0.06em] text-ink leading-tight text-center break-all px-0.5
                                drop-shadow-[0_0_12px_rgb(var(--text-main)/0.06)]">${esc(p.partNoLabel)}</p>
-                    <p class="${qtySize} font-mono font-semibold tabular-nums tracking-wide mt-1.5 leading-none"
+                    <p class="${qtySize} shrink-0 font-mono font-semibold tabular-nums tracking-wide mt-1.5 leading-snug"
                        style="color:${categoryInk(token, 0.72)}">${esc(p.qtyLabel)}</p>
-                    <p class="text-[10px] text-ink-faint mt-1.5 leading-tight text-center truncate w-full">${esc(p.displayName)}</p>
+                    <p class="shrink-0 text-[10px] text-ink-faint mt-1.5 leading-normal text-center truncate w-full">${esc(p.displayName)}</p>
                     ${badge}
                   </div>
                 `;
