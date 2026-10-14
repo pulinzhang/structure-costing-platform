@@ -7,7 +7,8 @@
 
 import { can } from '../../../../core/permissions.js?v=10';
 import { HUD_LED } from '../../../../ui/classes.js?v=15';
-import { bomVizTemplate } from './template.js?v=9';
+import { bindMoreMenu } from '../../../../ui/more-menu.js?v=7';
+import { bomVizTemplate } from './template.js?v=11';
 import { fmtPeriodRange, hasClosedPeriod } from '../../../common/period-ui.js?v=5';
 
 /** 布局常量（保证同层不重叠、标签不挤） */
@@ -121,6 +122,7 @@ const bomVizState = {
     hoverId: null,
     selectedId: null,
     isLoading: false,
+    isExporting: false,
 };
 
 function categoryInk(token, alpha) {
@@ -385,14 +387,14 @@ function isExpanded(nodeId) {
  * 保证同层不重叠；连接线走节点底部到子节点顶部
  * 最终将整棵树平移到画布中心（相对视口至少铺满舞台）
  */
-function layoutTree(root, viewportW = 800, viewportH = 600) {
+function layoutTree(root, viewportW = 800, viewportH = 600, expandAll = false) {
     const placements = [];
     const edges = [];
 
     function measure(node, depth) {
         const size = nodeSize(depth);
         const kids = node.children || [];
-        const open = isExpanded(node.id) && kids.length > 0;
+        const open = kids.length > 0 && (expandAll || isExpanded(node.id));
 
         if (!open) {
             return { width: size.w, node, depth, size, children: [] };
@@ -431,7 +433,7 @@ function layoutTree(root, viewportW = 800, viewportH = 600) {
             partNoLabel: resolvePartNumberLabel(node, category),
             qtyLabel: formatQtyLabel(node),
             childCount: kids.length,
-            isExpanded: isExpanded(node.id),
+            isExpanded: expandAll || isExpanded(node.id),
             showImage: depth <= 1 && size.img > 0 && !!node.sketch_url,
         });
 
@@ -510,6 +512,244 @@ function orthogonalPath(x1, y1, x2, y2) {
     return `M ${x1} ${y1} L ${x1} ${midY} L ${x2} ${midY} L ${x2} ${y2}`;
 }
 
+const EXPORT_FONT_MONO = "ui-monospace, SFMono-Regular, Menlo, Consolas, monospace";
+const EXPORT_FONT_SANS = "Inter, 'Segoe UI', 'PingFang SC', 'Microsoft YaHei', sans-serif";
+
+function themeRgba(varName, alpha = 1) {
+    const [red, green, blue] = getComputedStyle(document.documentElement)
+        .getPropertyValue(varName)
+        .trim()
+        .split(/\s+/);
+    if (alpha >= 1) return `rgb(${red}, ${green}, ${blue})`;
+    return `rgba(${red}, ${green}, ${blue}, ${alpha})`;
+}
+
+function svgText(x, y, fill, font, size, content, weight, spacing) {
+    const weightAttr = weight ? ` font-weight="${weight}"` : '';
+    const spacingAttr = spacing ? ` letter-spacing="${spacing}"` : '';
+    return `<text x="${x}" y="${y}" text-anchor="middle" dominant-baseline="central" fill="${fill}" font-family="${font}" font-size="${size}"${weightAttr}${spacingAttr}>${content}</text>`;
+}
+
+function monoLines(text, fontSize, maxWidth) {
+    const source = String(text || '—');
+    const maxChars = Math.max(4, Math.floor(maxWidth / (fontSize * 0.62)));
+    const lines = [];
+    for (let index = 0; index < source.length && lines.length < 3; index += maxChars) {
+        lines.push(source.slice(index, index + maxChars));
+    }
+    if (source.length > maxChars * 3 && lines[2]) {
+        lines[2] = `${lines[2].slice(0, Math.max(1, lines[2].length - 1))}…`;
+    }
+    return lines.length ? lines : ['—'];
+}
+
+function exportFilename(extension) {
+    const assembly = bomVizState.assembly;
+    const base = String(assembly?.part_number || assembly?.part_name || '结构图').trim() || '结构图';
+    const safe = base.replace(/[\\/:*?"<>|]/g, '_').slice(0, 80);
+    return `${safe}-结构图.${extension}`;
+}
+
+let exportMenu = null;
+
+function setExportMenuEnabled(enabled) {
+    const button = document.getElementById('bomVizExportMore');
+    if (!button) return;
+    button.disabled = !enabled;
+    button.classList.toggle('opacity-40', !enabled);
+    button.classList.toggle('pointer-events-none', !enabled);
+}
+
+function snapshotPathLabel() {
+    const snapshot = bomVizState.snapshot;
+    if (!snapshot) return '';
+    return [snapshot.location, snapshot.customer_name, snapshot.vehicle_model, snapshot.bom_version]
+        .filter(Boolean)
+        .join(' / ');
+}
+
+async function sketchDataUrl(url) {
+    try {
+        const response = await fetch(url, { credentials: 'same-origin' });
+        if (!response.ok) return null;
+        const blob = await response.blob();
+        const blobType = String(blob.type || '');
+        if (blobType && !blobType.startsWith('image/')) return null;
+        return await new Promise((resolve, reject) => {
+            const reader = new FileReader();
+            reader.onload = () => resolve(typeof reader.result === 'string' ? reader.result : null);
+            reader.onerror = () => reject(reader.error);
+            reader.readAsDataURL(blob);
+        });
+    } catch (error) {
+        console.warn('结构图简图未能写入 SVG:', url, error);
+        return null;
+    }
+}
+
+async function loadExportImages(placements) {
+    const urls = [
+        ...new Set(
+            placements
+                .map((placement) => (placement.showImage ? sketchSrc(placement.node.sketch_url) : null))
+                .filter(Boolean)
+        ),
+    ];
+    const entries = await Promise.all(urls.map(async (url) => [url, await sketchDataUrl(url)]));
+    return new Map(entries);
+}
+
+function exportNodeMarkup(placement, imageHref) {
+    const token = placement.category.token;
+    const left = placement.x - placement.w / 2;
+    const top = placement.y - placement.h / 2;
+    const isShortPartNo = placement.partNoLabel !== (placement.node.part_number || '—');
+    const partSize = isShortPartNo
+        ? placement.depth === 0
+            ? 24
+            : placement.depth === 1
+              ? 20
+              : 18
+        : placement.depth === 0
+          ? 14
+          : 12;
+    const qtySize = placement.depth === 0 ? 18 : 16;
+    const nameSize = 10;
+    const innerW = Math.max(24, placement.w - 16);
+    const partLines = monoLines(placement.partNoLabel, partSize, innerW);
+    const lineGap = 2;
+    const blockGap = 6;
+    const partBlock = partLines.length * partSize + Math.max(0, partLines.length - 1) * lineGap;
+    const hasImageSlot = placement.depth <= 1 && placement.imgSize > 0;
+    const imageH = hasImageSlot ? placement.imgSize : 0;
+    const textBlock = partBlock + blockGap + qtySize + blockGap + nameSize;
+    const contentH = (hasImageSlot ? imageH + 4 : 0) + textBlock;
+    const topPad = Math.max(8, (placement.h - contentH) / 2);
+    const parts = [
+        `<g>`,
+        `<rect x="${left}" y="${top}" width="${placement.w}" height="${placement.h}" fill="${themeRgba(token, placement.depth === 0 ? 0.22 : 0.12)}" stroke="${themeRgba(token, 0.55)}" stroke-width="1"/>`,
+    ];
+
+    let textTop = top + topPad;
+    if (hasImageSlot) {
+        if (imageHref) {
+            parts.push(
+                `<image href="${imageHref}" x="${left + 8}" y="${textTop}" width="${innerW}" height="${imageH}" preserveAspectRatio="xMidYMid meet"/>`
+            );
+        } else {
+            parts.push(svgText(placement.x, textTop + imageH / 2, themeRgba('--text-faint'), EXPORT_FONT_SANS, 9, '暂无图'));
+        }
+        textTop += imageH + 4;
+    }
+
+    partLines.forEach((line, index) => {
+        const y = textTop + partSize / 2 + index * (partSize + lineGap);
+        parts.push(svgText(placement.x, y, themeRgba('--text-main'), EXPORT_FONT_MONO, partSize, esc(line), 600, '0.06em'));
+    });
+    textTop += partBlock + blockGap;
+    parts.push(svgText(placement.x, textTop + qtySize / 2, themeRgba(token, 0.72), EXPORT_FONT_MONO, qtySize, esc(placement.qtyLabel), 600));
+    textTop += qtySize + blockGap;
+    parts.push(svgText(placement.x, textTop + nameSize / 2, themeRgba('--text-faint'), EXPORT_FONT_SANS, nameSize, esc(placement.displayName)));
+    parts.push('</g>');
+    return parts.join('');
+}
+
+function buildStructureSvg(placements, edges, canvasW, canvasH, images) {
+    const legend = LEGEND_ORDER.filter((key) => placements.some((placement) => placement.category.key === key)).map(
+        (key) => PART_CATEGORY[key]
+    );
+    const headerH = 76;
+    const title = bomVizState.assembly?.part_name || bomVizState.assembly?.part_number || '产品结构';
+    const pathLabel = snapshotPathLabel();
+    let legendX = 24;
+    const legendMarkup = legend
+        .map((category) => {
+            const mark = `<circle cx="${legendX + 4}" cy="58" r="3" fill="${themeRgba(category.token)}"/><text x="${legendX + 12}" y="58" dominant-baseline="central" fill="${themeRgba('--text-dim')}" font-family="${EXPORT_FONT_SANS}" font-size="10">${esc(category.label)}</text>`;
+            legendX += 14 + [...category.label].length * 11 + 14;
+            return mark;
+        })
+        .join('');
+    const svgW = Math.max(canvasW, legendX + 24, 24 + [...title].length * 13, 24 + [...pathLabel].length * 10);
+    const svgH = canvasH + headerH;
+    const treeOffsetX = (svgW - canvasW) / 2;
+
+    const edgeMarkup = edges
+        .map((edge) => {
+            const child = placements.find((placement) => placement.node.id === edge.childId);
+            const token = child?.category?.token || PART_CATEGORY.other.token;
+            return `<path d="${orthogonalPath(edge.x1, edge.y1, edge.x2, edge.y2)}" fill="none" stroke="${themeRgba(token, 0.35)}" stroke-width="1.25"/>`;
+        })
+        .join('');
+
+    const nodeMarkup = placements
+        .map((placement) => {
+            const src = placement.showImage ? sketchSrc(placement.node.sketch_url) : null;
+            const imageHref = src ? images.get(src) : null;
+            return exportNodeMarkup(placement, imageHref);
+        })
+        .join('');
+
+    return {
+        width: svgW,
+        height: svgH,
+        markup: `<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" width="${svgW}" height="${svgH}" viewBox="0 0 ${svgW} ${svgH}">
+  <rect width="100%" height="100%" fill="${themeRgba('--bg-deep')}"/>
+  <text x="24" y="22" dominant-baseline="central" fill="${themeRgba('--text-main')}" font-family="${EXPORT_FONT_SANS}" font-size="13" font-weight="600">${esc(title)}</text>
+  <text x="24" y="40" dominant-baseline="central" fill="${themeRgba('--text-faint')}" font-family="${EXPORT_FONT_SANS}" font-size="10">${esc(pathLabel)}</text>
+  ${legendMarkup}
+  <g transform="translate(${treeOffsetX}, ${headerH})">
+    ${edgeMarkup}
+    ${nodeMarkup}
+  </g>
+</svg>`,
+    };
+}
+
+function downloadBlob(blob, filename) {
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = filename;
+    document.body.appendChild(link);
+    link.click();
+    link.remove();
+    URL.revokeObjectURL(url);
+}
+
+async function svgToPngBlob(markup, width, height) {
+    const maxEdge = 8192;
+    const maxPixels = 16_000_000;
+    let scale = Math.min(2, window.devicePixelRatio || 1);
+    scale = Math.min(scale, maxEdge / width, maxEdge / height);
+    if (width * height * scale * scale > maxPixels) {
+        scale = Math.sqrt(maxPixels / (width * height));
+    }
+    const canvasW = Math.max(1, Math.round(width * scale));
+    const canvasH = Math.max(1, Math.round(height * scale));
+    const blob = new Blob([markup], { type: 'image/svg+xml;charset=utf-8' });
+    const url = URL.createObjectURL(blob);
+    try {
+        const image = new Image();
+        await new Promise((resolve, reject) => {
+            image.onload = () => resolve();
+            image.onerror = () => reject(new Error('无法生成 PNG'));
+            image.src = url;
+        });
+        const canvas = document.createElement('canvas');
+        canvas.width = canvasW;
+        canvas.height = canvasH;
+        const context = canvas.getContext('2d');
+        if (!context) throw new Error('无法生成 PNG');
+        context.drawImage(image, 0, 0, canvasW, canvasH);
+        const png = await new Promise((resolve) => canvas.toBlob(resolve, 'image/png'));
+        if (!png) throw new Error('无法生成 PNG');
+        return png;
+    } finally {
+        URL.revokeObjectURL(url);
+    }
+}
+
 const BomVizPage = {
     init() {
         if (!can('op:bom-structure:view')) {
@@ -529,6 +769,18 @@ const BomVizPage = {
                 ? `/bom-structure?snapshot_id=${encodeURIComponent(snapshotId)}`
                 : '/bom-structure';
         });
+        exportMenu = bindMoreMenu({
+            wrapId: 'bomVizExportWrap',
+            btnId: 'bomVizExportMore',
+            menuId: 'bomVizExportMenu',
+        });
+        document.getElementById('bomVizExportSvg')?.addEventListener('click', () => {
+            this.exportStructure('svg');
+        });
+        document.getElementById('bomVizExportPng')?.addEventListener('click', () => {
+            this.exportStructure('png');
+        });
+        setExportMenuEnabled(false);
 
         document.getElementById('bomVizKnowledgeClose')?.addEventListener('click', () => {
             this.closeKnowledge();
@@ -589,22 +841,17 @@ const BomVizPage = {
     },
 
     renderHeader() {
-        const snapshot = bomVizState.snapshot;
         const assembly = bomVizState.assembly;
         const pathEl = document.getElementById('bomVizPath');
         const nameEl = document.getElementById('bomVizAssemblyName');
         const legendEl = document.getElementById('bomVizCategoryLegend');
 
-        if (pathEl) {
-            pathEl.textContent = snapshot
-                ? [snapshot.location, snapshot.customer_name, snapshot.vehicle_model, snapshot.bom_version]
-                      .filter(Boolean)
-                      .join(' / ')
-                : '—';
-        }
+        if (pathEl) pathEl.textContent = snapshotPathLabel() || '—';
         if (nameEl) {
             nameEl.textContent = assembly?.part_name || assembly?.part_number || '—';
         }
+
+        setExportMenuEnabled(!bomVizState.isExporting);
 
         if (legendEl) {
             const present = new Set();
@@ -777,6 +1024,40 @@ const BomVizPage = {
         });
 
         this.applyHighlightState();
+    },
+
+    async exportStructure(format) {
+        const assembly = bomVizState.assembly;
+        if (!assembly || bomVizState.isExporting) return;
+        exportMenu?.close();
+        if (typeof window.refuseWeChatDownload === 'function' && window.refuseWeChatDownload()) return;
+
+        bomVizState.isExporting = true;
+        setExportMenuEnabled(false);
+
+        try {
+            await new Promise((resolve) => {
+                window.setTimeout(resolve, 0);
+            });
+            const { placements, edges, canvasW, canvasH } = layoutTree(assembly, 0, 0, true);
+            const images = await loadExportImages(placements);
+            const picture = buildStructureSvg(placements, edges, canvasW, canvasH, images);
+            if (format === 'png') {
+                const png = await svgToPngBlob(picture.markup, picture.width, picture.height);
+                downloadBlob(png, exportFilename('png'));
+                showToast(`已导出 PNG，共 ${placements.length} 个节点`, 'success');
+            } else {
+                const svg = new Blob([picture.markup], { type: 'image/svg+xml;charset=utf-8' });
+                downloadBlob(svg, exportFilename('svg'));
+                showToast(`已导出 SVG，共 ${placements.length} 个节点`, 'success');
+            }
+        } catch (error) {
+            console.error('导出结构图失败:', error);
+            showToast(error?.message || '导出失败', 'error');
+        } finally {
+            bomVizState.isExporting = false;
+            setExportMenuEnabled(Boolean(bomVizState.assembly));
+        }
     },
 
     onNodeClick(nodeId) {
@@ -1143,4 +1424,8 @@ const BomVizPage = {
 export const pageConfig = {
     render: bomVizTemplate,
     init: () => BomVizPage.init(),
+    destroy() {
+        exportMenu?.unbind();
+        exportMenu = null;
+    },
 };
