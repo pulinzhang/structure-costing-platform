@@ -3,6 +3,7 @@
  */
 
 import { DRAWER_SHELL, DRAWER_CLOSE, HUD_LED, DRAWER_BACKDROP } from '../../../../ui/classes.js?v=15';
+import { moreMenuItemHtml, moreMenuShellHtml } from '../../../../ui/more-menu.js?v=7';
 
 export function bomVizTemplate() {
     return `
@@ -23,8 +24,19 @@ export function bomVizTemplate() {
                         <p id="bomVizPath" class="text-[10px] text-ink-faint tracking-wide truncate"></p>
                     </div>
                 </div>
-                <div id="bomVizCategoryLegend"
-                     class="shrink-0 flex flex-wrap justify-end gap-x-3 gap-y-1 text-[10px] tracking-wide text-ink-dim max-w-md">
+                <div class="shrink-0 flex items-center gap-1">
+                    <div id="bomVizCategoryLegend"
+                         class="flex flex-wrap justify-end gap-x-3 gap-y-1 text-[10px] tracking-wide text-ink-dim max-w-md">
+                    </div>
+                    ${moreMenuShellHtml({
+                        wrapId: 'bomVizExportWrap',
+                        btnId: 'bomVizExportMore',
+                        menuId: 'bomVizExportMenu',
+                        itemsHtml: [
+                            moreMenuItemHtml({ id: 'bomVizExportSvg', label: '导出 SVG' }),
+                            moreMenuItemHtml({ id: 'bomVizExportPng', label: '导出 PNG' }),
+                        ].join(''),
+                    })}
                 </div>
             </div>
 
