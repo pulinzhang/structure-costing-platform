@@ -135,7 +135,7 @@ class StampingAnalysis:
         out = AnalysisRunResult(
             comparability=resolve_comparability(query.comparison_basis),
             has_data=bool(rows),
-            data_message=(f"冲压工艺零件={len(rows)}" if rows else "当前范围无冲压工艺数据"),
+            data_message=(f"冲压工艺 {len(rows)} 个零件" if rows else "当前范围无冲压工艺数据"),
         )
         parts_result: dict[str, AnalysisResultLeafPayload] = {}
 
@@ -189,7 +189,7 @@ class StampingAnalysis:
         out = AnalysisRunResult(
             comparability=resolve_comparability(query.comparison_basis),
             has_data=bool(rows),
-            data_message=(f"冲次单价行={len(rows)}" if rows else "当前范围无冲次单价数据"),
+            data_message=(f"冲次单价 {len(rows)} 条" if rows else "当前范围无冲次单价数据"),
         )
         parts_result: dict[str, AnalysisResultLeafPayload] = {}
 
@@ -250,7 +250,7 @@ class StampingAnalysis:
                 f"下面是库里其它年份的 {len(rows)} 行；拼焊费看其它费用"
             )
         elif rows:
-            data_message = f"冲压加工费行={len(rows)}"
+            data_message = f"冲压加工费 {len(rows)} 条"
         else:
             data_message = "当前范围无冲压加工费数据"
         out = AnalysisRunResult(
@@ -323,7 +323,7 @@ class StampingAnalysis:
             comparability=resolve_comparability(query.comparison_basis),
             has_data=bool(focus_rows),
             data_message=(
-                f"冲压零件行={len(focus_rows)}" if focus_rows else "当前范围无冲压零件价格数据"
+                f"冲压零件 {len(focus_rows)} 条" if focus_rows else "当前范围无冲压零件价格数据"
             ),
         )
         parts_result: dict[str, AnalysisResultLeafPayload] = {}

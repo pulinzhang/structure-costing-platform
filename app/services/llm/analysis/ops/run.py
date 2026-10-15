@@ -97,9 +97,9 @@ class OpsAnalysis:
             comparability=resolve_comparability(query.comparison_basis),
             has_data=any(row.row_count > 0 for row in boards),
             data_message=(
-                f"待审核={summary['pending_audit_total']}，"
-                f"未完成={summary['incomplete_total']}，"
-                f"待确认外发={summary['pending_confirm_total']}"
+                f"待审核 {summary['pending_audit_total']} 件，"
+                f"未完成 {summary['incomplete_total']} 件，"
+                f"待确认外发 {summary['pending_confirm_total']} 件"
             ),
             summary=summary,
         )
@@ -124,7 +124,7 @@ class OpsAnalysis:
         out = AnalysisRunResult(
             comparability=resolve_comparability(query.comparison_basis),
             has_data=bool(rows),
-            data_message=(f"模具费行={len(rows)}" if rows else "当前范围无模具费数据"),
+            data_message=(f"模具费 {len(rows)} 条" if rows else "当前范围无模具费数据"),
         )
         parts_result: dict[str, AnalysisResultLeafPayload] = {}
         if "summary" in query.analyses:
@@ -172,7 +172,7 @@ class OpsAnalysis:
         out = AnalysisRunResult(
             comparability=resolve_comparability(query.comparison_basis),
             has_data=bool(rows),
-            data_message=(f"检具费行={len(rows)}" if rows else "当前范围无检具费档案"),
+            data_message=(f"检具费 {len(rows)} 条" if rows else "当前范围无检具费档案"),
         )
         parts_result: dict[str, AnalysisResultLeafPayload] = {}
         if "summary" in query.analyses:
@@ -223,7 +223,7 @@ class OpsAnalysis:
         out = AnalysisRunResult(
             comparability=resolve_comparability(query.comparison_basis),
             has_data=bool(rows),
-            data_message=(f"采购对象行={len(rows)}" if rows else "当前范围无采购对象列表"),
+            data_message=(f"采购对象 {len(rows)} 条" if rows else "当前范围无采购对象列表"),
         )
         parts_result: dict[str, AnalysisResultLeafPayload] = {}
         if "summary" in query.analyses:
@@ -329,7 +329,7 @@ class OpsAnalysis:
         out = AnalysisRunResult(
             comparability=resolve_comparability(query.comparison_basis),
             has_data=bool(rows),
-            data_message=(f"工程变更行={len(rows)}" if rows else "当前范围无工程变更记录"),
+            data_message=(f"工程变更 {len(rows)} 条" if rows else "当前范围无工程变更记录"),
         )
         parts_result: dict[str, AnalysisResultLeafPayload] = {}
         if "summary" in query.analyses or not part_token:

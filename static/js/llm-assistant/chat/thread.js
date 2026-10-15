@@ -2,10 +2,10 @@
  * 消息线程 — Markdown 回答
  */
 
-import { humanizeUserFacingError } from '../errors.js';
+import { humanizeUserFacingError } from '../errors.js?v=2';
 import { EXPORT_ICON_BTN_CLASS, llmIconCopy, llmIconPrint, llmIconWord } from '../icons.js?v=2';
 import { renderMarkdown } from '../markdown/render.js?v=7';
-import { canExportAssistantMessage } from '../export/document.js?v=13';
+import { canExportAssistantMessage } from '../export/document.js?v=14';
 
 /**
  * @param {HTMLElement} root

@@ -3,7 +3,7 @@
  */
 
 import { renderMarkdown } from '../markdown/render.js?v=7';
-import { analysesKeyLabelZh } from '../report/labels.js';
+import { analysesKeyLabelZh } from '../report/labels.js?v=2';
 
 /**
  * @param {object} msg
@@ -48,8 +48,6 @@ export function buildAssistantDocumentHtml(msg) {
     const bodyHtml = renderMarkdown(msg.content || '');
     const footerParts = [];
     if (reportId) footerParts.push(`报告编号 ${reportId}`);
-    if (msg.prompt_version) footerParts.push(msg.prompt_version);
-    if (msg.from_cache) footerParts.push('缓存命中');
     const footerText = footerParts.join(' · ');
 
     const wordMeta = `<!--[if gte mso 9]><xml><w:WordDocument><w:View>Print</w:View><w:Zoom>100</w:Zoom></w:WordDocument></xml><![endif]-->`;

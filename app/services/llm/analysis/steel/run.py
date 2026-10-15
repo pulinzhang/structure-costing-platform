@@ -78,7 +78,7 @@ class SteelAnalysis:
         out = AnalysisRunResult(
             comparability=resolve_comparability(query.comparison_basis),
             has_data=bool(rows),
-            data_message=(f"加减价阶梯行={len(rows)}" if rows else "当前范围无加减价政策数据"),
+            data_message=(f"加减价政策 {len(rows)} 条" if rows else "当前范围无加减价政策数据"),
         )
         parts_result: dict[str, AnalysisResultLeafPayload] = {}
         if "summary" in query.analyses:
@@ -125,7 +125,7 @@ class SteelAnalysis:
         out = AnalysisRunResult(
             comparability=resolve_comparability(query.comparison_basis),
             has_data=bool(rows),
-            data_message=(f"基准价行={len(rows)}" if rows else "当前范围无基准价格数据"),
+            data_message=(f"基准价 {len(rows)} 条" if rows else "当前范围无基准价格数据"),
         )
         parts_result: dict[str, AnalysisResultLeafPayload] = {}
         if "summary" in query.analyses:
@@ -216,7 +216,7 @@ class SteelAnalysis:
         out = AnalysisRunResult(
             comparability=resolve_comparability(query.comparison_basis),
             has_data=bool(rows),
-            data_message=(f"中标厚度价行={len(rows)}" if rows else "当前范围无中标厚度价数据"),
+            data_message=(f"中标厚度价 {len(rows)} 条" if rows else "当前范围无中标厚度价数据"),
         )
         parts_result: dict[str, AnalysisResultLeafPayload] = {}
         if "summary" in query.analyses:
@@ -250,7 +250,7 @@ class SteelAnalysis:
         out = AnalysisRunResult(
             comparability=resolve_comparability(query.comparison_basis),
             has_data=bool(rows),
-            data_message=(f"废料价行={len(rows)}" if rows else "当前范围无废料销售价数据"),
+            data_message=(f"废料销售价 {len(rows)} 条" if rows else "当前范围无废料销售价数据"),
         )
         parts_result: dict[str, AnalysisResultLeafPayload] = {}
         if "summary" in query.analyses:
@@ -286,7 +286,7 @@ class SteelAnalysis:
         out = AnalysisRunResult(
             comparability=resolve_comparability(query.comparison_basis),
             has_data=bool(steel_rows),
-            data_message=f"钢材月度均价点数={len(steel_rows)}",
+            data_message=f"钢材月度均价 {len(steel_rows)} 个",
         )
         parts_result: dict[str, AnalysisResultLeafPayload] = {}
         if "summary" in query.analyses:

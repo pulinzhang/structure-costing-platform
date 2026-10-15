@@ -5,13 +5,13 @@
 
 import { createReport, getReport } from './api.js';
 import { mountComposer, setComposerBusy, setComposerCarry } from './chat/composer.js?v=9';
-import { humanizeUserFacingError } from './errors.js';
-import { renderThread } from './chat/thread.js?v=25';
-import { printAssistantMessage, closePrintPreview } from './export/print.js?v=17';
-import { downloadWordDocument } from './export/word.js?v=13';
+import { humanizeUserFacingError } from './errors.js?v=2';
+import { renderThread } from './chat/thread.js?v=26';
+import { printAssistantMessage, closePrintPreview } from './export/print.js?v=18';
+import { downloadWordDocument } from './export/word.js?v=14';
 import { findPrompt, fillPromptTemplate } from './prompts/catalog.js?v=9';
 import { applyReportToMessage } from './report/apply-report.js?v=4';
-import { openHistoryPanel } from './report/history.js?v=12';
+import { openHistoryPanel } from './report/history.js?v=13';
 import {
     buildStorageKey,
     clearConversation,

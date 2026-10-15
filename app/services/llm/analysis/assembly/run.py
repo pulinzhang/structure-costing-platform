@@ -620,11 +620,11 @@ class AssemblyAnalysis:
             part_total = (
                 out.summary.get("l0_count") if out.summary else max(row.l0_count for row in monthly)
             )
-            detail = f"L0 月切片={len(monthly)}，" f"供货总成={part_total}件（按零件号去重）"
+            detail = f"按月汇总 {len(monthly)} 个月，供货总成 {part_total} 件（按零件号去重）"
             parts = [part for part in (base_message, missing_message, detail) if part]
             out.data_message = "；".join(parts)
         elif part_rows:
-            detail = f"L0 零件行={len(part_rows)}"
+            detail = f"供货总成 {len(part_rows)} 件"
             parts = [part for part in (base_message, missing_message, detail) if part]
             out.data_message = "；".join(parts)
         else:

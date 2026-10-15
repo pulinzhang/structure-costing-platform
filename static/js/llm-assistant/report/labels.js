@@ -10,6 +10,8 @@ export const ANALYSIS_KIND_LABEL = {
     comparison: '对比分析',
     risk: '风险分析',
     drilldown: '核价详情',
+    usage_help: '操作说明',
+    engine_readiness: '核价条件检查',
 };
 
 /**
@@ -23,6 +25,6 @@ export function analysesKeyLabelZh(analysesKey) {
         .split(',')
         .map((part) => part.trim())
         .filter(Boolean)
-        .map((part) => ANALYSIS_KIND_LABEL[part] || part)
+        .map((part) => ANALYSIS_KIND_LABEL[part] || '分析')
         .join('、');
 }

@@ -22,6 +22,24 @@ from app.services.llm.prompts.labels import (
     sanitize_report_markdown,
 )
 from app.services.llm.prompts.registry import PromptRegistry
+from app.utils.logging_config import get_logger
+
+logger = get_logger("service.llm.generator")
+
+
+def _period_span_text(time_range: dict[str, str]) -> str:
+    start = _year_month_text(time_range.get("start"))
+    end = _year_month_text(time_range.get("end"))
+    if start and end and start != end:
+        return f"{start}至{end}"
+    return start or end or "未指定"
+
+
+def _year_month_text(value: object) -> str:
+    text = str(value or "")
+    if len(text) >= 7 and text[4] == "-":
+        return f"{text[:4]}年{text[5:7]}月"
+    return text
 
 
 @dataclass(frozen=True, slots=True)
@@ -220,13 +238,11 @@ class LlmReportGenerator:
         snapshot: AnalysisSnapshot,
         error_hint: str,
     ) -> str:
+        logger.info("模型不可用，改用系统结果作答: %s", error_hint)
         if snapshot.query.query_mode == "usage_help":
-            return self._render_usage_help_fallback(snapshot=snapshot, error_hint=error_hint)
+            return self._render_usage_help_fallback(snapshot=snapshot)
         if snapshot.query.query_mode == "engine_readiness":
-            return self._render_engine_readiness_fallback(
-                snapshot=snapshot,
-                error_hint=error_hint,
-            )
+            return self._render_engine_readiness_fallback(snapshot=snapshot)
 
         if isinstance(snapshot.result, dict):
             pinned = snapshot.result.get("table")
@@ -245,7 +261,7 @@ class LlmReportGenerator:
                     [
                         f"## {question}",
                         "",
-                        f"模型暂不可用（{error_hint}），{listing}",
+                        f"暂时无法展开说明，{listing}",
                         "",
                         pinned,
                     ]
@@ -256,7 +272,7 @@ class LlmReportGenerator:
         lines = [
             f"## {question}",
             "",
-            f"模型暂不可用（{error_hint}），以下为系统数据摘要：",
+            "暂时无法展开说明，以下是系统查出的结果：",
             "",
         ]
         if snapshot.meta.has_data is False:
@@ -265,8 +281,8 @@ class LlmReportGenerator:
             scope = snapshot.meta.scope
             if scope is not None:
                 lines.append(
-                    f"- 查询范围：{scope.time_range.get('start')} 至 "
-                    f"{scope.time_range.get('end')}（{scope.month_count} 个月有数据）"
+                    f"- 查询范围：{_period_span_text(scope.time_range)}"
+                    f"（{scope.month_count} 个月有数据）"
                 )
             if summary.get("grand_total_sum") is not None:
                 lines.append(f"- 总费用合计（元）：{summary.get('grand_total_sum')}")
@@ -291,7 +307,6 @@ class LlmReportGenerator:
         self,
         *,
         snapshot: AnalysisSnapshot,
-        error_hint: str,
     ) -> str:
         evidence = snapshot.evidence or {}
         ready_raw = evidence.get("engine_ready")
@@ -300,27 +315,26 @@ class LlmReportGenerator:
 
             ready = CostingEngineReadyVO.model_validate(ready_raw)
             body = render_engine_readiness_markdown(ready)
-            return f"{body}\n\n> 说明：模型暂不可用（{error_hint}），以上为系统就绪检查结果。"
+            return f"{body}\n\n> 说明：暂时无法展开说明，以上是系统检查结果。"
         return (
             f"## {snapshot.query.user_question}\n\n"
-            f"{snapshot.meta.data_message or '就绪检查未完成。'}\n\n"
-            f"> 模型暂不可用（{error_hint}）。"
+            f"{snapshot.meta.data_message or '核价条件还没查完，请稍后重试。'}\n\n"
+            "> 说明：暂时无法展开说明。"
         )
 
     def _render_usage_help_fallback(
         self,
         *,
         snapshot: AnalysisSnapshot,
-        error_hint: str,
     ) -> str:
         chunks_raw = snapshot.result.get("chunks") or []
         chunks = chunks_raw if isinstance(chunks_raw, list) else []
         lines = [
-            "# 使用帮助（规则模板）",
+            "# 操作说明",
             "",
             f"> 用户问题：{snapshot.query.user_question}",
             "",
-            f"> 说明：模型暂不可用（{error_hint}），以下为语料摘录。",
+            "> 说明：暂时无法整理成步骤，下面是相关操作说明。",
             "",
         ]
         for chunk in chunks:

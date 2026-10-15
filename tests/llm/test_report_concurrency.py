@@ -38,4 +38,4 @@ def test_create_report_rejects_when_too_many_active_tasks(
         )
 
     assert exc_info.value.code == 429
-    assert exc_info.value.message == "too many requests"
+    assert exc_info.value.message == "同时分析的问题过多，请等当前分析完成后再问"

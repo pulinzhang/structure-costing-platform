@@ -3,7 +3,7 @@
  * 弹窗被拦时回退全屏预览，用户可自行再点打印。
  */
 
-import { buildAssistantDocumentHtml, canExportAssistantMessage } from './document.js?v=13';
+import { buildAssistantDocumentHtml, canExportAssistantMessage } from './document.js?v=14';
 import { llmIconClose, llmIconPrint, PANEL_ICON_BTN_CLASS } from '../icons.js';
 
 /**

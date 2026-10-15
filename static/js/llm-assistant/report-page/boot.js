@@ -4,13 +4,13 @@
 
 import { getReport } from '../api.js';
 import { applyReportToMessage } from '../report/apply-report.js';
-import { analysesKeyLabelZh } from '../report/labels.js';
+import { analysesKeyLabelZh } from '../report/labels.js?v=2';
 import { renderMarkdown } from '../markdown/render.js?v=7';
 import {
     buildAssistantDocumentHtml,
     buildExportFilename,
     canExportAssistantMessage,
-} from '../export/document.js?v=13';
+} from '../export/document.js?v=14';
 
 const state = {
     reportId: 0,
@@ -83,7 +83,7 @@ function printHeadInnerHtml() {
     ].filter(Boolean);
     return `
         <div class="print-running-brand">
-            <span class="print-kicker">AI Analysis Report</span>
+            <span class="print-kicker">核价平台</span>
             <strong>AI 分析报告</strong>
         </div>
         <div class="print-running-meta">
@@ -121,8 +121,6 @@ function render(root) {
     const question = String(msg.user_question || '').trim();
     const footerParts = [];
     if (msg.report_id) footerParts.push(`报告编号 #${msg.report_id}`);
-    if (msg.prompt_version) footerParts.push(msg.prompt_version);
-    if (msg.from_cache) footerParts.push('缓存命中');
     footerParts.push('AI 助手整理，便于参阅，请以系统核算为准');
     const titleBits = [periodText(scope), scope.vehicle_model].filter(Boolean);
     document.title = titleBits.length
@@ -132,7 +130,7 @@ function render(root) {
     root.innerHTML = `
         <header class="report-head">
             <div>
-                <p>AI Analysis Report</p>
+                <p>核价平台</p>
                 <h1>AI 分析报告</h1>
             </div>
             <div class="report-actions">
