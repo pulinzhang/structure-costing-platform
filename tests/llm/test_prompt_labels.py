@@ -12,6 +12,9 @@ from app.services.llm.prompts.labels import (
 def test_analyses_key_label_zh() -> None:
     assert analyses_key_label_zh("summary") == "概览分析"
     assert analyses_key_label_zh("summary,trend") == "概览分析、趋势分析"
+    assert analyses_key_label_zh("usage_help") == "操作说明"
+    assert analyses_key_label_zh("engine_readiness") == "核价条件检查"
+    assert analyses_key_label_zh("not_a_kind") == "分析"
 
 
 def test_audience_label_zh() -> None:

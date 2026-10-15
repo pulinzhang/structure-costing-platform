@@ -67,10 +67,10 @@ _async_task_service = AsyncTaskService()
 
 def _mode_progress_copy(query_mode: str) -> tuple[str, str, str]:
     if query_mode == "usage_help":
-        return ("正在检索帮助语料…", "正在生成操作说明…", "帮助回答完成")
+        return ("正在查找操作说明…", "正在整理操作步骤…", "操作说明已完成")
     if query_mode == "engine_readiness":
-        return ("正在检查核算就绪…", "正在生成就绪说明…", "分析完成")
-    return ("正在查询并聚合核价事实…", "AI正在思考中…", "分析完成")
+        return ("正在检查能不能开始核价…", "正在整理检查结果…", "分析完成")
+    return ("正在查询核价结果…", "AI正在思考中…", "分析完成")
 
 
 def analysis_query_from_report_fields(
@@ -161,7 +161,7 @@ class LlmAnalysisReportService:
         )
         active_count = self.repository.count_active_by_user(db, user_id=int(current_user.id))
         if active_count >= int(settings.LLM_MAX_CONCURRENT_TASKS_PER_USER):
-            raise BusinessException("too many requests", code=429)
+            raise BusinessException("同时分析的问题过多，请等当前分析完成后再问", code=429)
 
         trace_id = str(uuid.uuid4())
         analysis_query = analysis_query.model_copy(update={"trace_id": trace_id})
@@ -190,12 +190,12 @@ class LlmAnalysisReportService:
                 ttl_minutes=int(settings.LLM_IDEMPOTENCY_TTL_MINUTES),
             )
             if hit is not None:
-                return self._to_task_vo(hit, from_cache=True, message="命中幂等缓存")
+                return self._to_task_vo(hit, from_cache=True, message="已有相同分析结果")
 
         audit = audit_create(current_user)
         task = _async_task_service.create_task(
             task_type=TASK_TYPE_LLM_ANALYSIS_REPORT,
-            message="已提交分析队列",
+            message="正在准备分析…",
             operator_id=int(current_user.id),
             operator_name=display_name(current_user),
         )
@@ -242,13 +242,14 @@ class LlmAnalysisReportService:
             )
 
         def on_crash(worker_db: Session, error: BaseException) -> None:
+            logger.error("分析任务失败", exc_info=error)
             try:
                 self.repository.mark_failed(
                     worker_db,
                     report_id,
                     LlmAnalysisReportFailPatch(
                         status=REPORT_STATUS_FAILED,
-                        error_message=str(error)[:1000],
+                        error_message="分析失败，请稍后重试",
                         updated_by=updated_by,
                     ),
                 )
@@ -261,7 +262,7 @@ class LlmAnalysisReportService:
             start_message="开始分析…",
             work=work,
             on_crash=on_crash,
-            crash_message=lambda error: f"分析失败: {error}",
+            crash_message=lambda _error: "分析失败，请稍后重试",
             crash_progress=100,
             crash_result=lambda _error: {
                 "report_id": report_id,
@@ -272,7 +273,7 @@ class LlmAnalysisReportService:
 
     def _submit_message(self, analysis_query: AnalysisQuery) -> str:
         if analysis_query.query_mode == "usage_help":
-            return "正在检索帮助语料…"
+            return "正在查找操作说明…"
         return "正在查询核价结果…"
 
     def get_report(

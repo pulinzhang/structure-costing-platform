@@ -19,7 +19,7 @@ GATE_LABEL_ZH: dict[str, str] = {
     "stamping_process": "冲压工艺",
     "tonnage_price": "冲次单价",
     "welding_unit_price": "焊接单价",
-    "bom_snapshot": "材料清单（BOM）",
+    "bom_snapshot": "材料清单",
     "annual_part_price": "年度零件价",
     "packaging_transport": "包装运输费",
     "base_price": "钢材基准价",
@@ -77,15 +77,19 @@ def render_engine_readiness_markdown(
     ym = f"{year}年{month:02d}月"
 
     lines = [
-        f"## {location} {ym} 核算就绪检查",
+        f"## {location} {ym} 核价条件检查",
         "",
         (
             "**结论：可以启动自动核价**（与「核价 → 自动核价引擎 → 检查就绪」一致）。"
             if ready.can_start
-            else f"**结论：尚有 {sum(1 for g in ready.gates.upload_or_config if not g.ok and g.code not in SOFT_UPLOAD_GATE_CODES)} 项硬门禁未过，暂不能启动。**"
+            else (
+                "**结论：还有 "
+                f"{sum(1 for g in ready.gates.upload_or_config if not g.ok and g.code not in SOFT_UPLOAD_GATE_CODES)}"
+                " 项必备资料没齐，暂不能启动核价。**"
+            )
         ),
         "",
-        "> 说明：材料清单（BOM）按「基地 + 项目 + 版本」维护，**可跨年复用**，不要求每年重传。",
+        "> 说明：材料清单按「基地 + 项目 + 版本」维护，**可跨年复用**，不要求每年重传。",
         "",
     ]
 
@@ -133,7 +137,7 @@ def render_engine_readiness_markdown(
 
     if ready.plan.l0_scopes:
         scopes = "、".join(f"{s.vehicle_model}/{s.bom_version}" for s in ready.plan.l0_scopes)
-        lines.append(f"成品核价范围（BOM 含 L0）：{scopes}。")
+        lines.append(f"供货总成核价范围：{scopes}。")
         lines.append("")
 
     lines.append(
@@ -160,7 +164,9 @@ class EngineReadinessRunner:
         span_note = ""
         if tr.start != tr.end:
             span_note = (
-                f"问句时间跨度为 {tr.start}～{tr.end}，按截止月 {year}-{month:02d} 检查就绪。"
+                f"问的是 {tr.start_year}年{tr.start_month:02d}月"
+                f"到 {tr.end_year}年{tr.end_month:02d}月，"
+                f"按 {year}年{month:02d}月检查能不能开始核价。"
             )
 
         if not location:
@@ -182,9 +188,9 @@ class EngineReadinessRunner:
         hard_fails = [g for g in gates_payload if g["hard_stop"]]
 
         data_message = (
-            f"{location} {year}年{month:02d}月可启动自动核价"
+            f"{location} {year}年{month:02d}月可以开始自动核价"
             if ready.can_start
-            else f"{location} {year}年{month:02d}月尚有 {len(hard_fails)} 项硬门禁未过"
+            else f"{location} {year}年{month:02d}月还有 {len(hard_fails)} 项必备资料没齐，暂不能启动核价"
         )
         if span_note:
             data_message = f"{span_note} {data_message}"
@@ -203,7 +209,7 @@ class EngineReadinessRunner:
             },
             evidence={
                 "engine_ready": ready.model_dump(mode="json"),
-                "bom_note": "材料清单按基地+项目+版本维护，不按年失效；绿灯表示已有含 L0 的快照。",
+                "bom_note": "材料清单按基地、项目、版本维护，不按年失效；这项已通过就表示供货总成清单已经有了。",
             },
             analysis_version=ANALYSIS_VERSION,
         )

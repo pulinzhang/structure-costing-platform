@@ -32,7 +32,7 @@ import {
 } from './core/permissions.js?v=15';
 import { pageLoadingHtml, pageNoticeHtml } from './ui/page-loading.js?v=1';
 
-const LLM_BOOT_URL = './llm-assistant/boot.js?v=71';
+const LLM_BOOT_URL = './llm-assistant/boot.js?v=72';
 
 // 页面按路由再加载。版本号留在 import() 地址上，和以前的静态 import 一样用来破缓存。
 const pageLoaders = {

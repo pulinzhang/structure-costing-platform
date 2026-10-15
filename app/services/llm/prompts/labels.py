@@ -24,13 +24,13 @@ AUDIENCE_LABEL_ZH: dict[str, str] = {
 
 def analyses_key_label_zh(analyses_key: str) -> str:
     if analyses_key == "usage_help":
-        return "使用帮助"
+        return "操作说明"
     if analyses_key == "engine_readiness":
-        return "核算就绪检查"
+        return "核价条件检查"
     parts = [part.strip() for part in analyses_key.split(",") if part.strip()]
     if not parts:
         return ANALYSIS_KIND_LABEL_ZH["summary"]
-    labels = [ANALYSIS_KIND_LABEL_ZH.get(part, part) for part in parts]
+    labels = [ANALYSIS_KIND_LABEL_ZH.get(part, "分析") for part in parts]
     return "、".join(labels)
 
 

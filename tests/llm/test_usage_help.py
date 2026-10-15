@@ -258,6 +258,8 @@ def test_l0_calc_stuck_usage_help_fallback_markdown() -> None:
     assert "删除" in markdown
     assert "计算中" in markdown
     assert "成品核价计算" in markdown
+    assert "模型暂不可用" not in markdown
+    assert "（test）" not in markdown
 
 
 PCR_HELP_QUESTION = "采购价格在哪导出协议？"

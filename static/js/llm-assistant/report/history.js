@@ -4,7 +4,7 @@
  */
 
 import { deleteReport, listReports } from '../api.js';
-import { analysesKeyLabelZh } from './labels.js';
+import { analysesKeyLabelZh } from './labels.js?v=2';
 
 const PAGE_SIZE = 10;
 const SCROLL_LOAD_THRESHOLD_PX = 48;
@@ -196,7 +196,7 @@ export async function openHistoryPanel(overlay, options) {
  */
 function renderHistoryItem(item) {
     const status = String(item.status || '').toLowerCase();
-    const statusLabel = STATUS_LABEL[status] || status || '-';
+    const statusLabel = STATUS_LABEL[status] || (status ? '处理中' : '-');
     const statusClass = status === 'succeeded'
         ? 'text-ok'
         : status === 'failed'

@@ -77,7 +77,7 @@ class BomAnalysis:
         out = AnalysisRunResult(
             comparability=resolve_comparability(query.comparison_basis),
             has_data=bool(rows),
-            data_message=(f"年度零件价行={len(rows)}" if rows else "当前范围无年度零件价数据"),
+            data_message=(f"年度零件价 {len(rows)} 条" if rows else "当前范围无年度零件价数据"),
         )
         parts_result: dict[str, AnalysisResultLeafPayload] = {}
 
@@ -172,7 +172,7 @@ class BomAnalysis:
         out = AnalysisRunResult(
             comparability=resolve_comparability(query.comparison_basis),
             has_data=bool(rows),
-            data_message=(f"包装运输费行={len(rows)}" if rows else "当前范围无包装运输费数据"),
+            data_message=(f"包装运输费 {len(rows)} 条" if rows else "当前范围无包装运输费数据"),
         )
         parts_result: dict[str, AnalysisResultLeafPayload] = {}
 
@@ -234,7 +234,7 @@ class BomAnalysis:
         out = AnalysisRunResult(
             comparability=resolve_comparability(query.comparison_basis),
             has_data=bool(rows),
-            data_message=(f"材料清单节点={len(rows)}" if rows else "当前范围无材料清单数据"),
+            data_message=(f"材料清单 {len(rows)} 条" if rows else "当前范围无材料清单数据"),
         )
         parts_result: dict[str, AnalysisResultLeafPayload] = {}
         if "summary" in query.analyses:

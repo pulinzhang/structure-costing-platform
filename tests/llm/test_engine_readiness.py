@@ -87,6 +87,9 @@ def test_engine_readiness_qingdao_2026_02_lists_hard_gates() -> None:
         assert "焊接单价" in markdown
         assert "跨年复用" in markdown
         assert "不要求每年重传" in markdown
+        assert "模型暂不可用" not in markdown
+        assert "硬门禁" not in markdown
+        assert "（test）" not in markdown
         if run.result.get("can_start"):
             assert "已就绪" in markdown
         hard_section = (

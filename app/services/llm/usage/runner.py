@@ -16,7 +16,9 @@ class UsageHelpRunner:
             comparability="unknown",
             has_data=bool(chunks),
             data_message=(
-                f"命中帮助语料：{'、'.join(titles)}" if chunks else "未命中帮助语料，已回退快速入门"
+                f"找到的操作说明：{'、'.join(titles)}"
+                if chunks
+                else "没有对上的操作说明，先看快速入门"
             ),
             summary={
                 "kind": "usage_help",

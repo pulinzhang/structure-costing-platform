@@ -58,7 +58,7 @@ class WeldingAnalysis:
         out = AnalysisRunResult(
             comparability=resolve_comparability(query.comparison_basis),
             has_data=bool(rows),
-            data_message=(f"焊接单价行={len(rows)}" if rows else "当前范围无焊接单价数据"),
+            data_message=(f"焊接单价 {len(rows)} 条" if rows else "当前范围无焊接单价数据"),
         )
         parts_result: dict[str, AnalysisResultLeafPayload] = {}
 
@@ -107,9 +107,7 @@ class WeldingAnalysis:
         out = AnalysisRunResult(
             comparability=resolve_comparability(query.comparison_basis),
             has_data=bool(rows),
-            data_message=(
-                f"焊接工艺拆解节点={len(rows)}" if rows else "当前范围无焊接工艺拆解数据"
-            ),
+            data_message=(f"焊接工艺拆解 {len(rows)} 条" if rows else "当前范围无焊接工艺拆解数据"),
         )
         parts_result: dict[str, AnalysisResultLeafPayload] = {}
         if "summary" in query.analyses:
@@ -174,7 +172,7 @@ class WeldingAnalysis:
             comparability=resolve_comparability(query.comparison_basis),
             has_data=bool(focus_rows),
             data_message=(
-                f"成品焊接费行={len(focus_rows)}" if focus_rows else "当前范围无成品焊接费数据"
+                f"焊接费 {len(focus_rows)} 条" if focus_rows else "当前范围无成品焊接费数据"
             ),
         )
         parts_result: dict[str, AnalysisResultLeafPayload] = {}

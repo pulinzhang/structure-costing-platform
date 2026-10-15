@@ -9,12 +9,12 @@ from __future__ import annotations
 
 # 通用 / 跨 VO
 COMMON_FIELD_LABELS: dict[str, str] = {
-    "id": "主键",
+    "id": "记录编号",
     "year": "年度",
     "month": "月份",
     "location": "采购基地",
     "vehicle_model": "项目",
-    "bom_version": "BOM 版本",
+    "bom_version": "材料清单版本",
     "part_number": "零件号",
     "part_name": "零件名称",
     "calc_status": "核算状态",
@@ -50,7 +50,7 @@ L0_FIELD_LABELS: dict[str, str] = {
     "management_rate": "管理费率",
     "scrap_rate": "报废费率",
     "pretax_profit_rate": "税前利润率",
-    "missing_leaf_count": "缺价叶子件数",
+    "missing_leaf_count": "缺价零件件数",
     "calc_message": "核算说明",
     "code": "间接费用代码",
     "label": "间接费用名称",
@@ -110,7 +110,7 @@ STEEL_PRICE_FIELD_LABELS: dict[str, str] = {
 
 # 聚合键（VO 没有，须在 Pack Schema 显式声明）
 AGGREGATE_FIELD_LABELS: dict[str, str] = {
-    "l0_count": "L0 成品件数",
+    "l0_count": "供货总成件数",
     "ok_count": "核算完成件数",
     "partial_count": "核算不全件数",
     "grand_total_sum": "总费用合计（元）",
@@ -118,13 +118,13 @@ AGGREGATE_FIELD_LABELS: dict[str, str] = {
     "indirect_amount_sum": "间接费用合计（元）",
     "steel_price_row_count": "钢材联动价行数",
     "stamping_part_cost_row_count": "冲压零件价行数",
-    "mom_delta": "环比差额（元，后端计算）",
-    "mom_rate": "环比变动率（后端计算）",
-    "status": "核算状态（Pack 投影，同源 calc_status）",
-    "hard_stop": "引擎硬停",
-    "can_start": "是否可启动核价",
-    "message": "门禁/范围说明",
-    "missing_leaf_count": "缺价叶子件数",
+    "mom_delta": "环比差额（元）",
+    "mom_rate": "环比变动率",
+    "status": "核算状态",
+    "hard_stop": "缺必备资料就不能启动",
+    "can_start": "是否可以开始核价",
+    "message": "检查说明",
+    "missing_leaf_count": "缺价零件件数",
     "calc_message": "核算说明",
 }
 
