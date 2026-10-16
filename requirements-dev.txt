@@ -6,4 +6,3 @@ pre-commit>=3.7.0
 # 匹配你当前 requirements.txt 的类型存根库 (Type Stubs)
 types-openpyxl
 types-Pillow
-types-python-multipart
