@@ -1,0 +1,273 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <title>Structural Parts Automated Costing — Architecture</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    html, body {
+      width: 1920px;
+      height: 1080px;
+      overflow: hidden;
+      background: #0e0f12;
+      color: #f3f0e8;
+      font-family: "Segoe UI", "Helvetica Neue", sans-serif;
+    }
+    .sheet {
+      width: 1920px;
+      height: 1080px;
+      padding: 56px 72px 48px;
+      display: flex;
+      flex-direction: column;
+    }
+    .eyebrow {
+      font-size: 13px;
+      letter-spacing: 0.18em;
+      text-transform: uppercase;
+      color: #e23b2f;
+      font-weight: 600;
+    }
+    h1 {
+      margin-top: 14px;
+      font-family: Georgia, "Times New Roman", serif;
+      font-weight: 500;
+      font-size: 54px;
+      line-height: 1.02;
+      letter-spacing: -0.025em;
+    }
+    .dek {
+      margin-top: 16px;
+      max-width: 920px;
+      font-size: 20px;
+      line-height: 1.4;
+      color: #b7b2a8;
+    }
+    .section {
+      margin-top: 42px;
+    }
+    .kicker {
+      font-size: 12px;
+      letter-spacing: 0.16em;
+      text-transform: uppercase;
+      color: #8d887e;
+      font-weight: 600;
+      margin-bottom: 14px;
+    }
+    .flow, .system {
+      display: flex;
+      align-items: stretch;
+      gap: 0;
+    }
+    article {
+      flex: 1 1 0;
+      min-width: 0;
+      border: 1px solid #2e2c28;
+      background: #161513;
+      padding: 16px 16px 18px;
+    }
+    .flow article { min-height: 168px; }
+    .system article { min-height: 148px; }
+    .idx {
+      font-family: Georgia, "Times New Roman", serif;
+      font-size: 18px;
+      color: #e23b2f;
+      letter-spacing: 0.02em;
+    }
+    .layer {
+      font-size: 11px;
+      letter-spacing: 0.14em;
+      text-transform: uppercase;
+      color: #8d887e;
+      font-weight: 600;
+    }
+    h3 {
+      margin-top: 10px;
+      font-size: 18px;
+      font-weight: 600;
+      letter-spacing: -0.01em;
+      line-height: 1.25;
+    }
+    article p {
+      margin-top: 8px;
+      font-size: 14px;
+      line-height: 1.4;
+      color: #b7b2a8;
+    }
+    .arrow {
+      flex: 0 0 36px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    .caption {
+      margin-top: 12px;
+      font-size: 14px;
+      color: #8d887e;
+    }
+    .legend {
+      margin-top: 16px;
+      font-size: 13px;
+      color: #8d887e;
+    }
+    .slices {
+      margin-top: 10px;
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+    }
+    .slices span {
+      border: 1px solid #2e2c28;
+      padding: 6px 10px;
+      font-size: 13px;
+      color: #d9d3c8;
+      background: #12110f;
+    }
+    .foot {
+      margin-top: auto;
+      padding-top: 22px;
+      border-top: 1px solid #2e2c28;
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-end;
+      gap: 32px;
+    }
+    .foot-title {
+      font-size: 13px;
+      letter-spacing: 0.14em;
+      text-transform: uppercase;
+      color: #8d887e;
+      font-weight: 600;
+    }
+    .promise {
+      margin-top: 8px;
+      font-family: Georgia, "Times New Roman", serif;
+      font-size: 22px;
+      line-height: 1.3;
+      max-width: 640px;
+    }
+    .stack {
+      margin-top: 8px;
+      font-size: 14px;
+      line-height: 1.45;
+      color: #b7b2a8;
+      text-align: right;
+    }
+  </style>
+</head>
+<body>
+  <div class="sheet">
+    <p class="eyebrow">Automotive costing system</p>
+    <h1>Structural parts,<br />priced every month.</h1>
+    <p class="dek">Assemblies, sub-assemblies, and stampings. Process sheets, negotiated steel, BOMs, and engineering changes land in one system. A numbered run closes the plant and the month.</p>
+
+    <section class="section">
+      <p class="kicker">How a month closes</p>
+      <div class="flow">
+        <article>
+          <div class="idx">01</div>
+          <h3>Workbooks</h3>
+          <p>Process sheets, BOMs, steel terms, and engineering changes arrive as Excel.</p>
+        </article>
+        <div class="arrow" aria-hidden="true">
+          <svg width="28" height="12" viewBox="0 0 28 12"><line x1="0" y1="6" x2="18" y2="6" stroke="#3a3834" stroke-width="1"/><path d="M16 2.2 L24 6 L16 9.8" fill="none" stroke="#e23b2f" stroke-width="1.4"/></svg>
+        </div>
+        <article>
+          <div class="idx">02</div>
+          <h3>Readiness</h3>
+          <p>Plant, year, and month. Missing prices or fees stop the run.</p>
+        </article>
+        <div class="arrow" aria-hidden="true">
+          <svg width="28" height="12" viewBox="0 0 28 12"><line x1="0" y1="6" x2="18" y2="6" stroke="#3a3834" stroke-width="1"/><path d="M16 2.2 L24 6 L16 9.8" fill="none" stroke="#e23b2f" stroke-width="1.4"/></svg>
+        </div>
+        <article>
+          <div class="idx">03</div>
+          <h3>Steel</h3>
+          <p>Base price plus thickness, width, and zinc policies. The month’s steel.</p>
+        </article>
+        <div class="arrow" aria-hidden="true">
+          <svg width="28" height="12" viewBox="0 0 28 12"><line x1="0" y1="6" x2="18" y2="6" stroke="#3a3834" stroke-width="1"/><path d="M16 2.2 L24 6 L16 9.8" fill="none" stroke="#e23b2f" stroke-width="1.4"/></svg>
+        </div>
+        <article>
+          <div class="idx">04</div>
+          <h3>Stamped part</h3>
+          <p>Material, conversion, die, and offal on each stamping.</p>
+        </article>
+        <div class="arrow" aria-hidden="true">
+          <svg width="28" height="12" viewBox="0 0 28 12"><line x1="0" y1="6" x2="18" y2="6" stroke="#3a3834" stroke-width="1"/><path d="M16 2.2 L24 6 L16 9.8" fill="none" stroke="#e23b2f" stroke-width="1.4"/></svg>
+        </div>
+        <article>
+          <div class="idx">05</div>
+          <h3>Assembly</h3>
+          <p>Weld and purchased parts roll up. Finance and procurement read one price.</p>
+        </article>
+        <div class="arrow" aria-hidden="true">
+          <svg width="28" height="12" viewBox="0 0 28 12"><line x1="0" y1="6" x2="18" y2="6" stroke="#3a3834" stroke-width="1"/><path d="M16 2.2 L24 6 L16 9.8" fill="none" stroke="#e23b2f" stroke-width="1.4"/></svg>
+        </div>
+        <article>
+          <div class="idx">06</div>
+          <h3>Explanation</h3>
+          <p>Plain language over the closed result. Every figure already exists on the grid.</p>
+        </article>
+      </div>
+      <p class="caption">One numbered, timed run. The engine orders the work. Each calculator owns its formula. Original workbooks stay archived.</p>
+    </section>
+
+    <section class="section">
+      <p class="kicker">System shape</p>
+      <div class="system">
+        <article>
+          <div class="layer">Client</div>
+          <h3>Operations console</h3>
+          <p>ES-module SPA. The sidebar and the API share one set of permission codes.</p>
+        </article>
+        <div class="arrow" aria-hidden="true">
+          <svg width="28" height="12" viewBox="0 0 28 12"><line x1="0" y1="6" x2="18" y2="6" stroke="#3a3834" stroke-width="1"/><path d="M16 2.2 L24 6 L16 9.8" fill="none" stroke="#e23b2f" stroke-width="1.4"/></svg>
+        </div>
+        <article>
+          <div class="layer">API</div>
+          <h3>FastAPI</h3>
+          <p>Typed responses. Long jobs return a task id. The page polls. The request session stays on the request.</p>
+        </article>
+        <div class="arrow" aria-hidden="true">
+          <svg width="28" height="12" viewBox="0 0 28 12"><line x1="0" y1="6" x2="18" y2="6" stroke="#3a3834" stroke-width="1"/><path d="M16 2.2 L24 6 L16 9.8" fill="none" stroke="#e23b2f" stroke-width="1.4"/></svg>
+        </div>
+        <article>
+          <div class="layer">Domain</div>
+          <h3>Business slices</h3>
+          <p>Each area owns its rules and tables. Costing composes the others. Excel parsers only parse.</p>
+        </article>
+        <div class="arrow" aria-hidden="true">
+          <svg width="28" height="12" viewBox="0 0 28 12"><line x1="0" y1="6" x2="18" y2="6" stroke="#3a3834" stroke-width="1"/><path d="M16 2.2 L24 6 L16 9.8" fill="none" stroke="#e23b2f" stroke-width="1.4"/></svg>
+        </div>
+        <article>
+          <div class="layer">Data</div>
+          <h3>SQLite ledger</h3>
+          <p>Books in one file. Task progress in another. Imported workbooks kept as evidence.</p>
+        </article>
+      </div>
+      <p class="legend">Areas in the domain. Costing reads the rest. The assistant only reads closed results.</p>
+      <div class="slices">
+        <span>Master data</span>
+        <span>Stamping</span>
+        <span>Negotiated steel</span>
+        <span>Welding &amp; BOM</span>
+        <span>Engineering change</span>
+        <span>Costing</span>
+        <span>Assistant, read only</span>
+      </div>
+    </section>
+
+    <footer class="foot">
+      <div>
+        <p class="foot-title">Promise</p>
+        <p class="promise">Numbers are computed in the domain.<br />The assistant explains them.</p>
+      </div>
+      <p class="stack">
+        Modular monolith<br />
+        FastAPI · Pydantic · SQLAlchemy · SQLite · OpenPyXL<br />
+        Token auth · OpenAI-compatible assistant · Windows or Docker
+      </p>
+    </footer>
+  </div>
+</body>
+</html>
