@@ -137,7 +137,7 @@ def test_matcher_requires_archive_category() -> None:
     row = _row(thickness="0.70", category_name="")
 
     assert matcher.apply(row, [policy]) is False
-    assert "牌号未分类" in row.messages[0]
+    assert "这个牌号还没分类" in row.messages[0]
 
 
 def test_matcher_skips_mill_without_thickness_block() -> None:

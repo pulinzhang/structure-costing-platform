@@ -78,7 +78,7 @@ def test_welding_coverage_missing_fee_uses_aligned_count() -> None:
 
     assert cov.complete is False
     assert cov.fee_count == 1
-    assert "当前树拆解 2 条，对齐 1 条" in cov.message
+    assert "拆了 2 个，算出 1 个" in cov.message
 
 
 def test_welding_coverage_failed_log_still_reports_aligned_count() -> None:
@@ -88,7 +88,7 @@ def test_welding_coverage_failed_log_still_reports_aligned_count() -> None:
 
     assert cov.complete is False
     assert cov.fee_count == 1
-    assert "failed" in cov.message
+    assert "最近一次是失败" in cov.message
 
 
 def test_welding_coverage_expired_node_outside_current_ids_is_ignored() -> None:
