@@ -37,7 +37,6 @@ dev = [
     # 补充第三方库的类型存根
     "types-openpyxl>=3.1.0",
     "types-Pillow>=10.0.0",
-    "types-python-multipart>=0.0.6",
     "types-PyYAML>=6.0",
     "pandas-stubs>=2.2.0",
 ]
