@@ -4,6 +4,7 @@
 # 启动后不退出，打印容器日志；Ctrl+C 只回到 shell，容器继续跑
 #   bash deploy.sh
 #   bash deploy.sh --skip-pull
+#   bash deploy.sh --no-follow
 #   bash deploy.sh --stop
 set -euo pipefail
 
@@ -12,6 +13,7 @@ cd "$ROOT"
 
 SKIP_PULL=0
 DO_STOP=0
+NO_FOLLOW=0
 
 usage() {
   cat <<'EOF'
@@ -19,6 +21,7 @@ usage() {
 
   （无参数）   git pull --ff-only，重建镜像并替换容器，然后跟随日志
   --skip-pull  不拉代码，按当前目录重建并替换容器，然后跟随日志
+  --no-follow  同样发版，但健康检查通过后退出（给 GitHub Actions 用）
   --stop       停止并删除容器（保留 ./data ./uploads ./logs）
   -h, --help   显示本说明
 
@@ -33,6 +36,7 @@ EOF
 for arg in "$@"; do
   case "$arg" in
     --skip-pull|--no-pull) SKIP_PULL=1 ;;
+    --no-follow) NO_FOLLOW=1 ;;
     --stop) DO_STOP=1 ;;
     -h|--help)
       usage
@@ -134,6 +138,28 @@ fi
 echo
 echo "发版完成。本机探测: curl -fsS http://127.0.0.1:${publish_port}/health"
 echo "停止容器: bash deploy.sh --stop"
+
+if [[ "$NO_FOLLOW" -eq 1 ]]; then
+  health_url="http://127.0.0.1:${publish_port}/health"
+  echo "==> 等待 ${health_url}"
+  healthy=0
+  for _ in $(seq 1 30); do
+    if curl -fsS "$health_url" >/dev/null; then
+      healthy=1
+      break
+    fi
+    sleep 2
+  done
+  if [[ "$healthy" -ne 1 ]]; then
+    echo "健康检查失败: ${health_url}" >&2
+    compose ps >&2 || true
+    compose logs --tail=80 >&2 || true
+    exit 1
+  fi
+  echo "健康检查通过"
+  exit 0
+fi
+
 echo "==> 跟随容器日志（Ctrl+C 回到 shell，容器继续运行）"
 
 trap 'echo; echo "已停止跟随日志。容器仍在后台。停止: bash deploy.sh --stop"; exit 0' INT
