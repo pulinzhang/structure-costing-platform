@@ -5,6 +5,7 @@ from __future__ import annotations
 import pytest
 
 from app.common.part_number import is_temporal_part_number_token
+from app.config import BASE_DIR
 from app.database import DatabaseConfig
 from app.services.llm.analysis.runner import AnalysisRunner
 from app.services.llm.context.snapshot_builder import SnapshotBuilder
@@ -22,13 +23,26 @@ from tests.llm.traversal_question_matrix import (
 
 
 def pytest_generate_tests(metafunc: pytest.Metafunc) -> None:
-    if "traversal_case" in metafunc.fixturenames:
-        cases = load_traversal_cases()
+    if "traversal_case" not in metafunc.fixturenames:
+        return
+    db_file = BASE_DIR / "data" / "stamping_costing.db"
+    if not db_file.is_file():
         metafunc.parametrize(
             "traversal_case",
-            cases,
-            ids=[item.case_id for item in cases],
+            [
+                pytest.param(
+                    None,
+                    marks=pytest.mark.skip(reason=f"主库不存在: {db_file}"),
+                )
+            ],
         )
+        return
+    cases = load_traversal_cases()
+    metafunc.parametrize(
+        "traversal_case",
+        cases,
+        ids=[item.case_id for item in cases],
+    )
 
 
 @pytest.fixture(scope="module")
