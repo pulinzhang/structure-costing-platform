@@ -1,6 +1,8 @@
-# 核心检查工具
-ruff>=0.5.0
-mypy>=1.10.0
+# 核心检查工具（与本机通过检查的版本对齐；不要写成 >=，否则 GitHub 会装到更新的规则）
+ruff==0.5.0
+mypy==1.8.0
+pytest==8.0.0
+pytest-asyncio==0.23.8
 pre-commit>=3.7.0
 
 # 匹配你当前 requirements.txt 的类型存根库 (Type Stubs)
