@@ -146,10 +146,15 @@ def _unix_ns_from_proc_stat(
 def _windows_process_start_unix_ns() -> int | None:
     import ctypes
 
+    # WinDLL 只出现在 Windows 的类型声明里，Linux 上直接点名过不了检查。
+    windll = getattr(ctypes, "WinDLL", None)
+    if not callable(windll):
+        return None
+
     class FileTime(ctypes.Structure):
         _fields_ = (("low", ctypes.c_uint32), ("high", ctypes.c_uint32))
 
-    kernel32 = ctypes.WinDLL("kernel32", use_last_error=True)
+    kernel32 = cast(Callable[..., ctypes.CDLL], windll)("kernel32", use_last_error=True)
     kernel32.GetCurrentProcess.restype = ctypes.c_void_p
     kernel32.GetProcessTimes.argtypes = [
         ctypes.c_void_p,
