@@ -9,7 +9,7 @@ from decimal import Decimal
 from typing import TypeVar
 
 from sqlalchemy import and_, case, func, or_
-from sqlalchemy.orm import Query, Session, joinedload, noload
+from sqlalchemy.orm import Query, Session, joinedload, noload, selectinload
 
 from app.common.audit import AUDIT_APPROVED, AUDIT_PENDING
 from app.common.bom.node_order import MISSING_SEQ_NO
@@ -472,3 +472,35 @@ class AssemblyCostQueries:
             )
             .first()
         )
+
+    def list_with_items_by_source_nodes(
+        self,
+        db: Session,
+        *,
+        year: int,
+        month: int,
+        location: str,
+        source_node_ids: list[int],
+    ) -> list[AssemblyCost]:
+        """按节点取该月总成卡，并带上材料明细。不按材料清单版本过滤。"""
+        if not source_node_ids:
+            return []
+        rows: list[AssemblyCost] = []
+        unique_ids = list(dict.fromkeys(source_node_ids))
+        for offset in range(0, len(unique_ids), 400):
+            chunk = unique_ids[offset : offset + 400]
+            rows.extend(
+                db.query(AssemblyCost)
+                .options(
+                    selectinload(AssemblyCost.items),
+                    noload(AssemblyCost.indirects),
+                )
+                .filter(
+                    AssemblyCost.year == year,
+                    AssemblyCost.month == month,
+                    AssemblyCost.location == location,
+                    AssemblyCost.source_node_id.in_(chunk),
+                )
+                .all()
+            )
+        return rows

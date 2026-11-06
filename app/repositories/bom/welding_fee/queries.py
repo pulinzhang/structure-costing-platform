@@ -23,6 +23,16 @@ class BomWeldingFeeQueries:
             .first()
         )
 
+    def list_by_ids(self, db: Session, fee_ids: list[int]) -> list[BomWeldingFee]:
+        if not fee_ids:
+            return []
+        return (
+            db.query(BomWeldingFee)
+            .options(joinedload(BomWeldingFee.items))
+            .filter(BomWeldingFee.id.in_(list(dict.fromkeys(fee_ids))))
+            .all()
+        )
+
     def get_by_business_key(
         self,
         db: Session,

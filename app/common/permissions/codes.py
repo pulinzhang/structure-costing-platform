@@ -316,6 +316,12 @@ class Perm:
     COSTING_RUN = "op:costing:run"  # 启动运行
     COSTING_DELETE = "op:costing:delete"  # 删除 Run
 
+    MENU_COST_RESTORE = "menu:cost-restore"  # 成本还原
+
+    MENU_COST_RESTORE_PROCUREMENT_OBJECT = "menu:cost-restore-procurement-object"  # 采购对象
+    COST_RESTORE_PROCUREMENT_OBJECT_VIEW = "op:cost-restore-procurement-object:view"  # 查询
+    COST_RESTORE_PROCUREMENT_OBJECT_EXPORT = "op:cost-restore-procurement-object:export"  # 导出
+
     MENU_PROCUREMENT_CONTRACT_REPORT = "menu:procurement-contract-report"  # 采购价格协议
     PROCUREMENT_CONTRACT_REPORT_VIEW = "op:procurement-contract-report:view"  # 查询
     PROCUREMENT_CONTRACT_REPORT_EXPORT = "op:procurement-contract-report:export"  # 导出

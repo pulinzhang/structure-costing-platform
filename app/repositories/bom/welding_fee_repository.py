@@ -35,6 +35,9 @@ class BomWeldingFeeRepository:
     def get_by_id(self, db: Session, fee_id: int) -> BomWeldingFee | None:
         return self._queries.get_by_id(db, fee_id)
 
+    def list_by_ids(self, db: Session, fee_ids: list[int]) -> list[BomWeldingFee]:
+        return self._queries.list_by_ids(db, fee_ids)
+
     def get_by_business_key(
         self,
         db: Session,

@@ -214,6 +214,23 @@ class AssemblyCostRepository:
     def get_by_id(self, db: Session, cost_id: int) -> AssemblyCost | None:
         return self._queries.get_by_id(db, cost_id)
 
+    def list_with_items_by_source_nodes(
+        self,
+        db: Session,
+        *,
+        year: int,
+        month: int,
+        location: str,
+        source_node_ids: list[int],
+    ) -> list[AssemblyCost]:
+        return self._queries.list_with_items_by_source_nodes(
+            db,
+            year=year,
+            month=month,
+            location=location,
+            source_node_ids=source_node_ids,
+        )
+
     def get_by_business_key(
         self,
         db: Session,

@@ -398,6 +398,19 @@
                         </li>
                     </ul>
                 </li>
+                <!-- 成本还原：与核价、采购价格协议平级 -->
+                <li class="sidebar-nav-item has-submenu">
+                    <a href="javascript:void(0)" class="sidebar-nav-link" data-submenu-toggle="costRestoreSubmenu">
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M9 7h6m0 10v-3m-3 3h.01M9 17h.01M9 14h.01M12 14h.01M15 11h.01M12 11h.01M9 11h.01M7 21h10a2 2 0 002-2V5a2 2 0 00-2-2H7a2 2 0 00-2 2v14a2 2 0 002 2z"></path></svg>
+                        <span>成本还原</span>
+                        <svg class="w-3.5 h-3.5 ms-auto submenu-arrow" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M19 9l-7 7-7-7"></path></svg>
+                    </a>
+                    <ul class="submenu" id="costRestoreSubmenu">
+                        <li>
+                            <a href="#/cost-restore-procurement-object" class="submenu-link" data-page="cost-restore-procurement-object"><span>采购对象</span></a>
+                        </li>
+                    </ul>
+                </li>
                 <!-- 采购价格协议：签字出门，一级叶子，不挂核价 -->
                 <li class="sidebar-nav-item">
                     <a href="#/procurement-contract-report" class="sidebar-nav-link" data-page="procurement-contract-report">
@@ -675,6 +688,6 @@
     <script src="/static/js/vendor/purify.min.js?v=1"></script>
 
     <script src="/static/js/main.js?v=32"></script>
-    <script type="module" src="/static/js/app.js?v=938"></script>
+    <script type="module" src="/static/js/app.js?v=939"></script>
 </body>
 </html>

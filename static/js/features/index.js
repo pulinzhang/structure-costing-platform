@@ -69,6 +69,8 @@
  * │   │   ├── calc/
  * │   │   └── list/
  * │   ├── procurement-contract-report/  # 采购价格协议（侧栏一级叶子，不进核价组）
+ * │   └── cost-restore/          # 成本还原（侧栏独立一组，不进核价）
+ * │       └── procurement-object/
  * │   └── engine/                # 自动核价引擎
  * ├── file-trace/                # 文件溯源
  * ├── engineering-change/        # 工程变更（侧栏在文件溯源之下）
@@ -204,6 +206,11 @@ export const pageMeta = {
         title: '采购价格协议',
         en: 'PROCUREMENT_AGREEMENT',
         breadcrumb: ['采购价格协议'],
+    },
+    'cost-restore-procurement-object': {
+        title: '采购对象',
+        en: 'COST_RESTORE_OBJECT',
+        breadcrumb: ['成本还原', '采购对象'],
     },
     'steel-price-policy-upload': {
         title: '加减价政策上传',

@@ -79,15 +79,24 @@ class BomProcurementObjectQueries:
         location: str,
         vehicle_model: str,
     ) -> list[BomProcurementObjectList]:
-        return (
-            db.query(BomProcurementObjectList)
-            .filter(
-                BomProcurementObjectList.location == location,
-                BomProcurementObjectList.vehicle_model == vehicle_model,
-            )
-            .order_by(BomProcurementObjectList.id.asc())
-            .all()
+        return self.list_lists_by_location(db, location=location, vehicle_model=vehicle_model)
+
+    def list_lists_by_location(
+        self,
+        db: Session,
+        *,
+        location: str,
+        vehicle_model: str | None = None,
+    ) -> list[BomProcurementObjectList]:
+        query = db.query(BomProcurementObjectList).filter(
+            BomProcurementObjectList.location == location,
         )
+        if vehicle_model:
+            query = query.filter(BomProcurementObjectList.vehicle_model == vehicle_model)
+        return query.order_by(
+            BomProcurementObjectList.vehicle_model.asc(),
+            BomProcurementObjectList.id.asc(),
+        ).all()
 
     def list_objects_by_location_vehicle(
         self,
