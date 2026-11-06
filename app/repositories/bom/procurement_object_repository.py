@@ -76,6 +76,17 @@ class BomProcurementObjectRepository:
             db, location=location, vehicle_model=vehicle_model
         )
 
+    def list_lists_by_location(
+        self,
+        db: Session,
+        *,
+        location: str,
+        vehicle_model: str | None = None,
+    ) -> list[BomProcurementObjectList]:
+        return self._queries.list_lists_by_location(
+            db, location=location, vehicle_model=vehicle_model
+        )
+
     def list_objects_by_location_vehicle(
         self,
         db: Session,

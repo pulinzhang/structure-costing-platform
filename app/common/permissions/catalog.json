@@ -1270,6 +1270,30 @@
       ]
     },
     {
+      "code": "menu:cost-restore",
+      "label": "成本还原",
+      "type": "group",
+      "children": [
+        {
+          "code": "menu:cost-restore-procurement-object",
+          "label": "采购对象",
+          "type": "menu",
+          "children": [
+            {
+              "code": "op:cost-restore-procurement-object:view",
+              "label": "查询",
+              "type": "op"
+            },
+            {
+              "code": "op:cost-restore-procurement-object:export",
+              "label": "导出",
+              "type": "op"
+            }
+          ]
+        }
+      ]
+    },
+    {
       "code": "menu:procurement-contract-report",
       "label": "采购价格协议",
       "type": "menu",

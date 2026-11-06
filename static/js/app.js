@@ -21,7 +21,7 @@ import { installDeleteErrorDialog } from './ui/error-dialog.js?v=16';
 import { bindCurrentRowOnOps } from './ui/table-row.js?v=3';
 import { installRecordLists } from './ui/record-list.js?v=11';
 import { bindHudSelects, closeHudSelectMenu } from './ui/hud-select.js?v=1';
-import { pageMeta } from './features/index.js?v=56';
+import { pageMeta } from './features/index.js?v=57';
 
 // 页面导入（路径与 index.html 菜单树 / features 目录对齐）
 import { getUserSession, initUserMenu, startTokenHeartbeat, updateUserSession } from './features/login/index.js?v=22';
@@ -57,6 +57,7 @@ const pageLoaders = {
     'assembly-cost-calc': () => import('./features/costing/assembly-cost/calc/index.js?v=28'),
     'assembly-cost': () => import('./features/costing/assembly-cost/list/index.js?v=66'),
     'procurement-contract-report': () => import('./features/costing/procurement-contract-report/index.js?v=58'),
+    'cost-restore-procurement-object': () => import('./features/costing/cost-restore/procurement-object/index.js?v=1'),
     'steel-price-policy-upload': () => import('./features/yishiyiyi/policy/upload/index.js?v=57'),
     'steel-price-policy-download': () => import('./features/yishiyiyi/policy/list/index.js?v=64'),
     'base-price-upload': () => import('./features/yishiyiyi/base-price/upload/index.js?v=68'),

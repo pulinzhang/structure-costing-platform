@@ -70,6 +70,19 @@ English: **Structural Parts Automated Costing Platform** / short **Costing Platf
 | [scrap-price-design.md](yishiyiyi/scrap-price-design.md) | 废料月度销售价（已落地）：基地×钢材/铝板；行=已启用基地 |
 | [thickness-policy-category-level-design.md](yishiyiyi/thickness-policy-category-level-design.md) | 分类级厚度加减价（设计） |
 
+## 采购 / 销售 / 接口 `procurement-sales-erp/`
+
+送审稿。只写设计和合同，不改程序。采购沿用已落地核算；销售读供货总成上的比例费用；采购部与销售部分开看结果；审核通过的结果再对 ERP。
+
+| 文档 | 状态 |
+|------|------|
+| [README.md](procurement-sales-erp/README.md) | 目录说明。建设方案是合同附件二；验收以附件一为准 |
+| [01-sales-costing-design.md](procurement-sales-erp/01-sales-costing-design.md) | 销售核价：供货总成，基数乘费率 |
+| [02-department-role-design.md](procurement-sales-erp/02-department-role-design.md) | 采购部 / 销售部各看各的结果 |
+| [03-erp-integration-design.md](procurement-sales-erp/03-erp-integration-design.md) | 结果推出 ERP 的封闭接口 |
+| [04-建设方案.md](procurement-sales-erp/04-建设方案.md) | 建设方案（商务与技术建议） |
+| [05-产品与开发合同.md](procurement-sales-erp/05-产品与开发合同.md) | 产品与开发合同送审稿 |
+
 ## 核价 `costing/`
 
 | 文档 | 状态 |
@@ -78,6 +91,7 @@ English: **Structural Parts Automated Costing Platform** / short **Costing Platf
 | [assembly-costing-design.md](costing/assembly-costing-design.md) | 总成月核价（已落地）：级别无关；财务总费用与采购应成本同一批行 |
 | [assembly-cost-restore-design.md](costing/assembly-cost-restore-design.md) | 总成核价成本还原报告（已落地）：异常时新页签画册级静态报告 |
 | [procurement-contract-report-design.md](costing/procurement-contract-report-design.md) | 采购价格协议（已落地）：按供应商出《批量零部件价格协议》 |
+| [procurement-pricing-sheet-design.md](costing/procurement-pricing-sheet-design.md) | 采购核价表（已落地）：采购对象成本还原。退化供货件展开冲压材料与加工费后合并；分总成另列焊接费 |
 | [l0-assembly-costing-design.md](costing/l0-assembly-costing-design.md) | 冻结史料：原 L0 成品核价口径（现网见总成月核价） |
 | [l1-assembly-costing-design.md](costing/l1-assembly-costing-design.md) | 历史：委外应成本口径（结果表方案已作废） |
 | [effective-period-design.md](costing/effective-period-design.md) | 协议价生效期（已否决）：年度价保持一年一行 |
