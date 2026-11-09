@@ -9,7 +9,7 @@
     <link rel="icon" type="image/x-icon" href="/static/assets/favicon.ico">
     <link href="/static/css/fonts.css?v=5" rel="stylesheet">
     <link href="/static/css/tailwind.css?v=35" rel="stylesheet">
-    <link href="/static/css/style.css?v=107" rel="stylesheet">
+    <link href="/static/css/style.css?v=108" rel="stylesheet">
     <link href="/static/css/brabus-light-tokens.css?v=7" rel="stylesheet">
 </head>
 <body class="bg-app-deep min-h-screen antialiased">
@@ -530,6 +530,30 @@
                                 <span>钢厂</span>
                             </a>
                         </li>
+                        <li class="submenu-item has-submenu">
+                            <a href="javascript:void(0)" class="submenu-link" data-submenu-toggle="assemblyBillingSubmenu">
+                                <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M9 7h6m-6 4h6m-6 4h4M7 3h10a2 2 0 012 2v14a2 2 0 01-2 2H7a2 2 0 01-2-2V5a2 2 0 012-2z"></path></svg>
+                                <span>总成计费</span>
+                                <svg class="w-3.5 h-3.5 ms-auto submenu-arrow" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M19 9l-7 7-7-7"></path></svg>
+                            </a>
+                            <ul class="submenu submenu-nested" id="assemblyBillingSubmenu">
+                                <li>
+                                    <a href="#/assembly-category" class="submenu-link submenu-link-nested" data-page="assembly-category">
+                                        <span>总成分类</span>
+                                    </a>
+                                </li>
+                                <li>
+                                    <a href="#/fee-archive" class="submenu-link submenu-link-nested" data-page="fee-archive">
+                                        <span>费用档案</span>
+                                    </a>
+                                </li>
+                                <li>
+                                    <a href="#/category-billing" class="submenu-link submenu-link-nested" data-page="category-billing">
+                                        <span>计费管理</span>
+                                    </a>
+                                </li>
+                            </ul>
+                        </li>
                     </ul>
                 </li>
                 <!-- 设置 -->
@@ -688,6 +712,6 @@
     <script src="/static/js/vendor/purify.min.js?v=1"></script>
 
     <script src="/static/js/main.js?v=32"></script>
-    <script type="module" src="/static/js/app.js?v=939"></script>
+    <script type="module" src="/static/js/app.js?v=943"></script>
 </body>
 </html>

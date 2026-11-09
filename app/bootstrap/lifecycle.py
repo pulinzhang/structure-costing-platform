@@ -37,6 +37,9 @@ def on_shutdown() -> None:
 
 
 def _seed_if_empty() -> None:
+    from app.services.masterdata.assembly_category.service import AssemblyCategoryService
+    from app.services.masterdata.category_billing.service import AssemblyCategoryBillingService
+    from app.services.masterdata.fee_archive.service import FeeArchiveService
     from app.services.masterdata.steel_grade_category.service import (
         SteelGradeCategoryService,
     )
@@ -50,6 +53,10 @@ def _seed_if_empty() -> None:
         UserService().ensure_default_admin(db)
         SteelGradeCategoryService().ensure_seed_if_empty(db)
         SteelMillService().ensure_seed_if_empty(db)
+        AssemblyCategoryBillingService().drop_retired_columns(db)
+        AssemblyCategoryService().ensure_seed_if_empty(db)
+        FeeArchiveService().ensure_seed_if_empty(db)
+        AssemblyCategoryBillingService().ensure_seed_if_empty(db)
         ensure_schema_reference_seed(db)
     finally:
         db.close()

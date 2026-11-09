@@ -17,11 +17,11 @@
  */
 
 import { installConfirmDialog } from './ui/confirm-dialog.js?v=6';
-import { installDeleteErrorDialog } from './ui/error-dialog.js?v=16';
+import { installDeleteErrorDialog } from './ui/error-dialog.js?v=17';
 import { bindCurrentRowOnOps } from './ui/table-row.js?v=3';
 import { installRecordLists } from './ui/record-list.js?v=11';
 import { bindHudSelects, closeHudSelectMenu } from './ui/hud-select.js?v=1';
-import { pageMeta } from './features/index.js?v=57';
+import { pageMeta } from './features/index.js?v=58';
 
 // 页面导入（路径与 index.html 菜单树 / features 目录对齐）
 import { getUserSession, initUserMenu, startTokenHeartbeat, updateUserSession } from './features/login/index.js?v=22';
@@ -64,6 +64,9 @@ const pageLoaders = {
     'base-price-download': () => import('./features/yishiyiyi/base-price/list/index.js?v=55'),
     'steel-grade-category': () => import('./features/masterdata/steel-grade-category/index.js?v=29'),
     'steel-mill': () => import('./features/masterdata/steel-mill/index.js?v=2'),
+    'assembly-category': () => import('./features/masterdata/assembly-category/index.js?v=1'),
+    'fee-archive': () => import('./features/masterdata/fee-archive/index.js?v=1'),
+    'category-billing': () => import('./features/masterdata/category-billing/index.js?v=4'),
     'winning-thickness-download': () => import('./features/yishiyiyi/winning-thickness/list/index.js?v=33'),
     'scrap-price': () => import('./features/yishiyiyi/scrap-price/index.js?v=34'),
     'bom-structure': () => import('./features/bom/material/structure/index.js?v=21'),

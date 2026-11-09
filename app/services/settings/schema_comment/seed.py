@@ -13,6 +13,9 @@ _COMMENTS: tuple[tuple[str, str, str, str], ...] = (
     ("suppliers", "masterdata", "供应商", "supplier"),
     ("supplier_aliases", "masterdata", "供应商别名", "supplier alias"),
     ("steel_grade_categories", "masterdata", "牌号分类", "steel grade category"),
+    ("assembly_categories", "masterdata", "总成分类", "assembly category"),
+    ("fee_archives", "masterdata", "费用档案", "fee archive"),
+    ("assembly_category_billings", "masterdata", "计费管理", "assembly category billing"),
     ("users", "settings", "用户", "user"),
     ("user_permissions", "settings", "用户权限", "user permission"),
     ("user_tokens", "settings", "用户令牌", "user token"),
@@ -130,6 +133,8 @@ _RESTRICT_EDGES: tuple[tuple[str, str], ...] = (
     ("steel_grade_categories", "steel_base_prices"),
     ("steel_grade_categories", "stamping_parts"),
     ("steel_grade_categories", "stamping_tailor_weld_blanks"),
+    ("assembly_categories", "assembly_category_billings"),
+    ("fee_archives", "assembly_category_billings"),
     ("steel_grade_categories", "engineering_change_material_orders"),
     ("stamping_parts", "stamping_process_fees"),
     ("stamping_parts", "stamping_part_costs"),
@@ -176,6 +181,7 @@ _MENU: dict[str, str] = {
     "engineering_change_upload_logs": "工程变更 → 设计变更 → 设计变更列表",
     "engineering_change_effect_links": "工程变更 → 设计变更 → 设计变更列表",
     "bom_welding_fees": "焊接工程 → 焊接费 → 焊接费列表",
+    "assembly_category_billings": "主数据 → 总成计费 → 计费管理",
 }
 
 

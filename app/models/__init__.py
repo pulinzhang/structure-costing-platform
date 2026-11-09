@@ -50,6 +50,9 @@ from app.models.engineering_change import (
 from app.models.file_trace import UploadFile
 from app.models.llm import LlmAnalysisReport
 from app.models.masterdata import (
+    AssemblyCategory,
+    AssemblyCategoryBilling,
+    FeeArchive,
     Location,
     LocationAlias,
     SteelGradeCategory,
@@ -123,6 +126,9 @@ __all__ = [
     "EngineeringChangeMaterialOrder",
     "EngineeringChangeMaterialUploadLog",
     "LlmAnalysisReport",
+    "AssemblyCategory",
+    "AssemblyCategoryBilling",
+    "FeeArchive",
     "Location",
     "LocationAlias",
     "Supplier",

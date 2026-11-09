@@ -28,6 +28,14 @@ class UserPermissionRepository:
         db.flush()
         return unique_codes
 
+    def delete_unknown(self, db: Session, valid_codes: list[str]) -> None:
+        """删掉目录里已经没有的权限码。调用方负责 commit。"""
+        if not valid_codes:
+            return
+        db.query(UserPermission).filter(UserPermission.permission_code.notin_(valid_codes)).delete(
+            synchronize_session=False
+        )
+
     def ensure_codes(self, db: Session, user_id: int, codes: list[str]) -> list[str]:
         """补齐缺失 code（不删已有），返回合并后列表。调用方负责 commit。"""
         existing = set(self.list_codes(db, user_id))
