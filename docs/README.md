@@ -36,6 +36,7 @@ English: **Structural Parts Automated Costing Platform** / short **Costing Platf
 | [supplier-design.md](masterdata/supplier-design.md) | 供应商（第一期已落地；第二期：采购对象可空门禁 + 下一跳 RESTRICT + 改/删） |
 | [steel-grade-category-design.md](masterdata/steel-grade-category-design.md) | 牌号分类（已落地）：主数据手工档案；下游只读 |
 | [steel-mill-design.md](masterdata/steel-mill-design.md) | 钢厂（已落地）：缩写 + 全称 + 别名；基准价与加减价写入 `steel_mill_id`，对不上整本退回 |
+| [assembly-billing-design.md](masterdata/assembly-billing-design.md) | 总成分类、费用档案、计费管理（已落地）：同挂主数据下二级菜单「总成计费」；本期不改核算 |
 
 ## 冲压 `stamping/`
 

@@ -106,7 +106,9 @@ class PermissionService:
         - 已有设计变更上传或列表菜单的用户，补上设计变更分组码
         - 已有材料变更上传或列表菜单的用户，补上材料变更分组码
         - 不给设计变更用户自动补材料变更
+        - 删掉目录里已经没有的权限码
         """
+        self.perm_repo.delete_unknown(db, get_all_codes())
         users = self.user_repo.list_all(db)
         admin_count = sum(1 for u in users if u.is_admin)
         if admin_count == 0:

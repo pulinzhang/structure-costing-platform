@@ -242,6 +242,21 @@ export const pageMeta = {
         en: 'STEEL_MILL',
         breadcrumb: ['主数据', '钢厂'],
     },
+    'assembly-category': {
+        title: '总成分类',
+        en: 'ASSEMBLY_CATEGORY',
+        breadcrumb: ['主数据', '总成计费', '总成分类'],
+    },
+    'fee-archive': {
+        title: '费用档案',
+        en: 'FEE_ARCHIVE',
+        breadcrumb: ['主数据', '总成计费', '费用档案'],
+    },
+    'category-billing': {
+        title: '计费管理',
+        en: 'CATEGORY_BILLING',
+        breadcrumb: ['主数据', '总成计费', '计费管理'],
+    },
     'winning-thickness-download': {
         title: '中标钢厂厚度价格列表',
         en: 'WINNING_MILL_THICKNESS_PRICE_LIST',

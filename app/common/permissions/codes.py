@@ -407,6 +407,24 @@ class Perm:
     STEEL_MILL_UPDATE = "op:steel-mill:update"  # 编辑
     STEEL_MILL_DELETE = "op:steel-mill:delete"  # 删除
 
+    MENU_ASSEMBLY_BILLING = "menu:assembly-billing"  # 总成计费
+
+    MENU_ASSEMBLY_CATEGORY = "menu:assembly-category"  # 总成分类
+    ASSEMBLY_CATEGORY_VIEW = "op:assembly-category:view"  # 查看
+    ASSEMBLY_CATEGORY_CREATE = "op:assembly-category:create"  # 新增
+    ASSEMBLY_CATEGORY_UPDATE = "op:assembly-category:update"  # 编辑
+    ASSEMBLY_CATEGORY_DELETE = "op:assembly-category:delete"  # 删除
+
+    MENU_FEE_ARCHIVE = "menu:fee-archive"  # 费用档案
+    FEE_ARCHIVE_VIEW = "op:fee-archive:view"  # 查看
+    FEE_ARCHIVE_CREATE = "op:fee-archive:create"  # 新增
+    FEE_ARCHIVE_UPDATE = "op:fee-archive:update"  # 编辑
+    FEE_ARCHIVE_DELETE = "op:fee-archive:delete"  # 删除
+
+    MENU_CATEGORY_BILLING = "menu:category-billing"  # 计费管理
+    CATEGORY_BILLING_VIEW = "op:category-billing:view"  # 查看
+    CATEGORY_BILLING_UPDATE = "op:category-billing:update"  # 保存勾选
+
     MENU_SETTINGS = "menu:settings"  # 设置
 
     MENU_SETTINGS_PROFILE = "menu:settings-profile"  # 个人资料

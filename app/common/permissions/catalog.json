@@ -1635,6 +1635,84 @@
               "type": "op"
             }
           ]
+        },
+        {
+          "code": "menu:assembly-billing",
+          "label": "总成计费",
+          "type": "group",
+          "children": [
+            {
+              "code": "menu:assembly-category",
+              "label": "总成分类",
+              "type": "menu",
+              "children": [
+                {
+                  "code": "op:assembly-category:view",
+                  "label": "查看",
+                  "type": "op"
+                },
+                {
+                  "code": "op:assembly-category:create",
+                  "label": "新增",
+                  "type": "op"
+                },
+                {
+                  "code": "op:assembly-category:update",
+                  "label": "编辑",
+                  "type": "op"
+                },
+                {
+                  "code": "op:assembly-category:delete",
+                  "label": "删除",
+                  "type": "op"
+                }
+              ]
+            },
+            {
+              "code": "menu:fee-archive",
+              "label": "费用档案",
+              "type": "menu",
+              "children": [
+                {
+                  "code": "op:fee-archive:view",
+                  "label": "查看",
+                  "type": "op"
+                },
+                {
+                  "code": "op:fee-archive:create",
+                  "label": "新增",
+                  "type": "op"
+                },
+                {
+                  "code": "op:fee-archive:update",
+                  "label": "编辑",
+                  "type": "op"
+                },
+                {
+                  "code": "op:fee-archive:delete",
+                  "label": "删除",
+                  "type": "op"
+                }
+              ]
+            },
+            {
+              "code": "menu:category-billing",
+              "label": "计费管理",
+              "type": "menu",
+              "children": [
+                {
+                  "code": "op:category-billing:view",
+                  "label": "查看",
+                  "type": "op"
+                },
+                {
+                  "code": "op:category-billing:update",
+                  "label": "保存勾选",
+                  "type": "op"
+                }
+              ]
+            }
+          ]
         }
       ]
     },

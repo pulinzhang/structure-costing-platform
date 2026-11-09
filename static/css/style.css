@@ -1308,6 +1308,26 @@ td.record-list-carry {
     }
 }
 
+/* 计费管理：左分类、右费用表。宽度不依赖未编译的 Tailwind 任意值。 */
+.cb-split {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr);
+    gap: 0.5rem;
+    align-items: start;
+    width: 100%;
+}
+
+@media (min-width: 1024px) {
+    .cb-split {
+        grid-template-columns: 240px minmax(0, 1fr);
+    }
+}
+
+#cbSaveBtn:disabled {
+    opacity: 0.4;
+    cursor: not-allowed;
+}
+
 /* 登录「记住账号」：方框勾选，深浅都走 token。 */
 .brabus-check {
     appearance: none;

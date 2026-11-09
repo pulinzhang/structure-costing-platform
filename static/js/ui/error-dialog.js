@@ -5,7 +5,7 @@
  */
 
 import { copyPlainText } from './copy-text.js?v=3';
-import { pageMeta } from '../features/index.js?v=56';
+import { pageMeta } from '../features/index.js?v=58';
 
 const DEFAULT_MESSAGE = '操作失败';
 const COPY_IDLE = '复制这段文字';
