@@ -10,6 +10,8 @@ _SIDEBAR = Path(__file__).resolve().parents[1] / "static" / "index.html"
 # 侧栏没有这两项，文档仍要能打开对应接口。
 _EXTRA_SETTINGS_TAGS = ("登录认证",)
 _EXTRA_GROUPS = (("AI助理", ("AI助理",)),)
+# 侧栏两处都叫「采购对象」。文档标签全局唯一，成本还原这页用路由上的标签。
+_SIDEBAR_TAG_ALIAS = {("成本还原", "采购对象"): "成本还原-采购对象"}
 
 
 class _SidebarMenuParser(HTMLParser):
@@ -83,10 +85,11 @@ def _sidebar_groups() -> tuple[tuple[str, tuple[str, ...]], ...]:
 def _expected_groups() -> tuple[tuple[str, tuple[str, ...]], ...]:
     expected: list[tuple[str, tuple[str, ...]]] = []
     for name, children in _sidebar_groups():
+        mapped = tuple(_SIDEBAR_TAG_ALIAS.get((name, child), child) for child in children)
         if name == "设置":
-            expected.append((name, children + _EXTRA_SETTINGS_TAGS))
+            expected.append((name, mapped + _EXTRA_SETTINGS_TAGS))
         else:
-            expected.append((name, children))
+            expected.append((name, mapped))
     expected.extend(_EXTRA_GROUPS)
     return tuple(expected)
 
@@ -109,9 +112,11 @@ def test_openapi_sidebar_uses_menu_names() -> None:
         "冲压工程",
         ("冲压模具", "冲压工艺", "冲次单价", "冲压加工费", "冲压模具费", "冲压检具费"),
     ) in groups
+    assert ("成本还原", ("成本还原-采购对象",)) in groups
     names = [name for name, _tags in groups]
     assert names.index("冲压工程") < names.index("焊接工程") < names.index("一事一议")
-    assert names.index("核价") < names.index("采购价格协议") < names.index("文件溯源")
+    assert names.index("核价") < names.index("成本还原") < names.index("采购价格协议")
+    assert names.index("采购价格协议") < names.index("文件溯源")
     assert "其他" not in names
 
     paths = schema["paths"]
