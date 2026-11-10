@@ -8,6 +8,7 @@ from pathlib import Path
 from sqlalchemy.orm import Session
 
 from app.parsers.bom.bom_parser import parse_bom_excel
+from app.services.bom.bom.upload.gates.category import bind_root_assembly_categories
 from app.services.bom.bom.upload.gates.validate import (
     require_l0_part_numbers,
     require_registered_project,
@@ -33,6 +34,7 @@ def prepare_bom_upload_run(
     report_progress(on_progress, 25, "正在解析 Excel...")
     parse_result = parse_bom_excel(args.file_content)
     validate_parsed_nodes(parse_result.nodes)
+    bind_root_assembly_categories(db, parse_result.nodes, required=True)
     file_l0_numbers = require_l0_part_numbers(parse_result.nodes)
     location, vehicle_model, bom_version = resolve_upload_scope(
         location=location,

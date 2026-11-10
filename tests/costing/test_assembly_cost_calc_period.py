@@ -12,6 +12,7 @@ from app.schemas.dto.assembly_cost_dto import AssemblyCostCalcDTO
 from app.services.costing.assembly_cost.calc.orchestrator.prep import prepare_calc_run
 from app.services.costing.assembly_cost.calc.orchestrator.progress import ProgressNotifier
 from app.services.costing.assembly_cost.calc.orchestrator.ready import collect_calc_ready
+from app.services.masterdata.category_billing.rates import FinishedFeeRates
 
 
 def _ready() -> SimpleNamespace:
@@ -45,6 +46,7 @@ def _l0_node() -> SimpleNamespace:
         bom_version="D/09",
         excel_row=1,
         weld_info=None,
+        assembly_category_id=3,
     )
 
 
@@ -66,12 +68,15 @@ def test_prep_lists_as_of_trees_without_version(
     deps.annual_price_repo.list_with_unit_price.return_value = []
     deps.welding_fee_repo.list_by_calc_scope.return_value = []
     deps.packaging_fee_repo.list_by_location_year.return_value = []
-    deps.settings_service.get_finished_finance_rate.return_value = 0
-    deps.settings_service.get_finished_management_rate.return_value = 0
-    deps.settings_service.get_finished_scrap_rate.return_value = 0
-    deps.settings_service.get_finished_pretax_profit_rate.return_value = 0
 
     with (
+        patch(
+            "app.services.costing.assembly_cost.calc.orchestrator.prep.load_finished_fee_rates",
+            return_value=FinishedFeeRates.zeros(),
+        ) as rates_loader,
+        patch(
+            "app.services.costing.assembly_cost.calc.orchestrator.prep.AssemblyCategoryService"
+        ) as category_cls,
         patch(
             "app.services.costing.assembly_cost.calc.orchestrator.prep.BomProcurementObjectRepository"
         ) as proc_cls,
@@ -82,6 +87,7 @@ def test_prep_lists_as_of_trees_without_version(
         proc_cls.return_value.list_lists_by_location_vehicle.return_value = []
         proc_cls.return_value.list_objects_by_list_id.return_value = []
         bd_cls.return_value.list_by_source_node_ids.return_value = []
+        category_cls.return_value.codes_by_ids.return_value = {3: "assembly"}
         prepare_calc_run(MagicMock(), deps, _dto(), ProgressNotifier())
 
     kwargs = bom_cls.return_value.list_as_of_trees.call_args.kwargs
@@ -95,6 +101,8 @@ def test_prep_lists_as_of_trees_without_version(
     assert fee_kwargs["source_node_ids"] == {1}
     bd_cls.return_value.list_by_source_node_ids.assert_called_once()
     assert bd_cls.return_value.list_by_source_node_ids.call_args.args[1] == [1]
+    rates_loader.assert_called_once()
+    assert rates_loader.call_args.args[1] == "assembly"
 
 
 @patch("app.services.costing.assembly_cost.calc.orchestrator.prep.BomPeriodService")

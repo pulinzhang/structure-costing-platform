@@ -64,6 +64,9 @@ class BomNodeVO(BaseModel):
     qty_text: str | None = None
     node_role: str
     is_supply_unit: bool
+    assembly_category_id: int | None = None
+    assembly_category_code: str | None = None
+    assembly_category_name: str | None = None
     manufacturing_category: str | None = None
     material: str | None = None
     thickness_mm: Decimal | None = None

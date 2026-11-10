@@ -115,10 +115,10 @@ total_amount
 |---|------|----------|----------|
 | I1 | 单件运输费 | 基地 + 年度 + L0 零件号 → `bom_packaging_transport_fees.unit_transport_fee` | ✅ |
 | I2 | **仓储费+捆包费** | 同上 → 结果字段 **`warehouse_bundling_fee`** ← 源 `other_fee` | ✅ |
-| I3 | 财务费 | 月总账 × `system_configs.finished_finance_rate`（默认 2%） | ✅ |
-| I4 | 管理费 | 月总账 × `finished_management_rate`（默认 2%） | ✅ |
-| I5 | 报废费用 | 月总账 × `finished_scrap_rate`（默认 3‰） | ✅ |
-| I6 | 税前利润 | 月总账 × `finished_pretax_profit_rate`（默认 2%） | ✅ |
+| I3 | 财务费 | 设置打开成品费率时，月总账 × 该供货总成分类在计费管理里财务费的计费率；关闭时 0 | ✅ |
+| I4 | 管理费 | 同上，管理费 | ✅ |
+| I5 | 报废费用 | 同上，报废费用 | ✅ |
+| I6 | 税前利润 | 同上，税前利润 | ✅ |
 | I7 | 检具分摊费 | 预留主数据（按 L0）；未建时 0，**计入总费用** | ⏳ |
 | I8 | 器具分摊费 | 同上 | ⏳ |
 
@@ -142,7 +142,7 @@ grand_total     = total_amount + indirect_amount
 | 数据 | 匹配键 |
 |------|--------|
 | 包装运输 I1 / I2 | **基地 + 年度 + 零件号**（不加车型） |
-| 费率 I3～I6 | 读 `system_configs` 单例；基数 = 该成品当月 `total_amount` |
+| 费率 I3～I6 | 系统设置「是否计算成品费率」关闭时为 0。打开时按该供货总成的总成分类，读计费管理已勾选费用的计费率；基数 = 该成品当月 `total_amount` |
 | 无包装运输行 | I1 / I2 记 **0**（当前模拟不因此打 partial） |
 
 > **勿用** `packaging_transport_total` 整包并入：成品侧只取 **单件运输费** 与 **仓储费+捆包费（other_fee）** 两项单列。

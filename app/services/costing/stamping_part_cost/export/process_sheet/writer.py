@@ -25,6 +25,7 @@ from app.repositories.yishiyiyi.scrap_price.scrap_price_repository import (
     StampingScrapPriceRepository,
 )
 from app.schemas.vo.user_vo import UserVO
+from app.services.costing.finished_rates import load_finished_fee_rates
 from app.services.costing.stamping_part_cost.export.formatters import formula_number
 from app.services.costing.stamping_part_cost.export.process_sheet.columns import (
     _FEE_RATE_COLS,
@@ -44,7 +45,7 @@ from app.services.costing.stamping_part_cost.export.process_sheet.rows import (
     write_process_data_rows,
 )
 from app.services.costing.stamping_part_cost.helpers import to_decimal
-from app.services.settings.system.service import SettingsService
+from app.services.masterdata.category_billing.rates import STAMPING_CATEGORY_CODE
 
 logger = logging.getLogger("service.stamping_part_cost_export")
 
@@ -73,11 +74,11 @@ def write_process_sheet_to_workbook(
     id_cols = _ID_COLS
     fee_rate_cols = _FEE_RATE_COLS
 
-    settings_service = SettingsService()
-    warehouse_packaging_rate = settings_service.get_finished_warehouse_packaging_rate(db)
-    management_rate = settings_service.get_finished_management_rate(db)
-    finance_rate = settings_service.get_finished_finance_rate(db)
-    pretax_profit_rate = settings_service.get_finished_pretax_profit_rate(db)
+    finished = load_finished_fee_rates(db, STAMPING_CATEGORY_CODE)
+    warehouse_packaging_rate = finished.warehouse_packaging_rate
+    management_rate = finished.management_rate
+    finance_rate = finished.finance_rate
+    pretax_profit_rate = finished.pretax_profit_rate
 
     # —— 样式 ——
     thin = Border(

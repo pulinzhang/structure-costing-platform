@@ -84,6 +84,7 @@ def parse_bom_nodes(ws: Worksheet) -> tuple[list[BomParsedNode], dict[int, int],
     seen_data_row = False
 
     header_row = _find_header_row(ws)
+    category_col = _assembly_category_column(ws, header_row)
 
     for row in range(header_row + 1, ws.max_row + 1):
         seq_raw = cell_value(ws, row, 1)
@@ -151,6 +152,11 @@ def parse_bom_nodes(ws: Worksheet) -> tuple[list[BomParsedNode], dict[int, int],
                     is_supply_unit=True,
                     weld_info=asm_weld,
                     source_row=row,
+                    assembly_category_label=(
+                        to_text(cell_value(ws, row, category_col))
+                        if category_col is not None
+                        else None
+                    ),
                 )
                 current_l0_index = len(nodes)
                 current_l1_index = None
@@ -255,6 +261,18 @@ def parse_bom_nodes(ws: Worksheet) -> tuple[list[BomParsedNode], dict[int, int],
 
     _finalize_structure_roles(nodes)
     return nodes, row_l0, row_part_sketch
+
+
+def _assembly_category_column(ws: Worksheet, header_row: int) -> int | None:
+    """表头里「总成分类」那一列。没有这一列时根上的分类留空。"""
+    last = ws.max_column or 1
+    for col in range(1, last + 1):
+        raw = to_text(cell_value(ws, header_row, col))
+        if raw is None:
+            continue
+        if "总成分类" in "".join(raw.split()):
+            return col
+    return None
 
 
 def _find_header_row(ws: Worksheet) -> int:

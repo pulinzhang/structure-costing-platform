@@ -3,7 +3,7 @@
  * 与冲压工艺上传同一模式：task_id + 进度轮询
  */
 
-import { bomUploadTemplate } from './template.js?v=23';
+import { bomUploadTemplate } from './template.js?v=24';
 import { copyElementText } from '../../../../ui/copy-text.js?v=3';
 import { uploadSubmitLabelHtml } from '../../../../ui/upload-actions.js?v=2';
 import { paintUploadProgressIcon } from '../../../../ui/sync-upload-progress.js?v=5';

@@ -1,4 +1,7 @@
-"""系统配置与档案列缺省。种子、列默认、空快照回退共用这一份。核价运行值仍从设置读取。"""
+"""系统配置与档案列缺省。种子、列默认、空快照回退共用这一份。
+
+成品五项费率的运行值不在这里取：开关在系统设置，数字在计费管理。
+"""
 
 from decimal import Decimal
 
@@ -7,7 +10,6 @@ DEFAULT_MATERIAL_LOSS_RATE = Decimal("0.003")  # 千分之 3
 DEFAULT_SCRAP_RECOVERY_RATE = Decimal("0.97")  # 97%
 DEFAULT_FINISHED_FINANCE_RATE = Decimal("0.02")  # 2%
 DEFAULT_FINISHED_MANAGEMENT_RATE = Decimal("0.02")  # 2%
-DEFAULT_FINISHED_WAREHOUSE_PACKAGING_RATE = Decimal("0.01")  # 1%
 DEFAULT_FINISHED_SCRAP_RATE = Decimal("0.003")  # 千分之 3
 DEFAULT_FINISHED_PRETAX_PROFIT_RATE = Decimal("0.02")  # 2%
 DEFAULT_SWING_SHEAR_PROCESS_FEE_PER_TON = Decimal("150")  # 元/吨

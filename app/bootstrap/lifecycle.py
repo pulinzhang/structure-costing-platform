@@ -37,6 +37,7 @@ def on_shutdown() -> None:
 
 
 def _seed_if_empty() -> None:
+    from app.services.bom.bom.node import BomNodeService
     from app.services.masterdata.assembly_category.service import AssemblyCategoryService
     from app.services.masterdata.category_billing.service import AssemblyCategoryBillingService
     from app.services.masterdata.fee_archive.service import FeeArchiveService
@@ -45,6 +46,7 @@ def _seed_if_empty() -> None:
     )
     from app.services.masterdata.steel_mill.service import SteelMillService
     from app.services.settings.schema_comment.seed import ensure_schema_reference_seed
+    from app.services.settings.system.service import SettingsService
     from app.services.settings.users.service import UserService
 
     session_factory = DatabaseConfig.get_session_factory()
@@ -53,10 +55,15 @@ def _seed_if_empty() -> None:
         UserService().ensure_default_admin(db)
         SteelGradeCategoryService().ensure_seed_if_empty(db)
         SteelMillService().ensure_seed_if_empty(db)
+        SettingsService().ensure_calculate_finished_rates_column(db)
+        BomNodeService().ensure_assembly_category_column(db)
         AssemblyCategoryBillingService().drop_retired_columns(db)
         AssemblyCategoryService().ensure_seed_if_empty(db)
+        BomNodeService().assign_unset_roots_to_assembly(db)
         FeeArchiveService().ensure_seed_if_empty(db)
+        added_fees = FeeArchiveService().ensure_missing_seed_fees(db)
         AssemblyCategoryBillingService().ensure_seed_if_empty(db)
+        AssemblyCategoryBillingService().check_missing_seed_fees(db, added_fees)
         ensure_schema_reference_seed(db)
     finally:
         db.close()

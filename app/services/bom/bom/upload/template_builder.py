@@ -40,12 +40,12 @@ def build_bom_material_template() -> tuple[bytes, str]:
     center = Alignment(horizontal="center", vertical="center", wrap_text=True)
 
     # 头信息横跨（对齐实样 A1:W1 / A2:W2 / 分区 meta）
-    sheet.merge_cells("A1:W1")
+    sheet.merge_cells("A1:X1")
     sheet["A1"] = "T28样例项目产品材料清单"
     sheet["A1"].font = Font(name="微软雅黑", size=14, bold=True)
     sheet["A1"].alignment = Alignment(horizontal="left", vertical="center")
 
-    sheet.merge_cells("A2:W2")
+    sheet.merge_cells("A2:X2")
     sheet["A2"] = (
         "编制部门： 技术中心                    "
         "编制日期：2025-01-01  版本： D/00  编号：BOM-T28-DEMO"
@@ -88,6 +88,7 @@ def build_bom_material_template() -> tuple[bytes, str]:
         "单件重量 （kg）",
         "检具是否 开发",
         "备注",
+        "总成分类",
     ]
     for col, title in enumerate(headers, start=1):
         cell = sheet.cell(row=4, column=col, value=title)
@@ -212,7 +213,7 @@ def build_bom_material_template() -> tuple[bytes, str]:
             cell.alignment = center
 
     # 总成字段跨 R5-R8（同一供货总成）
-    for col in (1, 2, 3, 4, 5, 6, 7):
+    for col in (1, 2, 3, 4, 5, 6, 7, 24):
         _merge_vertical(sheet, col, 5, 8)
     # 写回总成值到合并首格
     sheet.cell(row=5, column=1, value=1)
@@ -221,6 +222,7 @@ def build_bom_material_template() -> tuple[bytes, str]:
     sheet.cell(row=5, column=4, value="流水槽加强梁总成")
     sheet.cell(row=5, column=6, value=1)
     sheet.cell(row=5, column=7, value="焊点：4 凸焊：2")
+    sheet.cell(row=5, column=24, value="总成件")
 
     # 一级分总成跨其二级行 R6-R7
     for col in (8, 9, 10, 11, 12):
@@ -231,7 +233,7 @@ def build_bom_material_template() -> tuple[bytes, str]:
     sheet.cell(row=6, column=11, value=1)
     sheet.cell(row=6, column=12, value="凸焊：2")
 
-    for idx in range(1, 24):
+    for idx in range(1, 25):
         sheet.column_dimensions[get_column_letter(idx)].width = 12 if idx != 4 else 18
     sheet.column_dimensions["D"].width = 20
     sheet.column_dimensions["J"].width = 22
@@ -247,6 +249,7 @@ def build_bom_material_template() -> tuple[bytes, str]:
             "一级分总成若含多个二级子件，一级列须纵向合并到末行二级。",
             "板料写 T=1.2 判定为自制件；标准件写 M6 等判定为外购件。",
             "上传页须先选择采购基地；同基地+车型+版本再次导入将整树替换。简图可空。",
+            "每个供货总成的「总成分类」必填，只能是主数据里启用的分类：冲压件、凸焊件、总成件、黑漆件。",
         ],
     )
 

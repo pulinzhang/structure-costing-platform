@@ -93,7 +93,7 @@ class BatchCalculationEngine:
                         annual_prices=ctx.annual_prices,
                         welding=ctx.welding_by_bom_node.get(root.id),
                         packaging=ctx.packaging_by_part.get(root.part_number),
-                        rates=ctx.rates,
+                        rates=ctx.rates_by_node_id[root.id],
                         annual_suppliers=ctx.annual_suppliers,
                         conflicted_part_numbers=ctx.conflicted_part_numbers,
                         nodes_by_id=ctx.nodes_by_id,

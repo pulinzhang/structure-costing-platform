@@ -230,6 +230,11 @@ def _insert_l0(
         excel_filename=old_l0.excel_filename,
         excel_sheet_name=old_l0.excel_sheet_name,
         excel_part_col=old_l0.excel_part_col,
+        assembly_category_id=(
+            file_l0.assembly_category_id
+            if file_l0.assembly_category_id is not None
+            else old_l0.assembly_category_id
+        ),
         sketch_url=copied_sketch_url(
             location=session.location,
             vehicle_model=session.vehicle_model,
@@ -597,6 +602,7 @@ def _insert_node(
     excel_filename: str | None = None,
     excel_sheet_name: str | None = None,
     excel_part_col: int | None = None,
+    assembly_category_id: int | None = None,
 ) -> int:
     row = session.bom_service.create_engineering_change_node(
         session.db,
@@ -638,6 +644,7 @@ def _insert_node(
             effective_month=session.effective_month,
             expiry_year=session.expiry_year,
             expiry_month=session.expiry_month,
+            assembly_category_id=assembly_category_id,
             created_by=session.created_by,
             updated_by=session.updated_by,
         ),

@@ -1,5 +1,7 @@
 """计费管理 Repository。"""
 
+from decimal import Decimal
+
 from sqlalchemy import inspect, text
 from sqlalchemy.orm import Query, Session, contains_eager
 
@@ -101,6 +103,41 @@ class AssemblyCategoryBillingRepository:
                 AssemblyCategoryBilling.assembly_category_id == assembly_category_id
             )
         return query
+
+    def list_enabled_checked_rates(
+        self,
+        db: Session,
+        *,
+        category_code: str | None = None,
+    ) -> list[tuple[str, Decimal]]:
+        """启用分类已勾选、且费用启用的计费率。指定分类时只读那一行。"""
+        query = (
+            db.query(FeeArchive.code, FeeArchive.charge_rate)
+            .join(
+                AssemblyCategoryBilling,
+                AssemblyCategoryBilling.fee_archive_id == FeeArchive.id,
+            )
+            .join(
+                AssemblyCategory,
+                AssemblyCategory.id == AssemblyCategoryBilling.assembly_category_id,
+            )
+            .filter(AssemblyCategory.is_enabled.is_(True))
+            .filter(FeeArchive.is_enabled.is_(True))
+        )
+        if category_code is not None:
+            query = query.filter(AssemblyCategory.code == category_code)
+        return [(str(code), Decimal(str(rate))) for code, rate in query.all()]
+
+    def pair_exists(self, db: Session, category_id: int, fee_id: int) -> bool:
+        found = (
+            db.query(AssemblyCategoryBilling.id)
+            .filter(
+                AssemblyCategoryBilling.assembly_category_id == category_id,
+                AssemblyCategoryBilling.fee_archive_id == fee_id,
+            )
+            .first()
+        )
+        return found is not None
 
     def create(
         self, db: Session, payload: AssemblyCategoryBillingInsert

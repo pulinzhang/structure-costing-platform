@@ -37,6 +37,7 @@ from app.repositories.engineering_change.design_change.upload_log_repository imp
     EngineeringChangeUploadLogRepository,
 )
 from app.services.bom.bom.engineering import BomEngineeringService
+from app.services.bom.bom.upload.gates.category import bind_root_assembly_categories
 from app.services.bom.procurement_object.service import BomProcurementObjectService
 from app.services.engineering_change.design_change.upload.gates.bom_slice import (
     slice_bom_nodes_for_l0,
@@ -168,6 +169,7 @@ def prepare_engineering_change_run(
     )
 
     parsed_bom = parse_bom_excel(args.file_content, sheet_name=SHEET_BOM)
+    bind_root_assembly_categories(db, parsed_bom.nodes, required=False)
     file_project = (parsed_bom.meta.vehicle_model or "").strip()
     page_project = vehicle_model.strip()
     if not file_project or file_project.upper() != page_project.upper():

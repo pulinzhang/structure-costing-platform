@@ -184,3 +184,4 @@ class BomNodeWrite:
     effective_month: int = MONTH_MIN
     expiry_year: int | None = None
     expiry_month: int | None = None
+    assembly_category_id: int | None = None

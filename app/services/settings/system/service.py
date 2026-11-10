@@ -12,11 +12,6 @@ from app.common.system_defaults import (
     DEFAULT_BASE_PRICE_MONTH_MOVE_LIMIT,
     DEFAULT_BASE_PRICE_PROCESSING_FEE_LIMIT,
     DEFAULT_BODY_PANEL_MAX_THICKNESS,
-    DEFAULT_FINISHED_FINANCE_RATE,
-    DEFAULT_FINISHED_MANAGEMENT_RATE,
-    DEFAULT_FINISHED_PRETAX_PROFIT_RATE,
-    DEFAULT_FINISHED_SCRAP_RATE,
-    DEFAULT_FINISHED_WAREHOUSE_PACKAGING_RATE,
     DEFAULT_MATERIAL_LOSS_RATE,
     DEFAULT_SCRAP_RECOVERY_RATE,
     DEFAULT_STEEL_DENSITY,
@@ -90,6 +85,7 @@ class SettingsService:
         return name
 
     def get_config(self, db: Session, aux_db: Session | None = None) -> ConfigVO:
+        self.ensure_calculate_finished_rates_column(db)
         login_lock_minutes = self._login_lock_minutes(aux_db)
         row = self.repository.get_singleton(db)
         if row is None:
@@ -104,11 +100,7 @@ class SettingsService:
                 steel_density=DEFAULT_STEEL_DENSITY,
                 material_loss_rate=DEFAULT_MATERIAL_LOSS_RATE,
                 scrap_recovery_rate=DEFAULT_SCRAP_RECOVERY_RATE,
-                finished_finance_rate=DEFAULT_FINISHED_FINANCE_RATE,
-                finished_management_rate=DEFAULT_FINISHED_MANAGEMENT_RATE,
-                finished_warehouse_packaging_rate=DEFAULT_FINISHED_WAREHOUSE_PACKAGING_RATE,
-                finished_scrap_rate=DEFAULT_FINISHED_SCRAP_RATE,
-                finished_pretax_profit_rate=DEFAULT_FINISHED_PRETAX_PROFIT_RATE,
+                calculate_finished_rates=True,
                 swing_shear_process_fee_per_ton=DEFAULT_SWING_SHEAR_PROCESS_FEE_PER_TON,
                 base_price_month_move_limit=DEFAULT_BASE_PRICE_MONTH_MOVE_LIMIT,
                 base_price_processing_fee_limit=DEFAULT_BASE_PRICE_PROCESSING_FEE_LIMIT,
@@ -128,26 +120,7 @@ class SettingsService:
             scrap_recovery_rate=self._normalize_recovery_rate(
                 getattr(row, "scrap_recovery_rate", None)
             ),
-            finished_finance_rate=self._normalize_percent_rate(
-                getattr(row, "finished_finance_rate", None),
-                DEFAULT_FINISHED_FINANCE_RATE,
-            ),
-            finished_management_rate=self._normalize_percent_rate(
-                getattr(row, "finished_management_rate", None),
-                DEFAULT_FINISHED_MANAGEMENT_RATE,
-            ),
-            finished_warehouse_packaging_rate=self._normalize_percent_rate(
-                getattr(row, "finished_warehouse_packaging_rate", None),
-                DEFAULT_FINISHED_WAREHOUSE_PACKAGING_RATE,
-            ),
-            finished_scrap_rate=self._normalize_permille_rate(
-                getattr(row, "finished_scrap_rate", None),
-                DEFAULT_FINISHED_SCRAP_RATE,
-            ),
-            finished_pretax_profit_rate=self._normalize_percent_rate(
-                getattr(row, "finished_pretax_profit_rate", None),
-                DEFAULT_FINISHED_PRETAX_PROFIT_RATE,
-            ),
+            calculate_finished_rates=bool(getattr(row, "calculate_finished_rates", True)),
             swing_shear_process_fee_per_ton=self._normalize_non_negative_q2(
                 getattr(row, "swing_shear_process_fee_per_ton", None),
                 DEFAULT_SWING_SHEAR_PROCESS_FEE_PER_TON,
@@ -180,6 +153,7 @@ class SettingsService:
         current_user: UserVO,
     ) -> ConfigVO:
         updated_by = audit_update(current_user)["updated_by"] or ""
+        self.ensure_calculate_finished_rates_column(db)
         self.login_security_repo.save_lock_minutes(aux_db, dto.login_lock_minutes, updated_by)
         aux_db.commit()
         app_name = SettingsService._display_app_name(dto.app_name)
@@ -189,13 +163,6 @@ class SettingsService:
         steel_density = quantize_money(dto.steel_density, Q4)
         material_loss_rate = quantize_money(dto.material_loss_rate, Q6)
         scrap_recovery_rate = quantize_money(dto.scrap_recovery_rate, Q6)
-        finished_finance_rate = quantize_money(dto.finished_finance_rate, Q6)
-        finished_management_rate = quantize_money(dto.finished_management_rate, Q6)
-        finished_warehouse_packaging_rate = quantize_money(
-            dto.finished_warehouse_packaging_rate, Q6
-        )
-        finished_scrap_rate = quantize_money(dto.finished_scrap_rate, Q6)
-        finished_pretax_profit_rate = quantize_money(dto.finished_pretax_profit_rate, Q6)
         swing_shear_process_fee_per_ton = quantize_money(dto.swing_shear_process_fee_per_ton, Q2)
         base_price_month_move_limit = quantize_money(dto.base_price_month_move_limit, Q2)
         base_price_processing_fee_limit = quantize_money(dto.base_price_processing_fee_limit, Q2)
@@ -211,11 +178,7 @@ class SettingsService:
                     steel_density=steel_density,
                     material_loss_rate=material_loss_rate,
                     scrap_recovery_rate=scrap_recovery_rate,
-                    finished_finance_rate=finished_finance_rate,
-                    finished_management_rate=finished_management_rate,
-                    finished_warehouse_packaging_rate=finished_warehouse_packaging_rate,
-                    finished_scrap_rate=finished_scrap_rate,
-                    finished_pretax_profit_rate=finished_pretax_profit_rate,
+                    calculate_finished_rates=dto.calculate_finished_rates,
                     swing_shear_process_fee_per_ton=swing_shear_process_fee_per_ton,
                     base_price_month_move_limit=base_price_month_move_limit,
                     base_price_processing_fee_limit=base_price_processing_fee_limit,
@@ -235,11 +198,7 @@ class SettingsService:
                     steel_density=steel_density,
                     material_loss_rate=material_loss_rate,
                     scrap_recovery_rate=scrap_recovery_rate,
-                    finished_finance_rate=finished_finance_rate,
-                    finished_management_rate=finished_management_rate,
-                    finished_warehouse_packaging_rate=finished_warehouse_packaging_rate,
-                    finished_scrap_rate=finished_scrap_rate,
-                    finished_pretax_profit_rate=finished_pretax_profit_rate,
+                    calculate_finished_rates=dto.calculate_finished_rates,
                     swing_shear_process_fee_per_ton=swing_shear_process_fee_per_ton,
                     base_price_month_move_limit=base_price_month_move_limit,
                     base_price_processing_fee_limit=base_price_processing_fee_limit,
@@ -271,55 +230,20 @@ class SettingsService:
             return DEFAULT_SCRAP_RECOVERY_RATE
         return self._normalize_recovery_rate(getattr(row, "scrap_recovery_rate", None))
 
-    def get_finished_finance_rate(self, db: Session) -> Decimal:
-        """核价用：读成品财务费率，无效或缺失则回退 0.02。"""
-        row = self.repository.get_singleton(db)
-        if row is None:
-            return DEFAULT_FINISHED_FINANCE_RATE
-        return self._normalize_percent_rate(
-            getattr(row, "finished_finance_rate", None),
-            DEFAULT_FINISHED_FINANCE_RATE,
-        )
+    def ensure_calculate_finished_rates_column(self, db: Session) -> None:
+        """旧库补开关列，并删掉已经不读的五项费率列。"""
+        changed = self.repository.ensure_calculate_finished_rates_column(db)
+        changed = self.repository.drop_retired_finished_rate_columns(db) or changed
+        if changed:
+            db.commit()
 
-    def get_finished_management_rate(self, db: Session) -> Decimal:
-        """核价用：读成品管理费率，无效或缺失则回退 0.02。"""
+    def calculates_finished_rates(self, db: Session) -> bool:
+        """核价用：关闭时成品五项费率按 0。缺行视为打开。"""
+        self.ensure_calculate_finished_rates_column(db)
         row = self.repository.get_singleton(db)
         if row is None:
-            return DEFAULT_FINISHED_MANAGEMENT_RATE
-        return self._normalize_percent_rate(
-            getattr(row, "finished_management_rate", None),
-            DEFAULT_FINISHED_MANAGEMENT_RATE,
-        )
-
-    def get_finished_warehouse_packaging_rate(self, db: Session) -> Decimal:
-        """核价用：读仓储+包装管理费用率，无效或缺失则回退 0.01。"""
-        row = self.repository.get_singleton(db)
-        if row is None:
-            return DEFAULT_FINISHED_WAREHOUSE_PACKAGING_RATE
-        return self._normalize_percent_rate(
-            getattr(row, "finished_warehouse_packaging_rate", None),
-            DEFAULT_FINISHED_WAREHOUSE_PACKAGING_RATE,
-        )
-
-    def get_finished_scrap_rate(self, db: Session) -> Decimal:
-        """核价用：读成品报废率，无效或缺失则回退 0.003（千分之3）。"""
-        row = self.repository.get_singleton(db)
-        if row is None:
-            return DEFAULT_FINISHED_SCRAP_RATE
-        return self._normalize_permille_rate(
-            getattr(row, "finished_scrap_rate", None),
-            DEFAULT_FINISHED_SCRAP_RATE,
-        )
-
-    def get_finished_pretax_profit_rate(self, db: Session) -> Decimal:
-        """核价用：读成品税前利润率，无效或缺失则回退 0.02。"""
-        row = self.repository.get_singleton(db)
-        if row is None:
-            return DEFAULT_FINISHED_PRETAX_PROFIT_RATE
-        return self._normalize_percent_rate(
-            getattr(row, "finished_pretax_profit_rate", None),
-            DEFAULT_FINISHED_PRETAX_PROFIT_RATE,
-        )
+            return True
+        return bool(row.calculate_finished_rates)
 
     def get_base_price_processing_fee_limit(self, db: Session) -> Decimal:
         """基准价加工费上限（元/吨），即设置里保存的那个数。大于此值整批拒绝。"""
@@ -393,28 +317,6 @@ class SettingsService:
             return DEFAULT_SCRAP_RECOVERY_RATE
         if rate <= 0 or rate > 1:
             return DEFAULT_SCRAP_RECOVERY_RATE
-        return quantize_money(rate, Q6)
-
-    @staticmethod
-    def _normalize_percent_rate(value: object, default: Decimal) -> Decimal:
-        """百分比费率（0~1，含 0）。"""
-        try:
-            rate = Decimal(str(value))
-        except (InvalidOperation, TypeError, ValueError):
-            return default
-        if rate < 0 or rate > 1:
-            return default
-        return quantize_money(rate, Q6)
-
-    @staticmethod
-    def _normalize_permille_rate(value: object, default: Decimal) -> Decimal:
-        """千分率（≥0）。"""
-        try:
-            rate = Decimal(str(value))
-        except (InvalidOperation, TypeError, ValueError):
-            return default
-        if rate < 0:
-            return default
         return quantize_money(rate, Q6)
 
     @staticmethod

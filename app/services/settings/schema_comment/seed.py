@@ -134,6 +134,7 @@ _RESTRICT_EDGES: tuple[tuple[str, str], ...] = (
     ("steel_grade_categories", "stamping_parts"),
     ("steel_grade_categories", "stamping_tailor_weld_blanks"),
     ("assembly_categories", "assembly_category_billings"),
+    ("assembly_categories", "bom_nodes"),
     ("fee_archives", "assembly_category_billings"),
     ("steel_grade_categories", "engineering_change_material_orders"),
     ("stamping_parts", "stamping_process_fees"),

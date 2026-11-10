@@ -1,7 +1,6 @@
 """计费对照空库种子。已有任意行则不覆盖。
 
-现网总成核价每张卡都计这五项：运输、仓储+包装、财务费、管理费、税前利润。
-报废、检具、器具不在费用档案里，不进种子。
+四个分类都勾上费用档案里的种子费用。库里已经有对照时，只给新补上的费用代码勾选。
 """
 
 from app.services.masterdata.assembly_category.seed import ASSEMBLY_CATEGORY_SEEDS
