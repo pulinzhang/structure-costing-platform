@@ -54,6 +54,37 @@ class FeeArchiveService:
         db.commit()
         logger.info("已写入费用档案种子 %s 行", len(FEE_ARCHIVE_SEEDS))
 
+    def ensure_missing_seed_fees(self, db: Session) -> tuple[str, ...]:
+        """种子里有、库里没有的费用补一行。不改已有费率。"""
+        audit = audit_create(SYSTEM_USER)
+        added: list[str] = []
+        for seed in FEE_ARCHIVE_SEEDS:
+            if self.repository.get_by_code(db, seed.code) is not None:
+                continue
+            if self.repository.get_by_name(db, seed.name) is not None:
+                logger.warning("费用种子跳过，名称已被占用：%s", seed.name)
+                continue
+            self.repository.create(
+                db,
+                FeeArchiveInsert(
+                    code=seed.code,
+                    name=seed.name,
+                    charge_basis=seed.charge_basis,
+                    charge_rate=seed.charge_rate,
+                    sort_order=seed.sort_order,
+                    is_enabled=True,
+                    remark=None,
+                    created_by=audit["created_by"],
+                    updated_by=audit["updated_by"],
+                ),
+            )
+            added.append(seed.code)
+        if not added:
+            return ()
+        db.commit()
+        logger.info("已补费用档案种子 %s", ", ".join(added))
+        return tuple(added)
+
     def list_page(self, db: Session, query: FeeArchiveQuery) -> tuple[list[FeeArchiveVO], int]:
         skip = (query.page - 1) * query.size
         rows, total = self.repository.paginate(

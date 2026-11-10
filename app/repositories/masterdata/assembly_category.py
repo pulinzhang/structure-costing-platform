@@ -20,6 +20,24 @@ class AssemblyCategoryRepository:
     def get_by_code(self, db: Session, code: str) -> AssemblyCategory | None:
         return db.query(AssemblyCategory).filter(AssemblyCategory.code == code).first()
 
+    def codes_by_ids(self, db: Session, category_ids: list[int]) -> dict[int, str]:
+        if not category_ids:
+            return {}
+        rows = (
+            db.query(AssemblyCategory.id, AssemblyCategory.code)
+            .filter(AssemblyCategory.id.in_(category_ids))
+            .all()
+        )
+        return {int(row.id): str(row.code) for row in rows}
+
+    def list_enabled(self, db: Session) -> list[AssemblyCategory]:
+        return (
+            db.query(AssemblyCategory)
+            .filter(AssemblyCategory.is_enabled.is_(True))
+            .order_by(AssemblyCategory.sort_order.asc(), AssemblyCategory.id.asc())
+            .all()
+        )
+
     def get_by_name(self, db: Session, name: str) -> AssemblyCategory | None:
         return db.query(AssemblyCategory).filter(AssemblyCategory.name == name).first()
 

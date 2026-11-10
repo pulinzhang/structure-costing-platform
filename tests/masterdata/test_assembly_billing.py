@@ -392,3 +392,65 @@ def test_retired_billing_columns_are_dropped() -> None:
     finally:
         session.close()
         engine.dispose()
+
+
+def test_finished_fee_rates_follow_checked_fees(memory_db: Session) -> None:
+    AssemblyCategoryService().ensure_seed_if_empty(memory_db)
+    FeeArchiveService().ensure_seed_if_empty(memory_db)
+    billing = AssemblyCategoryBillingService()
+    billing.ensure_seed_if_empty(memory_db)
+    rates = billing.finished_fee_rates(memory_db)
+    assert rates.finance_rate == Decimal("0.02")
+    assert rates.management_rate == Decimal("0.02")
+    assert rates.warehouse_packaging_rate == Decimal("0.01")
+    assert rates.scrap_rate == Decimal("0.003")
+    assert rates.pretax_profit_rate == Decimal("0.02")
+
+    categories, _category_total = AssemblyCategoryService().list_page(
+        memory_db, AssemblyCategoryQuery(page=1, size=20)
+    )
+    fees, _fee_total = FeeArchiveService().list_page(memory_db, FeeArchiveQuery(page=1, size=20))
+    warehouse = next(fee for fee in fees if fee.code == "warehouse_packaging")
+    for category in categories:
+        billing.replace_selection(
+            memory_db,
+            category.id,
+            CategoryBillingReplace(fee_archive_ids=[warehouse.id]),
+            SYSTEM_USER,
+        )
+    cleared = billing.finished_fee_rates(memory_db)
+    assert cleared.finance_rate == Decimal("0")
+    assert cleared.scrap_rate == Decimal("0")
+    assert cleared.warehouse_packaging_rate == Decimal("0.01")
+
+
+def test_missing_scrap_fee_is_added_without_changing_rates(memory_db: Session) -> None:
+    AssemblyCategoryService().ensure_seed_if_empty(memory_db)
+    FeeArchiveService().ensure_seed_if_empty(memory_db)
+    memory_db.execute(text("DELETE FROM fee_archives WHERE code = 'scrap'"))
+    memory_db.commit()
+    fees, _fee_total = FeeArchiveService().list_page(memory_db, FeeArchiveQuery(page=1, size=20))
+    financial = next(fee for fee in fees if fee.code == "financial")
+    FeeArchiveService().update(
+        memory_db,
+        financial.id,
+        FeeArchiveUpdate(
+            name=financial.name,
+            charge_basis=financial.charge_basis,
+            charge_rate=Decimal("0.05"),
+            sort_order=financial.sort_order,
+            is_enabled=True,
+        ),
+        SYSTEM_USER,
+    )
+    billing = AssemblyCategoryBillingService()
+    billing.ensure_seed_if_empty(memory_db)
+    added = FeeArchiveService().ensure_missing_seed_fees(memory_db)
+    assert added == ("scrap",)
+    again, _again_total = FeeArchiveService().list_page(memory_db, FeeArchiveQuery(page=1, size=20))
+    kept = next(fee for fee in again if fee.code == "financial")
+    assert kept.model_dump()["charge_rate"] == "0.050000"
+    billing.check_missing_seed_fees(memory_db, added)
+    rates = billing.finished_fee_rates(memory_db)
+    assert rates.scrap_rate == Decimal("0.003")
+    assert rates.finance_rate == Decimal("0.05")

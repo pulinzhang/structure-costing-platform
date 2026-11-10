@@ -52,6 +52,19 @@ class AssemblyCategoryService:
         db.commit()
         logger.info("已写入总成分类种子 %s 行", len(ASSEMBLY_CATEGORY_SEEDS))
 
+    def id_by_code(self, db: Session, code: str) -> int | None:
+        row = self.repository.get_by_code(db, code)
+        if row is None:
+            return None
+        return int(row.id)
+
+    def codes_by_ids(self, db: Session, category_ids: list[int]) -> dict[int, str]:
+        return self.repository.codes_by_ids(db, category_ids)
+
+    def list_enabled(self, db: Session) -> list[AssemblyCategory]:
+        """启用中的分类，按列表顺序。供材料清单导入对名称和编码。"""
+        return self.repository.list_enabled(db)
+
     def list_page(
         self,
         db: Session,

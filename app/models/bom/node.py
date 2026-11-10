@@ -38,6 +38,7 @@ from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.database import Base
 from app.models.common.audit_mixin import AuditUserMixin
+from app.models.masterdata.assembly_category import AssemblyCategory
 
 
 class BomSnapshot(AuditUserMixin, Base):
@@ -308,6 +309,16 @@ class BomNode(AuditUserMixin, Base):
         default=False,
         comment="是否对外供货/报价单元。一般为 L0=True；月度汇总、对账以该标记为准",
     )
+    assembly_category_id: Mapped[int | None] = mapped_column(
+        Integer,
+        ForeignKey(
+            "assembly_categories.id",
+            ondelete="RESTRICT",
+            onupdate="RESTRICT",
+        ),
+        nullable=True,
+        comment="总成分类。只挂在供货总成（L0），取主数据里启用的分类",
+    )
 
     # ---------- 材料属性（主要挂在叶子；有二级时属性在二级） ----------
     material: Mapped[str | None] = mapped_column(
@@ -386,6 +397,10 @@ class BomNode(AuditUserMixin, Base):
     )
 
     snapshot: Mapped["BomSnapshot"] = relationship("BomSnapshot", back_populates="nodes")
+    assembly_category: Mapped[AssemblyCategory | None] = relationship(
+        AssemblyCategory,
+        foreign_keys=[assembly_category_id],
+    )
     parent: Mapped["BomNode | None"] = relationship(
         "BomNode",
         remote_side=[id],
@@ -406,6 +421,7 @@ class BomNode(AuditUserMixin, Base):
         Index("ix_bom_node_snapshot_part_number", "snapshot_id", "part_number"),
         Index("ix_bom_node_part_number", "part_number"),
         Index("ix_bom_node_snapshot_supply", "snapshot_id", "is_supply_unit"),
+        Index("ix_bom_node_assembly_category", "assembly_category_id"),
         Index(
             "uix_bom_node_l0_part_number",
             "snapshot_id",

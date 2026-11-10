@@ -3,11 +3,13 @@
 from __future__ import annotations
 
 import logging
+from decimal import Decimal
 
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
 
 from app.common.audit import SYSTEM_USER, audit_create
+from app.common.money import Q6, quantize_money
 from app.exceptions.base import BusinessException, NotFoundException
 from app.models.masterdata.category_billing import AssemblyCategoryBilling
 from app.models.masterdata.fee_archive import FeeArchive
@@ -24,6 +26,8 @@ from app.schemas.vo.category_billing_vo import (
     CategoryBillingSelectionVO,
 )
 from app.schemas.vo.user_vo import UserVO
+from app.services.masterdata.assembly_category.seed import ASSEMBLY_CATEGORY_SEEDS
+from app.services.masterdata.category_billing.rates import FinishedFeeRates
 from app.services.masterdata.category_billing.seed import BILLING_SEED_PAIRS
 
 logger = logging.getLogger("service.category_billing")
@@ -72,6 +76,63 @@ class AssemblyCategoryBillingService:
             return
         db.commit()
         logger.info("已写入计费种子 %s 行", written)
+
+    def check_missing_seed_fees(self, db: Session, fee_codes: tuple[str, ...]) -> None:
+        """刚补进档案的种子费用，给四个种子分类勾上。不改用户已经改过的勾选。"""
+        if not fee_codes:
+            return
+        audit = audit_create(SYSTEM_USER)
+        written = 0
+        for category_seed in ASSEMBLY_CATEGORY_SEEDS:
+            category = self.categories.get_by_code(db, category_seed.code)
+            if category is None:
+                continue
+            for fee_code in fee_codes:
+                fee = self.fees.get_by_code(db, fee_code)
+                if fee is None or self.repository.pair_exists(db, category.id, fee.id):
+                    continue
+                self.repository.create(
+                    db,
+                    AssemblyCategoryBillingInsert(
+                        assembly_category_id=category.id,
+                        fee_archive_id=fee.id,
+                        remark=None,
+                        created_by=audit["created_by"],
+                        updated_by=audit["updated_by"],
+                    ),
+                )
+                written += 1
+        if written == 0:
+            return
+        db.commit()
+        logger.info("已为新费用补勾选 %s 行", written)
+
+    def finished_fee_rates(
+        self,
+        db: Session,
+        *,
+        category_code: str | None = None,
+    ) -> FinishedFeeRates:
+        """启用分类里勾上、且费用仍启用的计费率。没勾上的项是 0。
+
+        现库报废费用的稳定键是 scrap，也认已经建过的 scrap_expense。
+        """
+        by_code: dict[str, Decimal] = {}
+        for code, rate in self.repository.list_enabled_checked_rates(
+            db, category_code=category_code
+        ):
+            amount = quantize_money(rate, Q6)
+            by_code[code] = amount
+            if code == "scrap_expense":
+                by_code["scrap"] = amount
+        zero = Decimal("0")
+        return FinishedFeeRates(
+            finance_rate=by_code.get("financial", zero),
+            management_rate=by_code.get("management", zero),
+            warehouse_packaging_rate=by_code.get("warehouse_packaging", zero),
+            scrap_rate=by_code.get("scrap", zero),
+            pretax_profit_rate=by_code.get("pretax_profit", zero),
+        )
 
     def list_page(
         self,

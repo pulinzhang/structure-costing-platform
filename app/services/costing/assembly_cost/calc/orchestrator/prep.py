@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 from collections import Counter, defaultdict
+from collections.abc import Sequence
 from dataclasses import dataclass
 from decimal import Decimal
 
@@ -11,6 +12,7 @@ from sqlalchemy.orm import Session
 from app.common.bom.node_order import bom_node_order_from
 from app.common.period import format_period
 from app.exceptions.base import BusinessException
+from app.models.bom import BomNode
 from app.models.costing import StampingPartCost
 from app.repositories.bom.procurement_object_repository import BomProcurementObjectRepository
 from app.repositories.bom.welding_process_breakdown_repository import (
@@ -36,6 +38,9 @@ from app.services.costing.assembly_cost.calc.rollup import (
     RollupWeldingFee,
 )
 from app.services.costing.assembly_cost.calc.seq_label import calc_card_seq_labels
+from app.services.costing.finished_rates import load_finished_fee_rates
+from app.services.masterdata.assembly_category.service import AssemblyCategoryService
+from app.services.masterdata.category_billing.rates import FinishedFeeRates
 from app.services.masterdata.vehicle_model.service import VehicleModelService
 
 
@@ -61,7 +66,7 @@ class CalcPrepContext:
     annual_suppliers: dict[str, str]
     welding_by_bom_node: dict[int, RollupWeldingFee]
     packaging_by_part: dict[str, RollupPackagingFee]
-    rates: RollupFinishedRates
+    rates_by_node_id: dict[int, RollupFinishedRates]
     procurement_missing: bool
     seq_label_by_node_id: dict[int, str]
     log_builder: ProcessLogBuilder
@@ -86,6 +91,66 @@ def _build_stamping_price_maps(
             continue
         prices[part_number] = first[part_number]
     return prices, frozenset(conflicted)
+
+
+def _tree_root_id(node: RollupBomNode, nodes_by_id: dict[int, RollupBomNode]) -> int:
+    current = node
+    while current.parent_id is not None and current.parent_id in nodes_by_id:
+        current = nodes_by_id[current.parent_id]
+    return current.id
+
+
+def _rollup_rates(finished: FinishedFeeRates) -> RollupFinishedRates:
+    return RollupFinishedRates(
+        finance_rate=finished.finance_rate,
+        management_rate=finished.management_rate,
+        scrap_rate=finished.scrap_rate,
+        pretax_profit_rate=finished.pretax_profit_rate,
+    )
+
+
+def _rates_by_subject(
+    db: Session,
+    orm_nodes: Sequence[BomNode],
+    subjects: list[RollupBomNode],
+    nodes_by_id: dict[int, RollupBomNode],
+) -> dict[int, RollupFinishedRates]:
+    """每个核价卡用它所属供货总成的总成分类。没分类不能算。"""
+    category_by_root: dict[int, int] = {}
+    missing: list[str] = []
+    for node in orm_nodes:
+        if node.parent_id is not None:
+            continue
+        category_id = node.assembly_category_id
+        if category_id is None:
+            missing.append(node.part_number or "（无零件号）")
+            continue
+        category_by_root[node.id] = category_id
+    if missing:
+        shown = "、".join(missing[:8])
+        more = f"等 {len(missing)} 个" if len(missing) > 8 else ""
+        raise BusinessException(
+            f"供货总成还没有总成分类：{shown}{more}。"
+            "请重新导入材料清单，给每个根填上总成分类后再计算。"
+        )
+    codes = AssemblyCategoryService().codes_by_ids(db, list(set(category_by_root.values())))
+    cache: dict[int, RollupFinishedRates] = {}
+    result: dict[int, RollupFinishedRates] = {}
+    unresolved: list[str] = []
+    for subject in subjects:
+        root_id = _tree_root_id(subject, nodes_by_id)
+        category_id = category_by_root.get(root_id)
+        code = codes.get(category_id) if category_id is not None else None
+        if category_id is None or code is None:
+            unresolved.append(subject.part_number)
+            continue
+        if category_id not in cache:
+            cache[category_id] = _rollup_rates(load_finished_fee_rates(db, code))
+        result[subject.id] = cache[category_id]
+    if unresolved:
+        shown = "、".join(unresolved[:8])
+        raise BusinessException(f"供货总成的总成分类已经不在主数据里：{shown}。")
+    return result
 
 
 def prepare_calc_run(
@@ -252,12 +317,7 @@ def prepare_calc_run(
             warehouse_bundling_fee=Decimal(str(pkg_row.other_fee or 0)),
         )
 
-    rates = RollupFinishedRates(
-        finance_rate=deps.settings_service.get_finished_finance_rate(db),
-        management_rate=deps.settings_service.get_finished_management_rate(db),
-        scrap_rate=deps.settings_service.get_finished_scrap_rate(db),
-        pretax_profit_rate=deps.settings_service.get_finished_pretax_profit_rate(db),
-    )
+    rates_by_node_id = _rates_by_subject(db, orm_nodes, subjects, nodes_by_id)
     log_builder = ProcessLogBuilder()
     _record_prep(
         log_builder,
@@ -289,7 +349,7 @@ def prepare_calc_run(
         annual_suppliers=annual_suppliers,
         welding_by_bom_node=welding_by_bom_node,
         packaging_by_part=packaging_by_part,
-        rates=rates,
+        rates_by_node_id=rates_by_node_id,
         procurement_missing=procurement_missing,
         seq_label_by_node_id=seq_label_by_node_id,
         log_builder=log_builder,

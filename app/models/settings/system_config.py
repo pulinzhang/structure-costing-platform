@@ -2,18 +2,13 @@
 
 from decimal import Decimal
 
-from sqlalchemy import Integer, Numeric, String, Text
+from sqlalchemy import Boolean, Integer, Numeric, String, Text, true as sql_true
 from sqlalchemy.orm import Mapped, mapped_column
 
 from app.common.system_defaults import (
     DEFAULT_BASE_PRICE_MONTH_MOVE_LIMIT,
     DEFAULT_BASE_PRICE_PROCESSING_FEE_LIMIT,
     DEFAULT_BODY_PANEL_MAX_THICKNESS,
-    DEFAULT_FINISHED_FINANCE_RATE,
-    DEFAULT_FINISHED_MANAGEMENT_RATE,
-    DEFAULT_FINISHED_PRETAX_PROFIT_RATE,
-    DEFAULT_FINISHED_SCRAP_RATE,
-    DEFAULT_FINISHED_WAREHOUSE_PACKAGING_RATE,
     DEFAULT_MATERIAL_LOSS_RATE,
     DEFAULT_SCRAP_RECOVERY_RATE,
     DEFAULT_STEEL_DENSITY,
@@ -62,35 +57,12 @@ class SystemConfig(AuditUserMixin, Base):
         default=DEFAULT_SCRAP_RECOVERY_RATE,
         comment="废料回收率（小数，默认 0.97=97%）",
     )
-    finished_finance_rate: Mapped[Decimal] = mapped_column(
-        Numeric(8, 6),
+    calculate_finished_rates: Mapped[bool] = mapped_column(
+        Boolean,
         nullable=False,
-        default=DEFAULT_FINISHED_FINANCE_RATE,
-        comment="成品财务费率（小数，默认 0.02=2%）",
-    )
-    finished_management_rate: Mapped[Decimal] = mapped_column(
-        Numeric(8, 6),
-        nullable=False,
-        default=DEFAULT_FINISHED_MANAGEMENT_RATE,
-        comment="成品管理费率（小数，默认 0.02=2%）",
-    )
-    finished_warehouse_packaging_rate: Mapped[Decimal] = mapped_column(
-        Numeric(8, 6),
-        nullable=False,
-        default=DEFAULT_FINISHED_WAREHOUSE_PACKAGING_RATE,
-        comment="仓储+包装管理费用率（小数，默认 0.01=1%）",
-    )
-    finished_scrap_rate: Mapped[Decimal] = mapped_column(
-        Numeric(8, 6),
-        nullable=False,
-        default=DEFAULT_FINISHED_SCRAP_RATE,
-        comment="成品报废率（小数，默认 0.003=千分之3）",
-    )
-    finished_pretax_profit_rate: Mapped[Decimal] = mapped_column(
-        Numeric(8, 6),
-        nullable=False,
-        default=DEFAULT_FINISHED_PRETAX_PROFIT_RATE,
-        comment="成品税前利润率（小数，默认 0.02=2%）",
+        default=True,
+        server_default=sql_true(),
+        comment="是否计算成品费率。关闭时财务、管理、仓储包装、报废、税前利润按 0",
     )
     swing_shear_process_fee_per_ton: Mapped[Decimal] = mapped_column(
         Numeric(12, 4),

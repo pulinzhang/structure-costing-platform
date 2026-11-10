@@ -227,6 +227,7 @@ def insert_parsed_nodes(
                 effective_month=effective_month,
                 expiry_year=expiry_year,
                 expiry_month=expiry_month,
+                assembly_category_id=parsed.assembly_category_id,
                 created_by=created_by,
                 updated_by=updated_by,
             ),

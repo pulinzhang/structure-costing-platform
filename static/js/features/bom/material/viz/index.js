@@ -1358,6 +1358,16 @@ const BomVizPage = {
                                 : ''
                         }
                     </div>
+                    ${
+                        (node.level ?? placement?.depth) === 0
+                            ? `
+                        <div>
+                            <p class="text-[10px] uppercase tracking-[0.14em] text-ink-dim mb-1.5">总成分类</p>
+                            <p class="text-[13px] text-ink">${esc(node.assembly_category_name || '未填写')}</p>
+                        </div>
+                    `
+                            : ''
+                    }
                     <div>
                         <p class="text-[10px] uppercase tracking-[0.14em] text-ink-dim mb-1.5">制造类别</p>
                         <p class="text-[13px] leading-relaxed" style="color:${categoryInk(category.token, 0.72)}">${esc(roleText)}</p>

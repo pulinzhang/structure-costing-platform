@@ -85,56 +85,6 @@ export function settingsTemplate() {
         placeholder: '97',
         helper: '废料价值回收比例',
     });
-    const financeField = suffixInput({
-        id: 'settingsFinishedFinancePercent',
-        label: '财务费率',
-        tip: '默认 2%',
-        unit: '%',
-        step: '0.01',
-        min: '0',
-        max: '100',
-        placeholder: '2',
-    });
-    const managementField = suffixInput({
-        id: 'settingsFinishedManagementPercent',
-        label: '管理费率',
-        tip: '默认 2%',
-        unit: '%',
-        step: '0.01',
-        min: '0',
-        max: '100',
-        placeholder: '2',
-    });
-    const warehousePackagingField = suffixInput({
-        id: 'settingsFinishedWarehousePackagingPercent',
-        label: '仓储+包装，管理费用率',
-        tip: '默认 1%',
-        unit: '%',
-        step: '0.01',
-        min: '0',
-        max: '100',
-        placeholder: '1',
-    });
-    const scrapField = suffixInput({
-        id: 'settingsFinishedScrapPermille',
-        label: '报废率',
-        tip: '默认 3‰',
-        unit: '‰',
-        step: '0.01',
-        min: '0',
-        max: '200',
-        placeholder: '3',
-    });
-    const pretaxField = suffixInput({
-        id: 'settingsFinishedPretaxProfitPercent',
-        label: '税前利润率',
-        tip: '默认 2%',
-        unit: '%',
-        step: '0.01',
-        min: '0',
-        max: '100',
-        placeholder: '2',
-    });
     const loginLockField = suffixInput({
         id: 'settingsLoginLockMinutes',
         label: '登录锁定',
@@ -240,12 +190,19 @@ export function settingsTemplate() {
                         <div class="w-[2px] h-3.5 bg-brand rounded-[1px]"></div>
                         <h3 class="text-[10px] font-semibold uppercase tracking-[0.14em] text-ink-dim">成品费率</h3>
                     </div>
-                    <div class="p-4 grid grid-cols-1 sm:grid-cols-2 gap-4 content-start flex-1">
-                        ${financeField}
-                        ${managementField}
-                        ${warehousePackagingField}
-                        ${scrapField}
-                        ${pretaxField}
+                    <div class="p-4 flex-1">
+                        <label class="flex items-start gap-3 text-ink">
+                            <input id="settingsCalculateFinishedRates" type="checkbox" checked
+                                   class="brabus-switch mt-0.5" role="switch">
+                            <span>
+                                <span class="block text-[11px] font-medium">是否计算成品费率</span>
+                                <span class="mt-1 block text-[10px] leading-relaxed text-ink-faint">
+                                    打开后，冲压零件按「冲压件」、总成核价按「总成件」，读取
+                                    <a href="#/category-billing" class="text-brand-hud">计费管理</a>
+                                    里已勾选费用的计费率。关闭后这几项按 0 计。保存后只影响之后的重算。
+                                </span>
+                            </span>
+                        </label>
                     </div>
                 </section>
 

@@ -680,6 +680,9 @@ const BomStructurePage = {
                     }
                     ${partNumberBlock}
                     <div class="mt-auto space-y-1">
+                        <p class="text-[10px] tracking-wide text-ink-muted">
+                            总成分类 ${esc(node.assembly_category_name || '未填写')}
+                        </p>
                         <p class="text-[10px] tracking-wide text-ink-dim">
                             ${esc(node.location || snapshot?.location || '')}
                             · ${esc(node.vehicle_model || snapshot?.vehicle_model || '')}

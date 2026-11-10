@@ -5,18 +5,13 @@
  * 密度按 4 位小数；各类「率」界面按 2 位小数（‰ / %），提交时再换算为小数串。
  */
 
-import { settingsTemplate } from './template.js?v=35';
+import { settingsTemplate } from './template.js?v=37';
 
 const API = '/api/settings/system/config';
 const DEFAULT_APP_NAME = '结构件自动核价平台';
 const DEFAULT_DENSITY = '7.8500';
 const DEFAULT_LOSS_PERMILLE = '3.00';
 const DEFAULT_RECOVERY_PERCENT = '97.00';
-const DEFAULT_FINISHED_FINANCE_PERCENT = '2.00';
-const DEFAULT_FINISHED_MANAGEMENT_PERCENT = '2.00';
-const DEFAULT_FINISHED_WAREHOUSE_PACKAGING_PERCENT = '1.00';
-const DEFAULT_FINISHED_SCRAP_PERMILLE = '3.00';
-const DEFAULT_FINISHED_PRETAX_PROFIT_PERCENT = '2.00';
 const DEFAULT_SWING_SHEAR_PROCESS_FEE_PER_TON = '150.00';
 const DEFAULT_BASE_PRICE_MONTH_MOVE_LIMIT = '300.00';
 const DEFAULT_BASE_PRICE_PROCESSING_FEE_LIMIT = '120.00';
@@ -29,11 +24,7 @@ const RATE_INPUT_IDS = [
     'settingsSteelDensity',
     'settingsMaterialLossPermille',
     'settingsScrapRecoveryPercent',
-    'settingsFinishedFinancePercent',
-    'settingsFinishedManagementPercent',
-    'settingsFinishedWarehousePackagingPercent',
-    'settingsFinishedScrapPermille',
-    'settingsFinishedPretaxProfitPercent',
+    'settingsCalculateFinishedRates',
     'settingsSwingShearProcessFeePerTon',
     'settingsBasePriceMonthMoveLimit',
     'settingsBasePriceProcessingFeeLimit',
@@ -41,24 +32,10 @@ const RATE_INPUT_IDS = [
     'settingsLoginLockMinutes',
 ];
 
-/** 小数率 → 界面 %（2 位小数） */
-function rateToPercentDisplay(rawRate, fallback) {
-    const percent = scaleDecimalByPow10(rawRate, 2, 2);
-    return percent != null && compareDecimalStrings(percent, '0') >= 0 ? percent : fallback;
-}
-
 /** 小数率 → 界面 ‰（2 位小数） */
 function rateToPermilleDisplay(rawRate, fallback) {
     const permille = scaleDecimalByPow10(rawRate, 3, 2);
     return permille != null && compareDecimalStrings(permille, '0') >= 0 ? permille : fallback;
-}
-
-function isPercentInRange(value) {
-    return (
-        value != null
-        && compareDecimalStrings(value, '0') >= 0
-        && compareDecimalStrings(value, '100') <= 0
-    );
 }
 
 function normalizeLoginLockMinutes(raw) {
@@ -95,11 +72,7 @@ function applyFormValues({
     density,
     lossPermille,
     recoveryPercent,
-    financePercent,
-    managementPercent,
-    warehousePackagingPercent,
-    scrapPermille,
-    pretaxProfitPercent,
+    calculateFinishedRates,
     swingShearFeePerTon,
     basePriceMonthMoveLimit,
     basePriceProcessingFeeLimit,
@@ -116,18 +89,8 @@ function applyFormValues({
     if (lossEl) lossEl.value = lossPermille;
     const recoveryEl = document.getElementById('settingsScrapRecoveryPercent');
     if (recoveryEl) recoveryEl.value = recoveryPercent;
-    const financeEl = document.getElementById('settingsFinishedFinancePercent');
-    if (financeEl) financeEl.value = financePercent;
-    const managementEl = document.getElementById('settingsFinishedManagementPercent');
-    if (managementEl) managementEl.value = managementPercent;
-    const warehousePackagingEl = document.getElementById(
-        'settingsFinishedWarehousePackagingPercent',
-    );
-    if (warehousePackagingEl) warehousePackagingEl.value = warehousePackagingPercent;
-    const scrapEl = document.getElementById('settingsFinishedScrapPermille');
-    if (scrapEl) scrapEl.value = scrapPermille;
-    const pretaxEl = document.getElementById('settingsFinishedPretaxProfitPercent');
-    if (pretaxEl) pretaxEl.value = pretaxProfitPercent;
+    const finishedRatesEl = document.getElementById('settingsCalculateFinishedRates');
+    if (finishedRatesEl) finishedRatesEl.checked = calculateFinishedRates !== false;
     const swingShearEl = document.getElementById('settingsSwingShearProcessFeePerTon');
     if (swingShearEl) swingShearEl.value = swingShearFeePerTon;
     const moveLimitEl = document.getElementById('settingsBasePriceMonthMoveLimit');
@@ -170,11 +133,7 @@ export const SettingsPage = {
             density: DEFAULT_DENSITY,
             lossPermille: DEFAULT_LOSS_PERMILLE,
             recoveryPercent: DEFAULT_RECOVERY_PERCENT,
-            financePercent: DEFAULT_FINISHED_FINANCE_PERCENT,
-            managementPercent: DEFAULT_FINISHED_MANAGEMENT_PERCENT,
-            warehousePackagingPercent: DEFAULT_FINISHED_WAREHOUSE_PACKAGING_PERCENT,
-            scrapPermille: DEFAULT_FINISHED_SCRAP_PERMILLE,
-            pretaxProfitPercent: DEFAULT_FINISHED_PRETAX_PROFIT_PERCENT,
+            calculateFinishedRates: true,
             swingShearFeePerTon: DEFAULT_SWING_SHEAR_PROCESS_FEE_PER_TON,
             basePriceMonthMoveLimit: DEFAULT_BASE_PRICE_MONTH_MOVE_LIMIT,
             basePriceProcessingFeeLimit: DEFAULT_BASE_PRICE_PROCESSING_FEE_LIMIT,
@@ -210,22 +169,7 @@ export const SettingsPage = {
                     data.material_loss_rate, DEFAULT_LOSS_PERMILLE,
                 ),
                 recoveryPercent,
-                financePercent: rateToPercentDisplay(
-                    data.finished_finance_rate, DEFAULT_FINISHED_FINANCE_PERCENT,
-                ),
-                managementPercent: rateToPercentDisplay(
-                    data.finished_management_rate, DEFAULT_FINISHED_MANAGEMENT_PERCENT,
-                ),
-                warehousePackagingPercent: rateToPercentDisplay(
-                    data.finished_warehouse_packaging_rate,
-                    DEFAULT_FINISHED_WAREHOUSE_PACKAGING_PERCENT,
-                ),
-                scrapPermille: rateToPermilleDisplay(
-                    data.finished_scrap_rate, DEFAULT_FINISHED_SCRAP_PERMILLE,
-                ),
-                pretaxProfitPercent: rateToPercentDisplay(
-                    data.finished_pretax_profit_rate, DEFAULT_FINISHED_PRETAX_PROFIT_PERCENT,
-                ),
+                calculateFinishedRates: data.calculate_finished_rates !== false,
                 swingShearFeePerTon: (() => {
                     const fee = formatDecimalFixed(data.swing_shear_process_fee_per_ton, 2);
                     return fee != null && compareDecimalStrings(fee, '0') >= 0
@@ -276,21 +220,9 @@ export const SettingsPage = {
         const recoveryPercent = parseDecimalInput(
             document.getElementById('settingsScrapRecoveryPercent')?.value, 2,
         );
-        const financePercent = parseDecimalInput(
-            document.getElementById('settingsFinishedFinancePercent')?.value, 2,
-        );
-        const managementPercent = parseDecimalInput(
-            document.getElementById('settingsFinishedManagementPercent')?.value, 2,
-        );
-        const warehousePackagingPercent = parseDecimalInput(
-            document.getElementById('settingsFinishedWarehousePackagingPercent')?.value, 2,
-        );
-        const scrapPermille = parseDecimalInput(
-            document.getElementById('settingsFinishedScrapPermille')?.value, 2,
-        );
-        const pretaxProfitPercent = parseDecimalInput(
-            document.getElementById('settingsFinishedPretaxProfitPercent')?.value, 2,
-        );
+        const calculateFinishedRates = document.getElementById(
+            'settingsCalculateFinishedRates',
+        )?.checked === true;
         const swingShearFeePerTon = parseDecimalInput(
             document.getElementById('settingsSwingShearProcessFeePerTon')?.value, 2,
         );
@@ -339,26 +271,6 @@ export const SettingsPage = {
             showToast('废料回收率须为 0~100%（不含 0）', 'warning');
             return;
         }
-        if (!isPercentInRange(financePercent)) {
-            showToast('成品财务费率须为 0~100%', 'warning');
-            return;
-        }
-        if (!isPercentInRange(managementPercent)) {
-            showToast('成品管理费率须为 0~100%', 'warning');
-            return;
-        }
-        if (!isPercentInRange(warehousePackagingPercent)) {
-            showToast('仓储+包装管理费用率须为 0~100%', 'warning');
-            return;
-        }
-        if (!isPermilleInRange(scrapPermille)) {
-            showToast('成品报废率须为 0~200‰', 'warning');
-            return;
-        }
-        if (!isPercentInRange(pretaxProfitPercent)) {
-            showToast('成品税前利润率须为 0~100%', 'warning');
-            return;
-        }
         if (
             swingShearFeePerTon == null
             || compareDecimalStrings(swingShearFeePerTon, '0') < 0
@@ -398,22 +310,7 @@ export const SettingsPage = {
 
         const materialLossRate = scaleDecimalByPow10(lossPermille, -3, 6);
         const scrapRecoveryRate = scaleDecimalByPow10(recoveryPercent, -2, 6);
-        const finishedFinanceRate = scaleDecimalByPow10(financePercent, -2, 6);
-        const finishedManagementRate = scaleDecimalByPow10(managementPercent, -2, 6);
-        const finishedWarehousePackagingRate = scaleDecimalByPow10(
-            warehousePackagingPercent, -2, 6,
-        );
-        const finishedScrapRate = scaleDecimalByPow10(scrapPermille, -3, 6);
-        const finishedPretaxProfitRate = scaleDecimalByPow10(pretaxProfitPercent, -2, 6);
-        if (
-            materialLossRate == null
-            || scrapRecoveryRate == null
-            || finishedFinanceRate == null
-            || finishedManagementRate == null
-            || finishedWarehousePackagingRate == null
-            || finishedScrapRate == null
-            || finishedPretaxProfitRate == null
-        ) {
+        if (materialLossRate == null || scrapRecoveryRate == null) {
             showToast('费率换算失败，请检查输入', 'warning');
             return;
         }
@@ -432,11 +329,7 @@ export const SettingsPage = {
                 steel_density: density,
                 material_loss_rate: materialLossRate,
                 scrap_recovery_rate: scrapRecoveryRate,
-                finished_finance_rate: finishedFinanceRate,
-                finished_management_rate: finishedManagementRate,
-                finished_warehouse_packaging_rate: finishedWarehousePackagingRate,
-                finished_scrap_rate: finishedScrapRate,
-                finished_pretax_profit_rate: finishedPretaxProfitRate,
+                calculate_finished_rates: calculateFinishedRates,
                 swing_shear_process_fee_per_ton: swingShearFeePerTon,
                 base_price_month_move_limit: basePriceMonthMoveLimit,
                 base_price_processing_fee_limit: basePriceProcessingFeeLimit,
@@ -465,24 +358,7 @@ export const SettingsPage = {
                             : recoveryPercent;
                     })()
                     : recoveryPercent,
-                financePercent: data.finished_finance_rate != null
-                    ? rateToPercentDisplay(data.finished_finance_rate, financePercent)
-                    : financePercent,
-                managementPercent: data.finished_management_rate != null
-                    ? rateToPercentDisplay(data.finished_management_rate, managementPercent)
-                    : managementPercent,
-                warehousePackagingPercent: data.finished_warehouse_packaging_rate != null
-                    ? rateToPercentDisplay(
-                        data.finished_warehouse_packaging_rate,
-                        warehousePackagingPercent,
-                    )
-                    : warehousePackagingPercent,
-                scrapPermille: data.finished_scrap_rate != null
-                    ? rateToPermilleDisplay(data.finished_scrap_rate, scrapPermille)
-                    : scrapPermille,
-                pretaxProfitPercent: data.finished_pretax_profit_rate != null
-                    ? rateToPercentDisplay(data.finished_pretax_profit_rate, pretaxProfitPercent)
-                    : pretaxProfitPercent,
+                calculateFinishedRates: data.calculate_finished_rates !== false,
                 swingShearFeePerTon: data.swing_shear_process_fee_per_ton != null
                     ? (formatDecimalFixed(data.swing_shear_process_fee_per_ton, 2)
                         || swingShearFeePerTon)

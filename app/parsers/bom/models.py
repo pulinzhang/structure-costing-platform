@@ -49,6 +49,8 @@ class BomParsedNode:
     remark: str | None = None
     source_row: int | None = None
     sketch_bytes: bytes | None = None
+    assembly_category_label: str | None = None
+    assembly_category_id: int | None = None
 
 
 @dataclass

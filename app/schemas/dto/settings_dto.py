@@ -42,35 +42,9 @@ class SystemConfigUpdateDTO(BaseModel):
         le=1,
         description="废料回收率（小数，如 0.97 表示 97%）",
     )
-    finished_finance_rate: Decimal = Field(
+    calculate_finished_rates: bool = Field(
         ...,
-        ge=0,
-        le=1,
-        description="成品财务费率（小数，如 0.02 表示 2%）",
-    )
-    finished_management_rate: Decimal = Field(
-        ...,
-        ge=0,
-        le=1,
-        description="成品管理费率（小数，如 0.02 表示 2%）",
-    )
-    finished_warehouse_packaging_rate: Decimal = Field(
-        ...,
-        ge=0,
-        le=1,
-        description="仓储+包装管理费用率（小数，如 0.01 表示 1%）",
-    )
-    finished_scrap_rate: Decimal = Field(
-        ...,
-        ge=0,
-        le=0.2,
-        description="成品报废率（小数，如 0.003 表示千分之3）",
-    )
-    finished_pretax_profit_rate: Decimal = Field(
-        ...,
-        ge=0,
-        le=1,
-        description="成品税前利润率（小数，如 0.02 表示 2%）",
+        description="是否计算成品费率。关闭时财务、管理、仓储包装、报废、税前利润按 0",
     )
     swing_shear_process_fee_per_ton: Decimal = Field(
         ...,
@@ -111,11 +85,6 @@ class SystemConfigUpdateDTO(BaseModel):
     @field_validator(
         "material_loss_rate",
         "scrap_recovery_rate",
-        "finished_finance_rate",
-        "finished_management_rate",
-        "finished_warehouse_packaging_rate",
-        "finished_scrap_rate",
-        "finished_pretax_profit_rate",
         mode="before",
     )
     @classmethod
@@ -149,11 +118,7 @@ class SystemConfigWrite:
     steel_density: Decimal
     material_loss_rate: Decimal
     scrap_recovery_rate: Decimal
-    finished_finance_rate: Decimal
-    finished_management_rate: Decimal
-    finished_warehouse_packaging_rate: Decimal
-    finished_scrap_rate: Decimal
-    finished_pretax_profit_rate: Decimal
+    calculate_finished_rates: bool
     swing_shear_process_fee_per_ton: Decimal
     base_price_month_move_limit: Decimal
     base_price_processing_fee_limit: Decimal
@@ -171,11 +136,7 @@ class SystemConfigPatch(TypedDict, total=False):
     steel_density: Decimal
     material_loss_rate: Decimal
     scrap_recovery_rate: Decimal
-    finished_finance_rate: Decimal
-    finished_management_rate: Decimal
-    finished_warehouse_packaging_rate: Decimal
-    finished_scrap_rate: Decimal
-    finished_pretax_profit_rate: Decimal
+    calculate_finished_rates: bool
     swing_shear_process_fee_per_ton: Decimal
     base_price_month_move_limit: Decimal
     base_price_processing_fee_limit: Decimal

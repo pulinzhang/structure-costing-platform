@@ -1,12 +1,12 @@
 """BOM 树节点行数据访问（不含树期过滤）。"""
 
-from sqlalchemy import func, or_
+from sqlalchemy import func, inspect, or_, text
 from sqlalchemy.orm import Session, joinedload
 from sqlalchemy.sql.elements import ColumnElement
 
 from app.common.bom.node_order import bom_node_sql_order
 from app.models.bom import BomNode, BomSnapshot
-from app.repositories.persist import model_from_payload
+from app.repositories.persist import model_from_payload, query_update
 from app.schemas.dto.bom_dto import BomNodeWrite
 
 _BOM_NODE_ORDER = bom_node_sql_order(BomNode)
@@ -15,12 +15,48 @@ _BOM_NODE_ORDER = bom_node_sql_order(BomNode)
 class BomNodeRepository:
     """BOM 树节点数据访问"""
 
+    def ensure_assembly_category_column(self, db: Session) -> bool:
+        """旧库给材料清单节点补总成分类。已有列则不动。"""
+        bind = db.get_bind()
+        inspector = inspect(bind)
+        table = BomNode.__tablename__
+        if not inspector.has_table(table):
+            return False
+        present = {column["name"] for column in inspector.get_columns(table)}
+        if "assembly_category_id" in present:
+            return False
+        db.execute(
+            text(
+                f"ALTER TABLE {table} ADD COLUMN assembly_category_id "
+                "INTEGER REFERENCES assembly_categories(id) "
+                "ON DELETE RESTRICT ON UPDATE RESTRICT"
+            )
+        )
+        db.execute(
+            text(
+                "CREATE INDEX IF NOT EXISTS ix_bom_node_assembly_category "
+                f"ON {table} (assembly_category_id)"
+            )
+        )
+        return True
+
+    def assign_category_where_missing(self, db: Session, *, level: int, category_id: int) -> int:
+        """给还没分类的节点补上总成分类。已有分类的不动。"""
+        return query_update(
+            db.query(BomNode).filter(
+                BomNode.level == level,
+                BomNode.assembly_category_id.is_(None),
+            ),
+            {"assembly_category_id": category_id},
+        )
+
     def get_by_id(self, db: Session, node_id: int) -> BomNode | None:
         return db.query(BomNode).filter(BomNode.id == node_id).first()
 
     def list_by_snapshot(self, db: Session, snapshot_id: int) -> list[BomNode]:
         return (
             db.query(BomNode)
+            .options(joinedload(BomNode.assembly_category))
             .filter(BomNode.snapshot_id == snapshot_id)
             .order_by(*_BOM_NODE_ORDER)
             .all()

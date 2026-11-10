@@ -17,6 +17,8 @@ from app.schemas.dto.bom_dto import BomNodeCreate, BomNodeWrite
 from app.schemas.vo.bom_vo import BomNodeTreeVO, BomNodeVO
 from app.schemas.vo.user_vo import UserVO
 from app.services.bom.bom.trees import descendant_ids
+from app.services.masterdata.assembly_category.service import AssemblyCategoryService
+from app.services.masterdata.category_billing.rates import ASSEMBLY_CATEGORY_CODE
 from app.services.masterdata.vehicle_model.service import VehicleModelService
 from app.services.settings.schema_comment.service import STILL_REFERENCED, ensure_deletable
 
@@ -32,9 +34,28 @@ class BomNodeService:
         self.snapshot_repo = BomSnapshotRepository()
         self.node_repo = BomNodeRepository()
 
+    def ensure_assembly_category_column(self, db: Session) -> None:
+        """旧库补总成分类列。已有则不动。"""
+        if self.node_repo.ensure_assembly_category_column(db):
+            db.commit()
+
+    def assign_unset_roots_to_assembly(self, db: Session) -> None:
+        """现网还没分类的供货总成，一律补成总成件。"""
+        category_id = AssemblyCategoryService().id_by_code(db, ASSEMBLY_CATEGORY_CODE)
+        if category_id is None:
+            return
+        updated = self.node_repo.assign_category_where_missing(db, level=0, category_id=category_id)
+        if updated:
+            db.commit()
+            logger.info("已把 %s 个供货总成补成总成件", updated)
+
     @staticmethod
     def _to_node_vo(row: BomNode, *, has_children: bool = False) -> BomNodeVO:
         vo = BomNodeVO.model_validate(row)
+        category = row.assembly_category
+        if category is not None:
+            vo.assembly_category_code = category.code
+            vo.assembly_category_name = category.name
         vo.manufacturing_category = resolve_manufacturing_category(
             node_role=vo.node_role,
             is_supply_unit=bool(vo.is_supply_unit),

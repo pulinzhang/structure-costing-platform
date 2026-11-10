@@ -18,5 +18,6 @@ FEE_ARCHIVE_SEEDS: tuple[FeeArchiveSeed, ...] = (
     FeeArchiveSeed(2, "transport", "运输", "amount", Decimal("0.02")),
     FeeArchiveSeed(3, "management", "管理费", "rate", Decimal("0.02")),
     FeeArchiveSeed(4, "financial", "财务费", "rate", Decimal("0.02")),
-    FeeArchiveSeed(5, "pretax_profit", "税前利润", "rate", Decimal("0.02")),
+    FeeArchiveSeed(5, "scrap", "报废费用", "rate", Decimal("0.003")),
+    FeeArchiveSeed(6, "pretax_profit", "税前利润", "rate", Decimal("0.02")),
 )

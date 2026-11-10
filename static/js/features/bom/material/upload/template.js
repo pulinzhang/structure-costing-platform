@@ -171,7 +171,7 @@ export function bomUploadTemplate() {
                         </div>
                     </div>
                     <div class="p-4">
-                        <p class="text-[11px] text-ink-muted leading-relaxed mb-0">项目和版本从表头读取。已经投产后再传，只更新写到的总成。出现新零件号，整份不收。</p>
+                        <p class="text-[11px] text-ink-muted leading-relaxed mb-0">项目和版本从表头读取。每个供货总成要填「总成分类」，只能是主数据里启用的冲压件、凸焊件、总成件、黑漆件。已经投产后再传，只更新写到的总成。出现新零件号，整份不收。</p>
                     </div>
                 </div>
                 ${recentUploadsCardHtml('bomRecentUploads')}

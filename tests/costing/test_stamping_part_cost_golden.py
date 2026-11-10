@@ -10,6 +10,7 @@ from sqlalchemy.orm import Session, selectinload
 
 from app.models.stamping import StampingPart
 from app.schemas.vo.stamping_part_cost_vo import StampingPartCostFailedItemVO
+from app.services.costing.finished_rates import load_finished_fee_rates
 from app.services.costing.stamping_part_cost.calc.constants import compute_finished_cost_stack
 from app.services.costing.stamping_part_cost.calc.fees.die import DieFeeResolver
 from app.services.costing.stamping_part_cost.calc.fees.gauge import GaugeFeeResolver
@@ -21,6 +22,7 @@ from app.services.costing.steel_price.calc.models import (
 )
 from app.services.costing.steel_price.calc.steps.apply_adjustments import AdjustmentApplier
 from app.services.costing.steel_price.calc.steps.enrich_base_price import BasePriceEnricher
+from app.services.masterdata.category_billing.rates import STAMPING_CATEGORY_CODE
 from app.services.settings.system.service import SettingsService
 
 YEAR = 2026
@@ -129,6 +131,7 @@ def test_stamping_part_cost_golden_wuhu_2026_01(db_session: Session) -> None:
         pytest.skip(f"无废料价: {LOCATION}/{YEAR}-{MONTH:02d}")
     assert Decimal(str(scrap.net_price)) == Decimal("2160.34")
 
+    finished = load_finished_fee_rates(db_session, STAMPING_CATEGORY_CODE)
     settings_svc = SettingsService()
     calculator = PartCostCalculator(
         price_resolver=_SteelFromPeriod(mill, steel_ton),  # type: ignore[arg-type]
@@ -144,10 +147,10 @@ def test_stamping_part_cost_golden_wuhu_2026_01(db_session: Session) -> None:
         density=settings_svc.get_steel_density(db_session),
         loss_rate=settings_svc.get_material_loss_rate(db_session),
         recovery_rate=settings_svc.get_scrap_recovery_rate(db_session),
-        finance_rate=settings_svc.get_finished_finance_rate(db_session),
-        management_rate=settings_svc.get_finished_management_rate(db_session),
-        warehouse_packaging_rate=settings_svc.get_finished_warehouse_packaging_rate(db_session),
-        pretax_profit_rate=settings_svc.get_finished_pretax_profit_rate(db_session),
+        finance_rate=finished.finance_rate,
+        management_rate=finished.management_rate,
+        warehouse_packaging_rate=finished.warehouse_packaging_rate,
+        pretax_profit_rate=finished.pretax_profit_rate,
     )
     if isinstance(result, StampingPartCostFailedItemVO):
         pytest.skip(result.reason)
@@ -174,10 +177,7 @@ def test_stamping_part_cost_golden_wuhu_2026_01(db_session: Session) -> None:
     )
     assert result.die_fee_amount == die.die_fee_amount
     assert result.gauge_fee_amount == gauge.gauge_fee_amount
-    finance_rate = settings_svc.get_finished_finance_rate(db_session)
-    management_rate = settings_svc.get_finished_management_rate(db_session)
-    warehouse_packaging_rate = settings_svc.get_finished_warehouse_packaging_rate(db_session)
-    pretax_profit_rate = settings_svc.get_finished_pretax_profit_rate(db_session)
+    finished = load_finished_fee_rates(db_session, STAMPING_CATEGORY_CODE)
     (
         expected_direct,
         expected_finance,
@@ -190,10 +190,10 @@ def test_stamping_part_cost_golden_wuhu_2026_01(db_session: Session) -> None:
         process_fee_amount=Decimal("1.508"),
         die_fee_amount=die.die_fee_amount,
         gauge_fee_amount=gauge.gauge_fee_amount,
-        finance_rate=finance_rate,
-        management_rate=management_rate,
-        warehouse_packaging_rate=warehouse_packaging_rate,
-        pretax_profit_rate=pretax_profit_rate,
+        finance_rate=finished.finance_rate,
+        management_rate=finished.management_rate,
+        warehouse_packaging_rate=finished.warehouse_packaging_rate,
+        pretax_profit_rate=finished.pretax_profit_rate,
     )
     assert result.direct_cost == expected_direct
     assert result.finished_finance_fee == expected_finance
